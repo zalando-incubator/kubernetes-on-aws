@@ -31,7 +31,7 @@ Assumptions
 ===========
 
 * The AWS account has a single Route53 hosted zone including a proper SSL cert (you can use the free ACM service)
-* The VPC has public subnets called "dmz-*-a"
+* The VPC has one public subnet per AZ (either AWS default VPC setup or public subnet named "dmz-<REGION>-<AZ>")
 * The VPC is in region eu-central-1 or eu-west-1
 * etcd cluster is available via DNS discovery (SRV records) at etcd.<YOUR-HOSTED-ZONE>
 * OAuth Token Info is available to validate user tokens
