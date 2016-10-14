@@ -1,0 +1,261 @@
+Description: Kubernetes cluster
+SenzaInfo:
+    StackName: kube-aws-test
+    Parameters:
+      - UserDataMaster:
+          Description: "User data of master"
+      - UserDataWorker:
+          Description: "User data of master"
+      - Subnet:
+          Description: "ID of public subnet"
+      - KmsKey:
+          Description: "ARN of KMS key to decrypt secrets"
+
+Mappings:
+  Images:
+    eu-central-1:
+        # latest image can be found on https://coreos.com/dist/aws/aws-stable.json
+        LatestCoreOSImage: ami-c90bf8a6
+    eu-west-1:
+        # latest image can be found on https://coreos.com/dist/aws/aws-stable.json
+        LatestCoreOSImage: ami-e3d6ab90
+  ServerSubnets:
+    eu-central-1:
+        Subnets:
+          - "{{ Arguments.Subnet }}"
+    eu-west-1:
+        Subnets:
+          - "{{ Arguments.Subnet }}"
+  LoadBalancerSubnets:
+    eu-central-1:
+        Subnets:
+          - "{{ Arguments.Subnet }}"
+    eu-west-1:
+        Subnets:
+          - "{{ Arguments.Subnet }}"
+
+SenzaComponents:
+  - MasterLoadBalancer:
+      Type: Senza::WeightedDnsElasticLoadBalancer
+      HTTPPort: 443
+      CrossZone: false
+      HealthCheckPath: /healthz
+      HealthCheckPort: 8080
+      SecurityGroups:
+        - {Ref: MasterLoadBalancerSecurityGroup}
+      Scheme: internet-facing
+      Listeners:
+        - PolicyNames: []
+          Protocol: SSL
+          InstanceProtocol: SSL
+          InstancePort: 443
+          LoadBalancerPort: 443
+  - MasterAutoScaling:
+      Type: Senza::AutoScalingGroup
+      InstanceType: t2.micro
+      Image: LatestCoreOSImage
+      SecurityGroups:
+         - {Ref: MasterSecurityGroup}
+      IamRoles:
+         - {Ref: MasterIAMRole}
+      ElasticLoadBalancer: MasterLoadBalancer
+      AssociatePublicIpAddress: true
+      UserData: "{{ Arguments.UserDataMaster }}"
+      AutoScaling:
+         Minimum: 1
+         Maximum: 1
+         SuccessRequires: "0 within 15m"
+  - WorkerAutoScaling:
+      Type: Senza::AutoScalingGroup
+      InstanceType: t2.micro
+      Image: LatestCoreOSImage
+      SecurityGroups:
+         - {Ref: WorkerSecurityGroup}
+      IamRoles:
+         - {Ref: WorkerIAMRole}
+      AssociatePublicIpAddress: true
+      UserData: "{{ Arguments.UserDataWorker }}"
+      AutoScaling:
+         Minimum: 1
+         Maximum: 1
+         SuccessRequires: "0 within 15m"
+
+Resources:
+
+  MasterIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - {Action: 'ec2:*', Effect: Allow, Resource: '*'}
+          - {Action: 'elasticloadbalancing:*', Effect: Allow, Resource: '*'}
+          - {Action: 'kms:Decrypt', Effect: Allow, Resource: '{{ Arguments.KmsKey }}'}
+          Version: '2012-10-17'
+        PolicyName: root
+      - PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Action: "s3:GetObject"
+            Resource: "arn:aws:s3:::zalando-stups-mint-170858875137-eu-central-1/k8s-authnz-webhook/*"
+            Effect: Allow
+        PolicyName: AllowMintRead
+    Type: AWS::IAM::Role
+  WorkerIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - {Action: 'ec2:Describe*', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:AttachVolume', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DetachVolume', Effect: Allow, Resource: '*'}
+          - {Action: 'kms:Decrypt', Effect: Allow, Resource: '{{ Arguments.KmsKey }}'}
+          - Action: ['ecr:GetAuthorizationToken', 'ecr:BatchCheckLayerAvailability',
+              'ecr:GetDownloadUrlForLayer', 'ecr:GetRepositoryPolicy', 'ecr:DescribeRepositories',
+              'ecr:ListImages', 'ecr:BatchGetImage']
+            Effect: Allow
+            Resource: '*'
+          Version: '2012-10-17'
+        PolicyName: root
+      - PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Action: "s3:GetObject"
+            Resource: "arn:aws:s3:::zalando-stups-mint-170858875137-eu-central-1/k8s-authnz-webhook/*"
+            Effect: Allow
+        PolicyName: AllowMintRead
+    Type: AWS::IAM::Role
+  MasterSecurityGroup:
+    Properties:
+      GroupDescription: {Ref: 'AWS::StackName'}
+      SecurityGroupEgress:
+      - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
+      - {CidrIp: 0.0.0.0/0, FromPort: 0, IpProtocol: tcp, ToPort: 65535}
+      - {CidrIp: 0.0.0.0/0, FromPort: 0, IpProtocol: udp, ToPort: 65535}
+      SecurityGroupIngress:
+      - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
+      - {CidrIp: 0.0.0.0/0, FromPort: 22, IpProtocol: tcp, ToPort: 22}
+      Tags: []
+      VpcId: "{{ AccountInfo.VpcID }}"
+    Type: AWS::EC2::SecurityGroup
+  MasterLoadBalancerSecurityGroup:
+    Properties:
+      GroupDescription: {Ref: 'AWS::StackName'}
+      SecurityGroupEgress:
+      - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
+      - {CidrIp: 0.0.0.0/0, FromPort: 0, IpProtocol: tcp, ToPort: 65535}
+      - {CidrIp: 0.0.0.0/0, FromPort: 0, IpProtocol: udp, ToPort: 65535}
+      SecurityGroupIngress:
+      - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
+      - {CidrIp: 0.0.0.0/0, FromPort: 443, IpProtocol: tcp, ToPort: 443}
+      Tags: []
+      VpcId: "{{ AccountInfo.VpcID }}"
+    Type: AWS::EC2::SecurityGroup
+  MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
+    Properties:
+      FromPort: 8080
+      GroupId: {Ref: MasterSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: MasterLoadBalancerSecurityGroup}
+      ToPort: 8080
+    Type: AWS::EC2::SecurityGroupIngress
+  MasterSecurityGroupIngressFromLoadBalancer:
+    Properties:
+      FromPort: 443
+      GroupId: {Ref: MasterSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: MasterLoadBalancerSecurityGroup}
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
+  WorkerSecurityGroup:
+    Properties:
+      GroupDescription: {Ref: 'AWS::StackName'}
+      SecurityGroupEgress:
+      - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
+      - {CidrIp: 0.0.0.0/0, FromPort: 0, IpProtocol: tcp, ToPort: 65535}
+      - {CidrIp: 0.0.0.0/0, FromPort: 0, IpProtocol: udp, ToPort: 65535}
+      SecurityGroupIngress:
+      - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
+      - {CidrIp: 0.0.0.0/0, FromPort: 22, IpProtocol: tcp, ToPort: 22}
+      Tags: []
+      VpcId: "{{ AccountInfo.VpcID }}"
+    Type: AWS::EC2::SecurityGroup
+  MasterSecurityGroupIngressFromWorker:
+    Properties:
+      FromPort: 443
+      GroupId: {Ref: MasterSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
+      ToPort: 443
+    Type: AWS::EC2::SecurityGroupIngress
+  WorkerSecurityGroupIngressFromMasterToFlannel:
+    Properties:
+      FromPort: 8472
+      GroupId: {Ref: WorkerSecurityGroup}
+      IpProtocol: udp
+      SourceSecurityGroupId: {Ref: MasterSecurityGroup}
+      ToPort: 8472
+    Type: AWS::EC2::SecurityGroupIngress
+  WorkerSecurityGroupIngressFromMasterToKubelet:
+    Properties:
+      FromPort: 10250
+      GroupId: {Ref: WorkerSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: MasterSecurityGroup}
+      ToPort: 10250
+    Type: AWS::EC2::SecurityGroupIngress
+  WorkerSecurityGroupIngressFromMasterTocAdvisor:
+    Properties:
+      FromPort: 4194
+      GroupId: {Ref: WorkerSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: MasterSecurityGroup}
+      ToPort: 4194
+    Type: AWS::EC2::SecurityGroupIngress
+  MasterSecurityGroupIngressFromFlannelToMaster:
+    Properties:
+      FromPort: 8472
+      GroupId: {Ref: MasterSecurityGroup}
+      IpProtocol: udp
+      SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
+      ToPort: 8472
+    Type: AWS::EC2::SecurityGroupIngress
+  MasterSecurityGroupIngressFromWorkerToMasterKubeletReadOnly:
+    Properties:
+      FromPort: 10255
+      GroupId: {Ref: MasterSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
+      ToPort: 10255
+    Type: AWS::EC2::SecurityGroupIngress
+  WorkerSecurityGroupIngressFromWorkerToFlannel:
+    Properties:
+      FromPort: 8472
+      GroupId: {Ref: WorkerSecurityGroup}
+      IpProtocol: udp
+      SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
+      ToPort: 8472
+    Type: AWS::EC2::SecurityGroupIngress
+  WorkerSecurityGroupIngressFromWorkerToWorkerKubeletReadOnly:
+    Properties:
+      FromPort: 10255
+      GroupId: {Ref: WorkerSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
+      ToPort: 10255
+    Type: AWS::EC2::SecurityGroupIngress

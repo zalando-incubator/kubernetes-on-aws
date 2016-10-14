@@ -1,0 +1,239 @@
+#cloud-config
+ssh_authorized_keys:
+  - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCpzwYq1DHpE45uNin32k3KchWGHSPjGgpDrrl7d9fiP6ByIhhkeG/0sHqy9MC5r5OOsBwjlUlVZv1fZv42ei9tv94qeHL9vIMLeYGSeZLF+iqYGJAGTOMViptJb1K3OdBk6s/+nJCIA4agbKOh3E4f+EdxUMOA/rllx3dBtFv8LE2CAAFH0g5b5nGdHbOyLCI1qeG54q7zpKK/oJxWoHBSNSekVlQV0/i9DelFfOf2W6r+ugXD4h5msL9doHvpqnq0xcjJ+nc9u1FE9BwkjfgIZEmb9mDMaBUIqtEJ2TzwP3aQ+RPCmPqMGiC2/FmCnY1imhGjX13H00o1/j9Qvj/j9i7D6hNVi7/zom+yail+W6E/s1wWmkAI4yLq0VAt9M4F860m464UFUpkBw0IFzYvsyA/OoB7Az6R36ilHZ4EhCTvbP2AH5OYzE68w0+8E28Xb3cet7PSUO1qZ9DrfMzHxbiZduCgn+GgdJ5QUMiel2X8e8+7J72JBzjbvwkx5qFGRgnKI1TAhxO50LQfWerB1ND21DMYldiqTqkmyKtxsn9pZiK0QHl31Q01gUJVnHprMzj5fvMe4EH4cCB4qeddKjUQYo5javV6yL7WQB4igdQF3gLy1EC1DoC5y/3BGjMJVSDAS8rHk/o+ATpJRJvhH8fK8Es+4x68vHU0tIDoZw== cardno:000604137982"
+coreos:
+  update:
+    reboot-strategy: "off"
+  flannel:
+    interface: $private_ipv4
+    etcd_endpoints: http://$private_ipv4:2379
+  etcd2:
+    discovery-srv: ETCD_DISCOVERY_DOMAIN
+    proxy: on
+    advertise-client-urls: http://$private_ipv4:2379
+    initial-advertise-peer-urls: http://$private_ipv4:2380
+    listen-client-urls: http://0.0.0.0:2379
+    listen-peer-urls: http://0.0.0.0:2380
+  units:
+    - name: etcd2.service
+      command: start
+      runtime: true
+
+    - name: docker.service
+      drop-ins:
+        - name: 40-flannel.conf
+          content: |
+            [Unit]
+            Requires=flanneld.service
+            After=flanneld.service
+            [Service]
+            EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
+
+    - name: kubelet.service
+      command: start
+      runtime: true
+      content: |
+        [Service]
+        Environment=KUBELET_VERSION=v1.4.0_coreos.2
+        Environment=KUBELET_ACI=quay.io/coreos/hyperkube
+        Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
+        --mount volume=dns,target=/etc/resolv.conf \
+        --volume hosts,kind=host,source=/etc/hosts \
+        --mount volume=hosts,target=/etc/hosts \
+        --volume rkt,kind=host,source=/opt/bin/host-rkt \
+        --mount volume=rkt,target=/usr/bin/rkt \
+        --volume var-lib-rkt,kind=host,source=/var/lib/rkt \
+        --mount volume=var-lib-rkt,target=/var/lib/rkt \
+        --volume stage,kind=host,source=/tmp \
+        --mount volume=stage,target=/tmp \
+        --volume var-log,kind=host,source=/var/log \
+        --mount volume=var-log,target=/var/log"
+        ExecStartPre=/usr/bin/mkdir -p /var/log/containers
+        ExecStart=/usr/lib/coreos/kubelet-wrapper \
+        --api-servers=API_SERVER \
+        --cni-conf-dir=/etc/kubernetes/cni/net.d \
+        --network-plugin=cni \
+        --container-runtime=docker \
+        --rkt-path=/usr/bin/rkt \
+        --rkt-stage1-image=coreos.com/rkt/stage1-coreos \
+        --register-node=true \
+        --allow-privileged=true \
+        --config=/etc/kubernetes/manifests \
+        --cluster_dns=10.3.0.10 \
+        --cluster_domain=cluster.local \
+        --cloud-provider=aws \
+        --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
+        --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
+        --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem
+        Restart=always
+        RestartSec=10
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: decrypt-tls-assets.service
+      enable: true
+      content: |
+        [Unit]
+        Description=decrypt kubelet tls assets using amazon kms
+        Before=kubelet.service
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/opt/bin/decrypt-tls-assets
+
+        [Install]
+        RequiredBy=kubelet.service
+
+    - name: install-ssh-keys.service
+      enable: true
+      content: |
+        [Unit]
+        Description=install personal SSH keys
+        Before=kubelet.service
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/opt/bin/install-ssh-keys
+
+        [Install]
+        RequiredBy=kubelet.service
+
+write_files:
+  - path: /etc/kubernetes/cni/docker_opts_cni.env
+    content: |
+      DOCKER_OPT_BIP=""
+      DOCKER_OPT_IPMASQ=""
+
+  - path: /opt/bin/install-ssh-keys
+    permissions: 0700
+    owner: root:root
+    content: |
+      #!/bin/bash -e
+      for uid in hjacobs mkerk sszuecs rdifazio mlinkhorst mlarsen tsarnowski lmineiro; do
+          /usr/bin/curl https://even.stups.zalan.do/public-keys/$uid/sshkey.pub -o /home/core/.ssh/authorized_keys.d/$uid
+      done
+      /usr/bin/update-ssh-keys
+
+  - path: /opt/bin/host-rkt
+    permissions: 0755
+    owner: root:root
+    content: |
+      #!/bin/sh
+      exec nsenter -m -u -i -n -p -t 1 -- /usr/bin/rkt "$@"
+
+  - path: /etc/kubernetes/ssl/worker.pem
+    encoding: gzip+base64
+    content: H4sIAIiK/1cAA21Uu9KySBTMeYrNrb+Qi4rBBjMwwACDDnfIBBVQEEFkhKdfvy/b2j3BCbqDrlPdp//8+Q5EBnb/UpEXYB2rIEA/4B+OYKzZmqqCSi0BwxCU+LsMSS5hU9UF02hq2V2Gq6lwAUUOpIBZAfIIUAwghIhTK4JPUlRnvlCdJfJBGjjA0o0gIAEURyFtwzEVETOrwiVB+iEaEElABTegcvzFOBIU/wZv4Ek8xDSWahGlNmLVcI6txol1qVhQSCD+VQYf4vwIc19lKZesIUswK0tUE7A2VL83fJxLGkUQ0BAAGUONgR/eBt33Qqpm1mpHZvE4cM22jZNaFBWha8PUdPhg2vXkHqbB2tDH0RMenZ5unuubvIVG5TssnzEt7GFJdnevMD/c0Wv299zKJa88rcYmDmqXx3Q3aOTqB/CLy/aTXpvW4ZORya77el8tPbOWdXCLG6AsnBJtL+iiLDfwkqsTTqCEIdyr5qyG261ampJ9lRdovwUv1W9mJhRsW1oAbWjmVBprDc7AG+Q7ZNdr5c3JbDcKSKd2w/xq5ru9f+/t3FAXhEqjWF0YWbnnkDZNYMyGYqv+qDBO2VL56cuXwzKMvG64fa1fZ3SgK4Aci+0k3smmyDwJa75dzmYS6o9xn3rT6TA8O7NdC9yxSDzA226iKkdQEgiAcYs1GBMg/9h11hiCPKPoGzK900DwkxHTD5GmARuW5cDBEumQFhq4gemX9BCyNdCWFe2dunun4n4szGid+Ztn/vCaot1UOcYHu9406YLf3CnerLPEeqcx+7/Yal/vIcDucb9P1SP27OMhrcdIicyiPMmtaHHYxJlkuq0wdqG7XaoLdRaZPFYNUtaNbN6Ka3v//oXgG5/5er9+yEnc7gz+WUym0NrqhXM8OhnUfmF+uJzODyKX03kFn9gtGvnZj3U1GxJLnry77xV6j+jUNLvUEbP3avd+8ArgXHHWDgO+1UK/qGM+zMZLkLGNxh019ujSF/smXQ8v6JdMunzgJ1XjU+zv4r4qntu5Y9wDX+VCV/yKJX3Fv5MoiFfTBr3sl6zXiVeccy1GopcEesDrx0cC2mijyOYqOgXqhVmEY6lwuIl7hHqoGJjhcA3fJpoUOgDapee7njsvXIgWKtpXdZ3sAKufVb7A7IL/5n4rBbnaf2vmH/gHp9iDBAAA
+
+  - path: /etc/kubernetes/ssl/worker-key.pem
+    encoding: gzip+base64
+    content: H4sIAJ6K/1cAA22Vt66sCABDe77i9eiKIUNJhiHn0MGQYcj56/fu23bdujmyLPvn51esICnGH8dl/liOEjCe8EcV4n+NH0BXFGE8FZZhVI6xBebrlvujby2BF1PfY9t2GOm7l9gbepEg0b5FSaDZOsv8PCHY0EyBXAHNyhn9hpKoRpC5mYJBXIhYynslZSLdIf2KpWNJgg5ry1swifORX93phjTIzb6MA0kDweTH5L1MG24ndD+0gMGTbemQWAy1fOjYqZlK2IhnfjN2addU1Zt7NbL0PYD66QLL5odsfCF5pJsjZ7OmL7mYTb3rujEdoXlMosKUG3HbwH9UZlap5f2ZuCM73O9VrRcLKOxgDStvtVEgvBP/WuuDq7ql1C2zM1V/l9uVIMvLadOxjqia76yK5e6PSUM3ksEOAmy5ha+oA8NsQpahkCHtTKQsvhkeKr5s626D8+BPhWdshmXG37AFzVCdSXEFyAdzZQMcWsCL2BxkhOI5bj/eBbyvfEVtpWoJO2Q/e3O7xiMs4kYRXNF4N3gH1jbR2byyWs4CYafj1k3nidyw8VAtd03i/TWzW3qCGBSxcQE6fjZWTMF+IA9DEOyjTlk7K+G21QeLAzrru/ODQcyLJ7SAkNfzCCOEgOScQP3qYdV+3bQV6YdJlpA5EImCJvhtR/AsQL9KsQI1ao6NDb8OmtsZTcIbl0dSjAeVqHy1MNoz/FJnJDs3JHHhhICD1yameR0mrndwx70AH/U1ZJlcfHDE/WzJEpcIvUxa8Sw1SMSj0Nb4a2J1w0bUs6mMWuQC7OMUZTnBqd1pNNA7JcYqHVfFAnN1xHlhp1thkKE0fDFQ6fH1Ra1FJZjTsdg1+xo11EOKvNucDA37DQwQPZnq3nMWqeVpNvuy653UOXm/4vVghIyjoWZIqBDVk0TjGdIT0QfnSOjn5FG+/BYV4IcqnmyjskY1agk+2z3bnLvTPotPCbnPjWalPW1wHcA3yij4mtbVoO36f8RZygHvNtDUXoNH4fraBhHJhRL5yKfGud/mXVrQc74rt8zQIVicM+fxDdIuo0JxWDpl8rkMIBpSgsIDxxiqaJR5ysnupgOqBtc5utwIjCXWL/UrQNWpDnmfPkA3Z1Yy2IVhXTajBbarHMG9hMdWaGrm2BIh7CS5sJRkHeK9HL0cVtXd/4s892Kf+6+rjVbHMSTfPssWsG8sDr5QW8A5SFfVA0JmFmVamghqS1Pz+6Ro+H6xe+Cu2mhNX/qlYTlNHtVrM09fXgFFtaN3eMb0Qhtvah38a1zr98elVTiKnKT3QUHco7zFKw4iiTu+tUmX0o2j3W4Isb0BIrzjWRnBBopUq7q1t++70AzqF5kJQzmQzbaBeiOlmC5lXKkyqEQ9fDSclcOLv1YfAyNjoTp6Bv3UFqSOjAnUo5d8McO9OmCXdHg/vxUaBQk6Vb711uqEI15exFFxq+3S7AJfiLP7bncZ1kQ+aMxpbrAdG0eg30pZOsR7WS0FzuyVwSPii+TbjCQ6a9BYxpi3OC8esNcygdoqWwmxoRPSWD9wLywIZtzUyFoTTxRa5LVwNBX98oBXOsOgF1cj7DMKZkHZBZT0g12FEKmKbnksF4XXjNPcjZczB9KW/x34JsGVJtjiXCQoikae+FsERpk0o4EggwsIYp/6XKkidUGi65g6sWPVvzMGLrNF6KnmHL5L618mhEg6KJjIVekU+HspgsH//9X8AwWWFBKLBgAA
+
+  - path: /etc/kubernetes/ssl/ca.pem
+    encoding: gzip+base64
+    content: H4sIAK2K/1cAA2WUWa+ySBCG7/kVc29OVJDt4rvopptFWWwWEe5E9kUFQbB//ec5X2YmmamkksqTSqqS9636+voExJph/6Vg1zdUQwE+/oZfjGUYioAUBaRKAWYDguKTCNiwaPqyqTR53kBAnuqHtZaLZzRH6ETIAc/lkIb7ljFDlbtSTCyw08A2wGCx9At3qmJvW0c+yNR5s9g1ni0ULTYKtjYqLx/2/sPIwvwNLSVYsA+OsLBPENx9RRu3UReM0TmllgtmVPxMRnhOfyaboV1+toeMUf93XawC4CiASOC7QSkOnxqDOahYNHp57YqhqI/79kg640oJo0qLAOscLNML9pK06W7RRV0/o5by02nedbZCjAXdjTp9cr6eaNquifvOETuP79cshsztXsWTMXI8wlFQT6k53kMZZfR+21labEiydJ5A1gXKQOKp3OgUamN83gqFn2A2Yy1GFc/iGSqtJdEm3o+HKQRT8yJrI9hHQ3fKTqOlN3rbtrMeefNuzeVeFayutW8cbNThOxN1bn0J5Z4Pm+p+DTXs+1WJ1T58SJZBlD3r+fQUl9ZxEkZXSjeec8+l3Vg3usc2Sloxb+QU76WluwyBMGWFkFQe54tJIp6Ex918Yrd01qWZtnnX3GK7OjZBmJyvtcSytkgMxAAC4P1tzYYPnG8JdSJBkEsYAksBPfljHHfjA6KvIQhmMGO4pv8qx/zjtB/pMMiWij3OR54bbhIe7EF8qI23iAmV3dU4zd3+slr1MGMLp5DdJHsycsdbUddAvOHoU1WttHlzrBe8LtWMqDGq28dg1jysl5MA91MWBMepdt6xfe6NajDbkZGCoLlZ4cXiuev0SlzBX08xalZurod0T9PHwO918RHnSRFCORErpFGVatle3hwO7CQwtqkfbJK+ePvlnGPz2Q+BIKb2TXastNRYojRFnevn9Ki8F93IiyjnBy69ghwr+hnpGhMui9NR0zTHRoyT5DoVc9WWE39DAa0NSvrxEbWtyR7iNgjc0zq0lJ2c0aGJ6n3UlSJDdvDASVlcwf6lPjiuedO3Yl6dy5Ev4CyXSHDcC/j1i/m5fmyj/3+E37OehiUuBAAA
+
+  - path: /opt/bin/decrypt-tls-assets
+    owner: root:root
+    permissions: 0700
+    content: |
+      #!/bin/bash -e
+
+      for encKey in $(find /etc/kubernetes/ssl/*.pem.enc);do
+        sudo rkt run \
+        --volume=ssl,kind=host,source=/etc/kubernetes/ssl,readOnly=false \
+        --mount=volume=ssl,target=/etc/kubernetes/ssl \
+        --uuid-file-save=/var/run/coreos/decrypt-tls-assets.uuid \
+        --dns=8.8.8.8 --dns=8.8.4.4 \
+        --net=host \
+        --trust-keys-from-https \
+        quay.io/coreos/awscli --exec=/bin/bash -- \
+          -c \
+          "/usr/bin/aws \
+            --region eu-central-1 kms decrypt \
+            --ciphertext-blob fileb://$encKey \
+            --output text \
+            --query Plaintext \
+            > $encKey.b64"
+
+        base64 --decode < $encKey.b64 > ${encKey%.enc}
+        sudo rkt rm --uuid-file=/var/run/coreos/decrypt-tls-assets.uuid
+      done
+
+  - path: /etc/kubernetes/manifests/kube-proxy.yaml
+    content: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: kube-proxy
+          namespace: kube-system
+          annotations:
+            rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
+        spec:
+          hostNetwork: true
+          containers:
+          - name: kube-proxy
+            image: quay.io/coreos/hyperkube:v1.4.0_coreos.2
+            command:
+            - /hyperkube
+            - proxy
+            - --master=API_SERVER
+            - --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml
+            securityContext:
+              privileged: true
+            volumeMounts:
+              - mountPath: /etc/ssl/certs
+                name: "ssl-certs"
+              - mountPath: /etc/kubernetes/worker-kubeconfig.yaml
+                name: "kubeconfig"
+                readOnly: true
+              - mountPath: /etc/kubernetes/ssl
+                name: "etc-kube-ssl"
+                readOnly: true
+              - mountPath: /var/run/dbus
+                name: dbus
+                readOnly: false
+          volumes:
+            - name: "ssl-certs"
+              hostPath:
+                path: "/usr/share/ca-certificates"
+            - name: "kubeconfig"
+              hostPath:
+                path: "/etc/kubernetes/worker-kubeconfig.yaml"
+            - name: "etc-kube-ssl"
+              hostPath:
+                path: "/etc/kubernetes/ssl"
+            - hostPath:
+                path: /var/run/dbus
+              name: dbus
+
+  - path: /etc/kubernetes/worker-kubeconfig.yaml
+    content: |
+        apiVersion: v1
+        kind: Config
+        clusters:
+        - name: local
+        users:
+        - name: kubelet
+          user:
+            token: WORKER_SHARED_SECRET
+        contexts:
+        - context:
+            cluster: local
+            user: kubelet
+          name: kubelet-context
+        current-context: kubelet-context
+
+
+  - path: /etc/kubernetes/cni/net.d/10-flannel.conf
+    content: |
+        {
+            "name": "podnet",
+            "type": "flannel",
+            "delegate": {
+                "isDefaultGateway": true
+            }
+        }
+
