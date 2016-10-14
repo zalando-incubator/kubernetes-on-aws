@@ -10,7 +10,6 @@ This repo contains some scripts and templates to provision Kubernetes clusters o
 
 It was initially based on `kube-aws`_, but we decided to diverge from it:
 
-* kube-aws deploys a new VPC --- we want to deploy into an existing public subnet
 * kube-aws uses a single master EC2 instance --- we want to have an ASG for the master nodes (probably running with size 1 usually, but having the option for more, e.g. during updates/migrations etc)
 * kube-aws runs etcd on the master --- we want to run etcd separately (currently we use our own 3 node etcd appliance with DNS discovery (SRV records))
 * kube-aws does not configure an ELB for the API server --- we want to terminate SSL at ELB in order to leverage existing SSL infrastructure (including ACM)
