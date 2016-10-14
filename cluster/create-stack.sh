@@ -8,7 +8,14 @@ if [ -z "$az" ]; then
 fi
 
 cluster=kube-aws-test
-subnet=$(aws ec2 describe-subnets --filters "Name=tag:Name,Values=dmz-*$az" | jq -r .Subnets[0].SubnetId)
+subnets_in_az=$(aws ec2 describe-subnets --filters "Name=availability-zone,Values=*$az" | jq '.Subnets|length')
+if [ "$subnets_in_az" -eq 1 ]; then
+    # we only have one subnet in this AZ (probably default VPC setup)
+    subnet=$(aws ec2 describe-subnets --filters "Name=availability-zone,Values=*$az" | jq -r .Subnets[0].SubnetId)
+else
+    # choose the "public" subnet by name ("DMZ" subnet like http://docs.stups.io/en/latest/installation/aws-account-setup.html)
+    subnet=$(aws ec2 describe-subnets --filters "Name=tag:Name,Values=dmz-*$az" | jq -r .Subnets[0].SubnetId)
+fi
 hosted_zone=$(aws route53 list-hosted-zones | jq -r .HostedZones[0].Name | sed s/\.$//)
 etcd_discovery_domain=etcd.${hosted_zone}
 api_server=https://kube-aws-test-${ver}.${hosted_zone}
