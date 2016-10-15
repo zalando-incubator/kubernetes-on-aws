@@ -50,6 +50,9 @@ SenzaComponents:
           InstanceProtocol: SSL
           InstancePort: 443
           LoadBalancerPort: 443
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
   - MasterAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: t2.micro
@@ -65,6 +68,9 @@ SenzaComponents:
          Minimum: 1
          Maximum: 1
          SuccessRequires: "0 within 15m"
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
   - WorkerAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: t2.micro
@@ -79,6 +85,9 @@ SenzaComponents:
          Minimum: 1
          Maximum: 1
          SuccessRequires: "0 within 15m"
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
 
 Resources:
 
@@ -150,7 +159,9 @@ Resources:
       SecurityGroupIngress:
       - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
       - {CidrIp: 0.0.0.0/0, FromPort: 22, IpProtocol: tcp, ToPort: 22}
-      Tags: []
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
   MasterLoadBalancerSecurityGroup:
@@ -163,7 +174,9 @@ Resources:
       SecurityGroupIngress:
       - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
       - {CidrIp: 0.0.0.0/0, FromPort: 443, IpProtocol: tcp, ToPort: 443}
-      Tags: []
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
   MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
@@ -173,6 +186,9 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: {Ref: MasterLoadBalancerSecurityGroup}
       ToPort: 8080
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromLoadBalancer:
     Properties:
@@ -181,6 +197,9 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: {Ref: MasterLoadBalancerSecurityGroup}
       ToPort: 443
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroup:
     Properties:
@@ -192,7 +211,9 @@ Resources:
       SecurityGroupIngress:
       - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
       - {CidrIp: 0.0.0.0/0, FromPort: 22, IpProtocol: tcp, ToPort: 22}
-      Tags: []
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
   MasterSecurityGroupIngressFromWorker:
@@ -202,6 +223,9 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
       ToPort: 443
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterToFlannel:
     Properties:
@@ -210,6 +234,9 @@ Resources:
       IpProtocol: udp
       SourceSecurityGroupId: {Ref: MasterSecurityGroup}
       ToPort: 8472
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterToKubelet:
     Properties:
@@ -218,6 +245,9 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: {Ref: MasterSecurityGroup}
       ToPort: 10250
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterTocAdvisor:
     Properties:
@@ -226,6 +256,9 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: {Ref: MasterSecurityGroup}
       ToPort: 4194
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromFlannelToMaster:
     Properties:
@@ -234,6 +267,9 @@ Resources:
       IpProtocol: udp
       SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
       ToPort: 8472
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromWorkerToMasterKubeletReadOnly:
     Properties:
@@ -242,6 +278,9 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
       ToPort: 10255
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromWorkerToFlannel:
     Properties:
@@ -250,6 +289,9 @@ Resources:
       IpProtocol: udp
       SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
       ToPort: 8472
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromWorkerToWorkerKubeletReadOnly:
     Properties:
@@ -258,4 +300,7 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
       ToPort: 10255
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: {Ref: 'AWS::StackName'}
     Type: AWS::EC2::SecurityGroupIngress
