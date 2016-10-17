@@ -92,14 +92,12 @@ coreos:
       command: start
       runtime: true
       content: |
-        [Unit]
-        Requires=kubelet.service docker.service
-        After=kubelet.service docker.service
-
         [Service]
         Type=simple
         StartLimitInterval=0
         Restart=on-failure
+        ExecStartPre=systemctl is-active docker.service
+        ExecStartPre=systemctl is-active kubelet.service
         ExecStartPre=/usr/bin/curl http://127.0.0.1:8080/version
         ExecStart=/opt/bin/install-kube-system
 
