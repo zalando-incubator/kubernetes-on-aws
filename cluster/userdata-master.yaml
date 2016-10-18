@@ -56,17 +56,18 @@ coreos:
         --mount volume=var-log,target=/var/log"
         ExecStartPre=/usr/bin/mkdir -p /var/log/containers
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
-        --api-servers=http://localhost:8080 \
         --cni-conf-dir=/etc/kubernetes/cni/net.d \
         --network-plugin=cni \
         --container-runtime=docker \
         --rkt-path=/usr/bin/rkt \
-        --rkt-stage1-image=coreos.com/rkt/stage1-coreos \
         --register-schedulable=false \
-        --allow-privileged=true \
-        --config=/etc/kubernetes/manifests \
+        --allow-privileged \
+        --node-labels=master=true \
+        --pod-manifest-path=/etc/kubernetes/manifests \
         --cluster_dns=10.3.0.10 \
         --cluster_domain=cluster.local \
+        --kubeconfig=/etc/kubernetes/kubeconfig \
+        --require-kubeconfig \
         --cloud-provider=aws
         Restart=always
         RestartSec=10
@@ -118,8 +119,24 @@ coreos:
         RequiredBy=kubelet.service
 
 
-
 write_files:
+  - path: /etc/kubernetes/kubeconfig
+    permissions: "0644"
+    owner: core
+    content: |
+      apiVersion: v1
+      kind: Config
+      clusters:
+      - name: local
+        cluster:
+          server: http://localhost:8080
+      users:
+      - name: kubelet
+      contexts:
+      - context:
+          cluster: local
+          user: kubelet
+
   - path: /etc/kubernetes/ssl/authnz.yaml
     permissions: 0744
     owner: root:root
