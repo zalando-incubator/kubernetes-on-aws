@@ -2,7 +2,7 @@
 az=$1
 ver=$2
 
-if [ -z "$az" ]; then
+if [ -z "$az" ] &&  [ -z "$ver" ]; then
     echo 'Usage: ./create-stack.sh <AZ> <VERSION>'
     exit 1
 fi
@@ -22,7 +22,7 @@ api_server=https://kube-aws-test-${ver}.${hosted_zone}
 
 key_arn=$(aws kms create-key --description "Kubernetes cluster $cluster $ver" | jq -r .KeyMetadata.Arn)
 aws kms create-alias --alias-name "alias/${cluster}-${ver}" --target-key-id "$key_arn"
-token=$(cat /dev/urandom | tr -dc _A-Z-a-z-0-9- | head -c 64)
+token=$(cat /dev/urandom | LC_ALL=C tr -dc _A-Z-a-z-0-9- | head -c 64)
 # TODO: encrypt fixed token with KMS
 userdata_master=$(cat userdata-master.yaml|sed -e s/STACK_VERSION/$ver/ -e s/ETCD_DISCOVERY_DOMAIN/$etcd_discovery_domain/ -e s,API_SERVER,$api_server, -e s/WORKER_SHARED_SECRET/$token/|gzip|base64)
 userdata_worker=$(cat userdata-worker.yaml|sed -e s/STACK_VERSION/$ver/ -e s/ETCD_DISCOVERY_DOMAIN/$etcd_discovery_domain/ -e s,API_SERVER,$api_server, -e s/WORKER_SHARED_SECRET/$token/|gzip|base64)
