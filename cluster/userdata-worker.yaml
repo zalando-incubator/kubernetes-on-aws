@@ -50,19 +50,18 @@ coreos:
         --mount volume=var-log,target=/var/log"
         ExecStartPre=/usr/bin/mkdir -p /var/log/containers
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
-        --api-servers=API_SERVER \
         --cni-conf-dir=/etc/kubernetes/cni/net.d \
         --network-plugin=cni \
         --container-runtime=docker \
         --rkt-path=/usr/bin/rkt \
-        --rkt-stage1-image=coreos.com/rkt/stage1-coreos \
-        --register-node=true \
-        --allow-privileged=true \
+        --register-node \
+        --allow-privileged \
         --config=/etc/kubernetes/manifests \
         --cluster_dns=10.3.0.10 \
         --cluster_domain=cluster.local \
         --cloud-provider=aws \
         --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
+        --require-kubeconfig \
         --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
         --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem
         Restart=always
@@ -215,6 +214,8 @@ write_files:
         kind: Config
         clusters:
         - name: local
+          cluster:
+            server: API_SERVER
         users:
         - name: kubelet
           user:
