@@ -34,8 +34,9 @@ coreos:
         - name: 10-etcd.conf
           content: |
             [Service]
-            ExecStartPre=/usr/bin/etcdctl --endpoint=http://localhost:2379 \
--             set /coreos.com/network/config '{ "Network": "10.2.0.0/16", "Backend" : {"Type" : "vxlan"}}'
+            ExecStartPre=/usr/bin/etcdctl \
+            --endpoint=http://localhost:2379 set /coreos.com/network/config \
+            '{ "Network": "10.2.0.0/16", "Backend": {"Type": "vxlan"}}'
     - name: kubelet.service
       command: start
       runtime: true
