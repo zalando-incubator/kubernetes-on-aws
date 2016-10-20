@@ -6,8 +6,6 @@ SenzaInfo:
           Description: "User data of master"
       - UserDataWorker:
           Description: "User data of master"
-      - Subnet:
-          Description: "ID of public subnet"
       - KmsKey:
           Description: "ARN of KMS key to decrypt secrets"
 
@@ -19,22 +17,12 @@ Mappings:
     eu-west-1:
         # latest image can be found on https://coreos.com/dist/aws/aws-stable.json
         LatestCoreOSImage: ami-e3d6ab90
-  ServerSubnets:
-    eu-central-1:
-        Subnets:
-          - "{{ Arguments.Subnet }}"
-    eu-west-1:
-        Subnets:
-          - "{{ Arguments.Subnet }}"
-  LoadBalancerSubnets:
-    eu-central-1:
-        Subnets:
-          - "{{ Arguments.Subnet }}"
-    eu-west-1:
-        Subnets:
-          - "{{ Arguments.Subnet }}"
 
 SenzaComponents:
+  - Configuration:
+      Type: Senza::SubnetAutoConfiguration
+      PublicOnly: true # use all public subnets
+      DefineParameters: false # skip CF template parameter definition
   - MasterLoadBalancer:
       Type: Senza::WeightedDnsElasticLoadBalancer
       HTTPPort: 443
