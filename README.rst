@@ -30,7 +30,7 @@ Assumptions
 ===========
 
 * The AWS account has a single Route53 hosted zone including a proper SSL cert (you can use the free ACM service)
-* The VPC has one public subnet per AZ (either AWS default VPC setup or public subnet named "dmz-<REGION>-<AZ>")
+* The VPC has at least one public subnet per AZ (either AWS default VPC setup or public subnet named "dmz-<REGION>-<AZ>")
 * The VPC is in region eu-central-1 or eu-west-1
 * etcd cluster is available via DNS discovery (SRV records) at etcd.<YOUR-HOSTED-ZONE>
 * OAuth Token Info is available to validate user tokens
@@ -44,7 +44,7 @@ Usage
     $ sudo pip3 install -U stups-senza awscli # install Senza and AWS CLI
     $ # login to AWS with right region
     $ cd cluster
-    $ ./create-stack.sh <AZ-SUFFIX> <VERSION> # e.g. ./create-stack.sh a test1
+    $ ./create-stack.sh <VERSION> # e.g. ./create-stack.sh test1
 
 This will bootstrap a new cluster and make the API server available as https://kube-aws-test-<VERSION>.<YOUR-HOSTED-ZONE-DOMAIN>.
 
