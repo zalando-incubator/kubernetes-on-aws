@@ -178,6 +178,10 @@ write_files:
       -d"$(cat /srv/kubernetes/manifests/secretary-de.yaml)" \
       "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/deployments"
 
+      /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
+      -d"$(cat /srv/kubernetes/manifests/mate-de.yaml)" \
+      "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/deployments"
+
       for manifest in {kube-dns,heapster,kube-dashboard}-svc.yaml;do
           /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
           -d"$(cat /srv/kubernetes/manifests/$manifest)" \
@@ -756,6 +760,36 @@ write_files:
               emptyDir:
                 medium: Memory # share a tmpfs between the two containers
 
+  - path: /srv/kubernetes/manifests/mate-de.yaml
+    content: |
+      apiVersion: extensions/v1beta1
+      kind: Deployment
+      metadata:
+        name: mate
+        namespace: kube-system
+      spec:
+        replicas: 1
+        template:
+          metadata:
+            labels:
+              app: mate
+          spec:
+            containers:
+            - name: mate
+              image: pierone.stups.zalan.do/teapot/mate:v0.0.4-31-gebb7747
+              args:
+              - --producer=kubernetes
+              - --kubernetes-domain=mate.teapot.zalan.do.
+              - --consumer=aws
+              - --aws-hosted-zone=mate.teapot.zalan.do.
+              - --no-sync
+            - name: kubectl
+              image: quay.io/coreos/hyperkube:v1.3.6_coreos.0
+              command:
+              - /hyperkube
+              args:
+              - kubectl
+              - proxy
 
   - path: /etc/kubernetes/ssl/ca.pem
     encoding: gzip+base64
@@ -778,4 +812,3 @@ write_files:
                 "isDefaultGateway": true
             }
         }
-
