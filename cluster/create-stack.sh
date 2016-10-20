@@ -26,4 +26,5 @@ token=$(cat /dev/urandom | LC_ALL=C tr -dc _A-Z-a-z-0-9- | head -c 64)
 # TODO: encrypt fixed token with KMS
 userdata_master=$(cat userdata-master.yaml|sed -e s/STACK_VERSION/$ver/ -e s/ETCD_DISCOVERY_DOMAIN/$etcd_discovery_domain/ -e s,API_SERVER,$api_server, -e s/WORKER_SHARED_SECRET/$token/|gzip|base64)
 userdata_worker=$(cat userdata-worker.yaml|sed -e s/STACK_VERSION/$ver/ -e s/ETCD_DISCOVERY_DOMAIN/$etcd_discovery_domain/ -e s,API_SERVER,$api_server, -e s/WORKER_SHARED_SECRET/$token/|gzip|base64)
-senza create senza-definition.yaml $ver Subnet=$subnet UserDataMaster="$userdata_master" UserDataWorker="$userdata_worker" KmsKey="$key_arn"
+senza create senza-master.yaml $ver Subnet=$subnet UserData="$userdata_master" KmsKey="$key_arn"
+senza create senza-worker.yaml $ver Subnet=$subnet UserData="$userdata_worker" KmsKey="$key_arn"
