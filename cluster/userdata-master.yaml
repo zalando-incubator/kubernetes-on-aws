@@ -337,7 +337,7 @@ write_files:
           - mountPath: /etc/ssl/certs
             name: ssl-certs-host
             readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:21e046c
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:c4ca2b9
           name: k8s-authnz-webhook
           ports:
           - containerPort: 8081
@@ -365,6 +365,10 @@ write_files:
               value: WORKER_SHARED_SECRET
             - name: WEBHOOK_ADDRESS
               value: :8081
+            - name: USERS_API_URL
+              value: https://users.auth.zalando.com
+            - name: CLUSTER_NAME
+              value: teapot-kube-aws-test #placeholder for the name of the cluster, currently missing in zack
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
