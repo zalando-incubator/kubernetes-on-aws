@@ -42,7 +42,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=v1.4.0_coreos.2
+        Environment=KUBELET_VERSION=v1.4.3_coreos.0
         Environment=KUBELET_ACI=quay.io/coreos/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
         --mount volume=dns,target=/etc/resolv.conf \
@@ -193,6 +193,10 @@ write_files:
       -d"$(cat /srv/kubernetes/manifests/secretary-de.yaml)" \
       "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/deployments"
 
+      /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
+      -d"$(cat /srv/kubernetes/manifests/mate-de.yaml)" \
+      "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/deployments"
+
       for manifest in {kube-dns,heapster,kube-dashboard}-svc.yaml;do
           /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
           -d"$(cat /srv/kubernetes/manifests/$manifest)" \
@@ -262,7 +266,7 @@ write_files:
           hostNetwork: true
           containers:
           - name: kube-proxy
-            image: quay.io/coreos/hyperkube:v1.4.0_coreos.2
+            image: quay.io/coreos/hyperkube:v1.4.3_coreos.0
             command:
             - /hyperkube
             - proxy
@@ -296,7 +300,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: quay.io/coreos/hyperkube:v1.4.0_coreos.2
+          image: quay.io/coreos/hyperkube:v1.4.3_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -392,7 +396,7 @@ write_files:
       spec:
         containers:
         - name: kube-controller-manager
-          image: quay.io/coreos/hyperkube:v1.4.0_coreos.2
+          image: quay.io/coreos/hyperkube:v1.4.3_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -439,7 +443,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: quay.io/coreos/hyperkube:v1.4.0_coreos.2
+          image: quay.io/coreos/hyperkube:v1.4.3_coreos.0
           command:
           - /hyperkube
           - scheduler
@@ -768,7 +772,7 @@ write_files:
                 name: credentials
                 readOnly: true
             - name: kubectl
-              image: quay.io/coreos/hyperkube:v1.3.6_coreos.0
+              image: quay.io/coreos/hyperkube:v1.4.3_coreos.0
               command:
               - /hyperkube
               args:
@@ -780,6 +784,36 @@ write_files:
               emptyDir:
                 medium: Memory # share a tmpfs between the two containers
 
+  - path: /srv/kubernetes/manifests/mate-de.yaml
+    content: |
+      apiVersion: extensions/v1beta1
+      kind: Deployment
+      metadata:
+        name: mate
+        namespace: kube-system
+      spec:
+        replicas: 1
+        template:
+          metadata:
+            labels:
+              app: mate
+          spec:
+            containers:
+            - name: mate
+              image: registry.opensource.zalan.do/teapot/mate:v0.0.4-34-gf2f1dd2
+              args:
+              - --producer=kubernetes
+              - --kubernetes-domain=HOSTED_ZONE.
+              - --consumer=aws
+              - --aws-hosted-zone=HOSTED_ZONE.
+              - --no-sync
+            - name: kubectl
+              image: quay.io/coreos/hyperkube:v1.4.3_coreos.0
+              command:
+              - /hyperkube
+              args:
+              - kubectl
+              - proxy
 
   - path: /etc/kubernetes/ssl/ca.pem
     encoding: gzip+base64
@@ -802,4 +836,3 @@ write_files:
                 "isDefaultGateway": true
             }
         }
-
