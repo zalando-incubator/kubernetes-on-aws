@@ -34,7 +34,7 @@ var values = struct {
 	ServiceCIDR:        "10.3.0.0/24",
 	K8sVer:             "v1.4.0",
 	HyperkubeImageRepo: "gcr.io/google_containers/hyperkube-amd64",
-	// K8sVer:             "v1.4.0_coreos.2",
+	// K8sVer:             "v1.4.3_coreos.0",
 	// HyperkubeImageRepo: "quay.io/coreos/hyperkube",
 	K8sNetworkPlugin: "cni",
 	ContainerRuntime: "docker",
