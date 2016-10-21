@@ -63,7 +63,8 @@ coreos:
         --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
         --require-kubeconfig \
         --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
-        --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem
+        --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
+        --feature-gates=AllAlpha=true
         Restart=always
         RestartSec=10
         [Install]
@@ -180,6 +181,7 @@ write_files:
             - proxy
             - --master=API_SERVER
             - --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml
+            - --feature-gates=AllAlpha=true
             securityContext:
               privileged: true
             volumeMounts:
