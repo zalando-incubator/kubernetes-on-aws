@@ -138,14 +138,14 @@ write_files:
           cluster: local
           user: kubelet
 
-  - path: /etc/kubernetes/ssl/authnz.yaml
+  - path: /etc/kubernetes/ssl/authn.yaml
     permissions: 0744
     owner: root:root
     content: |
       clusters:
         - name: authz-webhook
           cluster:
-            server: http://localhost:8081
+            server: http://localhost:8081/authentication
       users:
         - name: authz-webhook-client
           user:
@@ -156,7 +156,22 @@ write_files:
           cluster: authz-webhook
           user: authz-webhook-client
         name: authz-webhook
-
+  - path: /etc/kubernetes/ssl/authz.yaml
+    permissions: 0744
+    owner: root:root
+    content: |
+      clusters:
+        - name: authz-webhook
+          cluster:
+            server: http://localhost:8081/authorization
+      users:
+        - name: authz-webhook-client
+      current-context: authz-webhook
+      contexts:
+      - context:
+          cluster: authz-webhook
+          user: authz-webhook-client
+        name: authz-webhook
   - path: /opt/bin/install-kube-system
     permissions: 0700
     owner: root:root
@@ -298,8 +313,11 @@ write_files:
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --runtime-config=extensions/v1beta1/networkpolicies=true
-          - --authentication-token-webhook-config-file=/etc/kubernetes/ssl/authnz.yaml
+          - --authentication-token-webhook-config-file=/etc/kubernetes/ssl/authn.yaml
           - --cloud-provider=aws
+          - --authorization-mode=Webhook
+          - --authorization-webhook-config-file=/etc/kubernetes/ssl/authz.yaml
+          - --runtime-config=authorization.k8s.io/v1beta1=true
           - --feature-gates=AllAlpha=true
           livenessProbe:
             httpGet:
@@ -322,7 +340,7 @@ write_files:
           - mountPath: /etc/ssl/certs
             name: ssl-certs-host
             readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:4419a56
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:c4ca2b9
           name: k8s-authnz-webhook
           ports:
           - containerPort: 8081
@@ -350,6 +368,12 @@ write_files:
               value: WORKER_SHARED_SECRET
             - name: WEBHOOK_ADDRESS
               value: :8081
+            - name: USERS_API_URL
+              value: https://users.auth.zalando.com
+            - name: CLUSTER_NAME
+              value: teapot-kube-aws-test #placeholder for the name of the cluster, currently missing in zack
+            - name: TOKENINFO_URL
+              value: https://info.services.auth.zalando.com/oauth2/tokeninfo
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
