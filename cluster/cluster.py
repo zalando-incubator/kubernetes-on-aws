@@ -9,7 +9,9 @@ import subprocess
 import string
 import yaml
 
-from clickclick import info
+from clickclick import info, Action
+
+SCALING_PROCESSES_TO_SUSPEND = ['AZRebalance', 'AlarmNotification', 'ScheduledActions']
 
 
 def encode_user_data(plain_text: str) -> str:
@@ -63,14 +65,18 @@ def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=No
     return variables
 
 
-def get_launch_configuration_user_data(stack_name, version):
-    autoscaling = boto3.client('autoscaling')
+def get_auto_scaling_group(stack_name, version):
     cf = boto3.client('cloudformation')
     resources = cf.describe_stack_resources(StackName='{}-{}'.format(stack_name, version))['StackResources']
     for resource in resources:
         if resource['ResourceType'] == 'AWS::AutoScaling::AutoScalingGroup' and 'Worker' in resource['LogicalResourceId']:
             asg_name = resource['PhysicalResourceId']
-            break
+            return asg_name
+
+
+def get_launch_configuration_user_data(stack_name, version):
+    autoscaling = boto3.client('autoscaling')
+    asg_name = get_auto_scaling_group(stack_name, version)
 
     asgs = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups']
     lc_name = asgs[0]['LaunchConfigurationName']
@@ -141,7 +147,8 @@ def get_instances_to_update(stack_name, version, desired_user_data):
 @cli.command()
 @click.argument('stack_name')
 @click.argument('version')
-def update(stack_name, version):
+@click.option('--force', is_flag=True)
+def update(stack_name, version, force):
     '''
     Update Kubernetes cluster
     '''
@@ -151,7 +158,8 @@ def update(stack_name, version):
     userdata_master = get_user_data('userdata-master.yaml', variables)
     userdata_worker = get_user_data('userdata-worker.yaml', variables)
 
-    if decode_user_data(user_data) == decode_user_data(userdata_worker):
+    # TODO: handle master nodes as well
+    if not force and decode_user_data(user_data) == decode_user_data(userdata_worker):
         info('Worker user data did not change, not updating anything.')
         return
 
@@ -159,9 +167,45 @@ def update(stack_name, version):
     subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name), 'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*'])
     # wait for CF update to complete..
     subprocess.check_call(['senza', 'wait', stack_name, version])
-    # TODO: drain and respawn nodes
-    instances_to_update = get_instances_to_update(stack_name, version, userdata_worker)
-    print(instances_to_update)
+    perform_node_updates(stack_name, version, userdata_worker)
+
+
+def perform_node_updates(stack_name, version, desired_user_data):
+    # TODO: only works for worker nodes right now
+    autoscaling = boto3.client('autoscaling')
+    asg_name = get_auto_scaling_group(stack_name, version)
+
+    with Action('Suspending scaling processes for {}..'.format(asg_name)):
+        autoscaling.suspend_processes(AutoScalingGroupName=asg_name,
+                                      ScalingProcesses=SCALING_PROCESSES_TO_SUSPEND)
+
+    group = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups'][0]
+    old_desired_capacity = group['DesiredCapacity']
+    new_desired_capacity = old_desired_capacity + 1
+    # scale out
+    with Action('Scaling up to {} instances..'.format(new_desired_capacity)) as act:
+        autoscaling.update_auto_scaling_group(AutoScalingGroupName=asg_name,
+                                              MinSize=new_desired_capacity,
+                                              MaxSize=new_desired_capacity,
+                                              DesiredCapacity=new_desired_capacity)
+        # TODO: wait for nodes to be ready
+
+    instances_to_update = get_instances_to_update(stack_name, version, desired_user_data)
+    for instance_id in instances_to_update:
+        # TODO: drain
+        autoscaling = boto3.client('autoscaling')
+        with Action('Terminating old instance {}..'.format(instance_id)):
+            autoscaling.terminate_instance_in_auto_scaling_group(InstanceId=instance_id,
+                                                                 ShouldDecrementDesiredCapacity=False)
+
+    with Action('Scaling down to {} instances..'.format(old_desired_capacity)) as act:
+        autoscaling.update_auto_scaling_group(AutoScalingGroupName=asg_name,
+                                              MinSize=old_desired_capacity,
+                                              MaxSize=old_desired_capacity,
+                                              DesiredCapacity=old_desired_capacity)
+
+    with Action('Resuming scaling processes for {}..'.format(asg_name)):
+        autoscaling.resume_processes(AutoScalingGroupName=asg_name)
 
 
 @cli.command()
