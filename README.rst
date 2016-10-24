@@ -44,9 +44,9 @@ Usage
     $ sudo pip3 install -U stups-senza awscli # install Senza and AWS CLI
     $ # login to AWS with right region
     $ cd cluster
-    $ ./create-stack.sh <VERSION> # e.g. ./create-stack.sh test1
+    $ ./cluster.py create <CLUSTER_NAME> <VERSION> # e.g. ./cluster.py create test 1
 
-This will bootstrap a new cluster and make the API server available as https://kube-aws-test-<VERSION>.<YOUR-HOSTED-ZONE-DOMAIN>.
+This will bootstrap a new cluster and make the API server available as https://<CLUSTER_NAME>-<VERSION>.<YOUR-HOSTED-ZONE-DOMAIN>.
 
 
 .. _kube-aws: https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/aws
