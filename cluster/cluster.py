@@ -34,7 +34,7 @@ def create(cluster_name, version):
     all_hosted_zones = route53.list_hosted_zones()['HostedZones']
     hosted_zone = all_hosted_zones[0]['Name'].rstrip('.')
     etcd_discovery_domain = 'etcd.{}'.format(hosted_zone)
-    api_server = '{}-{}.{}'.format(cluster_name, version, hosted_zone)
+    api_server = 'https://{}-{}.{}'.format(cluster_name, version, hosted_zone)
     token = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(64))
     # TODO: encrypt fixed token with KMS
     variables = {
