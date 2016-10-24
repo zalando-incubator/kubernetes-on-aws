@@ -18,18 +18,7 @@ def get_user_data(fn, variables: dict) -> str:
     return b64_encoded.decode('ascii')
 
 
-@click.group()
-def cli():
-    pass
-
-
-@cli.command()
-@click.argument('cluster_name')
-@click.argument('version')
-def create(cluster_name, version):
-    '''
-    Create a new Kubernetes cluster (using current AWS credentials)
-    '''
+def get_cluster_variables(cluster_name: str, version: str):
     route53 = boto3.client('route53')
     all_hosted_zones = route53.list_hosted_zones()['HostedZones']
     hosted_zone = all_hosted_zones[0]['Name'].rstrip('.')
@@ -44,7 +33,23 @@ def create(cluster_name, version):
         'worker_shared_secret': token,
         'hosted_zone': hosted_zone
     }
+    return variables
 
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+@click.argument('cluster_name')
+@click.argument('version')
+def create(cluster_name, version):
+    '''
+    Create a new Kubernetes cluster (using current AWS credentials)
+    '''
+
+    variables = get_cluster_variables(cluster_name, version)
     userdata_master = get_user_data('userdata-master.yaml', variables)
     userdata_worker = get_user_data('userdata-worker.yaml', variables)
     subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(cluster_name), 'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*'])
@@ -57,7 +62,10 @@ def update(cluster_name, version):
     '''
     Update Kubernetes cluster
     '''
-    pass
+    variables = get_cluster_variables(cluster_name, version)
+    userdata_master = get_user_data('userdata-master.yaml', variables)
+    userdata_worker = get_user_data('userdata-worker.yaml', variables)
+    subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(cluster_name), 'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*'])
 
 
 @cli.command()
