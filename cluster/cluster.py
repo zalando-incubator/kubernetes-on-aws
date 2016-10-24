@@ -25,11 +25,11 @@ def get_account_alias_without_namespace():
     '''
     Return AWS account alias without an optional prefix (separated by dash)
 
-    i.e. an alias of "myorg-myteam" will return "myteam"
+    i.e. an alias of "myorg-myteam-staging" will return "myteam-staging"
     '''
     iam = boto3.client('iam')
     account_alias = iam.list_account_aliases()['AccountAliases'][0]
-    return account_alias.split('-')[-1]
+    return account_alias.split('-', 1)[-1]
 
 
 def get_cluster_variables(stack_name: str, version: str):
