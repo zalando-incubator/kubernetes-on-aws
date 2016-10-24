@@ -44,9 +44,11 @@ Usage
     $ sudo pip3 install -U stups-senza awscli # install Senza and AWS CLI
     $ # login to AWS with right region
     $ cd cluster
-    $ ./create-stack.sh <VERSION> # e.g. ./create-stack.sh test1
+    $ ./cluster.py create <STACK_NAME> <VERSION> # e.g. ./cluster.py create kube-aws-test 1
 
-This will bootstrap a new cluster and make the API server available as https://kube-aws-test-<VERSION>.<YOUR-HOSTED-ZONE-DOMAIN>.
+This will bootstrap a new cluster and make the API server available as https://<STACK_NAME>-<VERSION>.<YOUR-HOSTED-ZONE-DOMAIN>.
+
+The authorization webhook will require the user to have the group "<ACCOUNT_ALIAS_WITHOUT_PREFIX>-<STACK_NAME>", i.e. if the AWS account alias is "myorg-myteam" and the stack name is "kube-aws-test" then the required group is "myteam-kube-aws-test".
 
 
 .. _kube-aws: https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/aws
