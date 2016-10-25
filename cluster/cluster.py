@@ -5,6 +5,7 @@ import boto3
 import click
 import gzip
 import random
+import requests
 import subprocess
 import string
 import time
@@ -129,6 +130,19 @@ def tag_subnets():
                                   'Value': 'kubernetes'}])
 
 
+def wait_for_api_server(api_server):
+    with Action('Waiting for API server {}..'.format(api_server)) as act:
+        while True:
+            try:
+                response = requests.get(api_server, timeout=5)
+            except:
+                response = None
+            if response is not None and response.status_code == 401:
+                return
+            time.sleep(5)
+            act.progress()
+
+
 @click.group()
 def cli():
     pass
@@ -157,6 +171,7 @@ def create(stack_name, version, dry_run):
         subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name), 'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*'])
         # wait up to 15m for stack to be created
         subprocess.check_call(['senza', 'wait', '--timeout=900', stack_name, version])
+        wait_for_api_server(variables['api_server'])
 
 
 def get_instances_to_update(stack_name, version, desired_user_data):
@@ -212,6 +227,7 @@ def update(stack_name, version, force):
     # wait for CF update to complete..
     subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
     perform_node_updates(stack_name, version, 'Master', user_data_master)
+    wait_for_api_server(variables['api_server'])
     perform_node_updates(stack_name, version, 'Worker', user_data_worker)
 
 
