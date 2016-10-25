@@ -9,6 +9,7 @@ import subprocess
 import string
 import yaml
 
+from botocore.exceptions import ClientError
 from clickclick import info, Action
 
 SCALING_PROCESSES_TO_SUSPEND = ['AZRebalance', 'AlarmNotification', 'ScheduledActions']
@@ -96,6 +97,27 @@ def get_worker_shared_secret(user_data: str):
     return token
 
 
+def has_etcd_cluster():
+    cf = boto3.client('cloudformation')
+    try:
+        cf.describe_stacks(StackName='etcd-cluster-etcd')
+    except ClientError as err:
+        response = err.response
+        error_info = response['Error']
+        error_message = error_info['Message']
+        if 'does not exist' in error_message:
+            return False
+        else:
+            raise
+    return True
+
+
+def deploy_etcd_cluster(hosted_zone):
+    subprocess.check_call(['senza', 'create', 'etcd-cluster.yaml', 'etcd', 'HostedZone={}'.format(hosted_zone)])
+    # wait up to 15m for stack to be created
+    subprocess.check_call(['senza', 'wait', '--timeout=900', 'etcd-cluster', 'etcd'])
+
+
 @click.group()
 def cli():
     pass
@@ -115,10 +137,14 @@ def create(stack_name, version, dry_run):
     info('API server endpoint will be: {}'.format(variables['api_server']))
     if dry_run:
         print(yaml.safe_dump(variables))
+    if not has_etcd_cluster() and not dry_run:
+        deploy_etcd_cluster(variables['hosted_zone'])
     userdata_master = get_user_data('userdata-master.yaml', variables)
     userdata_worker = get_user_data('userdata-worker.yaml', variables)
     if not dry_run:
         subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name), 'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*'])
+        # wait up to 15m for stack to be created
+        subprocess.check_call(['senza', 'wait', '--timeout=900', stack_name, version])
 
 
 def get_instances_to_update(stack_name, version, desired_user_data):
@@ -166,7 +192,7 @@ def update(stack_name, version, force):
     # this will only update the Launch Configuration
     subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name), 'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*'])
     # wait for CF update to complete..
-    subprocess.check_call(['senza', 'wait', stack_name, version])
+    subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
     perform_node_updates(stack_name, version, userdata_worker)
 
 
