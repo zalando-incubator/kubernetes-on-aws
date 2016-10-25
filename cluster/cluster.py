@@ -174,15 +174,9 @@ def create(stack_name, version, dry_run):
         wait_for_api_server(variables['api_server'])
 
 
-def get_instances_to_update(stack_name, version, desired_user_data):
+def get_instances_to_update(asg_name, desired_user_data):
     autoscaling = boto3.client('autoscaling')
-    cf = boto3.client('cloudformation')
     ec2 = boto3.client('ec2')
-    resources = cf.describe_stack_resources(StackName='{}-{}'.format(stack_name, version))['StackResources']
-    for resource in resources:
-        if resource['ResourceType'] == 'AWS::AutoScaling::AutoScalingGroup' and 'Worker' in resource['LogicalResourceId']:
-            asg_name = resource['PhysicalResourceId']
-            break
 
     desired_plain_text = decode_user_data(desired_user_data)
     instance_ids = set()
@@ -231,6 +225,28 @@ def update(stack_name, version, force):
     perform_node_updates(stack_name, version, 'Worker', user_data_worker)
 
 
+def get_instances_in_service(group: dict):
+    # this only handles classic ELB (ELBv1)
+    instances_in_service = set()
+    lb_names = group['LoadBalancerNames']
+    if lb_names:
+        # check ELB status
+        elb = boto3.client('elb')
+        for lb_name in lb_names:
+            result = elb.describe_instance_health(LoadBalancerName=lb_name)
+            for instance in result['InstanceStates']:
+                if instance['State'] == 'InService':
+                    instances_in_service.add(instance['InstanceId'])
+    else:
+        # just use ASG LifecycleState
+        autoscaling = boto3.client('autoscaling')
+        group = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[group['AutoScalingGroupName']])['AutoScalingGroups'][0]
+        for instance in group['Instances']:
+            if instance['LifecycleState'] == 'InService':
+                instances_in_service.add(instance['InstanceId'])
+    return instances_in_service
+
+
 def perform_node_updates(stack_name, version, name_filter, desired_user_data):
     # TODO: only works for worker nodes right now
     autoscaling = boto3.client('autoscaling')
@@ -250,22 +266,35 @@ def perform_node_updates(stack_name, version, name_filter, desired_user_data):
                                               MaxSize=new_desired_capacity,
                                               DesiredCapacity=new_desired_capacity)
         while True:
-            group = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups'][0]
-            instances_in_service = [inst for inst in group['Instances'] if inst['LifecycleState'] == 'InService']
+            instances_in_service = get_instances_in_service(group)
             if len(instances_in_service) >= new_desired_capacity:
                 break
             time.sleep(5)
             act.progress()
 
-        # TODO: wait for nodes to be ready
+        # TODO: wait for nodes to be ready (at least we wait for master ELB right now)
 
-    instances_to_update = get_instances_to_update(stack_name, version, desired_user_data)
+    instances_to_update = get_instances_to_update(asg_name, desired_user_data)
     for instance_id in instances_to_update:
         # TODO: drain
         autoscaling = boto3.client('autoscaling')
         with Action('Terminating old instance {}..'.format(instance_id)):
             autoscaling.terminate_instance_in_auto_scaling_group(InstanceId=instance_id,
                                                                  ShouldDecrementDesiredCapacity=False)
+            while True:
+                instances_in_service = get_instances_in_service(group)
+                if instances_in_service and instance_id not in instances_in_service:
+                    break
+                time.sleep(2)
+                act.progress()
+
+        with Action('Waiting for ASG to scale back to {} instances..'.format(new_desired_capacity)) as act:
+            while True:
+                instances_in_service = get_instances_in_service(group)
+                if len(instances_in_service) >= new_desired_capacity:
+                    break
+                time.sleep(5)
+                act.progress()
 
     with Action('Scaling down to {} instances..'.format(old_desired_capacity)) as act:
         autoscaling.update_auto_scaling_group(AutoScalingGroupName=asg_name,
