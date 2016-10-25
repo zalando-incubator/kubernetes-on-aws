@@ -5,10 +5,13 @@ import boto3
 import click
 import gzip
 import random
+import requests
 import subprocess
 import string
+import time
 import yaml
 
+from botocore.exceptions import ClientError
 from clickclick import info, Action
 
 SCALING_PROCESSES_TO_SUSPEND = ['AZRebalance', 'AlarmNotification', 'ScheduledActions']
@@ -65,18 +68,18 @@ def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=No
     return variables
 
 
-def get_auto_scaling_group(stack_name, version):
+def get_auto_scaling_group(stack_name, version, name_filter):
     cf = boto3.client('cloudformation')
     resources = cf.describe_stack_resources(StackName='{}-{}'.format(stack_name, version))['StackResources']
     for resource in resources:
-        if resource['ResourceType'] == 'AWS::AutoScaling::AutoScalingGroup' and 'Worker' in resource['LogicalResourceId']:
+        if resource['ResourceType'] == 'AWS::AutoScaling::AutoScalingGroup' and name_filter in resource['LogicalResourceId']:
             asg_name = resource['PhysicalResourceId']
             return asg_name
 
 
-def get_launch_configuration_user_data(stack_name, version):
+def get_launch_configuration_user_data(stack_name, version, name_filter):
     autoscaling = boto3.client('autoscaling')
-    asg_name = get_auto_scaling_group(stack_name, version)
+    asg_name = get_auto_scaling_group(stack_name, version, name_filter)
 
     asgs = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups']
     lc_name = asgs[0]['LaunchConfigurationName']
@@ -94,6 +97,50 @@ def get_worker_shared_secret(user_data: str):
             kubeconfig = yaml.safe_load(write_file['content'])
             token = kubeconfig['users'][0]['user']['token']
     return token
+
+
+def has_etcd_cluster():
+    cf = boto3.client('cloudformation')
+    try:
+        cf.describe_stacks(StackName='etcd-cluster-etcd')
+    except ClientError as err:
+        response = err.response
+        error_info = response['Error']
+        error_message = error_info['Message']
+        if 'does not exist' in error_message:
+            return False
+        else:
+            raise
+    return True
+
+
+def deploy_etcd_cluster(hosted_zone):
+    subprocess.check_call(['senza', 'create', 'etcd-cluster.yaml', 'etcd', 'HostedZone={}'.format(hosted_zone)])
+    # wait up to 15m for stack to be created
+    subprocess.check_call(['senza', 'wait', '--timeout=900', 'etcd-cluster', 'etcd'])
+
+
+def tag_subnets():
+    '''
+    Tag all subnets with KubernetesCluster=kubernetes to make K8s AWS integration happy :-(
+    '''
+    ec2 = boto3.resource('ec2')
+    for subnet in ec2.subnets.all():
+        subnet.create_tags(Tags=[{'Key': 'KubernetesCluster',
+                                  'Value': 'kubernetes'}])
+
+
+def wait_for_api_server(api_server):
+    with Action('Waiting for API server {}..'.format(api_server)) as act:
+        while True:
+            try:
+                response = requests.get(api_server, timeout=5)
+            except:
+                response = None
+            if response is not None and response.status_code == 401:
+                return
+            time.sleep(5)
+            act.progress()
 
 
 @click.group()
@@ -115,10 +162,16 @@ def create(stack_name, version, dry_run):
     info('API server endpoint will be: {}'.format(variables['api_server']))
     if dry_run:
         print(yaml.safe_dump(variables))
+    if not has_etcd_cluster() and not dry_run:
+        deploy_etcd_cluster(variables['hosted_zone'])
+    tag_subnets()
     userdata_master = get_user_data('userdata-master.yaml', variables)
     userdata_worker = get_user_data('userdata-worker.yaml', variables)
     if not dry_run:
         subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name), 'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*'])
+        # wait up to 15m for stack to be created
+        subprocess.check_call(['senza', 'wait', '--timeout=900', stack_name, version])
+        wait_for_api_server(variables['api_server'])
 
 
 def get_instances_to_update(stack_name, version, desired_user_data):
@@ -144,6 +197,10 @@ def get_instances_to_update(stack_name, version, desired_user_data):
     return instance_ids
 
 
+def same_user_data(enc1, enc2):
+    return decode_user_data(enc1) == decode_user_data(enc2)
+
+
 @cli.command()
 @click.argument('stack_name')
 @click.argument('version')
@@ -152,28 +209,32 @@ def update(stack_name, version, force):
     '''
     Update Kubernetes cluster
     '''
-    user_data = get_launch_configuration_user_data(stack_name, version)
-    worker_shared_secret = get_worker_shared_secret(user_data)
+    existing_user_data_master = get_launch_configuration_user_data(stack_name, version, 'Master')
+    existing_user_data_worker = get_launch_configuration_user_data(stack_name, version, 'Worker')
+    worker_shared_secret = get_worker_shared_secret(existing_user_data_worker)
     variables = get_cluster_variables(stack_name, version, worker_shared_secret)
-    userdata_master = get_user_data('userdata-master.yaml', variables)
-    userdata_worker = get_user_data('userdata-worker.yaml', variables)
+    user_data_master = get_user_data('userdata-master.yaml', variables)
+    user_data_worker = get_user_data('userdata-worker.yaml', variables)
 
-    # TODO: handle master nodes as well
-    if not force and decode_user_data(user_data) == decode_user_data(userdata_worker):
-        info('Worker user data did not change, not updating anything.')
+    if not force and same_user_data(existing_user_data_master, user_data_master) and same_user_data(existing_user_data_worker, user_data_worker):
+        info('Neither worker nor master user data did change, not updating anything.')
         return
 
     # this will only update the Launch Configuration
-    subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name), 'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*'])
+    subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
+                           'UserDataMaster={}'.format(user_data_master),
+                           'UserDataWorker={}'.format(user_data_worker), 'KmsKey=*'])
     # wait for CF update to complete..
-    subprocess.check_call(['senza', 'wait', stack_name, version])
-    perform_node_updates(stack_name, version, userdata_worker)
+    subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
+    perform_node_updates(stack_name, version, 'Master', user_data_master)
+    wait_for_api_server(variables['api_server'])
+    perform_node_updates(stack_name, version, 'Worker', user_data_worker)
 
 
-def perform_node_updates(stack_name, version, desired_user_data):
+def perform_node_updates(stack_name, version, name_filter, desired_user_data):
     # TODO: only works for worker nodes right now
     autoscaling = boto3.client('autoscaling')
-    asg_name = get_auto_scaling_group(stack_name, version)
+    asg_name = get_auto_scaling_group(stack_name, version, name_filter)
 
     with Action('Suspending scaling processes for {}..'.format(asg_name)):
         autoscaling.suspend_processes(AutoScalingGroupName=asg_name,
@@ -188,6 +249,14 @@ def perform_node_updates(stack_name, version, desired_user_data):
                                               MinSize=new_desired_capacity,
                                               MaxSize=new_desired_capacity,
                                               DesiredCapacity=new_desired_capacity)
+        while True:
+            group = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups'][0]
+            instances_in_service = [inst for inst in group['Instances'] if inst['LifecycleState'] == 'InService']
+            if len(instances_in_service) >= new_desired_capacity:
+                break
+            time.sleep(5)
+            act.progress()
+
         # TODO: wait for nodes to be ready
 
     instances_to_update = get_instances_to_update(stack_name, version, desired_user_data)
