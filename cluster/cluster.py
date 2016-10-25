@@ -118,6 +118,16 @@ def deploy_etcd_cluster(hosted_zone):
     subprocess.check_call(['senza', 'wait', '--timeout=900', 'etcd-cluster', 'etcd'])
 
 
+def tag_subnets():
+    '''
+    Tag all subnets with KubernetesCluster=kubernetes to make K8s AWS integration happy :-(
+    '''
+    ec2 = boto3.resource('ec2')
+    for subnet in ec2.subnets.all():
+        subnet.create_tags(Tags=[{'Key': 'KubernetesCluster',
+                                  'Value': 'kubernetes'}])
+
+
 @click.group()
 def cli():
     pass
@@ -139,6 +149,7 @@ def create(stack_name, version, dry_run):
         print(yaml.safe_dump(variables))
     if not has_etcd_cluster() and not dry_run:
         deploy_etcd_cluster(variables['hosted_zone'])
+    tag_subnets()
     userdata_master = get_user_data('userdata-master.yaml', variables)
     userdata_worker = get_user_data('userdata-worker.yaml', variables)
     if not dry_run:
