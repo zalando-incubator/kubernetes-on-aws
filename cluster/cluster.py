@@ -282,7 +282,7 @@ def update(stack_name, version, force):
 
 
 def get_k8s_nodes(api_server: str, token: str):
-    headers = { "Authorization": "Bearer {}".format(token) }
+    headers = {"Authorization": "Bearer {}".format(token)}
     return requests.get(api_server + "/api/v1/nodes", headers=headers, timeout=5).json()
 
 
