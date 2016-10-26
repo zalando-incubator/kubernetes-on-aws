@@ -43,8 +43,9 @@ coreos:
       content: |
         [Service]
         Environment=KUBELET_VERSION=v1.4.4_coreos.0
-        Environment=KUBELET_ACI=quay.io/coreos/hyperkube
+        Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
+        --insecure-options=image \
         --mount volume=dns,target=/etc/resolv.conf \
         --volume rkt,kind=host,source=/opt/bin/host-rkt \
         --mount volume=rkt,target=/usr/bin/rkt \
@@ -266,7 +267,7 @@ write_files:
           hostNetwork: true
           containers:
           - name: kube-proxy
-            image: quay.io/coreos/hyperkube:v1.4.4_coreos.0
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
             command:
             - /hyperkube
             - proxy
@@ -301,7 +302,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: quay.io/coreos/hyperkube:v1.4.4_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -397,7 +398,7 @@ write_files:
       spec:
         containers:
         - name: kube-controller-manager
-          image: quay.io/coreos/hyperkube:v1.4.4_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -444,7 +445,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: quay.io/coreos/hyperkube:v1.4.4_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
           command:
           - /hyperkube
           - scheduler
@@ -773,7 +774,7 @@ write_files:
                 name: credentials
                 readOnly: true
             - name: kubectl
-              image: quay.io/coreos/hyperkube:v1.4.4_coreos.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
               command:
               - /hyperkube
               args:
@@ -809,7 +810,7 @@ write_files:
               - --aws-hosted-zone=HOSTED_ZONE.
               - --no-sync
             - name: kubectl
-              image: quay.io/coreos/hyperkube:v1.4.4_coreos.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
               command:
               - /hyperkube
               args:

@@ -35,8 +35,9 @@ coreos:
       content: |
         [Service]
         Environment=KUBELET_VERSION=v1.4.4_coreos.0
-        Environment=KUBELET_ACI=quay.io/coreos/hyperkube
+        Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
+        --insecure-options=image \
         --mount volume=dns,target=/etc/resolv.conf \
         --volume hosts,kind=host,source=/etc/hosts \
         --mount volume=hosts,target=/etc/hosts \
@@ -175,7 +176,7 @@ write_files:
           hostNetwork: true
           containers:
           - name: kube-proxy
-            image: quay.io/coreos/hyperkube:v1.4.4_coreos.0
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
             command:
             - /hyperkube
             - proxy
