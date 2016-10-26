@@ -162,31 +162,15 @@ write_files:
     owner: root:root
     content: |
       #!/bin/bash -e
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPUT \
-      -d"$(cat /srv/kubernetes/manifests/kube-dns-rc.yaml)" \
-      "http://127.0.0.1:8080/api/v1/namespaces/kube-system/replicationcontrollers/kube-dns-v19"
 
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPUT \
-      -d"$(cat /srv/kubernetes/manifests/kube-dashboard-rc.yaml)" \
-      "http://127.0.0.1:8080/api/v1/namespaces/kube-system/replicationcontrollers/kubernetes-dashboard-v1.4.0"
+      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/manifests:ro quay.io/coreos/hyperkube:v1.4.4_coreos.0 /hyperkube kubectl"
 
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPUT \
-      -d"$(cat /srv/kubernetes/manifests/heapster-de.yaml)" \
-      "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/deployments/heapster-v1.2.0"
+      for manifest in kube-dns-rc.yaml kube-dashboard-rc.yaml heapster-de.yaml secretary-de.yaml mate-de.yaml; do
+        ${KUBECTL} apply -f /manifests/$manifest
+      done
 
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPUT \
-      -d"$(cat /srv/kubernetes/manifests/secretary-de.yaml)" \
-      "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/deployments/secretary"
-
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPUT \
-      -d"$(cat /srv/kubernetes/manifests/mate-de.yaml)" \
-      "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/deployments/mate"
-
-      for svc in kube-dns heapster kube-dashboard; do
-          # NOTE: PUT for services will not work (requires clusterIP field)
-          /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-          -d"$(cat /srv/kubernetes/manifests/${svc}-svc.yaml)" \
-          "http://127.0.0.1:8080/api/v1/namespaces/kube-system/services"
+      for manifest in kube-dns-svc.yaml heapster-svc.yaml kube-dashboard-svc.yaml; do
+        ${KUBECTL} apply -f /manifests/$manifest
       done
 
   - path: /opt/bin/install-ssh-keys
