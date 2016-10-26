@@ -276,12 +276,51 @@ def update(stack_name, version, force):
                            'UserDataWorker={}'.format(user_data_worker), 'KmsKey=*'])
     # wait for CF update to complete..
     subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
-    perform_node_updates(stack_name, version, 'Master', user_data_master)
+    perform_node_updates(stack_name, version, 'Master', user_data_master, variables)
     wait_for_api_server(variables['api_server'])
-    perform_node_updates(stack_name, version, 'Worker', user_data_worker)
+    perform_node_updates(stack_name, version, 'Worker', user_data_worker, variables)
 
 
-def get_instances_in_service(group: dict):
+def get_k8s_nodes(api_server: str, token: str):
+    headers = { "Authorization": "Bearer {}".format(token) }
+    return requests.get(api_server + "/api/v1/nodes", headers=headers, timeout=5).json()
+
+
+def get_k8s_node_name(instance_id: str, config: dict):
+    nodes = get_k8s_nodes(config["api_server"], config["worker_shared_secret"])
+    for node in nodes["items"]:
+        if node["spec"]["externalID"] == instance_id:
+            return node["metadata"]["name"]
+    return ""
+
+
+def drain_node(node_name: str, config: dict, grace_period=10):
+    """
+    Drains a node for pods. Default grace period for the pods to terminate
+    gracefully is 10 seconds.
+    """
+    # TODO: evaluate what grace-period to use (or use a different approach
+    # where we wait for pods to be terminated)
+    subprocess.check_call([
+        'kubectl',
+        '--server', config["api_server"],
+        '--token', config["worker_shared_secret"],
+        'drain', node_name,
+        '--force', '--delete-local-data',
+        '--grace-period={}'.format(grace_period)])
+    time.sleep(10)
+
+
+def k8s_node_ready(instance_id: str, nodes: list):
+    for node in nodes:
+        if node["spec"]["externalID"] == instance_id:
+            for cond in node["status"]["conditions"]:
+                if cond["type"] == "Ready" and cond["status"] == "True":
+                    return True
+    return False
+
+
+def get_instances_in_service(group: dict, config: dict):
     # this only handles classic ELB (ELBv1)
     instances_in_service = set()
     lb_names = group['LoadBalancerNames']
@@ -294,16 +333,19 @@ def get_instances_in_service(group: dict):
                 if instance['State'] == 'InService':
                     instances_in_service.add(instance['InstanceId'])
     else:
-        # just use ASG LifecycleState
+        # use ASG LifecycleState and check that node is Ready in k8s
         autoscaling = boto3.client('autoscaling')
         group = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[group['AutoScalingGroupName']])['AutoScalingGroups'][0]
+        # get k8s nodes
+        nodes = get_k8s_nodes(config["api_server"], config["worker_shared_secret"])
         for instance in group['Instances']:
             if instance['LifecycleState'] == 'InService':
-                instances_in_service.add(instance['InstanceId'])
+                if k8s_node_ready(instance["InstanceId"], nodes["items"]):
+                    instances_in_service.add(instance['InstanceId'])
     return instances_in_service
 
 
-def perform_node_updates(stack_name, version, name_filter, desired_user_data):
+def perform_node_updates(stack_name, version, name_filter, desired_user_data, config):
     # TODO: only works for worker nodes right now
     autoscaling = boto3.client('autoscaling')
     asg_name = get_auto_scaling_group(stack_name, version, name_filter)
@@ -322,23 +364,24 @@ def perform_node_updates(stack_name, version, name_filter, desired_user_data):
                                               MaxSize=new_desired_capacity,
                                               DesiredCapacity=new_desired_capacity)
         while True:
-            instances_in_service = get_instances_in_service(group)
+            instances_in_service = get_instances_in_service(group, config)
             if len(instances_in_service) >= new_desired_capacity:
                 break
             time.sleep(5)
             act.progress()
 
-        # TODO: wait for nodes to be ready (at least we wait for master ELB right now)
-
     instances_to_update = get_instances_to_update(asg_name, desired_user_data)
     for instance_id in instances_to_update:
-        # TODO: drain
+        # drain
+        node_name = get_k8s_node_name(instance_id, config)
+        drain_node(node_name, config)
+
         autoscaling = boto3.client('autoscaling')
         with Action('Terminating old instance {}..'.format(instance_id)):
             autoscaling.terminate_instance_in_auto_scaling_group(InstanceId=instance_id,
                                                                  ShouldDecrementDesiredCapacity=False)
             while True:
-                instances_in_service = get_instances_in_service(group)
+                instances_in_service = get_instances_in_service(group, config)
                 if instances_in_service and instance_id not in instances_in_service:
                     break
                 time.sleep(2)
@@ -346,7 +389,7 @@ def perform_node_updates(stack_name, version, name_filter, desired_user_data):
 
         with Action('Waiting for ASG to scale back to {} instances..'.format(new_desired_capacity)) as act:
             while True:
-                instances_in_service = get_instances_in_service(group)
+                instances_in_service = get_instances_in_service(group, config)
                 if len(instances_in_service) >= new_desired_capacity:
                     break
                 time.sleep(5)
