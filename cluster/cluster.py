@@ -34,15 +34,66 @@ def get_user_data(fn, variables: dict) -> str:
     return encode_user_data(contents)
 
 
+def get_account_id():
+    conn = boto3.client('iam')
+    try:
+        own_user = conn.get_user()['User']
+    except:
+        own_user = None
+    if not own_user:
+        roles = conn.list_roles()['Roles']
+        if not roles:
+            users = conn.list_users()['Users']
+            if not users:
+                saml = conn.list_saml_providers()['SAMLProviderList']
+                if not saml:
+                    return None
+                else:
+                    arn = [s['Arn'] for s in saml][0]
+            else:
+                arn = [u['Arn'] for u in users][0]
+        else:
+            arn = [r['Arn'] for r in roles][0]
+    else:
+        arn = own_user['Arn']
+    account_id = arn.split(':')[4]
+    return account_id
+
+
+def get_account_alias():
+    conn = boto3.client('iam')
+    return conn.list_account_aliases()['AccountAliases'][0]
+
+
 def get_account_alias_without_namespace():
     '''
     Return AWS account alias without an optional prefix (separated by dash)
 
     i.e. an alias of "myorg-myteam-staging" will return "myteam-staging"
     '''
-    iam = boto3.client('iam')
-    account_alias = iam.list_account_aliases()['AccountAliases'][0]
+    account_alias = get_account_alias()
     return account_alias.split('-', 1)[-1]
+
+
+def get_mint_bucket_name():
+    account_id = get_account_id()
+    account_alias = get_account_alias()
+    s3 = boto3.resource('s3')
+    parts = account_alias.split('-')
+    prefix = parts[0]
+    my_session = boto3.session.Session()
+    my_region = my_session.region_name
+    bucket_name = '{}-stups-mint-{}-{}'.format(prefix, account_id, my_region)
+    bucket = s3.Bucket(bucket_name)
+    try:
+        bucket.load()
+        return bucket.name
+    except:
+        bucket = None
+    for bucket in s3.buckets.all():
+        if bucket.name.startswith('{}-stups-mint-{}-'.format(prefix, account_id)):
+            return bucket.name
+    return bucket_name
 
 
 def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=None):
@@ -57,13 +108,17 @@ def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=No
         worker_shared_secret = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(64))
     cluster_name = '{}-{}'.format(account_alias_without_namespace, stack_name)
     # TODO: encrypt fixed token with KMS
+
+    mint_bucket = get_mint_bucket_name()
+
     variables = {
         'stack_version': version,
         'etcd_discovery_domain': etcd_discovery_domain,
         'api_server': api_server,
         'worker_shared_secret': worker_shared_secret,
         'hosted_zone': hosted_zone,
-        'webhook_cluster_name': cluster_name
+        'webhook_cluster_name': cluster_name,
+        'mint_bucket': mint_bucket
     }
     return variables
 
@@ -162,6 +217,7 @@ def create(stack_name, version, dry_run):
     info('API server endpoint will be: {}'.format(variables['api_server']))
     if dry_run:
         print(yaml.safe_dump(variables))
+    # TODO: register mint bucket with "kube-secretary" app
     if not has_etcd_cluster() and not dry_run:
         deploy_etcd_cluster(variables['hosted_zone'])
     tag_subnets()
