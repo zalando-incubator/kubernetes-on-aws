@@ -76,21 +76,6 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
-    - name: decrypt-tls-assets.service
-      enable: true
-      content: |
-        [Unit]
-        Description=decrypt kubelet tls assets using amazon kms
-        Before=kubelet.service
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        ExecStart=/opt/bin/decrypt-tls-assets
-
-        [Install]
-        RequiredBy=kubelet.service
-
     - name: install-kube-system.service
       command: start
       runtime: true
@@ -177,30 +162,15 @@ write_files:
     owner: root:root
     content: |
       #!/bin/bash -e
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-      -d"$(cat /srv/kubernetes/manifests/kube-dns-rc.yaml)" \
-      "http://127.0.0.1:8080/api/v1/namespaces/kube-system/replicationcontrollers"
 
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-      -d"$(cat /srv/kubernetes/manifests/kube-dashboard-rc.yaml)" \
-      "http://127.0.0.1:8080/api/v1/namespaces/kube-system/replicationcontrollers"
+      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/manifests:ro quay.io/coreos/hyperkube:v1.4.4_coreos.0 /hyperkube kubectl"
 
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-      -d"$(cat /srv/kubernetes/manifests/heapster-de.yaml)" \
-      "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/deployments"
+      for manifest in kube-dns-rc.yaml kube-dashboard-rc.yaml heapster-de.yaml secretary-de.yaml mate-de.yaml; do
+        ${KUBECTL} apply -f /manifests/$manifest
+      done
 
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPUT \
-      -d"$(cat /srv/kubernetes/manifests/secretary-de.yaml)" \
-      "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/deployments/secretary"
-
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-      -d"$(cat /srv/kubernetes/manifests/mate-de.yaml)" \
-      "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/deployments"
-
-      for manifest in {kube-dns,heapster,kube-dashboard}-svc.yaml;do
-          /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-          -d"$(cat /srv/kubernetes/manifests/$manifest)" \
-          "http://127.0.0.1:8080/api/v1/namespaces/kube-system/services"
+      for manifest in kube-dns-svc.yaml heapster-svc.yaml kube-dashboard-svc.yaml; do
+        ${KUBECTL} apply -f /manifests/$manifest
       done
 
   - path: /opt/bin/install-ssh-keys
@@ -224,34 +194,6 @@ write_files:
     content: |
       #!/bin/sh
       exec nsenter -m -u -i -n -p -t 1 -- /usr/bin/rkt "$@"
-
-
-  - path: /opt/bin/decrypt-tls-assets
-    owner: root:root
-    permissions: 0700
-    content: |
-      #!/bin/bash -e
-
-      for encKey in $(find /etc/kubernetes/ssl/*.pem.enc);do
-        sudo rkt run \
-        --volume=ssl,kind=host,source=/etc/kubernetes/ssl,readOnly=false \
-        --mount=volume=ssl,target=/etc/kubernetes/ssl \
-        --uuid-file-save=/var/run/coreos/decrypt-tls-assets.uuid \
-        --dns=8.8.8.8 --dns=8.8.4.4 \
-        --net=host \
-        --trust-keys-from-https \
-        quay.io/coreos/awscli --exec=/bin/bash -- \
-          -c \
-          "/usr/bin/aws \
-            --region eu-central-1 kms decrypt \
-            --ciphertext-blob fileb://$encKey \
-            --output text \
-            --query Plaintext \
-            > $encKey.b64"
-
-        base64 --decode < $encKey.b64 > ${encKey%.enc}
-        sudo rkt rm --uuid-file=/var/run/coreos/decrypt-tls-assets.uuid
-      done
 
   - path: /etc/kubernetes/manifests/kube-proxy.yaml
     content: |
