@@ -215,7 +215,7 @@ def cli():
 @click.argument('stack_name')
 @click.argument('version')
 @click.option('--dry-run', is_flag=True, help='No-op mode: show what would be created')
-@click.option('--worker-nodes', type=int, help='Number of worker nodes')
+@click.option('--worker-nodes', default=1, type=int, help='Number of worker nodes')
 def create(stack_name, version, dry_run, worker_nodes):
     '''
     Create a new Kubernetes cluster (using current AWS credentials)
