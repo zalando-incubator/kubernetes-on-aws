@@ -132,16 +132,17 @@ def get_auto_scaling_group(stack_name, version, name_filter):
             return asg_name
 
 
-def get_launch_configuration_user_data(stack_name, version, name_filter):
+def get_launch_configuration(stack_name, version, name_filter):
     autoscaling = boto3.client('autoscaling')
     asg_name = get_auto_scaling_group(stack_name, version, name_filter)
 
     asgs = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups']
     lc_name = asgs[0]['LaunchConfigurationName']
     lcs = autoscaling.describe_launch_configurations(LaunchConfigurationNames=[lc_name])['LaunchConfigurations']
-    user_data = lcs[0]['UserData']
-    return user_data
+    return lcs[0]
 
+def get_launch_configuration_user_data(stack_name, version, name_filter):
+    return get_launch_configuration(stack_name, version, name_filter)['UserData']
 
 def get_current_worker_nodes(stack_name, version):
     autoscaling = boto3.client('autoscaling')
@@ -215,8 +216,9 @@ def cli():
 @click.argument('stack_name')
 @click.argument('version')
 @click.option('--dry-run', is_flag=True, help='No-op mode: show what would be created')
+@click.option('--instance-type', type=str, default='t2.micro', help='Type of instance')
 @click.option('--worker-nodes', default=1, type=int, help='Number of worker nodes')
-def create(stack_name, version, dry_run, worker_nodes):
+def create(stack_name, version, dry_run, instance_type, worker_nodes):
     '''
     Create a new Kubernetes cluster (using current AWS credentials)
     '''
@@ -235,7 +237,7 @@ def create(stack_name, version, dry_run, worker_nodes):
     if not dry_run:
         subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                                'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*',
-                               'WorkerNodes={}'.format(worker_nodes)])
+                               'WorkerNodes={}'.format(worker_nodes), 'InstanceType={}'.format(instance_type)])
         # wait up to 15m for stack to be created
         subprocess.check_call(['senza', 'wait', '--timeout=900', stack_name, version])
         wait_for_api_server(variables['api_server'])
@@ -266,7 +268,8 @@ def same_user_data(enc1, enc2):
 @click.argument('stack_name')
 @click.argument('version')
 @click.option('--force', is_flag=True)
-def update(stack_name, version, force):
+@click.option('--instance-type', type=str, default='current', help='Type of instance')
+def update(stack_name, version, force, instance_type):
     '''
     Update Kubernetes cluster
     '''
@@ -276,6 +279,9 @@ def update(stack_name, version, force):
     variables = get_cluster_variables(stack_name, version, worker_shared_secret)
     user_data_master = get_user_data('userdata-master.yaml', variables)
     user_data_worker = get_user_data('userdata-worker.yaml', variables)
+
+    if instance_type == 'current':
+        instance_type = get_launch_configuration(stack_name, version, 'Worker')['InstanceType']
 
     if not force and same_user_data(existing_user_data_master, user_data_master) and same_user_data(existing_user_data_worker, user_data_worker):
         info('Neither worker nor master user data did change, not updating anything.')
@@ -287,7 +293,7 @@ def update(stack_name, version, force):
     subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                            'UserDataMaster={}'.format(user_data_master),
                            'UserDataWorker={}'.format(user_data_worker), 'KmsKey=*',
-                           'WorkerNodes={}'.format(worker_nodes)])
+                           'WorkerNodes={}'.format(worker_nodes), 'InstanceType={}'.format(instance_type)])
     # wait for CF update to complete..
     subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
     perform_node_updates(stack_name, version, 'Master', user_data_master, variables)
