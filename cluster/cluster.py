@@ -143,6 +143,14 @@ def get_launch_configuration_user_data(stack_name, version, name_filter):
     return user_data
 
 
+def get_current_worker_nodes(stack_name, version):
+    autoscaling = boto3.client('autoscaling')
+    asg_name = get_auto_scaling_group(stack_name, version, 'Worker')
+
+    group = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups'][0]
+    return group['DesiredCapacity']
+
+
 def get_worker_shared_secret(user_data: str):
     plain_text = decode_user_data(user_data)
     data = yaml.safe_load(plain_text)
@@ -207,7 +215,8 @@ def cli():
 @click.argument('stack_name')
 @click.argument('version')
 @click.option('--dry-run', is_flag=True, help='No-op mode: show what would be created')
-def create(stack_name, version, dry_run):
+@click.option('--worker-nodes', type=int, help='Number of worker nodes')
+def create(stack_name, version, dry_run, worker_nodes):
     '''
     Create a new Kubernetes cluster (using current AWS credentials)
     '''
@@ -224,7 +233,9 @@ def create(stack_name, version, dry_run):
     userdata_master = get_user_data('userdata-master.yaml', variables)
     userdata_worker = get_user_data('userdata-worker.yaml', variables)
     if not dry_run:
-        subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name), 'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*'])
+        subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
+                               'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*',
+                               'WorkerNodes={}'.format(worker_nodes)])
         # wait up to 15m for stack to be created
         subprocess.check_call(['senza', 'wait', '--timeout=900', stack_name, version])
         wait_for_api_server(variables['api_server'])
@@ -270,10 +281,13 @@ def update(stack_name, version, force):
         info('Neither worker nor master user data did change, not updating anything.')
         return
 
+    worker_nodes = get_current_worker_nodes(stack_name, version)
+
     # this will only update the Launch Configuration
     subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                            'UserDataMaster={}'.format(user_data_master),
-                           'UserDataWorker={}'.format(user_data_worker), 'KmsKey=*'])
+                           'UserDataWorker={}'.format(user_data_worker), 'KmsKey=*',
+                           'WorkerNodes={}'.format(worker_nodes)])
     # wait for CF update to complete..
     subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
     perform_node_updates(stack_name, version, 'Master', user_data_master, variables)
