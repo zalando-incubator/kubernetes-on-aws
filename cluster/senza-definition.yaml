@@ -12,6 +12,8 @@ SenzaInfo:
           Description: "ARN of KMS key to decrypt secrets"
       - WorkerNodes:
           Description: "Number of worker nodes"
+      - InstanceType:
+          Description: "Type of instance"
 
 Mappings:
   Images:
@@ -65,7 +67,7 @@ SenzaComponents:
           Value: kubernetes
   - WorkerAutoScaling:
       Type: Senza::AutoScalingGroup
-      InstanceType: t2.micro
+      InstanceType: "{{ Arguments.InstanceType }}"
       Image: LatestCoreOSImage
       SecurityGroups:
          - {Ref: WorkerSecurityGroup}
