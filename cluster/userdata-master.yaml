@@ -323,10 +323,10 @@ write_files:
             - name: TOKENINFO_URL
               value: https://info.services.auth.zalando.com/oauth2/tokeninfo
         - name: k8s-api-ro-nginx
-          image: registry.opensource.zalan.do/teapot/nginx:1.11.5-0
-          ports:
-            - port: 8085
-              containerPort: 80
+          image: registry.opensource.zalan.do/teapot/nginx:1.11.5
+          volumeMounts:
+          - name: config-volume
+            mountPath: /etc/nginx
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
@@ -334,9 +334,9 @@ write_files:
         - hostPath:
             path: /usr/share/ca-certificates
           name: ssl-certs-host
-        - name: config-volume
-          configMap:
-            name: k8s-api-ro-nginx-config
+        - hostPath:
+            path: /etc/kubernetes/nginx
+          name: config-volume
 
   - path: /etc/kubernetes/manifests/kube-controller-manager.yaml
     content: |
@@ -813,85 +813,41 @@ write_files:
           app: prometheus
           component: node-exporter
         type: ClusterIP
-  - path: /srv/kubernetes/manifests/k8s-api-ro-nginx-de.yaml
+
+  - path: /etc/kubernetes/nginx/nginx.conf
     content: |
-      apiVersion: extensions/v1beta1
-      kind: Deployment
-      metadata:
-        name: k8s-api-ro-nginx
-        namespace: kube-system
-      spec:
-        replicas: 1
-        template:
-          metadata:
-            labels:
-              app: k8s-api-ro-nginx
-          spec:
-            containers:
-            - name: k8s-api-ro-nginx
-              image: registry.opensource.zalan.do/teapot/nginx:1.11.5
-              volumeMounts:
-              - name: config-volume
-                mountPath: /etc/nginx
-            volumes:
-            - name: config-volume
-              configMap:
-                name: k8s-api-ro-nginx-config
-  - path: /srv/kubernetes/manifests/k8s-api-ro-nginx-config-cm.yaml
-    content: |
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: k8s-api-ro-nginx-config
-        labels:
-          app: k8s-api-ro-nginx
-        namespace: kube-system
-      data:
-        nginx.conf: |
-          user nginx;
-          worker_processes 1;
+      user nginx;
+      worker_processes 1;
 
-          error_log /dev/stdout info;
+      error_log /dev/stdout info;
 
-          events {
-            worker_connections 1024;
-            multi_accept on;
-            use epoll;
-          }
+      events {
+        worker_connections 1024;
+      }
 
-          http {
-            default_type application/octet-stream;
+      http {
+        default_type application/octet-stream;
 
-            server_tokens off;
-            access_log off;
+        server_tokens off;
+        access_log off;
 
-            sendfile on;
-            tcp_nopush on;
-            tcp_nodelay on;
-            chunked_transfer_encoding on;
+        server {
+          listen 8082;
+          server_name _;
 
-            keepalive_timeout 120;
-            keepalive_requests 1048576;
-
-            server {
-              listen 80;
-                server_name _;
-
-              proxy_http_version 1.1;
-              proxy_pass_request_headers off;
-              proxy_set_header Connection "";
-
-              location / {
-                proxy_pass_request_body off;
-                proxy_method GET;
-                proxy_pass http://localhost:8080;
-              }
-
-              location ~ /secrets(/|$) {
-                return 403 "unauthorized";
-              }
+          location / {
+            if ($request_method != GET) {
+              return 403;
             }
+            proxy_pass_request_body off;
+            proxy_pass http://localhost:8080;
           }
+
+          location ~ /secrets(/|$) {
+            return 403 "unauthorized";
+          }
+        }
+      }
 
   - path: /etc/kubernetes/ssl/ca.pem
     encoding: gzip+base64
