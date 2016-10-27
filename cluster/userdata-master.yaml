@@ -166,7 +166,7 @@ write_files:
 
       KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/manifests:ro quay.io/coreos/hyperkube:v1.4.4_coreos.0 /hyperkube kubectl"
 
-      for manifest in kube-dns-rc.yaml kube-dashboard-rc.yaml heapster-de.yaml secretary-de.yaml mate-de.yaml; do
+      for manifest in kube-dns-de.yaml kube-dashboard-de.yaml heapster-de.yaml secretary-de.yaml mate-de.yaml; do
         ${KUBECTL} apply -f /manifests/$manifest
       done
 
@@ -405,14 +405,10 @@ write_files:
             initialDelaySeconds: 15
             timeoutSeconds: 15
 
-
-
-
-
-  - path: /srv/kubernetes/manifests/kube-dns-rc.yaml
+  - path: /srv/kubernetes/manifests/kube-dns-de.yaml
     content: |
-        apiVersion: v1
-        kind: ReplicationController
+        apiVersion: extensions/v1beta1
+        kind: Deployment
         metadata:
           name: kube-dns-v19
           namespace: kube-system
@@ -423,8 +419,9 @@ write_files:
         spec:
           replicas: 2
           selector:
-            k8s-app: kube-dns
-            version: v19
+            matchLabels:
+              k8s-app: kube-dns
+              version: v19
           template:
             metadata:
               labels:
@@ -617,10 +614,10 @@ write_files:
           selector:
             k8s-app: heapster
 
-  - path: /srv/kubernetes/manifests/kube-dashboard-rc.yaml
+  - path: /srv/kubernetes/manifests/kube-dashboard-de.yaml
     content: |
-        apiVersion: v1
-        kind: ReplicationController
+        apiVersion: extensions/v1beta1
+        kind: Deployment
         metadata:
           name: kubernetes-dashboard-v1.4.0
           namespace: kube-system
@@ -631,7 +628,8 @@ write_files:
         spec:
           replicas: 1
           selector:
-            k8s-app: kubernetes-dashboard
+            matchLabels:
+              k8s-app: kubernetes-dashboard
           template:
             metadata:
               labels:
