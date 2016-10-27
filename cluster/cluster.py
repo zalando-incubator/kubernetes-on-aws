@@ -141,8 +141,10 @@ def get_launch_configuration(stack_name, version, name_filter):
     lcs = autoscaling.describe_launch_configurations(LaunchConfigurationNames=[lc_name])['LaunchConfigurations']
     return lcs[0]
 
+
 def get_launch_configuration_user_data(stack_name, version, name_filter):
     return get_launch_configuration(stack_name, version, name_filter)['UserData']
+
 
 def get_current_worker_nodes(stack_name, version):
     autoscaling = boto3.client('autoscaling')
