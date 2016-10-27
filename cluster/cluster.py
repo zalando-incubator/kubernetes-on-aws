@@ -294,13 +294,28 @@ def get_k8s_node_name(instance_id: str, config: dict):
     return ""
 
 
-def drain_node(node_name: str, config: dict, grace_period=10):
+def longest_grace_period(node_name: str, config: dict):
     """
-    Drains a node for pods. Default grace period for the pods to terminate
-    gracefully is 10 seconds.
+    Find the longest grace period of any pods on the node.
     """
-    # TODO: evaluate what grace-period to use (or use a different approach
-    # where we wait for pods to be terminated)
+    headers = {"Authorization": "Bearer {}".format(config["worker_shared_secret"])}
+    params = {"fieldSelector": "spec.nodeName={}".format(node_name)}
+    pods = requests.get(config["api_server"] + "/api/v1/pods", params=params, headers=headers, timeout=5).json()
+    grace_period = 0
+    for pod in pods["items"]:
+        grace_period = max(pod["spec"]["terminationGracePeriodSeconds"], grace_period)
+    return grace_period
+
+
+def drain_node(node_name: str, config: dict, max_grace_period=60):
+    """
+    Drains a node for pods. Pods will be terminated with a grace period
+    respecting the longest grace period of any pod on the node limited to
+    max_grace_period. Default max_grace_period is 60s.
+    """
+    # respect pod terminate grace period
+    grace_period = min(longest_grace_period(node_name, config), max_grace_period)
+
     subprocess.check_call([
         'kubectl',
         '--server', config["api_server"],
@@ -308,7 +323,7 @@ def drain_node(node_name: str, config: dict, grace_period=10):
         'drain', node_name,
         '--force', '--delete-local-data',
         '--grace-period={}'.format(grace_period)])
-    time.sleep(10)
+    time.sleep(grace_period)
 
 
 def k8s_node_ready(instance_id: str, nodes: list):
