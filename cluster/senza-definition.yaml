@@ -10,6 +10,8 @@ SenzaInfo:
           Description: "User data of master"
       - KmsKey:
           Description: "ARN of KMS key to decrypt secrets"
+      - WorkerNodes:
+          Description: "Number of worker nodes"
 
 Mappings:
   Images:
@@ -73,7 +75,8 @@ SenzaComponents:
       UserData: "{{ Arguments.UserDataWorker }}"
       AutoScaling:
          Minimum: 1
-         Maximum: 1
+         Maximum: "{{ Arguments.WorkerNodes }}"
+         DesiredCapacity: "{{ Arguments.WorkerNodes }}"
          SuccessRequires: "0 within 15m"
       Tags:
         - Key: "KubernetesCluster"
