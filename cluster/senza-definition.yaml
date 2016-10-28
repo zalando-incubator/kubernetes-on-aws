@@ -133,11 +133,7 @@ Resources:
           - {Action: 'ec2:DetachVolume', Effect: Allow, Resource: '*'}
           - {Action: 'kms:Decrypt', Effect: Allow, Resource: '{{ Arguments.KmsKey }}'}
           - {Action: 'route53:*', Effect: Allow, Resource: '*'}
-          - Action: ['ecr:GetAuthorizationToken', 'ecr:BatchCheckLayerAvailability',
-              'ecr:GetDownloadUrlForLayer', 'ecr:GetRepositoryPolicy', 'ecr:DescribeRepositories',
-              'ecr:ListImages', 'ecr:BatchGetImage']
-            Effect: Allow
-            Resource: '*'
+          - {Action: 'sts:AssumeRole', Effect: Allow, Resource: '*'}
           Version: '2012-10-17'
         PolicyName: root
       - PolicyDocument:
