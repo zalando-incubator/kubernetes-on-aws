@@ -82,29 +82,19 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Type=simple
-        StartLimitInterval=0
-        Restart=on-failure
-        ExecStartPre=systemctl is-active docker.service
-        ExecStartPre=systemctl is-active kubelet.service
-        ExecStartPre=/usr/bin/curl http://127.0.0.1:8080/version
+        Type=oneshot
         ExecStart=/opt/bin/install-kube-system
 
     - name: install-ssh-keys.service
+      command: start
       enable: true
       content: |
         [Unit]
         Description=install personal SSH keys
-        Before=kubelet.service
 
         [Service]
         Type=oneshot
-        RemainAfterExit=yes
         ExecStart=/opt/bin/install-ssh-keys
-
-        [Install]
-        RequiredBy=kubelet.service
-
 
 write_files:
   - path: /etc/kubernetes/kubeconfig
@@ -163,11 +153,15 @@ write_files:
     owner: root:root
     content: |
       #!/bin/bash -e
+      until /usr/bin/curl -s -o /dev/null http://127.0.0.1:8080/version; do
+          echo 'Waiting for API server..'
+          sleep 10
+      done
 
       KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0 /hyperkube kubectl"
 
       for manifest in /srv/kubernetes/manifests/*/*.yaml; do
-        ${KUBECTL} apply -f $manifest
+          ${KUBECTL} apply -f $manifest
       done
 
   - path: /opt/bin/install-ssh-keys
@@ -175,8 +169,8 @@ write_files:
     owner: root:root
     content: |
       #!/bin/bash -e
-      for uid in hjacobs mkerk sszuecs rdifazio mlinkhorst mlarsen tsarnowski lmineiro; do
-          /usr/bin/curl https://even.stups.zalan.do/public-keys/$uid/sshkey.pub -o /home/core/.ssh/authorized_keys.d/$uid
+      for uid in hjacobs mkerk sszuecs rdifazio mlinkhorst mlarsen tsarnowski lmineiro aryszka; do
+          /usr/bin/curl -s https://even.stups.zalan.do/public-keys/$uid/sshkey.pub -o /home/core/.ssh/authorized_keys.d/$uid
       done
       /usr/bin/update-ssh-keys
 
