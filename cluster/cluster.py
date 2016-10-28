@@ -145,6 +145,7 @@ def get_launch_configuration(stack_name, version, name_filter):
 def get_launch_configuration_user_data(stack_name, version, name_filter):
     return get_launch_configuration(stack_name, version, name_filter)['UserData']
 
+
 def get_current_nodes(stack_name, version, name_filter):
     autoscaling = boto3.client('autoscaling')
     asg_name = get_auto_scaling_group(stack_name, version, name_filter)
@@ -152,11 +153,14 @@ def get_current_nodes(stack_name, version, name_filter):
     group = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups'][0]
     return group['DesiredCapacity']
 
+
 def get_current_master_nodes(stack_name, version):
     return get_current_nodes(stack_name, version, 'Master')
 
+
 def get_current_worker_nodes(stack_name, version):
     return get_current_nodes(stack_name, version, 'Worker')
+
 
 def get_worker_shared_secret(user_data: str):
     plain_text = decode_user_data(user_data)
@@ -298,7 +302,7 @@ def update(stack_name, version, force, instance_type, master_nodes, worker_nodes
         return
 
     if master_nodes == -1:
-        master_nodes_nodes = get_current_master_nodes(stack_name, version)
+        master_nodes = get_current_master_nodes(stack_name, version)
 
     if worker_nodes == -1:
         worker_nodes = get_current_worker_nodes(stack_name, version)
