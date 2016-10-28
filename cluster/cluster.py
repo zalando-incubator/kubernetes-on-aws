@@ -344,13 +344,20 @@ def drain_node(node_name: str, config: dict, max_grace_period=60):
     # respect pod terminate grace period
     grace_period = min(longest_grace_period(node_name, config), max_grace_period)
 
-    subprocess.check_call([
-        'kubectl',
-        '--server', config["api_server"],
-        '--token', config["worker_shared_secret"],
-        'drain', node_name,
-        '--force', '--delete-local-data',
-        '--grace-period={}'.format(grace_period)])
+    for i in range(3):
+        try:
+            subprocess.check_call([
+                'kubectl',
+                '--server', config["api_server"],
+                '--token', config["worker_shared_secret"],
+                'drain', node_name,
+                '--force', '--delete-local-data',
+                '--ignore-daemonsets',
+                '--grace-period={}'.format(grace_period)])
+            break
+        except Exception as e:
+            warning('Kubectl failed to drain node: {}'.format(e))
+            time.sleep(grace_period)
     time.sleep(grace_period)
 
 
