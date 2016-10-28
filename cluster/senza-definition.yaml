@@ -32,7 +32,6 @@ SenzaComponents:
   - MasterLoadBalancer:
       Type: Senza::WeightedDnsElasticLoadBalancer
       HTTPPort: 443
-      CrossZone: false
       HealthCheckPath: /healthz
       HealthCheckPort: 8080
       SecurityGroups:
@@ -56,6 +55,7 @@ SenzaComponents:
       IamRoles:
          - {Ref: MasterIAMRole}
       ElasticLoadBalancer: MasterLoadBalancer
+      HealthCheckGracePeriod: 480 # give master node up to 8 min to start up
       AssociatePublicIpAddress: true
       UserData: "{{ Arguments.UserDataMaster }}"
       AutoScaling:
