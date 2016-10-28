@@ -50,6 +50,28 @@ This will bootstrap a new cluster and make the API server available as https://<
 
 The authorization webhook will require the user to have the group "<ACCOUNT_ALIAS_WITHOUT_PREFIX>-<STACK_NAME>", i.e. if the AWS account alias is "myorg-myteam" and the stack name is "kube-aws-test" then the required group is "myteam-kube-aws-test".
 
+Update
+======
+
+clusters can be updated with
+
+.. code-block:: bash
+
+    $ ./cluster.py update <STACK_NAME> <VERSION> # e.g. ./cluster.py update kube-aws-test 1
+
+this will apply the new cloud-configs via cloud formation and trigger a rolling update for both workers and masters.
+
+Instance Type
+=============
+
+worker instance type can be configured on create and update.
+
+on create:
+* provide optional flag `--instance-type` to specify instance type of worker nodes (defaults to `t2.micro`)
+
+on update:
+* provide optional flag `--instance-type` to change instance type of worker nodes (defaults to `current` which results in whatever type the workers currently have)
+* if cloud-config didn't change one has to use the `--force` flag to trigger the update
 
 .. _kube-aws: https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/aws
 .. _Senza Cloud Formation tool: https://github.com/zalando-stups/senza
