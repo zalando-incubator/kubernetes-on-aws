@@ -289,7 +289,7 @@ write_files:
             name: ssl-certs-host
             readOnly: true
         - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:ba52f98
-          name: k8s-authnz-webhook
+          name: webhook
           ports:
           - containerPort: 8081
           livenessProbe:
@@ -322,7 +322,7 @@ write_files:
               value: WEBHOOK_CLUSTER_NAME
             - name: TOKENINFO_URL
               value: https://info.services.auth.zalando.com/oauth2/tokeninfo
-        - name: k8s-api-ro-nginx
+        - name: nginx
           image: registry.opensource.zalan.do/teapot/nginx:1.11.5
           volumeMounts:
           - name: config-volume
