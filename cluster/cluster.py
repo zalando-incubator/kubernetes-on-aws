@@ -12,7 +12,7 @@ import time
 import yaml
 
 from botocore.exceptions import ClientError
-from clickclick import info, Action
+from clickclick import info, Action, warning
 
 SCALING_PROCESSES_TO_SUSPEND = ['AZRebalance', 'AlarmNotification', 'ScheduledActions']
 
@@ -303,14 +303,20 @@ def update(stack_name, version, force, instance_type):
     perform_node_updates(stack_name, version, 'Worker', user_data_worker, variables)
 
 
-def get_k8s_nodes(api_server: str, token: str):
+def get_k8s_nodes(api_server: str, token: str) -> list:
     headers = {"Authorization": "Bearer {}".format(token)}
-    return requests.get(api_server + "/api/v1/nodes", headers=headers, timeout=5).json()
+    try:
+        response = requests.get(api_server + "/api/v1/nodes", headers=headers, timeout=5)
+        response.raise_for_status()
+        return response.json()['items']
+    except Exception as e:
+        warning('Failed to query API server for nodes: {}'.format(e))
+        return []
 
 
 def get_k8s_node_name(instance_id: str, config: dict):
     nodes = get_k8s_nodes(config["api_server"], config["worker_shared_secret"])
-    for node in nodes["items"]:
+    for node in nodes:
         if node["spec"]["externalID"] == instance_id:
             return node["metadata"]["name"]
     return ""
@@ -377,7 +383,7 @@ def get_instances_in_service(group: dict, config: dict):
         nodes = get_k8s_nodes(config["api_server"], config["worker_shared_secret"])
         for instance in group['Instances']:
             if instance['LifecycleState'] == 'InService':
-                if k8s_node_ready(instance["InstanceId"], nodes["items"]):
+                if k8s_node_ready(instance["InstanceId"], nodes):
                     instances_in_service.add(instance['InstanceId'])
     return instances_in_service
 
