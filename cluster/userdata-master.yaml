@@ -164,14 +164,10 @@ write_files:
     content: |
       #!/bin/bash -e
 
-      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0 /hyperkube kubectl"
+      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0 /hyperkube kubectl"
 
-      for manifest in kube-dns-de.yaml kube-dashboard-de.yaml heapster-de.yaml secretary-de.yaml mate-de.yaml prometheus-node-exporter-de.yaml; do
-        ${KUBECTL} apply -f /manifests/$manifest
-      done
-
-      for manifest in kube-dns-svc.yaml heapster-svc.yaml kube-dashboard-svc.yaml prometheus-node-exporter-svc.yaml; do
-        ${KUBECTL} apply -f /manifests/$manifest
+      for manifest in /srv/kubernetes/manifests/*/*.yaml; do
+        ${KUBECTL} apply -f $manifest
       done
 
   - path: /opt/bin/install-ssh-keys
@@ -413,7 +409,7 @@ write_files:
             initialDelaySeconds: 15
             timeoutSeconds: 15
 
-  - path: /srv/kubernetes/manifests/kube-dns-de.yaml
+  - path: /srv/kubernetes/manifests/deployments/kube-dns.yaml
     content: |
         apiVersion: extensions/v1beta1
         kind: Deployment
@@ -506,7 +502,7 @@ write_files:
                   protocol: TCP
               dnsPolicy: Default
 
-  - path: /srv/kubernetes/manifests/kube-dns-svc.yaml
+  - path: /srv/kubernetes/manifests/services/kube-dns.yaml
     content: |
         apiVersion: v1
         kind: Service
@@ -529,7 +525,7 @@ write_files:
             port: 53
             protocol: TCP
 
-  - path: /srv/kubernetes/manifests/heapster-de.yaml
+  - path: /srv/kubernetes/manifests/deployments/heapster.yaml
     content: |
         apiVersion: extensions/v1beta1
         kind: Deployment
@@ -605,7 +601,7 @@ write_files:
                     - --poll-period=300000
                     - --estimator=exponential
 
-  - path: /srv/kubernetes/manifests/heapster-svc.yaml
+  - path: /srv/kubernetes/manifests/services/heapster.yaml
     content: |
         kind: Service
         apiVersion: v1
@@ -622,7 +618,7 @@ write_files:
           selector:
             k8s-app: heapster
 
-  - path: /srv/kubernetes/manifests/kube-dashboard-de.yaml
+  - path: /srv/kubernetes/manifests/deployments/kube-dashboard.yaml
     content: |
         apiVersion: extensions/v1beta1
         kind: Deployment
@@ -667,7 +663,7 @@ write_files:
                   initialDelaySeconds: 30
                   timeoutSeconds: 30
 
-  - path: /srv/kubernetes/manifests/kube-dashboard-svc.yaml
+  - path: /srv/kubernetes/manifests/services/kube-dashboard.yaml
     content: |
         apiVersion: v1
         kind: Service
@@ -683,7 +679,7 @@ write_files:
           ports:
           - port: 80
             targetPort: 9090
-  - path: /srv/kubernetes/manifests/secretary-de.yaml
+  - path: /srv/kubernetes/manifests/deployments/secretary.yaml
     content: |
       apiVersion: extensions/v1beta1
       kind: Deployment
@@ -734,7 +730,7 @@ write_files:
               emptyDir:
                 medium: Memory # share a tmpfs between the two containers
 
-  - path: /srv/kubernetes/manifests/mate-de.yaml
+  - path: /srv/kubernetes/manifests/deployments/mate.yaml
     content: |
       apiVersion: extensions/v1beta1
       kind: Deployment
@@ -765,7 +761,7 @@ write_files:
               - kubectl
               - proxy
 
-  - path: /srv/kubernetes/manifests/prometheus-node-exporter-de.yaml
+  - path: /srv/kubernetes/manifests/daemonsets/prometheus-node-exporter.yaml
     content: |
       apiVersion: extensions/v1beta1
       kind: DaemonSet
@@ -793,7 +789,7 @@ write_files:
             hostNetwork: true
             hostPID: true
 
-  - path: /srv/kubernetes/manifests/prometheus-node-exporter-svc.yaml
+  - path: /srv/kubernetes/manifests/services/prometheus-node-exporter.yaml
     content: |
       apiVersion: v1
       kind: Service
@@ -814,6 +810,43 @@ write_files:
           app: prometheus
           component: node-exporter
         type: ClusterIP
+
+  - path: /srv/kubernetes/manifests/daemonsets/kube2iam.yaml
+    content: |
+      apiVersion: extensions/v1beta1
+      kind: DaemonSet
+      metadata:
+        name: kube2iam
+        namespace: kube-system
+        labels:
+          app: kube2iam
+      spec:
+        template:
+          metadata:
+            labels:
+              name: kube2iam
+          spec:
+            hostNetwork: true
+            containers:
+            - image: jtblin/kube2iam:latest
+              name: kube2iam
+              args:
+              - "--base-role-arn=arn:aws:iam::ACCOUNT_ID:role/"
+              - --iptables=true
+              - --host-ip=$(HOST_IP)
+              - --verbose
+              - --host-interface=cni0
+              env:
+              - name: HOST_IP
+                valueFrom:
+                  fieldRef:
+                    fieldPath: status.podIP
+              ports:
+              - containerPort: 8181
+                hostPort: 8181
+                name: http
+              securityContext:
+                privileged: true
 
   - path: /etc/kubernetes/nginx/nginx.conf
     content: |

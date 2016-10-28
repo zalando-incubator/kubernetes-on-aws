@@ -118,7 +118,8 @@ def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=No
         'worker_shared_secret': worker_shared_secret,
         'hosted_zone': hosted_zone,
         'webhook_cluster_name': cluster_name,
-        'mint_bucket': mint_bucket
+        'mint_bucket': mint_bucket,
+        'account_id': get_account_id()
     }
     return variables
 
