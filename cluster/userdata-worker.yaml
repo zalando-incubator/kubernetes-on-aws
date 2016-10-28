@@ -71,21 +71,6 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
-    - name: decrypt-tls-assets.service
-      enable: true
-      content: |
-        [Unit]
-        Description=decrypt kubelet tls assets using amazon kms
-        Before=kubelet.service
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        ExecStart=/opt/bin/decrypt-tls-assets
-
-        [Install]
-        RequiredBy=kubelet.service
-
     - name: install-ssh-keys.service
       enable: true
       content: |
@@ -135,33 +120,6 @@ write_files:
   - path: /etc/kubernetes/ssl/ca.pem
     encoding: gzip+base64
     content: H4sIAK2K/1cAA2WUWa+ySBCG7/kVc29OVJDt4rvopptFWWwWEe5E9kUFQbB//ec5X2YmmamkksqTSqqS9636+voExJph/6Vg1zdUQwE+/oZfjGUYioAUBaRKAWYDguKTCNiwaPqyqTR53kBAnuqHtZaLZzRH6ETIAc/lkIb7ljFDlbtSTCyw08A2wGCx9At3qmJvW0c+yNR5s9g1ni0ULTYKtjYqLx/2/sPIwvwNLSVYsA+OsLBPENx9RRu3UReM0TmllgtmVPxMRnhOfyaboV1+toeMUf93XawC4CiASOC7QSkOnxqDOahYNHp57YqhqI/79kg640oJo0qLAOscLNML9pK06W7RRV0/o5by02nedbZCjAXdjTp9cr6eaNquifvOETuP79cshsztXsWTMXI8wlFQT6k53kMZZfR+21labEiydJ5A1gXKQOKp3OgUamN83gqFn2A2Yy1GFc/iGSqtJdEm3o+HKQRT8yJrI9hHQ3fKTqOlN3rbtrMeefNuzeVeFayutW8cbNThOxN1bn0J5Z4Pm+p+DTXs+1WJ1T58SJZBlD3r+fQUl9ZxEkZXSjeec8+l3Vg3usc2Sloxb+QU76WluwyBMGWFkFQe54tJIp6Ex918Yrd01qWZtnnX3GK7OjZBmJyvtcSytkgMxAAC4P1tzYYPnG8JdSJBkEsYAksBPfljHHfjA6KvIQhmMGO4pv8qx/zjtB/pMMiWij3OR54bbhIe7EF8qI23iAmV3dU4zd3+slr1MGMLp5DdJHsycsdbUddAvOHoU1WttHlzrBe8LtWMqDGq28dg1jysl5MA91MWBMepdt6xfe6NajDbkZGCoLlZ4cXiuev0SlzBX08xalZurod0T9PHwO918RHnSRFCORErpFGVatle3hwO7CQwtqkfbJK+ePvlnGPz2Q+BIKb2TXastNRYojRFnevn9Ki8F93IiyjnBy69ghwr+hnpGhMui9NR0zTHRoyT5DoVc9WWE39DAa0NSvrxEbWtyR7iNgjc0zq0lJ2c0aGJ6n3UlSJDdvDASVlcwf6lPjiuedO3Yl6dy5Ev4CyXSHDcC/j1i/m5fmyj/3+E37OehiUuBAAA
-
-  - path: /opt/bin/decrypt-tls-assets
-    owner: root:root
-    permissions: 0700
-    content: |
-      #!/bin/bash -e
-
-      for encKey in $(find /etc/kubernetes/ssl/*.pem.enc);do
-        sudo rkt run \
-        --volume=ssl,kind=host,source=/etc/kubernetes/ssl,readOnly=false \
-        --mount=volume=ssl,target=/etc/kubernetes/ssl \
-        --uuid-file-save=/var/run/coreos/decrypt-tls-assets.uuid \
-        --dns=8.8.8.8 --dns=8.8.4.4 \
-        --net=host \
-        --trust-keys-from-https \
-        quay.io/coreos/awscli --exec=/bin/bash -- \
-          -c \
-          "/usr/bin/aws \
-            --region eu-central-1 kms decrypt \
-            --ciphertext-blob fileb://$encKey \
-            --output text \
-            --query Plaintext \
-            > $encKey.b64"
-
-        base64 --decode < $encKey.b64 > ${encKey%.enc}
-        sudo rkt rm --uuid-file=/var/run/coreos/decrypt-tls-assets.uuid
-      done
 
   - path: /etc/kubernetes/manifests/kube-proxy.yaml
     content: |
