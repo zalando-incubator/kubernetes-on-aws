@@ -271,7 +271,8 @@ def same_user_data(enc1, enc2):
 @click.argument('version')
 @click.option('--force', is_flag=True)
 @click.option('--instance-type', type=str, default='current', help='Type of instance')
-def update(stack_name, version, force, instance_type):
+@click.option('--worker-nodes', type=int, default=-1, help='Number of worker nodes')
+def update(stack_name, version, force, instance_type, worker_nodes):
     '''
     Update Kubernetes cluster
     '''
@@ -289,7 +290,8 @@ def update(stack_name, version, force, instance_type):
         info('Neither worker nor master user data did change, not updating anything.')
         return
 
-    worker_nodes = get_current_worker_nodes(stack_name, version)
+    if worker_nodes == -1:
+        worker_nodes = get_current_worker_nodes(stack_name, version)
 
     # this will only update the Launch Configuration
     subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
