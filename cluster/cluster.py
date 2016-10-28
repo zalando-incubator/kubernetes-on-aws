@@ -146,12 +146,20 @@ def get_launch_configuration_user_data(stack_name, version, name_filter):
     return get_launch_configuration(stack_name, version, name_filter)['UserData']
 
 
-def get_current_worker_nodes(stack_name, version):
+def get_current_nodes(stack_name, version, name_filter):
     autoscaling = boto3.client('autoscaling')
-    asg_name = get_auto_scaling_group(stack_name, version, 'Worker')
+    asg_name = get_auto_scaling_group(stack_name, version, name_filter)
 
     group = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups'][0]
     return group['DesiredCapacity']
+
+
+def get_current_master_nodes(stack_name, version):
+    return get_current_nodes(stack_name, version, 'Master')
+
+
+def get_current_worker_nodes(stack_name, version):
+    return get_current_nodes(stack_name, version, 'Worker')
 
 
 def get_worker_shared_secret(user_data: str):
@@ -219,8 +227,9 @@ def cli():
 @click.argument('version')
 @click.option('--dry-run', is_flag=True, help='No-op mode: show what would be created')
 @click.option('--instance-type', type=str, default='t2.micro', help='Type of instance')
+@click.option('--master-nodes', default=1, type=int, help='Number of master nodes')
 @click.option('--worker-nodes', default=1, type=int, help='Number of worker nodes')
-def create(stack_name, version, dry_run, instance_type, worker_nodes):
+def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes):
     '''
     Create a new Kubernetes cluster (using current AWS credentials)
     '''
@@ -239,7 +248,8 @@ def create(stack_name, version, dry_run, instance_type, worker_nodes):
     if not dry_run:
         subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                                'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*',
-                               'WorkerNodes={}'.format(worker_nodes), 'InstanceType={}'.format(instance_type)])
+                               'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes),
+                               'InstanceType={}'.format(instance_type)])
         # wait up to 15m for stack to be created
         subprocess.check_call(['senza', 'wait', '--timeout=900', stack_name, version])
         wait_for_api_server(variables['api_server'])
@@ -271,7 +281,9 @@ def same_user_data(enc1, enc2):
 @click.argument('version')
 @click.option('--force', is_flag=True)
 @click.option('--instance-type', type=str, default='current', help='Type of instance')
-def update(stack_name, version, force, instance_type):
+@click.option('--master-nodes', type=int, default=-1, help='Number of master nodes')
+@click.option('--worker-nodes', type=int, default=-1, help='Number of worker nodes')
+def update(stack_name, version, force, instance_type, master_nodes, worker_nodes):
     '''
     Update Kubernetes cluster
     '''
@@ -289,13 +301,18 @@ def update(stack_name, version, force, instance_type):
         info('Neither worker nor master user data did change, not updating anything.')
         return
 
-    worker_nodes = get_current_worker_nodes(stack_name, version)
+    if master_nodes == -1:
+        master_nodes = get_current_master_nodes(stack_name, version)
+
+    if worker_nodes == -1:
+        worker_nodes = get_current_worker_nodes(stack_name, version)
 
     # this will only update the Launch Configuration
     subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                            'UserDataMaster={}'.format(user_data_master),
                            'UserDataWorker={}'.format(user_data_worker), 'KmsKey=*',
-                           'WorkerNodes={}'.format(worker_nodes), 'InstanceType={}'.format(instance_type)])
+                           'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes),
+                           'InstanceType={}'.format(instance_type)])
     # wait for CF update to complete..
     subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
     perform_node_updates(stack_name, version, 'Master', user_data_master, variables)
