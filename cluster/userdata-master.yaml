@@ -114,7 +114,7 @@ write_files:
           cluster: local
           user: kubelet
 
-  - path: /etc/kubernetes/ssl/authn.yaml
+  - path: /etc/kubernetes/config/authn.yaml
     permissions: 0744
     owner: root:root
     content: |
@@ -132,7 +132,8 @@ write_files:
           cluster: authz-webhook
           user: authz-webhook-client
         name: authz-webhook
-  - path: /etc/kubernetes/ssl/authz.yaml
+
+  - path: /etc/kubernetes/config/authz.yaml
     permissions: 0744
     owner: root:root
     content: |
@@ -251,10 +252,10 @@ write_files:
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --runtime-config=extensions/v1beta1/networkpolicies=true
-          - --authentication-token-webhook-config-file=/etc/kubernetes/ssl/authn.yaml
+          - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --cloud-provider=aws
           - --authorization-mode=Webhook
-          - --authorization-webhook-config-file=/etc/kubernetes/ssl/authz.yaml
+          - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --runtime-config=authorization.k8s.io/v1beta1=true
           - --feature-gates=AllAlpha=true
           livenessProbe:
@@ -277,6 +278,9 @@ write_files:
             readOnly: true
           - mountPath: /etc/ssl/certs
             name: ssl-certs-host
+            readOnly: true
+          - mountPath: /etc/kubernetes/config
+            name: kubernetes-configs
             readOnly: true
         - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:ba52f98
           name: webhook
@@ -321,6 +325,9 @@ write_files:
         - hostPath:
             path: /etc/kubernetes/ssl
           name: ssl-certs-kubernetes
+        - hostPath:
+            path: /etc/kubernetes/config
+          name: kubernetes-configs
         - hostPath:
             path: /usr/share/ca-certificates
           name: ssl-certs-host
