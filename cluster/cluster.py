@@ -112,6 +112,7 @@ def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=No
     mint_bucket = get_mint_bucket_name()
 
     variables = {
+        'stack_name': stack_name,
         'stack_version': version,
         'etcd_discovery_domain': etcd_discovery_domain,
         'api_server': api_server,
