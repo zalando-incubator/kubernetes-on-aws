@@ -478,7 +478,22 @@ def perform_node_updates(stack_name, version, name_filter, desired_user_data, co
 @click.argument('stack_name')
 @click.argument('version')
 def delete(stack_name, version):
+    '''
+    Tear down a whole Kubernetes cluster
+    '''
     subprocess.check_call(['senza', 'delete', stack_name, version])
+
+
+@cli.command('get-api-token')
+@click.argument('stack_name')
+@click.argument('version')
+def get_api_token(stack_name, version):
+    '''
+    Return Bearer token for API server
+    '''
+    existing_user_data_worker = get_launch_configuration_user_data(stack_name, version, 'Worker')
+    worker_shared_secret = get_worker_shared_secret(existing_user_data_worker)
+    print(worker_shared_secret)
 
 
 if __name__ == '__main__':
