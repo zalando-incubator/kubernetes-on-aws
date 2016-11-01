@@ -6,7 +6,7 @@ Kubernetes on AWS
 
 This repo contains some scripts and templates to provision Kubernetes clusters on AWS using Cloud Formation and CoreOS.
 
-**Consider this very early test stuff, many values are hardcoded and at the moment we are only trying to solve or own specific Zalando user case. However, we are open to ideas from the community at large; please contact us via our Issues Tracker with your thoughts and suggestions.**
+**Consider this very early test stuff**. Many values are hardcoded, and currently we're focusing on solving our own, specific/Zalando user case. However, **we are open to ideas from the community at large about potentially turning this idea into a project that provides universal/general value to others**. Please contact us via our Issues Tracker with your thoughts and suggestions.
 
 It was initially based on `kube-aws`_, but we decided to diverge from it:
 
