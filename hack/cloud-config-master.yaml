@@ -32,6 +32,7 @@ coreos:
         Environment=KUBELET_VERSION={{.K8sVer}}
         Environment=KUBELET_ACI=docker://{{.HyperkubeImageRepo}}
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
+        --insecure-options=image \
         --mount volume=dns,target=/etc/resolv.conf \
         --volume rkt,kind=host,source=/opt/bin/host-rkt \
         --mount volume=rkt,target=/usr/bin/rkt \
@@ -39,7 +40,6 @@ coreos:
         --mount volume=var-lib-rkt,target=/var/lib/rkt \
         --volume stage,kind=host,source=/tmp \
         --mount volume=stage,target=/tmp \
-        --insecure-options=image \
         --volume var-log,kind=host,source=/var/log \
         --mount volume=var-log,target=/var/log"
         ExecStartPre=/usr/bin/mkdir -p /var/log/containers
@@ -48,68 +48,27 @@ coreos:
         --network-plugin={{.K8sNetworkPlugin}} \
         --container-runtime={{.ContainerRuntime}} \
         --rkt-path=/usr/bin/rkt \
-        --lock-file=/var/run/lock/kubelet.lock \
-        --exit-on-lock-contention \
         --register-schedulable=false \
-        --node-ip=$public_ipv4 \
         --allow-privileged \
         --node-labels=master=true \
         --pod-manifest-path=/etc/kubernetes/manifests \
         --cluster_dns={{.DNSServiceIP}} \
         --cluster_domain=cluster.local \
         --kubeconfig=/etc/kubernetes/kubeconfig \
-        --require-kubeconfig
+        --require-kubeconfig \
         Restart=always
         RestartSec=10
 
         [Install]
         WantedBy=multi-user.target
 
-    - name: decrypt-tls-assets.service
-      enable: true
-      content: |
-        [Unit]
-        Description=decrypt kubelet tls assets using amazon kms
-        Before=kubelet.service
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        ExecStart=/opt/bin/decrypt-tls-assets
-
-        [Install]
-        RequiredBy=kubelet.service
-
     - name: install-kube-system.service
       command: start
       runtime: true
       content: |
         [Service]
-        Type=simple
-        StartLimitInterval=0
-        Restart=on-failure
-        ExecStartPre=systemctl is-active docker.service
-        ExecStartPre=systemctl is-active kubelet.service
-        ExecStartPre=/usr/bin/curl http://127.0.0.1:8080/version
-        ExecStart=/opt/bin/install-kube-system
-
-    - name: copy-cni-plugins.service
-      command: start
-      runtime: true
-      content: |
-        [Unit]
-        Description=copy cni plugins from hyperkube image
-        Before=kubelet.service
-
-        [Service]
         Type=oneshot
-        RemainAfterExit=yes
-        ExecStart=/usr/bin/rkt --insecure-options=image fetch \
-        docker://{{.HyperkubeImageRepo}}:{{.K8sVer}}
-        ExecStart=/usr/bin/rkt image extract {{.HyperkubeImageRepo}}:{{.K8sVer}} \
-        --rootfs-only --overwrite /hyperkube-copy
-        ExecStart=/usr/bin/mv /hyperkube-copy/opt/cni /opt
-        ExecStart=/usr/bin/rm -rf /hyperkube-copy
+        ExecStart=/opt/bin/install-kube-system
 
 write_files:
   - path: /etc/kubernetes/kubeconfig
@@ -121,7 +80,8 @@ write_files:
       clusters:
       - name: local
         cluster:
-          server: {{.SecureAPIServers}}
+          #server: {{.SecureAPIServers}}
+          server: http://localhost:8080
           certificate-authority: /etc/kubernetes/ssl/ca.pem
       users:
       - name: kubelet
@@ -138,30 +98,15 @@ write_files:
     owner: root:root
     content: |
       #!/bin/bash -e
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-      -d"$(cat /srv/kubernetes/manifests/kube-dns-rc.yaml)" \
-      "http://127.0.0.1:8080/api/v1/namespaces/kube-system/replicationcontrollers"
+      until /usr/bin/curl -s -o /dev/null http://127.0.0.1:8080/version; do
+          echo 'Waiting for API server..'
+          sleep 10
+      done
 
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-      -d"$(cat /srv/kubernetes/manifests/kube-dashboard-rc.yaml)" \
-      "http://127.0.0.1:8080/api/v1/namespaces/kube-system/replicationcontrollers"
+      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0 /hyperkube kubectl"
 
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-      -d"$(cat /srv/kubernetes/manifests/heapster-de.yaml)" \
-      "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/deployments"
-
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-      -d"$(cat /srv/kubernetes/manifests/kube-proxy.yaml)" \
-      "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/daemonsets"
-
-      /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-      -d"$(cat /srv/kubernetes/manifests/kubelet.yaml)" \
-      "http://127.0.0.1:8080/apis/extensions/v1beta1/namespaces/kube-system/daemonsets"
-
-      for manifest in {kube-dns,heapster,kube-dashboard}-svc.yaml;do
-          /usr/bin/curl  -H "Content-Type: application/yaml" -XPOST \
-          -d"$(cat /srv/kubernetes/manifests/$manifest)" \
-          "http://127.0.0.1:8080/api/v1/namespaces/kube-system/services"
+      for manifest in /srv/kubernetes/manifests/*/*.yaml; do
+          ${KUBECTL} apply -f $manifest
       done
 
   - path: /etc/kubernetes/cni/docker_opts_cni.env
@@ -184,15 +129,41 @@ write_files:
       # https://github.com/coreos/rkt/issues/2878
       exec nsenter -m -u -i -n -p -t 1 -- /usr/bin/rkt "$@"
 
-  - path: /opt/bin/decrypt-tls-assets
-    owner: root:root
-    permissions: 0700
+  - path: /etc/kubernetes/manifests/kube-proxy.yaml
     content: |
-      #!/bin/bash -e
-
-      for encKey in $(find /etc/kubernetes/ssl/*.pem.enc);do
-        cp $encKey ${encKey%.enc}
-      done
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: kube-proxy
+          namespace: kube-system
+          annotations:
+            rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
+        spec:
+          hostNetwork: true
+          containers:
+          - name: kube-proxy
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
+            command:
+            - /hyperkube
+            - proxy
+            - --master=http://127.0.0.1:8080
+            - --v=2
+            securityContext:
+              privileged: true
+            volumeMounts:
+            - mountPath: /etc/ssl/certs
+              name: ssl-certs-host
+              readOnly: true
+            - mountPath: /var/run/dbus
+              name: dbus
+              readOnly: false
+          volumes:
+          - hostPath:
+              path: /usr/share/ca-certificates
+            name: ssl-certs-host
+          - hostPath:
+              path: /var/run/dbus
+            name: dbus
 
   - path: /etc/kubernetes/manifests/kube-apiserver.yaml
     content: |
@@ -215,7 +186,7 @@ write_files:
           - --service-cluster-ip-range={{.ServiceCIDR}}
           - --secure-port=443
           - --advertise-address=$private_ipv4
-          - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota
+          - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --client-ca-file=/etc/kubernetes/ssl/ca.pem
@@ -322,159 +293,28 @@ write_files:
             initialDelaySeconds: 15
             timeoutSeconds: 15
 
-  - path: /srv/kubernetes/manifests/kubelet.yaml
+  - path: /srv/kubernetes/manifests/deployments/kube-dns.yaml
     content: |
-      apiVersion: extensions/v1beta1
-      kind: DaemonSet
-      metadata:
-        name: kubelet
-        namespace: kube-system
-        labels:
-          k8s-app: kubelet
-          version: {{.K8sVer}}
-      spec:
-        template:
-          metadata:
-            labels:
-              k8s-app: kubelet
-              version: {{.K8sVer}}
-          spec:
-            containers:
-            - name: kubelet
-              image: {{.HyperkubeImageRepo}}:{{.K8sVer}}
-              command:
-              - /nsenter
-              - --target=1
-              - --mount
-              - --wd=.
-              - --
-              - ./hyperkube
-              - kubelet
-              - --cni-conf-dir=/etc/kubernetes/cni/net.d
-              - --network-plugin={{.K8sNetworkPlugin}}
-              - --lock-file=/var/run/lock/kubelet.lock
-              - --register-node
-              - --allow-privileged
-              - --pod-manifest-path=/etc/kubernetes/manifests
-              - --cluster_dns={{.DNSServiceIP}}
-              - --cluster_domain=cluster.local
-              - --kubeconfig=/etc/kubernetes/kubeconfig
-              - --require-kubeconfig
-              - --tls-cert-file=/etc/kubernetes/ssl/worker.pem
-              - --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem
-              securityContext:
-                privileged: true
-              volumeMounts:
-              - name: dev
-                mountPath: /dev
-              - name: run
-                mountPath: /run
-              - name: sys
-                mountPath: /sys
-                readOnly: true
-              - name: etc-kubernetes
-                mountPath: /etc/kubernetes
-                readOnly: true
-              - name: etc-ssl-certs
-                mountPath: /etc/ssl/certs
-                readOnly: true
-              - name: var-lib-docker
-                mountPath: /var/lib/docker
-              - name: var-lib-kubelet
-                mountPath: /var/lib/kubelet
-              - name: var-lib-rkt
-                mountPath: /var/lib/rkt
-            hostNetwork: true
-            hostPID: true
-            volumes:
-            - name: dev
-              hostPath:
-                path: /dev
-            - name: run
-              hostPath:
-                path: /run
-            - name: sys
-              hostPath:
-                path: /sys
-            - name: etc-kubernetes
-              hostPath:
-                path: /etc/kubernetes
-            - name: etc-ssl-certs
-              hostPath:
-                path: /usr/share/ca-certificates
-            - name: var-lib-docker
-              hostPath:
-                path: /var/lib/docker
-            - name: var-lib-kubelet
-              hostPath:
-                path: /var/lib/kubelet
-            - name: var-lib-rkt
-              hostPath:
-                path: /var/lib/rkt
-
-  - path: /srv/kubernetes/manifests/kube-proxy.yaml
-    content: |
-      apiVersion: "extensions/v1beta1"
-      kind: DaemonSet
-      metadata:
-        name: kube-proxy
-        namespace: kube-system
-        labels:
-          k8s_app: kube-proxy
-          version: {{.K8sVer}}
-      spec:
-        template:
-          metadata:
-            labels:
-              k8s_app: kube-proxy
-              version: {{.K8sVer}}
-          spec:
-            hostNetwork: true
-            containers:
-            - name: kube-proxy
-              image: {{.HyperkubeImageRepo}}:{{.K8sVer}}
-              command:
-              - /hyperkube
-              - proxy
-              - --kubeconfig=/etc/kubernetes/kubeconfig
-              securityContext:
-                privileged: true
-              volumeMounts:
-              - mountPath: /etc/ssl/certs
-                name: ssl-certs-host
-                readOnly: true
-              - name: etc-kubernetes
-                mountPath: /etc/kubernetes
-                readOnly: true
-            volumes:
-            - hostPath:
-                path: /usr/share/ca-certificates
-              name: ssl-certs-host
-            - name: etc-kubernetes
-              hostPath:
-                path: /etc/kubernetes
-
-  - path: /srv/kubernetes/manifests/kube-dns-rc.yaml
-    content: |
-        apiVersion: v1
-        kind: ReplicationController
+        apiVersion: extensions/v1beta1
+        kind: Deployment
         metadata:
-          name: kube-dns-v19
+          name: kube-dns
           namespace: kube-system
           labels:
             k8s-app: kube-dns
-            version: v19
+            version: v20
             kubernetes.io/cluster-service: "true"
         spec:
-          replicas: 1
+          replicas: 2
           selector:
-            k8s-app: kube-dns
-            version: v19
+            matchLabels:
+              k8s-app: kube-dns
+              version: v20
           template:
             metadata:
               labels:
                 k8s-app: kube-dns
-                version: v19
+                version: v20
                 kubernetes.io/cluster-service: "true"
               annotations:
                 scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -482,7 +322,7 @@ write_files:
             spec:
               containers:
               - name: kubedns
-                image: gcr.io/google_containers/kubedns-amd64:1.7
+                image: gcr.io/google_containers/kubedns-amd64:1.8
                 resources:
                   limits:
                     memory: 170Mi
@@ -516,7 +356,7 @@ write_files:
                   name: dns-tcp-local
                   protocol: TCP
               - name: dnsmasq
-                image: gcr.io/google_containers/kube-dnsmasq-amd64:1.3
+                image: gcr.io/google_containers/kube-dnsmasq-amd64:1.4
                 args:
                 - --cache-size=1000
                 - --no-resolv
@@ -546,7 +386,7 @@ write_files:
                   protocol: TCP
               dnsPolicy: Default
 
-  - path: /srv/kubernetes/manifests/kube-dns-svc.yaml
+  - path: /srv/kubernetes/manifests/services/kube-dns.yaml
     content: |
         apiVersion: v1
         kind: Service
@@ -569,12 +409,12 @@ write_files:
             port: 53
             protocol: TCP
 
-  - path: /srv/kubernetes/manifests/heapster-de.yaml
+  - path: /srv/kubernetes/manifests/deployments/heapster.yaml
     content: |
         apiVersion: extensions/v1beta1
         kind: Deployment
         metadata:
-          name: heapster-v1.2.0
+          name: heapster
           namespace: kube-system
           labels:
             k8s-app: heapster
@@ -645,7 +485,7 @@ write_files:
                     - --poll-period=300000
                     - --estimator=exponential
 
-  - path: /srv/kubernetes/manifests/heapster-svc.yaml
+  - path: /srv/kubernetes/manifests/services/heapster.yaml
     content: |
         kind: Service
         apiVersion: v1
@@ -662,26 +502,27 @@ write_files:
           selector:
             k8s-app: heapster
 
-  - path: /srv/kubernetes/manifests/kube-dashboard-rc.yaml
+  - path: /srv/kubernetes/manifests/deployments/kube-dashboard.yaml
     content: |
-        apiVersion: v1
-        kind: ReplicationController
+        apiVersion: extensions/v1beta1
+        kind: Deployment
         metadata:
-          name: kubernetes-dashboard-v1.4.0
+          name: kubernetes-dashboard
           namespace: kube-system
           labels:
             k8s-app: kubernetes-dashboard
-            version: v1.4.0
+            version: v1.4.2
             kubernetes.io/cluster-service: "true"
         spec:
           replicas: 1
           selector:
-            k8s-app: kubernetes-dashboard
+            matchLabels:
+              k8s-app: kubernetes-dashboard
           template:
             metadata:
               labels:
                 k8s-app: kubernetes-dashboard
-                version: v1.4.0
+                version: v1.4.2
                 kubernetes.io/cluster-service: "true"
               annotations:
                 scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -689,7 +530,7 @@ write_files:
             spec:
               containers:
               - name: kubernetes-dashboard
-                image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.0
+                image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.2
                 resources:
                   limits:
                     cpu: 100m
@@ -706,7 +547,7 @@ write_files:
                   initialDelaySeconds: 30
                   timeoutSeconds: 30
 
-  - path: /srv/kubernetes/manifests/kube-dashboard-svc.yaml
+  - path: /srv/kubernetes/manifests/services/kube-dashboard.yaml
     content: |
         apiVersion: v1
         kind: Service
@@ -723,27 +564,27 @@ write_files:
           - port: 80
             targetPort: 9090
 
-  - path: /etc/kubernetes/ssl/ca.pem.enc
+  - path: /etc/kubernetes/ssl/ca.pem
     # encoding: gzip+base64
     encoding: base64
     content: {{.TLSConfig.CACert}}
 
-  - path: /etc/kubernetes/ssl/apiserver.pem.enc
+  - path: /etc/kubernetes/ssl/apiserver.pem
     # encoding: gzip+base64
     encoding: base64
     content: {{.TLSConfig.APIServerCert}}
 
-  - path: /etc/kubernetes/ssl/apiserver-key.pem.enc
+  - path: /etc/kubernetes/ssl/apiserver-key.pem
     # encoding: gzip+base64
     encoding: base64
     content: {{.TLSConfig.APIServerKey}}
 
-  - path: /etc/kubernetes/ssl/worker.pem.enc
+  - path: /etc/kubernetes/ssl/worker.pem
     # encoding: gzip+base64
     encoding: base64
     content: {{.TLSConfig.WorkerCert}}
 
-  - path: /etc/kubernetes/ssl/worker-key.pem.enc
+  - path: /etc/kubernetes/ssl/worker-key.pem
     # encoding: gzip+base64
     encoding: base64
     content: {{.TLSConfig.WorkerKey}}

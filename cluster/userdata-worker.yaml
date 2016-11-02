@@ -60,11 +60,11 @@ coreos:
         --pod-manifest-path=/etc/kubernetes/manifests \
         --cluster_dns=10.3.0.10 \
         --cluster_domain=cluster.local \
-        --cloud-provider=aws \
         --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
         --require-kubeconfig \
         --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
         --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
+        --cloud-provider=aws \
         --feature-gates=AllAlpha=true
         Restart=always
         RestartSec=10
@@ -188,7 +188,6 @@ write_files:
             user: kubelet
           name: kubelet-context
         current-context: kubelet-context
-
 
   - path: /etc/kubernetes/cni/net.d/10-flannel.conf
     content: |
