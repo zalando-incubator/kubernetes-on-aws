@@ -77,14 +77,6 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
-    - name: install-kube-system.service
-      command: start
-      runtime: true
-      content: |
-        [Service]
-        Type=oneshot
-        ExecStart=/opt/bin/install-kube-system
-
     - name: install-ssh-keys.service
       command: start
       enable: true
@@ -95,6 +87,14 @@ coreos:
         [Service]
         Type=oneshot
         ExecStart=/opt/bin/install-ssh-keys
+
+    - name: install-kube-system.service
+      command: start
+      runtime: true
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/bin/install-kube-system
 
 write_files:
   - path: /etc/kubernetes/kubeconfig
