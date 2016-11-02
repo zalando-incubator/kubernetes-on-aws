@@ -37,6 +37,42 @@ coreos:
             ExecStartPre=/usr/bin/etcdctl \
             --endpoint=http://localhost:2379 set /coreos.com/network/config \
             '{ "Network": "10.2.0.0/16", "Backend": {"Type": "vxlan"}}'
+        - name: 40-ExecStartPre-symlink.conf
+          content: |
+            [Service]
+            ExecStartPre=/usr/bin/ln -sf /etc/flannel/options.env /run/flannel/options.env
+
+    - name: calico-node.service
+      command: start
+      content: |
+        [Unit]
+        Description=Calico per-host agent
+        Requires=network-online.target
+        After=network-online.target
+
+        [Service]
+        Slice=machine.slice
+        Environment=CALICO_DISABLE_FILE_LOGGING=true
+        Environment=HOSTNAME=$private_ipv4
+        Environment=IP=$private_ipv4
+        Environment=FELIX_FELIXHOSTNAME=$private_ipv4
+        Environment=CALICO_NETWORKING=false
+        Environment=NO_DEFAULT_POOLS=true
+        Environment=ETCD_ENDPOINTS=http://127.0.0.1:2379
+        ExecStart=/usr/bin/rkt run --inherit-env --stage1-from-dir=stage1-fly.aci \
+          --volume=modules,kind=host,source=/lib/modules,readOnly=false \
+          --mount=volume=modules,target=/lib/modules \
+          --volume=dns,kind=host,source=/etc/resolv.conf,readOnly=true \
+          --mount=volume=dns,target=/etc/resolv.conf \
+          --trust-keys-from-https quay.io/calico/node:v0.19.0
+
+        KillMode=mixed
+        Restart=always
+        TimeoutStartSec=0
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: kubelet.service
       command: start
       runtime: true
@@ -680,6 +716,35 @@ write_files:
           ports:
           - port: 80
             targetPort: 9090
+
+  - path: /etc/kubernetes/manifests/policy-controller.yaml
+    permissions: '0644'
+    content: |
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: calico-policy-controller
+        namespace: kube-system
+      spec:
+        hostNetwork: true
+        containers:
+          - name: k8s-policy-controller
+            image: calico/kube-policy-controller:v0.2.0
+            env:
+              - name: ETCD_ENDPOINTS
+                value: "http://127.0.0.1:2379"
+              - name: K8S_API
+                value: "http://127.0.0.1:8080"
+              - name: LEADER_ELECTION
+                value: "true"
+          - name: leader-elector
+            image: quay.io/calico/leader-elector:v0.1.0
+            imagePullPolicy: IfNotPresent
+            args:
+              - "--election=calico-policy-election"
+              - "--election-namespace=kube-system"
+              - "--http=127.0.0.1:4040"
+
   - path: /srv/kubernetes/manifests/deployments/secretary.yaml
     content: |
       apiVersion: extensions/v1beta1
@@ -840,7 +905,7 @@ write_files:
               - --iptables=true
               - --host-ip=$(HOST_IP)
               - --verbose
-              - --host-interface=cni0
+              - --host-interface=cali+
               env:
               - name: HOST_IP
                 valueFrom:
@@ -900,12 +965,27 @@ write_files:
     encoding: gzip+base64
     content: H4sIAFCK/1cAA22Vt66raACEe57i9OiKnIotfjLGRJM7gsnBmMzT79lb77RTzKfRSPPnz694SdHMH/cFfmxXC4An/ehS/J/xBzI0TZoqjQdAF4AjgQO2yY98hjyJNsgRS0Vj1/hDq9Ori3vzsX64k7zDpRqTfE2tCIM8tOAeTz0XVJpgaXfNw+TUv0tpawlOc+j8oBmVlS90qTXheqDXoh7yy599gfua+8E9IIJf6Ruke5gPKnI1Nd066jNzrOrIhEHjYGxgdq2T9UUqLuVAG7cVGedy86eJh+zGyJC5pCQVt3e7KE0tgoh6vV8XnpQIhr8TLdX0FnY6qb4/DzFuFvbTsbX4uSVODCLrYjoSWo1jRFR4pHBLwpFgD94pV65N6OtfjSiQ/EFVkpbYjcDuyjO7NcbYEZruY9MPZR0uA8jI6ERn9WAIHpG3ouBZVMxWzULHov4eK8dcWEJ2aCJwAA+m37KlpV6NPYiGYRREf4TolBxMp3tWV6R8g2xUp/cdwOr50UXj2ojqfIWenJ1rbXw57+bvXEpgE/TlQK/fBybvUNdsyjPvX6e3quLrI02Pc+fMPMopMU532di4omSXbuNvg7x0vjs9Hx5RjbTdphNPxofSWUaFzZ7q7cbeNSXDKOcMFYnnsAO+obMuH7RZuffBACVOQF1wgd3NV/q131dqw54E1ZWt25WO+xrqishvyEwKaSvh8zjfikerMfzGnpilDs5pLcGr0GvLXr6sYw5ncCOeDzkIL/Tdq5Xv3s62GF6uzRj8oUc6W9z4OMmde3z2w3bbfeEcqudGs0Xb+BeEEkYtWgqRvUP3kyRUsQTovAtPdsbTuZikCkw1x0+H/1SDYwdNYziuvBDnJw38DsjG14ueC/OG6ElvMv92tSTv3LhvcGnjYskQc+AzRapEeHiUvEuLeZhzAnZyekhnmcuF4EEnW4miUIWXs4tGcxtXRbei+Mw2umHGLXbm8TCa1LF2emipDVkqPAreqTKY1HQtf4mxSXpBtC1bz1AzX+VhEUa40ffcbENHTPn56QFj9h1L3nfkcsxZkTXcEWc0Pstj5RqlN8KugB5MjFZksG09/YKv9EOoGa44Pq5pR2y11arbi+9rk7GWbi1+0b3Gu62vhm4iymSgiQiKK6JgomBBQaLc1PLe4rjJRAR8pvHo8/cQSSEjsOgvMsirQWJvYDV3WczwNOJnuQEoKM7Py8GTa71j+JWyii0u31W9C2ealksxeEojjJLZ0OzdTHfSDPXYw2gcC8dqmjasQi2P5C7i2jXCnduNTw/2ztOcyOTooOaaDdybeU3t8TscqSNYv0GyIU8PUSRrfwAPFkADnJcqfYu+VTHfVunW5lYNR+crmSK8ZO7wOZeZhDdHNEIkD54RZ42CM2Wz14wZbddDyCS+MHttPQPWCN7PpG6u9DmsdgqjBHQnKPEqD3PEca16X5bFXmLrTM9dW5eZRb7JDbVGK8aoMqwCotbhjciEUWkADpaP+uWxkKrSLmLp0X0X6qTpY7Qu/lkMdd2gwtMZZh/qDvkDJgXkR1zcczFUyI1gVnZUabxhITIQxfuJi9RT/8i+UirMJfa37gvfUaHyy11OiMxFxkOxq8W3dLb5Gl74BkXPmewI2PvdZzpSPhZWQ1q14Ji/7UpH22Ele4Modcq6HqTo4pp+2qGVt41NtU+2VHt/AN98nJLywHqn9erCFh0KnrOwKgLEIP+B/l6KZIr/fzX/AqgprOSLBgAA
 
-  - path: /etc/kubernetes/cni/net.d/10-flannel.conf
+  - path: /etc/kubernetes/cni/net.d/10-calico.conf
+    permissions: '0644'
     content: |
-        {
-            "name": "podnet",
-            "type": "flannel",
-            "delegate": {
-                "isDefaultGateway": true
-            }
-        }
+      {
+          "name": "calico",
+          "type": "flannel",
+          "delegate": {
+              "type": "calico",
+              "etcd_endpoints": "http://127.0.0.1:2379",
+              "log_level": "none",
+              "log_level_stderr": "info",
+              "hostname": "$private_ipv4",
+              "policy": {
+                  "type": "k8s",
+                  "k8s_api_root": "http://127.0.0.1:8080/api/v1/"
+              }
+          }
+      }
+
+  - path: /etc/flannel/options.env
+    permissions: '0644'
+    content: |
+      FLANNELD_IFACE=$private_ipv4
+      FLANNELD_ETCD_ENDPOINTS=http://127.0.0.1:2379

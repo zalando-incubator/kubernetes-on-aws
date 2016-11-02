@@ -29,6 +29,44 @@ coreos:
             [Service]
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
 
+    - name: flanneld.service
+      drop-ins:
+        - name: 40-ExecStartPre-symlink.conf
+          content: |
+            [Service]
+            ExecStartPre=/usr/bin/ln -sf /etc/flannel/options.env /run/flannel/options.env
+
+    - name: calico-node.service
+      command: start
+      content: |
+        [Unit]
+        Description=Calico per-host agent
+        Requires=network-online.target
+        After=network-online.target
+
+        [Service]
+        Slice=machine.slice
+        Environment=CALICO_DISABLE_FILE_LOGGING=true
+        Environment=HOSTNAME=$private_ipv4
+        Environment=IP=$private_ipv4
+        Environment=FELIX_FELIXHOSTNAME=$private_ipv4
+        Environment=CALICO_NETWORKING=false
+        Environment=NO_DEFAULT_POOLS=true
+        Environment=ETCD_ENDPOINTS=http://127.0.0.1:2379
+        ExecStart=/usr/bin/rkt run --inherit-env --stage1-from-dir=stage1-fly.aci \
+          --volume=modules,kind=host,source=/lib/modules,readOnly=false \
+          --mount=volume=modules,target=/lib/modules \
+          --volume=dns,kind=host,source=/etc/resolv.conf,readOnly=true \
+          --mount=volume=dns,target=/etc/resolv.conf \
+          --trust-keys-from-https quay.io/calico/node:v0.19.0
+
+        KillMode=mixed
+        Restart=always
+        TimeoutStartSec=0
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: kubelet.service
       command: start
       runtime: true
@@ -188,12 +226,29 @@ write_files:
           name: kubelet-context
         current-context: kubelet-context
 
-  - path: /etc/kubernetes/cni/net.d/10-flannel.conf
+  - path: /etc/kubernetes/cni/net.d/10-calico.conf
+    permissions: '0644'
     content: |
-        {
-            "name": "podnet",
-            "type": "flannel",
-            "delegate": {
-                "isDefaultGateway": true
-            }
-        }
+      {
+          "name": "calico",
+          "type": "flannel",
+          "delegate": {
+              "type": "calico",
+              "etcd_endpoints": "http://127.0.0.1:2379",
+              "log_level": "none",
+              "log_level_stderr": "info",
+              "hostname": "$private_ipv4",
+              "policy": {
+                  "type": "k8s"
+              },
+              "kubernetes": {
+                  "kubeconfig": "/etc/kubernetes/worker-kubeconfig.yaml"
+              }
+          }
+      }
+
+  - path: /etc/flannel/options.env
+    permissions: '0644'
+    content: |
+      FLANNELD_IFACE=$private_ipv4
+      FLANNELD_ETCD_ENDPOINTS=http://127.0.0.1:2379
