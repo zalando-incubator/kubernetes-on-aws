@@ -32,7 +32,7 @@ var values = struct {
 	ETCDEndpoints:      "http://172.17.4.51:2379",
 	PodCIDR:            "10.2.0.0/16",
 	ServiceCIDR:        "10.3.0.0/24",
-	K8sVer:             "v1.4.4_coreos.0",
+	K8sVer:             "v1.4.5_coreos.0",
 	HyperkubeImageRepo: "registry.opensource.zalan.do/teapot/hyperkube",
 	// K8sVer:             "v1.4.3_coreos.0",
 	// HyperkubeImageRepo: "quay.io/coreos/hyperkube",

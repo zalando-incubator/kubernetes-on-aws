@@ -42,7 +42,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=v1.4.4_coreos.0
+        Environment=KUBELET_VERSION=v1.4.5_coreos.0
         Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
         --insecure-options=image \
@@ -77,14 +77,6 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
-    - name: install-kube-system.service
-      command: start
-      runtime: true
-      content: |
-        [Service]
-        Type=oneshot
-        ExecStart=/opt/bin/install-kube-system
-
     - name: install-ssh-keys.service
       command: start
       enable: true
@@ -95,6 +87,14 @@ coreos:
         [Service]
         Type=oneshot
         ExecStart=/opt/bin/install-ssh-keys
+
+    - name: install-kube-system.service
+      command: start
+      runtime: true
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/bin/install-kube-system
 
 write_files:
   - path: /etc/kubernetes/kubeconfig
@@ -159,7 +159,7 @@ write_files:
           sleep 10
       done
 
-      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0 /hyperkube kubectl"
+      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0 /hyperkube kubectl"
 
       for manifest in /srv/kubernetes/manifests/*/*.yaml; do
           ${KUBECTL} apply -f $manifest
@@ -200,7 +200,7 @@ write_files:
           hostNetwork: true
           containers:
           - name: kube-proxy
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
             command:
             - /hyperkube
             - proxy
@@ -235,7 +235,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -345,7 +345,7 @@ write_files:
       spec:
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -392,7 +392,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
           command:
           - /hyperkube
           - scheduler
@@ -415,7 +415,7 @@ write_files:
         apiVersion: extensions/v1beta1
         kind: Deployment
         metadata:
-          name: kube-dns-v19
+          name: kube-dns
           namespace: kube-system
           labels:
             k8s-app: kube-dns
@@ -531,7 +531,7 @@ write_files:
         apiVersion: extensions/v1beta1
         kind: Deployment
         metadata:
-          name: heapster-v1.2.0
+          name: heapster
           namespace: kube-system
           labels:
             k8s-app: heapster
@@ -624,11 +624,11 @@ write_files:
         apiVersion: extensions/v1beta1
         kind: Deployment
         metadata:
-          name: kubernetes-dashboard-v1.4.0
+          name: kubernetes-dashboard
           namespace: kube-system
           labels:
             k8s-app: kubernetes-dashboard
-            version: v1.4.0
+            version: v1.4.2
             kubernetes.io/cluster-service: "true"
         spec:
           replicas: 1
@@ -639,7 +639,7 @@ write_files:
             metadata:
               labels:
                 k8s-app: kubernetes-dashboard
-                version: v1.4.0
+                version: v1.4.2
                 kubernetes.io/cluster-service: "true"
               annotations:
                 scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -647,7 +647,7 @@ write_files:
             spec:
               containers:
               - name: kubernetes-dashboard
-                image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.0
+                image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.2
                 resources:
                   limits:
                     cpu: 100m
@@ -721,7 +721,7 @@ write_files:
                 name: credentials
                 readOnly: true
             - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
               command:
               - /hyperkube
               args:
@@ -759,7 +759,7 @@ write_files:
               - --aws-hosted-zone=HOSTED_ZONE.
               - --no-sync
             - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.4_coreos.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
               command:
               - /hyperkube
               args:
