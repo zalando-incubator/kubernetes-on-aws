@@ -285,7 +285,8 @@ def same_user_data(enc1, enc2):
 @click.option('--instance-type', type=str, default='current', help='Type of instance')
 @click.option('--master-nodes', type=int, default=-1, help='Number of master nodes')
 @click.option('--worker-nodes', type=int, default=-1, help='Number of worker nodes')
-def update(stack_name, version, force, instance_type, master_nodes, worker_nodes):
+@click.option('--postpone', is_flag=True, help='Postpone node update to a later point in time')
+def update(stack_name, version, force, instance_type, master_nodes, worker_nodes, postpone):
     '''
     Update Kubernetes cluster
     '''
@@ -317,9 +318,11 @@ def update(stack_name, version, force, instance_type, master_nodes, worker_nodes
                            'InstanceType={}'.format(instance_type)])
     # wait for CF update to complete..
     subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
-    perform_node_updates(stack_name, version, 'Master', user_data_master, variables)
-    wait_for_api_server(variables['api_server'])
-    perform_node_updates(stack_name, version, 'Worker', user_data_worker, variables)
+
+    if not postpone:
+        perform_node_updates(stack_name, version, 'Master', user_data_master, variables)
+        wait_for_api_server(variables['api_server'])
+        perform_node_updates(stack_name, version, 'Worker', user_data_worker, variables)
 
 
 def get_k8s_nodes(api_server: str, token: str) -> list:
