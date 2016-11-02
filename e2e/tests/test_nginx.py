@@ -1,8 +1,6 @@
+from clickclick import fatal_error
 
-import requests
-import time
-
-from clickclick import fatal_error, Action
+from .helpers import wait_for_deployment, create_deployment
 
 
 def test_nginx(run_id, url, token):
@@ -24,18 +22,9 @@ spec:
         ports:
         - containerPort: 80
 '''.format(run_id=run_id)
-    response = requests.post(url + '/apis/extensions/v1beta1/namespaces/e2e/deployments', data=manifest, headers={'Authorization': 'Bearer {}'.format(token), 'Content-Type': 'application/yaml'})
-    response.raise_for_status()
+    create_deployment(manifest, url, token)
 
-    with Action('Waiting for deployment of nginx..'):
-        available = False
-        for i in range(20):
-            response = requests.get(url + '/apis/extensions/v1beta1/namespaces/e2e/deployments/nginx-{}'.format(run_id), headers={'Authorization': 'Bearer {}'.format(token)})
-            data = response.json()
-            if data.get('status', {}).get('availableReplicas') == 1:
-                available = True
-                break
-            time.sleep(2)
+    available = wait_for_deployment('nginx-{}'.format(run_id), url, token)
 
     if not available:
         fatal_error('Deployment failed')
