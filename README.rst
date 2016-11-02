@@ -67,11 +67,28 @@ Instance Type
 worker instance type can be configured on create and update.
 
 on create:
+
 * provide optional flag `--instance-type` to specify instance type of worker nodes (defaults to `t2.micro`)
 
 on update:
+
 * provide optional flag `--instance-type` to change instance type of worker nodes (defaults to `current` which results in whatever type the workers currently have)
 * if cloud-config didn't change one has to use the `--force` flag to trigger the update
+
+Testing
+=======
+
+You can run end-to-end tests against a running cluster:
+
+.. code-block:: bash
+
+    $ cd e2e
+    $ sudo pip3 install -r requirements.txt
+    $ ./test-cluster.py <API_SERVER_URL> --token=<API_TOKEN>
+
+Where ``API_SERVER_URL`` is your cluster's API endpoint (e.g. https://kube-1.myteam.example.org) and ``API_TOKEN`` is a valid Bearer token.
+You can use ``./cluster.py get-api-token <STACK_NAME> <VERSION>`` to get the worker's shared secret from the AWS user data.
+
 
 .. _kube-aws: https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/aws
 .. _Senza Cloud Formation tool: https://github.com/zalando-stups/senza
