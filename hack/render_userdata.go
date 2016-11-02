@@ -67,8 +67,8 @@ func fileContent(path string) string {
 
 func main() {
 	userdata := map[string]string{
-		"cloud-config-controller": "userdata/cloud-config-controller",
-		"cloud-config-worker":     "userdata/cloud-config-worker",
+		"cloud-config-master.yaml": "userdata/cloud-config-master",
+		"cloud-config-worker.yaml": "userdata/cloud-config-worker",
 	}
 
 	for in, out := range userdata {
