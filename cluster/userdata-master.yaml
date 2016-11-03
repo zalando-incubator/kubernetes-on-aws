@@ -853,6 +853,59 @@ write_files:
               securityContext:
                 privileged: true
 
+
+  - path: /srv/kubernetes/manifests/daemonsets/cluster-autoscaler.yaml
+    content: |
+      apiVersion: extensions/v1beta1
+      kind: Deployment
+      metadata:
+        name: cluster-autoscaler
+        namespace: kube-system
+        labels:
+          app: cluster-autoscaler
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: cluster-autoscaler
+        template:
+          metadata:
+            labels:
+              app: cluster-autoscaler
+            annotations:
+              scheduler.alpha.kubernetes.io/critical-pod: ''
+          spec:
+            hostNetwork: true
+            containers:
+              - image: registry.opensource.zalan.do/teapot/aws-k8s-cluster-autoscaler:0.3
+                name: cluster-autoscaler
+                resources:
+                  limits:
+                    cpu: 100m
+                    memory: 300Mi
+                  requests:
+                    cpu: 100m
+                    memory: 300Mi
+                command:
+                  - ./cluster-autoscaler
+                  - --v=9
+                  - --cloud-provider=aws
+                  - --skip-nodes-with-local-storage=false
+                  - --leader-elect=false
+                env:
+                  - name: AWS_REGION
+                    value: eu-central-1
+                volumeMounts:
+                  - name: kubeconfig
+                    mountPath: /etc/kubernetes/worker-kubeconfig.yaml
+                    readOnly: true
+                imagePullPolicy: "Always"
+            volumes:
+              - name: kubeconfig
+                hostPath:
+                  path: "/etc/kubernetes/worker-kubeconfig.yaml"
+
+
   - path: /etc/kubernetes/nginx/nginx.conf
     content: |
       user nginx;
