@@ -10,8 +10,13 @@ import time
 
 from clickclick import Action, fatal_error, info
 
+from tests.helpers import create_resource
 
-EXPECTED_CONTAINERS = frozenset(['kube-scheduler', 'nginx', 'webhook', 'healthz', 'heapster-nanny', 'kubernetes-dashboard', 'kubedns', 'kube-apiserver', 'kube-controller-manager', 'mate', 'secretary', 'kubectl', 'kube-proxy', 'dnsmasq', 'gerry', 'heapster', 'prometheus-node-exporter'])
+
+EXPECTED_CONTAINERS = frozenset([
+    'kube-scheduler', 'nginx', 'webhook', 'healthz', 'heapster-nanny', 'kubernetes-dashboard',
+    'kubedns', 'kube-apiserver', 'kube-controller-manager', 'mate', 'secretary', 'kubectl', 'kube-proxy',
+    'dnsmasq', 'gerry', 'heapster', 'prometheus-node-exporter'])
 
 
 def get_containers(url, token):
@@ -60,10 +65,12 @@ kind: Namespace
 metadata:
     name: e2e
 '''
-    response = requests.post(url + '/api/v1/namespaces', data=manifest, headers={'Authorization': 'Bearer {}'.format(token), 'Content-Type': 'application/yaml'})
-    if response.status_code not in (200, 409):
-        print(response.json())
-        response.raise_for_status()
+    try:
+        create_resource(manifest, url + '/api/v1/namespaces', token)
+    except requests.exceptions.HTTPError as e:
+        # it's ok if the namespace is already there (409 Conflict)
+        if e.response.status_code != 409:
+            raise
 
     for entry in os.listdir('tests'):
         if entry.startswith('test_'):
