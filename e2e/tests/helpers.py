@@ -4,6 +4,8 @@ import time
 
 from clickclick import Action
 
+DEPLOYMENTS_PATH = '/apis/extensions/v1beta1/namespaces/e2e/deployments'
+
 
 def create_resource(manifest, url, token):
     response = requests.post(url, data=manifest,
@@ -13,7 +15,7 @@ def create_resource(manifest, url, token):
 
 
 def create_deployment(manifest, url, token):
-    response = create_resource(manifest, url + '/apis/extensions/v1beta1/namespaces/e2e/deployments', token)
+    response = create_resource(manifest, url + DEPLOYMENTS_PATH, token)
     return response
 
 
@@ -21,7 +23,7 @@ def wait_for_deployment(name, url, token):
     with Action('Waiting for deployment {}..'.format(name)):
         available = False
         for i in range(20):
-            response = requests.get(url + '/apis/extensions/v1beta1/namespaces/e2e/deployments/{}'.format(name), headers={'Authorization': 'Bearer {}'.format(token)})
+            response = requests.get(url + DEPLOYMENTS_PATH + '/{}'.format(name), headers={'Authorization': 'Bearer {}'.format(token)})
             data = response.json()
             if data.get('status', {}).get('availableReplicas') == 1:
                 available = True
