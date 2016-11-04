@@ -30,7 +30,7 @@ def get_user_data(fn, variables: dict) -> str:
     with open(fn) as fd:
         contents = fd.read()
     for key, value in variables.items():
-        contents = contents.replace(key.upper(), value)
+        contents = contents.replace('{{' + key.upper() + '}}', value)
     return encode_user_data(contents)
 
 
