@@ -17,20 +17,12 @@ SenzaInfo:
       - InstanceType:
           Description: "Type of instance"
 
-Mappings:
-  Images:
-    eu-central-1:
-        # latest image can be found on https://coreos.com/dist/aws/aws-stable.json
-        LatestCoreOSImage: ami-27877c48
-    eu-west-1:
-        # latest image can be found on https://coreos.com/dist/aws/aws-stable.json
-        LatestCoreOSImage: ami-7ddc960e
-
 SenzaComponents:
   - Configuration:
-      Type: Senza::SubnetAutoConfiguration
+      Type: Senza::CoreosAutoConfiguration
       PublicOnly: true # use all public subnets
       DefineParameters: false # skip CF template parameter definition
+      ReleaseChannel: stable # see https://coreos.com/os/docs/latest/switching-channels.html
   - MasterLoadBalancer:
       Type: Senza::WeightedDnsElasticLoadBalancer
       HTTPPort: 443
