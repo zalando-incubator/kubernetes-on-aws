@@ -232,7 +232,7 @@ def cli():
 @click.option('--instance-type', type=str, default='t2.micro', help='Type of instance')
 @click.option('--master-nodes', default=1, type=int, help='Number of master nodes')
 @click.option('--worker-nodes', default=1, type=int, help='Number of worker nodes')
-@click.option('--etcd_s3_bucket', default='teapot-etcd-backup', help='S3 Bucket to backup ETCD to')
+@click.option('--etcd-s3-bucket', default='teapot-etcd-backup', help='S3 Bucket to backup ETCD to')
 def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes):
     '''
     Create a new Kubernetes cluster (using current AWS credentials)
