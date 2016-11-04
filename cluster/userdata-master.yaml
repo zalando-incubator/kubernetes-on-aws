@@ -8,7 +8,7 @@ coreos:
     interface: $private_ipv4
     etcd_endpoints: http://$private_ipv4:2379
   etcd2:
-    discovery-srv: ETCD_DISCOVERY_DOMAIN
+    discovery-srv: {{ETCD_DISCOVERY_DOMAIN}}
     proxy: on
     advertise-client-urls: http://$private_ipv4:2379
     initial-advertise-peer-urls: http://$private_ipv4:2380
@@ -242,7 +242,7 @@ write_files:
           - --bind-address=0.0.0.0
           - --insecure-bind-address=0.0.0.0
           - --etcd-servers=http://localhost:2379
-          - --etcd-prefix=/registry-STACK_VERSION
+          - --etcd-prefix=/registry-{{STACK_VERSION}}
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/24
           - --secure-port=443
@@ -307,13 +307,13 @@ write_files:
               memory: 100Mi
           env:
             - name: SHARED_SECRET
-              value: WORKER_SHARED_SECRET
+              value: {{WORKER_SHARED_SECRET}}
             - name: WEBHOOK_ADDRESS
               value: :8081
             - name: USERS_API_URL
               value: https://users.auth.zalando.com
             - name: CLUSTER_NAME
-              value: WEBHOOK_CLUSTER_NAME
+              value: {{WEBHOOK_CLUSTER_NAME}}
             - name: TOKENINFO_URL
               value: https://info.services.auth.zalando.com/oauth2/tokeninfo
         - name: nginx
@@ -694,7 +694,7 @@ write_files:
             labels:
               app: secretary
             annotations:
-              iam.amazonaws.com/role: STACK_NAME-STACK_VERSION-app-secretary
+              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-secretary
           spec:
             containers:
             - name: gerry
@@ -702,7 +702,7 @@ write_files:
               args:
               - /meta/credentials
               - --application-id=kube-secretary
-              - --mint-bucket=s3://MINT_BUCKET
+              - --mint-bucket=s3://{{MINT_BUCKET}}
               volumeMounts:
               - mountPath: /meta/credentials
                 name: credentials
@@ -747,16 +747,16 @@ write_files:
             labels:
               app: mate
             annotations:
-              iam.amazonaws.com/role: STACK_NAME-STACK_VERSION-app-mate
+              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-mate
           spec:
             containers:
             - name: mate
               image: registry.opensource.zalan.do/teapot/mate:v0.0.5
               args:
               - --producer=kubernetes
-              - --kubernetes-domain=HOSTED_ZONE.
+              - --kubernetes-domain={{HOSTED_ZONE}}.
               - --consumer=aws
-              - --aws-hosted-zone=HOSTED_ZONE.
+              - --aws-hosted-zone={{HOSTED_ZONE}}.
               - --no-sync
             - name: kubectl
               image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
@@ -836,7 +836,7 @@ write_files:
             - image: jtblin/kube2iam:latest
               name: kube2iam
               args:
-              - "--base-role-arn=arn:aws:iam::ACCOUNT_ID:role/"
+              - "--base-role-arn=arn:aws:iam::{{ACCOUNT_ID}}:role/"
               - --iptables=true
               - --host-ip=$(HOST_IP)
               - --verbose
@@ -875,7 +875,7 @@ write_files:
               app: cluster-autoscaler
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
-              iam.amazonaws.com/role: STACK_NAME-STACK_VERSION-app-autoscaler
+              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-autoscaler
           spec:
             containers:
               - image: registry.opensource.zalan.do/teapot/aws-k8s-cluster-autoscaler:0.3.2
@@ -894,8 +894,8 @@ write_files:
                   - --skip-nodes-with-local-storage=false
                   - --leader-elect=false
                 env:
-                  - name: {{AWS_REGION}}
-                    value: eu-central-1
+                  - name: AWS_REGION
+                    value: {{REGION}}
                 imagePullPolicy: "Always"
 
   - path: /etc/kubernetes/nginx/nginx.conf
