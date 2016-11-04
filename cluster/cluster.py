@@ -111,6 +111,9 @@ def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=No
 
     mint_bucket = get_mint_bucket_name()
 
+    my_session = boto3.session.Session()
+    my_region = my_session.region_name
+
     variables = {
         'stack_name': stack_name,
         'stack_version': version,
@@ -120,7 +123,8 @@ def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=No
         'hosted_zone': hosted_zone,
         'webhook_cluster_name': cluster_name,
         'mint_bucket': mint_bucket,
-        'account_id': get_account_id()
+        'account_id': get_account_id(),
+        'region': my_region
     }
     return variables
 
@@ -231,7 +235,8 @@ def cli():
 @click.option('--instance-type', type=str, default='t2.micro', help='Type of instance')
 @click.option('--master-nodes', default=1, type=int, help='Number of master nodes')
 @click.option('--worker-nodes', default=1, type=int, help='Number of worker nodes')
-def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes):
+@click.option('--max-worker-nodes', default=10, type=int, help='Maximum number of nodes in the worker ASG')
+def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes, max_worker_nodes):
     '''
     Create a new Kubernetes cluster (using current AWS credentials)
     '''
@@ -250,7 +255,7 @@ def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nod
     if not dry_run:
         subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                                'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*',
-                               'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes),
+                               'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes), 'MaximumWorkerNodes={}'.format(max_worker_nodes),
                                'InstanceType={}'.format(instance_type)])
         # wait up to 15m for stack to be created
         subprocess.check_call(['senza', 'wait', '--timeout=900', stack_name, version])

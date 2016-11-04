@@ -863,6 +863,7 @@ write_files:
         namespace: kube-system
         labels:
           app: cluster-autoscaler
+          version: v1
       spec:
         replicas: 1
         selector:
@@ -874,8 +875,8 @@ write_files:
               app: cluster-autoscaler
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
+              iam.amazonaws.com/role: STACK_NAME-STACK_VERSION-app-autoscaler
           spec:
-            hostNetwork: true
             containers:
               - image: registry.opensource.zalan.do/teapot/aws-k8s-cluster-autoscaler:0.3.2
                 name: cluster-autoscaler
@@ -893,18 +894,9 @@ write_files:
                   - --skip-nodes-with-local-storage=false
                   - --leader-elect=false
                 env:
-                  - name: AWS_REGION
+                  - name: {{AWS_REGION}}
                     value: eu-central-1
-                volumeMounts:
-                  - name: kubeconfig
-                    mountPath: /etc/kubernetes/worker-kubeconfig.yaml
-                    readOnly: true
                 imagePullPolicy: "Always"
-            volumes:
-              - name: kubeconfig
-                hostPath:
-                  path: "/etc/kubernetes/worker-kubeconfig.yaml"
-
 
   - path: /etc/kubernetes/nginx/nginx.conf
     content: |
