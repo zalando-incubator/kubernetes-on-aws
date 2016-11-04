@@ -81,9 +81,8 @@ def get_mint_bucket_name():
     s3 = boto3.resource('s3')
     parts = account_alias.split('-')
     prefix = parts[0]
-    my_session = boto3.session.Session()
-    my_region = my_session.region_name
-    bucket_name = '{}-stups-mint-{}-{}'.format(prefix, account_id, my_region)
+    region = get_region()
+    bucket_name = '{}-stups-mint-{}-{}'.format(prefix, account_id, region)
     bucket = s3.Bucket(bucket_name)
     try:
         bucket.load()
@@ -93,6 +92,19 @@ def get_mint_bucket_name():
     for bucket in s3.buckets.all():
         if bucket.name.startswith('{}-stups-mint-{}-'.format(prefix, account_id)):
             return bucket.name
+    return bucket_name
+
+
+def get_region():
+    my_session = boto3.session.Session()
+    return my_session.region_name
+
+
+def get_etcd_bucket_name():
+    account_id = get_account_id()
+    account_alias = get_account_alias()
+    region = get_region()
+    bucket_name = '{}-etcd-{}-{}'.format(account_alias, account_id, region)
     return bucket_name
 
 
@@ -110,6 +122,7 @@ def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=No
     # TODO: encrypt fixed token with KMS
 
     mint_bucket = get_mint_bucket_name()
+    etcd_bucket = get_etcd_bucket_name()
 
     variables = {
         'stack_name': stack_name,
@@ -118,10 +131,11 @@ def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=No
         'api_server': api_server,
         'worker_shared_secret': worker_shared_secret,
         'hosted_zone': hosted_zone,
-        'etcd_s3_bucket': etcd_s3_bucket,
         'webhook_cluster_name': cluster_name,
         'mint_bucket': mint_bucket,
-        'account_id': get_account_id()
+        'etcd_bucket': etcd_bucket,
+        'account_id': get_account_id(),
+        'region': get_region()
     }
     return variables
 
@@ -191,7 +205,17 @@ def has_etcd_cluster():
     return True
 
 
-def deploy_etcd_cluster(hosted_zone, etcd_s3_bucket):
+def deploy_etcd_cluster(hosted_zone, etcd_bucket, region):
+    s3 = boto3.resource('s3', region)
+    with Action('Checking S3 bucket {}..'.format(etcd_bucket)) as act:
+        bucket = s3.Bucket(etcd_bucket)
+        try:
+            bucket.creation_date
+        except:
+            act.warning('creating bucket..')
+            bucket.create(CreateBucketConfiguration={'LocationConstraint': region})
+            bucket.wait_until_exists()
+
     subprocess.check_call(['senza', 'create', 'etcd-cluster.yaml', 'etcd', 'HostedZone={}'.format(hosted_zone), 'EtcdS3Backup={}'.format()])
     # wait up to 15m for stack to be created
     subprocess.check_call(['senza', 'wait', '--timeout=900', 'etcd-cluster', 'etcd'])
@@ -232,7 +256,6 @@ def cli():
 @click.option('--instance-type', type=str, default='t2.micro', help='Type of instance')
 @click.option('--master-nodes', default=1, type=int, help='Number of master nodes')
 @click.option('--worker-nodes', default=1, type=int, help='Number of worker nodes')
-@click.option('--etcd-s3-bucket', default='teapot-etcd-backup', help='S3 Bucket to backup ETCD to')
 def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes):
     '''
     Create a new Kubernetes cluster (using current AWS credentials)
@@ -245,7 +268,7 @@ def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nod
         print(yaml.safe_dump(variables))
     # TODO: register mint bucket with "kube-secretary" app
     if not has_etcd_cluster() and not dry_run:
-        deploy_etcd_cluster(variables['hosted_zone'], etcd_s3_bucket)
+        deploy_etcd_cluster(variables['hosted_zone'], variables['etcd_bucket'], variables['region'])
     tag_subnets()
     userdata_master = get_user_data('userdata-master.yaml', variables)
     userdata_worker = get_user_data('userdata-worker.yaml', variables)
