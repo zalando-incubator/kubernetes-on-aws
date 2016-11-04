@@ -216,7 +216,7 @@ def deploy_etcd_cluster(hosted_zone, etcd_bucket, region):
             bucket.create(CreateBucketConfiguration={'LocationConstraint': region})
             bucket.wait_until_exists()
 
-    subprocess.check_call(['senza', 'create', 'etcd-cluster.yaml', 'etcd', 'HostedZone={}'.format(hosted_zone), 'EtcdS3Backup={}'.format()])
+    subprocess.check_call(['senza', 'create', 'etcd-cluster.yaml', 'etcd', 'HostedZone={}'.format(hosted_zone), 'EtcdS3Backup={}'.format(etcd_bucket)])
     # wait up to 15m for stack to be created
     subprocess.check_call(['senza', 'wait', '--timeout=900', 'etcd-cluster', 'etcd'])
 
