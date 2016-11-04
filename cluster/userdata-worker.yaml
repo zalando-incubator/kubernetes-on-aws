@@ -8,7 +8,7 @@ coreos:
     interface: $private_ipv4
     etcd_endpoints: http://$private_ipv4:2379
   etcd2:
-    discovery-srv: ETCD_DISCOVERY_DOMAIN
+    discovery-srv: {{ETCD_DISCOVERY_DOMAIN}}
     proxy: on
     advertise-client-urls: http://$private_ipv4:2379
     initial-advertise-peer-urls: http://$private_ipv4:2380
@@ -176,11 +176,11 @@ write_files:
         clusters:
         - name: local
           cluster:
-            server: API_SERVER
+            server: {{API_SERVER}}
         users:
         - name: kubelet
           user:
-            token: WORKER_SHARED_SECRET
+            token: {{WORKER_SHARED_SECRET}}
         contexts:
         - context:
             cluster: local
