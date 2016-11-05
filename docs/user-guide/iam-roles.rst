@@ -64,3 +64,15 @@ role ``myapp-iam-role``:
           containers:
           - name: myapp
             image: myapp:v1.0
+
+To test that the pod gets the correct role you can exec into the container and
+query the metadata endpoint.
+
+.. code-block:: bash
+
+    $ kubectl exec -it myapp-podid -- sh
+    $ curl -s 169.254.169.254/latest/meta-data/iam/security-credentials/
+    myapp-iam-role
+
+The response of the request should be the name of the role available from
+within the pod.
