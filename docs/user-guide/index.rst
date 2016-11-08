@@ -10,3 +10,4 @@ How to the Kubernetes cluster.
    :maxdepth: 1
 
    iam-roles
+   example-credentials
