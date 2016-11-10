@@ -34,7 +34,7 @@ access role for the S3 bucket is called ``myapp-iam-role`` (See also
                   mountPath: /meta/credentials
                   readOnly: true
             - name: gerry
-              image: registry.opensource.zalan.do/teapot/gerry:v0.0.6
+              image: registry.opensource.zalan.do/teapot/gerry:v0.0.5
               args:
                 - /meta/credentials
                 - --application-id=myapp
@@ -63,7 +63,7 @@ The next important part is the ``gerry`` *sidecar*.
 .. code-block:: yaml
 
     - name: gerry
-      image: registry.opensource.zalan.do/teapot/gerry:v0.0.6
+      image: registry.opensource.zalan.do/teapot/gerry:v0.0.5
       args:
         - /meta/credentials
         - --application-id=myapp
