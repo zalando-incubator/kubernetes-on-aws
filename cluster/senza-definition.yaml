@@ -46,6 +46,11 @@ SenzaComponents:
       Type: Senza::AutoScalingGroup
       InstanceType: t2.micro
       Image: LatestCoreOSImage
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 20
+            VolumeType: standard
       SecurityGroups:
          - {Ref: MasterSecurityGroup}
       IamRoles:
@@ -66,6 +71,11 @@ SenzaComponents:
       Type: Senza::AutoScalingGroup
       InstanceType: "{{ Arguments.InstanceType }}"
       Image: LatestCoreOSImage
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 50
+            VolumeType: standard
       SecurityGroups:
          - {Ref: WorkerSecurityGroup}
       IamRoles:
