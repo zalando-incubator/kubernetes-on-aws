@@ -9,14 +9,17 @@ Expose your app
 
 Let's deploy a simple web server to test that our TLS termination works.
 
-Submit the following ``yaml`` files to your cluster. Note that this guide uses a
-top-down approach and starts with deploying the service first. You can, however,
-submit the files in any order you like.
+Submit the following ``yaml`` files to your cluster.
+
+*Note that this guide uses a top-down approach and starts with deploying the
+service first. This allows Kubernetes to better distribute pods belonging to
+the same service across the cluster to ensure high availability. You can, however,
+submit the files in any order you like and it will work. It's all declaritive.*
 
 Create a service
 ----------------
 
-Then create a ``Service`` of type ``LoadBalancer`` so that your pods become
+Create a ``Service`` of type ``LoadBalancer`` so that your pods become
 accessible from the internet through an ``ELB``. For TLS termination to work
 you need to annotate the service with the ARN of the certificate you want to serve.
 
