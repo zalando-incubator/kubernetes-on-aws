@@ -8,44 +8,13 @@ Expose your app
 ===============
 
 Let's deploy a simple web server to test that our TLS termination works.
-Submit the following ``yaml`` files to your cluster.
 
-Create the deployment
----------------------
+Submit the following ``yaml`` files to your cluster. Note that this guide uses a
+top-down approach and starts with deploying the service first. You can, however,
+submit the files in any order you like.
 
-.. code-block:: yaml
-
-    apiVersion: extensions/v1beta1
-    kind: Deployment
-    metadata:
-      name: nginx
-    spec:
-      replicas: 2
-      template:
-        metadata:
-          labels:
-            app: nginx
-        spec:
-          containers:
-          - name: nginx
-            image: nginx
-            ports:
-            - containerPort: 80
-
-This creates a deployment called ``nginx`` that will ensure to run two copies
-of the nginx image from dockerhub listening on port 80.
-
-Make sure your pods are running.
-
-.. code-block:: bash
-
-    $ kubectl get pods
-    NAME                     READY     STATUS    RESTARTS   AGE
-    nginx-1447934386-iblb3   1/1       Running   0          7m
-    nginx-1447934386-jj559   1/1       Running   0          7m
-
-Create the service
-------------------
+Create a service
+----------------
 
 Then create a ``Service`` of type ``LoadBalancer`` so that your pods become
 accessible from the internet through an ``ELB``. For TLS termination to work
@@ -69,19 +38,17 @@ you need to annotate the service with the ARN of the certificate you want to ser
         app: nginx
 
 This creates a logical service called ``nginx`` that forwards all traffic to any pods
-that match the label selector ``app=nginx``, which exactly maps to the two nginx replicas
-we created in the last step. The service (logically) listens on port 443 and forwards to
-port 80 on each of the upstream pods, which is where the nginx processes listen on.
+that match the label selector ``app=nginx``, which we haven't created yet. The service (logically) listens on port 443 and forwards to
+port 80 on each of the upstream pods, which is where the nginx processes will listen on.
 
 We also define the protocol that our upstreams use. Often your upstreams will just speak
-plain HTTP so the second annotation's value is actually its default value and can be left out.
+plain HTTP so the second annotation's value is actually the default value and can be omitted.
 
 **Make sure to define your service to listen on port 443 as this will be used as the listening
 port for your ELB.**
 
 Wait for a couple of minutes for AWS to provision an ``ELB`` for you and for DNS to propate.
-Then test your application using the ``ELB`` endpoint. Check the list of services to find out
-the endpoint of the ``ELB`` that was created for you.
+Check the list of services to find out the endpoint of the ``ELB`` that was created for you.
 
 .. code-block:: bash
 
@@ -89,7 +56,46 @@ the endpoint of the ``ELB`` that was created for you.
     NAME      CLUSTER-IP   EXTERNAL-IP                                     PORT(S)   AGE       SELECTOR
     nginx     10.3.0.245   some-long-hash.eu-central-1.elb.amazonaws.com   443/TCP   6m        app=nginx
 
-Curl it. You'll get a certificate warning since the hostname doesn't match the served certificate.
+Create the deployment
+---------------------
+
+Now let's deploy some pods that actually implement our service.
+
+.. code-block:: yaml
+
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    metadata:
+      name: nginx
+    spec:
+      replicas: 2
+      template:
+        metadata:
+          labels:
+            app: nginx
+        spec:
+          containers:
+          - name: nginx
+            image: nginx
+            ports:
+            - containerPort: 80
+
+This creates a deployment called ``nginx`` that will ensure to run two copies
+of the nginx image from dockerhub listening on port 80. They match exactly the
+labels that our service is looking for so they be dynamically added to the
+service's pool of upstreams.
+
+Make sure your pods are running.
+
+.. code-block:: bash
+
+    $ kubectl get pods
+    NAME                     READY     STATUS    RESTARTS   AGE
+    nginx-1447934386-iblb3   1/1       Running   0          7m
+    nginx-1447934386-jj559   1/1       Running   0          7m
+
+Now ``curl`` the service endpoint. You'll get a certificate warning since the hostname
+doesn't match the served certificate.
 
 .. code-block:: bash
 
@@ -123,7 +129,7 @@ For the service above this results in the following DNS name:
     nginx-default.hackweek.zalan.do
 
 Verify that this works with ``curl``. If you've chosen the right certificate ARN
-you won't get any certificate warning anymore.
+you won't get any certificate warning.
 
 .. code-block:: bash
 
@@ -155,6 +161,8 @@ adding an additional annotation to your service containing the desired dns name.
 
 Note that although you specify the full dns name here you must pick a name that
 is inside the zone of the cluster, e.g. in this case ``*.hackweek.zalan.do``.
+Also keep in mind that when doing this you can clash with other user's service names.
+
 
 Make sure it works:
 
