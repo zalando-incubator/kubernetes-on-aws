@@ -41,6 +41,8 @@ SenzaInfo:
   - InstanceCount:
       Description: Instance number in ASG
       Default: 5
+  - EtcdS3Backup:
+      Description: AWS S3 Bucket to backup ETCD to
   StackName: etcd-cluster
 Resources:
   EtcdSecurityGroup:
@@ -111,3 +113,12 @@ Resources:
             - route53:ListResourceRecordSets
             - route53:GetChange
             Resource: "*"
+      - PolicyName: AmazonS3EtcdBackupWrite
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:PutObject
+            Resource: [ "arn:aws:s3:::{{Arguments.EtcdS3Backup}}/*" ]
+
