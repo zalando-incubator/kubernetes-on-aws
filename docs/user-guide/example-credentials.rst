@@ -3,10 +3,29 @@ Example application with IAM credentials
 ========================================
 
 This is a full example manifest of an application (``myapp``) which uses IAM
-credentials distributed via a mint-bucket
-(``zalando-stups-mint-12345678910-eu-central-1``). In this example the AWS
-access role for the S3 bucket is called ``myapp-iam-role`` (See also
-:doc:`iam-roles` for how to correctly setup such a role in AWS):
+credentials distributed via a mint-bucket (``zalando-stups-mint-12345678910-eu-central-1``).
+
+Here is an example of a policy that grants access to the specific folder in the Mint's S3 bucket:
+
+.. code-block:: json
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Resource": [
+            "arn:aws:s3:::zalando-stups-mint-12345678910-eu-central-1/myapp/*"
+          ],
+          "Effect": "Allow",
+          "Action": [
+            "s3:GetObject"
+          ],
+          "Sid": "AllowMintRead"
+        }
+      ]
+    }
+
+In this example the AWS access role for the S3 bucket is called ``myapp-iam-role``
+(See also :doc:`iam-roles` for how to correctly setup such a role in AWS):
 
 .. code-block:: yaml
 
@@ -57,25 +76,6 @@ The first important part of the manifest is the ``annotations`` section:
 
 Here we specify the role needed in order for the pod to get access to the S3
 bucket with the credentials.
-
-Here is an example of a policy that grants access to the specific folder in the Mint's S3 bucket:
-
-.. code-block:: json
-    {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Resource": [
-            "arn:aws:s3:::zalando-stups-mint-1234567890-eu-west-1/myapp/*"
-          ],
-          "Effect": "Allow",
-          "Action": [
-            "s3:GetObject"
-          ],
-          "Sid": "AllowMintRead"
-        }
-      ]
-    }
 
 The next important part is the ``gerry`` *sidecar*.
 
