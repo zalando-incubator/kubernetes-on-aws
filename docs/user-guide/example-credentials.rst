@@ -8,6 +8,7 @@ credentials distributed via a mint-bucket (``zalando-stups-mint-12345678910-eu-c
 Here is an example of a policy that grants access to the specific folder in the Mint's S3 bucket:
 
 .. code-block:: json
+
     {
       "Version": "2012-10-17",
       "Statement": [
