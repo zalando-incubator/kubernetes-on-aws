@@ -3,64 +3,64 @@ Container resource limits
 =========================
 
 *Note: preliminary summary from skimming docs and educational guessing.*
-*no evaluation done. could contain errors.*
+*No evaluation done. It could contain errors.*
 
 resource definitions
 ====================
 
-there are two supported resource types: ``cpu`` and ``mem``. in future versions of k8s
+There are two supported resource types: ``cpu`` and ``mem``. In future versions of k8s
 one will be able to add custom resource types and the current implementation might be
 based on that.
 
-for each resource type there are two kinds of definitions: ``requests`` and ``limits``.
-requests and limits are defined per container. since the unit of scheduling is a pod
+For each resource type there are two kinds of definitions: ``requests`` and ``limits``.
+Requests and limits are defined per container. Since the unit of scheduling is a pod
 one needs to sum them up to get the requests and limits of a pod.
 
-the resulting four combinations are explained in more detail below.
+The resulting four combinations are explained in more detail below.
 
-resource requests
+Resource requests
 -----------------
 
-in general, requests are used by the scheduler to find a node that has free resources
-to take the pod. a node is full when the sum of all requests equals the registered
-capacity of that node in any resource type. so, if the requests of a pod are still
+In general, requests are used by the scheduler to find a node that has free resources
+to take the pod. A node is full when the sum of all requests equals the registered
+capacity of that node in any resource type. So, if the requests of a pod are still
 unclaimed on a node, the scheduler can schedule a pod there.
 
-note, that this is the only metric the scheduler uses (in that context).it doesn't take
+Note, that this is the only metric the scheduler uses (in that context). It doesn't take
 the actual usage of the pods into account (which can be lower or higher than whatever
 is defined in requests).
 
-**memory requests**
+**Memory requests**
 
-used for finding nodes with enough memory and making better scheduling decisions.
+Used for finding nodes with enough memory and making better scheduling decisions.
 
-**cpu requests**
+**CPU requests**
 
-maps to the docker flag --cpu-shares, which defines a relative weight of that container
-for cpu time. the relative share is executed per core, which can lead to unexpected outcomes
-but probably nothing to worry about in our use cases. a container will never be killed
+Maps to the docker flag ``--cpu-shares``, which defines a relative weight of that container
+for cpu time. The relative share is executed per core, which can lead to unexpected outcomes
+but probably nothing to worry about in our use cases. A container will never be killed
 because of this metric.
 
-resource limits
+Resource limits
 ---------------
 
-limits define the upper bound of resources a container can use. limits must always be greater
-equal than requests. the behaviour differs between cpu and memory.
+Limits define the upper bound of resources a container can use. Limits must always be greater
+equal than requests. The behaviour differs between cpu and memory.
 
-**memory limits**
+**Memory limits**
 
-maps to the docker flag --memory, which means processes in the container get killed by the
-kernel if they hit that memory usage. given you run one process per container this will kill
+Maps to the docker flag ``--memory``, which means processes in the container get killed by the
+kernel if they hit that memory usage. Given you run one process per container this will kill
 the whole container and kubernetes will try to restart it.
 
-**cpu limits**
+**CPU limits**
 
-maps to the docker flag --cpu-quota, which limits CPU time of that container's processes.
-seems like you can define that a container can only max utilize a core by e.g. 50%.
+Maps to the docker flag ``--cpu-quota``, which limits CPU time of that container's processes.
+Seems like you can define that a container can only max utilize a core by e.g. 50%.
 
-but, let's assume you have 3 of them on a single-core node this can lead to over-utilizing it.
+But, let's assume you have 3 of them on a single-core node this can lead to over-utilizing it.
 
-conclusion
+Conclusion
 ==========
 
 * ``requests`` are for making scheduling decisions
