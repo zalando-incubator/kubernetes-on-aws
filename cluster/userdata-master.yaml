@@ -691,6 +691,7 @@ write_files:
           ports:
           - port: 80
             targetPort: 9090
+
   - path: /srv/kubernetes/manifests/deployments/secretary.yaml
     content: |
       apiVersion: extensions/v1beta1
@@ -705,6 +706,8 @@ write_files:
             labels:
               app: secretary
             annotations:
+              scheduler.alpha.kubernetes.io/critical-pod: ''
+              scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
               iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-secretary
           spec:
             containers:
@@ -758,6 +761,8 @@ write_files:
             labels:
               app: mate
             annotations:
+              scheduler.alpha.kubernetes.io/critical-pod: ''
+              scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
               iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-mate
           spec:
             containers:
@@ -794,6 +799,9 @@ write_files:
             labels:
               app: prometheus
               component: node-exporter
+            annotations:
+              scheduler.alpha.kubernetes.io/critical-pod: ''
+              scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
           spec:
             containers:
             - image: prom/node-exporter:0.12.0
@@ -841,6 +849,9 @@ write_files:
           metadata:
             labels:
               name: kube2iam
+            annotations:
+              scheduler.alpha.kubernetes.io/critical-pod: ''
+              scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
           spec:
             hostNetwork: true
             containers:
@@ -883,6 +894,7 @@ write_files:
               app: cluster-autoscaler
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
+              scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
               iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-autoscaler
           spec:
             containers:
