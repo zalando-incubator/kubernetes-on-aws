@@ -906,6 +906,78 @@ write_files:
                     value: {{REGION}}
                 imagePullPolicy: "Always"
 
+  - path: /srv/kubernetes/manifests/daemonsets/appdynamics.yaml
+    content: |
+      apiVersion: extensions/v1beta1
+      kind: DaemonSet
+      metadata:
+        name: appdynamics
+        namespace: kube-system
+        labels:
+          app: appdynamics
+          component: logging
+      spec:
+        template:
+          metadata:
+            name: appdynamics
+            labels:
+              app: appdynamics
+              component: logging
+            annotations:
+              scheduler.alpha.kubernetes.io/critical-pod: ''
+              scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+          spec:
+            containers:
+            - name: log-watcher
+              image: registry.opensource.zalan.do/eagleeye/k8s-log-watcher:0.5-b2
+              volumeMounts:
+              - name: containerlogs
+                mountPath: /mnt/containers
+                readOnly: true
+              - name: jobfiles
+                mountPath: /mnt/jobs
+              env:
+              - name: CLUSTER_NODE_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: spec.nodeName
+              - name: WATCHER_KUBE_URL
+                value: http://127.0.0.1:8001
+              - name: WATCHER_DEBUG
+                value: "1"
+            - name: appdynamics-agent
+              image: pierone.stups.zalan.do/monitoring-appdynamics/appdynamics-machine-agent:0.2-b2
+              volumeMounts:
+              - name: containerlogs
+                mountPath: /mnt/containers
+                readOnly: true
+              - name: jobfiles
+                mountPath: /appd/agent/monitors/analytics-agent/conf/job
+              env:
+              - name: CLUSTER_NODE_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: spec.nodeName
+              - name: APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY
+                value: {{APPDYNAMICS_ACCESS_KEY}}
+              - name: APPDYNAMICS_AGENT_ACCOUNT_NAME
+                value: testing
+              - name: APPDYNAMICS_ACCOUNT_GLOBALNAME
+                value: testing_4630e5e5-7aed-4961-94ef-5af03cf0b83b
+            - name: kubectl
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
+              command:
+              - /hyperkube
+              args:
+              - kubectl
+              - proxy
+            volumes:
+            - name: containerlogs
+              hostPath:
+                path: /var/lib/docker/containers
+            - name: jobfiles
+              emptyDir: {}
+
   - path: /etc/kubernetes/nginx/nginx.conf
     content: |
       user nginx;
@@ -968,4 +1040,3 @@ write_files:
     content: |
         TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
         TOOLBOX_DOCKER_TAG=v0.0.2
-
