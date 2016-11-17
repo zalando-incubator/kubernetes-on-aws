@@ -80,5 +80,6 @@ metadata:
             info('Running {}..'.format(module_name))
             func(run_id, url, token)
 
+
 if __name__ == '__main__':
     main()
