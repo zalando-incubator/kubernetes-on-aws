@@ -12,3 +12,4 @@ How to the Kubernetes cluster.
    iam-roles
    example-credentials
    tls-termination
+   resource-limits
