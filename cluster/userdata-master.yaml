@@ -293,7 +293,7 @@ write_files:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
             readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:5dcab09
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:ba4980d
           name: webhook
           ports:
           - containerPort: 8081
@@ -327,6 +327,8 @@ write_files:
               value: {{WEBHOOK_CLUSTER_NAME}}
             - name: TOKENINFO_URL
               value: https://info.services.auth.zalando.com/oauth2/tokeninfo
+            - name: ROBOT_USERS
+              value: stups_deployment-controller-ui
         - name: nginx
           image: registry.opensource.zalan.do/teapot/nginx:1.11.5
           volumeMounts:
