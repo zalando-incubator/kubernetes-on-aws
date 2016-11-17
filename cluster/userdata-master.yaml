@@ -813,28 +813,6 @@ write_files:
             hostNetwork: true
             hostPID: true
 
-  - path: /srv/kubernetes/manifests/services/prometheus-node-exporter.yaml
-    content: |
-      apiVersion: v1
-      kind: Service
-      metadata:
-        annotations:
-          prometheus.io/scrape: 'true'
-        name: prometheus-node-exporter
-        labels:
-          app: prometheus
-          component: node-exporter
-      spec:
-        clusterIP: None
-        ports:
-          - name: prometheus-node-exporter
-            port: 9100
-            protocol: TCP
-        selector:
-          app: prometheus
-          component: node-exporter
-        type: ClusterIP
-
   - path: /srv/kubernetes/manifests/daemonsets/kube2iam.yaml
     content: |
       apiVersion: extensions/v1beta1
