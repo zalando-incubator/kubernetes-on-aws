@@ -2,10 +2,12 @@
 Container resource limits
 =========================
 
-*Note: preliminary summary from skimming docs and educational guessing.*
-*No evaluation done. It could contain errors.*
+.. Note::
 
-resource definitions
+   This is a preliminary summary from skimming docs and educational guessing.
+   No evaluation done. It could contain errors.
+
+Resource definitions
 ====================
 
 There are two supported resource types: ``cpu`` and ``mem``. In future versions of k8s
@@ -45,7 +47,7 @@ Resource limits
 ---------------
 
 Limits define the upper bound of resources a container can use. Limits must always be greater
-equal than requests. The behaviour differs between cpu and memory.
+or equal to requests. The behaviour differs between cpu and memory.
 
 **Memory limits**
 
