@@ -39,12 +39,14 @@ SenzaComponents:
           InstanceProtocol: SSL
           InstancePort: 443
           LoadBalancerPort: 443
+      ConnectionSettings:
+        IdleTimeout: 300
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
   - MasterAutoScaling:
       Type: Senza::AutoScalingGroup
-      InstanceType: t2.micro
+      InstanceType: m3.medium
       Image: LatestCoreOSImage
       BlockDeviceMappings:
         - DeviceName: /dev/xvda

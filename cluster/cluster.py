@@ -108,7 +108,7 @@ def get_etcd_bucket_name():
     return bucket_name
 
 
-def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=None):
+def get_cluster_variables(stack_name: str, version: str, appdynamics_access_key: str, worker_shared_secret=None):
     route53 = boto3.client('route53')
     all_hosted_zones = route53.list_hosted_zones()['HostedZones']
     hosted_zone = all_hosted_zones[0]['Name'].rstrip('.')
@@ -135,7 +135,8 @@ def get_cluster_variables(stack_name: str, version: str, worker_shared_secret=No
         'mint_bucket': mint_bucket,
         'etcd_bucket': etcd_bucket,
         'account_id': get_account_id(),
-        'region': get_region()
+        'region': get_region(),
+        'appdynamics_access_key': appdynamics_access_key
     }
     return variables
 
@@ -257,12 +258,13 @@ def cli():
 @click.option('--master-nodes', default=1, type=int, help='Number of master nodes')
 @click.option('--worker-nodes', default=1, type=int, help='Number of worker nodes')
 @click.option('--max-worker-nodes', default=10, type=int, help='Maximum number of nodes in the worker ASG')
-def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes, max_worker_nodes):
+@click.option('--appdynamics-access-key', type=str, required=True, help='Secret for the AppDynamics agent')
+def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes, max_worker_nodes, appdynamics_access_key):
     '''
     Create a new Kubernetes cluster (using current AWS credentials)
     '''
 
-    variables = get_cluster_variables(stack_name, version)
+    variables = get_cluster_variables(stack_name, version, appdynamics_access_key)
     info('Cluster name is:             {}'.format(variables['webhook_cluster_name']))
     info('API server endpoint will be: {}'.format(variables['api_server']))
     if dry_run:
@@ -307,20 +309,24 @@ def same_user_data(enc1, enc2):
 @cli.command()
 @click.argument('stack_name')
 @click.argument('version')
+@click.option('--dry-run', is_flag=True, help='No-op mode: show what would be created')
 @click.option('--force', is_flag=True)
 @click.option('--instance-type', type=str, default='current', help='Type of instance')
 @click.option('--master-nodes', type=int, default=-1, help='Number of master nodes')
 @click.option('--worker-nodes', type=int, default=-1, help='Number of worker nodes')
 @click.option('--postpone', is_flag=True, help='Postpone node update to a later point in time')
 @click.option('--max-worker-nodes', default=10, type=int, help='Maximum number of nodes in the worker ASG')
-def update(stack_name, version, force, instance_type, master_nodes, worker_nodes, postpone, max_worker_nodes):
+@click.option('--appdynamics-access-key', type=str, required=True, help='Secret for the AppDynamics agent')
+def update(stack_name, version,  dry_run, force, instance_type, master_nodes, worker_nodes, postpone, max_worker_nodes, appdynamics_access_key):
     '''
     Update Kubernetes cluster
     '''
     existing_user_data_master = get_launch_configuration_user_data(stack_name, version, 'Master')
     existing_user_data_worker = get_launch_configuration_user_data(stack_name, version, 'Worker')
     worker_shared_secret = get_worker_shared_secret(existing_user_data_worker)
-    variables = get_cluster_variables(stack_name, version, worker_shared_secret)
+    variables = get_cluster_variables(stack_name, version, appdynamics_access_key, worker_shared_secret)
+    if dry_run:
+        print(yaml.safe_dump(variables))
     user_data_master = get_user_data('userdata-master.yaml', variables)
     user_data_worker = get_user_data('userdata-worker.yaml', variables)
 
@@ -337,19 +343,20 @@ def update(stack_name, version, force, instance_type, master_nodes, worker_nodes
     if worker_nodes == -1:
         worker_nodes = get_current_worker_nodes(stack_name, version)
 
-    # this will only update the Launch Configuration
-    subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
-                           'UserDataMaster={}'.format(user_data_master),
-                           'UserDataWorker={}'.format(user_data_worker), 'KmsKey=*',
-                           'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes), 'MaximumWorkerNodes={}'.format(max_worker_nodes),
-                           'InstanceType={}'.format(instance_type)])
-    # wait for CF update to complete..
-    subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
+    if not dry_run:
+        # this will only update the Launch Configuration
+        subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
+                               'UserDataMaster={}'.format(user_data_master),
+                               'UserDataWorker={}'.format(user_data_worker), 'KmsKey=*',
+                               'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes), 'MaximumWorkerNodes={}'.format(max_worker_nodes),
+                               'InstanceType={}'.format(instance_type)])
+        # wait for CF update to complete..
+        subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
 
-    if not postpone:
-        perform_node_updates(stack_name, version, 'Master', user_data_master, variables)
-        wait_for_api_server(variables['api_server'])
-        perform_node_updates(stack_name, version, 'Worker', user_data_worker, variables)
+        if not postpone:
+            perform_node_updates(stack_name, version, 'Master', user_data_master, variables)
+            wait_for_api_server(variables['api_server'])
+            perform_node_updates(stack_name, version, 'Worker', user_data_worker, variables)
 
 
 def get_k8s_nodes(api_server: str, token: str) -> list:
