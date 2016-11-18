@@ -41,7 +41,7 @@ def main(url, token):
     all_containers_ready = False
 
     with Action('Waiting for all containers to be ready..') as act:
-        for i in range(30):
+        for i in range(60):
             containers = get_containers(url, token)
             ready = True
             for name in EXPECTED_CONTAINERS:
