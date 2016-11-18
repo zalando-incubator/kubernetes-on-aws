@@ -4,22 +4,7 @@ ssh_authorized_keys:
 coreos:
   update:
     reboot-strategy: "off"
-  flannel:
-    interface: $private_ipv4
-    etcd_endpoints: http://$private_ipv4:2379
-  etcd2:
-    discovery-srv: {{ETCD_DISCOVERY_DOMAIN}}
-    proxy: on
-    advertise-client-urls: http://$private_ipv4:2379
-    initial-advertise-peer-urls: http://$private_ipv4:2380
-    listen-client-urls: http://0.0.0.0:2379
-    listen-peer-urls: http://0.0.0.0:2380
   units:
-    - name: etcd2.service
-      command: start
-      runtime: true
-
-
     - name: install-docker.service
       command: start
       runtime: true
@@ -59,9 +44,6 @@ coreos:
       drop-ins:
         - name: 40-flannel.conf
           content: |
-            [Unit]
-            Requires=flanneld.service
-            After=flanneld.service
             [Service]
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
         - name: 50-logging.conf
