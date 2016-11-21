@@ -28,6 +28,12 @@ coreos:
             After=flanneld.service
             [Service]
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
+        - name: docker.conf
+          content: |
+            [Service]
+            ExecStart=
+            ExecStart=/usr/bin/docker daemon --log-opt max-file=2  --log-opt max-size=50m
+
 
     - name: flanneld.service
       drop-ins:
@@ -54,7 +60,8 @@ coreos:
         --volume stage,kind=host,source=/tmp \
         --mount volume=stage,target=/tmp \
         --volume var-log,kind=host,source=/var/log \
-        --mount volume=var-log,target=/var/log"
+        --mount volume=var-log,target=/var/log" \
+        --low-diskspace-threshold-mb=1000 \
         ExecStartPre=/usr/bin/mkdir -p /var/log/containers
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
         --cni-conf-dir=/etc/kubernetes/cni/net.d \
