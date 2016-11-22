@@ -60,8 +60,7 @@ coreos:
         --volume stage,kind=host,source=/tmp \
         --mount volume=stage,target=/tmp \
         --volume var-log,kind=host,source=/var/log \
-        --mount volume=var-log,target=/var/log" \
-        --low-diskspace-threshold-mb=1000 \
+        --mount volume=var-log,target=/var/log"
         ExecStartPre=/usr/bin/mkdir -p /var/log/containers
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
         --cni-conf-dir=/etc/kubernetes/cni/net.d \
@@ -77,6 +76,7 @@ coreos:
         --kubeconfig=/etc/kubernetes/kubeconfig \
         --require-kubeconfig \
         --cloud-provider=aws \
+        --low-diskspace-threshold-mb=1000 \
         --feature-gates=AllAlpha=true
         Restart=always
         RestartSec=10
