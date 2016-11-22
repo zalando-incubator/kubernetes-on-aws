@@ -205,6 +205,9 @@ write_files:
       metadata:
         name: kube-proxy
         namespace: kube-system
+        labels:
+          application: kube-proxy
+          version: v1.4.5_coreos.0
         annotations:
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
@@ -242,6 +245,9 @@ write_files:
       metadata:
         name: kube-apiserver
         namespace: kube-system
+        labels:
+          application: kube-apiserver
+          version: v1.4.5_coreos.0
       spec:
         hostNetwork: true
         containers:
@@ -355,6 +361,9 @@ write_files:
       metadata:
         name: kube-controller-manager
         namespace: kube-system
+        labels:
+          application: kube-controller-manager
+          version: v1.4.5_coreos.0
       spec:
         containers:
         - name: kube-controller-manager
@@ -401,6 +410,9 @@ write_files:
       metadata:
         name: kube-scheduler
         namespace: kube-system
+        labels:
+          application: kube-scheduler
+          version: v1.4.5_coreos.0
       spec:
         hostNetwork: true
         containers:
@@ -431,19 +443,19 @@ write_files:
         name: kube-dns
         namespace: kube-system
         labels:
-          k8s-app: kube-dns
+          application: kube-dns
           version: v20
           kubernetes.io/cluster-service: "true"
       spec:
         replicas: 2
         selector:
           matchLabels:
-            k8s-app: kube-dns
+            application: kube-dns
             version: v20
         template:
           metadata:
             labels:
-              k8s-app: kube-dns
+              application: kube-dns
               version: v20
               kubernetes.io/cluster-service: "true"
             annotations:
@@ -524,12 +536,12 @@ write_files:
         name: kube-dns
         namespace: kube-system
         labels:
-          k8s-app: kube-dns
+          application: kube-dns
           kubernetes.io/cluster-service: "true"
           kubernetes.io/name: "KubeDNS"
       spec:
         selector:
-          k8s-app: kube-dns
+          application: kube-dns
         clusterIP: 10.3.0.10
         ports:
         - name: dns
@@ -547,19 +559,19 @@ write_files:
         name: heapster
         namespace: kube-system
         labels:
-          k8s-app: heapster
+          application: heapster
           kubernetes.io/cluster-service: "true"
           version: v1.2.0
       spec:
         replicas: 1
         selector:
           matchLabels:
-            k8s-app: heapster
+            application: heapster
             version: v1.2.0
         template:
           metadata:
             labels:
-              k8s-app: heapster
+              application: heapster
               version: v1.2.0
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -623,6 +635,7 @@ write_files:
         name: heapster
         namespace: kube-system
         labels:
+          application: heapster
           kubernetes.io/cluster-service: "true"
           kubernetes.io/name: "Heapster"
       spec:
@@ -630,7 +643,7 @@ write_files:
           - port: 80
             targetPort: 8082
         selector:
-          k8s-app: heapster
+          application: heapster
 
   - path: /srv/kubernetes/manifests/deployments/kube-dashboard.yaml
     content: |
@@ -640,18 +653,18 @@ write_files:
         name: kubernetes-dashboard
         namespace: kube-system
         labels:
-          k8s-app: kubernetes-dashboard
+          application: kubernetes-dashboard
           version: v1.4.2
           kubernetes.io/cluster-service: "true"
       spec:
         replicas: 1
         selector:
           matchLabels:
-            k8s-app: kubernetes-dashboard
+            application: kubernetes-dashboard
         template:
           metadata:
             labels:
-              k8s-app: kubernetes-dashboard
+              application: kubernetes-dashboard
               version: v1.4.2
               kubernetes.io/cluster-service: "true"
             annotations:
@@ -685,11 +698,11 @@ write_files:
         name: kubernetes-dashboard
         namespace: kube-system
         labels:
-          k8s-app: kubernetes-dashboard
+          application: kubernetes-dashboard
           kubernetes.io/cluster-service: "true"
       spec:
         selector:
-          k8s-app: kubernetes-dashboard
+          application: kubernetes-dashboard
         ports:
         - port: 80
           targetPort: 9090
@@ -701,12 +714,16 @@ write_files:
       metadata:
         name: secretary
         namespace: kube-system
+        labels:
+          application: secretary
+          version: v0.1.1
       spec:
         replicas: 1
         template:
           metadata:
             labels:
-              app: secretary
+              application: secretary
+              version: v0.1.1
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
@@ -756,12 +773,16 @@ write_files:
       metadata:
         name: mate
         namespace: kube-system
+        labels:
+          application: mate
+          version: v0.0.5
       spec:
         replicas: 1
         template:
           metadata:
             labels:
-              app: mate
+              application: mate
+              version: v0.0.5
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
@@ -791,7 +812,8 @@ write_files:
       metadata:
         name: prometheus-node-exporter
         labels:
-          app: prometheus
+          application: prometheus
+          version: 0.12.0
           component: node-exporter
         namespace: kube-system
       spec:
@@ -799,7 +821,8 @@ write_files:
           metadata:
             name: prometheus-node-exporter
             labels:
-              app: prometheus
+              application: prometheus
+              version: 0.12.0
               component: node-exporter
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -823,12 +846,14 @@ write_files:
         name: kube2iam
         namespace: kube-system
         labels:
-          app: kube2iam
+          application: kube2iam
+          version: 0.2.2
       spec:
         template:
           metadata:
             labels:
-              name: kube2iam
+              application: kube2iam
+              version: 0.2.2
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
@@ -863,14 +888,15 @@ write_files:
         name: cluster-autoscaler
         namespace: kube-system
         labels:
-          app: cluster-autoscaler
-          version: v1
+          application: cluster-autoscaler
+          version: 0.3.2
       spec:
         replicas: 1
         template:
           metadata:
             labels:
-              app: cluster-autoscaler
+              application: cluster-autoscaler
+              version: 0.3.2
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
@@ -905,14 +931,16 @@ write_files:
         name: appdynamics
         namespace: kube-system
         labels:
-          app: appdynamics
+          application: appdynamics
+          version: 0.8
           component: logging
       spec:
         template:
           metadata:
             name: appdynamics
             labels:
-              app: appdynamics
+              application: appdynamics
+              version: 0.8
               component: logging
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
