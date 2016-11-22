@@ -28,6 +28,12 @@ coreos:
             After=flanneld.service
             [Service]
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
+        - name: docker.conf
+          content: |
+            [Service]
+            ExecStart=
+            ExecStart=/usr/bin/docker daemon --log-opt max-file=2  --log-opt max-size=50m
+
 
     - name: flanneld.service
       drop-ins:
@@ -70,6 +76,7 @@ coreos:
         --kubeconfig=/etc/kubernetes/kubeconfig \
         --require-kubeconfig \
         --cloud-provider=aws \
+        --low-diskspace-threshold-mb=1000 \
         --feature-gates=AllAlpha=true
         Restart=always
         RestartSec=10
