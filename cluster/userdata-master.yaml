@@ -362,25 +362,6 @@ write_files:
             path: /etc/kubernetes/nginx
           name: config-volume
 
-  - path: /etc/kubernetes/manifests/kube-apiserver-readonly-svc.yaml
-    content: |
-      apiVersion: v1
-      kind: Service
-      metadata:
-        name: apiserver-svc
-        namespace: kube-system
-        labels:
-          application: kube-apiserver-ro
-      spec:
-        type: ClusterIP
-        ports:
-          - port: 80
-            protocol: TCP
-            targetPort: 8082
-        selector:
-          application: kube-apiserver
-          version: v1.4.5_coreos.0
-
   - path: /etc/kubernetes/manifests/kube-controller-manager.yaml
     content: |
       apiVersion: v1
@@ -831,6 +812,65 @@ write_files:
               args:
               - kubectl
               - proxy
+
+  - path: /srv/kubernetes/manifests/services/kube-apiserver-readonly-svc.yaml
+    content: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: apiserver-svc
+        namespace: kube-system
+        labels:
+          application: kube-apiserver-ro
+      spec:
+        type: ClusterIP
+        ports:
+          - port: 80
+            protocol: TCP
+            targetPort: 8082
+        selector:
+          application: kube-apiserver
+          version: v1.4.5_coreos.0
+
+  - path: /srv/kubernetes/manifests/deployments/kube-state-metrics.yaml
+    content: |
+      apiVersion: extensions/v1beta1
+      kind: Deployment
+      metadata:
+        name: kube-state-metrics
+        namespace: kube-system
+      spec:
+        replicas: 1
+        template:
+          metadata:
+            labels:
+              app: kube-state-metrics
+          spec:
+            containers:
+            - image: registry.opensource.zalan.do/teapot/kube-state-metrics:v0.3.3
+              name: kube-state-metrics
+              ports:
+              - containerPort: 8080
+              command:
+              - /kube-state-metrics
+              - --port=8080
+              - --apiserver=http://apiserver-svc.kube-system.svc.cluster.local
+
+  - path: /srv/kubernetes/manifests/services/kube-state-metrics.yaml
+    content: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: kube-state-metrics
+        namespace: kube-system
+      spec:
+        type: LoadBalancer
+        ports:
+        - port: 80
+          protocol: TCP
+          targetPort: 8080
+        selector:
+          app: kube-state-metrics
 
   - path: /srv/kubernetes/manifests/daemonsets/prometheus-node-exporter.yaml
     content: |
