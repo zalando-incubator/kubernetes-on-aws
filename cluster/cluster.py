@@ -343,6 +343,12 @@ def update(stack_name, version,  dry_run, force, instance_type, master_nodes, wo
     if worker_nodes == -1:
         worker_nodes = get_current_worker_nodes(stack_name, version)
 
+    info('Cluster name is:        {}'.format(variables['webhook_cluster_name']))
+    info('API server endpoint is: {}'.format(variables['api_server']))
+    info('Master nodes:           {}'.format(master_nodes))
+    info('Worker nodes:           {}'.format(worker_nodes))
+    info('Instance type:          {}'.format(instance_type))
+
     if not dry_run:
         # this will only update the Launch Configuration
         subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
