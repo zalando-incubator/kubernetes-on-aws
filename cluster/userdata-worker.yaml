@@ -28,6 +28,10 @@ coreos:
             After=flanneld.service
             [Service]
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
+        - name: 50-logging.conf
+          content: |
+            [Service]
+            Environment="DOCKER_OPTS=--log-opt=max-file=2 --log-opt=max-size=50m"
 
     - name: kubelet.service
       command: start
@@ -65,6 +69,7 @@ coreos:
         --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
         --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
         --cloud-provider=aws \
+        --low-diskspace-threshold-mb=1000 \
         --feature-gates=AllAlpha=true
         Restart=always
         RestartSec=10
