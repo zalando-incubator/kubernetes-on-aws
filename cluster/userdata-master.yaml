@@ -362,6 +362,25 @@ write_files:
             path: /etc/kubernetes/nginx
           name: config-volume
 
+  - path: /etc/kubernetes/manifests/kube-apiserver-readonly-svc.yaml
+    content: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: apiserver-svc
+        namespace: kube-system
+        labels:
+          application: kube-apiserver-ro
+      spec:
+        type: ClusterIP
+        ports:
+          - port: 80
+            protocol: TCP
+            targetPort: 8082
+        selector:
+          application: kube-apiserver
+          version: v1.4.5_coreos.0
+
   - path: /etc/kubernetes/manifests/kube-controller-manager.yaml
     content: |
       apiVersion: v1
