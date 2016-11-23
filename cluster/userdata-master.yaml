@@ -28,12 +28,10 @@ coreos:
             After=flanneld.service
             [Service]
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
-        - name: docker.conf
+        - name: 50-logging.conf
           content: |
             [Service]
-            ExecStart=
-            ExecStart=/usr/bin/docker daemon --log-opt max-file=2  --log-opt max-size=50m
-
+            Environment="DOCKER_OPTS=--log-opt=max-file=2 --log-opt=max-size=50m"
 
     - name: flanneld.service
       drop-ins:
