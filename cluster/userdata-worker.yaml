@@ -28,6 +28,10 @@ coreos:
             After=flanneld.service
             [Service]
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
+        - name: 50-logging.conf
+          content: |
+            [Service]
+            Environment="DOCKER_OPTS=--log-opt=max-file=2 --log-opt=max-size=50m"
 
     - name: kubelet.service
       command: start
@@ -214,4 +218,3 @@ write_files:
     content: |
         TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
         TOOLBOX_DOCKER_TAG=v0.0.2
-
