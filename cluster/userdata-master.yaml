@@ -780,14 +780,14 @@ write_files:
         namespace: kube-system
         labels:
           application: mate
-          version: v0.0.5
+          version: v0.0.6
       spec:
         replicas: 1
         template:
           metadata:
             labels:
               application: mate
-              version: v0.0.5
+              version: v0.0.6
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
@@ -795,13 +795,17 @@ write_files:
           spec:
             containers:
             - name: mate
-              image: registry.opensource.zalan.do/teapot/mate:v0.0.5
+              image: registry.opensource.zalan.do/teapot/mate:v0.0.6
+              env:
+              - name: AWS_REGION
+                value: {{REGION}}
               args:
               - --producer=kubernetes
               - --kubernetes-domain={{HOSTED_ZONE}}.
               - --consumer=aws
               - --aws-hosted-zone={{HOSTED_ZONE}}.
-              - --no-sync
+              - --sync
+              - --aws-record-group-id={{WEBHOOK_CLUSTER_NAME}}
             - name: kubectl
               image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
               command:
