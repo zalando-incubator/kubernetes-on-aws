@@ -977,24 +977,24 @@ write_files:
                     value: {{REGION}}
                 imagePullPolicy: "Always"
 
-  - path: /srv/kubernetes/manifests/daemonsets/appdynamics.yaml
+  - path: /srv/kubernetes/manifests/daemonsets/appdynamics-agent.yaml
     content: |
       apiVersion: extensions/v1beta1
       kind: DaemonSet
       metadata:
-        name: appdynamics
+        name: appdynamics-agent
         namespace: kube-system
         labels:
-          application: appdynamics
-          version: v0.8
+          application: appdynamics-agent
+          version: v0.9
           component: logging
       spec:
         template:
           metadata:
-            name: appdynamics
+            name: appdynamics-agent
             labels:
-              application: appdynamics
-              version: v0.8
+              application: appdynamics-agent
+              version: v0.9
               component: logging
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -1002,7 +1002,7 @@ write_files:
           spec:
             containers:
             - name: log-watcher
-              image: registry.opensource.zalan.do/eagleeye/k8s-log-watcher:0.8
+              image: registry.opensource.zalan.do/eagleeye/k8s-log-watcher:0.9
               volumeMounts:
               - name: containerlogs
                 mountPath: /mnt/containers
