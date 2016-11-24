@@ -1004,6 +1004,16 @@ write_files:
             imagePullSecrets:
             - name: pierone.stups.zalan.do
 
+  - path: /srv/kubernetes/manifests/storageclasses/standard.yaml
+    content: |
+      apiVersion: storage.k8s.io/v1beta1
+      kind: StorageClass
+      metadata:
+        name: standard
+      provisioner: kubernetes.io/aws-ebs
+      parameters:
+        type: gp2
+
   - path: /etc/kubernetes/nginx/nginx.conf
     content: |
       user nginx;
