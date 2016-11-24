@@ -818,10 +818,8 @@ write_files:
       apiVersion: v1
       kind: Service
       metadata:
-        name: apiserver-svc
+        name: apiserver-svc-ro
         namespace: kube-system
-        labels:
-          application: kube-apiserver-ro
       spec:
         type: ClusterIP
         ports:
@@ -854,7 +852,7 @@ write_files:
               command:
               - /kube-state-metrics
               - --port=8080
-              - --apiserver=http://apiserver-svc.kube-system.svc.cluster.local
+              - --apiserver=http://apiserver-svc-ro.kube-system.svc.cluster.local
 
   - path: /srv/kubernetes/manifests/services/kube-state-metrics.yaml
     content: |
