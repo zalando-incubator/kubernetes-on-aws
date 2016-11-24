@@ -813,22 +813,6 @@ write_files:
               - kubectl
               - proxy
 
-  - path: /srv/kubernetes/manifests/services/kube-apiserver-readonly-svc.yaml
-    content: |
-      apiVersion: v1
-      kind: Service
-      metadata:
-        name: kubernetes-ro
-        namespace: kube-system
-      spec:
-        type: ClusterIP
-        ports:
-          - port: 80
-            protocol: TCP
-            targetPort: 8082
-        selector:
-          application: kube-apiserver
-
   - path: /srv/kubernetes/manifests/deployments/kube-state-metrics.yaml
     content: |
       apiVersion: extensions/v1beta1
@@ -852,7 +836,6 @@ write_files:
               command:
               - /kube-state-metrics
               - --port=8080
-              - --apiserver=http://kubernetes-ro.kube-system.svc.cluster.local
 
   - path: /srv/kubernetes/manifests/services/kube-state-metrics.yaml
     content: |
