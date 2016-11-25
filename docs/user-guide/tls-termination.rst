@@ -158,7 +158,7 @@ adding an additional annotation to your service containing the desired dns name.
     metadata:
       name: nginx
       annotations:
-        k8s.zalando.org/dnsname: my-nginx.hackweek.zalan.do
+        zalando.org/dnsname: my-nginx.hackweek.zalan.do
     spec:
       ...
 
@@ -191,7 +191,7 @@ For reference, the full service description should look like this:
       annotations:
         service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:eu-central-1:some-account-id:certificate/some-cert-id
         service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
-        k8s.zalando.org/dnsname: my-nginx.hackweek.zalan.do
+        zalando.org/dnsname: my-nginx.hackweek.zalan.do
     spec:
       type: LoadBalancer
       ports:
