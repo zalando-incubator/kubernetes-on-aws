@@ -5,13 +5,13 @@ Persistent Storage
 Some of your pods need to persist data across pod restarts (e.g. databases). In order to facilitate this we can mount
 folders into our pods that are backed by EBS volumes on AWS.
 
-Deploying PostreSQL
-===================
+Deploying Redis
+===============
 
-In this example we're going to deploy a non high-available but persistent PostgreSQL container.
+In this example we're going to deploy a non high-available but persistent Redis container.
 
 We start out by deploying a non-persistent version first and then extend it to keep our data across pod and node
-restarts. Submit the following two manifests to your cluster to create a deployment and a service for your postgres
+restarts. Submit the following two manifests to your cluster to create a deployment and a service for your redis
 instance. Note that we expose our deployment via a service to the internet by using ``type: Loadbalancer``.
 
 .. Note::
@@ -23,52 +23,49 @@ instance. Note that we expose our deployment via a service to the internet by us
     apiVersion: v1
     kind: Service
     metadata:
-      name: postgres
+      name: redis
     spec:
       type: LoadBalancer
       ports:
-      - port: 5432
-        targetPort: 5432
+      - port: 6379
+        targetPort: 6379
       selector:
-        application: postgres
+        application: redis
 
 .. code-block:: yaml
 
     apiVersion: extensions/v1beta1
     kind: Deployment
     metadata:
-      name: postgres
+      name: redis
     spec:
       replicas: 1
       template:
         metadata:
           labels:
-            application: postgres
-            version: 9.5.5
+            application: redis
+            version: 3.2.5
         spec:
           containers:
-          - name: postgres
-            image: postgres:9.5.5
+          - name: redis
+            image: redis:3.2.5
 
 
 Your service will be implemented by an ``ELB`` and we provision a DNS record to point to it based on the name and
 namespace you're defining it in. So given you use the manifests as printed above and you're running in the default
-namespace you should find your postgres instance at ``postgres-default.hackweek.zalan.do``.
+namespace you should find your redis instance at ``redis-default.hackweek.zalan.do``.
 
 Connect to your endpoint and make sure it works:
 
 .. code-block:: bash
 
-    $ psql --host postgres-default.hackweek.zalan.do --username postgres
-    psql (9.5.4, server 9.5.5)
-    Type "help" for help.
-
-    postgres=# \q
+    $ redis-cli -h redis-default.hackweek.zalan.do
+    redis-default.hackweek.zalan.do:6379> quit
 
 Creating a volume
 -----------------
 
-There's one major problem with your postgres container: It lacks some persistent storage. So let's add it.
+There's one major problem with your redis container: It lacks some persistent storage. So let's add it.
 
 We'll be using something that's called a ``PersistentVolumeClaim``. Claims are an abstraction over the actual
 storage system in your cluster. With a claim you define that you need some amount of storage at some path inside your
@@ -82,7 +79,7 @@ Submit the following file to your cluster in order to claim 10GB of standard sto
     apiVersion: v1
     kind: PersistentVolumeClaim
     metadata:
-      name: postgres-data
+      name: redis-data
       annotations:
         volume.beta.kubernetes.io/storage-class: standard
     spec:
@@ -102,7 +99,7 @@ After submitting the manifest to the cluster you can list your storage claims:
 
     $ kubectl get persistentVolumeClaims
     NAME            STATUS    VOLUME                                     CAPACITY   ACCESSMODES   AGE
-    postgres-data   Bound     pvc-fc26de82-b577-11e6-b2a5-02c15a33e7b7   10Gi       RWO           4s
+    redis-data      Bound     pvc-fc26de82-b577-11e6-b2a5-02c15a33e7b7   10Gi       RWO           4s
 
 Status ``Bound`` means that your claim was successfully implemented and is now bound to a persistent volume. You can
 also list all volumes:
@@ -111,7 +108,7 @@ also list all volumes:
 
     $ kubectl get persistentVolumes
     NAME                                       CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM                      REASON    AGE
-    pvc-fc26de82-b577-11e6-b2a5-02c15a33e7b7   10Gi       RWO           Delete          Bound     default/postgres-data                8m
+    pvc-fc26de82-b577-11e6-b2a5-02c15a33e7b7   10Gi       RWO           Delete          Bound     default/redis-data                   8m
 
 If you want to dig deeper you can describe the volume and see that it's backed by an EBS volume.
 
@@ -122,7 +119,7 @@ If you want to dig deeper you can describe the volume and see that it's backed b
     Labels:		failure-domain.beta.kubernetes.io/region=eu-central-1
         failure-domain.beta.kubernetes.io/zone=eu-central-1b
     Status:		Bound
-    Claim:		default/postgres-data
+    Claim:		default/redis-data
     Reclaim Policy:	Delete
     Access Modes:	RWO
     Capacity:	10Gi
@@ -148,37 +145,34 @@ Modify your deployment in the following way in order to use the persistent volum
     apiVersion: extensions/v1beta1
     kind: Deployment
     metadata:
-      name: postgres
+      name: redis
     spec:
       replicas: 1
       template:
         metadata:
           labels:
-            application: postgres
-            version: 9.5.5
+            application: redis
+            version: 3.2.5
         spec:
           containers:
-          - name: postgres
-            image: postgres:9.5.5
-            env:
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
+          - name: redis
+            image: redis:3.2.5
             volumeMounts:
-            - mountPath: /var/lib/postgresql/data
-              name: postgres-data
+            - mountPath: /data
+              name: redis-data
           volumes:
-            - name: postgres-data
+            - name: redis-data
               persistentVolumeClaim:
-                claimName: postgres-data
+                claimName: redis-data
 
 We did two things here: First we registered the ``persistentVolumeClaim`` under the ``volumes`` section in the pod
 definition and gave it a name. Then, by using the name, we mounted that volume under a path in the container in the
 ``volumeMounts`` section. The reason for having a two-level definition here is because multiple containers in the same
 pod can mount the same volume under different paths, e.g. for sharing data.
 
-Secondly, we told our postgres container to use a storage path that lives on the persistent volume via the ``PGDATA``
-environment variable. This way, anything that postgres stores will be written to the EBS volume and thus can be mounted
-on another node in case of node failure.
+Secondly, our redis container uses ``/data`` to store its data which is where we mounted our persistent volume.
+This way, anything that redis stores will be written to the EBS volume and thus can be mounted on another node in case
+of node failure.
 
 Note, that you usually want ``replicas`` to be ``1`` when using this approach. Though, you can use more replicas which
 would result in many pods mounting the same volume. As this volume is backed by an EBS volume this forces Kubernetes
@@ -194,56 +188,40 @@ Find out where your pod currently runs:
 
     $ kubectl get pods -o wide
       NAME                        READY     STATUS    RESTARTS   AGE       IP          NODE
-      postgres-3548935762-qevsk   1/1       Running   0          2m        10.2.1.66   ip-172-31-15-65.eu-central-1.compute.internal
+      redis-3548935762-qevsk      1/1       Running   0          2m        10.2.1.66   ip-172-31-15-65.eu-central-1.compute.internal
 
-The node it landed on is ``ip-172-31-15-65.eu-central-1.compute.internal``. Connect to your exposed postgres endpoint and create a table:
+The node it landed on is ``ip-172-31-15-65.eu-central-1.compute.internal``. Connect to your exposed redis endpoint and create a table:
 
 .. code-block:: bash
 
-    $ psql --host postgres-default.hackweek.zalan.do --username postgres
-    psql (9.5.4, server 9.5.5)
-    Type "help" for help.
-
-    postgres=# create table foo ();
-    CREATE TABLE
-    postgres=# \dt
-            List of relations
-     Schema | Name | Type  |  Owner
-    --------+------+-------+----------
-     public | foo  | table | postgres
-    (1 row)
-
-    postgres=# \q
+    $ redis-cli -h redis-default.hackweek.zalan.do
+    redis-default.hackweek.zalan.do:6379> set foo bar
+    OK
+    redis-default.hackweek.zalan.do:6379> get foo
+    "bar"
+    redis-default.hackweek.zalan.do:6379> quit
 
 Simulate a pod failure by deleting your pod. This will make Kubernetes create a new one potentially on another
 node but always in the same zone due to using an EBS volume.
 
 .. code-block:: bash
 
-    $ kubectl delete pod postgres-3548935762-qevsk
-    pod "postgres-3548935762-qevsk" deleted
+    $ kubectl delete pod redis-3548935762-qevsk
+    pod "redis-3548935762-qevsk" deleted
 
     $ kubectl get pods -o wide
     NAME                        READY     STATUS    RESTARTS   AGE       IP          NODE
-    postgres-3548935762-p4z9y   1/1       Running   0          1m        10.2.72.2   ip-172-31-10-115.eu-central-1.compute.internal
+    redis-3548935762-p4z9y      1/1       Running   0          1m        10.2.72.2   ip-172-31-10-115.eu-central-1.compute.internal
 
 In this example the new pod landed on another node (``ip-172-31-10-115.eu-central-1.compute.internal``).
-Let's check that it's available and didn't loose any data. Connect to postgres in the same way as before.
+Let's check that it's available and didn't loose any data. Connect to redis in the same way as before.
 
 .. code-block:: bash
 
-    $ psql --host postgres-default.hackweek.zalan.do --username postgres
-    psql (9.5.4, server 9.5.5)
-    Type "help" for help.
-
-    postgres=# \dt
-            List of relations
-     Schema | Name | Type  |  Owner
-    --------+------+-------+----------
-     public | foo  | table | postgres
-    (1 row)
-
-    postgres=# \q
+    $ redis-cli -h redis-default.hackweek.zalan.do
+    redis-default.hackweek.zalan.do:6379> get foo
+    "bar"
+    redis-default.hackweek.zalan.do:6379> quit
 
 And indeed, everything is still there.
 
@@ -254,16 +232,16 @@ All it takes to delete a volume is to delete the corresponding claim that initia
 
 .. code-block:: bash
 
-    $ kubectl delete persistentVolumeClaim postgres-data
-    persistentvolumeclaim "postgres-data" deleted
+    $ kubectl delete persistentVolumeClaim redis-data
+    persistentvolumeclaim "redis-data" deleted
 
 To fully clean up after yourself also delete the deployment and the service:
 
 .. code-block:: bash
 
-    $ kubectl delete deployment,service postgres
-    service "postgres" deleted
-    deployment "postgres" deleted
+    $ kubectl delete deployment,service redis
+    service "redis" deleted
+    deployment "redis" deleted
 
 Additional resources
 ====================
