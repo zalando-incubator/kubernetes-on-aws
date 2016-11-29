@@ -1032,7 +1032,7 @@ write_files:
                   fieldRef:
                     fieldPath: spec.nodeName
               - name: APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY
-                value: {{APPDYNAMICS_ACCESS_KEY}}
+                value: "{{APPDYNAMICS_ACCESS_KEY}}"
               - name: APPDYNAMICS_AGENT_ACCOUNT_NAME
                 value: testing
               - name: APPDYNAMICS_ACCOUNT_GLOBALNAME
@@ -1062,6 +1062,17 @@ write_files:
       provisioner: kubernetes.io/aws-ebs
       parameters:
         type: gp2
+
+  - path: /srv/kubernetes/manifests/thirdpartyresources/platform-credentials-set.yaml
+    content: |
+      apiVersion: extensions/v1beta1
+      kind: ThirdPartyResource
+      metadata:
+        # NOTE: dashes are needed to get proper PlatformCredentialsSet name
+        name: platform-credentials-set.zalando.org
+      description: "A specification to declare needed OAuth credentials (tokens, clients) for the Zalando Platform IAM system"
+      versions:
+      - name: v1
 
   - path: /etc/kubernetes/nginx/nginx.conf
     content: |
