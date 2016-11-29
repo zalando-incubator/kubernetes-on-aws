@@ -31,7 +31,7 @@ coreos:
         - name: 50-logging.conf
           content: |
             [Service]
-            Environment="DOCKER_OPTS=--log-opt=max-file=2 --log-opt=max-size=50m"
+            Environment="DOCKER_OPTS=--debug --log-opt=max-file=2 --log-opt=max-size=50m"
 
     - name: flanneld.service
       drop-ins:
@@ -46,7 +46,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=v1.4.5_coreos.0
+        Environment=KUBELET_VERSION=pr-cp_zalando.pr-37302
         Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
         --insecure-options=image \
@@ -175,7 +175,7 @@ write_files:
           sleep 10
       done
 
-      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0 /hyperkube kubectl"
+      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302 /hyperkube kubectl"
 
       for manifest in /srv/kubernetes/manifests/*/*.yaml; do
           ${KUBECTL} apply -f $manifest
@@ -212,14 +212,14 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-proxy
-          version: v1.4.5_coreos.0
+          version: pr-cp_zalando.pr-37302
         annotations:
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
           command:
           - /hyperkube
           - proxy
@@ -252,12 +252,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.4.5_coreos.0
+          version: pr-cp_zalando.pr-37302
       spec:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
           command:
           - /hyperkube
           - apiserver
@@ -368,11 +368,11 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.4.5_coreos.0
+          version: pr-cp_zalando.pr-37302
       spec:
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
           command:
           - /hyperkube
           - controller-manager
@@ -417,12 +417,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.4.5_coreos.0
+          version: pr-cp_zalando.pr-37302
       spec:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
           command:
           - /hyperkube
           - scheduler
@@ -759,7 +759,7 @@ write_files:
                 name: credentials
                 readOnly: true
             - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
               command:
               - /hyperkube
               args:
@@ -807,7 +807,7 @@ write_files:
               - --aws-record-group-id={{STACK_NAME}}-{{STACK_VERSION}}
               - --sync
             - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
               command:
               - /hyperkube
               args:
@@ -1038,7 +1038,7 @@ write_files:
               - name: APPDYNAMICS_ACCOUNT_GLOBALNAME
                 value: testing_4630e5e5-7aed-4961-94ef-5af03cf0b83b
             - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.5_coreos.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
               command:
               - /hyperkube
               args:
