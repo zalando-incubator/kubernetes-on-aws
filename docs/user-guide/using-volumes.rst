@@ -12,11 +12,7 @@ In this example we're going to deploy a non high-available but persistent Redis 
 
 We start out by deploying a non-persistent version first and then extend it to keep our data across pod and node
 restarts. Submit the following two manifests to your cluster to create a deployment and a service for your redis
-instance. Note that we expose our deployment via a service to the internet by using ``type: Loadbalancer``.
-
-.. Note::
-
-   This example doesn't use encryption and it can be accessed by anyone, don't store or transmit any secrets.
+instance.
 
 .. code-block:: yaml
 
@@ -25,7 +21,6 @@ instance. Note that we expose our deployment via a service to the internet by us
     metadata:
       name: redis
     spec:
-      type: LoadBalancer
       ports:
       - port: 6379
         targetPort: 6379
@@ -50,16 +45,16 @@ instance. Note that we expose our deployment via a service to the internet by us
           - name: redis
             image: redis:3.2.5
 
+Your service can be accessed from other pods by using the automatically generated cluster-internal DNS name or service
+IP address. So given you use the manifests as printed above and you're running in the default
+namespace you should find your redis instance at ``redis.default.svc.cluster.local`` from any other pod.
 
-Your service will be implemented by an ``ELB`` and we provision a DNS record to point to it based on the name and
-namespace you're defining it in. So given you use the manifests as printed above and you're running in the default
-namespace you should find your redis instance at ``redis-default.hackweek.zalan.do``.
-
-Connect to your endpoint and make sure it works:
+You can run an interactive pod and test that it works. You can use the same redis image as it contains the redis CLI.
 
 .. code-block:: bash
 
-    $ redis-cli -h redis-default.hackweek.zalan.do
+    $ kubectl run redis-cli --rm -ti --image=redis:3.2.5 --restart=Never /bin/bash
+    $ redis-cli -h redis.default.svc.cluster.local
     redis-default.hackweek.zalan.do:6379> quit
 
 Creating a volume
@@ -194,7 +189,8 @@ The node it landed on is ``ip-172-31-15-65.eu-central-1.compute.internal``. Conn
 
 .. code-block:: bash
 
-    $ redis-cli -h redis-default.hackweek.zalan.do
+    $ kubectl run redis-cli --rm -ti --image=redis:3.2.5 --restart=Never /bin/bash
+    $ redis-cli -h redis.default.svc.cluster.local
     redis-default.hackweek.zalan.do:6379> set foo bar
     OK
     redis-default.hackweek.zalan.do:6379> get foo
@@ -218,7 +214,8 @@ Let's check that it's available and didn't loose any data. Connect to redis in t
 
 .. code-block:: bash
 
-    $ redis-cli -h redis-default.hackweek.zalan.do
+    $ kubectl run redis-cli --rm -ti --image=redis:3.2.5 --restart=Never /bin/bash
+    $ redis-cli -h redis.default.svc.cluster.local
     redis-default.hackweek.zalan.do:6379> get foo
     "bar"
     redis-default.hackweek.zalan.do:6379> quit
