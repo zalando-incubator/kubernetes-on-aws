@@ -19,7 +19,43 @@ coreos:
       command: start
       runtime: true
 
+
+    - name: install-docker.service
+      command: start
+      runtime: true
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/bin/install-docker
+
     - name: docker.service
+      content: |
+        [Unit]
+        Description=Docker Application Container Engine
+        Documentation=http://docs.docker.com
+        After=install-docker docker.socket early-docker.target network.target
+        Requires=install-docker docker.socket early-docker.target 
+
+        [Service]
+        EnvironmentFile=-/run/flannel_docker_opts.env
+        EnvironmentFile=/etc/profile.env
+        MountFlags=slave
+        ExecStart=/opt/docker/dockerd --host=fd:// $DOCKER_OPTS $DOCKER_CGROUPS $DOCKER_OPT_BIP $DOCKER_OPT_MTU $DOCKER_OPT_IPMASQ
+        LimitNOFILE=1048576
+        # Having non-zero Limit*s causes performance problems due to accounting overhead
+        # in the kernel. We recommend using cgroups to do container-local accounting.
+        LimitNPROC=infinity
+        LimitCORE=infinity
+        # Uncomment TasksMax if your systemd version supports .
+        # Only systemd 226 and above support this version.
+        TasksMax=infinity
+        TimeoutStartSec=0
+        # set delegate yes so that systemd does not reset the cgroups of docker containers
+        Delegate=yes
+
+        [Install]
+        WantedBy=multi-user.targe
+
       drop-ins:
         - name: 40-flannel.conf
           content: |
@@ -102,7 +138,28 @@ coreos:
         Type=oneshot
         ExecStart=/usr/bin/docker pull registry.opensource.zalan.do/teapot/microscope:v0.0.2
 
+
+ 
 write_files:
+
+  - path: "/etc/profile.d/docker-path.sh"
+    content: |
+      PATH="/opt/docker:$PATH"
+
+  - path: "/etc/profile.env"
+    content: |
+      PATH="/opt/docker:/usr/sbin:$PATH"
+
+  - path: "/opt/bin/install-docker"
+    permissions: 0700
+    owner: root:root
+    content: |
+      #!/bin/bash -e
+      cd /opt
+      curl -O https://test.docker.com/builds/Linux/x86_64/docker-1.13.0-rc2.tgz
+      tar xzf docker-1.13.0-rc2.tgz
+      
+
   - path: /etc/kubernetes/cni/docker_opts_cni.env
     content: |
       DOCKER_OPT_BIP=""
