@@ -1,7 +1,7 @@
 import urllib.parse
 from clickclick import fatal_error
 
-from .helpers import wait_for_deployment, create_deployment, create_service, wait_for_endpoint
+from .helpers import wait_for_deployment, create_deployment, create_service, wait_for_resource
 
 
 def test_nginx(run_id, url, token):
@@ -41,7 +41,6 @@ spec:
       name: http
 '''.format(run_id=run_id)
     create_service(manifest, url, token)
-
     available = wait_for_deployment('nginx-{}'.format(run_id), url, token)
 
     if not available:
@@ -49,7 +48,7 @@ spec:
 
     parts = urllib.parse.urlsplit(url)
     domain = parts.netloc.split('.', 1)[-1]
-    available = wait_for_endpoint('http://nginx-{}-e2e.{}/'.format(run_id, domain), 'Welcome to nginx!', timeout=300)
+    available = wait_for_resource('http://nginx-{}-e2e.{}/'.format(run_id, domain), 'Welcome to nginx!', timeout=300)
 
     if not available:
         fatal_error('ELB service registration failed')
