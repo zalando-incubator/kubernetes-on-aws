@@ -1,11 +1,9 @@
-import urllib.parse
 from clickclick import fatal_error
 
-from .helpers import wait_for_deployment, create_deployment, create_service, wait_for_pod, create_resource, PETSET_PATH, SECRET_PATH
+from .helpers import PETSET_PATH, SECRET_PATH, create_resource, wait_for_pod
 
 
 def test_volumes(run_id, url, token):
-
 
     secret_manifest = '''
 apiVersion: v1
@@ -23,7 +21,6 @@ data:
 '''
 
     create_resource(secret_manifest, url + SECRET_PATH, token)
-
 
     manifest = '''
 apiVersion: apps/v1alpha1
