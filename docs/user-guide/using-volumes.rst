@@ -185,7 +185,7 @@ Find out where your pod currently runs:
       NAME                        READY     STATUS    RESTARTS   AGE       IP          NODE
       redis-3548935762-qevsk      1/1       Running   0          2m        10.2.1.66   ip-172-31-15-65.eu-central-1.compute.internal
 
-The node it landed on is ``ip-172-31-15-65.eu-central-1.compute.internal``. Connect to your exposed redis endpoint and create a table:
+The node it landed on is ``ip-172-31-15-65.eu-central-1.compute.internal``. Connect to your redis endpoint and create some data:
 
 .. code-block:: bash
 
