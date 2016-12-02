@@ -456,7 +456,6 @@ write_files:
         selector:
           matchLabels:
             application: kube-dns
-            version: v20
         template:
           metadata:
             labels:
@@ -555,7 +554,7 @@ write_files:
         - name: dns-tcp
           port: 53
           protocol: TCP
-
+ 
   - path: /srv/kubernetes/manifests/deployments/heapster.yaml
     content: |
       apiVersion: extensions/v1beta1
@@ -572,7 +571,6 @@ write_files:
         selector:
           matchLabels:
             application: heapster
-            version: v1.2.0
         template:
           metadata:
             labels:
@@ -724,6 +722,9 @@ write_files:
           version: v0.1.1
       spec:
         replicas: 1
+        selector:
+          matchLabels:
+            application: secretary
         template:
           metadata:
             labels:
@@ -783,6 +784,9 @@ write_files:
           version: v0.0.7
       spec:
         replicas: 1
+        selector:
+          matchLabels:
+            application: mate
         template:
           metadata:
             labels:
@@ -826,6 +830,9 @@ write_files:
           version: v0.3.3
       spec:
         replicas: 1
+        selector:
+          matchLabels:
+            application: kube-state-metrics
         template:
           metadata:
             labels:
@@ -871,6 +878,9 @@ write_files:
           component: node-exporter
         namespace: kube-system
       spec:
+        selector:
+          matchLabels:
+            application: prometheus-node-exporter
         template:
           metadata:
             name: prometheus-node-exporter
@@ -903,6 +913,9 @@ write_files:
           application: kube2iam
           version: v0.2.2
       spec:
+        selector:
+          matchLabels:
+            application: kube2iam
         template:
           metadata:
             labels:
@@ -946,6 +959,9 @@ write_files:
           version: v0.3.2
       spec:
         replicas: 1
+        selector:
+          matchLabels:
+            application: cluster-autoscaler
         template:
           metadata:
             labels:
@@ -989,6 +1005,9 @@ write_files:
           version: v0.9
           component: logging
       spec:
+        selector:
+          matchLabels:
+            application: appdynamics-agent
         template:
           metadata:
             name: appdynamics-agent
