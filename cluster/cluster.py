@@ -233,7 +233,7 @@ def tag_subnets():
 
 
 def wait_for_api_server(api_server):
-    with Action('Waiting for API server {}..'.format(api_server)) as act:
+    with Action('Waiting for API server {} ..'.format(api_server)) as act:
         while True:
             try:
                 response = requests.get(api_server, timeout=5)
