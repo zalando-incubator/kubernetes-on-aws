@@ -82,6 +82,8 @@ SenzaComponents:
          - {Ref: WorkerSecurityGroup}
       IamRoles:
          - {Ref: WorkerIAMRole}
+      ElasticLoadBalancer: WorkerLoadBalancer
+      HealthCheckGracePeriod: 480 # give worker node up to 8 min to start up
       AssociatePublicIpAddress: true
       UserData: "{{ Arguments.UserDataWorker }}"
       AutoScaling:
@@ -92,6 +94,25 @@ SenzaComponents:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+  - WorkerLoadBalancer:
+      Type: Senza::WeightedDnsElasticLoadBalancer
+      NameSuffix: worker
+      MainDomain: ignore-main-{{SenzaInfo.StackVersion}}.teapot.zalan.do
+      VersionDomain: ignore-version-{{SenzaInfo.StackVersion}}.teapot.zalan.do
+      HTTPPort: 4194
+      HealthCheckPath: /healthz
+      HealthCheckPort: 4194
+      Listeners:
+        - PolicyNames: []
+          Protocol: HTTP
+          InstanceProtocol: HTTP
+          InstancePort: 4194
+          LoadBalancerPort: 4194
+      Tags:
+        - Key: "Teapot"
+          Value: instance health check
+      SecurityGroups:
+         - {Ref: WorkerSecurityGroup}
 
 Resources:
 
