@@ -843,7 +843,7 @@ write_files:
         namespace: kube-system
         labels:
           application: mate
-          version: v0.0.7
+          version: v0.1.0
       spec:
         replicas: 1
         selector:
@@ -853,7 +853,7 @@ write_files:
           metadata:
             labels:
               application: mate
-              version: v0.0.7
+              version: v0.1.0
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
@@ -861,7 +861,7 @@ write_files:
           spec:
             containers:
             - name: mate
-              image: registry.opensource.zalan.do/teapot/mate:v0.0.7
+              image: registry.opensource.zalan.do/teapot/mate:v0.1.0
               env:
               - name: AWS_REGION
                 value: {{REGION}}
@@ -871,7 +871,6 @@ write_files:
               - --consumer=aws
               - --aws-hosted-zone={{HOSTED_ZONE}}.
               - --aws-record-group-id={{STACK_NAME}}-{{STACK_VERSION}}
-              - --sync
             - name: kubectl
               image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
               command:
