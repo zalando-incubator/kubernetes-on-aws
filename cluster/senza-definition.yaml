@@ -82,6 +82,8 @@ SenzaComponents:
          - {Ref: WorkerSecurityGroup}
       IamRoles:
          - {Ref: WorkerIAMRole}
+      ElasticLoadBalancer: WorkerLoadBalancer
+      HealthCheckGracePeriod: 480 # give worker node up to 8 min to start up
       AssociatePublicIpAddress: true
       UserData: "{{ Arguments.UserDataWorker }}"
       AutoScaling:
@@ -92,6 +94,23 @@ SenzaComponents:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+  - WorkerLoadBalancer:
+      Type: Senza::ElasticLoadBalancer
+      NameSuffix: worker
+      HTTPPort: 10248
+      HealthCheckPath: /healthz
+      HealthCheckPort: 10248
+      Listeners:
+        - PolicyNames: []
+          Protocol: HTTP
+          InstanceProtocol: HTTP
+          InstancePort: 10248
+          LoadBalancerPort: 10248
+      Tags:
+        - Key: "Teapot"
+          Value: instance health check
+      SecurityGroups:
+        - {Ref: WorkerLoadBalancerSecurityGroup}
 
 Resources:
 
@@ -286,6 +305,21 @@ Resources:
           Value: kubernetes
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
+  WorkerLoadBalancerSecurityGroup:
+    Properties:
+      GroupDescription: {Ref: 'AWS::StackName'}
+      SecurityGroupIngress:
+      - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
+      VpcId: "{{ AccountInfo.VpcID }}"
+    Type: AWS::EC2::SecurityGroup
+  WorkerSecurityGroupFromLoadBalancerHealthCheck:
+    Properties:
+      FromPort: 10248
+      GroupId: {Ref: WorkerSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: WorkerLoadBalancerSecurityGroup}
+      ToPort: 10248
+    Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromWorker:
     Properties:
       FromPort: 443
