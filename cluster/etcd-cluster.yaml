@@ -16,7 +16,7 @@ SenzaComponents:
         2379: 2379
         2380: 2380
       runtime: Docker
-      source: registry.opensource.zalan.do/acid/multiregion-etcd-cluster:3.0.15-p6
+      source: registry.opensource.zalan.do/acid/etcd-cluster:3.0.15-p14
       environment:
         HOSTED_ZONE: '{{Arguments.HostedZone}}'
         ACTIVE_REGIONS: '{{Arguments.ActiveRegions}}'
@@ -25,7 +25,7 @@ SenzaComponents:
           partition: none
           filesystem: tmpfs
           erase_on_boot: false
-          options: size=3g
+          options: size=2g
       appdynamics_application: 'etcd-cluster-{{Arguments.version}}'
     Type: Senza::TaupageAutoScalingGroup
     AutoScaling:
@@ -40,7 +40,7 @@ SenzaInfo:
       Default: eu-west-1,eu-central-1
   - InstanceCount:
       Description: Instance number in ASG
-      Default: 5
+      Default: 4
   - EtcdS3Backup:
       Description: AWS S3 Bucket to backup ETCD to
   StackName: etcd-cluster
@@ -55,12 +55,12 @@ Resources:
         ToPort: 22
         CidrIp: 172.16.0.0/12
       - IpProtocol: tcp
-        FromPort: 9100
-        ToPort: 9100
-        CidrIp: 172.16.0.0/12
-      - IpProtocol: tcp
         FromPort: 2379
         ToPort: 2380
+        CidrIp: 172.16.0.0/12
+      - IpProtocol: tcp
+        FromPort: 9100
+        ToPort: 9100
         CidrIp: 172.16.0.0/12
   EtcdIngressMembers:
     Type: "AWS::EC2::SecurityGroupIngress"
