@@ -874,10 +874,6 @@ write_files:
               - kubectl
               - proxy
               - --port=8080
-            volumes:
-            - name: credentials
-              emptyDir:
-                medium: Memory # share a tmpfs between the two containers
               resources:
                 limits:
                   cpu: 200m
@@ -885,6 +881,10 @@ write_files:
                 requests:
                   cpu: 100m
                   memory: 100Mi
+            volumes:
+            - name: credentials
+              emptyDir:
+                medium: Memory # share a tmpfs between the two containers
 
   - path: /srv/kubernetes/manifests/deployments/mate.yaml
     content: |
