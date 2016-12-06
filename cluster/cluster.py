@@ -259,7 +259,7 @@ def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nod
     '''
 
     variables = get_cluster_variables(stack_name, version, appdynamics_access_key)
-    info('Cluster ID is:             {}'.format(variables['cluster_id']))
+    info('Cluster ID is:               {}'.format(variables['cluster_id']))
     info('API server endpoint will be: {}'.format(variables['api_server']))
     if dry_run:
         print(yaml.safe_dump(variables))
@@ -337,7 +337,7 @@ def update(stack_name, version,  dry_run, force, instance_type, master_nodes, wo
     if worker_nodes == -1:
         worker_nodes = get_current_worker_nodes(stack_name, version)
 
-    info('Cluster ID is:        {}'.format(variables['cluster_id']))
+    info('Cluster ID is:          {}'.format(variables['cluster_id']))
     info('API server endpoint is: {}'.format(variables['api_server']))
     info('Master nodes:           {}'.format(master_nodes))
     info('Worker nodes:           {}'.format(worker_nodes))
