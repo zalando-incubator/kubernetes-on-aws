@@ -65,16 +65,6 @@ def get_account_alias():
     return conn.list_account_aliases()['AccountAliases'][0]
 
 
-def get_account_alias_without_namespace():
-    '''
-    Return AWS account alias without an optional prefix (separated by dash)
-
-    i.e. an alias of "myorg-myteam-staging" will return "myteam-staging"
-    '''
-    account_alias = get_account_alias()
-    return account_alias.split('-', 1)[-1]
-
-
 def get_mint_bucket_name():
     account_id = get_account_id()
     account_alias = get_account_alias()
@@ -112,13 +102,17 @@ def get_cluster_variables(stack_name: str, version: str, appdynamics_access_key:
     route53 = boto3.client('route53')
     all_hosted_zones = route53.list_hosted_zones()['HostedZones']
     hosted_zone = all_hosted_zones[0]['Name'].rstrip('.')
-    account_alias_without_namespace = get_account_alias_without_namespace()
 
     etcd_discovery_domain = 'etcd.{}'.format(hosted_zone)
     api_server = 'https://{}-{}.{}'.format(stack_name, version, hosted_zone)
     if not worker_shared_secret:
         worker_shared_secret = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(64))
-    cluster_name = '{}-{}'.format(account_alias_without_namespace, stack_name)
+    if stack_name == "kube-aws-test":
+        local_id = stack_name
+    else:
+        local_id = '{}-{}'.format(stack_name, version)
+
+    cluster_id = 'aws:{}:{}:{}'.format(get_account_id(), get_region(), local_id)
     # TODO: encrypt fixed token with KMS
 
     mint_bucket = get_mint_bucket_name()
@@ -131,7 +125,7 @@ def get_cluster_variables(stack_name: str, version: str, appdynamics_access_key:
         'api_server': api_server,
         'worker_shared_secret': worker_shared_secret,
         'hosted_zone': hosted_zone,
-        'webhook_cluster_name': cluster_name,
+        'cluster_id': cluster_id,
         'mint_bucket': mint_bucket,
         'etcd_bucket': etcd_bucket,
         'account_id': get_account_id(),
@@ -265,7 +259,7 @@ def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nod
     '''
 
     variables = get_cluster_variables(stack_name, version, appdynamics_access_key)
-    info('Cluster name is:             {}'.format(variables['webhook_cluster_name']))
+    info('Cluster ID is:               {}'.format(variables['cluster_id']))
     info('API server endpoint will be: {}'.format(variables['api_server']))
     if dry_run:
         print(yaml.safe_dump(variables))
@@ -343,7 +337,7 @@ def update(stack_name, version,  dry_run, force, instance_type, master_nodes, wo
     if worker_nodes == -1:
         worker_nodes = get_current_worker_nodes(stack_name, version)
 
-    info('Cluster name is:        {}'.format(variables['webhook_cluster_name']))
+    info('Cluster ID is:          {}'.format(variables['cluster_id']))
     info('API server endpoint is: {}'.format(variables['api_server']))
     info('Master nodes:           {}'.format(master_nodes))
     info('Worker nodes:           {}'.format(worker_nodes))
