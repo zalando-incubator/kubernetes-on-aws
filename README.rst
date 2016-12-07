@@ -4,7 +4,7 @@ Kubernetes on AWS
 
 **WORK IN PROGRESS**
 
-This repo contains some scripts and templates to provision Kubernetes clusters on AWS using Cloud Formation and CoreOS.
+This repo contains some scripts and templates to provision Kubernetes_ clusters on AWS using Cloud Formation and CoreOS_.
 
 **Consider this as very early alpha quality**. Many values are hardcoded, and currently we're focusing on solving our own, specific/Zalando user case. However, **we are open to ideas from the community at large about potentially turning this idea into a project that provides universal/general value to others**. Please contact us via our Issues Tracker with your thoughts and suggestions.
 
@@ -22,7 +22,7 @@ Features
 
 * Highly available master nodes (ASG) behind ELB
 * Worker Auto Scaling Group with Kubelet ELB health check
-* Cluster autoscaling (using autoscaler from contrib repo)
+* Cluster autoscaling (using cluster-autoscaler_)
 * Route53 DNS integration via Mate_
 * AWS IAM integration via kube2iam_
 * Standard components are installed: heapster, dashboard, node exporter, kube-state-metrics
@@ -103,8 +103,11 @@ Where ``API_SERVER_URL`` is your cluster's API endpoint (e.g. https://kube-1.myt
 You can use ``./cluster.py get-api-token <STACK_NAME> <VERSION>`` to get the worker's shared secret from the AWS user data.
 
 
+.. _Kubernetes: http://kubernetes.io
+.. _CoreOS: https://coreos.com/
 .. _kube-aws: https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/aws
 .. _Senza Cloud Formation tool: https://github.com/zalando-stups/senza
 .. _OAuth Token Info: http://planb.readthedocs.io/en/latest/intro.html#token-info
 .. _Mate: https://github.com/zalando-incubator/mate
 .. _kube2iam: https://github.com/jtblin/kube2iam
+.. _cluster-autoscaler: https://github.com/kubernetes/contrib/tree/master/cluster-autoscaler
