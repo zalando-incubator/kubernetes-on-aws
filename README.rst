@@ -22,11 +22,13 @@ Features
 
 * Highly available master nodes (ASG) behind ELB
 * Worker Auto Scaling Group with Kubelet ELB health check
+* Flannel overlay networking
 * Cluster autoscaling (using cluster-autoscaler_)
 * Route53 DNS integration via Mate_
 * AWS IAM integration via kube2iam_
-* Standard components are installed: heapster, dashboard, node exporter, kube-state-metrics
+* Standard components are installed: kube-dns, heapster, dashboard, node exporter, kube-state-metrics
 * Webhook authentication and authorization (roles "ReadOnly", "PowerUser", "Administrator")
+* TBD: Log shipping
 * Planned: full Ingress support (`#169 <https://github.com/zalando-incubator/kubernetes-on-aws/issues/169>`_)
 * Planned: Spot Fleet integration (`#61 <https://github.com/zalando-incubator/kubernetes-on-aws/issues/61>`_)
 
@@ -37,6 +39,7 @@ Notes
 * SSL client-cert authentication is disabled
 * Many values are hardcoded
 * Secrets (e.g. shared token) are not KMS-encrypted
+* Some components are not open-sourced yet: webhook, secretary
 
 
 Assumptions
