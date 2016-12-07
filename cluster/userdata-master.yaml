@@ -380,7 +380,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 500Mi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:52cc6ef
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:6669b4b
           name: webhook
           ports:
           - containerPort: 8081
@@ -410,8 +410,8 @@ write_files:
               value: :8081
             - name: USERS_API_URL
               value: https://users.auth.zalando.com
-            - name: CLUSTER_NAME
-              value: {{WEBHOOK_CLUSTER_NAME}}
+            - name: CLUSTER_ID
+              value: {{CLUSTER_ID}}
             - name: TOKENINFO_URL
               value: https://info.services.auth.zalando.com/oauth2/tokeninfo
             - name: USER_GROUPS
@@ -819,7 +819,7 @@ write_files:
         namespace: kube-system
         labels:
           application: secretary
-          version: v0.1.1
+          version: v0.2.0
       spec:
         replicas: 1
         selector:
@@ -829,7 +829,7 @@ write_files:
           metadata:
             labels:
               application: secretary
-              version: v0.1.1
+              version: v0.2.0
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
@@ -854,7 +854,7 @@ write_files:
                   cpu: 50m
                   memory: 15Mi
             - name: secretary
-              image: registry.opensource.zalan.do/teapot/secretary:v0.1.1
+              image: registry.opensource.zalan.do/teapot/secretary:v0.2.0
               args:
               - --all-namespaces
               - --service-account=default
@@ -866,28 +866,6 @@ write_files:
               - mountPath: /meta/credentials
                 name: credentials
                 readOnly: true
-              resources:
-                limits:
-                  cpu: 200m
-                  memory: 100Mi
-                requests:
-                  cpu: 50m
-                  memory: 50Mi
-            - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
-              command:
-              - /hyperkube
-              args:
-              - kubectl
-              - proxy
-              - --port=8080
-              resources:
-                limits:
-                  cpu: 100m
-                  memory: 100Mi
-                requests:
-                  cpu: 25m
-                  memory: 25Mi
             volumes:
             - name: credentials
               emptyDir:
@@ -902,7 +880,7 @@ write_files:
         namespace: kube-system
         labels:
           application: mate
-          version: v0.0.7
+          version: v0.1.0
       spec:
         replicas: 1
         selector:
@@ -912,7 +890,7 @@ write_files:
           metadata:
             labels:
               application: mate
-              version: v0.0.7
+              version: v0.1.0
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
@@ -920,7 +898,7 @@ write_files:
           spec:
             containers:
             - name: mate
-              image: registry.opensource.zalan.do/teapot/mate:v0.0.7
+              image: registry.opensource.zalan.do/teapot/mate:v0.1.0
               env:
               - name: AWS_REGION
                 value: {{REGION}}
@@ -930,7 +908,6 @@ write_files:
               - --consumer=aws
               - --aws-hosted-zone={{HOSTED_ZONE}}.
               - --aws-record-group-id={{STACK_NAME}}-{{STACK_VERSION}}
-              - --sync
               resources:
                 limits:
                   cpu: 200m
