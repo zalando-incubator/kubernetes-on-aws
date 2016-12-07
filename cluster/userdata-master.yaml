@@ -1134,6 +1134,44 @@ write_files:
             imagePullSecrets:
             - name: pierone.stups.zalan.do
 
+  - path: /srv/kubernetes/manifests/daemonsets/rescheduler.yaml
+    content: |
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: rescheduler-v0.2.1
+        namespace: kube-system
+        labels:
+          application: rescheduler
+          version: v0.2.1
+          kubernetes.io/cluster-service: "true"
+          kubernetes.io/name: "Rescheduler"
+      spec:
+        hostNetwork: true
+        containers:
+        - image: gcr.io/google_containers/rescheduler:v0.2.1
+          name: rescheduler
+          volumeMounts:
+          - mountPath: /var/log
+            name: logfile
+            readOnly: false
+          # TODO: Make resource requrements depend on the size of the cluster
+          resources:
+            requests:
+              cpu: 10m
+              memory: 100Mi
+          command:
+          # TODO: split this out into args when we no longer need to pipe stdout to a file #6428
+          - sh
+          - -c
+          - '/rescheduler --running-in-cluster=false 1>>/var/log/rescheduler.log 2>&1'
+        volumes:
+        - hostPath:
+            path: "/var/log"
+          name: logfile
+
+
+
   - path: /srv/kubernetes/manifests/storageclasses/standard.yaml
     content: |
       apiVersion: storage.k8s.io/v1beta1
