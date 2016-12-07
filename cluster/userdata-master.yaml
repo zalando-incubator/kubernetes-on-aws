@@ -614,8 +614,8 @@ write_files:
                   cpu: 200m
                   memory: 200Mi
                 requests:
-                  cpu: 100m
-                  memory: 100Mi
+                  cpu: 10m
+                  memory: 10Mi
               args:
               - -cmd=nslookup kubernetes.default.svc.cluster.local 127.0.0.1 >/dev/null && nslookup kubernetes.default.svc.cluster.local 127.0.0.1:10053 >/dev/null
               - -port=8080
@@ -689,7 +689,7 @@ write_files:
                     memory: 200Mi
                   requests:
                     cpu: 100m
-                    memory: 200Mi
+                    memory: 25Mi
                 command:
                   - /heapster
                   - --source=kubernetes.summary_api:''
@@ -697,11 +697,11 @@ write_files:
                 name: heapster-nanny
                 resources:
                   limits:
-                    cpu: 200m
-                    memory: 200Mi
-                  requests:
                     cpu: 100m
-                    memory: 100Mi
+                    memory: 50Mi
+                  requests:
+                    cpu: 25m
+                    memory: 10Mi
                 env:
                   - name: MY_POD_NAME
                     valueFrom:
@@ -772,11 +772,11 @@ write_files:
               image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.5.0
               resources:
                 limits:
-                  cpu: 200m
-                  memory: 200Mi
+                  cpu: 100m
+                  memory: 50Mi
                 requests:
                   cpu: 100m
-                  memory: 100Mi
+                  memory: 50Mi
               ports:
               - containerPort: 9090
               livenessProbe:
@@ -842,10 +842,10 @@ write_files:
               resources:
                 limits:
                   cpu: 200m
-                  memory: 200Mi
-                requests:
-                  cpu: 100m
                   memory: 100Mi
+                requests:
+                  cpu: 50m
+                  memory: 15Mi
             - name: secretary
               image: registry.opensource.zalan.do/teapot/secretary:v0.1.1
               args:
@@ -862,10 +862,10 @@ write_files:
               resources:
                 limits:
                   cpu: 200m
-                  memory: 200Mi
-                requests:
-                  cpu: 100m
                   memory: 100Mi
+                requests:
+                  cpu: 50m
+                  memory: 50Mi
             - name: kubectl
               image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
               command:
@@ -876,11 +876,11 @@ write_files:
               - --port=8080
               resources:
                 limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
                   cpu: 100m
                   memory: 100Mi
+                requests:
+                  cpu: 25m
+                  memory: 25Mi
             volumes:
             - name: credentials
               emptyDir:
@@ -929,8 +929,8 @@ write_files:
                   cpu: 200m
                   memory: 200Mi
                 requests:
-                  cpu: 100m
-                  memory: 100Mi
+                  cpu: 50m
+                  memory: 25Mi
             - name: kubectl
               image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
               command:
@@ -940,11 +940,11 @@ write_files:
               - proxy
               resources:
                 limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
                   cpu: 100m
                   memory: 100Mi
+                requests:
+                  cpu: 25m
+                  memory: 25Mi
 
   - path: /srv/kubernetes/manifests/deployments/kube-state-metrics.yaml
     content: |
@@ -977,11 +977,11 @@ write_files:
               - --port=8080
               resources:
                 limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
                   cpu: 100m
                   memory: 100Mi
+                requests:
+                  cpu: 50m
+                  memory: 25Mi
 
   - path: /srv/kubernetes/manifests/services/kube-state-metrics.yaml
     content: |
@@ -1039,8 +1039,8 @@ write_files:
                   cpu: 200m
                   memory: 200Mi
                 requests:
-                  cpu: 100m
-                  memory: 100Mi
+                  cpu: 25m
+                  memory: 25Mi
             hostNetwork: true
             hostPID: true
 
@@ -1090,11 +1090,11 @@ write_files:
                 privileged: true
               resources:
                 limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
                   cpu: 100m
                   memory: 100Mi
+                requests:
+                  cpu: 25m
+                  memory: 25Mi
 
   - path: /srv/kubernetes/manifests/deployments/cluster-autoscaler.yaml
     content: |
@@ -1126,11 +1126,11 @@ write_files:
                 name: cluster-autoscaler
                 resources:
                   limits:
-                    cpu: 200m
+                    cpu: 250m
                     memory: 500Mi
                   requests:
                     cpu: 100m
-                    memory: 300Mi
+                    memory: 50Mi
                 command:
                   - ./cluster-autoscaler
                   - --v=9
@@ -1192,7 +1192,7 @@ write_files:
                   memory: 200Mi
                 requests:
                   cpu: 100m
-                  memory: 100Mi
+                  memory: 80Mi
             - name: appdynamics-agent
               image: pierone.stups.zalan.do/monitoring-appdynamics/appdynamics-machine-agent:0.3
               volumeMounts:
@@ -1218,7 +1218,7 @@ write_files:
                   memory: 500Mi
                 requests:
                   cpu: 100m
-                  memory: 300Mi
+                  memory: 100Mi
             - name: kubectl
               image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
               command:
@@ -1228,11 +1228,11 @@ write_files:
               - proxy
               resources:
                 limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
                   cpu: 100m
                   memory: 100Mi
+                requests:
+                  cpu: 25m
+                  memory: 25Mi
             volumes:
             - name: containerlogs
               hostPath:
