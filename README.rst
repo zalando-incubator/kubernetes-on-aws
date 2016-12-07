@@ -88,7 +88,7 @@ On creation:
 
 On update:
 
-* provide optional flag ``--instance-type´` to change instance type of worker nodes (defaults to ``current`` which results in whatever type the workers currently have)
+* provide optional flag ``--instance-type`` to change instance type of worker nodes (defaults to ``current`` which results in whatever type the workers currently have)
 * if cloud-config didn't change one has to use the ``--force`` flag to trigger the update
 
 Testing
