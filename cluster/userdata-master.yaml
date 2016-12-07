@@ -33,7 +33,7 @@ coreos:
         Description=Docker Application Container Engine
         Documentation=http://docs.docker.com
         After=install-docker docker.socket early-docker.target network.target
-        Requires=install-docker docker.socket early-docker.target 
+        Requires=install-docker docker.socket early-docker.target
 
         [Service]
         EnvironmentFile=-/run/flannel_docker_opts.env
@@ -248,7 +248,7 @@ write_files:
     owner: root:root
     content: |
       #!/bin/bash -e
-      for uid in hjacobs mkerk sszuecs rdifazio mlinkhorst mlarsen tsarnowski lmineiro aryszka apfeiffer; do
+      for uid in hjacobs mkerk sszuecs rdifazio mlinkhorst mlarsen tsarnowski lmineiro aryszka apfeiffer ytussupbekov; do
           /usr/bin/curl -s https://even.stups.zalan.do/public-keys/$uid/sshkey.pub -o /home/core/.ssh/authorized_keys.d/$uid
       done
       /usr/bin/update-ssh-keys
@@ -290,6 +290,13 @@ write_files:
           - --v=2
           securityContext:
             privileged: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 75Mi
+            limits:
+              cpu: 200m
+              memory: 200Mi
           volumeMounts:
           - mountPath: /etc/ssl/certs
             name: ssl-certs-host
@@ -366,6 +373,13 @@ write_files:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
             readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 200m
+              memory: 500Mi
         - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:6669b4b
           name: webhook
           ports:
@@ -387,8 +401,8 @@ write_files:
               cpu: 100m
               memory: 100Mi
             requests:
-              cpu: 100m
-              memory: 100Mi
+              cpu: 50m
+              memory: 50Mi
           env:
             - name: SHARED_SECRET
               value: {{WORKER_SHARED_SECRET}}
@@ -404,6 +418,13 @@ write_files:
               value: stups_deployment-controller-ui=Administrator
         - name: nginx
           image: registry.opensource.zalan.do/teapot/nginx:1.11.5
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
           volumeMounts:
           - name: config-volume
             mountPath: /etc/nginx
@@ -445,8 +466,12 @@ write_files:
           - --cloud-provider=aws
           - --feature-gates=AllAlpha=true
           resources:
-            requests:
+            limits:
               cpu: 200m
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
           livenessProbe:
             httpGet:
               host: 127.0.0.1
@@ -492,8 +517,12 @@ write_files:
           - --leader-elect=true
           - --feature-gates=AllAlpha=true
           resources:
+            limits:
+              cpu: 250m
+              memory: 250Mi
             requests:
               cpu: 100m
+              memory: 100Mi
           livenessProbe:
             httpGet:
               host: 127.0.0.1
@@ -533,10 +562,11 @@ write_files:
               image: gcr.io/google_containers/kubedns-amd64:1.8
               resources:
                 limits:
-                  memory: 170Mi
+                  cpu: 200m
+                  memory: 200Mi
                 requests:
                   cpu: 100m
-                  memory: 70Mi
+                  memory: 50Mi
               livenessProbe:
                 httpGet:
                   path: /healthz
@@ -577,14 +607,22 @@ write_files:
               - containerPort: 53
                 name: dns-tcp
                 protocol: TCP
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 100Mi
+                requests:
+                  cpu: 50m
+                  memory: 25Mi
             - name: healthz
               image: gcr.io/google_containers/exechealthz-amd64:1.1
               resources:
                 limits:
-                  memory: 50Mi
+                  cpu: 100m
+                  memory: 100Mi
                 requests:
-                  cpu: 10m
-                  memory: 50Mi
+                  cpu: 50m
+                  memory: 25Mi
               args:
               - -cmd=nslookup kubernetes.default.svc.cluster.local 127.0.0.1 >/dev/null && nslookup kubernetes.default.svc.cluster.local 127.0.0.1:10053 >/dev/null
               - -port=8080
@@ -616,7 +654,7 @@ write_files:
         - name: dns-tcp
           port: 53
           protocol: TCP
- 
+
   - path: /srv/kubernetes/manifests/deployments/heapster.yaml
     content: |
       apiVersion: extensions/v1beta1
@@ -654,11 +692,11 @@ write_files:
                   timeoutSeconds: 5
                 resources:
                   limits:
-                    cpu: 80m
+                    cpu: 200m
                     memory: 200Mi
                   requests:
-                    cpu: 80m
-                    memory: 200Mi
+                    cpu: 100m
+                    memory: 25Mi
                 command:
                   - /heapster
                   - --source=kubernetes.summary_api:''
@@ -666,11 +704,11 @@ write_files:
                 name: heapster-nanny
                 resources:
                   limits:
-                    cpu: 50m
-                    memory: 90Mi
+                    cpu: 100m
+                    memory: 50Mi
                   requests:
-                    cpu: 50m
-                    memory: 90Mi
+                    cpu: 25m
+                    memory: 10Mi
                 env:
                   - name: MY_POD_NAME
                     valueFrom:
@@ -808,6 +846,13 @@ write_files:
               - mountPath: /meta/credentials
                 name: credentials
                 readOnly: false
+              resources:
+                limits:
+                  cpu: 200m
+                  memory: 100Mi
+                requests:
+                  cpu: 50m
+                  memory: 15Mi
             - name: secretary
               image: registry.opensource.zalan.do/teapot/secretary:v0.2.0
               args:
@@ -863,6 +908,13 @@ write_files:
               - --consumer=aws
               - --aws-hosted-zone={{HOSTED_ZONE}}.
               - --aws-record-group-id={{STACK_NAME}}-{{STACK_VERSION}}
+              resources:
+                limits:
+                  cpu: 200m
+                  memory: 200Mi
+                requests:
+                  cpu: 50m
+                  memory: 25Mi
             - name: kubectl
               image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
               command:
@@ -870,6 +922,13 @@ write_files:
               args:
               - kubectl
               - proxy
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 100Mi
+                requests:
+                  cpu: 25m
+                  memory: 25Mi
 
   - path: /srv/kubernetes/manifests/deployments/kube-state-metrics.yaml
     content: |
@@ -900,6 +959,13 @@ write_files:
               command:
               - /kube-state-metrics
               - --port=8080
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 100Mi
+                requests:
+                  cpu: 50m
+                  memory: 25Mi
 
   - path: /srv/kubernetes/manifests/services/kube-state-metrics.yaml
     content: |
@@ -952,6 +1018,13 @@ write_files:
               - name: prom-node-exp
                 containerPort: 9100
                 hostPort: 9100
+              resources:
+                limits:
+                  cpu: 200m
+                  memory: 200Mi
+                requests:
+                  cpu: 25m
+                  memory: 25Mi
             hostNetwork: true
             hostPID: true
 
@@ -999,6 +1072,13 @@ write_files:
                 name: http
               securityContext:
                 privileged: true
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 100Mi
+                requests:
+                  cpu: 25m
+                  memory: 25Mi
 
   - path: /srv/kubernetes/manifests/deployments/cluster-autoscaler.yaml
     content: |
@@ -1030,11 +1110,11 @@ write_files:
                 name: cluster-autoscaler
                 resources:
                   limits:
-                    cpu: 100m
-                    memory: 300Mi
+                    cpu: 250m
+                    memory: 500Mi
                   requests:
                     cpu: 100m
-                    memory: 300Mi
+                    memory: 50Mi
                 command:
                   - ./cluster-autoscaler
                   - --v=9
@@ -1090,6 +1170,13 @@ write_files:
                 value: http://127.0.0.1:8001
               - name: WATCHER_DEBUG
                 value: "1"
+              resources:
+                limits:
+                  cpu: 200m
+                  memory: 200Mi
+                requests:
+                  cpu: 100m
+                  memory: 80Mi
             - name: appdynamics-agent
               image: pierone.stups.zalan.do/monitoring-appdynamics/appdynamics-machine-agent:0.3
               volumeMounts:
@@ -1109,6 +1196,13 @@ write_files:
                 value: testing
               - name: APPDYNAMICS_ACCOUNT_GLOBALNAME
                 value: testing_4630e5e5-7aed-4961-94ef-5af03cf0b83b
+              resources:
+                limits:
+                  cpu: 200m
+                  memory: 500Mi
+                requests:
+                  cpu: 100m
+                  memory: 100Mi
             - name: kubectl
               image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
               command:
@@ -1116,6 +1210,13 @@ write_files:
               args:
               - kubectl
               - proxy
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 100Mi
+                requests:
+                  cpu: 25m
+                  memory: 25Mi
             volumes:
             - name: containerlogs
               hostPath:
