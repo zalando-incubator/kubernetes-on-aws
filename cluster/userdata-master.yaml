@@ -292,11 +292,11 @@ write_files:
             privileged: true
           resources:
             requests:
-              cpu: 100m
-              memory: 100Mi
+              cpu: 50m
+              memory: 75Mi
             limits:
-              cpu: 100m
-              memory: 100Mi
+              cpu: 200m
+              memory: 200Mi
           volumeMounts:
           - mountPath: /etc/ssl/certs
             name: ssl-certs-host
@@ -401,8 +401,8 @@ write_files:
               cpu: 100m
               memory: 100Mi
             requests:
-              cpu: 100m
-              memory: 100Mi
+              cpu: 50m
+              memory: 50Mi
           env:
             - name: SHARED_SECRET
               value: {{WORKER_SHARED_SECRET}}
@@ -418,6 +418,13 @@ write_files:
               value: stups_deployment-controller-ui=Administrator
         - name: nginx
           image: registry.opensource.zalan.do/teapot/nginx:1.11.5
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
           volumeMounts:
           - name: config-volume
             mountPath: /etc/nginx
@@ -463,7 +470,7 @@ write_files:
               cpu: 200m
               memory: 200Mi
             requests:
-              cpu: 200m
+              cpu: 100m
               memory: 100Mi
           livenessProbe:
             httpGet:
@@ -559,7 +566,7 @@ write_files:
                   memory: 200Mi
                 requests:
                   cpu: 100m
-                  memory: 100Mi
+                  memory: 50Mi
               livenessProbe:
                 httpGet:
                   path: /healthz
@@ -602,20 +609,20 @@ write_files:
                 protocol: TCP
               resources:
                 limits:
-                  cpu: 200m
-                  memory: 200Mi
-                requests:
                   cpu: 100m
                   memory: 100Mi
+                requests:
+                  cpu: 50m
+                  memory: 25Mi
             - name: healthz
               image: gcr.io/google_containers/exechealthz-amd64:1.1
               resources:
                 limits:
-                  cpu: 200m
-                  memory: 200Mi
+                  cpu: 100m
+                  memory: 100Mi
                 requests:
-                  cpu: 10m
-                  memory: 10Mi
+                  cpu: 50m
+                  memory: 25Mi
               args:
               - -cmd=nslookup kubernetes.default.svc.cluster.local 127.0.0.1 >/dev/null && nslookup kubernetes.default.svc.cluster.local 127.0.0.1:10053 >/dev/null
               - -port=8080
