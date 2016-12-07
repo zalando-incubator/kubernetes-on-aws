@@ -27,7 +27,7 @@ Features
 * AWS IAM integration via kube2iam_
 * Standard components are installed: heapster, dashboard, node exporter, kube-state-metrics
 * Webhook authentication and authorization (roles "ReadOnly", "PowerUser", "Administrator")
-* Planned: full Ingress support (`#169 <://github.com/zalando-incubator/kubernetes-on-aws/issues/169>`_)
+* Planned: full Ingress support (`#169 <https://github.com/zalando-incubator/kubernetes-on-aws/issues/169>`_)
 * Planned: Spot Fleet integration (`#61 <https://github.com/zalando-incubator/kubernetes-on-aws/issues/61>`_)
 
 Notes
