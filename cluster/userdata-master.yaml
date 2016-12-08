@@ -1151,10 +1151,6 @@ write_files:
         containers:
         - image: registry.opensource.zalan.do/teapot/rescheduler:v0.2.1
           name: rescheduler
-          volumeMounts:
-          - mountPath: /var/log
-            name: logfile
-            readOnly: false
           # TODO: Make resource requrements depend on the size of the cluster
           resources:
             requests:
@@ -1165,12 +1161,6 @@ write_files:
           - sh
           - -c
           - '/rescheduler --running-in-cluster=false 1>>/var/log/rescheduler.log 2>&1'
-        volumes:
-        - hostPath:
-            path: "/var/log"
-          name: logfile
-
-
 
   - path: /srv/kubernetes/manifests/storageclasses/standard.yaml
     content: |
