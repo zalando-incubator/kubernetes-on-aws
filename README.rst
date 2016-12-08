@@ -4,9 +4,9 @@ Kubernetes on AWS
 
 **WORK IN PROGRESS**
 
-This repo contains some scripts and templates to provision Kubernetes clusters on AWS using Cloud Formation and CoreOS.
+This repo contains some scripts and templates to provision Kubernetes_ clusters on AWS using Cloud Formation and CoreOS_.
 
-**Consider this very early test stuff**. Many values are hardcoded, and currently we're focusing on solving our own, specific/Zalando user case. However, **we are open to ideas from the community at large about potentially turning this idea into a project that provides universal/general value to others**. Please contact us via our Issues Tracker with your thoughts and suggestions.
+**Consider this as very early alpha quality**. Many values are hardcoded, and currently we're focusing on solving our own, specific/Zalando user case. However, **we are open to ideas from the community at large about potentially turning this idea into a project that provides universal/general value to others**. Please contact us via our Issues Tracker with your thoughts and suggestions.
 
 It was initially based on `kube-aws`_, but we decided to diverge from it:
 
@@ -17,6 +17,21 @@ It was initially based on `kube-aws`_, but we decided to diverge from it:
 
 We therefore adapted the generated Cloud Formation to YAML and are using our own `Senza Cloud Formation tool`_ for deployment (it's not doing any magic, but e.g. makes ELB+DNS config easy).
 
+Features
+========
+
+* Highly available master nodes (ASG) behind ELB
+* Worker Auto Scaling Group with Kubelet ELB health check
+* Flannel overlay networking
+* Cluster autoscaling (using cluster-autoscaler_)
+* Route53 DNS integration via Mate_
+* AWS IAM integration via kube2iam_
+* Standard components are installed: kube-dns, heapster, dashboard, node exporter, kube-state-metrics
+* Webhook authentication and authorization (roles "ReadOnly", "PowerUser", "Administrator")
+* TBD: Log shipping
+* Planned: full Ingress support (`#169 <https://github.com/zalando-incubator/kubernetes-on-aws/issues/169>`_)
+* Planned: Spot Fleet integration (`#61 <https://github.com/zalando-incubator/kubernetes-on-aws/issues/61>`_)
+
 Notes
 =====
 
@@ -24,6 +39,7 @@ Notes
 * SSL client-cert authentication is disabled
 * Many values are hardcoded
 * Secrets (e.g. shared token) are not KMS-encrypted
+* Some components are not open-sourced yet: webhook, secretary
 
 
 Assumptions
@@ -33,7 +49,7 @@ Assumptions
 * The VPC has at least one public subnet per AZ (either AWS default VPC setup or public subnet named "dmz-<REGION>-<AZ>")
 * The VPC is in region eu-central-1 or eu-west-1
 * etcd cluster is available via DNS discovery (SRV records) at etcd.<YOUR-HOSTED-ZONE>
-* OAuth Token Info is available to validate user tokens
+* `OAuth Token Info`_ is available to validate user tokens
 
 
 Usage
@@ -48,32 +64,32 @@ Usage
 
 This will bootstrap a new cluster and make the API server available as https://<STACK_NAME>-<VERSION>.<YOUR-HOSTED-ZONE-DOMAIN>.
 
-The authorization webhook will require the user to have the group "<ACCOUNT_ALIAS_WITHOUT_PREFIX>-<STACK_NAME>", i.e. if the AWS account alias is "myorg-myteam" and the stack name is "kube-aws-test" then the required group is "myteam-kube-aws-test".
+The authorization webhook will require the user to have the group "aws:<ACCOUNT_ID>:<REGION>:<STACK_NAME>:<VERSION>", e.g. "aws:123456789012:eu-central-1:kube-aws-test-1".
 
 Update
 ======
 
-clusters can be updated with
+Clusters can be updated with
 
 .. code-block:: bash
 
     $ ./cluster.py update <STACK_NAME> <VERSION> # e.g. ./cluster.py update kube-aws-test 1
 
-this will apply the new cloud-configs via cloud formation and trigger a rolling update for both workers and masters.
+This will apply the new cloud-configs via cloud formation and trigger a rolling update for both workers and masters.
 
 Instance Type
 =============
 
-worker instance type can be configured on create and update.
+Worker instance type can be configured on create and update.
 
-on create:
+On creation:
 
-* provide optional flag `--instance-type` to specify instance type of worker nodes (defaults to `t2.micro`)
+* provide optional flag ``--instance-type`` to specify instance type of worker nodes (defaults to ``t2.micro``)
 
-on update:
+On update:
 
-* provide optional flag `--instance-type` to change instance type of worker nodes (defaults to `current` which results in whatever type the workers currently have)
-* if cloud-config didn't change one has to use the `--force` flag to trigger the update
+* provide optional flag ``--instance-type`` to change instance type of worker nodes (defaults to ``current`` which results in whatever type the workers currently have)
+* if cloud-config didn't change one has to use the ``--force`` flag to trigger the update
 
 Testing
 =======
@@ -90,5 +106,11 @@ Where ``API_SERVER_URL`` is your cluster's API endpoint (e.g. https://kube-1.myt
 You can use ``./cluster.py get-api-token <STACK_NAME> <VERSION>`` to get the worker's shared secret from the AWS user data.
 
 
+.. _Kubernetes: http://kubernetes.io
+.. _CoreOS: https://coreos.com/
 .. _kube-aws: https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/aws
 .. _Senza Cloud Formation tool: https://github.com/zalando-stups/senza
+.. _OAuth Token Info: http://planb.readthedocs.io/en/latest/intro.html#token-info
+.. _Mate: https://github.com/zalando-incubator/mate
+.. _kube2iam: https://github.com/jtblin/kube2iam
+.. _cluster-autoscaler: https://github.com/kubernetes/contrib/tree/master/cluster-autoscaler
