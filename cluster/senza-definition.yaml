@@ -18,6 +18,8 @@ SenzaInfo:
           Description: "Maximum number of nodes in the worker ASG"
       - InstanceType:
           Description: "Type of instance"
+      - ClusterID:
+          Description: "ID of the cluster"
 
 SenzaComponents:
   - Configuration:
@@ -94,6 +96,8 @@ SenzaComponents:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+      TargetGroupARNs:
+        - {Ref: WorkerTargetGroup}
   - WorkerLoadBalancer:
       Type: Senza::ElasticLoadBalancer
       NameSuffix: worker
@@ -113,7 +117,6 @@ SenzaComponents:
         - {Ref: WorkerLoadBalancerSecurityGroup}
 
 Resources:
-
   MasterIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -299,12 +302,33 @@ Resources:
       SecurityGroupIngress:
       - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
       - {CidrIp: 0.0.0.0/0, FromPort: 22, IpProtocol: tcp, ToPort: 22}
+      - {CidrIp: 172.31.0.0/16, FromPort: 9090, IpProtocol: tcp, ToPort: 9090}
       - {CidrIp: 172.31.0.0/16, FromPort: 9100, IpProtocol: tcp, ToPort: 9100}
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
+
+  WorkerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: "/healthz"
+      HealthCheckPort: 9090
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+      Matcher:
+        HttpCode: '200'
+      Port: 9090
+      Protocol: HTTP
+      UnhealthyThresholdCount: 3
+      VpcId: "{{ AccountInfo.VpcID }}"
+      Tags:
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
+
   WorkerLoadBalancerSecurityGroup:
     Properties:
       GroupDescription: {Ref: 'AWS::StackName'}

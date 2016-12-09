@@ -273,7 +273,7 @@ def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nod
         subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                                'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*',
                                'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes), 'MaximumWorkerNodes={}'.format(max_worker_nodes),
-                               'InstanceType={}'.format(instance_type)])
+                               'InstanceType={}'.format(instance_type), 'ClusterID={}'.format(variables['cluster_id'])])
         # wait up to 15m for stack to be created
         subprocess.check_call(['senza', 'wait', '--timeout=900', stack_name, version])
         wait_for_api_server(variables['api_server'])
@@ -349,7 +349,7 @@ def update(stack_name, version,  dry_run, force, instance_type, master_nodes, wo
                                'UserDataMaster={}'.format(user_data_master),
                                'UserDataWorker={}'.format(user_data_worker), 'KmsKey=*',
                                'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes), 'MaximumWorkerNodes={}'.format(max_worker_nodes),
-                               'InstanceType={}'.format(instance_type)])
+                               'InstanceType={}'.format(instance_type), 'ClusterID={}'.format(variables['cluster_id'])])
         # wait for CF update to complete..
         subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
 
