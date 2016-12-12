@@ -74,7 +74,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=pr-cp_zalando.pr-37302
+        Environment=KUBELET_VERSION=v1.4.7_zalando.0
         Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
         --insecure-options=image \
@@ -199,14 +199,14 @@ write_files:
           namespace: kube-system
           labels:
             application: kube-proxy
-            version: pr-cp_zalando.pr-37302
+            version: v1.4.7_zalando.0
           annotations:
             rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
         spec:
           hostNetwork: true
           containers:
           - name: kube-proxy
-            image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
             command:
             - /hyperkube
             - proxy
