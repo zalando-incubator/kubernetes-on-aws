@@ -428,6 +428,8 @@ write_files:
           volumeMounts:
           - name: config-volume
             mountPath: /etc/nginx
+          ports:
+          - containerPort: 8082
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
@@ -530,6 +532,24 @@ write_files:
               port: 10251
             initialDelaySeconds: 15
             timeoutSeconds: 15
+
+  - path: /srv/kubernetes/manifests/services/kubernetes-readonly.yaml
+    content: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: kubernetes-readonly
+        namespace: kube-system
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
+      spec:
+        type: LoadBalancer
+        ports:
+        - port: 80
+          protocol: TCP
+          targetPort: 8082
+        selector:
+          application: kube-apiserver
 
   - path: /srv/kubernetes/manifests/deployments/kube-dns.yaml
     content: |
@@ -974,10 +994,7 @@ write_files:
       metadata:
         name: kube-state-metrics
         namespace: kube-system
-        annotations:
-          service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
       spec:
-        type: LoadBalancer
         ports:
         - port: 80
           protocol: TCP
