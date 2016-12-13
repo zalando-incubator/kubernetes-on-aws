@@ -81,7 +81,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=pr-cp_zalando.pr-37302
+        Environment=KUBELET_VERSION=v1.4.7_zalando.0
         Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
         --insecure-options=image \
@@ -226,7 +226,7 @@ write_files:
           sleep 10
       done
 
-      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302 /hyperkube kubectl"
+      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0 /hyperkube kubectl"
 
       for manifest in /srv/kubernetes/manifests/*/*.yaml; do
           ${KUBECTL} apply -f $manifest
@@ -274,14 +274,14 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-proxy
-          version: pr-cp_zalando.pr-37302
+          version: v1.4.7_zalando.0
         annotations:
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
           command:
           - /hyperkube
           - proxy
@@ -321,12 +321,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: pr-cp_zalando.pr-37302
+          version: v1.4.7_zalando.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
           command:
           - /hyperkube
           - apiserver
@@ -411,11 +411,11 @@ write_files:
             - name: USERS_API_URL
               value: https://users.auth.zalando.com
             - name: CLUSTER_ID
-              value: {{CLUSTER_ID}}
+              value: {{WEBHOOK_ID}}
             - name: TOKENINFO_URL
               value: https://info.services.auth.zalando.com/oauth2/tokeninfo
             - name: USER_GROUPS
-              value: stups_deployment-controller-ui=Administrator
+              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator
         - name: nginx
           image: registry.opensource.zalan.do/teapot/nginx:1.11.5
           resources:
@@ -451,11 +451,11 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: pr-cp_zalando.pr-37302
+          version: v1.4.7_zalando.0
       spec:
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
           command:
           - /hyperkube
           - controller-manager
@@ -504,12 +504,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: pr-cp_zalando.pr-37302
+          version: v1.4.7_zalando.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
           command:
           - /hyperkube
           - scheduler
@@ -916,7 +916,7 @@ write_files:
                   cpu: 50m
                   memory: 25Mi
             - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
               command:
               - /hyperkube
               args:
@@ -1126,27 +1126,51 @@ write_files:
                     value: {{REGION}}
                 imagePullPolicy: "Always"
 
-  - path: /srv/kubernetes/manifests/daemonsets/appdynamics-agent.yaml
+  - path: /srv/kubernetes/manifests/daemonsets/logging-agent.yaml
     content: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: scalyr-config-base
+        namespace: kube-system
+      data:
+        scalyr.config: |
+          {
+            "import_vars": ["WATCHER_SCALYR_API_KEY", "WATCHER_CLUSTER_ID"],
+
+            "api_key": "$WATCHER_SCALYR_API_KEY",
+
+            "server_attributes": {
+                "serverHost": "$WATCHER_CLUSTER_ID"
+            },
+
+            "implicit_metric_monitor": false,
+            "implicit_agent_process_metrics_monitor": false,
+
+            "logs": [],
+            "monitors": []
+          }
+
+      ---
       apiVersion: extensions/v1beta1
       kind: DaemonSet
       metadata:
-        name: appdynamics-agent
+        name: logging-agent
         namespace: kube-system
         labels:
-          application: appdynamics-agent
-          version: v0.9
+          application: logging-agent
+          version: v0.10
           component: logging
       spec:
         selector:
           matchLabels:
-            application: appdynamics-agent
+            application: logging-agent
         template:
           metadata:
-            name: appdynamics-agent
+            name: logging-agent
             labels:
-              application: appdynamics-agent
-              version: v0.9
+              application: logging-agent
+              version: v0.10
               component: logging
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -1154,48 +1178,72 @@ write_files:
           spec:
             containers:
             - name: log-watcher
-              image: registry.opensource.zalan.do/eagleeye/k8s-log-watcher:0.9
-              volumeMounts:
-              - name: containerlogs
-                mountPath: /mnt/containers
-                readOnly: true
-              - name: jobfiles
-                mountPath: /mnt/jobs
+              image: registry.opensource.zalan.do/eagleeye/kubernetes-log-watcher:0.11
               env:
               - name: CLUSTER_NODE_NAME
                 valueFrom:
                   fieldRef:
                     fieldPath: spec.nodeName
-              - name: WATCHER_KUBE_URL
-                value: http://127.0.0.1:8001
-              - name: WATCHER_DEBUG
-                value: "1"
+
+              - name: WATCHER_KUBERNETES_UPDATE_CERTIFICATES
+                value: "true"
+              - name: WATCHER_CLUSTER_ID
+                value: "{{CLUSTER_ID}}"
+
+              - name: WATCHER_AGENTS
+                value: scalyr
+              - name: WATCHER_SCALYR_API_KEY
+                value: "{{SCALYR_ACCESS_KEY}}"
+              - name: WATCHER_SCALYR_DEST_PATH
+                value: /mnt/scalyr-logs
+              - name: WATCHER_SCALYR_CONFIG_PATH
+                value: /mnt/scalyr-config/agent.json
+              - name: WATCHER_SCALYR_JOURNALD
+                value: "true"
+
               resources:
                 limits:
                   cpu: 200m
                   memory: 200Mi
                 requests:
-                  cpu: 100m
-                  memory: 80Mi
-            - name: appdynamics-agent
-              image: pierone.stups.zalan.do/monitoring-appdynamics/appdynamics-machine-agent:0.3
+                  cpu: 50m
+                  memory: 50Mi
+
               volumeMounts:
               - name: containerlogs
                 mountPath: /mnt/containers
                 readOnly: true
-              - name: jobfiles
-                mountPath: /appd/agent/monitors/analytics-agent/conf/job
+              - name: scalyr-logs
+                mountPath: /mnt/scalyr-logs
+                readOnly: false
+              - name: scalyr-config
+                mountPath: /mnt/scalyr-config
+                readOnly: false
+
+            - name: scalyr-agent
+              image: registry.opensource.zalan.do/eagleeye/scalyr-agent:0.1
+
               env:
-              - name: CLUSTER_NODE_NAME
-                valueFrom:
-                  fieldRef:
-                    fieldPath: spec.nodeName
-              - name: APPDYNAMICS_AGENT_ACCOUNT_ACCESS_KEY
-                value: "{{APPDYNAMICS_ACCESS_KEY}}"
-              - name: APPDYNAMICS_AGENT_ACCOUNT_NAME
-                value: testing
-              - name: APPDYNAMICS_ACCOUNT_GLOBALNAME
-                value: testing_4630e5e5-7aed-4961-94ef-5af03cf0b83b
+              # Note: added for scalyr-config-base, but not needed by the scalyr-agent itself.
+              - name: WATCHER_SCALYR_API_KEY
+                value: "{{SCALYR_ACCESS_KEY}}"
+              - name: WATCHER_CLUSTER_ID
+                value: "{{CLUSTER_ID}}"
+
+              volumeMounts:
+              - name: containerlogs
+                mountPath: /mnt/containers
+                readOnly: true
+              - name: scalyr-logs
+                mountPath: /mnt/scalyr-logs
+                readOnly: true
+              - name: scalyr-config
+                mountPath: /etc/scalyr-agent-2/
+                readOnly: true
+              - name: journal
+                mountPath: /var/log/journal
+                readOnly: true
+
               resources:
                 limits:
                   cpu: 200m
@@ -1203,28 +1251,25 @@ write_files:
                 requests:
                   cpu: 100m
                   memory: 100Mi
-            - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:pr-cp_zalando.pr-37302
-              command:
-              - /hyperkube
-              args:
-              - kubectl
-              - proxy
-              resources:
-                limits:
-                  cpu: 100m
-                  memory: 100Mi
-                requests:
-                  cpu: 25m
-                  memory: 25Mi
+
             volumes:
             - name: containerlogs
               hostPath:
                 path: /var/lib/docker/containers
-            - name: jobfiles
+
+            - name: journal
+              hostPath:
+                path: /var/log/journal
+
+            - name: scalyr-logs
               emptyDir: {}
-            imagePullSecrets:
-            - name: pierone.stups.zalan.do
+
+            - name: scalyr-config
+              configMap:
+                name: scalyr-config-base
+                items:
+                  - key: scalyr.config
+                    path: agent.json
 
   - path: /etc/kubernetes/manifests/rescheduler.yaml
     content: |
