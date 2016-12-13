@@ -1298,6 +1298,59 @@ write_files:
           args:
           - --running-in-cluster=false
 
+  - path: /srv/kubernetes/manifests/deployments/kube-aws-ingress-controller.yaml
+    content: |
+      apiVersion: extensions/v1beta1
+      kind: Deployment
+      metadata:
+        name: kube-aws-ingress-controller
+        namespace: kube-system
+        labels:
+          application: kube-aws-ingress-controller
+          version: v0.0.1
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            application: kube-aws-ingress-controller
+        template:
+          metadata:
+            labels:
+              application: kube-aws-ingress-controller
+              version: v0.0.1
+            annotations:
+              scheduler.alpha.kubernetes.io/critical-pod: ''
+              scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-kube-aws-ingress-controller
+          spec:
+            containers:
+            - name: controller
+              image: registry.opensource.zalan.do/teapot/kube-aws-ingress-controller:e37d6ca
+              env:
+              - name: AWS_REGION
+                value: {{REGION}}
+              resources:
+                limits:
+                  cpu: 200m
+                  memory: 200Mi
+                requests:
+                  cpu: 50m
+                  memory: 25Mi
+            - name: kubectl
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
+              command:
+              - /hyperkube
+              args:
+              - kubectl
+              - proxy
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 100Mi
+                requests:
+                  cpu: 25m
+                  memory: 25Mi
+
   - path: /srv/kubernetes/manifests/storageclasses/standard.yaml
     content: |
       apiVersion: storage.k8s.io/v1beta1
