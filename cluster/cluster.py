@@ -107,12 +107,13 @@ def get_cluster_variables(stack_name: str, version: str, scalyr_access_key: str,
     api_server = 'https://{}-{}.{}'.format(stack_name, version, hosted_zone)
     if not worker_shared_secret:
         worker_shared_secret = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(64))
-    if stack_name == "kube-aws-test":
-        local_id = stack_name
-    else:
-        local_id = '{}-{}'.format(stack_name, version)
 
-    cluster_id = 'aws:{}:{}:{}'.format(get_account_id(), get_region(), local_id)
+    cluster_id = 'aws:{}:{}:{}-{}'.format(get_account_id(), get_region(), stack_name, version)
+    webhook_id = cluster_id
+
+    if stack_name == "kube-aws-test":
+        webhook_id = 'aws:{}:{}:{}'.format(get_account_id(), get_region(), stack_name)
+
     # TODO: encrypt fixed token with KMS
 
     mint_bucket = get_mint_bucket_name()
@@ -126,6 +127,7 @@ def get_cluster_variables(stack_name: str, version: str, scalyr_access_key: str,
         'worker_shared_secret': worker_shared_secret,
         'hosted_zone': hosted_zone,
         'cluster_id': cluster_id,
+        'webhook_id': webhook_id,
         'mint_bucket': mint_bucket,
         'etcd_bucket': etcd_bucket,
         'account_id': get_account_id(),
