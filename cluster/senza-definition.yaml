@@ -334,7 +334,7 @@ Resources:
       SecurityGroupIngress:
       - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
       - {CidrIp: 0.0.0.0/0, FromPort: 22, IpProtocol: tcp, ToPort: 22}
-      - {CidrIp: 172.31.0.0/16, FromPort: 9090, IpProtocol: tcp, ToPort: 9090}
+      - {CidrIp: 172.31.0.0/16, FromPort: 9999, IpProtocol: tcp, ToPort: 9999}
       - {CidrIp: 172.31.0.0/16, FromPort: 9100, IpProtocol: tcp, ToPort: 9100}
       Tags:
         - Key: "KubernetesCluster"
@@ -347,13 +347,13 @@ Resources:
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthCheckPath: "/healthz"
-      HealthCheckPort: 9090
+      HealthCheckPort: 9999
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 10
       HealthyThresholdCount: 4
       Matcher:
         HttpCode: '200'
-      Port: 9090
+      Port: 9999
       Protocol: HTTP
       UnhealthyThresholdCount: 3
       VpcId: "{{ AccountInfo.VpcID }}"
