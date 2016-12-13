@@ -340,7 +340,7 @@ def update(stack_name, version, dry_run, force, instance_type, master_nodes, wor
     info('Cluster ID is:          {}'.format(variables['cluster_id']))
     info('API server endpoint is: {}'.format(variables['api_server']))
     info('Master nodes:           {}'.format(master_nodes))
-    info('Worker nodes:           {}'.format(worker_nodes))
+    info('Worker nodes:           {}, max: {}'.format(worker_nodes, max_worker_nodes))
     info('Instance type:          {}'.format(instance_type))
 
     if not dry_run:
@@ -462,6 +462,8 @@ def perform_node_updates(stack_name, version, name_filter, desired_user_data, co
 
     group = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups'][0]
     old_desired_capacity = group['DesiredCapacity']
+    old_min_size = group['MinSize']
+    old_max_size = group['MaxSize']
     new_desired_capacity = old_desired_capacity + 1
     # scale out
     with Action('Scaling up to {} instances..'.format(new_desired_capacity)) as act:
@@ -503,8 +505,8 @@ def perform_node_updates(stack_name, version, name_filter, desired_user_data, co
 
     with Action('Scaling down to {} instances..'.format(old_desired_capacity)) as act:
         autoscaling.update_auto_scaling_group(AutoScalingGroupName=asg_name,
-                                              MinSize=old_desired_capacity,
-                                              MaxSize=old_desired_capacity,
+                                              MinSize=old_min_size,
+                                              MaxSize=old_max_size,
                                               DesiredCapacity=old_desired_capacity)
 
     with Action('Resuming scaling processes for {}..'.format(asg_name)):
