@@ -250,6 +250,38 @@ Resources:
             Effect: Allow
         PolicyName: AllowMintRead
     Type: AWS::IAM::Role
+
+  KubeAWSIngressControllerIAMRole:
+    Properties:
+      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-app-kube-aws-ingress-controller"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: WorkerIAMRole
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - {Action: 'autoscaling:*', Effect: Allow, Resource: '*'}
+          - {Action: 'elasticloadbalancing:*', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:*', Effect: Allow, Resource: '*'}
+          Version: '2012-10-17'
+        PolicyName: root
+    Type: AWS::IAM::Role
+
   MasterSecurityGroup:
     Properties:
       GroupDescription: {Ref: 'AWS::StackName'}
