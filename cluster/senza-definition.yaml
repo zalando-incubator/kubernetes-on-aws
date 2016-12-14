@@ -307,6 +307,37 @@ Resources:
         PolicyName: root
     Type: AWS::IAM::Role
 
+  KubeDashboardIAMRole:
+    Properties:
+      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-app-kube-dashboard"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: WorkerIAMRole
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Action: "s3:GetObject"
+            Resource: "arn:aws:s3:::{{ AccountInfo.MintBucket }}/{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-dashboard/*"
+            Effect: Allow
+        PolicyName: AllowMintRead
+    Type: AWS::IAM::Role
+
   MasterSecurityGroup:
     Properties:
       GroupDescription: {Ref: 'AWS::StackName'}
