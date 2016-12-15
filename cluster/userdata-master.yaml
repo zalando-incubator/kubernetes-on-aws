@@ -761,7 +761,10 @@ write_files:
           application: heapster
           kubernetes.io/cluster-service: "true"
           kubernetes.io/name: "Heapster"
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
       spec:
+        type: LoadBalancer
         ports:
           - port: 80
             targetPort: 8082
@@ -994,7 +997,10 @@ write_files:
       metadata:
         name: kube-state-metrics
         namespace: kube-system
+        annotations:
+          service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
       spec:
+        type: LoadBalancer
         ports:
         - port: 80
           protocol: TCP
