@@ -46,6 +46,8 @@ SenzaComponents:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
   - MasterAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: m3.medium
@@ -71,6 +73,8 @@ SenzaComponents:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
   - WorkerAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: "{{ Arguments.InstanceType }}"
@@ -96,6 +100,8 @@ SenzaComponents:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
       TargetGroupARNs:
         - {Ref: WorkerTargetGroup}
   - WorkerLoadBalancer:
@@ -113,6 +119,10 @@ SenzaComponents:
       Tags:
         - Key: "Teapot"
           Value: instance health check
+        - Key: "KubernetesCluster"
+          Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
       SecurityGroups:
         - {Ref: WorkerLoadBalancerSecurityGroup}
 
@@ -306,6 +316,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
   MasterLoadBalancerSecurityGroup:
@@ -317,6 +329,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
   MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
@@ -329,6 +343,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromLoadBalancer:
     Properties:
@@ -340,6 +356,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroup:
     Properties:
@@ -352,6 +370,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
 
@@ -381,6 +401,9 @@ Resources:
       SecurityGroupIngress:
       - {CidrIp: 0.0.0.0/0, FromPort: 443, IpProtocol: tcp, ToPort: 443}
       VpcId: "{{ AccountInfo.VpcID }}"
+      Tags:
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroup
 
   WorkerLoadBalancerSecurityGroup:
@@ -389,6 +412,9 @@ Resources:
       SecurityGroupIngress:
       - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
       VpcId: "{{ AccountInfo.VpcID }}"
+      Tags:
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroup
   WorkerSecurityGroupFromLoadBalancerHealthCheck:
     Properties:
@@ -397,6 +423,9 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: {Ref: WorkerLoadBalancerSecurityGroup}
       ToPort: 10248
+      Tags:
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromWorker:
     Properties:
@@ -408,6 +437,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterToFlannel:
     Properties:
@@ -419,6 +450,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterToKubelet:
     Properties:
@@ -430,6 +463,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterTocAdvisor:
     Properties:
@@ -441,6 +476,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromFlannelToMaster:
     Properties:
@@ -452,6 +489,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromWorkerToMasterKubeletReadOnly:
     Properties:
@@ -463,6 +502,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromWorkerToFlannel:
     Properties:
@@ -474,6 +515,8 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromWorkerToWorkerKubeletReadOnly:
     Properties:
@@ -485,4 +528,6 @@ Resources:
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
