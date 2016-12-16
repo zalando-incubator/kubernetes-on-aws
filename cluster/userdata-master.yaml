@@ -1350,30 +1350,30 @@ write_files:
           args:
           - --running-in-cluster=false
 
-  - path: /srv/kubernetes/manifests/deployments/kube-aws-ingress-controller.yaml
+  - path: /srv/kubernetes/manifests/deployments/app-ingress-controller.yaml
     content: |
       apiVersion: extensions/v1beta1
       kind: Deployment
       metadata:
-        name: kube-aws-ingress-controller
+        name: app-ingress-controller
         namespace: kube-system
         labels:
-          application: kube-aws-ingress-controller
+          application: app-ingress-controller
           version: v0.0.1
       spec:
         replicas: 1
         selector:
           matchLabels:
-            application: kube-aws-ingress-controller
+            application: app-ingress-controller
         template:
           metadata:
             labels:
-              application: kube-aws-ingress-controller
+              application: app-ingress-controller
               version: v0.0.1
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
-              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-kube-aws-ingress-controller
+              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-ingress-controller
           spec:
             containers:
             - name: controller
