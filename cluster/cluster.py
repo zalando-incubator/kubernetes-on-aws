@@ -353,7 +353,7 @@ def update(stack_name, version, dry_run, force, instance_type, master_nodes, wor
     info('Cluster ID is:          {}'.format(variables['cluster_id']))
     info('API server endpoint is: {}'.format(variables['api_server']))
     info('Master nodes:           {}'.format(master_nodes))
-    info('Worker nodes:           {}, max: {}'.format(worker_nodes, max_worker_nodes))
+    info('Worker nodes:           {}, min: {}, max: {}'.format(worker_nodes, min_worker_nodes, max_worker_nodes))
     info('Instance type:          {}'.format(instance_type))
 
     if not dry_run:
