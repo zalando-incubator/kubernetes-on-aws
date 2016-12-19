@@ -160,12 +160,12 @@ def get_launch_configuration_user_data(stack_name, version, name_filter):
     return get_launch_configuration(stack_name, version, name_filter)['UserData']
 
 
-def get_current_nodes(stack_name, version, name_filter):
+def get_current_nodes(stack_name, version, name_filter, key='DesiredCapacity'):
     autoscaling = boto3.client('autoscaling')
     asg_name = get_auto_scaling_group(stack_name, version, name_filter)
 
     group = autoscaling.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_name])['AutoScalingGroups'][0]
-    return group['DesiredCapacity']
+    return group[key]
 
 
 def get_current_master_nodes(stack_name, version):
@@ -174,6 +174,10 @@ def get_current_master_nodes(stack_name, version):
 
 def get_current_worker_nodes(stack_name, version):
     return get_current_nodes(stack_name, version, 'Worker')
+
+
+def get_current_min_worker_nodes(stack_name, version):
+    return get_current_nodes(stack_name, version, 'Worker', 'MinSize')
 
 
 def get_worker_shared_secret(user_data: str):
@@ -253,9 +257,10 @@ def cli():
 @click.option('--instance-type', type=str, default='t2.micro', help='Type of instance')
 @click.option('--master-nodes', default=1, type=int, help='Number of master nodes')
 @click.option('--worker-nodes', default=1, type=int, help='Number of worker nodes')
+@click.option('--min-worker-nodes', default=1, type=int, help='Minimum number of nodes in the worker ASG')
 @click.option('--max-worker-nodes', default=10, type=int, help='Maximum number of nodes in the worker ASG')
 @click.option('--scalyr-access-key', type=str, required=True, help='Secret for the logging agent')
-def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes, max_worker_nodes, scalyr_access_key):
+def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes, min_worker_nodes, max_worker_nodes, scalyr_access_key):
     '''
     Create a new Kubernetes cluster (using current AWS credentials)
     '''
@@ -274,7 +279,9 @@ def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nod
     if not dry_run:
         subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                                'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*',
-                               'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes), 'MaximumWorkerNodes={}'.format(max_worker_nodes),
+                               'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes),
+                               'MinimumWorkerNodes={}'.format(min_worker_nodes),
+                               'MaximumWorkerNodes={}'.format(max_worker_nodes),
                                'InstanceType={}'.format(instance_type), 'ClusterID={}'.format(variables['cluster_id'])])
         # wait up to 15m for stack to be created
         subprocess.check_call(['senza', 'wait', '--timeout=900', stack_name, version])
@@ -311,9 +318,10 @@ def same_user_data(enc1, enc2):
 @click.option('--master-nodes', type=int, default=-1, help='Number of master nodes')
 @click.option('--worker-nodes', type=int, default=-1, help='Number of worker nodes')
 @click.option('--postpone', is_flag=True, help='Postpone node update to a later point in time')
+@click.option('--min-worker-nodes', default=-1, type=int, help='Minimum number of nodes in the worker ASG')
 @click.option('--max-worker-nodes', default=10, type=int, help='Maximum number of nodes in the worker ASG')
 @click.option('--scalyr-access-key', type=str, required=True, help='Secret for the logging agent')
-def update(stack_name, version, dry_run, force, instance_type, master_nodes, worker_nodes, postpone, max_worker_nodes, scalyr_access_key):
+def update(stack_name, version, dry_run, force, instance_type, master_nodes, worker_nodes, postpone, min_worker_nodes, max_worker_nodes, scalyr_access_key):
     '''
     Update Kubernetes cluster
     '''
@@ -339,6 +347,9 @@ def update(stack_name, version, dry_run, force, instance_type, master_nodes, wor
     if worker_nodes == -1:
         worker_nodes = get_current_worker_nodes(stack_name, version)
 
+    if min_worker_nodes == -1:
+        min_worker_nodes = get_current_min_worker_nodes(stack_name, version)
+
     info('Cluster ID is:          {}'.format(variables['cluster_id']))
     info('API server endpoint is: {}'.format(variables['api_server']))
     info('Master nodes:           {}'.format(master_nodes))
@@ -350,7 +361,9 @@ def update(stack_name, version, dry_run, force, instance_type, master_nodes, wor
         subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                                'UserDataMaster={}'.format(user_data_master),
                                'UserDataWorker={}'.format(user_data_worker), 'KmsKey=*',
-                               'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes), 'MaximumWorkerNodes={}'.format(max_worker_nodes),
+                               'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes),
+                               'MinimumWorkerNodes={}'.format(min_worker_nodes),
+                               'MaximumWorkerNodes={}'.format(max_worker_nodes),
                                'InstanceType={}'.format(instance_type), 'ClusterID={}'.format(variables['cluster_id'])])
         # wait for CF update to complete..
         subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])

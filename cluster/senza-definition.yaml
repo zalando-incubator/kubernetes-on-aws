@@ -14,6 +14,8 @@ SenzaInfo:
           Description: "Number of master nodes"
       - WorkerNodes:
           Description: "Number of worker nodes"
+      - MinimumWorkerNodes:
+          Description: "Minimum number of nodes in the worker ASG"
       - MaximumWorkerNodes:
           Description: "Maximum number of nodes in the worker ASG"
       - InstanceType:
@@ -93,7 +95,7 @@ SenzaComponents:
       AssociatePublicIpAddress: true
       UserData: "{{ Arguments.UserDataWorker }}"
       AutoScaling:
-         Minimum: 1
+         Minimum: "{{ Arguments.MinimumWorkerNodes}}"
          Maximum: "{{ Arguments.MaximumWorkerNodes}}"
          DesiredCapacity: "{{ Arguments.WorkerNodes }}"
          SuccessRequires: "0 within 15m"
