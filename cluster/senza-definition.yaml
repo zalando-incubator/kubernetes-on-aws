@@ -104,8 +104,6 @@ SenzaComponents:
           Value: kubernetes
         - Key: "ClusterID"
           Value: "{{ Arguments.ClusterID }}"
-      TargetGroupARNs:
-        - {Ref: WorkerTargetGroup}
   - WorkerLoadBalancer:
       Type: Senza::ElasticLoadBalancer
       NameSuffix: worker
@@ -378,26 +376,6 @@ Resources:
           Value: "{{ Arguments.ClusterID }}"
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
-
-  WorkerTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      HealthCheckIntervalSeconds: 30
-      HealthCheckPath: "/healthz"
-      HealthCheckPort: 9999
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 10
-      HealthyThresholdCount: 4
-      Matcher:
-        HttpCode: '200'
-      Port: 9999
-      Protocol: HTTP
-      UnhealthyThresholdCount: 3
-      VpcId: "{{ AccountInfo.VpcID }}"
-      Tags:
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
-
 
   IngressLoadBalancerSecurityGroup:
     Properties:
