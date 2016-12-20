@@ -14,6 +14,8 @@ SenzaInfo:
           Description: "Number of master nodes"
       - WorkerNodes:
           Description: "Number of worker nodes"
+      - MinimumWorkerNodes:
+          Description: "Minimum number of nodes in the worker ASG"
       - MaximumWorkerNodes:
           Description: "Maximum number of nodes in the worker ASG"
       - InstanceType:
@@ -93,7 +95,7 @@ SenzaComponents:
       AssociatePublicIpAddress: true
       UserData: "{{ Arguments.UserDataWorker }}"
       AutoScaling:
-         Minimum: 1
+         Minimum: "{{ Arguments.MinimumWorkerNodes}}"
          Maximum: "{{ Arguments.MaximumWorkerNodes}}"
          DesiredCapacity: "{{ Arguments.WorkerNodes }}"
          SuccessRequires: "0 within 15m"
@@ -102,8 +104,6 @@ SenzaComponents:
           Value: kubernetes
         - Key: "ClusterID"
           Value: "{{ Arguments.ClusterID }}"
-      TargetGroupARNs:
-        - {Ref: WorkerTargetGroup}
   - WorkerLoadBalancer:
       Type: Senza::ElasticLoadBalancer
       NameSuffix: worker
@@ -261,9 +261,9 @@ Resources:
         PolicyName: AllowMintRead
     Type: AWS::IAM::Role
 
-  KubeAWSIngressControllerIAMRole:
+  IngressControllerIAMRole:
     Properties:
-      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-app-kube-aws-ingress-controller"
+      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-app-ingress-controller"
       AssumeRolePolicyDocument:
         Statement:
         - Action: ['sts:AssumeRole']
@@ -407,26 +407,6 @@ Resources:
           Value: "{{ Arguments.ClusterID }}"
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
-
-  WorkerTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      HealthCheckIntervalSeconds: 30
-      HealthCheckPath: "/healthz"
-      HealthCheckPort: 9999
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 10
-      HealthyThresholdCount: 4
-      Matcher:
-        HttpCode: '200'
-      Port: 9999
-      Protocol: HTTP
-      UnhealthyThresholdCount: 3
-      VpcId: "{{ AccountInfo.VpcID }}"
-      Tags:
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
-
 
   IngressLoadBalancerSecurityGroup:
     Properties:

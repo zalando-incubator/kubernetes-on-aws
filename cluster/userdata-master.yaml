@@ -415,7 +415,7 @@ write_files:
             - name: TOKENINFO_URL
               value: https://info.services.auth.zalando.com/oauth2/tokeninfo
             - name: USER_GROUPS
-              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator
+              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly
         - name: nginx
           image: registry.opensource.zalan.do/teapot/nginx:1.11.5
           resources:
@@ -970,7 +970,7 @@ write_files:
         namespace: kube-system
         labels:
           application: mate
-          version: v0.1.0
+          version: v0.2.0
       spec:
         replicas: 1
         selector:
@@ -980,7 +980,7 @@ write_files:
           metadata:
             labels:
               application: mate
-              version: v0.1.0
+              version: v0.2.0
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
@@ -988,7 +988,7 @@ write_files:
           spec:
             containers:
             - name: mate
-              image: registry.opensource.zalan.do/teapot/mate:v0.1.0
+              image: registry.opensource.zalan.do/teapot/mate:v0.2.0
               env:
               - name: AWS_REGION
                 value: {{REGION}}
@@ -1440,34 +1440,34 @@ write_files:
           args:
           - --running-in-cluster=false
 
-  - path: /srv/kubernetes/manifests/deployments/kube-aws-ingress-controller.yaml
+  - path: /srv/kubernetes/manifests/deployments/app-ingress-controller.yaml
     content: |
       apiVersion: extensions/v1beta1
       kind: Deployment
       metadata:
-        name: kube-aws-ingress-controller
+        name: app-ingress-controller
         namespace: kube-system
         labels:
-          application: kube-aws-ingress-controller
+          application: app-ingress-controller
           version: v0.0.1
       spec:
         replicas: 1
         selector:
           matchLabels:
-            application: kube-aws-ingress-controller
+            application: app-ingress-controller
         template:
           metadata:
             labels:
-              application: kube-aws-ingress-controller
+              application: app-ingress-controller
               version: v0.0.1
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
-              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-kube-aws-ingress-controller
+              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-ingress-controller
           spec:
             containers:
             - name: controller
-              image: registry.opensource.zalan.do/teapot/kube-aws-ingress-controller:e37d6ca
+              image: registry.opensource.zalan.do/teapot/kube-aws-ingress-controller:fb568ac
               env:
               - name: AWS_REGION
                 value: {{REGION}}
