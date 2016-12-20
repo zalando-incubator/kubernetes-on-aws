@@ -773,37 +773,8 @@ write_files:
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
-              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-kube-dashboard
           spec:
             containers:
-            - name: employeelogind
-              image: pierone.stups.zalan.do/teapot/employeelogind:0457e10
-              args:
-              - -backend=http://127.0.0.1:9090
-              env:
-              - name: CREDENTIALS_DIR
-                value: /meta/credentials
-              - name: SESSION_ENCRYPTION_KEY
-                valueFrom:
-                  secretKeyRef:
-                    name: kube-dashboard-config
-                    key: session.key
-              ports:
-              - containerPort: 3030
-              volumeMounts:
-              - mountPath: /meta/credentials
-                name: credentials
-                readOnly: true
-            - name: gerry
-              image: registry.opensource.zalan.do/teapot/gerry:v0.0.7
-              args:
-              - /meta/credentials
-              - --application-id={{STACK_NAME}}-{{STACK_VERSION}}-dashboard
-              - --mint-bucket=s3://{{MINT_BUCKET}}
-              volumeMounts:
-              - mountPath: /meta/credentials
-                name: credentials
-                readOnly: false
             - name: kubernetes-dashboard
               image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.5.0
               resources:
@@ -821,12 +792,6 @@ write_files:
                   port: 9090
                 initialDelaySeconds: 30
                 timeoutSeconds: 30
-            volumes:
-            - name: credentials
-              emptyDir:
-                medium: Memory
-            imagePullSecrets:
-            - name: pierone.stups.zalan.do
 
   - path: /srv/kubernetes/manifests/services/kube-dashboard.yaml
     content: |
@@ -838,23 +803,98 @@ write_files:
         labels:
           application: kubernetes-dashboard
           kubernetes.io/cluster-service: "true"
+      spec:
+        selector:
+          application: kubernetes-dashboard
+        ports:
+        - port: 80
+          targetPort: 9090
+
+  - path: /srv/kubernetes/manifests/deployments/kubernetes-dashboard-proxy.yaml
+    content: |
+      apiVersion: extensions/v1beta1
+      kind: Deployment
+      metadata:
+        name: kubernetes-dashboard-proxy
+        namespace: kube-system
+        labels:
+          application: kubernetes-dashboard-proxy
+          version: "0457e10"
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            application: kubernetes-dashboard-proxy
+        template:
+          metadata:
+            labels:
+              application: kubernetes-dashboard-proxy
+              version: "0457e10"
+            annotations:
+              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-kube-dashboard-proxy
+          spec:
+            containers:
+            - name: employeelogind
+              image: pierone.stups.zalan.do/teapot/employeelogind:0457e10
+              args:
+              - -backend=http://kubernetes-dashboard.kube-system.svc.cluster.local
+              env:
+              - name: CREDENTIALS_DIR
+                value: /meta/credentials
+              - name: SESSION_ENCRYPTION_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: kubernetes-dashboard-proxy-config
+                    key: session.key
+              ports:
+              - containerPort: 3030
+              volumeMounts:
+              - mountPath: /meta/credentials
+                name: credentials
+                readOnly: true
+            - name: gerry
+              image: registry.opensource.zalan.do/teapot/gerry:v0.0.7
+              args:
+              - /meta/credentials
+              - --application-id={{STACK_NAME}}-{{STACK_VERSION}}-dashboard-proxy
+              - --mint-bucket=s3://{{MINT_BUCKET}}
+              volumeMounts:
+              - mountPath: /meta/credentials
+                name: credentials
+                readOnly: false
+            volumes:
+            - name: credentials
+              emptyDir:
+                medium: Memory
+            imagePullSecrets:
+            - name: pierone.stups.zalan.do
+
+  - path: /srv/kubernetes/manifests/services/kubernetes-dashboard-proxy.yaml
+    content: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: kubernetes-dashboard-proxy
+        namespace: kube-system
+        labels:
+          application: kubernetes-dashboard-proxy
         annotations:
           service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:eu-central-1:{{ACCOUNT_ID}}:certificate/{{CERTIFICATE_ID}}
           zalando.org/dnsname: {{STACK_NAME}}-{{STACK_VERSION}}-dashboard.{{HOSTED_ZONE}}
       spec:
         type: LoadBalancer
         selector:
-          application: kubernetes-dashboard
+          application: kubernetes-dashboard-proxy
         ports:
         - port: 443
           targetPort: 3030
 
-  - path: /srv/kubernetes/manifests/deployments/kube-dashboard-config.yaml
+  - path: /srv/kubernetes/manifests/deployments/kubernetes-dashboard-proxy-config.yaml
     content: |
       apiVersion: v1
       kind: Secret
       metadata:
-        name: kube-dashboard-config
+        name: kubernetes-dashboard-proxy-config
         namespace: kube-system
       type: Opaque
       data:

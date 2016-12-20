@@ -307,9 +307,9 @@ Resources:
         PolicyName: root
     Type: AWS::IAM::Role
 
-  KubeDashboardIAMRole:
+  KubeDashboardProxyIAMRole:
     Properties:
-      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-app-kube-dashboard"
+      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-app-kube-dashboard-proxy"
       AssumeRolePolicyDocument:
         Statement:
         - Action: ['sts:AssumeRole']
@@ -333,7 +333,7 @@ Resources:
           Version: '2012-10-17'
           Statement:
           - Action: "s3:GetObject"
-            Resource: "arn:aws:s3:::{{ AccountInfo.MintBucket }}/{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-dashboard/*"
+            Resource: "arn:aws:s3:::{{ AccountInfo.MintBucket }}/{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-dashboard-proxy/*"
             Effect: Allow
         PolicyName: AllowMintRead
     Type: AWS::IAM::Role
