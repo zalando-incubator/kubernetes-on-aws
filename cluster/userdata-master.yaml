@@ -81,7 +81,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=v1.4.7_zalando.0
+        Environment=KUBELET_VERSION=v1.5.1_coreos.0
         Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
         --insecure-options=image \
@@ -226,7 +226,7 @@ write_files:
           sleep 10
       done
 
-      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0 /hyperkube kubectl"
+      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0 /hyperkube kubectl"
 
       for manifest in /srv/kubernetes/manifests/*/*.yaml; do
           ${KUBECTL} apply -f $manifest
@@ -274,14 +274,14 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-proxy
-          version: v1.4.7_zalando.0
+          version: v1.5.1_coreos.0
         annotations:
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
           command:
           - /hyperkube
           - proxy
@@ -321,12 +321,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.4.7_zalando.0
+          version: v1.5.1_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -380,7 +380,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 500Mi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:6669b4b
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.0
           name: webhook
           ports:
           - containerPort: 8081
@@ -415,7 +415,7 @@ write_files:
             - name: TOKENINFO_URL
               value: https://info.services.auth.zalando.com/oauth2/tokeninfo
             - name: USER_GROUPS
-              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator
+              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly
         - name: nginx
           image: registry.opensource.zalan.do/teapot/nginx:1.11.5
           resources:
@@ -451,11 +451,11 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.4.7_zalando.0
+          version: v1.5.1_coreos.0
       spec:
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -504,12 +504,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.4.7_zalando.0
+          version: v1.5.1_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
           command:
           - /hyperkube
           - scheduler
@@ -880,7 +880,7 @@ write_files:
         namespace: kube-system
         labels:
           application: mate
-          version: v0.1.0
+          version: v0.2.0
       spec:
         replicas: 1
         selector:
@@ -890,7 +890,7 @@ write_files:
           metadata:
             labels:
               application: mate
-              version: v0.1.0
+              version: v0.2.0
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
@@ -898,7 +898,7 @@ write_files:
           spec:
             containers:
             - name: mate
-              image: registry.opensource.zalan.do/teapot/mate:v0.1.0
+              image: registry.opensource.zalan.do/teapot/mate:v0.2.0
               env:
               - name: AWS_REGION
                 value: {{REGION}}
@@ -916,7 +916,7 @@ write_files:
                   cpu: 50m
                   memory: 25Mi
             - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
               command:
               - /hyperkube
               args:
@@ -1054,6 +1054,7 @@ write_files:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
           spec:
+            hostNetwork: true
             containers:
             - name: skipper-ingress
               image: registry.opensource.zalan.do/teapot/skipper:prerelease-ingress-3
@@ -1074,7 +1075,7 @@ write_files:
                   cpu: 25m
                   memory: 25Mi
             - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
               command:
               - /hyperkube
               args:
@@ -1353,25 +1354,25 @@ write_files:
           args:
           - --running-in-cluster=false
 
-  - path: /srv/kubernetes/manifests/deployments/kube-aws-ingress-controller.yaml
+  - path: /srv/kubernetes/manifests/deployments/app-ingress-controller.yaml
     content: |
       apiVersion: extensions/v1beta1
       kind: Deployment
       metadata:
-        name: kube-aws-ingress-controller
+        name: app-ingress-controller
         namespace: kube-system
         labels:
-          application: kube-aws-ingress-controller
+          application: app-ingress-controller
           version: v0.0.1
       spec:
         replicas: 1
         selector:
           matchLabels:
-            application: kube-aws-ingress-controller
+            application: app-ingress-controller
         template:
           metadata:
             labels:
-              application: kube-aws-ingress-controller
+              application: app-ingress-controller
               version: v0.0.1
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -1380,7 +1381,7 @@ write_files:
           spec:
             containers:
             - name: controller
-              image: registry.opensource.zalan.do/teapot/kube-aws-ingress-controller:e37d6ca
+              image: registry.opensource.zalan.do/teapot/kube-aws-ingress-controller:fb568ac
               env:
               - name: AWS_REGION
                 value: {{REGION}}
@@ -1392,7 +1393,7 @@ write_files:
                   cpu: 50m
                   memory: 25Mi
             - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:v1.4.7_zalando.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
               command:
               - /hyperkube
               args:
