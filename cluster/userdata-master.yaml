@@ -1062,7 +1062,11 @@ write_files:
               - name: ingress-port
                 containerPort: 9999
                 hostPort: 9999
-              command: ["skipper", "-application-log-level", "DEBUG", "-kubernetes-url", "http://localhost:8001", "-address", ":9999"]
+              command: ["skipper",
+                "-application-log-level", "DEBUG",
+                "-kubernetes-url", "http://localhost:8001",
+                "-address", ":9999",
+                "-proxy-preserve-host"]
               resources:
                 limits:
                   cpu: 200m
@@ -1373,7 +1377,7 @@ write_files:
             annotations:
               scheduler.alpha.kubernetes.io/critical-pod: ''
               scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
-              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-ingress-controller
+              iam.amazonaws.com/role: {{STACK_NAME}}-{{STACK_VERSION}}-app-ingr-ctrl
           spec:
             containers:
             - name: controller
