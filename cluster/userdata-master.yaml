@@ -81,7 +81,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=v1.5.1_coreos.0
+        Environment=KUBELET_VERSION=v1.5.2_coreos.0
         Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
         --insecure-options=image \
@@ -226,7 +226,7 @@ write_files:
           sleep 10
       done
 
-      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0 /hyperkube kubectl"
+      KUBECTL="docker run --net host -v /srv/kubernetes/manifests:/srv/kubernetes/manifests:ro registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0 /hyperkube kubectl"
 
       for manifest in /srv/kubernetes/manifests/*/*.yaml; do
           ${KUBECTL} apply -f $manifest
@@ -274,14 +274,14 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-proxy
-          version: v1.5.1_coreos.0
+          version: v1.5.2_coreos.0
         annotations:
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0
           command:
           - /hyperkube
           - proxy
@@ -321,12 +321,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.5.1_coreos.0
+          version: v1.5.2_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -451,11 +451,11 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.5.1_coreos.0
+          version: v1.5.2_coreos.0
       spec:
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -504,12 +504,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.5.1_coreos.0
+          version: v1.5.2_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0
           command:
           - /hyperkube
           - scheduler
@@ -1060,7 +1060,7 @@ write_files:
                   cpu: 25m
                   memory: 25Mi
             - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0
               command:
               - /hyperkube
               args:
@@ -1378,7 +1378,7 @@ write_files:
                   cpu: 50m
                   memory: 25Mi
             - name: kubectl
-              image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.1_coreos.0
+              image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0
               command:
               - /hyperkube
               args:
