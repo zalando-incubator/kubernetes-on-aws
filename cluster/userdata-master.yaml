@@ -7,6 +7,7 @@ coreos:
   flannel:
     interface: $private_ipv4
     etcd_endpoints: http://$private_ipv4:2379
+    etcd_prefix: /{{STACK_VERSION}}/coreos.com/network
   etcd2:
     discovery-srv: {{ETCD_DISCOVERY_DOMAIN}}
     proxy: on
@@ -74,7 +75,7 @@ coreos:
           content: |
             [Service]
             ExecStartPre=/usr/bin/etcdctl \
-            --endpoint=http://localhost:2379 set /coreos.com/network/config \
+            --endpoint=http://localhost:2379 set /{{STACK_VERSION}}/coreos.com/network/config \
             '{ "Network": "10.2.0.0/16", "Backend": {"Type": "vxlan"}}'
     - name: kubelet.service
       command: start
