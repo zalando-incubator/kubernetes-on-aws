@@ -33,7 +33,7 @@ def get_containers(url, token):
 @click.command()
 @click.argument('url')
 @click.option('--token')
-@click.option('--retries', default=90, type=int, help="Number of retries when waiting for containers to be ready.")
+@click.option('--retries', default=120, type=int, help="Number of retries when waiting for containers to be ready.")
 def main(url, token, retries):
 
     run_id = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(8))
