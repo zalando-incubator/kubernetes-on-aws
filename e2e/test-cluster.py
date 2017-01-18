@@ -33,7 +33,8 @@ def get_containers(url, token):
 @click.command()
 @click.argument('url')
 @click.option('--token')
-def main(url, token):
+@click.option('--retries', default=90, type=int, help="Number of retries when waiting for containers to be ready.")
+def main(url, token, retries):
 
     run_id = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(8))
     info('Starting test run {}..'.format(run_id))
@@ -41,7 +42,7 @@ def main(url, token):
     all_containers_ready = False
 
     with Action('Waiting for all containers to be ready..') as act:
-        for i in range(60):
+        for i in range(retries):
             containers = get_containers(url, token)
             ready = True
             for name in EXPECTED_CONTAINERS:
