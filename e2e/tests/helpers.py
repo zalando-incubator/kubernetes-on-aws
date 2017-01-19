@@ -6,7 +6,7 @@ from clickclick import Action
 
 DEPLOYMENTS_PATH = '/apis/extensions/v1beta1/namespaces/e2e/deployments'
 SERVICES_PATH = '/api/v1/namespaces/e2e/services'
-PETSET_PATH = '/apis/apps/v1alpha1/namespaces/e2e/petsets'
+STATEFULSET_PATH = '/apis/apps/v1beta1/namespaces/e2e/statefulsets'
 SECRET_PATH = '/api/v1/namespaces/e2e/secrets'
 ENDPOINT_PATH = '/api/v1/namespaces/e2e/endpoints'
 POD_PATH = '/api/v1/namespaces/e2e/pods'
@@ -50,7 +50,7 @@ def wait_for_pod(name, url, token, timeout=100):
         while time.time() < cut_off:
             response = requests.get(url + POD_PATH + '/{}'.format(name), headers={'Authorization': 'Bearer {}'.format(token)})
             data = response.json()
-            if data.get('status', {}).get('phase') == 'Running':
+            if response.status_code != 404 and data.get('status', {}).get('phase') == 'Running':
                 available = True
                 break
             time.sleep(2)
