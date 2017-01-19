@@ -282,6 +282,7 @@ def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nod
                                'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes),
                                'MinimumWorkerNodes={}'.format(min_worker_nodes),
                                'MaximumWorkerNodes={}'.format(max_worker_nodes),
+                               'HostedZone={}'.format(variables['hosted_zone']),
                                'InstanceType={}'.format(instance_type), 'ClusterID={}'.format(variables['cluster_id'])])
         # wait up to 15m for stack to be created
         subprocess.check_call(['senza', 'wait', '--timeout=900', stack_name, version])
@@ -364,6 +365,7 @@ def update(stack_name, version, dry_run, force, instance_type, master_nodes, wor
                                'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes),
                                'MinimumWorkerNodes={}'.format(min_worker_nodes),
                                'MaximumWorkerNodes={}'.format(max_worker_nodes),
+                               'HostedZone={}'.format(variables['hosted_zone']),
                                'InstanceType={}'.format(instance_type), 'ClusterID={}'.format(variables['cluster_id'])])
         # wait for CF update to complete..
         subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
