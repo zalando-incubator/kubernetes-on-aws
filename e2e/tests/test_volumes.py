@@ -1,6 +1,6 @@
 from clickclick import fatal_error
 
-from .helpers import PETSET_PATH, SECRET_PATH, create_resource, wait_for_pod
+from .helpers import STATEFULSET_PATH, SECRET_PATH, create_resource, wait_for_pod
 
 
 def test_volumes(run_id, url, token):
@@ -23,8 +23,8 @@ data:
     create_resource(secret_manifest, url + SECRET_PATH, token)
 
     manifest = '''
-apiVersion: apps/v1alpha1
-kind: PetSet
+apiVersion: apps/v1beta1
+kind: StatefulSet
 metadata:
   name: &cluster_name spilodemo
   labels:
@@ -38,8 +38,6 @@ spec:
       labels:
         application: spilo
         spilo-cluster: *cluster_name
-      annotations:
-        pod.alpha.kubernetes.io/initialized: "true"
     spec:
       containers:
       - name: *cluster_name
@@ -104,7 +102,7 @@ spec:
         requests:
           storage: 5Gi
 '''
-    create_resource(manifest, url + PETSET_PATH, token)
+    create_resource(manifest, url + STATEFULSET_PATH, token)
 
     for i in range(3):
         available = wait_for_pod('spilodemo-{}'.format(i), url, token)
