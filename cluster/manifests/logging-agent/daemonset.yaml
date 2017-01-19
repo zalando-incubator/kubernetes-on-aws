@@ -1,0 +1,117 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: logging-agent
+  namespace: kube-system
+  labels:
+    application: logging-agent
+    version: v0.10
+    component: logging
+spec:
+  selector:
+    matchLabels:
+      application: logging-agent
+  template:
+    metadata:
+      name: logging-agent
+      labels:
+        application: logging-agent
+        version: v0.10
+        component: logging
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+    spec:
+      containers:
+      - name: log-watcher
+        image: registry.opensource.zalan.do/eagleeye/kubernetes-log-watcher:0.11
+        env:
+        - name: CLUSTER_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+
+        - name: WATCHER_KUBERNETES_UPDATE_CERTIFICATES
+          value: "true"
+        - name: WATCHER_CLUSTER_ID
+          value: "{{ .ID }}"
+        - name: WATCHER_AGENTS
+          value: scalyr
+        - name: WATCHER_SCALYR_API_KEY
+          value: "{{ .ConfigItems.SCALYR_ACCESS_KEY }}"
+        - name: WATCHER_SCALYR_DEST_PATH
+          value: /mnt/scalyr-logs
+        - name: WATCHER_SCALYR_CONFIG_PATH
+          value: /mnt/scalyr-config/agent.json
+        - name: WATCHER_SCALYR_JOURNALD
+          value: "true"
+
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
+
+        volumeMounts:
+        - name: containerlogs
+          mountPath: /mnt/containers
+          readOnly: true
+        - name: scalyr-logs
+          mountPath: /mnt/scalyr-logs
+          readOnly: false
+        - name: scalyr-config
+          mountPath: /mnt/scalyr-config
+          readOnly: false
+
+      - name: scalyr-agent
+        image: registry.opensource.zalan.do/eagleeye/scalyr-agent:0.1
+
+        env:
+        # Note: added for scalyr-config-base, but not needed by the scalyr-agent itself.
+        - name: WATCHER_SCALYR_API_KEY
+          value: "{{ .ConfigItems.SCALYR_ACCESS_KEY }}"
+        - name: WATCHER_CLUSTER_ID
+          value: "{{ .ID }}"
+
+        volumeMounts:
+        - name: containerlogs
+          mountPath: /mnt/containers
+          readOnly: true
+        - name: scalyr-logs
+          mountPath: /mnt/scalyr-logs
+          readOnly: true
+        - name: scalyr-config
+          mountPath: /etc/scalyr-agent-2/
+          readOnly: true
+        - name: journal
+          mountPath: /var/log/journal
+          readOnly: true
+
+        resources:
+          limits:
+            cpu: 200m
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+
+      volumes:
+      - name: containerlogs
+        hostPath:
+          path: /var/lib/docker/containers
+
+      - name: journal
+        hostPath:
+          path: /var/log/journal
+
+      - name: scalyr-logs
+        emptyDir: {}
+
+      - name: scalyr-config
+        configMap:
+          name: scalyr-config-base
+          items:
+            - key: scalyr.config
+              path: agent.json

@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mate
+  namespace: kube-system
+  labels:
+    application: mate
+    version: v0.5.1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: mate
+  template:
+    metadata:
+      labels:
+        application: mate
+        version: v0.5.1
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-mate"
+    spec:
+      containers:
+      - name: mate
+        image: registry.opensource.zalan.do/teapot/mate:v0.5.1
+        env:
+        - name: AWS_REGION
+          value: {{ .Region }}
+        args:
+        - --producer=kubernetes
+        - --kubernetes-format={{`{{ .Name }}-{{ .Namespace }}`}}.{{ .ConfigItems.HOSTED_ZONE }}.
+        - --consumer=aws
+        - --aws-record-group-id={{ .LocalID }}
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 50m
+            memory: 25Mi

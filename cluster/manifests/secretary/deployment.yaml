@@ -1,0 +1,58 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: secretary
+  namespace: kube-system
+  labels:
+    application: secretary
+    version: v0.2.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: secretary
+  template:
+    metadata:
+      labels:
+        application: secretary
+        version: v0.2.0
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-secretary"
+    spec:
+      containers:
+      - name: gerry
+        image: registry.opensource.zalan.do/teapot/gerry:v0.0.8
+        args:
+        - /meta/credentials
+        - --application-id=secretary
+        - --mint-bucket=s3://{{.ConfigItems.MINT_BUCKET}}
+        volumeMounts:
+        - mountPath: /meta/credentials
+          name: credentials
+          readOnly: false
+        resources:
+          limits:
+            cpu: 200m
+            memory: 100Mi
+          requests:
+            cpu: 50m
+            memory: 15Mi
+      - name: secretary
+        image: registry.opensource.zalan.do/teapot/secretary:v0.2.0
+        args:
+        - --all-namespaces
+        - --service-account=default
+        - --interval=10m
+        env:
+        - name: CREDENTIALS_DIR
+          value: /meta/credentials
+        volumeMounts:
+        - mountPath: /meta/credentials
+          name: credentials
+          readOnly: true
+      volumes:
+      - name: credentials
+        emptyDir:
+          medium: Memory # share a tmpfs between the two containers
