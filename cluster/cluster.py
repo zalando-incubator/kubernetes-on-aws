@@ -291,48 +291,7 @@ def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nod
         wait_for_api_server(variables['api_server'])
 
 
-def parse_label_string(label_string) -> dict:
-    labels = dict()
-
-    if label_string == "":
-        return labels
-
-    splitted_labels = label_string.split(",")
-    for label in splitted_labels:
-        key, value = label.split("=", 2)
-        labels[key] = value
-
-    return labels
-
-
-def node_matches_labels(node, labels) -> bool:
-    node_labels = node["metadata"]["labels"]
-    for key in labels.keys():
-        label_matches = key in node_labels and node_labels[key] == labels[key]
-        if not label_matches:
-            return False
-
-    return True
-
-
-def get_instances_to_update_by_labels(desired_node_labels, config):
-    instance_ids = set()
-
-    parsed_labels = parse_label_string(desired_node_labels)
-
-    nodes = get_k8s_nodes(config["api_server"], config["worker_shared_secret"])
-    for node in nodes:
-        if not node_matches_labels(node, parsed_labels):
-            instance_ids.add(node["spec"]["externalID"])
-
-    return instance_ids
-
-
-def same_user_data(enc1, enc2):
-    return decode_user_data(enc1) == decode_user_data(enc2)
-
-
-def get_instances_to_update_by_userdata(asg_name, desired_user_data):
+def get_instances_to_update(asg_name, desired_user_data):
     autoscaling = boto3.client('autoscaling')
     ec2 = boto3.client('ec2')
 
@@ -349,11 +308,8 @@ def get_instances_to_update_by_userdata(asg_name, desired_user_data):
     return instance_ids
 
 
-def get_instances_to_update(asg_name, desired_user_data, desired_node_labels, config):
-    by_userdata = get_instances_to_update_by_userdata(asg_name, desired_user_data)
-    by_labels = get_instances_to_update_by_labels(desired_node_labels, config)
-
-    return by_userdata.union(by_labels)
+def same_user_data(enc1, enc2):
+    return decode_user_data(enc1) == decode_user_data(enc2)
 
 
 @cli.command()
@@ -419,9 +375,9 @@ def update(stack_name, version, dry_run, force, instance_type, master_nodes, wor
         subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
 
         if not postpone:
-            perform_node_updates(stack_name, version, 'Master', user_data_master, node_labels, variables)
+            perform_node_updates(stack_name, version, 'Master', user_data_master, variables)
             wait_for_api_server(variables['api_server'])
-            perform_node_updates(stack_name, version, 'Worker', user_data_worker, node_labels, variables)
+            perform_node_updates(stack_name, version, 'Worker', user_data_worker, variables)
 
 
 def get_k8s_nodes(api_server: str, token: str) -> list:
@@ -516,7 +472,7 @@ def get_instances_in_service(group: dict, config: dict):
     return instances_in_service
 
 
-def perform_node_updates(stack_name, version, name_filter, desired_user_data, desired_node_labels, config):
+def perform_node_updates(stack_name, version, name_filter, desired_user_data, config):
     # TODO: only works for worker nodes right now
     autoscaling = boto3.client('autoscaling')
     asg_name = get_auto_scaling_group(stack_name, version, name_filter)
@@ -543,7 +499,7 @@ def perform_node_updates(stack_name, version, name_filter, desired_user_data, de
             time.sleep(5)
             act.progress()
 
-    instances_to_update = get_instances_to_update(asg_name, desired_user_data, desired_node_labels, config)
+    instances_to_update = get_instances_to_update(asg_name, desired_user_data)
     for instance_id in instances_to_update:
         # drain
         node_name = get_k8s_node_name(instance_id, config)
