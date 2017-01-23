@@ -98,7 +98,7 @@ def get_etcd_bucket_name():
     return bucket_name
 
 
-def get_cluster_variables(stack_name: str, version: str, scalyr_access_key: str, worker_shared_secret=None):
+def get_cluster_variables(stack_name: str, version: str, node_labels: str, scalyr_access_key: str, worker_shared_secret=None):
     route53 = boto3.client('route53')
     all_hosted_zones = route53.list_hosted_zones()['HostedZones']
     hosted_zone = all_hosted_zones[0]['Name'].rstrip('.')
@@ -132,6 +132,7 @@ def get_cluster_variables(stack_name: str, version: str, scalyr_access_key: str,
         'etcd_bucket': etcd_bucket,
         'account_id': get_account_id(),
         'region': get_region(),
+        'node_labels': node_labels,
         'scalyr_access_key': scalyr_access_key
     }
     return variables
@@ -259,13 +260,14 @@ def cli():
 @click.option('--worker-nodes', default=1, type=int, help='Number of worker nodes')
 @click.option('--min-worker-nodes', default=1, type=int, help='Minimum number of nodes in the worker ASG')
 @click.option('--max-worker-nodes', default=10, type=int, help='Maximum number of nodes in the worker ASG')
+@click.option('--node-labels', type=str, default='', help='Labels to assign to each node')
 @click.option('--scalyr-access-key', type=str, required=True, help='Secret for the logging agent')
-def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes, min_worker_nodes, max_worker_nodes, scalyr_access_key):
+def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes, min_worker_nodes, max_worker_nodes, node_labels, scalyr_access_key):
     '''
     Create a new Kubernetes cluster (using current AWS credentials)
     '''
 
-    variables = get_cluster_variables(stack_name, version, scalyr_access_key)
+    variables = get_cluster_variables(stack_name, version, node_labels, scalyr_access_key)
     info('Cluster ID is:               {}'.format(variables['cluster_id']))
     info('API server endpoint will be: {}'.format(variables['api_server']))
     if dry_run:
@@ -289,7 +291,48 @@ def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nod
         wait_for_api_server(variables['api_server'])
 
 
-def get_instances_to_update(asg_name, desired_user_data):
+def parse_label_string(label_string) -> dict:
+    labels = dict()
+
+    if label_string == "":
+        return labels
+
+    splitted_labels = label_string.split(",")
+    for label in splitted_labels:
+        key, value = label.split("=", 2)
+        labels[key] = value
+
+    return labels
+
+
+def node_matches_labels(node, labels) -> bool:
+    node_labels = node["metadata"]["labels"]
+    for key in labels.keys():
+        label_matches = key in node_labels and node_labels[key] == labels[key]
+        if not label_matches:
+            return False
+
+    return True
+
+
+def get_instances_to_update_by_labels(desired_node_labels, config):
+    instance_ids = set()
+
+    parsed_labels = parse_label_string(desired_node_labels)
+
+    nodes = get_k8s_nodes(config["api_server"], config["worker_shared_secret"])
+    for node in nodes:
+        if not node_matches_labels(node, parsed_labels):
+            instance_ids.add(node["spec"]["externalID"])
+
+    return instance_ids
+
+
+def same_user_data(enc1, enc2):
+    return decode_user_data(enc1) == decode_user_data(enc2)
+
+
+def get_instances_to_update_by_userdata(asg_name, desired_user_data):
     autoscaling = boto3.client('autoscaling')
     ec2 = boto3.client('ec2')
 
@@ -306,8 +349,11 @@ def get_instances_to_update(asg_name, desired_user_data):
     return instance_ids
 
 
-def same_user_data(enc1, enc2):
-    return decode_user_data(enc1) == decode_user_data(enc2)
+def get_instances_to_update(asg_name, desired_user_data, desired_node_labels, config):
+    by_userdata = get_instances_to_update_by_userdata(asg_name, desired_user_data)
+    by_labels = get_instances_to_update_by_labels(desired_node_labels, config)
+
+    return by_userdata.union(by_labels)
 
 
 @cli.command()
@@ -321,15 +367,16 @@ def same_user_data(enc1, enc2):
 @click.option('--postpone', is_flag=True, help='Postpone node update to a later point in time')
 @click.option('--min-worker-nodes', default=-1, type=int, help='Minimum number of nodes in the worker ASG')
 @click.option('--max-worker-nodes', default=10, type=int, help='Maximum number of nodes in the worker ASG')
+@click.option('--node-labels', type=str, default='', help='Labels to assign to each node')
 @click.option('--scalyr-access-key', type=str, required=True, help='Secret for the logging agent')
-def update(stack_name, version, dry_run, force, instance_type, master_nodes, worker_nodes, postpone, min_worker_nodes, max_worker_nodes, scalyr_access_key):
+def update(stack_name, version, dry_run, force, instance_type, master_nodes, worker_nodes, postpone, min_worker_nodes, max_worker_nodes, node_labels, scalyr_access_key):
     '''
     Update Kubernetes cluster
     '''
     existing_user_data_master = get_launch_configuration_user_data(stack_name, version, 'Master')
     existing_user_data_worker = get_launch_configuration_user_data(stack_name, version, 'Worker')
     worker_shared_secret = get_worker_shared_secret(existing_user_data_worker)
-    variables = get_cluster_variables(stack_name, version, scalyr_access_key, worker_shared_secret)
+    variables = get_cluster_variables(stack_name, version, node_labels, scalyr_access_key, worker_shared_secret)
     if dry_run:
         print(yaml.safe_dump(variables))
     user_data_master = get_user_data('userdata-master.yaml', variables)
@@ -371,9 +418,9 @@ def update(stack_name, version, dry_run, force, instance_type, master_nodes, wor
         subprocess.check_call(['senza', 'wait', '--timeout=600', stack_name, version])
 
         if not postpone:
-            perform_node_updates(stack_name, version, 'Master', user_data_master, variables)
+            perform_node_updates(stack_name, version, 'Master', user_data_master, node_labels, variables)
             wait_for_api_server(variables['api_server'])
-            perform_node_updates(stack_name, version, 'Worker', user_data_worker, variables)
+            perform_node_updates(stack_name, version, 'Worker', user_data_worker, node_labels, variables)
 
 
 def get_k8s_nodes(api_server: str, token: str) -> list:
@@ -468,7 +515,7 @@ def get_instances_in_service(group: dict, config: dict):
     return instances_in_service
 
 
-def perform_node_updates(stack_name, version, name_filter, desired_user_data, config):
+def perform_node_updates(stack_name, version, name_filter, desired_user_data, desired_node_labels, config):
     # TODO: only works for worker nodes right now
     autoscaling = boto3.client('autoscaling')
     asg_name = get_auto_scaling_group(stack_name, version, name_filter)
@@ -495,7 +542,7 @@ def perform_node_updates(stack_name, version, name_filter, desired_user_data, co
             time.sleep(5)
             act.progress()
 
-    instances_to_update = get_instances_to_update(asg_name, desired_user_data)
+    instances_to_update = get_instances_to_update(asg_name, desired_user_data, desired_node_labels, config)
     for instance_id in instances_to_update:
         # drain
         node_name = get_k8s_node_name(instance_id, config)
