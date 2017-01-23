@@ -98,7 +98,7 @@ def get_etcd_bucket_name():
     return bucket_name
 
 
-def get_cluster_variables(stack_name: str, version: str, node_labels: str, scalyr_access_key: str, worker_shared_secret=None):
+def get_cluster_variables(stack_name: str, version: str, node_labels: str, worker_shared_secret=None):
     route53 = boto3.client('route53')
     all_hosted_zones = route53.list_hosted_zones()['HostedZones']
     hosted_zone = all_hosted_zones[0]['Name'].rstrip('.')
@@ -133,7 +133,6 @@ def get_cluster_variables(stack_name: str, version: str, node_labels: str, scaly
         'account_id': get_account_id(),
         'region': get_region(),
         'node_labels': node_labels,
-        'scalyr_access_key': scalyr_access_key
     }
     return variables
 
@@ -261,13 +260,12 @@ def cli():
 @click.option('--min-worker-nodes', default=1, type=int, help='Minimum number of nodes in the worker ASG')
 @click.option('--max-worker-nodes', default=10, type=int, help='Maximum number of nodes in the worker ASG')
 @click.option('--node-labels', type=str, default='', help='Labels to assign to each node')
-@click.option('--scalyr-access-key', type=str, required=True, help='Secret for the logging agent')
-def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes, min_worker_nodes, max_worker_nodes, node_labels, scalyr_access_key):
+def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nodes, min_worker_nodes, max_worker_nodes, node_labels):
     '''
     Create a new Kubernetes cluster (using current AWS credentials)
     '''
 
-    variables = get_cluster_variables(stack_name, version, node_labels, scalyr_access_key)
+    variables = get_cluster_variables(stack_name, version, node_labels)
     info('Cluster ID is:               {}'.format(variables['cluster_id']))
     info('API server endpoint will be: {}'.format(variables['api_server']))
     if dry_run:
@@ -324,16 +322,14 @@ def same_user_data(enc1, enc2):
 @click.option('--min-worker-nodes', default=-1, type=int, help='Minimum number of nodes in the worker ASG')
 @click.option('--max-worker-nodes', default=10, type=int, help='Maximum number of nodes in the worker ASG')
 @click.option('--node-labels', type=str, default='', help='Labels to assign to each node')
-@click.option('--scalyr-access-key', type=str, required=True, help='Secret for the logging agent')
-def update(stack_name, version, dry_run, force, instance_type, master_nodes, worker_nodes, postpone, min_worker_nodes, max_worker_nodes, node_labels,
-           scalyr_access_key):
+def update(stack_name, version, dry_run, force, instance_type, master_nodes, worker_nodes, postpone, min_worker_nodes, max_worker_nodes, node_labels):
     '''
     Update Kubernetes cluster
     '''
     existing_user_data_master = get_launch_configuration_user_data(stack_name, version, 'Master')
     existing_user_data_worker = get_launch_configuration_user_data(stack_name, version, 'Worker')
     worker_shared_secret = get_worker_shared_secret(existing_user_data_worker)
-    variables = get_cluster_variables(stack_name, version, node_labels, scalyr_access_key, worker_shared_secret)
+    variables = get_cluster_variables(stack_name, version, node_labels, worker_shared_secret)
     if dry_run:
         print(yaml.safe_dump(variables))
     user_data_master = get_user_data('userdata-master.yaml', variables)
