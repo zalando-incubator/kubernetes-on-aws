@@ -369,7 +369,8 @@ def get_instances_to_update(asg_name, desired_user_data, desired_node_labels, co
 @click.option('--max-worker-nodes', default=10, type=int, help='Maximum number of nodes in the worker ASG')
 @click.option('--node-labels', type=str, default='', help='Labels to assign to each node')
 @click.option('--scalyr-access-key', type=str, required=True, help='Secret for the logging agent')
-def update(stack_name, version, dry_run, force, instance_type, master_nodes, worker_nodes, postpone, min_worker_nodes, max_worker_nodes, node_labels, scalyr_access_key):
+def update(stack_name, version, dry_run, force, instance_type, master_nodes, worker_nodes, postpone, min_worker_nodes, max_worker_nodes, node_labels,
+           scalyr_access_key):
     '''
     Update Kubernetes cluster
     '''
