@@ -1,0 +1,40 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: prometheus-node-exporter
+  labels:
+    application: prometheus-node-exporter
+    version: v0.12.0
+    component: node-exporter
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      application: prometheus-node-exporter
+  template:
+    metadata:
+      name: prometheus-node-exporter
+      labels:
+        application: prometheus-node-exporter
+        version: v0.12.0
+        component: node-exporter
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+    spec:
+      containers:
+      - image: prom/node-exporter:0.12.0
+        name: prometheus-node-exporter
+        ports:
+        - name: prom-node-exp
+          containerPort: 9100
+          hostPort: 9100
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 25m
+            memory: 25Mi
+      hostNetwork: true
+      hostPID: true

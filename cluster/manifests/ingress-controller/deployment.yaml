@@ -1,0 +1,50 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: app-ingress-controller
+  namespace: kube-system
+  labels:
+    application: app-ingress-controller
+    version: v0.1.0-2-g0755a45
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: app-ingress-controller
+  template:
+    metadata:
+      labels:
+        application: app-ingress-controller
+        version: v0.1.0-2-g0755a45
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-ingr-ctrl"
+    spec:
+      containers:
+      - name: controller
+        image: registry.opensource.zalan.do/teapot/kube-aws-ingress-controller:v0.1.0-2-g0755a45
+        env:
+        - name: AWS_REGION
+          value: {{ .Region }}
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 50m
+            memory: 25Mi
+      - name: kubectl
+        image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0
+        command:
+        - /hyperkube
+        args:
+        - kubectl
+        - proxy
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 25m
+            memory: 25Mi

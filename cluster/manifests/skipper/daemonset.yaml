@@ -1,0 +1,53 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: skipper-ingress
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    version: v0.1.1
+    component: ingress
+spec:
+  selector:
+    matchLabels:
+      application: skipper-ingress
+  template:
+    metadata:
+      name: skipper-ingress
+      labels:
+        application: skipper-ingress
+        version: v0.1.1
+        component: ingress
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+    spec:
+      hostNetwork: true
+      containers:
+      - name: skipper-ingress
+        image: registry.opensource.zalan.do/teapot/skipper:v0.1.1
+        ports:
+        - name: ingress-port
+          containerPort: 9999
+          hostPort: 9999
+        args:
+          - "-application-log-level=DEBUG"
+          - "-kubernetes-url=http://localhost:8001"
+          - "-address=:9999"
+          - "-proxy-preserve-host"
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 25m
+            memory: 25Mi
+      - name: kubectl
+        image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0
+        command:
+        - /hyperkube
+        args:
+        - kubectl
+        - proxy
+        ports:
+        - containerPort: 8001
