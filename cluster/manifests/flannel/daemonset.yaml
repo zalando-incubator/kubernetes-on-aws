@@ -1,0 +1,58 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: kube-flannel
+  namespace: kube-system
+  labels:
+    application: flannel
+    version: v0.7.0
+spec:
+  selector:
+    matchLabels:
+      application: flannel
+  template:
+    metadata:
+      labels:
+        application: flannel
+        version: v0.7.0
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+      containers:
+      - name: kube-flannel
+        image: quay.io/coreos/flannel:v0.7.0
+        command: [ "/opt/bin/flanneld", "--ip-masq", "--kube-subnet-mgr" ]
+        securityContext:
+          privileged: true
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+        - name: run
+          mountPath: /run
+        - name: flannel-cfg
+          mountPath: /etc/kube-flannel/
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 25m
+            memory: 25Mi
+      volumes:
+        - name: run
+          hostPath:
+            path: /run
+        - name: flannel-cfg
+          configMap:
+            name: kube-flannel-cfg
