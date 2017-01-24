@@ -20,32 +20,26 @@ spec:
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
-      initContainers:
-      - name: etcdctl
-        image: quay.io/coreos/etcd:v3.2.10
-        args:
-        - etcdctl
-        - --endpoint=http://127.0.0.1:2379
-        - set
-        - /coreos.com/network/config
-        - '{"Network": "10.2.0.0/16", "Backend": {"Type": "vxlan"}}'
-        resources:
-          limits:
-            cpu: 100m
-            memory: 100Mi
-          requests:
-            cpu: 25m
-            memory: 25Mi
+      serviceAccountName: system
       containers:
       - name: kube-flannel
         image: registry.opensource.zalan.do/teapot/flannel:v0.9.1
         args:
-        - --etcd-endpoints=http://127.0.0.1:2379
+        - --kube-subnet-mgr
         - --iface=eth0
         - --ip-masq
         - --healthz-ip=127.0.0.1
         - --healthz-port=7978
         - --v=2
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         resources:
           limits:
             cpu: 100m
@@ -56,6 +50,8 @@ spec:
         securityContext:
           privileged: true
         volumeMounts:
+        - name: flannelcfg
+          mountPath: /etc/kube-flannel
         - name: runflannel
           mountPath: /run/flannel
       hostNetwork: true
@@ -69,6 +65,9 @@ spec:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       volumes:
+      - name: flannelcfg
+        configMap:
+          name: kube-flannel-cfg
       - name: runflannel
         hostPath:
           path: /run/flannel
