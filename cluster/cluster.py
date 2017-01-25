@@ -495,6 +495,8 @@ def perform_node_updates(stack_name, version, name_filter, desired_user_data, co
             time.sleep(5)
             act.progress()
 
+    # get the list of instances again (some time elapsed during scale up and one instance might have died..)
+    instances_to_update = get_instances_to_update(asg_name, desired_user_data)
     for instance_id in instances_to_update:
         # drain
         node_name = get_k8s_node_name(instance_id, config)
