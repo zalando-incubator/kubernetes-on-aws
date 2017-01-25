@@ -314,7 +314,7 @@ def same_user_data(enc1, enc2):
 @click.argument('stack_name')
 @click.argument('version')
 @click.option('--dry-run', is_flag=True, help='No-op mode: show what would be created')
-@click.option('--force', is_flag=True)
+@click.option('--force', is_flag=True, help='No-op flag: only for compatibility')
 @click.option('--instance-type', type=str, default='current', help='Type of instance')
 @click.option('--master-nodes', type=int, default=-1, help='Number of master nodes')
 @click.option('--worker-nodes', type=int, default=-1, help='Number of worker nodes')
@@ -326,7 +326,6 @@ def update(stack_name, version, dry_run, force, instance_type, master_nodes, wor
     '''
     Update Kubernetes cluster
     '''
-    existing_user_data_master = get_launch_configuration_user_data(stack_name, version, 'Master')
     existing_user_data_worker = get_launch_configuration_user_data(stack_name, version, 'Worker')
     worker_shared_secret = get_worker_shared_secret(existing_user_data_worker)
     variables = get_cluster_variables(stack_name, version, node_labels, worker_shared_secret)
@@ -337,10 +336,6 @@ def update(stack_name, version, dry_run, force, instance_type, master_nodes, wor
 
     if instance_type == 'current':
         instance_type = get_launch_configuration(stack_name, version, 'Worker')['InstanceType']
-
-    if not force and same_user_data(existing_user_data_master, user_data_master) and same_user_data(existing_user_data_worker, user_data_worker):
-        info('Neither worker nor master user data did change, not updating anything.')
-        return
 
     if master_nodes == -1:
         master_nodes = get_current_master_nodes(stack_name, version)
@@ -472,6 +467,11 @@ def perform_node_updates(stack_name, version, name_filter, desired_user_data, co
     # TODO: only works for worker nodes right now
     autoscaling = boto3.client('autoscaling')
     asg_name = get_auto_scaling_group(stack_name, version, name_filter)
+    instances_to_update = get_instances_to_update(asg_name, desired_user_data)
+
+    if not instances_to_update:
+        info('All instances in ASG {} have up-to-date user data'.format(asg_name))
+        return
 
     with Action('Suspending scaling processes for {}..'.format(asg_name)):
         autoscaling.suspend_processes(AutoScalingGroupName=asg_name,
@@ -495,6 +495,7 @@ def perform_node_updates(stack_name, version, name_filter, desired_user_data, co
             time.sleep(5)
             act.progress()
 
+    # get the list of instances again (some time elapsed during scale up and one instance might have died..)
     instances_to_update = get_instances_to_update(asg_name, desired_user_data)
     for instance_id in instances_to_update:
         # drain
