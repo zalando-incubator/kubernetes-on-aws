@@ -1,0 +1,74 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "zmon-scheduler"
+  namespace: "kube-system"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        application: "zmon-scheduler"
+        version: "v0.1"
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+    spec:
+      containers:
+        - name: zmon-scheduler
+          image: "registry.opensource.zalan.do/stups/zmon-scheduler:cd114"
+
+          env:
+            - name: LOCAL_ENTITY_ID
+              value: kube-cluster[{{ .ID }}]
+
+            - name: SCHEDULER_OAUTH2_ACCESS_TOKEN_URL
+              value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
+            - name: CREDENTIALS_DIR
+              value: /meta/credentials
+            - name: ZMON_BASE_URL
+              value: https://data-service.zmon.zalan.do
+
+            - name: SCHEDULER_REDIS_HOST
+              value: zmon-redis
+            - name: SCHEDULER_REDIS_PORT
+              value: "6379"
+
+            - name: SCHEDULER_ENTITY_BASE_FILTER_STR
+              value: '[{"infrastructure_account":"{{ .InfrastructureAccount }}","region":"{{ .Region }}"}]'
+            - name: SCHEDULER_INSTANT_EVAL_HTTP_URL
+              value: https://data-service.zmon.zalan.do/api/v1/instant-evaluations/kube-cluster[{{ .InfrastructureAccount }}:{{ .Region }}]/
+            - name: SCHEDULER_TRIAL_RUN_HTTP_URL
+              value: https://data-service.zmon.zalan.do/api/v1/trial-runs/kube-cluster[{{ .InfrastructureAccount }}:{{ .Region }}]/
+            - name: SCHEDULER_DOWNTIME_HTTP_URL
+              value: https://data-service.zmon.zalan.do/api/v1/downtimes/kube-cluster[{{ .InfrastructureAccount }}:{{ .Region }}]/
+            - name: SCHEDULER_CHECK_DETAIL_METRICS
+              value: "true"
+            - name: SCHEDULER_ENTITY_SERVICE_URL
+              value: https://data-service.zmon.zalan.do/
+            - name: SCHEDULER_CONTROLLER_URL
+              value: https://data-service.zmon.zalan.do/
+            - name: SCHEDULER_ENABLE_GLOBAL_ENTITY
+              value: "false"
+
+          volumeMounts:
+            - name: credentials
+              mountPath: /meta/credentials
+              readOnly: true
+
+        - name: gerry
+          image: registry.opensource.zalan.do/teapot/gerry:v0.0.8
+          args:
+            - /meta/credentials
+            - --application-id=secretary
+            - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
+
+          volumeMounts:
+            - name: credentials
+              mountPath: /meta/credentials
+              readOnly: false
+
+      volumes:
+        - name: credentials
+          emptyDir:
+            medium: Memory

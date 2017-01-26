@@ -1,0 +1,21 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "zmon-redis"
+  namespace: "kube-system"
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        application: "zmon-redis"
+        version: "v0.1"
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+    spec:
+      containers:
+        - name: zmon-redis
+          image: registry.opensource.zalan.do/stups/redis:3.2.0-alpine
+          ports:
+            - containerPort: 6379
