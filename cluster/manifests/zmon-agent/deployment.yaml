@@ -22,12 +22,18 @@ spec:
     spec:
       containers:
         - name: zmon-agent
-          image: "registry.opensource.zalan.do/zmon/zmon-agent-core:0.1-a15"
+          image: "registry.opensource.zalan.do/zmon/zmon-agent-core:0.1-a16"
+          resources:
+            limits:
+              cpu: 100m
+              memory: 200Mi
+            requests:
+              cpu: 50m
+              memory: 80Mi
+
           env:
             - name: ZMON_AGENT_INFRASTRUCTURE_ACCOUNT
               value: "{{ .InfrastructureAccount }}"
-            - name: ZMON_AGENT_ACCOUNT_ALIAS
-              value: "{{ .ConfigItems.account_alias }}"
             - name: ZMON_AGENT_REGION
               value: "{{ .Region }}"
             - name: ZMON_AGENT_INTERVAL

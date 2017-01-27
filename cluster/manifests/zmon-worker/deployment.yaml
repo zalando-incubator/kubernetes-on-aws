@@ -1,14 +1,14 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: "zmon-worker"
-  namespace: "kube-system"
+  name: zmon-worker
+  namespace: kube-system
 spec:
   replicas: 2
   template:
     metadata:
       labels:
-        application: "zmon-worker"
+        application: zmon-worker
         version: "v0.1"
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -17,11 +17,27 @@ spec:
       containers:
         - name: zmon-worker
           image: "pierone.stups.zalan.do/stups/zmon-worker:zv195"
+          resources:
+            limits:
+              cpu: 500m
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+
+          ports:
+            - containerPort: 8080
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 60
+
           env:
-            - name: WORKER_TEAM
-              value: "{{ .ConfigItems.account_alias }}"
             - name: WORKER_ZMON_QUEUES
-              value: zmon:queue:default/25
+              value: zmon:queue:default/16
             - name: WORKER_REDIS_SERVERS
               value: zmon-redis:6379
 

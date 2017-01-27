@@ -3,8 +3,14 @@ kind: Deployment
 metadata:
   name: "zmon-redis"
   namespace: "kube-system"
+  labels:
+    application: "zmon-redis"
+    version: "v0.1"
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      application: "zmon-redis"
   template:
     metadata:
       labels:
@@ -17,5 +23,20 @@ spec:
       containers:
         - name: zmon-redis
           image: registry.opensource.zalan.do/stups/redis:3.2.0-alpine
+          resources:
+            limits:
+              cpu: 200m
+              memory: 1Gi
+            requests:
+              cpu: 50m
+              memory: 100Mi
           ports:
             - containerPort: 6379
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 10
+            periodSeconds: 60
+

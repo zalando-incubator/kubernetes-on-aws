@@ -1,14 +1,20 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: "zmon-scheduler"
-  namespace: "kube-system"
+  name: zmon-scheduler
+  namespace: kube-system
+  labels:
+    application: zmon-scheduler
+    version: "v0.1"
 spec:
   replicas: 1
+  selectors:
+    matchLabels:
+      application: zmon-scheduler
   template:
     metadata:
       labels:
-        application: "zmon-scheduler"
+        application: zmon-scheduler
         version: "v0.1"
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -17,6 +23,23 @@ spec:
       containers:
         - name: zmon-scheduler
           image: "registry.opensource.zalan.do/stups/zmon-scheduler:cd114"
+          resources:
+            limits:
+              cpu: 200m
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+
+          ports:
+            - containerPort: 7979
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 7979
+            initialDelaySeconds: 30
+            periodSeconds: 60
 
           env:
             - name: LOCAL_ENTITY_ID
@@ -29,13 +52,16 @@ spec:
             - name: ZMON_BASE_URL
               value: https://data-service.zmon.zalan.do
 
+            - name: MANAGEMENT_PORT
+              value: 7979
+
             - name: SCHEDULER_REDIS_HOST
               value: zmon-redis
             - name: SCHEDULER_REDIS_PORT
               value: "6379"
 
             - name: SCHEDULER_ENTITY_BASE_FILTER_STR
-              value: '[{"infrastructure_account":"{{ .InfrastructureAccount }}","region":"{{ .Region }}"}]'
+              value: '[{"infrastructure_account":"{{ .InfrastructureAccount }}","region":"{{ .Region }}","kube_cluster":"{{ .ID }}"}]'
             - name: SCHEDULER_INSTANT_EVAL_HTTP_URL
               value: https://data-service.zmon.zalan.do/api/v1/instant-evaluations/kube-cluster[{{ .InfrastructureAccount }}:{{ .Region }}]/
             - name: SCHEDULER_TRIAL_RUN_HTTP_URL
