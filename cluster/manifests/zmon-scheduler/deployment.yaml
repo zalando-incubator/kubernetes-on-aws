@@ -45,6 +45,12 @@ spec:
             - name: LOCAL_ENTITY_ID
               value: kube-cluster[{{ .ID }}]
 
+            - name: MEM_TOTAL_KB
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.memory
+                  divisor: 1Ki
+
             - name: SCHEDULER_OAUTH2_ACCESS_TOKEN_URL
               value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
             - name: CREDENTIALS_DIR
