@@ -22,8 +22,8 @@ SenzaInfo:
           Description: "Type of instance"
       - ClusterID:
           Description: "ID of the cluster"
-      - HostedZone:
-          Description: "Hosted DNS zone"
+      - APIServerHostName:
+          Description: "API Server host name"
 
 SenzaComponents:
   - Configuration:
@@ -47,8 +47,8 @@ SenzaComponents:
           LoadBalancerPort: 443
       ConnectionSettings:
         IdleTimeout: 300
-      VersionDomain: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}.{{Arguments.HostedZone}}"
-      MainDomain: "{{SenzaInfo.StackName}}.{{Arguments.HostedZone}}"
+      VersionDomain: "{{ Arguments.APIServerHostName }}"
+      # MainDomain: "{{ Arguments.APIServerHostName }}"
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
