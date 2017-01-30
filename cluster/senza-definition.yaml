@@ -24,6 +24,10 @@ SenzaInfo:
           Description: "ID of the cluster"
       - APIServerHostName:
           Description: "API Server host name"
+      - MasterNodePoolName:
+          Description: "Name of the master node pool (ASG)"
+      - WorkerNodePoolName:
+          Description: "Name of the worker node pool (ASG)"
 
 SenzaComponents:
   - Configuration:
@@ -48,7 +52,6 @@ SenzaComponents:
       ConnectionSettings:
         IdleTimeout: 300
       VersionDomain: "{{ Arguments.APIServerHostName }}"
-      # MainDomain: "{{ Arguments.APIServerHostName }}"
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
@@ -82,6 +85,8 @@ SenzaComponents:
           Value: kubernetes
         - Key: "ClusterID"
           Value: "{{ Arguments.ClusterID }}"
+        - Key: "NodePool"
+          Value: "{{ Arguments.MasterNodePoolName }}"
   - WorkerAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: "{{ Arguments.InstanceType }}"
@@ -110,6 +115,8 @@ SenzaComponents:
           Value: kubernetes
         - Key: "ClusterID"
           Value: "{{ Arguments.ClusterID }}"
+        - Key: "NodePool"
+          Value: "{{ Arguments.WorkerNodePoolName }}"
   - WorkerLoadBalancer:
       Type: Senza::ElasticLoadBalancer
       NameSuffix: worker
