@@ -1,14 +1,20 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: zmon-worker
-  namespace: kube-system
+  name: "zmon-aws-agent"
+  namespace: "kube-system"
+  labels:
+    application: "zmon-aws-agent"
+    version: "v0.1"
 spec:
-  replicas: 2
+  replicas: 1
+  selector:
+    matchLabels:
+      application: zmon-aws-agent
   template:
     metadata:
       labels:
-        application: zmon-worker
+        application: "zmon-aws-agent"
         version: "v0.1"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
@@ -16,32 +22,17 @@ spec:
         scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
     spec:
       containers:
-        - name: zmon-worker
-          image: "pierone.stups.zalan.do/stups/zmon-worker:zv195"
+        - name: zmon-aws-agent
+          image: pierone.stups.zalan.do/stups/zmon-aws-agent:zv129
           resources:
             limits:
-              cpu: 500m
-              memory: 1Gi
+              cpu: 100m
+              memory: 200Mi
             requests:
-              cpu: 200m
-              memory: 512Mi
-
-          ports:
-            - containerPort: 8080
-
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 30
-            periodSeconds: 60
+              cpu: 50m
+              memory: 80Mi
 
           env:
-            - name: WORKER_ZMON_QUEUES
-              value: zmon:queue:default/16
-            - name: WORKER_REDIS_SERVERS
-              value: zmon-redis:6379
-
             - name: OAUTH2_ACCESS_TOKEN_URL
               value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
             - name: CREDENTIALS_DIR
