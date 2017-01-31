@@ -396,8 +396,12 @@ def longest_grace_period(node_name: str, config: dict):
     """
     headers = {"Authorization": "Bearer {}".format(config["worker_shared_secret"])}
     params = {"fieldSelector": "spec.nodeName={}".format(node_name)}
-    pods = requests.get(config["api_server"] + "/api/v1/pods", params=params, headers=headers, timeout=5).json()
+    resp = requests.get(config["api_server"] + "/api/v1/pods", params=params, headers=headers, timeout=5)
+    pods = resp.json()
     grace_period = 0
+    if not pods:
+        print("resp:", resp)
+        return grace_period
     for pod in pods["items"]:
         grace_period = max(pod["spec"]["terminationGracePeriodSeconds"], grace_period)
     return grace_period
