@@ -1,0 +1,64 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "zmon-aws-agent"
+  namespace: "kube-system"
+  labels:
+    application: "zmon-aws-agent"
+    version: "v0.1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: zmon-aws-agent
+  template:
+    metadata:
+      labels:
+        application: "zmon-aws-agent"
+        version: "v0.1"
+      annotations:
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+    spec:
+      containers:
+        - name: zmon-aws-agent
+          image: pierone.stups.zalan.do/stups/zmon-aws-agent:zv129
+          resources:
+            limits:
+              cpu: 100m
+              memory: 200Mi
+            requests:
+              cpu: 50m
+              memory: 80Mi
+
+          env:
+            - name: OAUTH2_ACCESS_TOKEN_URL
+              value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
+            - name: CREDENTIALS_DIR
+              value: /meta/credentials
+
+          volumeMounts:
+            - name: credentials
+              mountPath: /meta/credentials
+              readOnly: true
+
+        - name: gerry
+          image: registry.opensource.zalan.do/teapot/gerry:v0.0.8
+          args:
+            - /meta/credentials
+            - --application-id=secretary
+            - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
+
+          volumeMounts:
+            - name: credentials
+              mountPath: /meta/credentials
+              readOnly: false
+
+      volumes:
+        - name: credentials
+          emptyDir:
+            medium: Memory
+
+      imagePullSecrets:
+        - name: pierone.stups.zalan.do

@@ -1,0 +1,76 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: zmon-worker
+  namespace: kube-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      application: zmon-worker
+  template:
+    metadata:
+      labels:
+        application: zmon-worker
+        version: "v0.1"
+      annotations:
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+    spec:
+      containers:
+        - name: zmon-worker
+          image: "pierone.stups.zalan.do/stups/zmon-worker:zv195"
+          resources:
+            limits:
+              cpu: 500m
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+
+          ports:
+            - containerPort: 8080
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 60
+
+          env:
+            - name: WORKER_ZMON_QUEUES
+              value: zmon:queue:default/16
+            - name: WORKER_REDIS_SERVERS
+              value: zmon-redis:6379
+
+            - name: OAUTH2_ACCESS_TOKEN_URL
+              value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
+            - name: CREDENTIALS_DIR
+              value: /meta/credentials
+
+          volumeMounts:
+            - name: credentials
+              mountPath: /meta/credentials
+              readOnly: true
+
+        - name: gerry
+          image: registry.opensource.zalan.do/teapot/gerry:v0.0.8
+          args:
+            - /meta/credentials
+            - --application-id=secretary
+            - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
+
+          volumeMounts:
+            - name: credentials
+              mountPath: /meta/credentials
+              readOnly: false
+
+      volumes:
+        - name: credentials
+          emptyDir:
+            medium: Memory
+
+      imagePullSecrets:
+        - name: pierone.stups.zalan.do

@@ -1,0 +1,74 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "zmon-agent"
+  namespace: "kube-system"
+  labels:
+    application: "zmon-agent"
+    version: "v0.1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: zmon-agent
+  template:
+    metadata:
+      labels:
+        application: "zmon-agent"
+        version: "v0.1"
+      annotations:
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+    spec:
+      containers:
+        - name: zmon-agent
+          image: "registry.opensource.zalan.do/zmon/zmon-agent-core:0.1-a18"
+          resources:
+            limits:
+              cpu: 100m
+              memory: 200Mi
+            requests:
+              cpu: 50m
+              memory: 80Mi
+
+          env:
+            - name: ZMON_AGENT_INFRASTRUCTURE_ACCOUNT
+              value: "{{ .InfrastructureAccount }}"
+            - name: ZMON_AGENT_REGION
+              value: "{{ .Region }}"
+            - name: ZMON_AGENT_INTERVAL
+              value: "60"
+
+            - name: ZMON_AGENT_ENTITY_SERVICE_URL
+              value: https://data-service.zmon.zalan.do
+
+            - name: ZMON_AGENT_KUBERNETES_CLUSTER_ID
+              value: "{{ .ID }}"
+
+            - name: OAUTH2_ACCESS_TOKEN_URL
+              value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
+            - name: CREDENTIALS_DIR
+              value: /meta/credentials
+
+          volumeMounts:
+            - name: credentials
+              mountPath: /meta/credentials
+              readOnly: true
+
+        - name: gerry
+          image: registry.opensource.zalan.do/teapot/gerry:v0.0.8
+          args:
+            - /meta/credentials
+            - --application-id=secretary
+            - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
+
+          volumeMounts:
+            - name: credentials
+              mountPath: /meta/credentials
+              readOnly: false
+
+      volumes:
+        - name: credentials
+          emptyDir:
+            medium: Memory

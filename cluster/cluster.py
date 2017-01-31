@@ -131,6 +131,7 @@ def get_cluster_variables(stack_name: str, version: str, node_labels: str, worke
         'mint_bucket': mint_bucket,
         'etcd_bucket': etcd_bucket,
         'account_id': get_account_id(),
+        'account_alias': get_account_alias(),
         'region': get_region(),
         'node_labels': node_labels,
     }
