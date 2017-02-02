@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: daemonupgrader
+  namespace: kube-system
+  labels:
+    application: daemonupgrader
+    version: 8264ca0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: daemonupgrader
+  template:
+    metadata:
+      labels:
+        application: daemonupgrader
+        version: 8264ca0
+    spec:
+      containers:
+      - name: daemonupgrader
+        image: registry.opensource.zalan.do/teapot/k8s-daemonupgradecontroller:8264ca0
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 50m
+            memory: 25Mi
