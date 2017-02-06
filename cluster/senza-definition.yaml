@@ -521,6 +521,19 @@ Resources:
         - Key: "ClusterID"
           Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
+  WorkerSecurityGroupIngressFromWorkerToWorkerSkipperMetrics:
+    Properties:
+      FromPort: 9911
+      GroupId: {Ref: WorkerSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
+      ToPort: 9911
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
+    Type: AWS::EC2::SecurityGroupIngress
 
   ZmonIAMRole:
     Properties:
