@@ -217,7 +217,9 @@ def deploy_etcd_cluster(hosted_zone, etcd_bucket, region):
             bucket.create(CreateBucketConfiguration={'LocationConstraint': region})
             bucket.wait_until_exists()
 
-    subprocess.check_call(['senza', 'create', 'etcd-cluster.yaml', 'etcd', 'HostedZone={}'.format(hosted_zone), 'EtcdS3Backup={}'.format(etcd_bucket)])
+    subprocess.check_call(['senza', 'create', '--update-if-exists', 'etcd-cluster.yaml', 'etcd',
+                           'HostedZone={}'.format(hosted_zone),
+                           'EtcdS3Backup={}'.format(etcd_bucket)])
     # wait up to 15m for stack to be created
     subprocess.check_call(['senza', 'wait', '--timeout=900', 'etcd-cluster', 'etcd'])
 
@@ -277,7 +279,7 @@ def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nod
     userdata_master = get_user_data('userdata-master.yaml', variables)
     userdata_worker = get_user_data('userdata-worker.yaml', variables)
     if not dry_run:
-        subprocess.check_call(['senza', 'create', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
+        subprocess.check_call(['senza', 'create', '--update-if-exists', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                                'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*',
                                'MasterNodePoolName=master-default',
                                'WorkerNodePoolName=worker-default',
@@ -542,7 +544,7 @@ def delete(stack_name, version):
     '''
     Tear down a whole Kubernetes cluster
     '''
-    subprocess.check_call(['senza', 'delete', stack_name, version])
+    subprocess.check_call(['senza', 'delete', '--ignore-non-existent', stack_name, version])
 
 
 @cli.command('get-api-token')
