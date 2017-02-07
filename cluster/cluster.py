@@ -281,6 +281,8 @@ def create(stack_name, version, dry_run, instance_type, master_nodes, worker_nod
     if not dry_run:
         subprocess.check_call(['senza', 'create', '--update-if-exists', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                                'UserDataMaster={}'.format(userdata_master), 'UserDataWorker={}'.format(userdata_worker), 'KmsKey=*',
+                               'MasterNodePoolName=master-default',
+                               'WorkerNodePoolName=worker-default',
                                'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes),
                                'MinimumWorkerNodes={}'.format(min_worker_nodes),
                                'MaximumWorkerNodes={}'.format(max_worker_nodes),
@@ -359,6 +361,8 @@ def update(stack_name, version, dry_run, force, instance_type, master_nodes, wor
         subprocess.check_call(['senza', 'update', 'senza-definition.yaml', version, 'StackName={}'.format(stack_name),
                                'UserDataMaster={}'.format(user_data_master),
                                'UserDataWorker={}'.format(user_data_worker), 'KmsKey=*',
+                               'MasterNodePoolName=master-default',
+                               'WorkerNodePoolName=worker-default',
                                'MasterNodes={}'.format(master_nodes), 'WorkerNodes={}'.format(worker_nodes),
                                'MinimumWorkerNodes={}'.format(min_worker_nodes),
                                'MaximumWorkerNodes={}'.format(max_worker_nodes),
