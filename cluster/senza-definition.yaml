@@ -22,8 +22,8 @@ SenzaInfo:
           Description: "Type of instance"
       - ClusterID:
           Description: "ID of the cluster"
-      - APIServerHostName:
-          Description: "API Server host name"
+      - HostedZone:
+          Description: "Hosted DNS zone"
       - MasterNodePoolName:
           Description: "Name of the master node pool (ASG)"
       - WorkerNodePoolName:
@@ -51,8 +51,8 @@ SenzaComponents:
           LoadBalancerPort: 443
       ConnectionSettings:
         IdleTimeout: 300
-      VersionDomain: "{{ Arguments.APIServerHostName }}"
-      MainDomain: "{{ Arguments.APIServerHostName }}"
+      VersionDomain: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}.{{Arguments.HostedZone}}"
+      MainDomain: "{{SenzaInfo.StackName}}.{{Arguments.HostedZone}}"
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
