@@ -400,7 +400,7 @@ def longest_grace_period(node_name: str, config: dict):
     pods = resp.json()
     grace_period = 0
     if not pods:
-        print("resp:", resp)
+        warning("Response does not contain valid json {}", resp)
         return grace_period
     for pod in pods["items"]:
         grace_period = max(pod["spec"]["terminationGracePeriodSeconds"], grace_period)
