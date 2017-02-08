@@ -1,9 +1,7 @@
 SenzaComponents:
 - Configuration:
     Type: Senza::StupsAutoConfiguration
-    PublicOnly: true
 - AppServer:
-    AssociatePublicIpAddress: true
     IamRoles:
     - Ref: EtcdRole
     InstanceType: m3.medium
@@ -19,7 +17,6 @@ SenzaComponents:
       source: registry.opensource.zalan.do/acid/etcd-cluster:3.0.15-p14
       environment:
         HOSTED_ZONE: '{{Arguments.HostedZone}}'
-        ACTIVE_REGIONS: '{{Arguments.ActiveRegions}}'
       mounts:
         /home/etcd:
           partition: none
@@ -35,12 +32,9 @@ SenzaInfo:
   Parameters:
   - HostedZone:
       Description: AWS Hosted Zone to work with
-  - ActiveRegions:
-      Description: Multi-Region-Cluster? Active/Deployed regions.
-      Default: eu-west-1,eu-central-1
   - InstanceCount:
       Description: Instance number in ASG
-      Default: 4
+      Default: 5
   - EtcdS3Backup:
       Description: AWS S3 Bucket to backup ETCD to
   StackName: etcd-cluster
@@ -121,4 +115,3 @@ Resources:
             Action:
             - s3:PutObject
             Resource: [ "arn:aws:s3:::{{Arguments.EtcdS3Backup}}/*" ]
-
