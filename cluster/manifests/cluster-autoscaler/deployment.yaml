@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: cluster-autoscaler
-    version: v0.3.2
+    version: v0.2
 spec:
   replicas: 1
   selector:
@@ -15,30 +15,19 @@ spec:
     metadata:
       labels:
         application: cluster-autoscaler
-        version: v0.3.2
+        version: v0.2
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
     spec:
       containers:
-        - image: registry.opensource.zalan.do/teapot/aws-k8s-cluster-autoscaler:0.3.2
+        - image: registry.opensource.zalan.do/teapot/kube-aws-autoscaler:0.2
           name: cluster-autoscaler
           resources:
             limits:
-              cpu: 250m
-              memory: 500Mi
+              cpu: 200m
+              memory: 100Mi
             requests:
-              cpu: 100m
+              cpu: 50m
               memory: 50Mi
-          command:
-            - ./cluster-autoscaler
-            - --v=9
-            - --cloud-provider=aws
-            - --skip-nodes-with-local-storage=false
-            - --leader-elect=false
-            - --scale-down-unneeded-time=45m0s
-          env:
-            - name: AWS_REGION
-              value: {{ .Region }}
-          imagePullPolicy: "Always"
