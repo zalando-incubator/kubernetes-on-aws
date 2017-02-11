@@ -123,6 +123,35 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
+    - name: kube-node-drainer.service
+      enable: true
+      command: start
+      runtime: true
+      content: |
+        [Unit]
+        Description=drain this k8s node to make running pods time to gracefully shut down before stopping kubelet
+        After=multi-user.target
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStart=/bin/true
+        TimeoutStopSec=30s
+        ExecStop=/bin/sh -c '/usr/bin/rkt run \
+        --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
+        --mount=volume=kube,target=/etc/kubernetes \
+        --net=host \
+        registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0 \
+          --exec=/kubectl -- \
+          --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
+          drain $(hostname) \
+          --ignore-daemonsets \
+          --delete-local-data \
+          --force'
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: install-microscope.service
       command: start
       runtime: true
