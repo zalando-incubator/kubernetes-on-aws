@@ -94,13 +94,14 @@ coreos:
       content: |
         [Unit]
         Description=drain this k8s node to make running pods time to gracefully shut down before stopping kubelet
-        After=multi-user.target
+        Requires=docker.service
+        After=docker.service
 
         [Service]
         Type=oneshot
         RemainAfterExit=true
         ExecStart=/bin/true
-        TimeoutStopSec=30s
+        TimeoutStopSec=40s
         ExecStop=/bin/sh -c '/usr/bin/rkt run \
         --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
         --mount=volume=kube,target=/etc/kubernetes \
