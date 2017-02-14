@@ -44,6 +44,16 @@ spec:
               value: zmon:queue:default/16
             - name: WORKER_REDIS_SERVERS
               value: zmon-redis:6379
+            - name: WORKER_PLUGIN_SQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: zmon-worker
+                  key: sql-user
+            - name: WORKER_PLUGIN_SQL_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: zmon-worker
+                  key: sql-pass
 
             - name: OAUTH2_ACCESS_TOKEN_URL
               value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
