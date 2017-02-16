@@ -27,42 +27,7 @@ coreos:
       command: start
       runtime: true
 
-    - name: install-docker.service
-      command: start
-      runtime: true
-      content: |
-        [Service]
-        Type=oneshot
-        ExecStart=/opt/bin/install-docker
-
     - name: docker.service
-      content: |
-        [Unit]
-        Description=Docker Application Container Engine
-        Documentation=http://docs.docker.com
-        After=install-docker docker.socket early-docker.target network.target
-        Requires=install-docker docker.socket early-docker.target
-
-        [Service]
-        EnvironmentFile=-/run/flannel_docker_opts.env
-        EnvironmentFile=/etc/profile.env
-        MountFlags=slave
-        ExecStart=/opt/docker/dockerd --host=fd:// $DOCKER_OPTS $DOCKER_CGROUPS $DOCKER_OPT_BIP $DOCKER_OPT_MTU $DOCKER_OPT_IPMASQ
-        LimitNOFILE=1048576
-        # Having non-zero Limit*s causes performance problems due to accounting overhead
-        # in the kernel. We recommend using cgroups to do container-local accounting.
-        LimitNPROC=infinity
-        LimitCORE=infinity
-        # Uncomment TasksMax if your systemd version supports .
-        # Only systemd 226 and above support this version.
-        TasksMax=infinity
-        TimeoutStartSec=0
-        # set delegate yes so that systemd does not reset the cgroups of docker containers
-        Delegate=yes
-
-        [Install]
-        WantedBy=multi-user.target
-
       drop-ins:
         - name: 40-flannel.conf
           content: |
@@ -71,10 +36,10 @@ coreos:
             After=flanneld.service
             [Service]
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
-        - name: 50-logging.conf
+        - name: 60-dockeropts.conf
           content: |
             [Service]
-            Environment="DOCKER_OPTS=--debug --log-opt=max-file=2 --log-opt=max-size=50m"
+            Environment="DOCKER_OPTS=--iptables=false --log-opt=max-file=2 --log-opt=max-size=50m"
 
     - name: flanneld.service
       drop-ins:
@@ -119,9 +84,41 @@ coreos:
         --require-kubeconfig \
         --cloud-provider=aws \
         --low-diskspace-threshold-mb=1000 \
-        --feature-gates=AllAlpha=true
+        --feature-gates=AllAlpha=true \
+        --system-reserved=cpu=100m,memory=164Mi \
+        --kube-reserved=cpu=100m,memory=282Mi
         Restart=always
         RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: kube-node-drainer.service
+      enable: true
+      command: start
+      runtime: true
+      content: |
+        [Unit]
+        Description=drain this k8s node to make running pods time to gracefully shut down before stopping kubelet
+        Requires=docker.service
+        After=docker.service
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=true
+        ExecStart=/bin/true
+        TimeoutStopSec=120s
+        ExecStop=/bin/sh -c '/usr/bin/rkt run \
+        --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
+        --mount=volume=kube,target=/etc/kubernetes \
+        --net=host \
+        registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0 \
+          --exec=/kubectl -- \
+          --kubeconfig=/etc/kubernetes/kubeconfig \
+          drain $(hostname) \
+          --ignore-daemonsets \
+          --delete-local-data \
+          --force'
 
         [Install]
         WantedBy=multi-user.target
@@ -138,21 +135,6 @@ coreos:
         ExecStart=/usr/bin/docker pull registry.opensource.zalan.do/teapot/microscope:v0.0.3
 
 write_files:
-
-  - path: "/etc/profile.env"
-    content: |
-      PATH="/opt/docker:/usr/sbin:$PATH"
-
-
-  - path: "/opt/bin/install-docker"
-    permissions: 0700
-    owner: root:root
-    content: |
-      #!/bin/bash -e
-      cd /opt
-      curl -O https://test.docker.com/builds/Linux/x86_64/docker-1.13.0-rc2.tgz
-      tar xzf docker-1.13.0-rc2.tgz
-
 
   - path: /etc/kubernetes/kubeconfig
     permissions: "0644"
@@ -206,15 +188,6 @@ write_files:
           cluster: authz-webhook
           user: authz-webhook-client
         name: authz-webhook
-
-  - path: /opt/bin/install-docker
-    permissions: 0700
-    owner: root:root
-    content: |
-      #!/bin/bash -e
-      cd /opt
-      curl -O https://test.docker.com/builds/Linux/x86_64/docker-1.13.0-rc2.tgz
-      tar xzf docker-1.13.0-rc2.tgz
 
   - path: /etc/kubernetes/cni/docker_opts_cni.env
     content: |

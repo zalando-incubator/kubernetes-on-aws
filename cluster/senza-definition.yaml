@@ -34,7 +34,7 @@ SenzaComponents:
       Type: Senza::CoreosAutoConfiguration
       PublicOnly: true # use all public subnets
       DefineParameters: false # skip CF template parameter definition
-      ReleaseChannel: stable # see https://coreos.com/os/docs/latest/switching-channels.html
+      ReleaseChannel: alpha # see https://coreos.com/os/docs/latest/switching-channels.html
   - MasterLoadBalancer:
       Type: Senza::WeightedDnsElasticLoadBalancer
       HTTPPort: 443
@@ -210,6 +210,7 @@ Resources:
           - {Action: 'ec2:Describe*', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:DescribeAutoScalingGroups', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:DescribeAutoScalingInstances', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DescribeScalingActivities', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:SetDesiredCapacity', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:TerminateInstanceInAutoScalingGroup', Effect: Allow, Resource: '*'}
           Version: '2012-10-17'
