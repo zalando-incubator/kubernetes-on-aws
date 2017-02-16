@@ -36,10 +36,10 @@ coreos:
             After=flanneld.service
             [Service]
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
-        - name: 50-logging.conf
+        - name: 60-dockeropts.conf
           content: |
             [Service]
-            Environment="DOCKER_OPTS=--log-opt=max-file=2 --log-opt=max-size=50m"
+            Environment="DOCKER_OPTS=--iptables=false --log-opt=max-file=2 --log-opt=max-size=50m"
 
     - name: flanneld.service
       drop-ins:
