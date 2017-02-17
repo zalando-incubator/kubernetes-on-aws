@@ -54,7 +54,7 @@ In this example the AWS access role for the S3 bucket is called ``myapp-iam-role
                   mountPath: /meta/credentials
                   readOnly: true
             - name: gerry
-              image: registry.opensource.zalan.do/teapot/gerry:v0.0.8
+              image: registry.opensource.zalan.do/teapot/gerry:v0.0.9
               args:
                 - /meta/credentials
                 - --application-id=myapp
@@ -83,7 +83,7 @@ The next important part is the ``gerry`` *sidecar*.
 .. code-block:: yaml
 
     - name: gerry
-      image: registry.opensource.zalan.do/teapot/gerry:v0.0.8
+      image: registry.opensource.zalan.do/teapot/gerry:v0.0.9
       args:
         - /meta/credentials
         - --application-id=myapp
