@@ -4,7 +4,7 @@
 User's Guide
 ============
 
-How to the Kubernetes cluster.
+How to use the Kubernetes cluster.
 
 .. toctree::
    :maxdepth: 1
