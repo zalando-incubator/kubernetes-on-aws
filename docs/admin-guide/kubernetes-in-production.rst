@@ -96,7 +96,7 @@ Keep-alive connections are the default when using connection pools. This means t
 
 Kubernetes’ default behavior is a blocker for seamless migration from our AWS/STUPS infrastructure to Kubernetes. In STUPS, single Docker containers run directly on EC2 instances. Graceful container termination is not needed as AWS automatically deregisters EC2 instances and drains connections from the ELB on instance termination. We therefore consider solving the graceful pod termination issue in Kubernetes on the infrastructure level. This would not require any application code changes by our users (application developers).
 
-You find a `blog post about graceful shutdown of node.js on Kubernetes`_ and a `small test app to see the pod termination behavior`_.
+For further reading on the topic, you can find a `blog post about graceful shutdown of node.js on Kubernetes`_ and a `small test app to see the pod termination behavior`_.
 
 .. _readinessProbe: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
 .. _blog post about graceful shutdown of node.js on Kubernetes: https://blog.risingstack.com/graceful-shutdown-node-js-kubernetes/
