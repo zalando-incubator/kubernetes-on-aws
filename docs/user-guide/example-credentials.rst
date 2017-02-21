@@ -2,6 +2,11 @@
 Example application with IAM credentials
 ========================================
 
+.. Note::
+
+    This section describes the legacy way of getting OAuth credentials via Mint.
+    Please read :ref:`zalando-iam-integration` for the recommended new approach.
+
 This is a full example manifest of an application (``myapp``) which uses IAM
 credentials distributed via a mint-bucket (``zalando-stups-mint-12345678910-eu-central-1``).
 

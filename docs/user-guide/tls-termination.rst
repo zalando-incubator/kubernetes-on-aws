@@ -1,3 +1,5 @@
+.. _tls-termination:
+
 =======================
 TLS Termination and DNS
 =======================
