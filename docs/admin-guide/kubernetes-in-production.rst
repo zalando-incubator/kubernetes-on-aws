@@ -70,27 +70,37 @@ Default resource requests and limits can be configured via the LimitRange_ resou
 
 We provide a `tiny script`_ and use the Downwards API to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size.
 
-Kubelet can be instructed to reserve a certain amount of resources for the system and for Kubernetes components (kubelet itself and Docker etc). Reserved resources are subtracted from the `node’s allocatable resources`_. This improves scheduling and makes resource allocation/usage more transparent. Node allocatable resources or rather reserved resources are also visible in `Kubernetes Operational View`_.
-
-*TODO: add link to kubelet flags*
+`Kubelet can be instructed to reserve a certain amount of resources`_ for the system and for Kubernetes components (kubelet itself and Docker etc). Reserved resources are subtracted from the `node’s allocatable resources`_. This improves scheduling and makes resource allocation/usage more transparent. Node allocatable resources or rather reserved resources are also visible in `Kubernetes Operational View`_.
 
 .. _LimitRange: https://github.com/kubernetes/community/blob/master/contributors/design-proposals/admission_control_limit_range.md
 .. _tiny script: https://github.com/zalando/docker-openjdk/blob/master/utils/java-dynamic-memory-opts
+.. _Kubelet can be instructed to reserve a certain amount of resources: https://github.com/kubernetes/kubernetes/blob/1fc1e5efb5e5e1f821bfff8e2ef2dc308bfade8a/cmd/kubelet/app/options/options.go#L227
 .. _node’s allocatable resources: https://github.com/kubernetes/community/blob/master/contributors/design-proposals/node-allocatable.md
 
 Graceful Pod Termination
 ========================
 
-Kubernetes will cause service disruptions on pod terminations by default as applications and configuration need to be prepared for graceful shutdown. By default, pods receive the TERM signal and will be killed 30s later with KILL. Kubernetes expects the container to handle the TERM signal and change the readinessProbe_ to “fail”. This can be achieved by changing an in-memory value which instructs the health endpoint to return a non-200 status code. Sadly the default probe settings (period 10s, failure threshold 3) prevent an in-time change of the “ready” state. To achieve graceful pod shutdown..
+Kubernetes will cause service disruptions on pod terminations by default as applications and configuration need to be prepared for graceful shutdown.
+By default, pods receive the TERM signal and ``kube-proxy`` reconfigures the ``iptables`` rules to stop traffic to the pod.
+The pod will be killed 30s later by a KILL signal if it did not terminate by itself before.
 
-* ..the container needs to switch its health endpoint to non-200 status code when receiving the TERM signal
-* ..the readinessProbe settings need to be tweaked to react within the grace period (30s by default), e.g. by setting failure threshold to 1 or 2 (while keeping the default period of 10s)
+Kubernetes expects the container to handle the TERM signal and at least wait some seconds for ``kube-proxy`` to change the ``iptables`` rules.
+Note that the readinessProbe_ behavior does not matter after having received the TERM signal.
 
-TODO: example and link existing blog posts by others
+There are two cases leading to failing requests:
 
-Kubernetes’ assumption that application handle the TERM signal and change their health endpoint is a blocker for seamless migration from our AWS/STUPS infrastructure to Kubernetes. In STUPS, single Docker containers run directly on EC2 instances. Graceful container termination is not needed as AWS automatically deregisters EC2 instances and drains connections from the ELB on instance termination. We therefore consider solving the graceful pod termination issue in Kubernetes on the infrastructure level. This would not require any application code changes by our users (application developers).
+* The pod's container terminates immediately when receiving the TERM signal --- thus not giving ``kube-proxy`` enough time to remove the forwarding rule
+* Keep-alive connections are not handed over by Kubernetes, i.e. requests from clients with keep-alive connection will still be routed to the pod
+
+Keep-alive connections are the default when using connection pools. This means that nearly all client connections between microservices are affected by pod terminations.
+
+Kubernetes’ default behavior is a blocker for seamless migration from our AWS/STUPS infrastructure to Kubernetes. In STUPS, single Docker containers run directly on EC2 instances. Graceful container termination is not needed as AWS automatically deregisters EC2 instances and drains connections from the ELB on instance termination. We therefore consider solving the graceful pod termination issue in Kubernetes on the infrastructure level. This would not require any application code changes by our users (application developers).
+
+You find a `blog post about graceful shutdown of node.js on Kubernetes`_ and a `small test app to see the pod termination behavior`_.
 
 .. _readinessProbe: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
+.. _blog post about graceful shutdown of node.js on Kubernetes: https://blog.risingstack.com/graceful-shutdown-node-js-kubernetes/
+.. _small test app to see the pod termination behavior: https://github.com/mikkeloscar/kube-sigterm-test
 
 Autoscaling
 ===========
