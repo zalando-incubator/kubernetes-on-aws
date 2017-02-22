@@ -194,8 +194,27 @@ We use flannel as our overlay network which requires etcd by default to configur
 
 Kubernetes allows to define PodSecurityPolicy_ resources to restrict the use of “privileged” containers and similar features which allow privilege escalation.
 
+Docker
+======
+
+Docker is often beautiful and sometimes painful, especially when trying to run containers reliable in production. We encountered various issues with Docker and all of them are not really Kubernetes related, e.g.:
+
+* Docker 1.11 to 1.12.5 included an evil `bug where the Docker daemon becomes unresponsive`_ (``docker ps`` hangs). We hit this problem every week on at least one of our Kubernetes nodes. Our workaround was upgrading to Docker 1.13 RC2 (we now moved back to 1.12.6 as the fix was backported).
+* We saw some processes getting stuck in "pipe wait" while writing to STDOUT when using the default Docker ``json`` logger (root cause was not identified yet).
+* There seem to be a lot more race conditions in Docker and you can find many "Docker daemon hangs" issues reported, we already expect to hit them once in a while.
+* Upgrading Docker clients to `1.13 broke pulls`_ from our `Pier One registry`_ (pulls from gcr.io were broken too). We implemented a quick workaround in Pier One until Docker fixed the issue upstream.
+* A `thread on Twitter`_ suggested adding the ``--iptables=false`` flag for Docker 1.13. We spend some time until we found out that this is a bad idea. NAT for the Flannel overlay network breaks when adding ``--iptables=false``.
+
+We learned that Docker can be quite painful to run in production because of the many tiny bugs (race conditions).
+You can be sure to hit some of them when running enough nodes 24x7.
+Also better not touch your Docker version once you have a running setup.
+
 .. _proprietary webhook: https://github.com/zalando-incubator/kubernetes-on-aws/blob/449f8f3bf5c60e0d319be538460ff91266337abc/cluster/userdata-master.yaml#L319
 .. _Kubernetes Operational View: https://github.com/hjacobs/kube-ops-view
 .. _PodSecurityPolicy: https://kubernetes.io/docs/user-guide/pod-security-policy/
 .. _CronJob: https://kubernetes.io/docs/user-guide/cron-jobs/
 .. _kube-job-cleaner: https://github.com/hjacobs/kube-job-cleaner
+.. _bug where the Docker daemon becomes unresponsive: https://github.com/docker/docker/issues/28889
+.. _1.13 broke pulls: https://github.com/docker/docker/issues/30083
+.. _Pier One registry: https://github.com/zalando-stups/pierone
+.. _thread on Twitter: https://twitter.com/jbeda/status/826969113801093121
