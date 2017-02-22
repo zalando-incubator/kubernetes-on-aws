@@ -32,11 +32,18 @@ We always create two AWS Auto Scaling Groups (ASGs, “node pools”) right now:
 
 Both ASGs span multiple Availability Zones (AZ). The API server is exposed with TLS via a “classic” TCP/SSL Elastic Load Balancer (ELB).
 
-We use a custom built Cluster Registry REST service to manage our Kubernetes clusters. Another component (Cluster Lifecycle Manager, CLM) is regularly polling the Cluster Registry and updating clusters to the desired state. The desired state is expressed with Cloud Formation and Kubernetes manifests stored in git. Different clusters can use different channel configurations, i.e. some non-critical clusters might use the “alpha” channel with latest features while others rely on the “stable” channel. The channel concept is similar to how CoreOS manages releases of Container Linux.
+We use a custom built Cluster Registry REST service to manage our Kubernetes clusters. Another component (Cluster Lifecycle Manager, CLM) is regularly polling the Cluster Registry and updating clusters to the desired state.
+The desired state is expressed with Cloud Formation and Kubernetes manifests `stored in git`_.
+
+.. image:: images/cluster-lifecycle-manager.svg
+
+Different clusters can use different channel configurations, i.e. some non-critical clusters might use the “alpha” channel with latest features while others rely on the “stable” channel.
+The channel concept is similar to how CoreOS manages releases of Container Linux.
 
 *TODO: briefly describe our Cluster Lifecycle Manager and node update process*
 
 .. _kube-aws: https://github.com/coreos/kube-aws
+.. _stored in git: https://github.com/zalando-incubator/kubernetes-on-aws
 
 AWS Integration
 ===============
@@ -53,7 +60,10 @@ There is no official way of implementing Ingress on AWS. We decided to create a 
 * SSL termination by ALB: convenient usage of ACM (free Amazon CA) and certificates upload to AWS IAM
 * Using the “new” ELBv2 Application Load Balancer
 
-We use Skipper_ as our HTTP proxy to route based on Host header and path. Skipper directly comes with a Kubernetes data client to automatically update its routes periodically.
+.. image:: images/kube-aws-ingress-controller.svg
+
+We use Skipper_ as our HTTP proxy to route based on Host header and path. Skipper is running as a ``DaemonSet`` on all worker nodes for convenient AWS ASG integration (new nodes are automatically registered in the ALB's Target Group).
+Skipper directly comes with a Kubernetes data client to automatically update its routes periodically.
 
 Mate_ is automatically configuring the Ingress hosts as DNS records in Route53 for us.
 
@@ -68,9 +78,27 @@ Understanding the Kubernetes resource requests and limits is crucial.
 
 Default resource requests and limits can be configured via the LimitRange_ resource. This can prevent “stupid” incidents like JVM deployments without any settings (no memory limit and no JVM heap set) eating all the node’s memory.
 
-We provide a `tiny script`_ and use the Downwards API to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size.
+We provide a `tiny script`_ and use the Downwards API to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size. The container spec of a ``Deployment`` for some JVM app would look like this:
 
-`Kubelet can be instructed to reserve a certain amount of resources`_ for the system and for Kubernetes components (kubelet itself and Docker etc). Reserved resources are subtracted from the `node’s allocatable resources`_. This improves scheduling and makes resource allocation/usage more transparent. Node allocatable resources or rather reserved resources are also visible in `Kubernetes Operational View`_.
+.. code-block:: yaml
+
+        # ...
+        env:
+          # set the maximum available memory as JVM would assume host/node capacity otherwise
+          # this is evaluated by java-dynamic-memory-opts in the Zalando OpenJDK base image
+          # see https://github.com/zalando/docker-openjdk
+          - name: MEM_TOTAL_KB
+            valueFrom:
+              resourceFieldRef:
+                resource: limits.memory
+                divisor: 1Ki
+        resources:
+          limits:
+            memory: 1Gi
+
+`Kubelet can be instructed to reserve a certain amount of resources`_ for the system and for Kubernetes components (kubelet itself and Docker etc). Reserved resources are subtracted from the `node’s allocatable resources`_. This improves scheduling and makes resource allocation/usage more transparent. Node allocatable resources or rather reserved resources are also visible in `Kubernetes Operational View`_:
+
+.. image:: images/kube-ops-view-reserved-resources.png
 
 .. _LimitRange: https://github.com/kubernetes/community/blob/master/contributors/design-proposals/admission_control_limit_range.md
 .. _tiny script: https://github.com/zalando/docker-openjdk/blob/master/utils/java-dynamic-memory-opts
@@ -117,11 +145,12 @@ Node Autoscaling
 
 Our `experimental AWS Autoscaler`_ is an attempt to implement a simple and elastic autoscaling with AWS Auto Scaling Groups.
 
-Graceful node shutdown is required to allow safe downscaling at any time. We simply added a small systemd unit to run kubectl drain on shutdown.
+Graceful node shutdown is required to allow safe downscaling at any time. We simply added a small `systemd unit to run kubectl drain on shutdown`_.
 
 Upscaling or node replacement poses the risk of race conditions between application pods and required system pods (DaemonSet). We have not yet figured out a good way of postponing application scheduling until the node is fully ready. The kubelet’s Ready condition is not enough as it does not ensure that all system pods such as kube-proxy and kube2iam are running. One idea is using taints during node initialization to prevent application pods to be scheduled until the node is fully ready.
 
 .. _experimental AWS Autoscaler: https://github.com/hjacobs/kube-aws-autoscaler
+.. _systemd unit to run kubectl drain on shutdown: https://github.com/zalando-incubator/kubernetes-on-aws/blob/449f8f3bf5c60e0d319be538460ff91266337abc/cluster/userdata-worker.yaml#L92
 
 Monitoring
 ==========
@@ -150,12 +179,14 @@ Jobs
 We use the very convenient Kubernetes CronJob_ resource for various tasks such as updating all our SSH bastion hosts every week.
 
 Kubernetes jobs are not cleaned up by default and completed pods are never deleted. Running jobs frequently (like every few minutes) quickly thrashes the Kubernetes API server with unnecessary pod resources.
-We observed a significant slowdown of the API server with increasing number of completed jobs/pods hanging around. To mitigate this, A small kube-job-cleaner_ script runs as a CronJob every hour and cleans up completed jobs/pods.
+We observed a significant slowdown of the API server with increasing number of completed jobs/pods hanging around. To mitigate this, A small kube-job-cleaner_ script `runs as a CronJob every hour`_ and cleans up completed jobs/pods.
+
+.. _runs as a CronJob every hour: https://github.com/zalando-incubator/kubernetes-on-aws/blob/449f8f3bf5c60e0d319be538460ff91266337abc/cluster/manifests/kube-job-cleaner/cronjob.yaml
 
 Security
 ========
 
-We authorize access to the API server via a proprietary webhook which verifies the OAuth Bearer access token and looks up user’s roles via another small REST services (backed historically by LDAP).
+We authorize access to the API server via a `proprietary webhook`_ which verifies the OAuth Bearer access token and looks up user’s roles via another small REST services (backed historically by LDAP).
 
 Access to etcd should be restricted as it holds all of Kubernetes’ cluster data thus allowing tampering when accessed directly.
 
@@ -163,7 +194,7 @@ We use flannel as our overlay network which requires etcd by default to configur
 
 Kubernetes allows to define PodSecurityPolicy_ resources to restrict the use of “privileged” containers and similar features which allow privilege escalation.
 
-
+.. _proprietary webhook: https://github.com/zalando-incubator/kubernetes-on-aws/blob/449f8f3bf5c60e0d319be538460ff91266337abc/cluster/userdata-master.yaml#L319
 .. _Kubernetes Operational View: https://github.com/hjacobs/kube-ops-view
 .. _PodSecurityPolicy: https://kubernetes.io/docs/user-guide/pod-security-policy/
 .. _CronJob: https://kubernetes.io/docs/user-guide/cron-jobs/
