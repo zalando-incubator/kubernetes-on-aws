@@ -54,7 +54,7 @@ Set the JVM heap memory dynamically by using the ``java-dynamic-memory-opts`` sc
               resourceFieldRef:
                 resource: limits.memory
                 divisor: 1Ki
-		resources:
+                resources:
           requests:
             cpu: 100m
             memory: 2Gi
