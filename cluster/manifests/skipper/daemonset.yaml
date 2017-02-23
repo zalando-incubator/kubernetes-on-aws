@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.1.1
+    version: v0.9.9
     component: ingress
   annotations:
     daemonset.kubernetes.io/strategyType: RollingUpdate
@@ -19,7 +19,7 @@ spec:
       name: skipper-ingress
       labels:
         application: skipper-ingress
-        version: v0.1.1
+        version: v0.9.9
         component: ingress
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -34,6 +34,7 @@ spec:
           containerPort: 9999
           hostPort: 9999
         args:
+          - "skipper"
           - "-application-log-level=DEBUG"
           - "-kubernetes-url=http://localhost:8001"
           - "-address=:9999"
