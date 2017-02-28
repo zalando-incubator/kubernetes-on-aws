@@ -16,10 +16,16 @@ spec:
       labels:
         application: daemonupgrader
         version: 8264ca0
+      annotations:
+        daemonset.kubernetes.io/strategyType: RollingUpdate
+        daemonset.kubernetes.io/maxUnavailable: "1"
     spec:
       containers:
       - name: daemonupgrader
-        image: registry.opensource.zalan.do/teapot/k8s-daemonupgradecontroller:8264ca0
+        image: registry.opensource.zalan.do/teapot/k8s-daemonupgradecontroller:5c21c97
+        env:
+        - name: HOTLOOP_DELAY
+          value: "60"
         resources:
           limits:
             cpu: 200m
