@@ -28,15 +28,7 @@ spec:
         name: kube2iam
         args:
         - "--base-role-arn=arn:aws:iam::{{ getAWSAccountID .InfrastructureAccount }}:role/"
-        - --iptables=true
-        - --host-ip=$(HOST_IP)
         - --verbose
-        - --host-interface=cni0
-        env:
-        - name: HOST_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
         ports:
         - containerPort: 8181
           hostPort: 8181

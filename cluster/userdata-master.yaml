@@ -49,6 +49,27 @@ coreos:
             ExecStartPre=/usr/bin/etcdctl \
             --endpoint=http://localhost:2379 set /coreos.com/network/config \
             '{ "Network": "10.2.0.0/16", "Backend": {"Type": "vxlan"}}'
+
+    - name: kube2iam-iptables.service
+      command: start
+      runtime: true
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/sbin/iptables \
+          --append PREROUTING \
+          --protocol tcp \
+          --destination 169.254.169.254 \
+          --dport 80 \
+          --in-interface cni0 \
+          --match tcp \
+          --jump DNAT \
+          --table nat \
+          --to-destination $private_ipv4:8181
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: kubelet.service
       command: start
       runtime: true
@@ -316,7 +337,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.3
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.4
           name: webhook
           ports:
           - containerPort: 8081
