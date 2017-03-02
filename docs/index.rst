@@ -1,6 +1,11 @@
 Welcome to Kubernetes on AWS' documentation!
 ============================================
 
+.. Note::
+
+   This documentation is only an extract from our internal Zalando documentation.
+   It's provided in the hope that it helps the Kubernetes community.
+
 Contents:
 
 .. toctree::
