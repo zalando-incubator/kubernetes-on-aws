@@ -36,7 +36,8 @@ spec:
         args:
           - "skipper"
           - "-application-log-level=DEBUG"
-          - "-kubernetes-url=http://localhost:8001"
+          - "-kubernetes"
+          - "-kubernetes-in-cluster"
           - "-address=:9999"
           - "-proxy-preserve-host"
         resources:
@@ -46,12 +47,3 @@ spec:
           requests:
             cpu: 25m
             memory: 25Mi
-      - name: kubectl
-        image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0
-        command:
-        - /hyperkube
-        args:
-        - kubectl
-        - proxy
-        ports:
-        - containerPort: 8001
