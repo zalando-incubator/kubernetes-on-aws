@@ -9,6 +9,7 @@ How to use the Kubernetes cluster.
 .. toctree::
    :maxdepth: 1
 
+   cheat-sheet
    labels
    zalando-iam
    iam-roles
