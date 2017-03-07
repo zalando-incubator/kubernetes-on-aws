@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.9.9
+    version: v0.9.15a
     component: ingress
   annotations:
     daemonset.kubernetes.io/strategyType: RollingUpdate
@@ -19,7 +19,7 @@ spec:
       name: skipper-ingress
       labels:
         application: skipper-ingress
-        version: v0.9.9
+        version: v0.9.15a
         component: ingress
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -28,7 +28,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.9.9
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.9.15a
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -36,7 +36,8 @@ spec:
         args:
           - "skipper"
           - "-application-log-level=DEBUG"
-          - "-kubernetes-url=http://localhost:8001"
+          - "-kubernetes"
+          - "-kubernetes-in-cluster"
           - "-address=:9999"
           - "-proxy-preserve-host"
         resources:
@@ -46,12 +47,3 @@ spec:
           requests:
             cpu: 25m
             memory: 25Mi
-      - name: kubectl
-        image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.2_coreos.0
-        command:
-        - /hyperkube
-        args:
-        - kubectl
-        - proxy
-        ports:
-        - containerPort: 8001
