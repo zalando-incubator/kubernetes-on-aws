@@ -6,11 +6,11 @@ Kubernetes on AWS
 
 This repo contains configuration templates to provision Kubernetes_ clusters on AWS using Cloud Formation and CoreOS_.
 
-**Consider this as alpha quality**. Many values are hardcoded, and currently we're focusing on solving our own, specific/Zalando user case.
+**Consider this as alpha quality**. Many values are hardcoded, and currently we're focusing on solving our own, specific/Zalando use case.
 However, **we are open to ideas from the community at large about potentially turning this idea into a project that provides universal/general value to others**.
 Please contact us via our Issues Tracker with your thoughts and suggestions.
 
-Configuration in this repository initially was based on kube-aws_, but now depends on three components which are currently not open sourced yet:
+Configuration in this repository initially was based on kube-aws_, but now depends on three components which are not yet open sourced:
 
 * Cluster Registry to keep desired cluster states (e.g. used config channel and version)
 * Cluster Lifecycle Manager to provision the cluster's Cloud Formation stack and apply Kubernetes manifests for system components
