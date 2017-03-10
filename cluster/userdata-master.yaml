@@ -337,7 +337,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.6
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.7
           name: webhook
           ports:
           - containerPort: 8081
@@ -360,13 +360,9 @@ write_files:
             requests:
               cpu: 50m
               memory: 50Mi
+          args:
+            - --tokens-file=/etc/kubernetes/config/tokenfile.csv
           env:
-            - name: SHARED_SECRET
-              value: {{WORKER_SHARED_SECRET}}
-            - name: CONTROLLER_MANAGER_SECRET
-              value: {{CONTROLLER_MANAGER_SECRET}}
-            - name: WEBHOOK_ADDRESS
-              value: :8081
             - name: USERS_API_URL
               value: https://users.auth.zalando.com
             - name: CLUSTER_ID
@@ -375,6 +371,10 @@ write_files:
               value: https://info.services.auth.zalando.com/oauth2/tokeninfo
             - name: USER_GROUPS
               value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator
+          volumeMounts:
+          - mountPath: /etc/kubernetes/config
+            name: kubernetes-configs
+            readOnly: true
         - name: nginx
           image: registry.opensource.zalan.do/teapot/nginx:1.11.5
           resources:
@@ -577,6 +577,11 @@ write_files:
       - name: kube-controller-manager
         user:
           token: {{CONTROLLER_MANAGER_SECRET}}
+
+  - path: /etc/kubernetes/config/tokenfile.csv
+    content: |
+      {{WORKER_SHARED_SECRET}},kubelet,kubelet
+      {{CONTROLLER_MANAGER_SECRET}},kube-controller-manager,kube-controller-manager
 
   - path: /etc/kubernetes/ssl/ca.pem
     encoding: gzip+base64
