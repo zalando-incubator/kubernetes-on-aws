@@ -66,7 +66,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=v1.5.3_coreos.0
+        Environment=KUBELET_VERSION=v1.5.4_coreos.0
         Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
         --insecure-options=image \
@@ -128,7 +128,7 @@ coreos:
         --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
         --mount=volume=kube,target=/etc/kubernetes \
         --net=host \
-        registry.opensource.zalan.do/teapot/hyperkube:v1.5.3_coreos.0 \
+        registry.opensource.zalan.do/teapot/hyperkube:v1.5.4_coreos.0 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
           drain $(hostname) \
@@ -186,14 +186,14 @@ write_files:
           namespace: kube-system
           labels:
             application: kube-proxy
-            version: v1.5.3_coreos.0
+            version: v1.5.4_coreos.0
           annotations:
             rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
         spec:
           hostNetwork: true
           containers:
           - name: kube-proxy
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.3_coreos.0
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.4_coreos.0
             command:
             - /hyperkube
             - proxy
