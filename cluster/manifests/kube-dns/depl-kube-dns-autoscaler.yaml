@@ -5,21 +5,23 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-dns-autoscaler
-    version: v1.0.0
+    version: v1.1.1
     kubernetes.io/cluster-service: "true"
 spec:
   template:
     metadata:
       labels:
         application: kube-dns-autoscaler
-        version: v1.0.0
+        version: v1.1.1
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
     spec:
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
       containers:
       - name: autoscaler
-        image: gcr.io/google_containers/cluster-proportional-autoscaler-amd64:1.0.0
+        image: gcr.io/google_containers/cluster-proportional-autoscaler-amd64:1.1.1-r2
         resources:
           requests:
             cpu: "20m"
@@ -28,8 +30,7 @@ spec:
           - /cluster-proportional-autoscaler
           - --namespace=kube-system
           - --configmap=kube-dns-autoscaler
-          - --mode=linear
           - --target=Deployment/kube-dns
-          - --default-params={"linear":{"coresPerReplica":256,"nodesPerReplica":16,"min":2}}
+          - --default-params={"linear":{"coresPerReplica":256,"nodesPerReplica":16,"preventSinglePointFailure":true}}
           - --logtostderr=true
           - --v=2

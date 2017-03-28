@@ -23,7 +23,6 @@ spec:
         component: logging
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
         pod.beta.kubernetes.io/init-containers: '[
           {
             "name": "init-scalyr-config",
@@ -59,6 +58,9 @@ spec:
           }
         ]'
     spec:
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
       containers:
       - name: log-watcher
         image: registry.opensource.zalan.do/eagleeye/kubernetes-log-watcher:0.12

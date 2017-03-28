@@ -18,9 +18,11 @@ spec:
         version: v0.7
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
     spec:
+      tolerations:
+      - key: criticaladdonsonly
+        operator: exists
       containers:
         - image: registry.opensource.zalan.do/teapot/kube-aws-autoscaler:0.7
           name: cluster-autoscaler

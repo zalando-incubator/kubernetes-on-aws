@@ -16,8 +16,10 @@ spec:
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
     spec:
+      tolerations:
+      - key: criticaladdonsonly
+        operator: exists
       containers:
         - name: zmon-worker
           image: "pierone.stups.zalan.do/stups/zmon-worker:zv201"
