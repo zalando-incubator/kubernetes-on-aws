@@ -4,7 +4,7 @@ Kubernetes on AWS
 
 **WORK IN PROGRESS**
 
-This repo contains configuration templates to provision Kubernetes_ clusters on AWS using Cloud Formation and CoreOS_.
+This repo contains configuration templates to provision Kubernetes_ clusters on AWS using Cloud Formation and `CoreOS Container Linux`_.
 
 **Consider this as alpha quality**. Many values are hardcoded, and currently we're focusing on solving our own, specific/Zalando use case.
 However, **we are open to ideas from the community at large about potentially turning this idea into a project that provides universal/general value to others**.
@@ -65,7 +65,7 @@ Directory Structure
 
 
 .. _Kubernetes: http://kubernetes.io
-.. _CoreOS: https://coreos.com/
+.. _CoreOS Container Linux: https://coreos.com/os/docs/latest
 .. _kube-aws: https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/aws
 .. _Senza Cloud Formation tool: https://github.com/zalando-stups/senza
 .. _OAuth Token Info: http://planb.readthedocs.io/en/latest/intro.html#token-info
