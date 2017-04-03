@@ -6,6 +6,7 @@ AWS IAM integration
 
 This section describes how to setup an AWS IAM role which can then be assumed
 by pods running in a Kubernetes cluster.
+You only need AWS IAM roles if your application calls the AWS API directly (e.g. to store data in some S3 bucket).
 
 Create IAM Role with AssumeRole trust relationship
 ==================================================

@@ -10,9 +10,12 @@ Container resource limits
 Resource definitions
 ====================
 
-There are two supported resource types: ``cpu`` and ``mem``. In future versions of k8s
+There are two supported resource types: ``cpu`` and ``memory``. In future versions of Kubernetes
 one will be able to add custom resource types and the current implementation might be
 based on that.
+
+CPU resources are measured in virtual cores or more commonly in Millicores (e.g. ``500m`` denoting 50% of a vCPU).
+Memory resources are measured in Bytes and the usual suffixes can be used, e.g. ``500Mi`` denoting 500 Mebibyte_.
 
 For each resource type there are two kinds of definitions: ``requests`` and ``limits``.
 Requests and limits are defined per container. Since the unit of scheduling is a pod
@@ -32,42 +35,37 @@ Note, that this is the only metric the scheduler uses (in that context). It does
 the actual usage of the pods into account (which can be lower or higher than whatever
 is defined in requests).
 
-**Memory requests**
-
-Used for finding nodes with enough memory and making better scheduling decisions.
-
-**CPU requests**
-
-Maps to the docker flag ``--cpu-shares``, which defines a relative weight of that container
-for cpu time. The relative share is executed per core, which can lead to unexpected outcomes
-but probably nothing to worry about in our use cases. A container will never be killed
-because of this metric.
+Memory requests
+    Used for finding nodes with enough memory and making better scheduling decisions.
+CPU requests
+    Maps to the docker flag ``--cpu-shares``, which defines a relative weight of that container
+    for cpu time. The relative share is executed per core, which can lead to unexpected outcomes
+    but probably nothing to worry about in our use cases. A container will never be killed
+    because of this metric.
 
 Resource limits
 ---------------
 
 Limits define the upper bound of resources a container can use. Limits must always be greater
-or equal to requests. The behaviour differs between cpu and memory.
+or equal to requests. The behavior differs between cpu and memory.
 
-**Memory limits**
-
-Maps to the docker flag ``--memory``, which means processes in the container get killed by the
-kernel if they hit that memory usage. Given you run one process per container this will kill
-the whole container and kubernetes will try to restart it.
-
-**CPU limits**
-
-Maps to the docker flag ``--cpu-quota``, which limits CPU time of that container's processes.
-Seems like you can define that a container can only max utilize a core by e.g. 50%.
-
-But, let's assume you have 3 of them on a single-core node this can lead to over-utilizing it.
+Memory limits
+    Maps to the docker flag ``--memory``, which means processes in the container get killed by the
+    kernel if they hit that memory usage (``OOMKilled``). Given you run one process per container this will kill
+    the whole container and Kubernetes will try to restart it.
+CPU limits
+    Maps to the docker flag ``--cpu-quota``, which limits CPU time of that container's processes.
+    Seems like you can define that a container can only max utilize a core by e.g. 50%.
+    But, let's assume you have 3 of them on a single-core node this can lead to over-utilizing it.
 
 Conclusion
 ==========
 
 * ``requests`` are for making scheduling decisions
 * ``limits`` are real resource limits of containers
-* effect of cpu limits still fuzzy to me
+* effect of CPU limits is not completely straight forward to understand
 * choosing higher ``limits`` than ``requests`` allows to over-provision nodes,
   but has the danger of over-utilizing it
 * ``requests`` are required for using the horizontal pod autoscaler
+
+.. _Mebibyte: https://en.wikipedia.org/wiki/Mebibyte
