@@ -40,7 +40,11 @@ The desired state is expressed with Cloud Formation and Kubernetes manifests `st
 Different clusters can use different channel configurations, i.e. some non-critical clusters might use the “alpha” channel with latest features while others rely on the “stable” channel.
 The channel concept is similar to how CoreOS manages releases of Container Linux.
 
-*TODO: briefly describe our Cluster Lifecycle Manager and node update process*
+Clusters are automatically updated as soon as changes are merged into the respective branch.
+Configuration changes are first tested in a separate feature branch, afterwards the pull request to the "dev" branch (channel) is automatically tested end-to-end (this includes the official Kubernetes conformance tests).
+
+.. image:: images/cluster-updates.svg
+
 
 .. _kube-aws: https://github.com/coreos/kube-aws
 .. _stored in git: https://github.com/zalando-incubator/kubernetes-on-aws
