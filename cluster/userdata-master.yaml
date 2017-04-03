@@ -515,7 +515,6 @@ write_files:
         containers:
         - image: registry.opensource.zalan.do/teapot/rescheduler:v0.3.0
           name: rescheduler
-          # TODO: Make resource requrements depend on the size of the cluster
           resources:
             requests:
               cpu: 10m
@@ -529,23 +528,17 @@ write_files:
     content: |
       user nginx;
       worker_processes 1;
-
       error_log /dev/stdout info;
-
       events {
         worker_connections 1024;
       }
-
       http {
         default_type application/octet-stream;
-
         server_tokens off;
         access_log off;
-
         server {
           listen 8082;
           server_name _;
-
           location / {
             if ($request_method != GET) {
               return 403;
@@ -553,7 +546,6 @@ write_files:
             proxy_pass_request_body off;
             proxy_pass http://localhost:8080;
           }
-
           location ~ /secrets(/|$) {
             return 403 "unauthorized";
           }
