@@ -33,7 +33,7 @@ The ``PlatformCredentialsSet`` resource allows application owners to declare nee
        tokens:
          full-access:
            privileges:
-             # All zalando-specific privileges start with namespace de.zalando, following pattern <namespace>::<privilege>
+             # All zalando-specific privileges start with namespace com.zalando, following pattern <namespace>::<privilege>
              - com.zalando::foobar.write
              - com.zalando::acme.full
          read-only:
@@ -113,6 +113,26 @@ The application can now simply read the declared tokens from text files, i.e. ev
     secret=$(cat /meta/credentials/read-only-token-secret)
     curl -H "Authorization: $type $secret" https://resource-server.example.org/protected
 
+Either use one of the `supported token libraries`_ or implement the file read on your own.
+How to read a token in different languages:
+
+.. code-block:: python
+
+    # Python
+    with open('/meta/credentials/{}-token-secret'.format(token_name)) as fd:
+        access_token = fd.read().strip()
+
+
+.. code-block:: javascript
+
+    // JavaScript
+    const accessToken = String(fs.readFileSync(`/meta/credentials/${tokenName}-token-secret`)).trim()
+
+.. code-block:: java
+
+    // Java
+    String accessToken = new String(Files.readAllBytes(Paths.get("/meta/credentials/" + tokenName + "-token-secret"))).trim();
+
 .. Note::
 
     Using the authorization type from the secret instead of hardcoding ``Bearer`` allows to transparently
@@ -182,3 +202,4 @@ See also the `Problem OpenAPI schema YAML`_.
 .. _YOUR TURN frontend: https://yourturn.stups.zalan.do/
 .. _RFC 7807: https://tools.ietf.org/html/rfc7807
 .. _Problem OpenAPI schema YAML: https://zalando.github.io/problem/schema.yaml
+.. _supported token libraries: http://docs.stups.io/en/latest/appendix/oauth-integrations.html

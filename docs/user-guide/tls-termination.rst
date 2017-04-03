@@ -6,6 +6,12 @@ TLS Termination and DNS
 
 This section describes how to expose a service via TLS to the internet.
 
+.. Note::
+
+    You usually want to use :ref:`ingress` instead to automatically expose
+    your application with TLS and DNS.
+
+
 Expose your app
 ===============
 
