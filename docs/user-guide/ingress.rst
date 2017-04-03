@@ -17,7 +17,7 @@ Ingress allows to expose a service to the internet by defining its HTTP layer ad
 * service and service port
 
 The ingress services, when detecting a new or modified Ingress entry, will create/update the DNS record for the defined
-hostname, will update the load balancer to use the defined TLS certificate and route the requests to the cluster
+hostname, will update the load balancer to use a TLS certificate and route the requests to the cluster
 nodes, and will define the routes that find the right service based on the hostname and the path.
 
 More details about the general Ingress in Kubernetes can be found in the official documentation:
@@ -64,7 +64,7 @@ Create the ingress rules
 ------------------------
 
 Let's assume that we want to access this API and admin UI from the internet with the base URL
-https://test-app.hackweek.zalan.do, and we want to access the UI on the path /admin while all other endpoints
+https://test-app.playground.zalan.do, and we want to access the UI on the path /admin while all other endpoints
 should be directed to the API. We can create the following ingress entry in the apply directory as ingress.yaml:
 
 .. code-block:: yaml
@@ -73,11 +73,9 @@ should be directed to the API. We can create the following ingress entry in the 
     kind: Ingress
     metadata:
       name: test-app
-      annotations:
-        zalando.org/aws-load-balancer-ssl-cert: <certificate ARN>
     spec:
       rules:
-      - host: test-app.hackweek.zalan.do
+      - host: test-app.playground.zalan.do
         http:
           paths:
           - backend:
@@ -89,8 +87,36 @@ should be directed to the API. We can create the following ingress entry in the 
               servicePort: admin-ui-port
 
 Once the changes were applied by the pipeline, the API and the admin UI should be accessible at
-https://test-app.hackweek.zalan.do and https://test-app.hackweek.zalan.do/admin. (If the load balancer and/or
-the DNS entry are newly created, it can take ~1 minute for everything be ready.)
+https://test-app.playground.zalan.do and https://test-app.playground.zalan.do/admin. (If the load balancer and/or
+the DNS entry are newly created, it can take ~1 minute for everything to
+be ready.)
+Already provisioned X509 Certificate (IAM and ACM) will be found and
+matched automatically for your ingress resource.
+
+Specify a Certificate
+---------------------
+
+Let's assume we want to hard code our certificate that is used in the
+ALB to terminate TLS for https://test-app.playground.zalan.do/.
+We can create the following ingress entry in the apply directory as ingress.yaml:
+
+.. code-block:: yaml
+
+    apiVersion: extensions/v1beta1
+    kind: Ingress
+    metadata:
+      name: test-app
+      annotations:
+        zalando.org/aws-load-balancer-ssl-cert: <certificate ARN>
+    spec:
+      rules:
+      - host: test-app.playground.zalan.do
+        http:
+          paths:
+          - backend:
+              serviceName: test-app-service
+              servicePort: main-port
+
 
 Certificate ARN
 ---------------
