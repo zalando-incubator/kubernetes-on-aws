@@ -13,11 +13,12 @@ How to use the Kubernetes cluster.
    labels
    zalando-iam
    iam-roles
-   example-credentials
-   tls-termination
    ingress
    resource-limits
    using-volumes
    logging
    running-in-production
+   example-credentials
+   tls-termination
    service-accounts
+   faq

@@ -1,0 +1,50 @@
+===================================================
+ADR-001: Store cluster versions in Cluster Registry
+===================================================
+
+Context
+=======
+
+The `Cluster Lifecycle Manager`_ (CLM) can pull configuration from two separate sources, e.g. the `Cluster Registry`_ and a channel source (git repository).
+
+The CLM must be able to go away and later come back to continue where it left off. Therefore it must store the current cluster configuration state somewhere. The cluster configuration state is defined by a version of the channel source and the configuration currently stored in a Cluster Registry.
+
+The configuration state should be in a format that is not tied to a specific implementation of the CLM this way the CLM can support multiple ways of provisioning clusters.
+
+The CLM should be able to support multiple configuration sources and be able to provision clusters in multiple ways. Therefore the configuration format should not be tied to a specific implementation of configuration sources or provisioning method.
+
+Decision
+========
+
+CLM will store the current configuration state under the ``status`` field of the ``Cluster`` resource in the Cluster Registry. The configuration state will be stored as three versions:
+
+``next_version``
+    This indicates that the cluster is being updated to this version next, this is mostly used for debugging purposes.
+``current_version``
+    This is the current version the cluster has.
+``last_version``
+    This is the last working version. The last version is also used for rolling back a cluster in case the new version is broken.
+
+Each version is a string defined as the channel version (git commit sha1) concatenated with a separator character “#” and the sha1 hash of the current cluster config (excluding the ``status`` field) from the Cluster Registry.
+
+We decided to encode the version as a simple string because:
+
+* Splitting into multiple fields or properties would push the CLM implementation detail unnecessarily to the Cluster Registry schema (as we might think of different implementations with more version parts, e.g. a Kops provisioner relying on a certain Kops version)
+* The concrete version string format only needs to be known in one place (the CLM provisioner implementation), i.e. the string can be opaque to all other systems
+* A simple string field is easily read and “parsed” by humans for debugging
+* KISS
+
+Status
+======
+
+Accepted.
+
+Consequences
+============
+
+* CLM will be responsible for deriving the cluster config hash based on the cluster config from the Cluster Registry.
+* CLM will be responsible for concatenating/comparing version strings. The Cluster Registry will for instance not be aware of the format of the versions which are stored there.
+* CLM can have several provisioner implementations which each can define its own versioning format without requiring changes in the Cluster Registry.
+
+.. _Cluster Lifecycle Manager: http://kubernetes-on-aws.readthedocs.io/en/latest/admin-guide/kubernetes-in-production.html#cluster-provisioning
+.. _Cluster Registry: http://kubernetes-on-aws.readthedocs.io/en/latest/admin-guide/kubernetes-in-production.html#cluster-provisioning
