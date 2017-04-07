@@ -2,6 +2,13 @@
 Running Kubernetes in Production
 ================================
 
+.. Tip::
+
+    Start by watching our meetup talk `"Kubernetes on AWS at Europe's Leading Online Fashion Platform" on YouTube`_ (slides_) to learn how we run Kubernetes on AWS in production.
+
+.. _"Kubernetes on AWS at Europe's Leading Online Fashion Platform" on YouTube: https://www.youtube.com/watch?time_continue=2671&v=XmnhzEoengI
+.. _slides: https://www.slideshare.net/try_except_/kubernetes-on-aws-at-europes-leading-online-fashion-platform
+
 This document should briefly describe our learnings in Zalando Tech while running Kubernetes on AWS in production. As we just recently started to migrate to Kubernetes, we consider ourselves far from being experts in the field. This document is shared in the hope that others in the community can benefit from our learnings.
 
 Context
