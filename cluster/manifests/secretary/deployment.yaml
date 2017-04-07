@@ -18,9 +18,11 @@ spec:
         version: v0.2.0
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
         iam.amazonaws.com/role: "{{ .LocalID }}-app-secretary"
     spec:
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
       containers:
       - name: gerry
         image: registry.opensource.zalan.do/teapot/gerry:v0.0.9

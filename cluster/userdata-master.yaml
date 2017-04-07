@@ -75,7 +75,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=v1.5.5_coreos.0
+        Environment=KUBELET_VERSION=v1.6.1_coreos.0
         Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
         --insecure-options=image \
@@ -133,7 +133,7 @@ coreos:
         --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
         --mount=volume=kube,target=/etc/kubernetes \
         --net=host \
-        registry.opensource.zalan.do/teapot/hyperkube:v1.5.5_coreos.0 \
+        registry.opensource.zalan.do/teapot/hyperkube:v1.6.1_coreos.0 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain $(hostname) \
@@ -231,14 +231,14 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-proxy
-          version: v1.5.5_coreos.0
+          version: v1.6.1_coreos.0
         annotations:
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.5_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.1_coreos.0
           command:
           - /hyperkube
           - proxy
@@ -278,12 +278,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.5.5_coreos.0
+          version: v1.6.1_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.5_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.1_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -291,6 +291,8 @@ write_files:
           - --insecure-bind-address=0.0.0.0
           - --etcd-servers=http://localhost:2379
           - --etcd-prefix=/registry-{{STACK_VERSION}}
+          - --storage-backend=etcd2
+          - --storage-media-type=application/json
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/24
           - --secure-port=443
@@ -410,11 +412,11 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.5.5_coreos.0
+          version: v1.6.1_coreos.0
       spec:
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.5_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.1_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -469,12 +471,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.5.5_coreos.0
+          version: v1.6.1_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.5.5_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.1_coreos.0
           command:
           - /hyperkube
           - scheduler
@@ -501,19 +503,18 @@ write_files:
       apiVersion: v1
       kind: Pod
       metadata:
-        name: rescheduler-v0.2.1
+        name: rescheduler-v0.3.0
         namespace: kube-system
         labels:
           application: rescheduler
-          version: v0.2.1
+          version: v0.3.0
           kubernetes.io/cluster-service: "true"
           kubernetes.io/name: "Rescheduler"
       spec:
         hostNetwork: true
         containers:
-        - image: registry.opensource.zalan.do/teapot/rescheduler:v0.2.1
+        - image: registry.opensource.zalan.do/teapot/rescheduler:v0.3.0
           name: rescheduler
-          # TODO: Make resource requrements depend on the size of the cluster
           resources:
             requests:
               cpu: 10m
@@ -527,23 +528,17 @@ write_files:
     content: |
       user nginx;
       worker_processes 1;
-
       error_log /dev/stdout info;
-
       events {
         worker_connections 1024;
       }
-
       http {
         default_type application/octet-stream;
-
         server_tokens off;
         access_log off;
-
         server {
           listen 8082;
           server_name _;
-
           location / {
             if ($request_method != GET) {
               return 403;
@@ -551,7 +546,6 @@ write_files:
             proxy_pass_request_body off;
             proxy_pass http://localhost:8080;
           }
-
           location ~ /secrets(/|$) {
             return 403 "unauthorized";
           }
