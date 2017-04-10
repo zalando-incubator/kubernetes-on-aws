@@ -22,44 +22,35 @@ spec:
         component: logging
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        pod.beta.kubernetes.io/init-containers: '[
-          {
-            "name": "init-scalyr-config",
-            "image": "busybox",
-            "imagePullPolicy": "IfNotPresent",
-            "command": ["sh", "-c"],
-            "args": [
-              "if [ ! -f /mnt/scalyr/agent.json ]; then
-                echo {
-                  \\\"import_vars\\\": [\\\"WATCHER_SCALYR_API_KEY\\\", \\\"WATCHER_CLUSTER_ID\\\"],
-                  \\\"server_attributes\\\": {\\\"serverHost\\\": \\\"\\$WATCHER_CLUSTER_ID\\\"},
-                  \\\"implicit_agent_process_metrics_monitor\\\": false,
-                  \\\"implicit_metric_monitor\\\": false,
-                  \\\"api_key\\\": \\\"\\$WATCHER_SCALYR_API_KEY\\\",
-                  \\\"monitors\\\": [],
-                  \\\"logs\\\": []
-                  } > /mnt/scalyr/agent.json;
-                  echo Updated agent.json to inital configuration;
-              fi
-              && cat /mnt/scalyr/agent.json;
-              test -f /mnt/scalyr-checkpoint/checkpoints.json && ls -lah /mnt/scalyr-checkpoint/checkpoints.json && cat /mnt/scalyr-checkpoint/checkpoints.json || true;"
-            ],
-            "volumeMounts": [
-              {
-                "name": "scalyr-config",
-                "mountPath": "/mnt/scalyr"
-              },
-              {
-                "name": "scalyr-checkpoint",
-                "mountPath": "/mnt/scalyr-checkpoint"
-              }
-            ]
-          }
-        ]'
     spec:
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
+      initContainers:
+      - name: init-scalyr-config
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c"]
+        args:
+        - |
+            if [ ! -f /mnt/scalyr/agent.json ]; then
+              echo '{
+                "import_vars": ["WATCHER_SCALYR_API_KEY", "WATCHER_CLUSTER_ID"],
+                "server_attributes": {"serverHost": "$WATCHER_CLUSTER_ID"},
+                "implicit_agent_process_metrics_monitor": false,
+                "implicit_metric_monitor": false,
+                "api_key": "$WATCHER_SCALYR_API_KEY",
+                "monitors": [],
+                "logs": []
+                }' > /mnt/scalyr/agent.json;
+                echo 'Updated agent.json to inital configuration';
+            fi && cat /mnt/scalyr/agent.json;
+            test -f /mnt/scalyr-checkpoint/checkpoints.json && ls -lah /mnt/scalyr-checkpoint/checkpoints.json && cat /mnt/scalyr-checkpoint/checkpoints.json || true;
+        volumeMounts:
+        - name: scalyr-config
+          mountPath: /mnt/scalyr
+        - name: scalyr-checkpoint
+          mountPath: /mnt/scalyr-checkpoint
       containers:
       - name: log-watcher
         image: registry.opensource.zalan.do/eagleeye/kubernetes-log-watcher:0.12
