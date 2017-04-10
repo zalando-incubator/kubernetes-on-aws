@@ -220,6 +220,19 @@ We learned that Docker can be quite painful to run in production because of the 
 You can be sure to hit some of them when running enough nodes 24x7.
 Also better not touch your Docker version once you have a running setup.
 
+etcd
+====
+
+Kubernetes relies on etcd for storing the state of the whole cluster.
+Losing etcd consensus makes the Kubernetes API server essentially read only, i.e. no changes can be performed in the cluster.
+Losing etcd data requires rebuilding the whole cluster state and would probably cause a major downtime.
+Luckily all data can be restored as long as at least one etcd node is alive.
+
+Knowing the criticality of the etcd cluster, we decided to use our existing, production-grade `STUPS etcd cluster`_ running on EC2 instances separate from Kubernetes.
+The STUPS etcd cluster registers all etcd nodes in Route53 DNS and we use etcd's DNS discovery feature to connect Kubernetes to the etcd nodes.
+The STUPS etcd cluster is deployed across availability zones (AZ) with five nodes in total. All etcd nodes run our own `STUPS Taupage AMI`_, which (similar to CoreOS) runs a Docker image specified via AWS user data (cloud-init).
+
+
 .. _proprietary webhook: https://github.com/zalando-incubator/kubernetes-on-aws/blob/449f8f3bf5c60e0d319be538460ff91266337abc/cluster/userdata-master.yaml#L319
 .. _Kubernetes Operational View: https://github.com/hjacobs/kube-ops-view
 .. _PodSecurityPolicy: https://kubernetes.io/docs/user-guide/pod-security-policy/
@@ -229,3 +242,5 @@ Also better not touch your Docker version once you have a running setup.
 .. _1.13 broke pulls: https://github.com/docker/docker/issues/30083
 .. _Pier One registry: https://github.com/zalando-stups/pierone
 .. _thread on Twitter: https://twitter.com/jbeda/status/826969113801093121
+.. _STUPS etcd cluster: https://github.com/zalando-incubator/stups-etcd-cluster
+.. _STUPS Taupage AMI: https://github.com/zalando-stups/taupage
