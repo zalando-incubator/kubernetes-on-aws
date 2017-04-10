@@ -87,7 +87,19 @@ Resources
 
 Understanding the Kubernetes resource requests and limits is crucial.
 
-Default resource requests and limits can be configured via the LimitRange_ resource. This can prevent “stupid” incidents like JVM deployments without any settings (no memory limit and no JVM heap set) eating all the node’s memory.
+Default resource requests and limits can be configured via the LimitRange_ resource. This can prevent “stupid” incidents like JVM deployments without any settings (no memory limit and no JVM heap set) eating all the node’s memory. We currently use the following default limits:
+
+.. code-block:: bash
+
+    $ kubectl describe limits
+    Name:       limits
+    Namespace:  default
+    Type        Resource    Min Max  Default Request Default Limit Max Limit/Request Ratio
+    ----        --------    --- ---- --------------- ------------- -----------------------
+    Container   cpu         -   16   100m            3             -
+    Container   memory      -   64Gi 100Mi           1Gi           -
+
+The default limit for CPU is 3 cores as we discovered that this is a sweet spot for JVM apps to startup quickly.
 
 We provide a `tiny script`_ and use the Downwards API to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size. The container spec of a ``Deployment`` for some JVM app would look like this:
 
