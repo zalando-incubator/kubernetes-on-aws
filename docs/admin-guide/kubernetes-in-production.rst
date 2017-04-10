@@ -87,7 +87,20 @@ Resources
 
 Understanding the Kubernetes resource requests and limits is crucial.
 
-Default resource requests and limits can be configured via the LimitRange_ resource. This can prevent “stupid” incidents like JVM deployments without any settings (no memory limit and no JVM heap set) eating all the node’s memory.
+Default resource requests and limits can be configured via the LimitRange_ resource. This can prevent “stupid” incidents like JVM deployments without any settings (no memory limit and no JVM heap set) eating all the node’s memory. We currently use the following default limits:
+
+.. code-block:: bash
+
+    $ kubectl describe limits
+    Name:       limits
+    Namespace:  default
+    Type        Resource    Min Max  Default Request Default Limit Max Limit/Request Ratio
+    ----        --------    --- ---- --------------- ------------- -----------------------
+    Container   cpu         -   16   100m            3             -
+    Container   memory      -   64Gi 100Mi           1Gi           -
+
+The default limit for CPU is 3 cores as we discovered that this is a sweet spot for JVM apps to startup quickly.
+See `our LimitRange YAML manifest`_ for details.
 
 We provide a `tiny script`_ and use the Downwards API to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size. The container spec of a ``Deployment`` for some JVM app would look like this:
 
@@ -220,6 +233,19 @@ We learned that Docker can be quite painful to run in production because of the 
 You can be sure to hit some of them when running enough nodes 24x7.
 Also better not touch your Docker version once you have a running setup.
 
+etcd
+====
+
+Kubernetes relies on etcd for storing the state of the whole cluster.
+Losing etcd consensus makes the Kubernetes API server essentially read only, i.e. no changes can be performed in the cluster.
+Losing etcd data requires rebuilding the whole cluster state and would probably cause a major downtime.
+Luckily all data can be restored as long as at least one etcd node is alive.
+
+Knowing the criticality of the etcd cluster, we decided to use our existing, production-grade `STUPS etcd cluster`_ running on EC2 instances separate from Kubernetes.
+The STUPS etcd cluster registers all etcd nodes in Route53 DNS and we use etcd's DNS discovery feature to connect Kubernetes to the etcd nodes.
+The STUPS etcd cluster is deployed across availability zones (AZ) with five nodes in total. All etcd nodes run our own `STUPS Taupage AMI`_, which (similar to CoreOS) runs a Docker image specified via AWS user data (cloud-init).
+
+
 .. _proprietary webhook: https://github.com/zalando-incubator/kubernetes-on-aws/blob/449f8f3bf5c60e0d319be538460ff91266337abc/cluster/userdata-master.yaml#L319
 .. _Kubernetes Operational View: https://github.com/hjacobs/kube-ops-view
 .. _PodSecurityPolicy: https://kubernetes.io/docs/user-guide/pod-security-policy/
@@ -229,3 +255,6 @@ Also better not touch your Docker version once you have a running setup.
 .. _1.13 broke pulls: https://github.com/docker/docker/issues/30083
 .. _Pier One registry: https://github.com/zalando-stups/pierone
 .. _thread on Twitter: https://twitter.com/jbeda/status/826969113801093121
+.. _STUPS etcd cluster: https://github.com/zalando-incubator/stups-etcd-cluster
+.. _STUPS Taupage AMI: https://github.com/zalando-stups/taupage
+.. _our LimitRange YAML manifest: https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/cluster/manifests/default-limits/limits.yaml
