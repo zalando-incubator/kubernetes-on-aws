@@ -6,7 +6,7 @@ metadata:
   labels:
     application: heapster
     kubernetes.io/cluster-service: "true"
-    version: v1.2.0
+    version: v1.3.0
 spec:
   replicas: 1
   selector:
@@ -16,13 +16,15 @@ spec:
     metadata:
       labels:
         application: heapster
-        version: v1.2.0
+        version: v1.3.0
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
     spec:
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
       containers:
-        - image: gcr.io/google_containers/heapster:v1.2.0
+        - image: gcr.io/google_containers/heapster:v1.3.0
           name: heapster
           livenessProbe:
             httpGet:
