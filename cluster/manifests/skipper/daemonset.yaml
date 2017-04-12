@@ -7,13 +7,12 @@ metadata:
     application: skipper-ingress
     version: v0.9.26
     component: ingress
-  annotations:
-    daemonset.kubernetes.io/strategyType: RollingUpdate
-    daemonset.kubernetes.io/maxUnavailable: "1"
 spec:
   selector:
     matchLabels:
       application: skipper-ingress
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       name: skipper-ingress
@@ -23,8 +22,10 @@ spec:
         component: ingress
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
     spec:
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
       hostNetwork: true
       containers:
       - name: skipper-ingress

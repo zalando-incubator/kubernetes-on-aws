@@ -7,13 +7,12 @@ metadata:
     application: logging-agent
     version: v0.10
     component: logging
-  annotations:
-    daemonset.kubernetes.io/strategyType: RollingUpdate
-    daemonset.kubernetes.io/maxUnavailable: "1"
 spec:
   selector:
     matchLabels:
       application: logging-agent
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       name: logging-agent
@@ -23,7 +22,6 @@ spec:
         component: logging
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
         pod.beta.kubernetes.io/init-containers: '[
           {
             "name": "init-scalyr-config",
@@ -59,6 +57,9 @@ spec:
           }
         ]'
     spec:
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
       containers:
       - name: log-watcher
         image: registry.opensource.zalan.do/eagleeye/kubernetes-log-watcher:0.12

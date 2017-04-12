@@ -7,13 +7,12 @@ metadata:
     version: v0.12.0
     component: node-exporter
   namespace: kube-system
-  annotations:
-    daemonset.kubernetes.io/strategyType: RollingUpdate
-    daemonset.kubernetes.io/maxUnavailable: "1"
 spec:
   selector:
     matchLabels:
       application: prometheus-node-exporter
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       name: prometheus-node-exporter
@@ -23,8 +22,10 @@ spec:
         component: node-exporter
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
     spec:
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
       containers:
       - image: prom/node-exporter:0.12.0
         name: prometheus-node-exporter
