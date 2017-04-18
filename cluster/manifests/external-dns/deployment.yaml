@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+  namespace: kube-system
+  labels:
+    application: external-dns
+    version: v0.3.0-alpha.1
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      application: external-dns
+  template:
+    metadata:
+      labels:
+        application: external-dns
+        version: v0.3.0-alpha.1
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
+    spec:
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0-alpha.1
+        args:
+        - --in-cluster
+        - --source=service
+        - --source=ingress
+        - --provider=aws
+        - --registry=txt
+        - --record-owner-id={{ .ID }}
+        - --dry-run=false 
+        - --domain=
+        - --zone=""
