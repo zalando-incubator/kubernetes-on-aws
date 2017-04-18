@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kube-dns-metrics-bash
+  namespace: kube-system
+  labels:
+    application: kube-dns-metrics-bash
+    version: v0.0.4
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: kube-dns-metrics-bash
+  template:
+    metadata:
+      labels:
+        application: kube-dns-metrics-bash
+        version: v0.0.4
+    spec:
+      containers:
+        - image: pierone.stups.zalan.do/teapot/kube-dns-metrics-bash:v0.0.4
+          name: kube-dns-metrics-bash
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 25m
+              memory: 25Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+          ports:
+            - containerPort: 8080
