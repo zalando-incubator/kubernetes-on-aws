@@ -19,8 +19,10 @@ spec:
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
     spec:
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
       containers:
         - name: zmon-agent
           image: "registry.opensource.zalan.do/zmon/zmon-agent-core:0.1-a19"

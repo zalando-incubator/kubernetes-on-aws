@@ -19,8 +19,10 @@ spec:
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
     spec:
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
       containers:
         - name: zmon-scheduler
           image: "registry.opensource.zalan.do/stups/zmon-scheduler:v38"

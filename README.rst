@@ -16,9 +16,10 @@ Configuration in this repository initially was based on kube-aws_, but now depen
 * Cluster Lifecycle Manager to provision the cluster's Cloud Formation stack and apply Kubernetes manifests for system components
 * Authnz Webhook to validate OAuth tokens and authorize access
 
-We plan to release all required components to the community in Q1/2017.
+We plan to release all required components to the community in Q2/2017.
 
-Please see our `Running Kubernetes in Production on AWS document`_ for details on the setup.
+Please watch our meetup talk `"Kubernetes on AWS at Europe's Leading Online Fashion Platform" on YouTube`_ to learn how we run Kubernetes on AWS in production.
+See our `Running Kubernetes in Production on AWS document`_ for details on the setup.
 
 
 Features
@@ -73,3 +74,4 @@ Directory Structure
 .. _kube2iam: https://github.com/jtblin/kube2iam
 .. _kube-aws-autoscaler: https://github.com/hjacobs/kube-aws-autoscaler
 .. _Running Kubernetes in Production on AWS document: https://kubernetes-on-aws.readthedocs.io/en/latest/admin-guide/kubernetes-in-production.html
+.. _"Kubernetes on AWS at Europe's Leading Online Fashion Platform" on YouTube: https://www.youtube.com/watch?time_continue=2671&v=XmnhzEoengI
