@@ -26,7 +26,7 @@ spec:
         image: registry.opensource.zalan.do/teapot/flannel:v0.9.1
         args:
         - --kube-subnet-mgr
-        - --iface=eth0
+        - --iface=$(POD_IP)
         - --ip-masq
         - --healthz-ip=127.0.0.1
         - --healthz-port=7978
@@ -40,6 +40,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         resources:
           limits:
             cpu: 100m
