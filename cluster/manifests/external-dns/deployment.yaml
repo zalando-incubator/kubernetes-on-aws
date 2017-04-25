@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: external-dns
-    version: v0.3.0-alpha.3
+    version: v0.3.0-alpha.4
 spec:
   strategy:
     type: Recreate
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: external-dns
-        version: v0.3.0-alpha.3
+        version: v0.3.0-alpha.4
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
@@ -26,7 +26,7 @@ spec:
          operator: Exists
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0-alpha.3
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0-alpha.4
         args:
         - --in-cluster
         - --source=service
@@ -34,7 +34,8 @@ spec:
         - --provider=aws
         - --registry=txt
         - --record-owner-id={{ .Region }}:{{ .LocalID }}
-        - --dry-run=false 
+        - --dry-run=false
+        - --debug
         - --domain=
         - --zone=""
         - --compatibility # change this to string later to --compatibility=mate, when this flag value will become a string type
