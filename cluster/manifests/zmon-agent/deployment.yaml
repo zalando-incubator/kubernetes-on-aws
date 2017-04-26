@@ -50,6 +50,17 @@ spec:
             - name: ZMON_AGENT_KUBERNETES_CLUSTER_ALIAS
               value: "{{ .Alias }}"
 
+            - name: ZMON_AGENT_POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: zmon-worker
+                  key: sql-user
+            - name: ZMON_AGENT_POSTGRES_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: zmon-worker
+                  key: sql-pass
+
             - name: OAUTH2_ACCESS_TOKEN_URL
               value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
             - name: CREDENTIALS_DIR
