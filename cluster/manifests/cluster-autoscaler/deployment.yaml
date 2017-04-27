@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: cluster-autoscaler
-    version: v0.7
+    version: v0.8
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: cluster-autoscaler
-        version: v0.7
+        version: v0.8
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
@@ -24,7 +24,7 @@ spec:
       - key: CriticalAddonsOnly
         operator: Exists
       containers:
-        - image: registry.opensource.zalan.do/teapot/kube-aws-autoscaler:0.7
+        - image: registry.opensource.zalan.do/teapot/kube-aws-autoscaler:0.8
           name: cluster-autoscaler
           resources:
             limits:
