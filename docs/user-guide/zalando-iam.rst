@@ -31,16 +31,17 @@ The ``PlatformCredentialsSet`` resource allows application owners to declare nee
     spec:
        application: my-app
        tokens:
-         full-access:
-           privileges:
+         full-access: # token name
+           privileges: # privileges/scopes for the token.
              # All zalando-specific privileges start with namespace com.zalando, following pattern <namespace>::<privilege>
+             # the privileges/scopes you define here should match those you define for your application in yourturn.
              - com.zalando::foobar.write
              - com.zalando::acme.full
-         read-only:
-           privileges:
+         read-only: # token name
+           privileges: # privileges/scopes for the token.
              - com.zalando::foobar.read
        clients:
-         employee:
+         employee: # client name
            # the allowed grant type, see https://tools.ietf.org/html/rfc6749
            # options: authorization-code, implicit, resource-owner-password-credentials, client-credentials
            # (values directly reference RFC section titles)
@@ -52,7 +53,14 @@ The ``PlatformCredentialsSet`` resource allows application owners to declare nee
            # redirection URI as described in https://tools.ietf.org/html/rfc6749#section-2
            redirectUri: https://example.org/auth/callback
 
-The declared credentials will automatically be provided as a secret with the same name.
+The declared credentials will automatically be provided as a secret with the
+same name.
+
+Following this example you would get a token called ``full-access`` with the
+privileges ``com.zalando::foobar.write`` and ``com.zalando::acme.full``, a
+token called ``read-only`` with privileges ``com.zalando::foobar.read`` and a
+client named ``employee`` which uses ``authorization-code`` grant under realm
+``users``.
 
 
 Secrets
