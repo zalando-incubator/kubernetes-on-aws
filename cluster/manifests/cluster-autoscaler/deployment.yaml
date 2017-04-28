@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: cluster-autoscaler
-    version: v0.7
+    version: v0.9
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: cluster-autoscaler
-        version: v0.7
+        version: v0.9
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
@@ -24,12 +24,17 @@ spec:
       - key: CriticalAddonsOnly
         operator: Exists
       containers:
-        - image: registry.opensource.zalan.do/teapot/kube-aws-autoscaler:0.7
-          name: cluster-autoscaler
-          resources:
-            limits:
-              cpu: 200m
-              memory: 300Mi
-            requests:
-              cpu: 50m
-              memory: 100Mi
+      - name: cluster-autoscaler
+        image: registry.opensource.zalan.do/teapot/kube-aws-autoscaler:0.9
+        envFrom:
+        - configMapRef:
+            # load buffer settings from ConfigMap e.g. to set spare nodes to zero for test environments
+            name: cluster-autoscaler-{{ .Environment }}
+            optional: true
+        resources:
+          limits:
+            cpu: 200m
+            memory: 300Mi
+          requests:
+            cpu: 50m
+            memory: 100Mi
