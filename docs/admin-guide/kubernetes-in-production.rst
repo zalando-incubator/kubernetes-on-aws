@@ -76,11 +76,11 @@ There is no official way of implementing Ingress on AWS. We decided to create a 
 We use Skipper_ as our HTTP proxy to route based on Host header and path. Skipper is running as a ``DaemonSet`` on all worker nodes for convenient AWS ASG integration (new nodes are automatically registered in the ALB's Target Group).
 Skipper directly comes with a Kubernetes data client to automatically update its routes periodically.
 
-Mate_ is automatically configuring the Ingress hosts as DNS records in Route53 for us.
+`External DNS`_ is automatically configuring the Ingress hosts as DNS records in Route53 for us.
 
 .. _Kube AWS Ingress Controller: https://github.com/zalando-incubator/kube-ingress-aws-controller
 .. _Skipper: https://github.com/zalando/skipper
-.. _Mate: https://github.com/zalando-incubator/mate
+.. _External DNS: https://github.com/kubernetes-incubator/external-dns
 
 Resources
 =========
