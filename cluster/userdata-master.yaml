@@ -75,7 +75,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=v1.6.1_coreos.0
+        Environment=KUBELET_VERSION=v1.6.2_coreos.0
         Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
         --insecure-options=image \
@@ -133,7 +133,7 @@ coreos:
         --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
         --mount=volume=kube,target=/etc/kubernetes \
         --net=host \
-        registry.opensource.zalan.do/teapot/hyperkube:v1.6.1_coreos.0 \
+        registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain $(hostname) \
@@ -231,14 +231,14 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-proxy
-          version: v1.6.1_coreos.0
+          version: v1.6.2_coreos.0
         annotations:
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.1_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
           command:
           - /hyperkube
           - proxy
@@ -278,12 +278,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.6.1_coreos.0
+          version: v1.6.2_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.1_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -340,7 +340,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.8
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.10
           name: webhook
           ports:
           - containerPort: 8081
@@ -413,11 +413,11 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.6.1_coreos.0
+          version: v1.6.2_coreos.0
       spec:
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.1_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -472,12 +472,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.6.1_coreos.0
+          version: v1.6.2_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.1_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
           command:
           - /hyperkube
           - scheduler

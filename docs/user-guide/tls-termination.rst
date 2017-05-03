@@ -123,40 +123,8 @@ doesn't match the served certificate.
 DNS records
 ===========
 
-For convenience we create alias DNS entries for your service so you don't have
-to use the arbitrary ELB endpoints. The DNS name that is generated is based on
-your service's name, namespace, and the cluster's domain.
-
-The generated DNS name's format is:
-
-.. code-block:: go
-
-    {serviceName}-{serviceNamespace}.{teamName}.zalan.do
-
-For the service above this results in the following DNS name:
-
-.. code-block:: go
-
-    nginx-default.hackweek.zalan.do
-
-Verify that this works with ``curl``. If you've chosen the right certificate ARN
-you won't get any certificate warning.
-
-.. code-block:: bash
-
-    $ curl https://nginx-default.hackweek.zalan.do
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <title>Welcome to nginx!</title>
-    ...
-    </body>
-    </html>
-
-Customizing the DNS name
-------------------------
-
-However, if you're not happy with the default DNS name you can change it by
+For convenience you can assign a DNS name for your service so you don't have
+to use the arbitrary ELB endpoints. The DNS name can be specified by
 adding an additional annotation to your service containing the desired dns name.
 
 .. code-block:: yaml
@@ -166,7 +134,7 @@ adding an additional annotation to your service containing the desired dns name.
     metadata:
       name: nginx
       annotations:
-        zalando.org/dnsname: my-nginx.hackweek.zalan.do
+        external-dns.alpha.kubernetes.io/hostname: my-nginx.playground.zalan.do
     spec:
       ...
 
@@ -179,7 +147,7 @@ Make sure it works:
 
 .. code-block:: bash
 
-    $ curl https://my-nginx.hackweek.zalan.do
+    $ curl https://my-nginx.playground.zalan.do
     <!DOCTYPE html>
     <html>
     <head>
@@ -199,7 +167,7 @@ For reference, the full service description should look like this:
       annotations:
         service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:eu-central-1:some-account-id:certificate/some-cert-id
         service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
-        zalando.org/dnsname: my-nginx.hackweek.zalan.do
+        external-dns.alpha.kubernetes.io/hostname: my-nginx.playground.zalan.do
     spec:
       type: LoadBalancer
       ports:
@@ -208,8 +176,6 @@ For reference, the full service description should look like this:
       selector:
         app: nginx
 
-*Special note to Zalando Hackweek cluster users: We will provide you with the correct
-ARN for the Hackweek cluster DNS zone.*
 
 Common pitfalls
 ===============

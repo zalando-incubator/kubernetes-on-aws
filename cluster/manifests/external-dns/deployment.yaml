@@ -1,0 +1,45 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+  namespace: kube-system
+  labels:
+    application: external-dns
+    version: v0.3.0-beta.0
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      application: external-dns
+  template:
+    metadata:
+      labels:
+        application: external-dns
+        version: v0.3.0-beta.0
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
+    spec:
+      tolerations:
+       - key: CriticalAddonsOnly
+         operator: Exists
+      containers:
+      - name: external-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0-beta.0
+        args:
+        - --source=service
+        - --source=ingress
+        - --provider=aws
+        - --policy=upsert-only # remove when we are sure external-dns can be trusted
+        - --registry=txt
+        - --txt-owner-id={{ .Region }}:{{ .LocalID }}
+        - --compatibility=mate # remove when we switched to the new annotations
+        - --debug # remove when we are sure external-dns can be trusted
+      - name: external-dns-migration
+        image: pierone.stups.zalan.do/teapot/external-dns-migration:v0.1.2
+        args:
+        - --source-txt-label=mate:{{ .LocalID }}
+        - --target-txt-label=heritage=external-dns,external-dns/owner={{ .Region }}:{{ .LocalID }}
+      imagePullSecrets:
+        - name: pierone.stups.zalan.do
