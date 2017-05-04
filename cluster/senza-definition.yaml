@@ -241,35 +241,6 @@ Resources:
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
-  MateIAMRole:
-    Properties:
-      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-app-mate"
-      AssumeRolePolicyDocument:
-        Statement:
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal:
-            Service: [ec2.amazonaws.com]
-        - Action: ['sts:AssumeRole']
-          Effect: Allow
-          Principal:
-            AWS:
-              Fn::Join:
-                - ""
-                -
-                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
-                  -
-                    Ref: WorkerIAMRole
-        Version: '2012-10-17'
-      Path: /
-      Policies:
-      - PolicyDocument:
-          Statement:
-          - {Action: 'route53:*', Effect: Allow, Resource: '*'}
-          - {Action: 'elasticloadbalancing:DescribeLoadBalancers', Effect: Allow, Resource: '*'}
-          Version: '2012-10-17'
-        PolicyName: root
-    Type: AWS::IAM::Role
   IngressControllerIAMRole:
     Properties:
       RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-app-ingr-ctrl"
@@ -385,6 +356,8 @@ Resources:
       - {CidrIp: 172.31.0.0/16, FromPort: 9100, IpProtocol: tcp, ToPort: 9100}
       # allow checking kubelet healthz port from within the VPC
       - {CidrIp: 172.31.0.0/16, FromPort: 10248, IpProtocol: tcp, ToPort: 10248}
+      # allow default service NodePort range
+      - {CidrIp: 172.31.0.0/16, FromPort: 30000, IpProtocol: tcp, ToPort: 32767}
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
