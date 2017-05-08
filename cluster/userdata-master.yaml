@@ -340,7 +340,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.10
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.11
           name: webhook
           ports:
           - containerPort: 8081
@@ -427,6 +427,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --feature-gates=AllAlpha=true
+          - --cloud-config=/etc/kubernetes/cloud-config.ini
           resources:
             limits:
               cpu: 200m
@@ -599,6 +600,11 @@ write_files:
                 "isDefaultGateway": true
             }
         }
+
+  - path: /etc/kubernetes/cloud-config.ini
+    content: |
+      [global]
+      DisableSecurityGroupIngress = true
 
   - path: /home/core/.toolboxrc
     owner: core
