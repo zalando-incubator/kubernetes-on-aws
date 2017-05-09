@@ -29,12 +29,12 @@ Features
 * Worker Auto Scaling Group
 * Flannel overlay networking
 * Cluster autoscaling (using kube-aws-autoscaler_)
-* Route53 DNS integration via Mate_
+* Route53 DNS integration via `External DNS`_
 * AWS IAM integration via kube2iam_
 * Standard components are installed: kube-dns, heapster, dashboard, node exporter, kube-state-metrics
 * Webhook authentication and authorization (roles "ReadOnly", "PowerUser", "Administrator")
 * Log shipping via Scalyr
-* Mostly done: full Ingress support (`#169 <https://github.com/zalando-incubator/kubernetes-on-aws/issues/169>`_)
+* Full Ingress support with ALB/SSL via kube-ingress-aws-controller_
 * Planned: Spot Fleet integration (`#61 <https://github.com/zalando-incubator/kubernetes-on-aws/issues/61>`_)
 
 
@@ -70,8 +70,9 @@ Directory Structure
 .. _kube-aws: https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/aws
 .. _Senza Cloud Formation tool: https://github.com/zalando-stups/senza
 .. _OAuth Token Info: http://planb.readthedocs.io/en/latest/intro.html#token-info
-.. _Mate: https://github.com/zalando-incubator/mate
+.. _External DNS: https://github.com/kubernetes-incubator/external-dns
 .. _kube2iam: https://github.com/jtblin/kube2iam
 .. _kube-aws-autoscaler: https://github.com/hjacobs/kube-aws-autoscaler
 .. _Running Kubernetes in Production on AWS document: https://kubernetes-on-aws.readthedocs.io/en/latest/admin-guide/kubernetes-in-production.html
 .. _"Kubernetes on AWS at Europe's Leading Online Fashion Platform" on YouTube: https://www.youtube.com/watch?time_continue=2671&v=XmnhzEoengI
+.. _kube-ingress-aws-controller: https://github.com/zalando-incubator/kube-ingress-aws-controller
