@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: external-dns
-    version: v0.3.0-beta.2
+    version: v0.3.0
 spec:
   strategy:
     type: Recreate
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: external-dns
-        version: v0.3.0-beta.2
+        version: v0.3.0
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
@@ -26,7 +26,7 @@ spec:
          operator: Exists
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0-beta.2
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.3.0
         args:
         - --source=service
         - --source=ingress
@@ -35,5 +35,3 @@ spec:
         - --txt-owner-id={{ .Region }}:{{ .LocalID }}
         - --compatibility=mate # remove when we switched to the new annotations
         - --debug # remove when we are sure external-dns can be trusted
-      imagePullSecrets:
-        - name: pierone.stups.zalan.do

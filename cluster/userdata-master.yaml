@@ -75,9 +75,9 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=v1.6.2_coreos.0
-        Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
-        Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
+        Environment=KUBELET_IMAGE_TAG=v1.6.3_coreos.0
+        Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
+        Environment="RKT_RUN_ARGS=--volume dns,kind=host,source=/etc/resolv.conf \
         --insecure-options=image \
         --mount volume=dns,target=/etc/resolv.conf \
         --volume rkt,kind=host,source=/opt/bin/host-rkt \
@@ -133,7 +133,7 @@ coreos:
         --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
         --mount=volume=kube,target=/etc/kubernetes \
         --net=host \
-        registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0 \
+        registry.opensource.zalan.do/teapot/hyperkube:v1.6.3_coreos.0 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain $(hostname) \
@@ -231,14 +231,14 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-proxy
-          version: v1.6.2_coreos.0
+          version: v1.6.3_coreos.0
         annotations:
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.3_coreos.0
           command:
           - /hyperkube
           - proxy
@@ -278,12 +278,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.6.2_coreos.0
+          version: v1.6.3_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.3_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -373,7 +373,7 @@ write_files:
             - name: TOKENINFO_URL
               value: https://info.services.auth.zalando.com/oauth2/tokeninfo
             - name: USER_GROUPS
-              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator
+              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser
           volumeMounts:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
@@ -413,11 +413,11 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.6.2_coreos.0
+          version: v1.6.3_coreos.0
       spec:
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.3_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -473,12 +473,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.6.2_coreos.0
+          version: v1.6.3_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.3_coreos.0
           command:
           - /hyperkube
           - scheduler
