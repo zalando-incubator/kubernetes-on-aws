@@ -24,7 +24,7 @@ coreos:
           content: |
             [Service]
             Environment="ETCD_IMAGE_TAG=v3.1.6"
-            Environment="ETCD_OPTS=gateway start --listen-addr=127.0.0.1:2379 --endpoints={{ etcd_endpoints }}"
+            Environment="ETCD_OPTS=gateway start --listen-addr=127.0.0.1:2379 --endpoints={{ ETCD_ENDPOINTS }}"
 
     - name: docker.service
       drop-ins:
@@ -289,9 +289,9 @@ write_files:
           - --bind-address=0.0.0.0
           - --insecure-bind-address=0.0.0.0
           - --etcd-servers=http://127.0.0.1:2379
-          - --etcd-prefix={{ apiserver_etcd_prefix }}
-          - --storage-backend={{ apiserver_storage_backend }}
-          - --storage-media-type={{ apiserver_storage_media_type }}
+          - --etcd-prefix={{ APISERVER_ETCD_PREFIX }}
+          - --storage-backend={{ APISERVER_STORAGE_BACKEND }}
+          - --storage-media-type={{ APISERVER_STORAGE_MEDIA_TYPE }}
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/24
           - --secure-port=443
