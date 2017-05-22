@@ -77,18 +77,17 @@ coreos:
         [Service]
         Environment=KUBELET_IMAGE_TAG=v1.6.3_coreos.0
         Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
-        Environment="RKT_RUN_ARGS=--volume dns,kind=host,source=/etc/resolv.conf \
-        --insecure-options=image \
+        Environment="RKT_RUN_ARGS=--insecure-options=image \
+        --uuid-file-save=/var/run/kubelet-pod.uuid \
+        --volume dns,kind=host,source=/etc/resolv.conf \
         --mount volume=dns,target=/etc/resolv.conf \
-        --volume rkt,kind=host,source=/opt/bin/host-rkt \
-        --mount volume=rkt,target=/usr/bin/rkt \
-        --volume var-lib-rkt,kind=host,source=/var/lib/rkt \
-        --mount volume=var-lib-rkt,target=/var/lib/rkt \
-        --volume stage,kind=host,source=/tmp \
-        --mount volume=stage,target=/tmp \
         --volume var-log,kind=host,source=/var/log \
-        --mount volume=var-log,target=/var/log"
+        --mount volume=var-log,target=/var/log \
+        --volume var-lib-cni,kind=host,source=/var/lib/cni \
+        --mount volume=var-lib-cni,target=/var/lib/cni"
         ExecStartPre=/usr/bin/mkdir -p /var/log/containers
+        ExecStartPre=/bin/mkdir -p /var/lib/cni
+        ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
         --cni-conf-dir=/etc/kubernetes/cni/net.d \
         --network-plugin=cni \
@@ -108,6 +107,7 @@ coreos:
         --feature-gates=AllAlpha=true \
         --system-reserved=cpu=100m,memory=164Mi \
         --kube-reserved=cpu=100m,memory=282Mi
+        ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
         Restart=always
         RestartSec=10
 
