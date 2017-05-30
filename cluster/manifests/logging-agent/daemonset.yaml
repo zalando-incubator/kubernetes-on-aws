@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: logging-agent
-    version: v0.14
+    version: v0.15
     component: logging
 spec:
   selector:
@@ -18,7 +18,7 @@ spec:
       name: logging-agent
       labels:
         application: logging-agent
-        version: v0.14
+        version: v0.15
         component: logging
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -53,7 +53,7 @@ spec:
           mountPath: /mnt/scalyr-checkpoint
       containers:
       - name: log-watcher
-        image: registry.opensource.zalan.do/eagleeye/kubernetes-log-watcher:0.14
+        image: registry.opensource.zalan.do/eagleeye/kubernetes-log-watcher:0.15
         env:
         - name: CLUSTER_NODE_NAME
           valueFrom:
@@ -72,6 +72,10 @@ spec:
           value: /mnt/scalyr-config/agent.json
         - name: WATCHER_SCALYR_JOURNALD
           value: "true"
+        - name: WATCHER_SCALYR_JOURNALD_WRITE_RATE
+          value: 20000
+        - name: WATCHER_SCALYR_JOURNALD_WRITE_BURST
+          value: 300000
 
         resources:
           limits:
