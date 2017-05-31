@@ -7,7 +7,7 @@ SenzaInfo:
       - UserDataMaster:
           Description: "User data of master"
       - UserDataWorker:
-          Description: "User data of master"
+          Description: "User data of worker"
       - KmsKey:
           Description: "ARN of KMS key to decrypt secrets"
       - MasterNodes:
@@ -101,16 +101,13 @@ SenzaComponents:
          - {Ref: WorkerSecurityGroup}
       IamRoles:
          - {Ref: WorkerIAMRole}
-      ElasticLoadBalancer: WorkerLoadBalancer
-      HealthCheckGracePeriod: 480 # give worker node up to 8 min to start up
-      HealthCheckType: EC2
       AssociatePublicIpAddress: true
       UserData: "{{ Arguments.UserDataWorker }}"
       AutoScaling:
          Minimum: "{{ Arguments.MinimumWorkerNodes}}"
          Maximum: "{{ Arguments.MaximumWorkerNodes}}"
          DesiredCapacity: "{{ Arguments.WorkerNodes }}"
-         SuccessRequires: "0 within 15m"
+         SuccessRequires: "1 within 15m"
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
@@ -118,25 +115,6 @@ SenzaComponents:
           Value: "{{ Arguments.ClusterID }}"
         - Key: "NodePool"
           Value: "{{ Arguments.WorkerNodePoolName }}"
-  - WorkerLoadBalancer:
-      Type: Senza::ElasticLoadBalancer
-      NameSuffix: worker
-      HTTPPort: 10248
-      HealthCheckPath: /healthz
-      HealthCheckPort: 10248
-      Listeners:
-        - PolicyNames: []
-          Protocol: HTTP
-          InstanceProtocol: HTTP
-          InstancePort: 10248
-          LoadBalancerPort: 10248
-      Tags:
-        - Key: "KubernetesCluster"
-          Value: kubernetes
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
-      SecurityGroups:
-        - {Ref: WorkerLoadBalancerSecurityGroup}
 
 Resources:
   MasterIAMRole:
@@ -373,27 +351,6 @@ Resources:
           Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroup
 
-  WorkerLoadBalancerSecurityGroup:
-    Properties:
-      GroupDescription: {Ref: 'AWS::StackName'}
-      SecurityGroupIngress:
-      - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
-      VpcId: "{{ AccountInfo.VpcID }}"
-      Tags:
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
-    Type: AWS::EC2::SecurityGroup
-  WorkerSecurityGroupFromLoadBalancerHealthCheck:
-    Properties:
-      FromPort: 10248
-      GroupId: {Ref: WorkerSecurityGroup}
-      IpProtocol: tcp
-      SourceSecurityGroupId: {Ref: WorkerLoadBalancerSecurityGroup}
-      ToPort: 10248
-      Tags:
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
-    Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromWorker:
     Properties:
       FromPort: 443
