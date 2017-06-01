@@ -14,18 +14,17 @@ coreos:
     reboot-strategy: "off"
   flannel:
     interface: $private_ipv4
-    etcd_endpoints: http://$private_ipv4:2379
-  etcd2:
-    discovery-srv: {{ETCD_DISCOVERY_DOMAIN}}
-    proxy: on
-    advertise-client-urls: http://$private_ipv4:2379
-    initial-advertise-peer-urls: http://$private_ipv4:2380
-    listen-client-urls: http://0.0.0.0:2379
-    listen-peer-urls: http://0.0.0.0:2380
+    etcd_endpoints: http://127.0.0.1:2379
   units:
-    - name: etcd2.service
+    - name: etcd-member.service
       command: start
-      runtime: true
+      enable: true
+      drop-ins:
+        - name: 40-etcd-gateway.conf
+          content: |
+            [Service]
+            Environment="ETCD_IMAGE_TAG=v3.1.6"
+            Environment="ETCD_OPTS=gateway start --listen-addr=127.0.0.1:2379 --endpoints={{ ETCD_ENDPOINTS }}"
 
     - name: docker.service
       drop-ins:
@@ -75,20 +74,19 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_VERSION=v1.6.2_coreos.0
-        Environment=KUBELET_ACI=docker://registry.opensource.zalan.do/teapot/hyperkube
-        Environment="RKT_OPTS=--volume dns,kind=host,source=/etc/resolv.conf \
-        --insecure-options=image \
+        Environment=KUBELET_IMAGE_TAG=v1.6.4_coreos.0
+        Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
+        Environment="RKT_RUN_ARGS=--insecure-options=image \
+        --uuid-file-save=/var/run/kubelet-pod.uuid \
+        --volume dns,kind=host,source=/etc/resolv.conf \
         --mount volume=dns,target=/etc/resolv.conf \
-        --volume rkt,kind=host,source=/opt/bin/host-rkt \
-        --mount volume=rkt,target=/usr/bin/rkt \
-        --volume var-lib-rkt,kind=host,source=/var/lib/rkt \
-        --mount volume=var-lib-rkt,target=/var/lib/rkt \
-        --volume stage,kind=host,source=/tmp \
-        --mount volume=stage,target=/tmp \
         --volume var-log,kind=host,source=/var/log \
-        --mount volume=var-log,target=/var/log"
+        --mount volume=var-log,target=/var/log \
+        --volume var-lib-cni,kind=host,source=/var/lib/cni \
+        --mount volume=var-lib-cni,target=/var/lib/cni"
         ExecStartPre=/usr/bin/mkdir -p /var/log/containers
+        ExecStartPre=/bin/mkdir -p /var/lib/cni
+        ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
         --cni-conf-dir=/etc/kubernetes/cni/net.d \
         --network-plugin=cni \
@@ -108,6 +106,7 @@ coreos:
         --feature-gates=AllAlpha=true \
         --system-reserved=cpu=100m,memory=164Mi \
         --kube-reserved=cpu=100m,memory=282Mi
+        ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
         Restart=always
         RestartSec=10
 
@@ -133,7 +132,7 @@ coreos:
         --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
         --mount=volume=kube,target=/etc/kubernetes \
         --net=host \
-        registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0 \
+        registry.opensource.zalan.do/teapot/hyperkube:v1.6.4_coreos.0 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain $(hostname) \
@@ -231,14 +230,14 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-proxy
-          version: v1.6.2_coreos.0
+          version: v1.6.4_coreos.0
         annotations:
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.4_coreos.0
           command:
           - /hyperkube
           - proxy
@@ -278,21 +277,21 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.6.2_coreos.0
+          version: v1.6.4_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.4_coreos.0
           command:
           - /hyperkube
           - apiserver
           - --bind-address=0.0.0.0
           - --insecure-bind-address=0.0.0.0
-          - --etcd-servers=http://localhost:2379
-          - --etcd-prefix=/registry-{{STACK_VERSION}}
-          - --storage-backend=etcd2
-          - --storage-media-type=application/json
+          - --etcd-servers=http://127.0.0.1:2379
+          - --etcd-prefix={{ APISERVER_ETCD_PREFIX }}
+          - --storage-backend={{ APISERVER_STORAGE_BACKEND }}
+          - --storage-media-type={{ APISERVER_STORAGE_MEDIA_TYPE }}
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/24
           - --secure-port=443
@@ -340,7 +339,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.11
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.13
           name: webhook
           ports:
           - containerPort: 8081
@@ -373,7 +372,7 @@ write_files:
             - name: TOKENINFO_URL
               value: https://info.services.auth.zalando.com/oauth2/tokeninfo
             - name: USER_GROUPS
-              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator
+              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser
           volumeMounts:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
@@ -413,11 +412,11 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.6.2_coreos.0
+          version: v1.6.4_coreos.0
       spec:
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.4_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -473,12 +472,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.6.2_coreos.0
+          version: v1.6.4_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.2_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.4_coreos.0
           command:
           - /hyperkube
           - scheduler
