@@ -1,0 +1,53 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    name: monitor
+    application: appdynamics-machineagent
+    version: v1
+  name: appdynamics-machineagent
+  namespace: kube-system
+spec:
+  template:
+    metadata:
+      name: appdynamics-machinenagent
+      labels:
+        application: appdynamics-machineagent
+    spec:
+      hostNetwork: true
+      containers:
+      - name: appdynamics-machineagent-prod
+        image: pierone.stups.zalan.do/monitoring-appdynamics/appdynamics-machine-agent-4.2:latest
+        volumeMounts:
+        - name: appd-prod-secrets
+          mountPath: /etc/secrets
+        ports:
+        - name: analytics-agent
+          containerPort: 9090
+          hostPort: 9090
+        env:
+          - name: APPDYNAMICS_AGENT_UNIQUE_HOST_ID
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+      - name: appdynamics-machineagent-test
+        image: pierone.stups.zalan.do/monitoring-appdynamics/appdynamics-machine-agent:latest
+        volumeMounts:
+        - name: appd-sandbox-secrets
+          mountPath: /etc/secrets
+        ports:
+        - name: analytics-agent
+          containerPort: 9092
+          hostPort: 9092
+        env:
+          - name: APPDYNAMICS_AGENT_UNIQUE_HOST_ID
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+      volumes:
+      - name: appd-sandbox-secrets
+        secret:
+          secretName: "appdynamics-test"
+      - name: appd-prod-secrets
+        secret:
+          secretName: "appdynamics-prod"
