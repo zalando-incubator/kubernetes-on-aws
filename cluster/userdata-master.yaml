@@ -214,13 +214,6 @@ write_files:
       DOCKER_OPT_BIP=""
       DOCKER_OPT_IPMASQ=""
 
-  - path: /opt/bin/host-rkt
-    permissions: 0755
-    owner: root:root
-    content: |
-      #!/bin/sh
-      exec nsenter -m -u -i -n -p -t 1 -- /usr/bin/rkt "$@"
-
   - path: /etc/kubernetes/manifests/kube-proxy.yaml
     content: |
       apiVersion: v1
@@ -339,7 +332,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.12
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.1.14
           name: webhook
           ports:
           - containerPort: 8081
@@ -427,6 +420,7 @@ write_files:
           - --cloud-provider=aws
           - --feature-gates=AllAlpha=true
           - --cloud-config=/etc/kubernetes/cloud-config.ini
+          - --use-service-account-credentials=true
           resources:
             limits:
               cpu: 200m
