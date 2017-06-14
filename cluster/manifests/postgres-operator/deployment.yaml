@@ -1,0 +1,31 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: postgres-operator
+  namespace: kube-system
+  labels:
+    application: postgres-operator
+    version: ba6529b
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      application: postgres-operator
+  template:
+    metadata:
+      labels:
+        application: postgres-operator
+        version: ba6529b
+    spec:
+      containers:
+      - name: postgres-operator
+        image: registry.opensource.zalan.do/acid/postgres-operator:ba6529b
+        env:
+        - name: CONFIG_MAP_NAME
+          value: postgres-operator
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+      serviceAccountName: system
