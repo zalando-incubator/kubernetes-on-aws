@@ -50,7 +50,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Kubernetes on AWS'
-copyright = '2016, Zalando SE'
+copyright = '2017, Zalando SE'
 author = 'Zalando SE'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -156,7 +156,7 @@ except:
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
 #
-# html_favicon = None
+html_favicon = 'favicon.ico'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

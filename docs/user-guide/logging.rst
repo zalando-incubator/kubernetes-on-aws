@@ -9,6 +9,8 @@ Zalando cluster will ship logs to Scalyr for all containers running on a cluster
 .. note::
     Logs are shipped per container and not per application. To view all logs from certain application you can use Scalyr UI https://www.scalyr.com/events and filter using :ref:`log-attributes-label`.
 
+One Scalyr account will be provisioned for each community, i.e. the same Scalyr account is used for both test and production clusters.
+
 You need to make sure the minimum requirements are satisfied to start viewing logs on Scalyr.
 
 Requirements
@@ -26,7 +28,7 @@ Always make sure your application logs to ``stdout`` & ``stderr``. This will all
 Labels
 ------
 
-In order for the container logs to be shipped, your deployment **must** include the follwoing metadata labels:
+In order for the container logs to be shipped, your deployment **must** include the following metadata labels:
 
 - application
 - version
@@ -41,7 +43,7 @@ All logs are shipped with extra attributes that can help in filtering from Scaly
 ``application``
     Application ID. Retrieved from metadata labels.
 
-``versions``
+``version``
     Application version. Retrieved from metadata labels.
 
 ``release``
@@ -62,3 +64,68 @@ All logs are shipped with extra attributes that can help in filtering from Scaly
 ``namespace``
     Namespace running this deployment(pod). Retrieved from Kubernetes cluster.
 
+Log parsing
+===========
+
+The default parser for application logs is the ``json`` parser.
+In some cases however you might want to use a `custom Scalyr parser
+<https://www.scalyr.com/help/config>`_ for your application. This can be
+achieved via Pod annotations.
+
+However, the ``json`` parser only parses the JSON generated from the Docker logs. If your application
+generates logs in JSON, the default parser will only see them as an escaped string of JSON.
+However, Scalyr provides a special parser ``escapedJson`` for that.
+
+Scalyr's default parser can even be configured to also make a pass with the ``escapedJson`` parser. That way
+there is no need to configure anything on a per application level to get properly parsed fields from JSON based
+application logs in Scalyr. Just `edit the JSON parser <https://www.scalyr.com/parsers?parser=json>`_ to contain the
+following config.
+
+.. code-block:: js
+
+   // Parser for log files containing JSON records.
+   {
+      attributes: {
+        // Tag all events parsed with this parser so we can easily select them in queries.
+        dataset: "json"
+      },
+
+      formats: [
+        {format: "${parse=json}$", repeat: true},
+        {format: "\\{\"log\":\"$log{parse=escapedJson}$", repeat: true}
+      ]
+    }
+
+The following example shows how to annotate a pod to instruct the log watcher
+to use the custom parser ``json-java-parser`` for pod container ``my-app``.
+
+.. code-block:: yaml
+
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    metadata:
+      name: my-app
+    spec:
+      replicas: 3
+      template:
+        metadata:
+          labels:
+            application: my-app
+          annotations:
+            # specify scalyr log parser
+            kubernetes-log-watcher/scalyr-parser: '[{"container": "my-app-container", "parser": "json-java-parser"}]'
+        spec:
+          containers:
+          - name: my-app-container
+            image: pierone.stups.zalan.do/myteam/my-app:cd53
+            ports:
+            - containerPort: 8080
+
+The value of ``kubernetes-log-watcher/scalyr-parser`` annotation should be a
+JSON serialized list. If ``container`` value did not match, then it will fall
+back to the default parser (i.e. ``json``).
+
+.. note::
+    You need to specify the container in the parser annotation because
+    you can have multiple containers in a pod which may use different log
+    formats.
