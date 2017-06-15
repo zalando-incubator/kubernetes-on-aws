@@ -354,13 +354,47 @@ write_files:
             - name: CLUSTER_ID
               value: {{WEBHOOK_ID}}
             - name: TOKENINFO_URL
-              value: https://info.services.auth.zalando.com/oauth2/tokeninfo
+              value: http://127.0.0.1:9021/oauth2/introspect
             - name: USER_GROUPS
               value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser
           volumeMounts:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
             readOnly: true
+        - image: pierone.stups.zalan.do/foundation/platform-iam-tokeninfo:46fa3a9
+          name: tokeninfo
+          ports:
+            - containerPort: 9021
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9021
+            periodSeconds: 3
+            failureThreshold: 2
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9021
+            periodSeconds: 3
+            failureThreshold: 2
+          resources:
+            limits:
+              cpu: 4000m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+          env:
+            - name: OPENID_PROVIDER_CONFIGURATION_URL
+              value: https://identity.zalando.com/.well-known/openid-configuration
+            - name: REVOCATION_PROVIDER_URL
+              value: https://planb-revocation.greendale-questionmark.zalan.do/revocations
+            - name: REVOCATION_HASHING_SALT
+              value: {{REVOCATION_HASHING_SALT}}
+            - name: BUSINESS_PARTNERS
+              value: ""
+            - name: ENABLE_INTROSPECTION
+              value: "true"
         - name: nginx
           image: registry.opensource.zalan.do/teapot/nginx:1.11.5
           resources:
