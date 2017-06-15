@@ -158,7 +158,7 @@ Resources:
               Action:
               - "s3:*"
               Resource:
-              - "arn:aws:s3:::zalando-<backup-bucket>"
+              - "arn:aws:s3:::{{ Arguments.postgres_backup_bucket }}"
             - Effect: "Allow"
               Action":
               - "ec2:CreateTags"
@@ -167,4 +167,9 @@ Resources:
               Resource:
               - "*"
 
-# TODO Bucket for Backups
+  PostgresS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: {{ Arguments.postgres_backup_bucket }}
+      AccessControl: Private
+
