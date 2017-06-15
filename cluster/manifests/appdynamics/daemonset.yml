@@ -4,10 +4,16 @@ metadata:
   labels:
     name: monitor
     application: appdynamics-machineagent
-    version: v1
+    version: 0.4
   name: appdynamics-machineagent
+  version: 0.4
   namespace: kube-system
 spec:
+  selector:
+    matchLabels:
+      application: appdynamics-machineagent
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       name: appdynamics-machinenagent
@@ -17,7 +23,7 @@ spec:
       hostNetwork: true
       containers:
       - name: appdynamics-machineagent-prod
-        image: pierone.stups.zalan.do/monitoring-appdynamics/appdynamics-machine-agent-4.2:latest
+        image: pierone.stups.zalan.do/monitoring-appdynamics/appdynamics-machine-agent-4.2:0.4
         volumeMounts:
         - name: appd-prod-secrets
           mountPath: /etc/secrets
@@ -25,20 +31,6 @@ spec:
         - name: analytics-agent
           containerPort: 9090
           hostPort: 9090
-        env:
-          - name: APPDYNAMICS_AGENT_UNIQUE_HOST_ID
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
-      - name: appdynamics-machineagent-test
-        image: pierone.stups.zalan.do/monitoring-appdynamics/appdynamics-machine-agent:latest
-        volumeMounts:
-        - name: appd-sandbox-secrets
-          mountPath: /etc/secrets
-        ports:
-        - name: analytics-agent
-          containerPort: 9092
-          hostPort: 9092
         env:
           - name: APPDYNAMICS_AGENT_UNIQUE_HOST_ID
             valueFrom:
