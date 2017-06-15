@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-operator
+data:
+  service_account_name: operator
+  cluster_labels: application:spilo
+  cluster_name_label: version
+  pod_role_label: spilo-role
+  db_hosted_zone: {{ .ConfigItems.hosted_zone }}
+  debug_logging: "true"
+  dns_name_format: '%s.%s.%s'
+  docker_image: registry.opensource.zalan.do/acid/spiloprivate-9.6:1.2-p7
+  etcd_host: etcd-acid-cluster.etcd.{{ .ConfigItems.hosted_zone }}:2379
+  infrastructure_roles_secret_name: postgresql-infrastructure-roles
+  oauth_token_secret_name: postgresql-operator
+  pam_configuration: |
+    https://info.services.auth.zalando.com/oauth2/tokeninfo?access_token= uid realm=/employees
+  pam_role_name: zalandos
+  pod_deletion_wait_timeout: 10m
+  pod_label_wait_timeout: 10m
+  ready_wait_interval: 3s
+  ready_wait_timeout: 30s
+  replication_username: replication
+  resource_check_interval: 3s
+  resource_check_timeout: 10m
+  resync_period: 5m
+  resync_period_pod: 5m
+  super_username: postgres
+  teams_api_url: https://teams.auth.zalando.com/api/
+  wal_s3_bucket: {{ .ConfigItems.postgres_backup_s3_bucket }}
+  kube_iam_role: app-spilo
+  default_cpu_request: 100m
+  default_memory_request: 100Mi
+  default_cpu_limit: 3000m
+  default_memory_limit: 1Gi
+  workers: "16"
