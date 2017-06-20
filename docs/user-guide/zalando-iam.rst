@@ -29,7 +29,7 @@ The ``PlatformCredentialsSet`` resource allows application owners to declare nee
     metadata:
        name: my-app-credentials
     spec:
-       application: my-app
+       application: my-app # has to match with registered application in kio/yourturn
        tokens:
          full-access: # token name
            privileges: # privileges/scopes for the token.
@@ -133,7 +133,7 @@ How to read a token in different languages:
 
 .. code-block:: javascript
 
-    // JavaScript
+    // JavaScript (node.js)
     const accessToken = String(fs.readFileSync(`/meta/credentials/${tokenName}-token-secret`)).trim()
 
 .. code-block:: java
@@ -144,7 +144,7 @@ How to read a token in different languages:
 .. Note::
 
     Using the authorization type from the secret instead of hardcoding ``Bearer`` allows to transparently
-    switch to HTTP Basic Auth in a different context (e.g. running the Open Source application in a non-Zalando environment).
+    switch to HTTP Basic Auth in a different context (e.g. running an Open Source application in a non-Zalando environment).
     Users would simply need to provide an appropriate secret like:
 
     .. code-block:: yaml

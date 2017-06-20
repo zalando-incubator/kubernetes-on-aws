@@ -15,12 +15,16 @@ Access Control
 Applications are authorized to perform certain actions based on the service account selected.
 We currently allow the following service accounts:
 
+kube-system:system
+    Used only for admin access in kube-system namespace.
 kube-system:default
-    Used only for admin access.
+    Used for read only access in the kube-system namespace.
 default:default
-    Gives ReadOnly access to the Kubernetes API.
-*:operator
-    Gives full access to the used namespace and read and write access to TPR resources in all namespaces.
+    Gives read-only access to the Kubernetes API.
+\*:operator
+    Gives full access to the used namespace and read-write access to TPR, storage classes, persistent volumes in all namespaces.
+
+Additional service accounts are used by the Kubernetes' controller manager to allow it to work properly. 
 
 
 How to create service accounts
@@ -39,7 +43,7 @@ For example, to request ``operator`` access you will need to create the followin
       name: operator
       namespace: $YOUR_NAMESPACE
 
-This can be used in an example deployment like in the following YAML:
+The service account can be used in an example deployment like this:
 
 .. code-block:: yaml
 

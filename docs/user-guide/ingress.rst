@@ -16,25 +16,23 @@ Ingress allows to expose a service to the internet by defining its HTTP layer ad
 * path endpoint (optional)
 * service and service port
 
-The ingress services, when detecting a new or modified Ingress entry, will create/update the DNS record for the defined
+The Ingress services, when detecting a new or modified Ingress entry, will create/update the DNS record for the defined
 hostname, will update the load balancer to use a TLS certificate and route the requests to the cluster
 nodes, and will define the routes that find the right service based on the hostname and the path.
 
-More details about the general Ingress in Kubernetes can be found in the official documentation:
-
-`official docs`_
+More details about the general Ingress in Kubernetes can be found in the official `Ingress Resources`_.
 
 How to setup Ingress?
 =====================
 
-Let's assume that we have a deployment with label application=test-app, and providing an API service on port
-8080 and an admin UI on the port 8081. In order to make them accessible from the internet, we need to create a
+Let's assume that we have a deployment with label ``application=test-app``, providing an API service on port
+8080 and an admin UI on port 8081. In order to make them accessible from the internet, we need to create a
 service first.
 
 Create a service
 ----------------
 
-The service definition of the service looks like this, create it in the apply directory as service.yaml:
+The service definition looks like this, create it in the ``apply`` directory as ``service.yaml``:
 
 .. code-block:: yaml
 
@@ -57,15 +55,15 @@ The service definition of the service looks like this, create it in the apply di
       selector:
         application: test-app
 
-Note that we didn't define the ServiceType. This means that the service type will be the default ClusterIP, and
+Note that we didn't define the ``type`` of the service. This means that the service type will be the default ``ClusterIP``, and
 will be accessible only from inside the cluster.
 
-Create the ingress rules
+Create the Ingress rules
 ------------------------
 
 Let's assume that we want to access this API and admin UI from the internet with the base URL
-https://test-app.playground.zalan.do, and we want to access the UI on the path /admin while all other endpoints
-should be directed to the API. We can create the following ingress entry in the apply directory as ingress.yaml:
+https://test-app.playground.zalan.do, and we want to access the UI on the path ``/admin`` while all other endpoints
+should be directed to the API. We can create the following Ingress entry in the ``apply`` directory as ``ingress.yaml``:
 
 .. code-block:: yaml
 
@@ -91,14 +89,17 @@ https://test-app.playground.zalan.do and https://test-app.playground.zalan.do/ad
 the DNS entry are newly created, it can take ~1 minute for everything to
 be ready.)
 Already provisioned X509 Certificate (IAM and ACM) will be found and
-matched automatically for your ingress resource.
+matched automatically for your Ingress resource.
 
-Specify a Certificate
----------------------
+Manually selecting a certificate
+--------------------------------
 
+The right certificate is usually discovered automatically,
+but there might be occasions where the SSL certificate ID (ARN) needs to be specified manually
+(e.g. if a ``CNAME`` in another account points to our Ingress).
 Let's assume we want to hard code our certificate that is used in the
 ALB to terminate TLS for https://test-app.playground.zalan.do/.
-We can create the following ingress entry in the apply directory as ingress.yaml:
+We can create the following Ingress entry in the ``apply`` directory as ``ingress.yaml``:
 
 .. code-block:: yaml
 
@@ -163,7 +164,7 @@ available for your account. You can find the right certificate in one of the fol
         ]
     }
 
-...where you want to use the Arn values.
+...where you want to use the ``Arn`` values.
 
 **2. For Amazon Certificate Manager (ACM) certificates:**
 
@@ -188,13 +189,13 @@ available for your account. You can find the right certificate in one of the fol
         ]
     }
 
-...where you want to use the CertificateArn values.
+...where you want to use the ``CertificateArn`` values.
 
-Alternative ways to expose an application
-=========================================
+Alternatives
+============
 
-Using Ingress is an alternative way to exposing an application with its own load balancer, described in the
-:ref:`tls-termination` section. The two methods can live next to each other, but they need to have separate
+You can expose an application with its own load balancer, described in the
+:ref:`tls-termination`. The two methods can live next to each other, but they need to have separate
 service definitions (due to the different service types).
 
-.. _official docs: http://kubernetes.io/docs/user-guide/ingress/
+.. _Ingress Resources: http://kubernetes.io/docs/user-guide/ingress/

@@ -4,9 +4,9 @@ Running Kubernetes in Production
 
 .. Tip::
 
-    Start by watching our meetup talk `"Kubernetes on AWS at Europe's Leading Online Fashion Platform" on YouTube`_ (slides_) to learn how we run Kubernetes on AWS in production.
+    Start by watching our meetup talk `"Kubernetes on AWS at Europe's Leading Online Fashion Platform"`_ on YouTube, to learn how we run Kubernetes on AWS in production. (slides_)
 
-.. _"Kubernetes on AWS at Europe's Leading Online Fashion Platform" on YouTube: https://www.youtube.com/watch?time_continue=2671&v=XmnhzEoengI
+.. _"Kubernetes on AWS at Europe's Leading Online Fashion Platform": https://www.youtube.com/watch?time_continue=2671&v=XmnhzEoengI
 .. _slides: https://www.slideshare.net/try_except_/kubernetes-on-aws-at-europes-leading-online-fashion-platform
 
 This document should briefly describe our learnings in Zalando Tech while running Kubernetes on AWS in production. As we just recently started to migrate to Kubernetes, we consider ourselves far from being experts in the field. This document is shared in the hope that others in the community can benefit from our learnings.
@@ -28,7 +28,7 @@ We are a team of infrastructure engineers provisioning Kubernetes clusters for o
 Cluster Provisioning
 ====================
 
-There are many tools out there to provision Kubernetes clusters. We chose to adapt `kube-aws`_ as it matches our current way of working on AWS: immutable nodes configured via cloud-init and Cloud Formation for declarative infrastructure. CoreOS’ Container Linux perfectly matches our understanding of the node OS: only provide what is needed to run containers, not more.
+There are many tools out there to provision Kubernetes clusters. We chose to adapt `kube-aws`_ as it matches our current way of working on AWS: immutable nodes configured via cloud-init and CloudFormation for declarative infrastructure. CoreOS’ Container Linux perfectly matches our understanding of the node OS: only provide what is needed to run containers, not more.
 
 Only one Kubernetes cluster is created per AWS account. We create separated AWS accounts/clusters for production and test environments.
 
@@ -40,7 +40,7 @@ We always create two AWS Auto Scaling Groups (ASGs, “node pools”) right now:
 Both ASGs span multiple Availability Zones (AZ). The API server is exposed with TLS via a “classic” TCP/SSL Elastic Load Balancer (ELB).
 
 We use a custom built Cluster Registry REST service to manage our Kubernetes clusters. Another component (Cluster Lifecycle Manager, CLM) is regularly polling the Cluster Registry and updating clusters to the desired state.
-The desired state is expressed with Cloud Formation and Kubernetes manifests `stored in git`_.
+The desired state is expressed with CloudFormation and Kubernetes manifests `stored in git`_.
 
 .. image:: images/cluster-lifecycle-manager.svg
 
@@ -89,7 +89,7 @@ Understanding the Kubernetes resource requests and limits is crucial.
 
 Default resource requests and limits can be configured via the LimitRange_ resource. This can prevent “stupid” incidents like JVM deployments without any settings (no memory limit and no JVM heap set) eating all the node’s memory. We currently use the following default limits:
 
-.. code-block:: bash
+.. code-block:: none
 
     $ kubectl describe limits
     Name:       limits

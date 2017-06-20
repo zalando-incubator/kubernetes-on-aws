@@ -10,13 +10,11 @@ The following OSS repositories are relevant for the project and code, issues and
 
 Kubernetes on AWS (GH)
     https://github.com/zalando-incubator/kubernetes-on-aws
-Mate (DNS)
-    https://github.com/zalando-incubator/mate
 STUPS etcd
     https://github.com/zalando/stups-etcd-cluster
 Zalando Kubectl Wrapper
     https://github.com/zalando-incubator/zalando-kubectl
-External DNS (mate replacement)
+External DNS
     https://github.com/kubernetes-incubator/external-dns
 Kubernetes AWS Cluster Autoscaler
     https://github.com/hjacobs/kube-aws-autoscaler
