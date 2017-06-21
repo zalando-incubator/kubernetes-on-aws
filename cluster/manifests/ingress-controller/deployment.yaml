@@ -1,21 +1,21 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: app-ingress-controller
+  name: kube-ingress-aws-controller
   namespace: kube-system
   labels:
-    application: app-ingress-controller
-    version: v0.3.4
+    application: kube-ingress-aws-controller
+    version: v0.3.6
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: app-ingress-controller
+      application: kube-ingress-aws-controller
   template:
     metadata:
       labels:
-        application: app-ingress-controller
-        version: v0.3.4
+        application: kube-ingress-aws-controller
+        version: v0.3.6
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-app-ingr-ctrl"
@@ -26,7 +26,7 @@ spec:
         operator: Exists
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-aws-ingress-controller:v0.3.5
+        image: registry.opensource.zalan.do/teapot/kube-ingress-aws-controller:v0.3.6
         env:
         - name: AWS_REGION
           value: {{ .Region }}
