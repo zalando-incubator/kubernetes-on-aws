@@ -1,0 +1,32 @@
+# Gives kubelet user access to use retricted and privileged psps in kube-system.
+# This is needed to allow kubelet to create mirror pods
+# TODO: remove these roles if/when introducing tls-bootstrap/node identities.
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: privileged-psp-kubelet
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: privileged-psp
+subjects:
+- kind: User
+  name: kubelet
+  apiGroup: rbac.authorization.k8s.io
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: restricted-psp-kubelet
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: restricted-psp
+subjects:
+- kind: User
+  name: kubelet
+  apiGroup: rbac.authorization.k8s.io
+  namespace: kube-system

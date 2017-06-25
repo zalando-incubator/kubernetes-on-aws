@@ -20,6 +20,7 @@ spec:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
     spec:
       priorityClassName: visibility-zmon
+      serviceAccountName: zmon
       initContainers:
       - name: gerry-init
         image: registry.opensource.zalan.do/teapot/gerry:v0.0.14
@@ -40,7 +41,6 @@ spec:
           - name: credentials
             mountPath: /meta/credentials
             readOnly: false
-
       containers:
         - name: zmon-agent
           image: "pierone.stups.zalan.do/zmon/zmon-agent-core:0.1-a58-zv3"

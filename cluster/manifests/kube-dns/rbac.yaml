@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-dns
+  namespace: kube-system
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: kube-dns-autoscaler
+  namespace: kube-system
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: system:kube-dns-autoscaler
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["list"]
+  - apiGroups: [""]
+    resources: ["replicationcontrollers/scale"]
+    verbs: ["get", "update"]
+  - apiGroups: ["extensions"]
+    resources: ["deployments/scale", "replicasets/scale"]
+    verbs: ["get", "update"]
+# Remove the configmaps rule once below issue is fixed:
+# kubernetes-incubator/cluster-proportional-autoscaler#16
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: system:kube-dns-autoscaler
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+subjects:
+  - kind: ServiceAccount
+    name: kube-dns-autoscaler
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: system:kube-dns-autoscaler
+  apiGroup: rbac.authorization.k8s.io
