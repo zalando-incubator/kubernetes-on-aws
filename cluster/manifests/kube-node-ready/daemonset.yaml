@@ -1,0 +1,37 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: kube-node-ready
+  namespace: kube-system
+  labels:
+    application: kube-node-ready
+    version: v0.0.1
+spec:
+  selector:
+    matchLabels:
+      application: kube-node-ready
+  template:
+    metadata:
+      labels:
+        application: kube-node-ready
+        version: v0.0.1
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        iam.amazonaws.com/role: "{{ .LocalID }}-kube-node-ready"
+    spec:
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      containers:
+      - name: kube-node-ready
+        image: registry.opensource.zalan.do/teapot/kube-node-ready:8d13c11-dirty-4
+        args:
+        - --master-lifecycle-hook={{ .Outputs.MasterAutoscalingLifecycleHook }}
+        - --worker-lifecycle-hook={{ .Outputs.WorkerAutoscalingLifecycleHook }}
+        resources:
+          limits:
+            cpu: 50m
+            memory: 50Mi
+          requests:
+            cpu: 20m
+            memory: 20Mi

@@ -115,7 +115,6 @@ SenzaComponents:
           Value: "{{ Arguments.ClusterID }}"
         - Key: "NodePool"
           Value: "{{ Arguments.WorkerNodePoolName }}"
-
 Resources:
   MasterIAMRole:
     Properties:
@@ -523,3 +522,67 @@ Resources:
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
+  MasterAutoscalingLifecycleHook:
+    Type: "AWS::AutoScaling::LifecycleHook"
+    Properties:
+      DefaultResult: "CONTINUE"
+      HeartbeatTimeout: "900"
+      AutoScalingGroupName:
+        Ref: MasterAutoScaling
+      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
+  WorkerAutoscalingLifecycleHook:
+    Type: "AWS::AutoScaling::LifecycleHook"
+    Properties:
+      DefaultResult: "CONTINUE"
+      HeartbeatTimeout: "900"
+      AutoScalingGroupName:
+        Ref:
+          WorkerAutoScaling
+      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
+  KubeReadyIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-kube-node-ready"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: WorkerIAMRole
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: MasterIAMRole
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+            - {Action: 'autoscaling:Describe*', Effect: Allow, Resource: '*'}
+            - {Action: 'autoscaling:CompleteLifecycleAction', Effect: Allow, Resource: '*'}
+            - {Action: 'sts:AssumeRole', Effect: Allow, Resource: '*'}
+          Version: '2012-10-17'
+        PolicyName: root
+Outputs:
+  MasterAutoscalingLifecycleHook:
+    Value:
+      Ref: MasterAutoscalingLifecycleHook
+  WorkerAutoscalingLifecycleHook:
+    Value:
+      Ref: WorkerAutoscalingLifecycleHook
