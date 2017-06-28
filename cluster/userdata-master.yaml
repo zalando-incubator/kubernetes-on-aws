@@ -323,7 +323,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: pierone.stups.zalan.do/teapot/k8s-authnz-webhook:v0.1.11-15-g686ead1
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.2.0
           name: webhook
           ports:
           - containerPort: 8081
@@ -358,7 +358,7 @@ write_files:
             - name: USER_GROUPS
               value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser
             - name: BUSINESS_PARTNER_IDS
-              value: {{BUSINESS_PARTNER_IDS}}
+              value: {{ APISERVER_BUSINESS_PARTNER_IDS }}
           volumeMounts:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
