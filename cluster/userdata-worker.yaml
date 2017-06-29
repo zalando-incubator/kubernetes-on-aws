@@ -138,17 +138,6 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
-    - name: install-microscope.service
-      command: start
-      runtime: true
-      content: |
-        [Unit]
-        Requires=docker.service
-        After=docker.service
-        [Service]
-        Type=oneshot
-        ExecStart=/usr/bin/docker pull registry.opensource.zalan.do/teapot/microscope:v0.0.4
-
     - name: cfn-signal.service
       command: start
       runtime: true
@@ -265,9 +254,3 @@ write_files:
                 "isDefaultGateway": true
             }
         }
-
-  - path: /home/core/.toolboxrc
-    owner: core
-    content: |
-        TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
-        TOOLBOX_DOCKER_TAG=v0.0.3

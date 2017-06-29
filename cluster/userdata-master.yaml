@@ -119,7 +119,6 @@ coreos:
       runtime: true
       content: |
         [Unit]
-        Description=drain this k8s node to make running pods time to gracefully shut down before stopping kubelet
         Requires=docker.service
         After=docker.service
 
@@ -142,17 +141,6 @@ coreos:
 
         [Install]
         WantedBy=multi-user.target
-
-    - name: install-microscope.service
-      command: start
-      runtime: true
-      content: |
-        [Unit]
-        Requires=docker.service
-        After=docker.service
-        [Service]
-        Type=oneshot
-        ExecStart=/usr/bin/docker pull registry.opensource.zalan.do/teapot/microscope:v0.0.4
 
 write_files:
 
@@ -601,9 +589,3 @@ write_files:
     content: |
       [global]
       DisableSecurityGroupIngress = true
-
-  - path: /home/core/.toolboxrc
-    owner: core
-    content: |
-        TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
-        TOOLBOX_DOCKER_TAG=v0.0.3
