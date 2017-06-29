@@ -47,20 +47,20 @@ instance.
 
 Your service can be accessed from other pods by using the automatically generated cluster-internal DNS name or service
 IP address. So given you use the manifests as printed above and you're running in the default
-namespace you should find your redis instance at ``redis.default.svc.cluster.local`` from any other pod.
+namespace you should find your Redis instance at ``redis.default.svc.cluster.local`` from any other pod.
 
-You can run an interactive pod and test that it works. You can use the same redis image as it contains the redis CLI.
+You can run an interactive pod and test that it works. You can use the same Redis image as it contains the redis CLI.
 
-.. code-block:: bash
+.. code-block:: none
 
-    $ kubectl run redis-cli --rm -ti --image=redis:3.2.5 --restart=Never /bin/bash
+    $ zkubectl run redis-cli --rm -ti --image=redis:3.2.5 --restart=Never /bin/bash
     $ redis-cli -h redis.default.svc.cluster.local
     redis-default.hackweek.zalan.do:6379> quit
 
 Creating a volume
 -----------------
 
-There's one major problem with your redis container: It lacks some persistent storage. So let's add it.
+There's one major problem with your Redis container: It lacks some persistent storage. So let's add it.
 
 We'll be using something that's called a ``PersistentVolumeClaim``. Claims are an abstraction over the actual
 storage system in your cluster. With a claim you define that you need some amount of storage at some path inside your
@@ -90,26 +90,26 @@ safely ignored, more important for you are the name and the requested size of st
 
 After submitting the manifest to the cluster you can list your storage claims:
 
-.. code-block:: bash
+.. code-block:: none
 
-    $ kubectl get persistentVolumeClaims
+    $ zkubectl get persistentVolumeClaims
     NAME            STATUS    VOLUME                                     CAPACITY   ACCESSMODES   AGE
     redis-data      Bound     pvc-fc26de82-b577-11e6-b2a5-02c15a33e7b7   10Gi       RWO           4s
 
 Status ``Bound`` means that your claim was successfully implemented and is now bound to a persistent volume. You can
 also list all volumes:
 
-.. code-block:: bash
+.. code-block:: none
 
-    $ kubectl get persistentVolumes
+    $ zkubectl get persistentVolumes
     NAME                                       CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM                      REASON    AGE
     pvc-fc26de82-b577-11e6-b2a5-02c15a33e7b7   10Gi       RWO           Delete          Bound     default/redis-data                   8m
 
 If you want to dig deeper you can describe the volume and see that it's backed by an EBS volume.
 
-.. code-block:: bash
+.. code-block:: none
 
-    $ kubectl describe persistentVolume pvc-fc26de82-b577-11e6-b2a5-02c15a33e7b7
+    $ zkubectl describe persistentVolume pvc-fc26de82-b577-11e6-b2a5-02c15a33e7b7
     Name:		pvc-fc26de82-b577-11e6-b2a5-02c15a33e7b7
     Labels:		failure-domain.beta.kubernetes.io/region=eu-central-1
         failure-domain.beta.kubernetes.io/zone=eu-central-1b
@@ -165,8 +165,8 @@ definition and gave it a name. Then, by using the name, we mounted that volume u
 ``volumeMounts`` section. The reason for having a two-level definition here is because multiple containers in the same
 pod can mount the same volume under different paths, e.g. for sharing data.
 
-Secondly, our redis container uses ``/data`` to store its data which is where we mounted our persistent volume.
-This way, anything that redis stores will be written to the EBS volume and thus can be mounted on another node in case
+Secondly, our Redis container uses ``/data`` to store its data which is where we mounted our persistent volume.
+This way, anything that Redis stores will be written to the EBS volume and thus can be mounted on another node in case
 of node failure.
 
 Note, that you usually want ``replicas`` to be ``1`` when using this approach. Though, you can use more replicas which
@@ -179,17 +179,17 @@ Trying it out
 
 Find out where your pod currently runs:
 
-.. code-block:: bash
+.. code-block:: none
 
-    $ kubectl get pods -o wide
+    $ zkubectl get pods -o wide
       NAME                        READY     STATUS    RESTARTS   AGE       IP          NODE
       redis-3548935762-qevsk      1/1       Running   0          2m        10.2.1.66   ip-172-31-15-65.eu-central-1.compute.internal
 
-The node it landed on is ``ip-172-31-15-65.eu-central-1.compute.internal``. Connect to your redis endpoint and create some data:
+The node it landed on is ``ip-172-31-15-65.eu-central-1.compute.internal``. Connect to your Redis endpoint and create some data:
 
-.. code-block:: bash
+.. code-block:: none
 
-    $ kubectl run redis-cli --rm -ti --image=redis:3.2.5 --restart=Never /bin/bash
+    $ zkubectl run redis-cli --rm -ti --image=redis:3.2.5 --restart=Never /bin/bash
     $ redis-cli -h redis.default.svc.cluster.local
     redis-default.hackweek.zalan.do:6379> set foo bar
     OK
@@ -200,21 +200,21 @@ The node it landed on is ``ip-172-31-15-65.eu-central-1.compute.internal``. Conn
 Simulate a pod failure by deleting your pod. This will make Kubernetes create a new one potentially on another
 node but always in the same zone due to using an EBS volume.
 
-.. code-block:: bash
+.. code-block:: none
 
-    $ kubectl delete pod redis-3548935762-qevsk
+    $ zkubectl delete pod redis-3548935762-qevsk
     pod "redis-3548935762-qevsk" deleted
 
-    $ kubectl get pods -o wide
+    $ zkubectl get pods -o wide
     NAME                        READY     STATUS    RESTARTS   AGE       IP          NODE
     redis-3548935762-p4z9y      1/1       Running   0          1m        10.2.72.2   ip-172-31-10-115.eu-central-1.compute.internal
 
 In this example the new pod landed on another node (``ip-172-31-10-115.eu-central-1.compute.internal``).
-Let's check that it's available and didn't loose any data. Connect to redis in the same way as before.
+Let's check that it's available and didn't loose any data. Connect to Redis in the same way as before.
 
-.. code-block:: bash
+.. code-block:: none
 
-    $ kubectl run redis-cli --rm -ti --image=redis:3.2.5 --restart=Never /bin/bash
+    $ zkubectl run redis-cli --rm -ti --image=redis:3.2.5 --restart=Never /bin/bash
     $ redis-cli -h redis.default.svc.cluster.local
     redis-default.hackweek.zalan.do:6379> get foo
     "bar"
@@ -227,16 +227,16 @@ Deleting a volume
 
 All it takes to delete a volume is to delete the corresponding claim that initiated its creation in the first place.
 
-.. code-block:: bash
+.. code-block:: none
 
-    $ kubectl delete persistentVolumeClaim redis-data
+    $ zkubectl delete persistentVolumeClaim redis-data
     persistentvolumeclaim "redis-data" deleted
 
 To fully clean up after yourself also delete the deployment and the service:
 
-.. code-block:: bash
+.. code-block:: none
 
-    $ kubectl delete deployment,service redis
+    $ zkubectl delete deployment,service redis
     service "redis" deleted
     deployment "redis" deleted
 

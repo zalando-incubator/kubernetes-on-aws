@@ -14,7 +14,7 @@ There are two supported resource types: ``cpu`` and ``memory``. In future versio
 one will be able to add custom resource types and the current implementation might be
 based on that.
 
-CPU resources are measured in virtual cores or more commonly in Millicores (e.g. ``500m`` denoting 50% of a vCPU).
+CPU resources are measured in virtual cores or more commonly in "millicores" (e.g. ``500m`` denoting 50% of a vCPU).
 Memory resources are measured in Bytes and the usual suffixes can be used, e.g. ``500Mi`` denoting 500 Mebibyte_.
 
 For each resource type there are two kinds of definitions: ``requests`` and ``limits``.
@@ -31,7 +31,7 @@ to take the pod. A node is full when the sum of all requests equals the register
 capacity of that node in any resource type. So, if the requests of a pod are still
 unclaimed on a node, the scheduler can schedule a pod there.
 
-Note, that this is the only metric the scheduler uses (in that context). It doesn't take
+Note that this is the only metric the scheduler uses (in that context). It doesn't take
 the actual usage of the pods into account (which can be lower or higher than whatever
 is defined in requests).
 
@@ -39,7 +39,7 @@ Memory requests
     Used for finding nodes with enough memory and making better scheduling decisions.
 CPU requests
     Maps to the docker flag ``--cpu-shares``, which defines a relative weight of that container
-    for cpu time. The relative share is executed per core, which can lead to unexpected outcomes
+    for CPU time. The relative share is executed per core, which can lead to unexpected outcomes
     but probably nothing to worry about in our use cases. A container will never be killed
     because of this metric.
 
@@ -47,7 +47,7 @@ Resource limits
 ---------------
 
 Limits define the upper bound of resources a container can use. Limits must always be greater
-or equal to requests. The behavior differs between cpu and memory.
+or equal to requests. The behavior differs between CPU and memory.
 
 Memory limits
     Maps to the docker flag ``--memory``, which means processes in the container get killed by the

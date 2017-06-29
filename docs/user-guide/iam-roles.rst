@@ -27,13 +27,6 @@ name is ``kube-1``, the policy document would look like this:
         {
           "Effect": "Allow",
           "Principal": {
-            "Service": "ec2.amazonaws.com"
-          },
-          "Action": "sts:AssumeRole"
-        },
-        {
-          "Effect": "Allow",
-          "Principal": {
             "AWS": "arn:aws:iam::12345678912:role/kube-1-worker"
           },
           "Action": "sts:AssumeRole"
@@ -71,11 +64,11 @@ role ``myapp-iam-role``:
 To test that the pod gets the correct role you can exec into the container and
 query the metadata endpoint.
 
-.. code-block:: bash
+.. code-block:: none
 
-    $ kubectl exec -it myapp-podid -- sh
+    $ zkubectl exec -it myapp-podid -- sh
     $ curl -s 169.254.169.254/latest/meta-data/iam/security-credentials/
     myapp-iam-role
 
-The response of the request should be the name of the role available from
+The response should be the name of the role available from
 within the pod.

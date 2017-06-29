@@ -74,7 +74,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_IMAGE_TAG=v1.6.4_coreos.0
+        Environment=KUBELET_IMAGE_TAG=v1.6.6_coreos.1
         Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_RUN_ARGS=--insecure-options=image \
         --uuid-file-save=/var/run/kubelet-pod.uuid \
@@ -119,7 +119,6 @@ coreos:
       runtime: true
       content: |
         [Unit]
-        Description=drain this k8s node to make running pods time to gracefully shut down before stopping kubelet
         Requires=docker.service
         After=docker.service
 
@@ -132,7 +131,7 @@ coreos:
         --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
         --mount=volume=kube,target=/etc/kubernetes \
         --net=host \
-        registry.opensource.zalan.do/teapot/hyperkube:v1.6.4_coreos.0 \
+        registry.opensource.zalan.do/teapot/hyperkube:v1.6.6_coreos.1 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain $(hostname) \
@@ -142,17 +141,6 @@ coreos:
 
         [Install]
         WantedBy=multi-user.target
-
-    - name: install-microscope.service
-      command: start
-      runtime: true
-      content: |
-        [Unit]
-        Requires=docker.service
-        After=docker.service
-        [Service]
-        Type=oneshot
-        ExecStart=/usr/bin/docker pull registry.opensource.zalan.do/teapot/microscope:v0.0.4
 
 write_files:
 
@@ -223,14 +211,14 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-proxy
-          version: v1.6.4_coreos.0
+          version: v1.6.6_coreos.1
         annotations:
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.4_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.6_coreos.1
           command:
           - /hyperkube
           - proxy
@@ -270,12 +258,15 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.6.4_coreos.0
+          version: v1.6.6_coreos.1
+        annotations:
+          kubernetes-log-watcher/scalyr-parser: |
+            [{"container": "webhook", "parser": "json-structured-log"}]
       spec:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.4_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.6_coreos.1
           command:
           - /hyperkube
           - apiserver
@@ -405,11 +396,11 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.6.4_coreos.0
+          version: v1.6.6_coreos.1
       spec:
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.4_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.6_coreos.1
           command:
           - /hyperkube
           - controller-manager
@@ -466,12 +457,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.6.4_coreos.0
+          version: v1.6.6_coreos.1
       spec:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.4_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.6_coreos.1
           command:
           - /hyperkube
           - scheduler
@@ -598,9 +589,3 @@ write_files:
     content: |
       [global]
       DisableSecurityGroupIngress = true
-
-  - path: /home/core/.toolboxrc
-    owner: core
-    content: |
-        TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
-        TOOLBOX_DOCKER_TAG=v0.0.3
