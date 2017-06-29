@@ -18,6 +18,9 @@ SenzaInfo:
           Description: "Minimum number of nodes in the worker ASG"
       - MaximumWorkerNodes:
           Description: "Maximum number of nodes in the worker ASG"
+      - MasterInstanceType:
+          Description: "Type of instance for master nodes"
+          Default: "m3.medium"
       - InstanceType:
           Description: "Type of instance"
       - ClusterID:
@@ -60,7 +63,7 @@ SenzaComponents:
           Value: "{{ Arguments.ClusterID }}"
   - MasterAutoScaling:
       Type: Senza::AutoScalingGroup
-      InstanceType: m3.medium
+      InstanceType: "{{ Arguments.MasterInstanceType }}"
       Image: LatestCoreOSImage
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
