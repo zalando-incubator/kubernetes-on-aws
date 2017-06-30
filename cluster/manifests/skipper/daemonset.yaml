@@ -22,6 +22,8 @@ spec:
         component: ingress
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
       affinity:
         nodeAffinity:
@@ -36,14 +38,13 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper:v0.9.37
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.9.49-1-gd2a3df5
         ports:
         - name: ingress-port
           containerPort: 9999
           hostPort: 9999
         args:
           - "skipper"
-          - "-application-log-level=DEBUG"
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-address=:9999"

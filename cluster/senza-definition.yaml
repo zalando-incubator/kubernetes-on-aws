@@ -18,6 +18,9 @@ SenzaInfo:
           Description: "Minimum number of nodes in the worker ASG"
       - MaximumWorkerNodes:
           Description: "Maximum number of nodes in the worker ASG"
+      - MasterInstanceType:
+          Description: "Type of instance for master nodes"
+          Default: "m3.medium"
       - InstanceType:
           Description: "Type of instance"
       - ClusterID:
@@ -60,7 +63,7 @@ SenzaComponents:
           Value: "{{ Arguments.ClusterID }}"
   - MasterAutoScaling:
       Type: Senza::AutoScalingGroup
-      InstanceType: m3.medium
+      InstanceType: "{{ Arguments.MasterInstanceType }}"
       Image: LatestCoreOSImage
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
@@ -115,7 +118,6 @@ SenzaComponents:
           Value: "{{ Arguments.ClusterID }}"
         - Key: "NodePool"
           Value: "{{ Arguments.WorkerNodePoolName }}"
-
 Resources:
   MasterIAMRole:
     Properties:
@@ -183,9 +185,7 @@ Resources:
       - PolicyDocument:
           Statement:
           - {Action: 'ec2:Describe*', Effect: Allow, Resource: '*'}
-          - {Action: 'autoscaling:DescribeAutoScalingGroups', Effect: Allow, Resource: '*'}
-          - {Action: 'autoscaling:DescribeAutoScalingInstances', Effect: Allow, Resource: '*'}
-          - {Action: 'autoscaling:DescribeScalingActivities', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:Describe*', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:SetDesiredCapacity', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:TerminateInstanceInAutoScalingGroup', Effect: Allow, Resource: '*'}
           Version: '2012-10-17'
@@ -243,23 +243,19 @@ Resources:
       Policies:
       - PolicyDocument:
           Statement:
-          - {Action: 'acm:ListCertificates', Effect: Allow, Resource: '*'}
-          - {Action: 'acm:DescribeCertificate', Effect: Allow, Resource: '*'}
-          - {Action: 'autoscaling:DescribeAutoScalingGroups', Effect: Allow, Resource: '*'}
-          - {Action: 'autoscaling:AttachLoadBalancers', Effect: Allow, Resource: '*'}
-          - {Action: 'autoscaling:DetachLoadBalancers', Effect: Allow, Resource: '*'}
-          - {Action: 'autoscaling:DetachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
-          - {Action: 'autoscaling:AttachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
+          - {Action: 'acm:*', Effect: Allow, Resource: '*'}
+          #- {Action: 'acm:DescribeCertificate', Effect: Allow, Resource: '*'}
+          # - {Action: 'autoscaling:DescribeAutoScalingGroups', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:*', Effect: Allow, Resource: '*'}
+          # - {Action: 'autoscaling:DetachLoadBalancers', Effect: Allow, Resource: '*'}
+          # - {Action: 'autoscaling:DetachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
+          # - {Action: 'autoscaling:AttachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
           - {Action: 'cloudformation:*', Effect: Allow, Resource: '*'}
           - {Action: 'elasticloadbalancing:*', Effect: Allow, Resource: '*'}
           - {Action: 'elasticloadbalancingv2:*', Effect: Allow, Resource: '*'}
-          - {Action: 'ec2:DescribeInstances', Effect: Allow, Resource: '*'}
-          - {Action: 'ec2:DescribeSubnets', Effect: Allow, Resource: '*'}
-          - {Action: 'ec2:DescribeSecurityGroups', Effect: Allow, Resource: '*'}
-          - {Action: 'ec2:DescribeRouteTables', Effect: Allow, Resource: '*'}
-          - {Action: 'ec2:DescribeVpcs', Effect: Allow, Resource: '*'}
-          - {Action: 'iam:GetServerCertificate', Effect: Allow, Resource: '*'}
-          - {Action: 'iam:ListServerCertificates', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:Describe*', Effect: Allow, Resource: '*'}
+          - {Action: 'iam:*', Effect: Allow, Resource: '*'}
+          # - {Action: 'iam:ListServerCertificates', Effect: Allow, Resource: '*'}
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
@@ -519,7 +515,135 @@ Resources:
               Effect: Allow
             - {Action: 'sqs:GetQueueAttributes', Effect: Allow, Resource: '*'}
             - {Action: 'sqs:ListDeadLetterSourceQueues', Effect: Allow, Resource: '*'}
-            - {Action: 'sqs:ListQueues', Effect: Allow, Resource: '*'}            
+            - {Action: 'sqs:ListQueues', Effect: Allow, Resource: '*'}
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
+  DeploymentIAMRole:
+    Properties:
+      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-deployment"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: WorkerIAMRole
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+            - Action: 'kms:Decrypt'
+              Effect: Allow
+              Resource: '*'
+          Version: '2012-10-17'
+        PolicyName: root
+    Type: AWS::IAM::Role
+  DeploymentSecretKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Enabled: true
+      EnableKeyRotation: false
+      KeyUsage: "ENCRYPT_DECRYPT"
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-deployment-key"
+        Statement:
+        - Effect: "Allow"
+          Resource: "*"
+          Principal:
+            AWS: "arn:aws:iam::{{ AccountInfo.AccountID }}:root"
+          Action:
+          - "kms:*"
+        - Effect: "Allow"
+          Resource: "*"
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: DeploymentIAMRole
+          Action:
+          - "kms:Decrypt"
+  DeploymentSecretKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: "alias/{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-deployment-secret"
+      TargetKeyId:
+        Ref: DeploymentSecretKey
+  MasterAutoscalingLifecycleHook:
+    Type: "AWS::AutoScaling::LifecycleHook"
+    Properties:
+      DefaultResult: "CONTINUE"
+      HeartbeatTimeout: "600"
+      AutoScalingGroupName:
+        Ref: MasterAutoScaling
+      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
+  WorkerAutoscalingLifecycleHook:
+    Type: "AWS::AutoScaling::LifecycleHook"
+    Properties:
+      DefaultResult: "CONTINUE"
+      HeartbeatTimeout: "600"
+      AutoScalingGroupName:
+        Ref:
+          WorkerAutoScaling
+      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
+  KubeReadyIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-kube-node-ready"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: WorkerIAMRole
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: MasterIAMRole
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+            - {Action: 'autoscaling:Describe*', Effect: Allow, Resource: '*'}
+            - {Action: 'autoscaling:CompleteLifecycleAction', Effect: Allow, Resource: '*'}
+            - {Action: 'sts:AssumeRole', Effect: Allow, Resource: '*'}
+          Version: '2012-10-17'
+        PolicyName: root
+Outputs:
+  MasterAutoscalingLifecycleHook:
+    Value:
+      Ref: MasterAutoscalingLifecycleHook
+  WorkerAutoscalingLifecycleHook:
+    Value:
+      Ref: WorkerAutoscalingLifecycleHook

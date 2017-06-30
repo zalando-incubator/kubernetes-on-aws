@@ -10,3 +10,4 @@ How to create, update and operate Kubernetes clusters.
    :maxdepth: 1
 
    kubernetes-in-production
+   public-presentations

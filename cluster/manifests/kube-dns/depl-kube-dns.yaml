@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-dns
-    version: v1.14.1
+    version: v1.14.2
     kubernetes.io/cluster-service: "true"
 spec:
   # replicas: not specified here:
@@ -23,7 +23,7 @@ spec:
     metadata:
       labels:
         application: kube-dns
-        version: v1.14.1
+        version: v1.14.2
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
@@ -38,7 +38,7 @@ spec:
           optional: true
       containers:
       - name: kubedns
-        image: gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.1
+        image: gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.2
         resources:
           limits:
             memory: 170Mi
@@ -83,7 +83,7 @@ spec:
         - name: kube-dns-config
           mountPath: /kube-dns-config
       - name: dnsmasq
-        image: gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.1
+        image: gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.2
         livenessProbe:
           httpGet:
             path: /healthcheck/dnsmasq
@@ -121,7 +121,7 @@ spec:
         - name: kube-dns-config
           mountPath: /etc/k8s/dns/dnsmasq-nanny
       - name: sidecar
-        image: gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.1
+        image: gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.2
         livenessProbe:
           httpGet:
             path: /metrics

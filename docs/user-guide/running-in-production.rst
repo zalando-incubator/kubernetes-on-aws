@@ -2,15 +2,15 @@
 Running in Production
 =====================
 
-Minimum Number of Replicas
-==========================
+Number of Replicas
+==================
 
 Always run at least two replicas (three or more are recommended) of your application to survive cluster updates and autoscaling without downtime.
 
 Readiness Probes
 ================
 
-Web applications should always configure a ``readinessProbe`` to make sure that the container only gets traffic after successful startup:
+Web applications should always configure a ``readinessProbe`` to make sure that the container only gets traffic after a successful startup:
 
 .. code-block:: yaml
 
@@ -33,7 +33,7 @@ Resource Requests
 
 Always configure `resource requests`_ for both CPU and memory.
 The Kubernetes scheduler and cluster autoscaler need this information in order to make the right decisions.
-Example resource requests:
+Example:
 
 
 .. code-block:: yaml
