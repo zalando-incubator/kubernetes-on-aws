@@ -4,9 +4,9 @@ metadata:
   labels:
     name: monitor
     application: appdynamics-machineagent
-    version: 0.4
+    version: "0.4"
   name: appdynamics-machineagent
-  version: 0.4
+  version: "0.4"
   namespace: kube-system
 spec:
   selector:
@@ -22,7 +22,7 @@ spec:
     spec:
       hostNetwork: true
       containers:
-      - name: appdynamics-machineagent-prod
+      - name: appdynamics-machineagent
         image: pierone.stups.zalan.do/monitoring-appdynamics/appdynamics-machine-agent-4.2:0.4
         volumeMounts:
         - name: appd-prod-secrets
@@ -37,9 +37,6 @@ spec:
               fieldRef:
                 fieldPath: spec.nodeName
       volumes:
-      - name: appd-sandbox-secrets
-        secret:
-          secretName: "appdynamics-test"
       - name: appd-prod-secrets
         secret:
           secretName: "appdynamics-prod"
