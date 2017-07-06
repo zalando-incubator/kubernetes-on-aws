@@ -185,7 +185,11 @@ Resources:
       - PolicyDocument:
           Statement:
           - {Action: 'ec2:Describe*', Effect: Allow, Resource: '*'}
-          - {Action: 'autoscaling:*', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DescribeAutoScalingGroups', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DescribeAutoScalingInstances', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DescribeScalingActivities', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:SetDesiredCapacity', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:TerminateInstanceInAutoScalingGroup', Effect: Allow, Resource: '*'}
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
@@ -241,19 +245,23 @@ Resources:
       Policies:
       - PolicyDocument:
           Statement:
-          - {Action: 'acm:*', Effect: Allow, Resource: '*'}
-          #- {Action: 'acm:DescribeCertificate', Effect: Allow, Resource: '*'}
-          # - {Action: 'autoscaling:DescribeAutoScalingGroups', Effect: Allow, Resource: '*'}
-          - {Action: 'autoscaling:*', Effect: Allow, Resource: '*'}
-          # - {Action: 'autoscaling:DetachLoadBalancers', Effect: Allow, Resource: '*'}
-          # - {Action: 'autoscaling:DetachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
-          # - {Action: 'autoscaling:AttachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
+          - {Action: 'acm:ListCertificates', Effect: Allow, Resource: '*'}
+          - {Action: 'acm:DescribeCertificate', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DescribeAutoScalingGroups', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:AttachLoadBalancers', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DetachLoadBalancers', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DetachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:AttachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
           - {Action: 'cloudformation:*', Effect: Allow, Resource: '*'}
           - {Action: 'elasticloadbalancing:*', Effect: Allow, Resource: '*'}
           - {Action: 'elasticloadbalancingv2:*', Effect: Allow, Resource: '*'}
-          - {Action: 'ec2:Describe*', Effect: Allow, Resource: '*'}
-          - {Action: 'iam:*', Effect: Allow, Resource: '*'}
-          # - {Action: 'iam:ListServerCertificates', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DescribeInstances', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DescribeSubnets', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DescribeSecurityGroups', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DescribeRouteTables', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DescribeVpcs', Effect: Allow, Resource: '*'}
+          - {Action: 'iam:GetServerCertificate', Effect: Allow, Resource: '*'}
+          - {Action: 'iam:ListServerCertificates', Effect: Allow, Resource: '*'}
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
@@ -541,15 +549,113 @@ Resources:
       Policies:
       - PolicyDocument:
           Statement:
-            - Action: 'kms:Decrypt'
-              Effect: Allow
-              Resource: '*'
+          - Effect: "Deny"
+            Action:
+            - "ec2:*"
+            Resource: "*"
+            Condition:
+              StringLike:
+                ec2:Region:
+                - "us-*"
+                - "ap-*"
+                - "sa-*"
+          - Effect: "Deny"
+            Action:
+            - "iam:Update*"
+            - "iam:Put*"
+            - "iam:Create*"
+            - "iam:Delete*"
+            - "iam:Attach*"
+            - "iam:Detach*"
+            Resource: "arn:aws:iam::*:role/Shibboleth*"
+          - Effect: "Deny"
+            Action:
+            - "ec2:DeleteRoute"
+            - "ec2:DeleteRouteTable"
+            - "ec2:DeleteSubnet"
+            - "ec2:DeleteVpc"
+            - "ec2:DeleteVpcPeeringConnection"
+            - "ec2:DeleteVpnConnection"
+            - "ec2:DeleteVpnConnectionRoute"
+            - "ec2:DeleteVpnGateway"
+            - "ec2:CreateRoute"
+            - "ec2:CreateRouteTable"
+            - "ec2:CreateSubnet"
+            - "ec2:CreateVpc"
+            - "ec2:CreateVpcPeeringConnection"
+            - "ec2:CreateVpnConnection"
+            - "ec2:CreateVpnConnectionRoute"
+            - "ec2:CreateVpnGateway"
+            - "iam:ChangePassword"
+            - "iam:CreateAccountAlias"
+            - "iam:CreateOpenIDConnectProvider"
+            - "iam:CreateSAMLProvider"
+            - "iam:DeleteAccountAlias"
+            - "iam:DeleteOpenIDConnectProvider"
+            - "iam:DeleteSAMLProvider"
+            - "iam:UpdateOpenIDConnectProviderThumbprint"
+            - "iam:UpdateSAMLProvider"
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+            - "acm:*"
+            - "apigateway:*"
+            - "automation:*"
+            - "autoscaling:*"
+            - "aws-marketplace:View*"
+            - "aws-portal:View*"
+            - "cloudformation:*"
+            - "cloudfront:*"
+            - "cloudsearch:*"
+            - "cloudtrail:DescribeTrails"
+            - "cloudtrail:GetTrailStatus"
+            - "cloudtrail:LookupEvents"
+            - "cloudtrail:StartLogging"
+            - "cloudwatch:*"
+            - "config:*"
+            - "datapipeline:*"
+            - "devicefarm:*"
+            - "dynamodb:*"
+            - "ec2:*"
+            - "ec2-reports:*"
+            - "elasticache:*"
+            - "elasticfilesystem:*"
+            - "elasticloadbalancing:*"
+            - "elasticmapreduce:*"
+            - "elastictranscoder:*"
+            - "es:*"
+            - "events:*"
+            - "glacier:*"
+            - "health:*"
+            - "iam:*"
+            - "kinesis:*"
+            - "kms:*"
+            - "logs:*"
+            - "machinelearning:*"
+            - "rds:*"
+            - "redshift:*"
+            - "rekognition:*"
+            - "route53:*"
+            - "route53domains:Get*"
+            - "route53domains:List*"
+            - "s3:*"
+            - "sdb:*"
+            - "ses:*"
+            - "sns:*"
+            - "sqs:*"
+            - "sts:*"
+            - "support:*"
+            - "swf:*"
+            - "tag:get*"
+            - "trustedadvisor:*"
+            Resource: "*"
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
   DeploymentSecretKey:
     Type: AWS::KMS::Key
     Properties:
+      Description: "Key used by deployment pipeline for secret encryption/decryption"
       Enabled: true
       EnableKeyRotation: false
       KeyUsage: "ENCRYPT_DECRYPT"
@@ -557,13 +663,29 @@ Resources:
         Version: "2012-10-17"
         Id: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-deployment-key"
         Statement:
-        - Effect: "Allow"
+        - Sid: "Allow access for Key Administrators"
+          Effect: "Allow"
           Resource: "*"
           Principal:
             AWS: "arn:aws:iam::{{ AccountInfo.AccountID }}:root"
           Action:
-          - "kms:*"
-        - Effect: "Allow"
+          - "kms:ReEncrypt*"
+          - "kms:Create*"
+          - "kms:Describe*"
+          - "kms:Enable*"
+          - "kms:Encrypt"
+          - "kms:Decrypt"
+          - "kms:List*"
+          - "kms:Put*"
+          - "kms:Update*"
+          - "kms:Revoke*"
+          - "kms:Disable*"
+          - "kms:Get*"
+          - "kms:Delete*"
+          - "kms:ScheduleKeyDeletion"
+          - "kms:CancelKeyDeletion"
+        - Sid: "Allow access for deployment system to decrypt the keys"
+          Effect: "Allow"
           Resource: "*"
           Principal:
             AWS:
