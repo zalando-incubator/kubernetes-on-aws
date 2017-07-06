@@ -60,6 +60,18 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
+    - name: dockercfg.service
+      command: start
+      runtime: true
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStartPre=/usr/bin/mkdir -p /root/.docker
+        ExecStart=/opt/bin/dockercfg.sh
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: kubelet.service
       command: start
       runtime: true
@@ -76,7 +88,10 @@ coreos:
         --volume var-log,kind=host,source=/var/log \
         --mount volume=var-log,target=/var/log \
         --volume var-lib-cni,kind=host,source=/var/lib/cni \
-        --mount volume=var-lib-cni,target=/var/lib/cni"
+        --mount volume=var-lib-cni,target=/var/lib/cni \
+        --volume dockercfg,kind=host,source=/root/.docker/config.json \
+        --mount volume=dockercfg,target=/root/.docker/config.json \
+        --set-env=HOME=/root"
         ExecStartPre=/usr/bin/mkdir -p /var/log/containers
         ExecStartPre=/bin/mkdir -p /var/lib/cni
         ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
@@ -254,3 +269,20 @@ write_files:
                 "isDefaultGateway": true
             }
         }
+
+  - path: /opt/bin/dockercfg.sh
+    owner: root:root
+    permissions: 0755
+    content: |
+      #!/bin/bash
+      iid="instance-identity-document:$(curl http://169.254.169.254/latest/dynamic/instance-identity/pkcs7)"
+      iid="$(echo -n "$iid" | base64 -w 0)"
+      cat << EOF > /root/.docker/config.json
+      {
+        "auths": {
+          "https://pierone.stups.zalan.do": {
+            "auth": "${iid}"
+          }
+        }
+      }
+      EOF
