@@ -18,6 +18,9 @@ SenzaInfo:
           Description: "Minimum number of nodes in the worker ASG"
       - MaximumWorkerNodes:
           Description: "Maximum number of nodes in the worker ASG"
+      - MasterInstanceType:
+          Description: "Type of instance for master nodes"
+          Default: "m3.medium"
       - InstanceType:
           Description: "Type of instance"
       - ClusterID:
@@ -60,7 +63,7 @@ SenzaComponents:
           Value: "{{ Arguments.ClusterID }}"
   - MasterAutoScaling:
       Type: Senza::AutoScalingGroup
-      InstanceType: m3.medium
+      InstanceType: "{{ Arguments.MasterInstanceType }}"
       Image: LatestCoreOSImage
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
@@ -519,7 +522,249 @@ Resources:
               Effect: Allow
             - {Action: 'sqs:GetQueueAttributes', Effect: Allow, Resource: '*'}
             - {Action: 'sqs:ListDeadLetterSourceQueues', Effect: Allow, Resource: '*'}
-            - {Action: 'sqs:ListQueues', Effect: Allow, Resource: '*'}            
+            - {Action: 'sqs:ListQueues', Effect: Allow, Resource: '*'}
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
+  DeploymentIAMRole:
+    Properties:
+      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-deployment"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: WorkerIAMRole
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Effect: "Deny"
+            Action:
+            - "ec2:*"
+            Resource: "*"
+            Condition:
+              StringLike:
+                ec2:Region:
+                - "us-*"
+                - "ap-*"
+                - "sa-*"
+          - Effect: "Deny"
+            Action:
+            - "iam:Update*"
+            - "iam:Put*"
+            - "iam:Create*"
+            - "iam:Delete*"
+            - "iam:Attach*"
+            - "iam:Detach*"
+            Resource: "arn:aws:iam::*:role/Shibboleth*"
+          - Effect: "Deny"
+            Action:
+            - "ec2:DeleteRoute"
+            - "ec2:DeleteRouteTable"
+            - "ec2:DeleteSubnet"
+            - "ec2:DeleteVpc"
+            - "ec2:DeleteVpcPeeringConnection"
+            - "ec2:DeleteVpnConnection"
+            - "ec2:DeleteVpnConnectionRoute"
+            - "ec2:DeleteVpnGateway"
+            - "ec2:CreateRoute"
+            - "ec2:CreateRouteTable"
+            - "ec2:CreateSubnet"
+            - "ec2:CreateVpc"
+            - "ec2:CreateVpcPeeringConnection"
+            - "ec2:CreateVpnConnection"
+            - "ec2:CreateVpnConnectionRoute"
+            - "ec2:CreateVpnGateway"
+            - "iam:ChangePassword"
+            - "iam:CreateAccountAlias"
+            - "iam:CreateOpenIDConnectProvider"
+            - "iam:CreateSAMLProvider"
+            - "iam:DeleteAccountAlias"
+            - "iam:DeleteOpenIDConnectProvider"
+            - "iam:DeleteSAMLProvider"
+            - "iam:UpdateOpenIDConnectProviderThumbprint"
+            - "iam:UpdateSAMLProvider"
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+            - "acm:*"
+            - "apigateway:*"
+            - "automation:*"
+            - "autoscaling:*"
+            - "aws-marketplace:View*"
+            - "aws-portal:View*"
+            - "cloudformation:*"
+            - "cloudfront:*"
+            - "cloudsearch:*"
+            - "cloudtrail:DescribeTrails"
+            - "cloudtrail:GetTrailStatus"
+            - "cloudtrail:LookupEvents"
+            - "cloudtrail:StartLogging"
+            - "cloudwatch:*"
+            - "config:*"
+            - "datapipeline:*"
+            - "devicefarm:*"
+            - "dynamodb:*"
+            - "ec2:*"
+            - "ec2-reports:*"
+            - "elasticache:*"
+            - "elasticfilesystem:*"
+            - "elasticloadbalancing:*"
+            - "elasticmapreduce:*"
+            - "elastictranscoder:*"
+            - "es:*"
+            - "events:*"
+            - "glacier:*"
+            - "health:*"
+            - "iam:*"
+            - "kinesis:*"
+            - "kms:*"
+            - "logs:*"
+            - "machinelearning:*"
+            - "rds:*"
+            - "redshift:*"
+            - "rekognition:*"
+            - "route53:*"
+            - "route53domains:Get*"
+            - "route53domains:List*"
+            - "s3:*"
+            - "sdb:*"
+            - "ses:*"
+            - "sns:*"
+            - "sqs:*"
+            - "sts:*"
+            - "support:*"
+            - "swf:*"
+            - "tag:get*"
+            - "trustedadvisor:*"
+            Resource: "*"
+          Version: '2012-10-17'
+        PolicyName: root
+    Type: AWS::IAM::Role
+  DeploymentSecretKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "Key used by deployment pipeline for secret encryption/decryption"
+      Enabled: true
+      EnableKeyRotation: false
+      KeyUsage: "ENCRYPT_DECRYPT"
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-deployment-key"
+        Statement:
+        - Sid: "Allow access for Key Administrators"
+          Effect: "Allow"
+          Resource: "*"
+          Principal:
+            AWS: "arn:aws:iam::{{ AccountInfo.AccountID }}:root"
+          Action:
+          - "kms:ReEncrypt*"
+          - "kms:Create*"
+          - "kms:Describe*"
+          - "kms:Enable*"
+          - "kms:Encrypt"
+          - "kms:Decrypt"
+          - "kms:List*"
+          - "kms:Put*"
+          - "kms:Update*"
+          - "kms:Revoke*"
+          - "kms:Disable*"
+          - "kms:Get*"
+          - "kms:Delete*"
+          - "kms:ScheduleKeyDeletion"
+          - "kms:CancelKeyDeletion"
+        - Sid: "Allow access for deployment system to decrypt the keys"
+          Effect: "Allow"
+          Resource: "*"
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: DeploymentIAMRole
+          Action:
+          - "kms:Decrypt"
+  DeploymentSecretKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: "alias/{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-deployment-secret"
+      TargetKeyId:
+        Ref: DeploymentSecretKey
+  MasterAutoscalingLifecycleHook:
+    Type: "AWS::AutoScaling::LifecycleHook"
+    Properties:
+      DefaultResult: "CONTINUE"
+      HeartbeatTimeout: "600"
+      AutoScalingGroupName:
+        Ref: MasterAutoScaling
+      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
+  WorkerAutoscalingLifecycleHook:
+    Type: "AWS::AutoScaling::LifecycleHook"
+    Properties:
+      DefaultResult: "CONTINUE"
+      HeartbeatTimeout: "600"
+      AutoScalingGroupName:
+        Ref:
+          WorkerAutoScaling
+      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
+  KubeReadyIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-kube-node-ready"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: WorkerIAMRole
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: MasterIAMRole
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+            - {Action: 'autoscaling:Describe*', Effect: Allow, Resource: '*'}
+            - {Action: 'autoscaling:CompleteLifecycleAction', Effect: Allow, Resource: '*'}
+            - {Action: 'sts:AssumeRole', Effect: Allow, Resource: '*'}
+          Version: '2012-10-17'
+        PolicyName: root
+Outputs:
+  MasterAutoscalingLifecycleHook:
+    Value:
+      Ref: MasterAutoscalingLifecycleHook
+  WorkerAutoscalingLifecycleHook:
+    Value:
+      Ref: WorkerAutoscalingLifecycleHook
