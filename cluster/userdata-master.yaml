@@ -288,6 +288,7 @@ write_files:
           command:
           - /hyperkube
           - apiserver
+          - --apiserver-count={{ APISERVER_COUNT }}
           - --bind-address=0.0.0.0
           - --insecure-bind-address=0.0.0.0
           - --etcd-servers=http://127.0.0.1:2379
@@ -620,7 +621,7 @@ write_files:
     content: |
       {{WORKER_SHARED_SECRET}},kubelet,kubelet
       {{CONTROLLER_MANAGER_SECRET}},kube-controller-manager,kube-controller-manager
-  
+
   - path: /etc/kubernetes/config/image-policy-webhook.yaml
     permissions: 0644
     owner: root:root
