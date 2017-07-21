@@ -4,6 +4,7 @@
 Public Presentations
 ====================
 
+* `Automatic infrastructure for Kubernetes ingress in AWS - Berlin Docker Meetup <https://www.slideshare.net/SandorSzuecs/2017-0719-automatic-infrastructure-for-kubernetes-ingress-in-aws>`_
 * `Large Scale Kubernetes on AWS at Europe's Leading Online Fashion Platform - Docker Hamburg Meetup <https://drive.google.com/open?id=0B6UeTsXSqfklLXNpR0V5Tk5DbFk>`_
 * `PostgreSQL on Kubernetes - Docker Hamburg Meetup <https://drive.google.com/open?id=0B6UeTsXSqfklN2ZaM1FFMk93Qm8>`_
 * `From AWS/STUPS to Kubernetes on AWS @Zalando - Berlin Kubernetes Meetup <https://www.slideshare.net/try_except_/from-awsstups-to-kubernetes-on-aws-zalando-berlin-kubernetes-meetup>`_
