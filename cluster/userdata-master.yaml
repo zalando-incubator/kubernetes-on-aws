@@ -410,14 +410,10 @@ write_files:
               value: https://identity.zalando.com/.well-known/openid-configuration
             - name: ENABLE_INTROSPECTION
               value: "true"
-        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.1.0
+        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.2.2
           name: image-policy-webhook
           args:
-          - --whitelisted-registry=registry.opensource.zalan.do
-          - --whitelisted-registry=pierone.stups.zalan.do
-          - --scm-regexp=^git:(git@|https://)github.bus.zalan.do[:/].*$
-          - --scm-regexp=^git:(git@|https://)github.com[:/](zalando|zalando-incubator|zalando-stups|zalando-zmon)/.*$
-          - --insecure-allow-all={{ ALLOW_ALL_IMAGES }}
+          - --policy={{ IMAGE_POLICY }}
           ports:
           - containerPort: 8083
         - name: nginx
@@ -548,17 +544,17 @@ write_files:
       apiVersion: v1
       kind: Pod
       metadata:
-        name: rescheduler-v0.3.0
+        name: rescheduler-v0.3.1
         namespace: kube-system
         labels:
           application: rescheduler
-          version: v0.3.0
+          version: v0.3.1
           kubernetes.io/cluster-service: "true"
           kubernetes.io/name: "Rescheduler"
       spec:
         hostNetwork: true
         containers:
-        - image: registry.opensource.zalan.do/teapot/rescheduler:v0.3.0
+        - image: registry.opensource.zalan.do/teapot/rescheduler:v0.3.1
           name: rescheduler
           resources:
             requests:
