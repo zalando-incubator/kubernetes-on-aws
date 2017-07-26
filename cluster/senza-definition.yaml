@@ -275,6 +275,7 @@ Resources:
       - {CidrIp: 172.31.0.0/16, FromPort: 8082, IpProtocol: tcp, ToPort: 8082}
       - {CidrIp: 172.31.0.0/16, FromPort: 9100, IpProtocol: tcp, ToPort: 9100}
       - {CidrIp: 172.31.0.0/16, FromPort: 9911, IpProtocol: tcp, ToPort: 9911}
+      - {CidrIp: 172.31.0.0/16, FromPort: 30080, IpProtocol: tcp, ToPort: 30080}
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
@@ -315,6 +316,32 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: {Ref: MasterLoadBalancerSecurityGroup}
       ToPort: 443
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
+    Type: AWS::EC2::SecurityGroupIngress
+  MasterSecurityGroupIngressFromMaster:
+    Properties:
+      FromPort: 443
+      GroupId: {Ref: MasterSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: MasterSecurityGroup}
+      ToPort: 443
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
+    Type: AWS::EC2::SecurityGroupIngress
+  MasterKubeletToMasterKubeletSecurityGroup:
+    Properties:
+      FromPort: 10250
+      GroupId: {Ref: MasterSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: MasterSecurityGroup}
+      ToPort: 10250
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes
@@ -517,7 +544,7 @@ Resources:
             - {Action: 'tag:Get*', Effect: Allow, Resource: '*'}
             - {Action: 'dynamodb:ListTables', Effect: Allow, Resource: '*'}
             - Action: "s3:GetObject"
-              Resource: "arn:aws:s3:::{{ AccountInfo.MintBucket }}/secretary/*"
+              Resource: "arn:aws:s3:::{{ AccountInfo.MintBucket }}/gerry/*"
               Effect: Allow
             - {Action: 'sqs:GetQueueAttributes', Effect: Allow, Resource: '*'}
             - {Action: 'sqs:ListDeadLetterSourceQueues', Effect: Allow, Resource: '*'}
