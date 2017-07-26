@@ -6,7 +6,7 @@ ADR-002: Installation of Kubernetes non core system components
 Context
 =======
 
-In `cluster.py` we used to install all the `kube-system` components using a `systemd` unit. This consisted basically in a bash script that deployed all the manifests from `/srv/kubernetes/manifests/*/*.yaml` using `kubectl`.
+In ``cluster.py`` we used to install all the ``kube-system`` components using a ``systemd`` unit. This consisted basically in a bash script that deployed all the manifests from ``/srv/kubernetes/manifests/*/*.yaml`` using ``kubectl``.
 We obviously do not want to update versions manually via kubectl. Furthermore, this approach also meant that we had to launch a new master instance in order to apply the updated manifests.
 
 Decision
@@ -42,5 +42,5 @@ Accepted.
 Consequences
 ============
 
-The chosen file convention will be relevant when discussing the removal of components from `kube-system`.
+The chosen file convention will be relevant when discussing the removal of components from ``kube-system``.
 This is currently out of scope for this ADR as this only covers the "apply" case.
