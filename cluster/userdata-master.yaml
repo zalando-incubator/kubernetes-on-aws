@@ -130,6 +130,8 @@ coreos:
         --cluster_domain=cluster.local \
         --kubeconfig=/etc/kubernetes/kubeconfig \
         --require-kubeconfig \
+        --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
+        --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
         --cloud-provider=aws \
         --low-diskspace-threshold-mb=1000 \
         --feature-gates=AllAlpha=true \
@@ -676,6 +678,14 @@ write_files:
   - path: /etc/kubernetes/ssl/apiserver-key.pem
     encoding: gzip+base64
     content: {{APISERVER_KEY}}
+
+  - path: /etc/kubernetes/ssl/worker.pem
+    encoding: gzip+base64
+    content: {{WORKER_CERT}}
+
+  - path: /etc/kubernetes/ssl/worker-key.pem
+    encoding: gzip+base64
+    content: {{WORKER_KEY}}
 
   - path: /etc/kubernetes/cni/net.d/10-flannel.conf
     content: |
