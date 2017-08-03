@@ -1,0 +1,44 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    name: monitor
+    application: appdynamics-machineagent
+    version: "4.3"
+  name: appdynamics-machineagent
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      application: appdynamics-machineagent
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      name: appdynamics-machinenagent
+      labels:
+        application: appdynamics-machineagent
+        version: "4.3"
+    spec:
+      hostNetwork: true
+      containers:
+      - name: appdynamics-machineagent
+        image: pierone.stups.zalan.do/monitoring-appdynamics/appdynamics-machine-agent:0.74
+        volumeMounts:
+        - name: appdynamics
+          mountPath: /etc/secrets
+        ports:
+        - name: analytics-agent
+          containerPort: 9090
+          hostPort: 9090
+        env:
+          - name: APPDYNAMICS_AGENT_UNIQUE_HOST_ID
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: CLUSTER_ENV
+            value: "{{ .Environment }}" 
+      volumes:
+      - name: appdynamics
+        secret:
+          secretName: "appdynamics"
