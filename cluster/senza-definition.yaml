@@ -65,15 +65,15 @@ SenzaComponents:
       Type: Senza::WeightedDnsElasticLoadBalancer
       HTTPPort: 443
       HealthCheckPath: /healthz
-      HealthCheckPort: 8082
+      HealthCheckPort: 8080
       SecurityGroups:
         - {Ref: MasterLoadBalancerInternalSecurityGroup}
       Scheme: internal
       Listeners:
         - PolicyNames: []
-          Protocol: SSL
-          InstanceProtocol: SSL
-          InstancePort: 443
+          Protocol: HTTPS
+          InstanceProtocol: HTTP
+          InstancePort: 8080
           LoadBalancerPort: 443
       ConnectionSettings:
         IdleTimeout: 300
@@ -291,7 +291,7 @@ Resources:
       SecurityGroupIngress:
       - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
       - {CidrIp: 0.0.0.0/0, FromPort: 22, IpProtocol: tcp, ToPort: 22}
-      - {CidrIp: 172.31.0.0/16, FromPort: 443, IpProtocol: tcp, ToPort: 443}
+      - {CidrIp: 172.31.0.0/16, FromPort: 8080, IpProtocol: tcp, ToPort: 8080}
       - {CidrIp: 172.31.0.0/16, FromPort: 8082, IpProtocol: tcp, ToPort: 8082}
       - {CidrIp: 172.31.0.0/16, FromPort: 9100, IpProtocol: tcp, ToPort: 9100}
       - {CidrIp: 172.31.0.0/16, FromPort: 9911, IpProtocol: tcp, ToPort: 9911}
