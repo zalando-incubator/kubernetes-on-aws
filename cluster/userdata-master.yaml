@@ -84,6 +84,17 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
+    - name: gen-controller-manager-config.service
+      command: start
+      runtime: true
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/bin/gen-controller-manager-config.sh
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: kubelet.service
       command: start
       runtime: true
@@ -593,8 +604,14 @@ write_files:
         }
       }
 
-  - path: /etc/kubernetes/controller-kubeconfig
+  - path: /opt/bin/gen-controller-manager-config.sh
     content: |
+    owner: root:root
+    permissions: 0755
+    content: |
+      #!/bin/bash
+      token="$(head -c 16 /dev/urandom | od -An -t x | tr -d ' ')"
+      cat << EOF > /etc/kubernetes/controller-kubeconfig
       apiVersion: v1
       kind: Config
       clusters:
@@ -611,12 +628,14 @@ write_files:
       users:
       - name: kube-controller-manager
         user:
-          token: {{CONTROLLER_MANAGER_SECRET}}
+          token: ${token}
+      EOF
+
+      echo "${token},kube-controller-manager,kube-controller-manager" >> /etc/kubernetes/config/tokenfile.csv
 
   - path: /etc/kubernetes/config/tokenfile.csv
     content: |
       {{WORKER_SHARED_SECRET}},kubelet,kubelet
-      {{CONTROLLER_MANAGER_SECRET}},kube-controller-manager,kube-controller-manager
 
   - path: /etc/kubernetes/config/image-policy-webhook.yaml
     permissions: 0644
