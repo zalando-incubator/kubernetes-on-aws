@@ -49,7 +49,7 @@ coreos:
           content: |
             [Service]
             ExecStartPre=/usr/bin/etcdctl \
-            --endpoint=http://localhost:2379 set /coreos.com/network/config \
+            --endpoint=http://127.0.0.1:2379 set /coreos.com/network/config \
             '{ "Network": "10.2.0.0/16", "Backend": {"Type": "vxlan"}}'
 
     - name: kube2iam-iptables.service
@@ -80,6 +80,17 @@ coreos:
         Type=oneshot
         ExecStartPre=/usr/bin/mkdir -p /root/.docker
         ExecStart=/opt/bin/dockercfg.sh
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: gen-controller-manager-config.service
+      command: start
+      runtime: true
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/bin/gen-controller-manager-config.sh
 
         [Install]
         WantedBy=multi-user.target
@@ -171,7 +182,7 @@ write_files:
       clusters:
       - name: local
         cluster:
-          server: http://localhost:8080
+          server: http://127.0.0.1:8080
       users:
       - name: kubelet
       contexts:
@@ -186,7 +197,7 @@ write_files:
       clusters:
         - name: authz-webhook
           cluster:
-            server: http://localhost:8081/authentication
+            server: http://127.0.0.1:8081/authentication
       users:
         - name: authz-webhook-client
           user:
@@ -205,7 +216,7 @@ write_files:
       clusters:
         - name: authz-webhook
           cluster:
-            server: http://localhost:8081/authorization
+            server: http://127.0.0.1:8081/authorization
       users:
         - name: authz-webhook-client
       current-context: authz-webhook
@@ -585,7 +596,7 @@ write_files:
               return 403;
             }
             proxy_pass_request_body off;
-            proxy_pass http://localhost:8080;
+            proxy_pass http://127.0.0.1:8080;
           }
           location ~ /secrets(/|$) {
             return 403 "unauthorized";
@@ -593,30 +604,38 @@ write_files:
         }
       }
 
-  - path: /etc/kubernetes/controller-kubeconfig
+  - path: /opt/bin/gen-controller-manager-config.sh
     content: |
+    owner: root:root
+    permissions: 0755
+    content: |
+      #!/bin/bash
+      token="$(head -c 16 /dev/urandom | od -An -t x | tr -d ' ')"
+      cat << EOF > /etc/kubernetes/controller-kubeconfig
       apiVersion: v1
       kind: Config
       clusters:
-      - name: https://10.3.0.1
+      - name: local
         cluster:
-          server: https://10.3.0.1
+          server: https://127.0.0.1
           certificate-authority: /etc/kubernetes/ssl/ca.pem
       contexts:
-      - name: https://10.3.0.1
+      - name: local
         context:
-          cluster: https://10.3.0.1
+          cluster: local
           user: kube-controller-manager
-      current-context: https://10.3.0.1
+      current-context: local
       users:
       - name: kube-controller-manager
         user:
-          token: {{CONTROLLER_MANAGER_SECRET}}
+          token: ${token}
+      EOF
+
+      echo "${token},kube-controller-manager,kube-controller-manager" >> /etc/kubernetes/config/tokenfile.csv
 
   - path: /etc/kubernetes/config/tokenfile.csv
     content: |
       {{WORKER_SHARED_SECRET}},kubelet,kubelet
-      {{CONTROLLER_MANAGER_SECRET}},kube-controller-manager,kube-controller-manager
 
   - path: /etc/kubernetes/config/image-policy-webhook.yaml
     permissions: 0644
@@ -636,7 +655,7 @@ write_files:
       clusters:
         - name: image-policy-webhook
           cluster:
-            server: http://localhost:8083/admit
+            server: http://127.0.0.1:8083/admit
       users:
         - name: image-policy-webhook
       current-context: image-policy-webhook
@@ -689,3 +708,15 @@ write_files:
         }
       }
       EOF
+
+  - path: /home/core/.toolboxrc
+    owner: core
+    content: |
+      TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
+      TOOLBOX_DOCKER_TAG=v0.0.4
+
+  - path: /root/.toolboxrc
+    owner: root
+    content: |
+      TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
+      TOOLBOX_DOCKER_TAG=v0.0.4
