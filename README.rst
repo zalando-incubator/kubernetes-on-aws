@@ -6,7 +6,7 @@ Kubernetes on AWS
 
 This repo contains configuration templates to provision Kubernetes_ clusters on AWS using Cloud Formation and `CoreOS Container Linux`_.
 
-**Consider this as alpha quality**. Many values are hardcoded, and currently we're focusing on solving our own, specific/Zalando use case.
+**Consider this as beta quality**. Many values are hardcoded, and currently we're focusing on solving our own, specific/Zalando use case.
 However, **we are open to ideas from the community at large about potentially turning this idea into a project that provides universal/general value to others**.
 Please contact us via our Issues Tracker with your thoughts and suggestions.
 
@@ -16,7 +16,7 @@ Configuration in this repository initially was based on kube-aws_, but now depen
 * Cluster Lifecycle Manager to provision the cluster's Cloud Formation stack and apply Kubernetes manifests for system components
 * Authnz Webhook to validate OAuth tokens and authorize access
 
-We plan to release all required components to the community in Q2/2017.
+We plan to release all required components to the community in Q4/2017.
 
 Please watch our meetup talk `"Kubernetes on AWS at Europe's Leading Online Fashion Platform" on YouTube`_ to learn how we run Kubernetes on AWS in production.
 See our `Running Kubernetes in Production on AWS document`_ for details on the setup.
