@@ -84,6 +84,17 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
+    - name: gen-controller-manager-config.service
+      command: start
+      runtime: true
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/bin/gen-controller-manager-config.sh
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: kubelet.service
       command: start
       runtime: true
@@ -593,8 +604,14 @@ write_files:
         }
       }
 
-  - path: /etc/kubernetes/controller-kubeconfig
+  - path: /opt/bin/gen-controller-manager-config.sh
     content: |
+    owner: root:root
+    permissions: 0755
+    content: |
+      #!/bin/bash
+      token="$(head -c 16 /dev/urandom | od -An -t x | tr -d ' ')"
+      cat << EOF > /etc/kubernetes/controller-kubeconfig
       apiVersion: v1
       kind: Config
       clusters:
@@ -611,12 +628,14 @@ write_files:
       users:
       - name: kube-controller-manager
         user:
-          token: {{CONTROLLER_MANAGER_SECRET}}
+          token: ${token}
+      EOF
+
+      echo "${token},kube-controller-manager,kube-controller-manager" >> /etc/kubernetes/config/tokenfile.csv
 
   - path: /etc/kubernetes/config/tokenfile.csv
     content: |
       {{WORKER_SHARED_SECRET}},kubelet,kubelet
-      {{CONTROLLER_MANAGER_SECRET}},kube-controller-manager,kube-controller-manager
 
   - path: /etc/kubernetes/config/image-policy-webhook.yaml
     permissions: 0644
@@ -648,15 +667,15 @@ write_files:
 
   - path: /etc/kubernetes/ssl/ca.pem
     encoding: gzip+base64
-    content: H4sIACiK/1cAA2WUWa+ySBCG7/kVc29OVJDt4rvopptFWWwWEe5E9kUFQbB//ec5X2YmmamkksqTSqqS9636+voExJph/6Vg1zdUQwE+/oZfjGUYioAUBaRKAWYDguKTCNiwaPqyqTR53kBAnuqHtZaLZzRH6ETIAc/lkIb7ljFDlbtSTCyw08A2wGCx9At3qmJvW0c+yNR5s9g1ni0ULTYKtjYqLx/2/sPIwvwNLSVYsA+OsLBPENx9RRu3UReM0TmllgtmVPxMRnhOfyaboV1+toeMUf93XawC4CiASOC7QSkOnxqDOahYNHp57YqhqI/79kg640oJo0qLAOscLNML9pK06W7RRV0/o5by02nedbZCjAXdjTp9cr6eaNquifvOETuP79cshsztXsWTMXI8wlFQT6k53kMZZfR+21labEiydJ5A1gXKQOKp3OgUamN83gqFn2A2Yy1GFc/iGSqtJdEm3o+HKQRT8yJrI9hHQ3fKTqOlN3rbtrMeefNuzeVeFayutW8cbNThOxN1bn0J5Z4Pm+p+DTXs+1WJ1T58SJZBlD3r+fQUl9ZxEkZXSjeec8+l3Vg3usc2Sloxb+QU76WluwyBMGWFkFQe54tJIp6Ex918Yrd01qWZtnnX3GK7OjZBmJyvtcSytkgMxAAC4P1tzYYPnG8JdSJBkEsYAksBPfljHHfjA6KvIQhmMGO4pv8qx/zjtB/pMMiWij3OR54bbhIe7EF8qI23iAmV3dU4zd3+slr1MGMLp5DdJHsycsdbUddAvOHoU1WttHlzrBe8LtWMqDGq28dg1jysl5MA91MWBMepdt6xfe6NajDbkZGCoLlZ4cXiuev0SlzBX08xalZurod0T9PHwO918RHnSRFCORErpFGVatle3hwO7CQwtqkfbJK+ePvlnGPz2Q+BIKb2TXastNRYojRFnevn9Ki8F93IiyjnBy69ghwr+hnpGhMui9NR0zTHRoyT5DoVc9WWE39DAa0NSvrxEbWtyR7iNgjc0zq0lJ2c0aGJ6n3UlSJDdvDASVlcwf6lPjiuedO3Yl6dy5Ev4CyXSHDcC/j1i/m5fmyj/3+E37OehiUuBAAA
+    content: {{CA_CERT}}
 
   - path: /etc/kubernetes/ssl/apiserver.pem
     encoding: gzip+base64
-    content: H4sIADyK/1cAA2WUybKjOBBF93xF719UMBnbLAWIWWDmYWfgIcBgGzCW8dcXfr3pqtZGobwZcSOVJ/PXr+1IUDOcf2Toh4ZqyCCEn+AvChmG0r1lGVy/MSCGBLBhnC9sr0mPSrc9oniZad1yo3mWDvCgLXmAmCH0EThqgI0gJTfIOPNxmwdsU/HoBRXgStiJJYBCiXuw2RA9Mg4SvSkdFGYvpAAOhR7rhN4u2WIUCss/gx2YkQ+JQjIl9jwLkmaqErO3E5Uv3zBFUvTjDF7I/RhTH+dS6995anJ5ahCMYYsAo8nBqAVGwSselIAXAbAzJIWAj26B21aqpyg7ur1QqZrpXWDTEvY540vPLq06WX4bMQN35fXOOa9y1a/sTajjk88zl/lOjHqq33eNfeVXOFLL63hsrsXEB7frNNcktYMVYtu4hhapQWwGd8/mZo5WmGup8ROSRjFfs5q2LH10QPmgHmCvSLOVdfwhKZZj60Uj8XmjUAJTQ6eHYqpk5vNiPcwR95q6vj25LjlbEEl1bwq2TeU9Tae5cGlueDwJshfo7uXitNZ7HcIVulcUMk5cHuwlbJm3XB/rfX3NdmEhJmIsTOwXxZm5N85dxYvkOgCvuXwZ9nrMHk/UzStNT2OMWT+LJkGMXs/7ZSL3JI/6yuU98OCUZU/JNyt8+4GIC/nO7MwnwEgCQOtwMRNcYKLgrZ0+cwKeTn++HuBky0CfVlam5yEKgZsmy7O2tUqVyCYZmvcBSfchxBkmOEtkefgAFa/FEDN56srwP28qT9GSa/GQpfFcGUbyQ2VqLnnq9+UqXPIkb6rkxdhXh8t2xuVvnfojYRW6Qo/flRav9vB6Zpw646bfXB0GBezk6mjZtA08ccu/N4WmLpQ9+M+GeBYAYP25CZD+JlEm/5IIPKnLcGmTWW0FrMz9OTWom5B7U38RWxzfsfm6cQ7bwGiBo8hnk7vXHxC0Cvd+FjCpLvK94Xdjwa2HVOwVXxwzRA1LcRyJSh/KUe653bLcKyUMZxVj2rN2uN7rddrmjgDq2j22qiqJ8GnQxvOoPO7VNZ2ontX001C8XbE88cN4fu6GylgFrliwZ2a9nRHBOko+y9jpNgvYPoqK5CKHAGhhlz/fqWqQ0/2+3Qb15C960vs3yy2bND8uL1v9Tu6C8raBPflSPtLKPGqd2Jung9cF0qQ7fpdRehAlX3Zlnf1SVr5zIrZ2+14YwYe3Un88RkvMkHLinWicWRBssIyc6p/hoe5465sRHcqKxoj62W7QUf6/8X4DpV5xig4FAAA=
+    content: {{APISERVER_CERT}}
 
   - path: /etc/kubernetes/ssl/apiserver-key.pem
     encoding: gzip+base64
-    content: H4sIAFCK/1cAA22Vt66raACEe57i9OiKnIotfjLGRJM7gsnBmMzT79lb77RTzKfRSPPnz694SdHMH/cFfmxXC4An/ehS/J/xBzI0TZoqjQdAF4AjgQO2yY98hjyJNsgRS0Vj1/hDq9Ori3vzsX64k7zDpRqTfE2tCIM8tOAeTz0XVJpgaXfNw+TUv0tpawlOc+j8oBmVlS90qTXheqDXoh7yy599gfua+8E9IIJf6Ruke5gPKnI1Nd066jNzrOrIhEHjYGxgdq2T9UUqLuVAG7cVGedy86eJh+zGyJC5pCQVt3e7KE0tgoh6vV8XnpQIhr8TLdX0FnY6qb4/DzFuFvbTsbX4uSVODCLrYjoSWo1jRFR4pHBLwpFgD94pV65N6OtfjSiQ/EFVkpbYjcDuyjO7NcbYEZruY9MPZR0uA8jI6ERn9WAIHpG3ouBZVMxWzULHov4eK8dcWEJ2aCJwAA+m37KlpV6NPYiGYRREf4TolBxMp3tWV6R8g2xUp/cdwOr50UXj2ojqfIWenJ1rbXw57+bvXEpgE/TlQK/fBybvUNdsyjPvX6e3quLrI02Pc+fMPMopMU532di4omSXbuNvg7x0vjs9Hx5RjbTdphNPxofSWUaFzZ7q7cbeNSXDKOcMFYnnsAO+obMuH7RZuffBACVOQF1wgd3NV/q131dqw54E1ZWt25WO+xrqishvyEwKaSvh8zjfikerMfzGnpilDs5pLcGr0GvLXr6sYw5ncCOeDzkIL/Tdq5Xv3s62GF6uzRj8oUc6W9z4OMmde3z2w3bbfeEcqudGs0Xb+BeEEkYtWgqRvUP3kyRUsQTovAtPdsbTuZikCkw1x0+H/1SDYwdNYziuvBDnJw38DsjG14ueC/OG6ElvMv92tSTv3LhvcGnjYskQc+AzRapEeHiUvEuLeZhzAnZyekhnmcuF4EEnW4miUIWXs4tGcxtXRbei+Mw2umHGLXbm8TCa1LF2emipDVkqPAreqTKY1HQtf4mxSXpBtC1bz1AzX+VhEUa40ffcbENHTPn56QFj9h1L3nfkcsxZkTXcEWc0Pstj5RqlN8KugB5MjFZksG09/YKv9EOoGa44Pq5pR2y11arbi+9rk7GWbi1+0b3Gu62vhm4iymSgiQiKK6JgomBBQaLc1PLe4rjJRAR8pvHo8/cQSSEjsOgvMsirQWJvYDV3WczwNOJnuQEoKM7Py8GTa71j+JWyii0u31W9C2ealksxeEojjJLZ0OzdTHfSDPXYw2gcC8dqmjasQi2P5C7i2jXCnduNTw/2ztOcyOTooOaaDdybeU3t8TscqSNYv0GyIU8PUSRrfwAPFkADnJcqfYu+VTHfVunW5lYNR+crmSK8ZO7wOZeZhDdHNEIkD54RZ42CM2Wz14wZbddDyCS+MHttPQPWCN7PpG6u9DmsdgqjBHQnKPEqD3PEca16X5bFXmLrTM9dW5eZRb7JDbVGK8aoMqwCotbhjciEUWkADpaP+uWxkKrSLmLp0X0X6qTpY7Qu/lkMdd2gwtMZZh/qDvkDJgXkR1zcczFUyI1gVnZUabxhITIQxfuJi9RT/8i+UirMJfa37gvfUaHyy11OiMxFxkOxq8W3dLb5Gl74BkXPmewI2PvdZzpSPhZWQ1q14Ji/7UpH22Ele4Modcq6HqTo4pp+2qGVt41NtU+2VHt/AN98nJLywHqn9erCFh0KnrOwKgLEIP+B/l6KZIr/fzX/AqgprOSLBgAA
+    content: {{APISERVER_KEY}}
 
   - path: /etc/kubernetes/cni/net.d/10-flannel.conf
     content: |
@@ -689,3 +708,15 @@ write_files:
         }
       }
       EOF
+
+  - path: /home/core/.toolboxrc
+    owner: core
+    content: |
+      TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
+      TOOLBOX_DOCKER_TAG=v0.0.4
+
+  - path: /root/.toolboxrc
+    owner: root
+    content: |
+      TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
+      TOOLBOX_DOCKER_TAG=v0.0.4

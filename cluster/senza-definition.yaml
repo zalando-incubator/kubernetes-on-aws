@@ -61,6 +61,25 @@ SenzaComponents:
           Value: kubernetes
         - Key: "ClusterID"
           Value: "{{ Arguments.ClusterID }}"
+  - MasterLoadBalancerInternal:
+      Type: Senza::WeightedDnsElasticLoadBalancer
+      HTTPPort: 443
+      HealthCheckPath: /healthz
+      HealthCheckPort: 8080
+      SecurityGroups:
+        - {Ref: MasterLoadBalancerInternalSecurityGroup}
+      Scheme: internal
+      Listeners:
+        - PolicyNames: []
+          Protocol: HTTPS
+          InstanceProtocol: HTTP
+          InstancePort: 8080
+          LoadBalancerPort: 443
+      ConnectionSettings:
+        IdleTimeout: 300
+      VersionDomain: "internal-{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}.{{Arguments.HostedZone}}"
+      MainDomain: "internal-{{SenzaInfo.StackName}}.{{Arguments.HostedZone}}"
+      NameSuffix: "MLI"
   - MasterAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: "{{ Arguments.MasterInstanceType }}"
@@ -74,7 +93,7 @@ SenzaComponents:
          - {Ref: MasterSecurityGroup}
       IamRoles:
          - {Ref: MasterIAMRole}
-      ElasticLoadBalancer: MasterLoadBalancer
+      ElasticLoadBalancer: [MasterLoadBalancer, MasterLoadBalancerInternal]
       HealthCheckGracePeriod: 480 # give master node up to 8 min to start up
       HealthCheckType: EC2
       AssociatePublicIpAddress: true
@@ -272,6 +291,7 @@ Resources:
       SecurityGroupIngress:
       - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
       - {CidrIp: 0.0.0.0/0, FromPort: 22, IpProtocol: tcp, ToPort: 22}
+      - {CidrIp: 172.31.0.0/16, FromPort: 8080, IpProtocol: tcp, ToPort: 8080}
       - {CidrIp: 172.31.0.0/16, FromPort: 8082, IpProtocol: tcp, ToPort: 8082}
       - {CidrIp: 172.31.0.0/16, FromPort: 9100, IpProtocol: tcp, ToPort: 9100}
       - {CidrIp: 172.31.0.0/16, FromPort: 9911, IpProtocol: tcp, ToPort: 9911}
@@ -289,6 +309,20 @@ Resources:
       SecurityGroupIngress:
       - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
       - {CidrIp: 0.0.0.0/0, FromPort: 443, IpProtocol: tcp, ToPort: 443}
+      Tags:
+        - Key: "KubernetesCluster"
+          Value: kubernetes
+        - Key: "ClusterID"
+          Value: "{{ Arguments.ClusterID }}"
+      VpcId: "{{ AccountInfo.VpcID }}"
+    Type: AWS::EC2::SecurityGroup
+  MasterLoadBalancerInternalSecurityGroup:
+    Properties:
+      GroupDescription: {Ref: 'AWS::StackName'}
+      SecurityGroupIngress:
+      - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
+      # node kubelets
+      - {CidrIp: 172.31.0.0/16, FromPort: 443, IpProtocol: tcp, ToPort: 443}
       Tags:
         - Key: "KubernetesCluster"
           Value: kubernetes

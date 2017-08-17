@@ -70,6 +70,13 @@ Resources:
         Fn::GetAtt:
           - EtcdSecurityGroup
           - GroupId
+  EtcdBackupBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: "{{Arguments.EtcdS3Backup}}"
+      VersioningConfiguration:
+        Status: Enabled
   EtcdRole:
     Type: AWS::IAM::Role
     Properties:
