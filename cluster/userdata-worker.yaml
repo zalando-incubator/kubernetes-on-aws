@@ -80,7 +80,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_IMAGE_TAG=v1.6.7_coreos.0
+        Environment=KUBELET_IMAGE_TAG=v1.7.3_coreos.0
         Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_RUN_ARGS=--insecure-options=image \
         --uuid-file-save=/var/run/kubelet-pod.uuid \
@@ -145,24 +145,13 @@ coreos:
         --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
         --mount=volume=kube,target=/etc/kubernetes \
         --net=host \
-        registry.opensource.zalan.do/teapot/hyperkube:v1.6.7_coreos.0 \
+        registry.opensource.zalan.do/teapot/hyperkube:v1.7.3_coreos.0 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
           drain $(hostname) \
           --ignore-daemonsets \
           --delete-local-data \
           --force'
-
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: cfn-signal.service
-      command: start
-      runtime: true
-      content: |
-        [Service]
-        Type=oneshot
-        ExecStart=/usr/bin/docker run registry.opensource.zalan.do/teapot/cfn-signal:1.4-4 {{LOCAL_ID}} WorkerAutoScaling 0
 
         [Install]
         WantedBy=multi-user.target
@@ -206,14 +195,14 @@ write_files:
           namespace: kube-system
           labels:
             application: kube-proxy
-            version: v1.6.7_coreos.0
+            version: v1.7.3_coreos.0
           annotations:
             rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
         spec:
           hostNetwork: true
           containers:
           - name: kube-proxy
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.7_coreos.0
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.3_coreos.0
             command:
             - /hyperkube
             - proxy
@@ -262,7 +251,7 @@ write_files:
         clusters:
         - name: local
           cluster:
-            server: {{API_SERVER_INTERNAL}}
+            server: {{API_SERVER}}
         users:
         - name: kubelet
           user:
@@ -312,4 +301,3 @@ write_files:
     content: |
       TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
       TOOLBOX_DOCKER_TAG=v0.0.4
-

@@ -49,7 +49,7 @@ coreos:
           content: |
             [Service]
             ExecStartPre=/usr/bin/etcdctl \
-            --endpoint=http://localhost:2379 set /coreos.com/network/config \
+            --endpoint=http://127.0.0.1:2379 set /coreos.com/network/config \
             '{ "Network": "10.2.0.0/16", "Backend": {"Type": "vxlan"}}'
 
     - name: kube2iam-iptables.service
@@ -100,7 +100,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_IMAGE_TAG=v1.6.7_coreos.0
+        Environment=KUBELET_IMAGE_TAG=v1.7.3_coreos.0
         Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_RUN_ARGS=--insecure-options=image \
         --uuid-file-save=/var/run/kubelet-pod.uuid \
@@ -130,6 +130,8 @@ coreos:
         --cluster_domain=cluster.local \
         --kubeconfig=/etc/kubernetes/kubeconfig \
         --require-kubeconfig \
+        --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
+        --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
         --cloud-provider=aws \
         --low-diskspace-threshold-mb=1000 \
         --feature-gates=AllAlpha=true \
@@ -160,7 +162,7 @@ coreos:
         --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
         --mount=volume=kube,target=/etc/kubernetes \
         --net=host \
-        registry.opensource.zalan.do/teapot/hyperkube:v1.6.7_coreos.0 \
+        registry.opensource.zalan.do/teapot/hyperkube:v1.7.3_coreos.0 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain $(hostname) \
@@ -182,7 +184,7 @@ write_files:
       clusters:
       - name: local
         cluster:
-          server: http://localhost:8080
+          server: http://127.0.0.1:8080
       users:
       - name: kubelet
       contexts:
@@ -197,7 +199,7 @@ write_files:
       clusters:
         - name: authz-webhook
           cluster:
-            server: http://localhost:8081/authentication
+            server: http://127.0.0.1:8081/authentication
       users:
         - name: authz-webhook-client
           user:
@@ -216,7 +218,7 @@ write_files:
       clusters:
         - name: authz-webhook
           cluster:
-            server: http://localhost:8081/authorization
+            server: http://127.0.0.1:8081/authorization
       users:
         - name: authz-webhook-client
       current-context: authz-webhook
@@ -240,14 +242,14 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-proxy
-          version: v1.6.7_coreos.0
+          version: v1.7.3_coreos.0
         annotations:
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.7_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.3_coreos.0
           command:
           - /hyperkube
           - proxy
@@ -287,7 +289,7 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.6.7_coreos.0
+          version: v1.7.3_coreos.0
         annotations:
           kubernetes-log-watcher/scalyr-parser: |
             [{"container": "webhook", "parser": "json-structured-log"}]
@@ -295,7 +297,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.7_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.3_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -327,7 +329,7 @@ write_files:
               host: 127.0.0.1
               port: 8080
               path: /healthz
-            initialDelaySeconds: 15
+            initialDelaySeconds: 60
             timeoutSeconds: 15
           ports:
           - containerPort: 443
@@ -353,7 +355,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.2.2
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.2.3
           name: webhook
           ports:
           - containerPort: 8081
@@ -462,11 +464,11 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.6.7_coreos.0
+          version: v1.7.3_coreos.0
       spec:
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.7_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.3_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -523,12 +525,12 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.6.7_coreos.0
+          version: v1.7.3_coreos.0
       spec:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.6.7_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.3_coreos.0
           command:
           - /hyperkube
           - scheduler
@@ -596,7 +598,7 @@ write_files:
               return 403;
             }
             proxy_pass_request_body off;
-            proxy_pass http://localhost:8080;
+            proxy_pass http://127.0.0.1:8080;
           }
           location ~ /secrets(/|$) {
             return 403 "unauthorized";
@@ -615,16 +617,16 @@ write_files:
       apiVersion: v1
       kind: Config
       clusters:
-      - name: https://10.3.0.1
+      - name: local
         cluster:
-          server: https://10.3.0.1
+          server: https://127.0.0.1
           certificate-authority: /etc/kubernetes/ssl/ca.pem
       contexts:
-      - name: https://10.3.0.1
+      - name: local
         context:
-          cluster: https://10.3.0.1
+          cluster: local
           user: kube-controller-manager
-      current-context: https://10.3.0.1
+      current-context: local
       users:
       - name: kube-controller-manager
         user:
@@ -655,7 +657,7 @@ write_files:
       clusters:
         - name: image-policy-webhook
           cluster:
-            server: http://localhost:8083/admit
+            server: http://127.0.0.1:8083/admit
       users:
         - name: image-policy-webhook
       current-context: image-policy-webhook
@@ -676,6 +678,14 @@ write_files:
   - path: /etc/kubernetes/ssl/apiserver-key.pem
     encoding: gzip+base64
     content: {{APISERVER_KEY}}
+
+  - path: /etc/kubernetes/ssl/worker.pem
+    encoding: gzip+base64
+    content: {{WORKER_CERT}}
+
+  - path: /etc/kubernetes/ssl/worker-key.pem
+    encoding: gzip+base64
+    content: {{WORKER_KEY}}
 
   - path: /etc/kubernetes/cni/net.d/10-flannel.conf
     content: |
