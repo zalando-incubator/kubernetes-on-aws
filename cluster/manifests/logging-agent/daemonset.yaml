@@ -63,7 +63,10 @@ spec:
         - name: WATCHER_AGENTS
           value: scalyr
         - name: WATCHER_SCALYR_API_KEY
-          value: "{{ .ConfigItems.scalyr_access_key }}"
+          valueFrom:
+            secretKeyRef:
+              name: logging-agent
+              key: scalyr-access-key
         - name: WATCHER_CLUSTER_ID
           value: "{{ .ID }}"
         - name: WATCHER_SCALYR_DEST_PATH
@@ -102,7 +105,10 @@ spec:
         env:
         # Note: added for scalyr-config-base, but not needed by the scalyr-agent itself.
         - name: WATCHER_SCALYR_API_KEY
-          value: "{{ .ConfigItems.scalyr_access_key }}"
+          valueFrom:
+            secretKeyRef:
+              name: logging-agent
+              key: scalyr-access-key
         - name: WATCHER_CLUSTER_ID
           value: "{{ .ID }}"
 
@@ -150,4 +156,3 @@ spec:
       - name: scalyr-logs
         hostPath:
           path: /var/log/scalyr-agent
-
