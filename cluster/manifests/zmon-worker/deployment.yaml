@@ -22,7 +22,7 @@ spec:
         operator: Exists
       containers:
         - name: zmon-worker
-          image: "pierone.stups.zalan.do/stups/zmon-worker:zv207"
+          image: "pierone.stups.zalan.do/stups/zmon-worker:zv217"
           resources:
             limits:
               cpu: 500m
@@ -47,7 +47,10 @@ spec:
             - name: WORKER_REDIS_SERVERS
               value: zmon-redis:6379
             - name: WORKER_PLUGIN_SCALYR_READ_KEY
-              value: "{{ .ConfigItems.scalyr_read_key }}"
+              valueFrom:
+                secretKeyRef:
+                  name: zmon-worker
+                  key: scalyr-read-key
             - name: WORKER_ACCOUNT
               value: "{{ .InfrastructureAccount }}"
             - name: WORKER_REGION
