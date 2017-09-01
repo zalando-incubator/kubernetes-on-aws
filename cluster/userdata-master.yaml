@@ -134,7 +134,6 @@ coreos:
         --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
         --cloud-provider=aws \
         --low-diskspace-threshold-mb=1000 \
-        --feature-gates=AllAlpha=true \
         --system-reserved=cpu=100m,memory=164Mi \
         --kube-reserved=cpu=100m,memory=282Mi
         ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
@@ -257,7 +256,6 @@ write_files:
           - /hyperkube
           - proxy
           - --master=http://127.0.0.1:8080
-          - --feature-gates=AllAlpha=true
           - --v=2
           securityContext:
             privileged: true
@@ -328,7 +326,6 @@ write_files:
           - --authorization-mode=Webhook
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=AllAlpha=true
           - --anonymous-auth=false
           livenessProbe:
             httpGet:
@@ -486,7 +483,6 @@ write_files:
           - --service-account-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
-          - --feature-gates=AllAlpha=true
           - --cloud-config=/etc/kubernetes/cloud-config.ini
           - --use-service-account-credentials=true
           resources:
@@ -548,7 +544,6 @@ write_files:
           - scheduler
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
-          - --feature-gates=AllAlpha=true
           resources:
             limits:
               cpu: 250m
