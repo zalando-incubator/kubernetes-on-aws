@@ -134,6 +134,7 @@ coreos:
         --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
         --cloud-provider=aws \
         --low-diskspace-threshold-mb=1000 \
+        --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
         --system-reserved=cpu=100m,memory=164Mi \
         --kube-reserved=cpu=100m,memory=282Mi
         ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
@@ -256,6 +257,7 @@ write_files:
           - /hyperkube
           - proxy
           - --master=http://127.0.0.1:8080
+          - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
           - --v=2
           securityContext:
             privileged: true
@@ -326,6 +328,7 @@ write_files:
           - --authorization-mode=Webhook
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
+          - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
           - --anonymous-auth=false
           livenessProbe:
             httpGet:
@@ -484,6 +487,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
+          - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
           - --use-service-account-credentials=true
           resources:
             limits:
@@ -544,6 +548,7 @@ write_files:
           - scheduler
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
+          - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
           resources:
             limits:
               cpu: 250m
