@@ -117,7 +117,7 @@ coreos:
         --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
         --cloud-provider=aws \
         --low-diskspace-threshold-mb=1000 \
-        --feature-gates=AllAlpha=true \
+        --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
         --system-reserved=cpu=100m,memory=164Mi \
         --kube-reserved=cpu=100m,memory=282Mi
         ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
@@ -210,7 +210,7 @@ write_files:
             - /hyperkube
             - proxy
             - --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml
-            - --feature-gates=AllAlpha=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
             - --v=2
             securityContext:
               privileged: true
