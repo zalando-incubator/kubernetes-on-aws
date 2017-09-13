@@ -19,7 +19,7 @@ spec:
       hostPID: true
       containers:
       - name: instana-agent
-        image: pierone.stups.zalan.do/eagleeye/instana-agent:master-8 
+        image: pierone.stups.zalan.do/eagleeye/instana-agent:master-9
         imagePullPolicy: Always
         securityContext:
           privileged: true
@@ -43,13 +43,13 @@ spec:
           - name: INSTANA_TAGS
             value: "zmon-staging,kubernetes"
           - name: INSTANA_ZONE
-            value: "{{ .Alias }}" 
+            value: "stups-test"
           - name: INSTANA_AGENT_KUBERNETES_CLUSTER_ID
-            value: "{{ .ID }}"
+            value: "aws:085668006708:eu-central-1:kube-1"
           - name: INSTANA_AGENT_KUBERNETES_CLUSTER_ALIAS
-            value: "{{ .Alias }}"
+            value: "stups-test"
           - name: INSTANA_AGENT_KUBERNETES_CLUSTER_ENVIRONMENT
-            value: "{{ .Environment }}"
+            value: "test"
         livenessProbe:
           exec:
             command:
