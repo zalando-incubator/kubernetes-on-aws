@@ -1,0 +1,42 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: container-linux-update-operator
+  namespace: kube-system
+  labels:
+    application: container-linux-update-operator
+    version: v0.4.1
+    kubernetes.io/cluster-service: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: container-linux-update-operator
+  template:
+    metadata:
+      labels:
+        application: container-linux-update-operator
+        version: v0.4.1
+    spec:
+      containers:
+      - name: update-operator
+        image: quay.io/coreos/container-linux-update-operator:v0.4.1
+        command:
+        - /bin/update-operator
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 50m
+            memory: 25Mi
+      serviceAccountName: system
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
