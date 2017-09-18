@@ -84,6 +84,17 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
+    - name: timesynced-enable-network-time.service
+      command: start
+      runtime: true
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/timedatectl set-ntp true
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: gen-controller-manager-config.service
       command: start
       runtime: true
@@ -746,3 +757,9 @@ write_files:
     content: |
       TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
       TOOLBOX_DOCKER_TAG=v0.0.4
+
+  - path: /etc/systemd/timesynced.conf
+    owner: root
+    content: |
+      [Time]
+      NTP=0.amazon.pool.ntp.org 1.amazon.pool.ntp.org 2.amazon.pool.ntp.org 3.amazon.pool.ntp.org
