@@ -255,6 +255,7 @@ write_files:
           application: kube-proxy
           version: v1.7.6_coreos.0
         annotations:
+          scheduler.alpha.kubernetes.io/critical-pod: ''
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
       spec:
         tolerations:
@@ -305,6 +306,7 @@ write_files:
           application: kube-apiserver
           version: v1.7.6_coreos.0
         annotations:
+          scheduler.alpha.kubernetes.io/critical-pod: ''
           kubernetes-log-watcher/scalyr-parser: |
             [{"container": "webhook", "parser": "json-structured-log"}]
       spec:
@@ -484,6 +486,8 @@ write_files:
         labels:
           application: kube-controller-manager
           version: v1.7.6_coreos.0
+        annotations:
+          scheduler.alpha.kubernetes.io/critical-pod: ''
       spec:
         tolerations:
         - key: CriticalAddonsOnly
@@ -548,6 +552,8 @@ write_files:
         labels:
           application: kube-scheduler
           version: v1.7.6_coreos.0
+        annotations:
+          scheduler.alpha.kubernetes.io/critical-pod: ''
       spec:
         tolerations:
         - key: CriticalAddonsOnly
@@ -589,6 +595,7 @@ write_files:
           version: v0.3.1
           kubernetes.io/cluster-service: "true"
           kubernetes.io/name: "Rescheduler"
+          scheduler.alpha.kubernetes.io/critical-pod: ''
       spec:
         tolerations:
         - key: CriticalAddonsOnly
