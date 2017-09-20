@@ -1,0 +1,67 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: emergency-access-service
+  namespace: kube-system
+  labels:
+    application: emergency-access-service
+    version: master-28
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: emergency-access-service
+  template:
+    metadata:
+      labels:
+        application: emergency-access-service
+        version: master-28
+    spec:
+      serviceAccountName: system
+      containers:
+      - name: emergency-access-service
+        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-28"
+        args:
+        - --insecure-http
+        - --community={{ .Owner }}
+        - --cluster-id={{ .ID }}
+        - --teams-api-url=https://teams.auth.zalando.com
+        - --debug
+        # enable audittrail reporting
+        - --audittrail-url=https://audittrail.cloud.zalando.com
+        - --jira-url=https://techjira.zalando.net
+        env:
+        - name: CONFIGMAP_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: platform-iam-credentials
+          mountPath: /meta/credentials
+          readOnly: true
+        - name: secrets
+          mountPath: /meta/secrets
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+      volumes:
+      - name: platform-iam-credentials
+        secret:
+          secretName: "emergency-access-service"
+      - name: secrets
+        secret:
+          secretName: "emergency-access-service-secrets"
