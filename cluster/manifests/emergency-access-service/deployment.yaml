@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: emergency-access-service
-    version: master-28
+    version: master-30
 spec:
   replicas: 1
   selector:
@@ -15,18 +15,19 @@ spec:
     metadata:
       labels:
         application: emergency-access-service
-        version: master-28
+        version: master-30
     spec:
       serviceAccountName: system
       containers:
       - name: emergency-access-service
-        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-28"
+        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-30"
         args:
         - --insecure-http
         - --community={{ .Owner }}
         - --cluster-id={{ .ID }}
         - --teams-api-url=https://teams.auth.zalando.com
         - --debug
+        - --token-url=https://info.services.auth.zalando.com/oauth2/tokeninfo
         # enable audittrail reporting
         - --audittrail-url=https://audittrail.cloud.zalando.com
         - --jira-url=https://techjira.zalando.net
