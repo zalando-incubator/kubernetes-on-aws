@@ -1,0 +1,73 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: emergency-access-service
+  namespace: kube-system
+  labels:
+    application: emergency-access-service
+    version: master-30
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: emergency-access-service
+  template:
+    metadata:
+      labels:
+        application: emergency-access-service
+        version: master-30
+      annotations:
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "emergency-access-service", "parser": "json-structured-log"}]
+    spec:
+      serviceAccountName: system
+      containers:
+      - name: emergency-access-service
+        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-30"
+        args:
+        - --insecure-http
+        - --community={{ .Owner }}
+        - --cluster-id={{ .ID }}
+        - --teams-api-url=https://teams.auth.zalando.com
+        - --debug
+        # TODO(mlarsen): Rename this flag to tokeninfo-url to reflect that it's
+        # not the OAuth2 token URL.
+        - --token-url=https://info.services.auth.zalando.com/oauth2/tokeninfo
+        # enable audittrail reporting
+        - --audittrail-url=https://audittrail.cloud.zalando.com
+        - --jira-url=https://techjira.zalando.net
+        env:
+        - name: CONFIGMAP_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: platform-iam-credentials
+          mountPath: /meta/credentials
+          readOnly: true
+        - name: secrets
+          mountPath: /meta/secrets
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+      volumes:
+      - name: platform-iam-credentials
+        secret:
+          secretName: "emergency-access-service"
+      - name: secrets
+        secret:
+          secretName: "emergency-access-service-secrets"
