@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: emergency-access-service
-    version: master-28
+    version: master-30
 spec:
   replicas: 1
   selector:
@@ -15,18 +15,24 @@ spec:
     metadata:
       labels:
         application: emergency-access-service
-        version: master-28
+        version: master-30
+      annotations:
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "emergency-access-service", "parser": "json-structured-log"}]
     spec:
       serviceAccountName: system
       containers:
       - name: emergency-access-service
-        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-28"
+        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-30"
         args:
         - --insecure-http
         - --community={{ .Owner }}
         - --cluster-id={{ .ID }}
         - --teams-api-url=https://teams.auth.zalando.com
         - --debug
+        # TODO(mlarsen): Rename this flag to tokeninfo-url to reflect that it's
+        # not the OAuth2 token URL.
+        - --token-url=https://info.services.auth.zalando.com/oauth2/tokeninfo
         # enable audittrail reporting
         - --audittrail-url=https://audittrail.cloud.zalando.com
         - --jira-url=https://techjira.zalando.net
