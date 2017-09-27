@@ -375,7 +375,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.3.2
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.3.3
           name: webhook
           ports:
           - containerPort: 8081
@@ -401,8 +401,8 @@ write_files:
           args:
             - --tokens-file=/etc/kubernetes/config/tokenfile.csv
           env:
-            - name: USERS_API_URL
-              value: https://users.auth.zalando.com
+            - name: TEAMS_API_URL
+              value: https://teams.auth.zalando.com
             - name: CLUSTER_ID
               value: {{WEBHOOK_ID}}
             - name: TOKEN_INTROSPECTION_URL
