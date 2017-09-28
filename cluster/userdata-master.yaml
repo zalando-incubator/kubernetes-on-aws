@@ -12,6 +12,7 @@ ssh_authorized_keys:
   - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCq3oEP8qhMvGtlR1bgVc9tFOVJ5B5RMKtm6UQ/zXQUpm8DQ04SxdM2U7TfuLien2HSfpHAlYe0eLJZUfIqCXUeZ37v0ozj2RglireEcJm0t9XJ7kTS4kqVxrL6iuN6qQVGHs0vxoo/o9+SP0YkuuJoXwJvVI4yKVbnbfA5hKaAffAYPmfgqOZ7+3AMwmaj/D3tI0xVEA48ptGkj5nnOl0pXlfLRNvbnXOCa/dTKUgkma1F0lXoTipkRspsMEiAnwfJ1dwnzgNzllt//Ao/H+yOVR8fWJ7d+nowszIk6zwUR7c6walxKKf5Oy5bQBU49MZ6xLP1oma9F2+llmV7qpqx rodrigo.reis@zalando.de'
   - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqAikaHsZWMuJvKZphZPZG0fnKMvVCRfBAbIS6e0Y+YqM0PfsWgB5e4f5TrbisQHdKopbfZVwYIaV/NegEuinrYPKC7t2ese/HjxgjHR95zHOcDP19Cbo+xeyH8zbRd9K3iRSyCUSMNRw5NL6zN8JOSl12m8QWQA4hTjFTmt870fIT4RLxu9qGlbQipUm57E/SotsNC41MQ/PsLQzOAviKrkS1rei2vzRHzAcjz1Z7GT5oH+dFVUC66kKa0XWDvq+VtkRVoLvS2chrIPCgESeeZAyOKyiOoyJxFFFiMVK48MWDBBIYTIsHE0qs/RwBi9+8lQGiHK5Rpk2djcloO0c7 sandor.szuecs@zalando.de'
   - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCa6Sj76tQ/nyCbkAd5zL/ZPhH+4lfuBT7fFXfamRnIiA3LVXp5/0R8vhvXOYL5Q6uclr5n8sJD1IcwpYTkQrV+u7+PKnbBJZjYDgsbcDr843jzDHhJOzWiKpB5fFcu4Ll5pYVyXq3CgsTuNKBUCnQJEtx7WLRBAFoHZuicp9IjfXfyEVclcKvlGfWBFnidaSCrv2MKKCfqYwif8bY1PSnDYaqsqCrptZkzvuFlcewtsp2t12W760LiZlAB8RRM9SE5DdTYqyeLB2NymI0JecFM+yW/p3bRp6NZt63w9N/IqjQw5aJwAJfEzrb2dVKlr9y7TXyKZPfElvzPEsujTZBOTZs4uRfTMdPsAJj8qB/hNvdIfaFLn9KNQvzhwOjk8zjYU5NhZMUu5T8VBby8tcg9DLFfIqLJxoD1E1UHkOXCIuA3jhF6zre2d6cUeLmatsuOmd2OYeAcy9s3GOOjn/zCpIZ9k5eDLaWKwBgNFnNVznWdOgpd5BaY5PE1wS6655/po7hEngE3KWaNcmHV7AuQteozWYNNbIZy78UZ2p9LDm7v78BP5UNy834kSOu8MUQN2hNJ9hZ4x0MI2F6nmDKxqxAfkH9LBQ3Mf6FfJsV0+GSrLnI0mvmBcZp9/LOwcBAjf9MyHN3IcFbTxiQATaj7rXnYoBi88g9l4lQObiBNXQ== yerken.tussupbekov@zalando.de'
+  - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0AQyTM4DBDLiXDfHpVUAKv8H+DPTJQWeXEO4knfUT+jskpKDafmR8AcOjSlEOONv2MWMLTnTXV3rWYKJtP9NkgpZO/o+l0sZ9GW3ZOieg49NiiWabqa3OAHadgVfqtk9vNBB1Yz977LnloU4pt1MEe6S7Tmrf8pp9JcesNJ3W+zAG49PEZ9U+pL9UMGbPcFjnpVJvXp3cl+PI6TeuFehPzch0NKPBIXbIdgOgY6VA36YAHvgVD6tClcui7QZ71uNDvChfYkUqeGNcHQzElhqBAi2AoOATd9pM4Cz/0c7kbBkky5aiJ9D/ooQswnwKrd7w0S53hG+lHL18P/qHHkBL alexey.ermakov@zalando.de'
 coreos:
   update:
     reboot-strategy: "off"
@@ -337,6 +338,7 @@ write_files:
           - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,extensions/v1beta1/podsecuritypolicy=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
+          - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
           - --authorization-mode=Webhook
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
@@ -374,7 +376,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.3.1
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.3.4
           name: webhook
           ports:
           - containerPort: 8081
@@ -400,8 +402,8 @@ write_files:
           args:
             - --tokens-file=/etc/kubernetes/config/tokenfile.csv
           env:
-            - name: USERS_API_URL
-              value: https://users.auth.zalando.com
+            - name: TEAMS_API_URL
+              value: https://teams.auth.zalando.com
             - name: CLUSTER_ID
               value: {{WEBHOOK_ID}}
             - name: TOKEN_INTROSPECTION_URL
