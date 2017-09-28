@@ -4,7 +4,7 @@ metadata:
   name: zmon-worker
   namespace: kube-system
 spec:
-  replicas: 2
+  replicas: 4
   selector:
     matchLabels:
       application: zmon-worker
@@ -12,7 +12,7 @@ spec:
     metadata:
       labels:
         application: zmon-worker
-        version: "zv223"
+        version: "zv225"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -22,14 +22,14 @@ spec:
         operator: Exists
       containers:
         - name: zmon-worker
-          image: "pierone.stups.zalan.do/stups/zmon-worker:zv223"
+          image: "pierone.stups.zalan.do/stups/zmon-worker:zv225"
           resources:
             limits:
               cpu: 500m
               memory: 2Gi
             requests:
-              cpu: 200m
-              memory: 1Gi
+              cpu: 500m
+              memory: 2Gi
 
           ports:
             - containerPort: 8080
@@ -43,7 +43,7 @@ spec:
 
           env:
             - name: WORKER_ZMON_QUEUES
-              value: zmon:queue:default/16
+              value: zmon:queue:default/24
             - name: WORKER_REDIS_SERVERS
               value: zmon-redis:6379
             - name: WORKER_PLUGIN_SCALYR_READ_KEY
