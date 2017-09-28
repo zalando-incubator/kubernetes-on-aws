@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.10.0-alpha
+    version: v0.9.83
     component: ingress
 spec:
   selector:
@@ -18,7 +18,7 @@ spec:
       name: skipper-ingress
       labels:
         application: skipper-ingress
-        version: v0.10.0-alpha
+        version: v0.9.83
         component: ingress
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -44,12 +44,12 @@ spec:
           containerPort: 9999
           hostPort: 9999
         args:
+          - "skipper"
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-address=:9999"
           - "-proxy-preserve-host"
           - "-serve-host-metrics"
-          - "-opentracing=tracing_instana"
         resources:
           limits:
             cpu: 200m
