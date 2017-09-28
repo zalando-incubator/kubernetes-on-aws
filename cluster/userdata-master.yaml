@@ -170,16 +170,16 @@ coreos:
         ExecStart=/bin/true
         TimeoutStopSec=120s
         ExecStop=/bin/sh -c '/usr/bin/rkt run --insecure-options=image \
-        --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
-        --mount=volume=kube,target=/etc/kubernetes \
-        --net=host \
-        docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.6_coreos.0 \
+          --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
+          --mount=volume=kube,target=/etc/kubernetes \
+          --net=host \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.6_coreos.0 \
           --exec=/kubectl -- \
-          --kubeconfig=/etc/kubernetes/kubeconfig \
-          drain $(hostname) \
-          --ignore-daemonsets \
-          --delete-local-data \
-          --force'
+            --kubeconfig=/etc/kubernetes/kubeconfig \
+            drain $(hostname) \
+            --ignore-daemonsets \
+            --delete-local-data \
+            --force'
 
         [Install]
         WantedBy=multi-user.target
