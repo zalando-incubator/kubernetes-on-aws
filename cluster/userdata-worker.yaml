@@ -145,7 +145,6 @@ coreos:
       content: |
         [Unit]
         Description=drain this k8s node to make running pods time to gracefully shut down before stopping kubelet
-        Requires=docker.service
         After=docker.service
 
         [Service]
@@ -153,17 +152,17 @@ coreos:
         RemainAfterExit=true
         ExecStart=/bin/true
         TimeoutStopSec=120s
-        ExecStop=/bin/sh -c '/usr/bin/rkt run \
-        --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
-        --mount=volume=kube,target=/etc/kubernetes \
-        --net=host \
-        registry.opensource.zalan.do/teapot/hyperkube:v1.7.6_coreos.0 \
+        ExecStop=/bin/sh -c '/usr/bin/rkt run --insecure-options=image \
+          --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
+          --mount=volume=kube,target=/etc/kubernetes \
+          --net=host \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.6_coreos.0 \
           --exec=/kubectl -- \
-          --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
-          drain $(hostname) \
-          --ignore-daemonsets \
-          --delete-local-data \
-          --force'
+            --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
+            drain $(hostname) \
+            --ignore-daemonsets \
+            --delete-local-data \
+            --force'
 
         [Install]
         WantedBy=multi-user.target
