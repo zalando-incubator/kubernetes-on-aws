@@ -167,17 +167,6 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
-    - name: cfn-signal.service
-      command: start
-      runtime: true
-      content: |
-        [Service]
-        Type=oneshot
-        ExecStart=/usr/bin/docker run registry.opensource.zalan.do/teapot/cfn-signal:1.4-4 {{LOCAL_ID}} WorkerAutoScaling 0
-
-        [Install]
-        WantedBy=multi-user.target
-
 write_files:
 
   - path: /etc/kubernetes/cni/docker_opts_cni.env
