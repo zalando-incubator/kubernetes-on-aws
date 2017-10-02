@@ -52,6 +52,10 @@ coreos:
             ExecStartPre=/usr/bin/etcdctl \
             --endpoint=http://127.0.0.1:2379 set /coreos.com/network/config \
             '{ "Network": "10.2.0.0/16", "Backend": {"Type": "vxlan"}}'
+        - name: 20-version.conf
+          content: |
+            [Service]
+            Environment="FLANNEL_IMAGE_TAG=v0.8.0"
 
     - name: kube2iam-iptables.service
       command: start
