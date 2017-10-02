@@ -44,6 +44,13 @@ coreos:
             [Service]
             Environment="DOCKER_OPTS=--log-opt=max-file=2 --log-opt=max-size=50m"
 
+    - name: flanneld.service
+      drop-ins:
+      - name: 20-version.conf
+        content: |
+          [Service]
+          Environment="FLANNEL_IMAGE_TAG=v0.8.0"
+
     - name: timesynced-enable-network-time.service
       command: start
       runtime: true
