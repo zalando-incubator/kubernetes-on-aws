@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: coredns-autoscaler
+  namespace: kube-system
+  labels:
+    application: coredns-autoscaler
+    version: v1.1.2
+    kubernetes.io/cluster-service: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: coredns-autoscaler
+  template:
+    metadata:
+      labels:
+        application: coredns-autoscaler
+        version: v1.1.2
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      serviceAccountName: system
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      containers:
+      - name: autoscaler
+        image: registry.opensource.zalan.do/teapot/cluster-proportional-autoscaler:1.1.2-r2
+        resources:
+          requests:
+            cpu: "20m"
+            memory: "10Mi"
+        command:
+          - /cluster-proportional-autoscaler
+          - --namespace=kube-system
+          - --configmap=coredns-autoscaler
+          - --target=Deployment/coredns
+          - --default-params={"linear":{"coresPerReplica":256,"nodesPerReplica":16,"preventSinglePointFailure":true}}
+          - --logtostderr=true
+          - --v=2
