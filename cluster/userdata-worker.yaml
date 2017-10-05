@@ -16,9 +16,6 @@ ssh_authorized_keys:
 coreos:
   update:
     reboot-strategy: "off"
-  flannel:
-    interface: $private_ipv4
-    etcd_endpoints: http://127.0.0.1:2379
   units:
     - name: etcd-member.service
       command: start
@@ -43,6 +40,22 @@ coreos:
           content: |
             [Service]
             Environment="DOCKER_OPTS=--log-opt=max-file=2 --log-opt=max-size=50m"
+
+    - name: flanneld.service
+      drop-ins:
+      - name: 20-version.conf
+        content: |
+          [Service]
+          Environment="FLANNELD_IFACE="$private_ipv4"
+          Environment="FLANNELD_ETCD_ENDPOINTS="http://127.0.0.1:2379"
+          Environment="FLANNEL_IMAGE_TAG=v0.9.0"
+
+    - name: flannel-docker-opts.service
+      drop-ins:
+      - name: 20-version.conf
+        content: |
+          [Service]
+          Environment="FLANNEL_IMAGE_TAG=v0.9.0"
 
     - name: timesynced-enable-network-time.service
       command: start
