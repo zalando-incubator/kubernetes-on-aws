@@ -1,0 +1,25 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: pod-cidr-controller
+  namespace: kube-system
+  labels:
+    application: pod-cidr-controller
+    version: v0.1.0
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      application: pod-cidr-controller
+  template:
+    metadata:
+      labels:
+        application: pod-cidr-controller
+        version: v0.1.0
+    spec:
+      hostNetwork: true
+      containers:
+      - name: pod-cidr-controller
+        image: pierone.stups.zalan.do/teapot/pod-cidr-controller:v0.1.0
+      serviceAccountName: system
