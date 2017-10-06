@@ -186,6 +186,15 @@ coreos:
           docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.7_coreos.0 \
           --exec=/kubectl -- \
             --kubeconfig=/etc/kubernetes/kubeconfig \
+            label node $(hostname) \
+            lifecycle-status=draining \
+            --overwrite; /usr/bin/rkt run --insecure-options=image \
+          --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
+          --mount=volume=kube,target=/etc/kubernetes \
+          --net=host \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.7_coreos.0 \
+          --exec=/kubectl -- \
+            --kubeconfig=/etc/kubernetes/kubeconfig \
             drain $(hostname) \
             --ignore-daemonsets \
             --delete-local-data \
