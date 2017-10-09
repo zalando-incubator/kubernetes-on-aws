@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: pod-cidr-controller
@@ -19,7 +19,14 @@ spec:
         version: v0.1.0
     spec:
       hostNetwork: true
+      serviceAccountName: system
       containers:
       - name: pod-cidr-controller
         image: pierone.stups.zalan.do/teapot/pod-cidr-controller:v0.1.0
-      serviceAccountName: system
+        resources:
+          requests:
+            memory: 32Mi
+            cpu: 10m
+          limits:
+            memory: 128Mi
+            cpu: 100m
