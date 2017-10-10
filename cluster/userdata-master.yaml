@@ -16,9 +16,6 @@ ssh_authorized_keys:
 coreos:
   update:
     reboot-strategy: "off"
-  flannel:
-    interface: $private_ipv4
-    etcd_endpoints: http://127.0.0.1:2379
   units:
     - name: etcd-member.service
       command: start
@@ -27,7 +24,6 @@ coreos:
         - name: 40-etcd-gateway.conf
           content: |
             [Service]
-            Environment="ETCD_IMAGE_TAG=v3.1.6"
             Environment="ETCD_OPTS=gateway start --listen-addr=127.0.0.1:2379 --endpoints={{ ETCD_ENDPOINTS }}"
 
     - name: docker.service
@@ -46,12 +42,25 @@ coreos:
 
     - name: flanneld.service
       drop-ins:
-        - name: 10-etcd.conf
-          content: |
-            [Service]
-            ExecStartPre=/usr/bin/etcdctl \
-            --endpoint=http://127.0.0.1:2379 set /coreos.com/network/config \
-            '{ "Network": "10.2.0.0/16", "Backend": {"Type": "vxlan"}}'
+      - name: 10-etcd.conf
+        content: |
+          [Service]
+          ExecStartPre=/usr/bin/etcdctl \
+          --endpoint=http://127.0.0.1:2379 set /coreos.com/network/config \
+          '{ "Network": "10.2.0.0/16", "Backend": {"Type": "vxlan"}}'
+      - name: 20-version.conf
+        content: |
+          [Service]
+          Environment="FLANNELD_IFACE="$private_ipv4"
+          Environment="FLANNELD_ETCD_ENDPOINTS="http://127.0.0.1:2379"
+          Environment="FLANNEL_IMAGE_TAG=v0.9.0"
+
+    - name: flannel-docker-opts.service
+      drop-ins:
+      - name: 20-version.conf
+        content: |
+          [Service]
+          Environment="FLANNEL_IMAGE_TAG=v0.9.0"
 
     - name: kube2iam-iptables.service
       command: start
@@ -112,7 +121,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_IMAGE_TAG=v1.7.6_coreos.0
+        Environment=KUBELET_IMAGE_TAG=v1.7.7_coreos.0
         Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_RUN_ARGS=--insecure-options=image \
         --uuid-file-save=/var/run/kubelet-pod.uuid \
@@ -135,7 +144,7 @@ coreos:
         --rkt-path=/usr/bin/rkt \
         --register-schedulable=false \
         --allow-privileged \
-        --node-labels=master=true \
+        --node-labels=kubernetes.io/role=master,master=true \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
         --cluster_dns=10.3.0.10 \
@@ -174,7 +183,16 @@ coreos:
           --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
           --mount=volume=kube,target=/etc/kubernetes \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.6_coreos.0 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.7_coreos.0 \
+          --exec=/kubectl -- \
+            --kubeconfig=/etc/kubernetes/kubeconfig \
+            label node $(hostname) \
+            lifecycle-status=draining \
+            --overwrite; /usr/bin/rkt run --insecure-options=image \
+          --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
+          --mount=volume=kube,target=/etc/kubernetes \
+          --net=host \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.7_coreos.0 \
           --exec=/kubectl -- \
             --kubeconfig=/etc/kubernetes/kubeconfig \
             drain $(hostname) \
@@ -254,7 +272,7 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-proxy
-          version: v1.7.6_coreos.0
+          version: v1.7.7_coreos.0
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
           rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
@@ -265,7 +283,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.6_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.7_coreos.0
           command:
           - /hyperkube
           - proxy
@@ -305,7 +323,7 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.7.6_coreos.0
+          version: v1.7.7_coreos.0
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
           kubernetes-log-watcher/scalyr-parser: |
@@ -317,7 +335,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.6_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.7_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -376,7 +394,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.3.4
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.3.5
           name: webhook
           ports:
           - containerPort: 8081
@@ -487,7 +505,7 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.7.6_coreos.0
+          version: v1.7.7_coreos.0
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
       spec:
@@ -496,7 +514,7 @@ write_files:
           operator: Exists
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.6_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.7_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -553,7 +571,7 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.7.6_coreos.0
+          version: v1.7.7_coreos.0
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
       spec:
@@ -563,7 +581,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.6_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.7_coreos.0
           command:
           - /hyperkube
           - scheduler
