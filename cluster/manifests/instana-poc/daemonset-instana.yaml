@@ -1,0 +1,99 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    name: monitor
+    application: instana-agent
+    version: v1
+  name: instana-agent
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      application: instana-agent
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      name: instana-agent
+      labels:
+        application: instana-agent
+        version: v1
+    spec:
+      hostNetwork: true
+      hostIPC: true
+      hostPID: true
+      containers:
+      - name: instana-agent
+        image: pierone.stups.zalan.do/eagleeye/instana-agent:master-12
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: docker
+          mountPath: /var/run/docker.sock
+        - name: dev
+          mountPath: /dev
+        - name: sys
+          mountPath: /sys
+        - name: varlog
+          mountPath: /var/log
+        ports:
+        env:
+          - name: INSTANA_PORT
+            value: "443"
+          - name: INSTANA_HOST
+            value: "saas-eu-west-1.instana.io"
+          - name: INSTANA_KEY
+            valueFrom:
+              secretKeyRef:
+                name: instana-agent
+                key: instana-key
+          - name: INSTANA_TAGS
+            value: "zmon=staging,platform=kubernetes,environment={{ .Environment }}"
+          - name: INSTANA_ZONE
+            value: "{{ .Alias }}"
+          - name: INSTANA_AGENT_KUBERNETES_CLUSTER_ID
+            value: "{{ .ID }}"
+          - name: INSTANA_AGENT_KUBERNETES_CLUSTER_ALIAS
+            value: "{{ .Alias }}"
+          - name: INSTANA_AGENT_KUBERNETES_CLUSTER_ENVIRONMENT
+            value: "{{ .Environment }}"
+        livenessProbe:
+          exec:
+            command:
+              - echo
+              - noop
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          exec:
+            command:
+              - echo
+              - noop
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "0.2"
+          limits:
+            memory: "512Mi"
+            cpu: "0.5"
+      volumes:
+      - name: docker
+        hostPath:
+          path: /var/run/docker.sock
+      - name: dev
+        hostPath:
+          path: /dev
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: varlog
+        hostPath:
+          path: /var/log

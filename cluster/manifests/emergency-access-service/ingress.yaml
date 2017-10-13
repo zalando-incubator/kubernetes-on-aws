@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: emergency-access-service
+  namespace: kube-system
+  labels:
+    application: emergency-access-service
+spec:
+  rules:
+  - host: emergency-access-service.{{ .Alias }}.zalan.do
+    http:
+      paths:
+      - backend:
+          serviceName: emergency-access-service
+          servicePort: http
