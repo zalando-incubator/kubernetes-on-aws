@@ -38,7 +38,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: pierone.stups.zalan.do/teapot/skipper-tracing:v0.0.2
+        image: pierone.stups.zalan.do/teapot/skipper-tracing:v0.0.3
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -49,6 +49,7 @@ spec:
           - "-address=:9999"
           - "-proxy-preserve-host"
           - "-serve-host-metrics"
+          - "-metrics-exp-decay-sample"
           - "-opentracing=tracing_instana"
         resources:
           limits:
