@@ -1,0 +1,28 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: pdb-controller
+  namespace: kube-system
+  labels:
+    application: pdb-controller
+    version: v0.0.1
+spec:
+  selector:
+    matchLabels:
+      application: pdb-controller
+  template:
+    metadata:
+      labels:
+        application: pdb-controller
+        version: v0.0.1
+    spec:
+      containers:
+      - name: pdb-controller
+        image: registry.opensource.zalan.do/teapot/pdb-controller:v0.0.1
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 10m
+            memory: 25Mi
