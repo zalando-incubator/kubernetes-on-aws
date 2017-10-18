@@ -22,6 +22,15 @@ spec:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kube-proxy
+                operator: NotIn
+                values:
+                - local
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
