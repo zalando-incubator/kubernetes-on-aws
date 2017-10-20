@@ -6,6 +6,8 @@ metadata:
   labels:
     application: kube-proxy
     version: v1.7.9_coreos.0
+  annotations:
+    rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
 spec:
   selector:
     matchLabels:
@@ -20,7 +22,6 @@ spec:
         version: v1.7.9_coreos.0
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
     spec:
       affinity:
         nodeAffinity:
@@ -32,8 +33,12 @@ spec:
                 values:
                 - local
       tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
+      - operator: Exists
+        effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
+      - operator: Exists
+        key: CriticalAddonsOnly
       hostNetwork: true
       containers:
       - name: kube-proxy
@@ -63,9 +68,6 @@ spec:
         - name: etc-kube-ssl
           mountPath: /etc/kubernetes/ssl
           readOnly: true
-        - name: dbus
-          mountPath: /var/run/dbus
-          readOnly: false
       volumes:
       - name: ssl-certs
         hostPath:
@@ -76,6 +78,3 @@ spec:
       - name: etc-kube-ssl
         hostPath:
           path: /etc/kubernetes/ssl
-      - name: dbus
-        hostPath:
-          path: /var/run/dbus
