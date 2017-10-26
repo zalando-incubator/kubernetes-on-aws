@@ -35,11 +35,12 @@ spec:
         - |
             if [ ! -f /mnt/scalyr/agent.json ]; then
               echo '{
-                "import_vars": ["WATCHER_SCALYR_API_KEY", "WATCHER_CLUSTER_ID"],
+                "import_vars": ["WATCHER_SCALYR_API_KEY", "WATCHER_SCALYR_REGION", "WATCHER_CLUSTER_ID"],
                 "server_attributes": {"serverHost": "$WATCHER_CLUSTER_ID"},
                 "implicit_agent_process_metrics_monitor": false,
                 "implicit_metric_monitor": false,
                 "api_key": "$WATCHER_SCALYR_API_KEY",
+                "scalyr_server": "$WATCHER_SCALYR_REGION",
                 "monitors": [],
                 "logs": []
                 }' > /mnt/scalyr/agent.json;
@@ -109,6 +110,8 @@ spec:
             secretKeyRef:
               name: logging-agent
               key: scalyr-access-key
+        - name: WATCHER_SCALYR_REGION
+          value: "{{ .ConfigItems.scalyr_region }}"
         - name: WATCHER_CLUSTER_ID
           value: "{{ .ID }}"
 
