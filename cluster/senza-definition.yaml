@@ -31,6 +31,8 @@ SenzaInfo:
           Description: "Name of the master node pool (ASG)"
       - WorkerNodePoolName:
           Description: "Name of the worker node pool (ASG)"
+      - EtcdS3BackupBucket:
+          Description: "Name of the S3 bucket used for etcd backups"
 
 SenzaComponents:
   - Configuration:
@@ -788,6 +790,42 @@ Resources:
             - {Action: 'autoscaling:Describe*', Effect: Allow, Resource: '*'}
             - {Action: 'autoscaling:CompleteLifecycleAction', Effect: Allow, Resource: '*'}
             - {Action: 'sts:AssumeRole', Effect: Allow, Resource: '*'}
+          Version: '2012-10-17'
+        PolicyName: root
+  ETCDS3BackupIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-etcd-backup"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: WorkerIAMRole
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ["s3:ListBucket"]
+            Resource: ["arn:aws:s3:::{{ Arguments.EtcdS3BackupBucket }}"]
+          - Effect: Allow
+            Action:
+            - "s3:PutObject"
+            - "s3:GetObject"
+            - "s3:DeleteObject"
+            Resource: ["arn:aws:s3:::{{ Arguments.EtcdS3BackupBucket }}/*"]
           Version: '2012-10-17'
         PolicyName: root
 Outputs:
