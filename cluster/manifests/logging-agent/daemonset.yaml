@@ -45,12 +45,13 @@ spec:
                 "monitors": [],
                 "logs": []
                 ' > $SCALYR_CONFIG_PATH;
-                if [ -n "$WATCHER_SCALYR_REGION" ]; then
-                  IMPORT_VARS="$IMPORT_VARS WATCHER_SCALYR_REGION"
-                  echo ',"scalyr_server": "$WATCHER_SCALYR_REGION"' >> $SCALYR_CONFIG_PATH
+                if [ -n "$WATCHER_SCALYR_SERVER" ]; then
+                  IMPORT_VARS="$IMPORT_VARS WATCHER_SCALYR_SERVER"
+                  echo ',"scalyr_server": "$WATCHER_SCALYR_SERVER"' >> $SCALYR_CONFIG_PATH
                 fi
                 echo ', "import_vars":[' >> $SCALYR_CONFIG_PATH
-                for i in $IMPORT_VARS; do echo "\"$i\","; done | sed 's/",$/"/' >> $SCALYR_CONFIG_PATH
+                ALL_IMPORT_VARS=`for i in $IMPORT_VARS; do echo "\"$i\","; done`
+                echo $ALL_IMPORT_VARS | sed 's/",$/"/' >> $SCALYR_CONFIG_PATH
                 echo ' ]' >> $SCALYR_CONFIG_PATH
                 echo "}" >> $SCALYR_CONFIG_PATH
                 echo 'Updated agent.json to inital configuration';
@@ -119,8 +120,8 @@ spec:
             secretKeyRef:
               name: logging-agent
               key: scalyr-access-key
-        - name: WATCHER_SCALYR_REGION
-          value: "{{ .ConfigItems.scalyr_region }}"
+        - name: WATCHER_SCALYR_SERVER
+          value: "{{ .ConfigItems.scalyr_server }}"
         - name: WATCHER_CLUSTER_ID
           value: "{{ .ID }}"
 
