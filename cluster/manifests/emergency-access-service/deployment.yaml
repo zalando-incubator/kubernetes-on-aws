@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: emergency-access-service
-    version: master-40
+    version: master-48
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: emergency-access-service
-        version: master-40
+        version: master-48
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "emergency-access-service", "parser": "json-structured-log"}]
@@ -23,7 +23,7 @@ spec:
       serviceAccountName: system
       containers:
       - name: emergency-access-service
-        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-40"
+        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-48"
         args:
         - --insecure-http
         - --community={{ .Owner }}
@@ -36,6 +36,7 @@ spec:
         # enable audittrail reporting
         - --audittrail-url=https://audittrail.cloud.zalando.com
         - --jira-url=https://techjira.zalando.net
+        - --environment={{ .Environment }}
         env:
         - name: CONFIGMAP_NAMESPACE
           valueFrom:
