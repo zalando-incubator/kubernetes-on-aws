@@ -61,8 +61,6 @@ SenzaComponents:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
   - MasterAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: "{{ Arguments.MasterInstanceType }}"
@@ -89,8 +87,6 @@ SenzaComponents:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
         - Key: "NodePool"
           Value: "{{ Arguments.MasterNodePoolName }}"
   - WorkerAutoScaling:
@@ -116,8 +112,6 @@ SenzaComponents:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
         - Key: "NodePool"
           Value: "{{ Arguments.WorkerNodePoolName }}"
 Resources:
@@ -282,8 +276,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
   MasterLoadBalancerSecurityGroup:
@@ -295,8 +287,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
   MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
@@ -309,8 +299,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromLoadBalancer:
     Properties:
@@ -322,8 +310,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromMaster:
     Properties:
@@ -335,8 +321,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterKubeletToMasterKubeletSecurityGroup:
     Properties:
@@ -348,8 +332,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroup:
     Properties:
@@ -366,8 +348,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
 
@@ -381,8 +361,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
         - Key: "kubernetes:application"
           Value: "kube-ingress-aws-controller"
     Type: AWS::EC2::SecurityGroup
@@ -397,8 +375,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterToFlannel:
     Properties:
@@ -410,8 +386,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterToKubelet:
     Properties:
@@ -423,8 +397,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterTocAdvisor:
     Properties:
@@ -436,8 +408,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromFlannelToMaster:
     Properties:
@@ -449,8 +419,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromWorkerToMasterKubeletReadOnly:
     Properties:
@@ -462,8 +430,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromWorkerToFlannel:
     Properties:
@@ -475,8 +441,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromWorkerToWorkerKubeletReadOnly:
     Properties:
@@ -488,8 +452,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromWorkerToWorkerSkipperMetrics:
     Properties:
@@ -501,8 +463,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
 
   ZmonIAMRole:
