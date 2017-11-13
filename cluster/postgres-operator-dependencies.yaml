@@ -1,0 +1,175 @@
+SenzaComponents:
+- Configuration:
+    Type: Senza::StupsAutoConfiguration
+- AppServer:
+    IamRoles:
+    - Ref: EtcdRole
+    InstanceType: t2.small
+    SecurityGroups:
+    - Fn::GetAtt:
+      - EtcdSecurityGroup
+      - GroupId
+    TaupageConfig:
+      ports:
+        2379: 2379
+        2380: 2380
+      runtime: Docker
+      source: registry.opensource.zalan.do/acid/etcd-cluster:3.0.17-p15
+      environment:
+        HOSTED_ZONE: '{{ Arguments.HostedZone }}'
+      mounts:
+        /home/etcd:
+          partition: none
+          filesystem: tmpfs
+          erase_on_boot: false
+          options: size=2g
+    Type: Senza::TaupageAutoScalingGroup
+    AutoScaling:
+      Minimum: "{{Arguments.InstanceCount}}"
+      Maximum: "{{Arguments.InstanceCount}}"
+SenzaInfo:
+  Parameters:
+  - HostedZone:
+      Description: AWS Hosted Zone to work with
+  - InstanceCount:
+      Description: Instance number in ASG
+      Default: 3
+  - EtcdS3Backup:
+      Description: AWS S3 Bucket to backup ETCD to
+  StackName: etcd-acid-cluster
+Resources:
+  EtcdSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Etcd Acid Appliance Security Group
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 172.16.0.0/12
+      - IpProtocol: tcp
+        FromPort: 2379
+        ToPort: 2380
+        CidrIp: 172.16.0.0/12
+      - IpProtocol: tcp
+        FromPort: 9100
+        ToPort: 9100
+        CidrIp: 172.16.0.0/12
+  EtcdIngressMembers:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      GroupId:
+        Fn::GetAtt:
+          - EtcdSecurityGroup
+          - GroupId
+      IpProtocol: tcp
+      FromPort: 0
+      ToPort: 65535
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+          - EtcdSecurityGroup
+          - GroupId
+  EtcdRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: AmazonEC2ReadOnlyAccess
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+              - ec2:Describe*
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:RevokeSecurityGroupIngress
+            Resource: "*"
+          - Effect: Allow
+            Action: autoscaling:Describe*
+            Resource: "*"
+      - PolicyName: AmazonRoute53Access
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - route53:ListHostedZonesByName
+            - route53:ChangeResourceRecordSets
+            - route53:GetHostedZone
+            - route53:ListResourceRecordSets
+            - route53:GetChange
+            Resource: "*"
+      - PolicyName: AmazonS3EtcdBackupWrite
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:PutObject
+            Resource: [ "arn:aws:s3:::{{Arguments.EtcdS3Backup}}/*" ]
+
+  PostgresOperatorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      RoleName: "postgres-operator-role"
+      Policies:
+      - PolicyName: AllowEC2Modify
+        PolicyDocument:
+          Version: "2012-10-17",
+          Statement:
+            - Effect: Allow
+              Action:
+                - ec2:Describe*
+                - ec2:Modify*
+
+  PostgresPodRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      Path: "/"
+      RoleName: "postgres-pod-role"
+      Policies:
+      - PolicyName: postgres-pod-policy
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Action:
+              - "s3:*"
+              Resource:
+              - "arn:aws:s3:::{{ Arguments.postgres_backup_bucket }}"
+            - Effect: "Allow"
+              Action":
+              - "ec2:CreateTags"
+              - "ec2:Describe*"
+              - "ec2:Modify*"
+              Resource:
+              - "*"
+
+  PostgresS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: {{ Arguments.postgres_backup_bucket }}
+      AccessControl: Private
+

@@ -1,0 +1,25 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: postgres-operator
+  namespace: acid
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: postgres-operator
+        application: postgres-operator
+        version: {{ version }}
+    spec:
+      containers:
+      - env:
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CONFIG_MAP_NAME
+          value: "postgres-operator"
+        image: pierone.stups.zalan.do/acid/postgres-operator:ba6529bba6529b
+        name: postgres-operator
+      serviceAccountName: operator
