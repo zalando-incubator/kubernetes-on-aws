@@ -12,7 +12,7 @@ spec:
     metadata:
       labels:
         application: zmon-worker
-        version: "zv225"
+        version: "zv228"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -22,7 +22,7 @@ spec:
         operator: Exists
       containers:
         - name: zmon-worker
-          image: "pierone.stups.zalan.do/stups/zmon-worker:zv225"
+          image: "pierone.stups.zalan.do/stups/zmon-worker:zv228"
           resources:
             limits:
               cpu: 500m
@@ -82,6 +82,13 @@ spec:
             - /meta/credentials
             - --application-id=gerry
             - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 10m
+              memory: 10Mi
 
           volumeMounts:
             - name: credentials
