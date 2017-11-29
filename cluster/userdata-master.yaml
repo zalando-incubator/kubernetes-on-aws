@@ -53,14 +53,14 @@ coreos:
           [Service]
           Environment="FLANNELD_IFACE="$private_ipv4"
           Environment="FLANNELD_ETCD_ENDPOINTS="http://127.0.0.1:2379"
-          Environment="FLANNEL_IMAGE_TAG=v0.9.0"
+          Environment="FLANNEL_IMAGE_TAG=v0.9.1"
 
     - name: flannel-docker-opts.service
       drop-ins:
       - name: 20-version.conf
         content: |
           [Service]
-          Environment="FLANNEL_IMAGE_TAG=v0.9.0"
+          Environment="FLANNEL_IMAGE_TAG=v0.9.1"
 
     - name: kube2iam-iptables.service
       command: start
@@ -145,6 +145,7 @@ coreos:
         --register-schedulable=false \
         --allow-privileged \
         --node-labels=kubernetes.io/role=master,master=true \
+        --node-labels=flannel=local \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
         --cluster_dns=10.3.0.10 \
