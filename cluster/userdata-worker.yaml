@@ -131,11 +131,12 @@ coreos:
         --register-node \
         --allow-privileged \
         --node-labels=kubernetes.io/role=worker \
+        --node-labels=kube-proxy=local \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
         --cluster_dns=10.3.0.10 \
         --cluster_domain=cluster.local \
-        --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
+        --kubeconfig=/etc/kubernetes/kubeconfig \
         --require-kubeconfig \
         --healthz-bind-address=0.0.0.0 \
         --healthz-port=10248 \
@@ -181,7 +182,7 @@ coreos:
           --net=host \
           docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0 \
           --exec=/kubectl -- \
-            --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
+            --kubeconfig=/etc/kubernetes/kubeconfig \
             drain $(hostname) \
             --ignore-daemonsets \
             --delete-local-data \
@@ -214,10 +215,10 @@ write_files:
         apiVersion: v1
         kind: Pod
         metadata:
-          name: kube-proxy
+          name: kube-proxy-userdata
           namespace: kube-system
           labels:
-            application: kube-proxy
+            application: kube-proxy-userdata
             version: v1.7.9_coreos.0
           annotations:
             scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -233,7 +234,7 @@ write_files:
             command:
             - /hyperkube
             - proxy
-            - --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml
+            - --kubeconfig=/etc/kubernetes/kubeconfig
             - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
             - --v=2
             securityContext:
@@ -248,7 +249,7 @@ write_files:
             volumeMounts:
               - mountPath: /etc/ssl/certs
                 name: "ssl-certs"
-              - mountPath: /etc/kubernetes/worker-kubeconfig.yaml
+              - mountPath: /etc/kubernetes/kubeconfig
                 name: "kubeconfig"
                 readOnly: true
               - mountPath: /etc/kubernetes/ssl
@@ -263,7 +264,7 @@ write_files:
                 path: "/usr/share/ca-certificates"
             - name: "kubeconfig"
               hostPath:
-                path: "/etc/kubernetes/worker-kubeconfig.yaml"
+                path: "/etc/kubernetes/kubeconfig"
             - name: "etc-kube-ssl"
               hostPath:
                 path: "/etc/kubernetes/ssl"
@@ -271,7 +272,7 @@ write_files:
                 path: /var/run/dbus
               name: dbus
 
-  - path: /etc/kubernetes/worker-kubeconfig.yaml
+  - path: /etc/kubernetes/kubeconfig
     content: |
         apiVersion: v1
         kind: Config
