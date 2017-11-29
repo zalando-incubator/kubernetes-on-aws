@@ -146,6 +146,7 @@ coreos:
         --allow-privileged \
         --node-labels=kubernetes.io/role=master,master=true \
         --node-labels=flannel=local \
+        --node-labels=kube-proxy=local \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
         --cluster_dns=10.3.0.10 \
@@ -269,10 +270,10 @@ write_files:
       apiVersion: v1
       kind: Pod
       metadata:
-        name: kube-proxy
+        name: kube-proxy-userdata
         namespace: kube-system
         labels:
-          application: kube-proxy
+          application: kube-proxy-userdata
           version: v1.7.9_coreos.0
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
