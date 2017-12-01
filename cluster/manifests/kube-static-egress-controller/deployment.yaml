@@ -20,10 +20,6 @@ spec:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-static-egress-controller"
     spec:
-      serviceAccountName: system
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
       containers:
       - name: controller
         image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.0.3
@@ -41,7 +37,7 @@ spec:
           value: eu-central-1
         resources:
           limits:
-            cpu: 200m
+            cpu: 100m
             memory: 200Mi
           requests:
             cpu: 5m
