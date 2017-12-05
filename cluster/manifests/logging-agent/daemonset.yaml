@@ -57,6 +57,17 @@ spec:
                 echo 'Updated agent.json to inital configuration';
             fi && cat $SCALYR_CONFIG_PATH;
             test -f /mnt/scalyr-checkpoint/checkpoints.json && ls -lah /mnt/scalyr-checkpoint/checkpoints.json && cat /mnt/scalyr-checkpoint/checkpoints.json || true;
+        env:
+        - name: WATCHER_SCALYR_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: logging-agent
+              key: scalyr-access-key
+        - name: WATCHER_CLUSTER_ID
+          value: "{{ .ID }}"
+        - name: WATCHER_SCALYR_SERVER
+          value: "{{ index .ConfigItems "scalyr_server" }}"
+
         volumeMounts:
         - name: scalyr-config
           mountPath: /mnt/scalyr
