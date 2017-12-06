@@ -34,10 +34,10 @@ spec:
         args:
         - |
             SCALYR_CONFIG_PATH="/mnt/scalyr/agent.json"
-            IMPORT_VARS="WATCHER_SCALYR_API_KEY WATCHER_CLUSTER_ID"
+            IMPORT_VARS="WATCHER_SCALYR_API_KEY WATCHER_CLUSTER_ID WATCHER_SCALYR_SERVER"
             if [ ! -f $SCALYR_CONFIG_PATH ]; then
               echo '{
-                "import_vars": ["WATCHER_SCALYR_API_KEY", "WATCHER_CLUSTER_ID"],
+                "import_vars": ["WATCHER_SCALYR_API_KEY", "WATCHER_CLUSTER_ID", "WATCHER_SCALYR_SERVER"],
                 "server_attributes": {"serverHost": "$WATCHER_CLUSTER_ID"},
                 "implicit_agent_process_metrics_monitor": false,
                 "implicit_metric_monitor": false,
@@ -57,6 +57,17 @@ spec:
                 echo 'Updated agent.json to inital configuration';
             fi && cat $SCALYR_CONFIG_PATH;
             test -f /mnt/scalyr-checkpoint/checkpoints.json && ls -lah /mnt/scalyr-checkpoint/checkpoints.json && cat /mnt/scalyr-checkpoint/checkpoints.json || true;
+        env:
+        - name: WATCHER_SCALYR_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: logging-agent
+              key: scalyr-access-key
+        - name: WATCHER_CLUSTER_ID
+          value: "{{ .ID }}"
+        - name: WATCHER_SCALYR_SERVER
+          value: "{{ index .ConfigItems "scalyr_server" }}"
+
         volumeMounts:
         - name: scalyr-config
           mountPath: /mnt/scalyr
@@ -78,6 +89,8 @@ spec:
             secretKeyRef:
               name: logging-agent
               key: scalyr-access-key
+        - name: WATCHER_SCALYR_SERVER
+          value: "{{ index .ConfigItems "scalyr_server" }}"
         - name: WATCHER_CLUSTER_ID
           value: "{{ .ID }}"
         - name: WATCHER_SCALYR_DEST_PATH
