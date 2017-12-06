@@ -17,25 +17,6 @@ coreos:
   update:
     reboot-strategy: "off"
   units:
-{{#ETCD_PROXY_ENABLED}}
-    - name: etcd-member.service
-      command: start
-      enabled: true
-      content: |
-        [Unit]
-        Wants=network.target
-        [Service]
-        Type=simple
-        Restart=on-failure
-        RestartSec=10s
-        ExecStartPre=/usr/bin/mkdir --parents /var/lib/coreos
-        ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
-        ExecStart=/usr/bin/rkt run --uuid-file-save=/var/lib/coreos/etcd-member-wrapper.uuid --port=2379-tcp:2379 --mount volume=dns,target=/etc/resolv.conf --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true --insecure-options=image docker://registry.opensource.zalan.do/teapot/etcd-proxy:master-1 -- {{ETCD_ENDPOINTS}}
-        ExecStop=-/usr/bin/rkt stop --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
-        [Install]
-        WantedBy=multi-user.target
-{{/ETCD_PROXY_ENABLED}}
-{{^ETCD_PROXY_ENABLED}}
     - name: etcd-member.service
       command: start
       enable: true
@@ -44,7 +25,6 @@ coreos:
           content: |
             [Service]
             Environment="ETCD_OPTS=gateway start --listen-addr=127.0.0.1:2379 --endpoints={{ ETCD_ENDPOINTS }}"
-{{/ETCD_PROXY_ENABLED}}
 
     - name: docker.service
       drop-ins:
