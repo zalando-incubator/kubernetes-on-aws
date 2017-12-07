@@ -61,8 +61,6 @@ SenzaComponents:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
   - MasterAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: "{{ Arguments.MasterInstanceType }}"
@@ -89,8 +87,6 @@ SenzaComponents:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
         - Key: "NodePool"
           Value: "{{ Arguments.MasterNodePoolName }}"
   - WorkerAutoScaling:
@@ -116,8 +112,6 @@ SenzaComponents:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
         - Key: "NodePool"
           Value: "{{ Arguments.WorkerNodePoolName }}"
 Resources:
@@ -267,6 +261,53 @@ Resources:
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
+  StaticEgressControllerIAMRole:
+    Properties:
+      RoleName: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-static-egress-controller"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+        - Action: ['sts:AssumeRole']
+          Effect: Allow
+          Principal:
+            AWS:
+              Fn::Join:
+                - ""
+                -
+                  - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
+                  -
+                    Ref: WorkerIAMRole
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - {Action: 'cloudformation:*', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:AllocateAddress', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:AssociateRouteTable', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DisassociateRouteTable', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:CreateRouteTable', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:CreateRoute', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:CreateNatGateway', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:CreateSubnet', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:CreateTags', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:ReleaseAddress', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DeleteRouteTable', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DeleteRoute', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DeleteNatGateway', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DeleteSubnet', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DescribeAddresses', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DescribeInternetGateways', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DescribeRouteTables', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DescribeNatGateways', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DescribeSubnets', Effect: Allow, Resource: '*'}
+          - {Action: 'ec2:DescribeVpcs', Effect: Allow, Resource: '*'}
+          Version: '2012-10-17'
+        PolicyName: root
+    Type: AWS::IAM::Role
 
   MasterSecurityGroup:
     Properties:
@@ -282,8 +323,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
   MasterLoadBalancerSecurityGroup:
@@ -295,8 +334,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
   MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
@@ -309,8 +346,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromLoadBalancer:
     Properties:
@@ -322,8 +357,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromMaster:
     Properties:
@@ -335,8 +368,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterKubeletToMasterKubeletSecurityGroup:
     Properties:
@@ -348,8 +379,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroup:
     Properties:
@@ -366,8 +395,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
 
@@ -381,8 +408,8 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
+        - Key: "kubernetes:application"
+          Value: "kube-ingress-aws-controller"
     Type: AWS::EC2::SecurityGroup
 
   MasterSecurityGroupIngressFromWorker:
@@ -395,8 +422,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterToFlannel:
     Properties:
@@ -408,8 +433,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterToKubelet:
     Properties:
@@ -421,8 +444,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromMasterTocAdvisor:
     Properties:
@@ -434,8 +455,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromFlannelToMaster:
     Properties:
@@ -447,8 +466,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromWorkerToMasterKubeletReadOnly:
     Properties:
@@ -460,8 +477,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromWorkerToFlannel:
     Properties:
@@ -473,8 +488,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromWorkerToWorkerKubeletReadOnly:
     Properties:
@@ -486,8 +499,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
   WorkerSecurityGroupIngressFromWorkerToWorkerSkipperMetrics:
     Properties:
@@ -499,8 +510,6 @@ Resources:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-        - Key: "ClusterID"
-          Value: "{{ Arguments.ClusterID }}"
     Type: AWS::EC2::SecurityGroupIngress
 
   ZmonIAMRole:

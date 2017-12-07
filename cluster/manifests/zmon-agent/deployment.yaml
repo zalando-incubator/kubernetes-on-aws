@@ -5,7 +5,7 @@ metadata:
   namespace: "kube-system"
   labels:
     application: "zmon-agent"
-    version: "v0.1-a33"
+    version: "v0.1-a37"
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: "zmon-agent"
-        version: "v0.1-a33"
+        version: "v0.1-a37"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -25,7 +25,7 @@ spec:
         operator: Exists
       containers:
         - name: zmon-agent
-          image: "registry.opensource.zalan.do/zmon/zmon-agent-core:0.1-a33"
+          image: "registry.opensource.zalan.do/zmon/zmon-agent-core:0.1-a37"
           resources:
             limits:
               cpu: 100m
@@ -79,6 +79,13 @@ spec:
             - /meta/credentials
             - --application-id=gerry
             - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 10m
+              memory: 10Mi
 
           volumeMounts:
             - name: credentials

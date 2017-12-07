@@ -17,6 +17,25 @@ coreos:
   update:
     reboot-strategy: "off"
   units:
+{{#ETCD_PROXY_ENABLED}}
+    - name: etcd-member.service
+      command: start
+      enabled: true
+      content: |
+        [Unit]
+        Wants=network.target
+        [Service]
+        Type=simple
+        Restart=on-failure
+        RestartSec=10s
+        ExecStartPre=/usr/bin/mkdir --parents /var/lib/coreos
+        ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
+        ExecStart=/usr/bin/rkt run --uuid-file-save=/var/lib/coreos/etcd-member-wrapper.uuid --port=2379-tcp:2379 --mount volume=dns,target=/etc/resolv.conf --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true --insecure-options=image docker://registry.opensource.zalan.do/teapot/etcd-proxy:master-1 -- {{ETCD_ENDPOINTS}}
+        ExecStop=-/usr/bin/rkt stop --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
+        [Install]
+        WantedBy=multi-user.target
+{{/ETCD_PROXY_ENABLED}}
+{{^ETCD_PROXY_ENABLED}}
     - name: etcd-member.service
       command: start
       enable: true
@@ -25,6 +44,7 @@ coreos:
           content: |
             [Service]
             Environment="ETCD_OPTS=gateway start --listen-addr=127.0.0.1:2379 --endpoints={{ ETCD_ENDPOINTS }}"
+{{/ETCD_PROXY_ENABLED}}
 
     - name: docker.service
       drop-ins:
@@ -53,14 +73,14 @@ coreos:
           [Service]
           Environment="FLANNELD_IFACE="$private_ipv4"
           Environment="FLANNELD_ETCD_ENDPOINTS="http://127.0.0.1:2379"
-          Environment="FLANNEL_IMAGE_TAG=v0.9.0"
+          Environment="FLANNEL_IMAGE_TAG=v0.9.1"
 
     - name: flannel-docker-opts.service
       drop-ins:
       - name: 20-version.conf
         content: |
           [Service]
-          Environment="FLANNEL_IMAGE_TAG=v0.9.0"
+          Environment="FLANNEL_IMAGE_TAG=v0.9.1"
 
     - name: kube2iam-iptables.service
       command: start
@@ -145,6 +165,7 @@ coreos:
         --register-schedulable=false \
         --allow-privileged \
         --node-labels=kubernetes.io/role=master,master=true \
+        --node-labels=flannel=local \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
         --cluster_dns=10.3.0.10 \
@@ -343,7 +364,7 @@ write_files:
             limits:
               cpu: 200m
               memory: 1Gi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.3.6
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.3.7
           name: webhook
           ports:
           - containerPort: 8081
@@ -376,7 +397,7 @@ write_files:
             - name: TOKEN_INTROSPECTION_URL
               value: http://127.0.0.1:9021/oauth2/introspect
             - name: USER_GROUPS
-              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,credprov-api-discovery-k8s-cluster-read-only-token=ReadOnly
+              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,credprov-api-discovery-k8s-cluster-read-only-token=ReadOnly,stups_zmon-zmon=ReadOnly
             - name: BUSINESS_PARTNER_IDS
               value: {{ APISERVER_BUSINESS_PARTNER_IDS }}
           volumeMounts:
@@ -475,6 +496,7 @@ write_files:
           - --cloud-config=/etc/kubernetes/cloud-config.ini
           - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
           - --use-service-account-credentials=true
+          - --v=4
           resources:
             limits:
               cpu: 200m
