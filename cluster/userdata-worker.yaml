@@ -17,6 +17,25 @@ coreos:
   update:
     reboot-strategy: "off"
   units:
+{{#ETCD_PROXY_ENABLED}}
+    - name: etcd-member.service
+      command: start
+      enabled: true
+      content: |
+        [Unit]
+        Wants=network.target
+        [Service]
+        Type=simple
+        Restart=on-failure
+        RestartSec=10s
+        ExecStartPre=/usr/bin/mkdir --parents /var/lib/coreos
+        ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
+        ExecStart=/usr/bin/rkt run --uuid-file-save=/var/lib/coreos/etcd-member-wrapper.uuid --port=2379-tcp:2379 --mount volume=dns,target=/etc/resolv.conf --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true --insecure-options=image docker://registry.opensource.zalan.do/teapot/etcd-proxy:master-1 -- {{ETCD_ENDPOINTS}}
+        ExecStop=-/usr/bin/rkt stop --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
+        [Install]
+        WantedBy=multi-user.target
+{{/ETCD_PROXY_ENABLED}}
+{{^ETCD_PROXY_ENABLED}}
     - name: etcd-member.service
       command: start
       enable: true
@@ -25,6 +44,7 @@ coreos:
           content: |
             [Service]
             Environment="ETCD_OPTS=gateway start --listen-addr=127.0.0.1:2379 --endpoints={{ ETCD_ENDPOINTS }}"
+{{/ETCD_PROXY_ENABLED}}
 
     - name: docker.service
       drop-ins:
@@ -47,7 +67,7 @@ coreos:
           [Service]
           Environment="FLANNELD_IFACE="$private_ipv4"
           Environment="FLANNELD_ETCD_ENDPOINTS="http://127.0.0.1:2379"
-          Environment="FLANNEL_IMAGE_TAG=v0.9.0"
+          Environment="FLANNEL_IMAGE_TAG=v0.9.1"
           Environment="FLANNEL_OPTS=--ip-masq=true -v 2"
 
     - name: flannel-docker-opts.service
@@ -55,7 +75,7 @@ coreos:
       - name: 20-version.conf
         content: |
           [Service]
-          Environment="FLANNEL_IMAGE_TAG=v0.9.0"
+          Environment="FLANNEL_IMAGE_TAG=v0.9.1"
 
     - name: timesynced-enable-network-time.service
       command: start
@@ -131,11 +151,13 @@ coreos:
         --register-node \
         --allow-privileged \
         --node-labels=kubernetes.io/role=worker \
+        --node-labels=flannel=local \
+        --node-labels=kube-proxy=local \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
         --cluster_dns=10.3.0.10 \
         --cluster_domain=cluster.local \
-        --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
+        --kubeconfig=/etc/kubernetes/kubeconfig \
         --require-kubeconfig \
         --healthz-bind-address=0.0.0.0 \
         --healthz-port=10248 \
@@ -181,7 +203,7 @@ coreos:
           --net=host \
           docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0 \
           --exec=/kubectl -- \
-            --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
+            --kubeconfig=/etc/kubernetes/kubeconfig \
             drain $(hostname) \
             --ignore-daemonsets \
             --delete-local-data \
@@ -214,10 +236,10 @@ write_files:
         apiVersion: v1
         kind: Pod
         metadata:
-          name: kube-proxy
+          name: kube-proxy-userdata
           namespace: kube-system
           labels:
-            application: kube-proxy
+            application: kube-proxy-userdata
             version: v1.7.9_coreos.0
           annotations:
             scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -233,7 +255,7 @@ write_files:
             command:
             - /hyperkube
             - proxy
-            - --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml
+            - --kubeconfig=/etc/kubernetes/kubeconfig
             - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
             - --v=2
             securityContext:
@@ -248,7 +270,7 @@ write_files:
             volumeMounts:
               - mountPath: /etc/ssl/certs
                 name: "ssl-certs"
-              - mountPath: /etc/kubernetes/worker-kubeconfig.yaml
+              - mountPath: /etc/kubernetes/kubeconfig
                 name: "kubeconfig"
                 readOnly: true
               - mountPath: /etc/kubernetes/ssl
@@ -263,7 +285,7 @@ write_files:
                 path: "/usr/share/ca-certificates"
             - name: "kubeconfig"
               hostPath:
-                path: "/etc/kubernetes/worker-kubeconfig.yaml"
+                path: "/etc/kubernetes/kubeconfig"
             - name: "etc-kube-ssl"
               hostPath:
                 path: "/etc/kubernetes/ssl"
@@ -271,7 +293,7 @@ write_files:
                 path: /var/run/dbus
               name: dbus
 
-  - path: /etc/kubernetes/worker-kubeconfig.yaml
+  - path: /etc/kubernetes/kubeconfig
     content: |
         apiVersion: v1
         kind: Config
