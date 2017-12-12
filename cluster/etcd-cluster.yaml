@@ -78,8 +78,16 @@ Resources:
     DeletionPolicy: Retain
     Properties:
       BucketName: "{{Arguments.EtcdS3Backup}}"
+      LifecycleConfiguration:
+        Rules:
+          - AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+            ExpirationInDays: 7
+            NoncurrentVersionExpirationInDays: 1
+            Prefix: ""
+            Status: Enabled
       VersioningConfiguration:
-        Status: Enabled
+        Status: Suspended
   EtcdRole:
     Type: AWS::IAM::Role
     Properties:
