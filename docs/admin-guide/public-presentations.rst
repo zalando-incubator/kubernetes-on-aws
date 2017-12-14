@@ -4,6 +4,7 @@
 Public Presentations
 ====================
 
+* `AWS re:invent 2017: Mastering Kubernetes on AWS <https://www.youtube.com/watch?v=w34txLmpEuM>`_
 * `Kubernetes on AWS at Zalando - First Kubernetes & CNCF meetup in Finland <https://www.youtube.com/watch?time_continue=4&v=H92nfJt3ymo>`_
 * `Large Scale Kubernetes on AWS at Europe's Leading Online Fashion Platform - AWS Tech Community Days Cologne <https://www.slideshare.net/HenningJacobs/large-scale-kubernetes-on-aws-at-europes-leading-online-fashion-platform-aws-tech-community-days-cologne>`_
 * `Automatic infrastructure for Kubernetes ingress in AWS - Berlin Docker Meetup <https://www.slideshare.net/SandorSzuecs/2017-0719-automatic-infrastructure-for-kubernetes-ingress-in-aws>`_
