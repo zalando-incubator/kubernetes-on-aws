@@ -37,8 +37,7 @@ spec:
         command:
         - /hyperkube
         - proxy
-        - --kubeconfig=/etc/kubernetes/kubeconfig
-        - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true
+        - --config=/config/kube-proxy.yaml
         - --v=2
         securityContext:
           privileged: true
@@ -59,6 +58,9 @@ spec:
         - name: etc-kube-ssl
           mountPath: /etc/kubernetes/ssl
           readOnly: true
+        - name: kube-proxy-config
+          mountPath: /config
+          readOnly: true
       volumes:
       - name: ssl-certs
         hostPath:
@@ -69,3 +71,6 @@ spec:
       - name: etc-kube-ssl
         hostPath:
           path: /etc/kubernetes/ssl
+      - name: kube-proxy-config
+        configMap:
+          name: kube-proxy-config
