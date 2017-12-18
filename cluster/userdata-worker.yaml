@@ -124,7 +124,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_IMAGE_TAG=v1.7.9_coreos.0
+        Environment=KUBELET_IMAGE_TAG=v1.8.5_coreos.0
         Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_RUN_ARGS=--insecure-options=image \
         --uuid-file-save=/var/run/kubelet-pod.uuid \
@@ -151,11 +151,10 @@ coreos:
         --allow-privileged \
         --node-labels=kubernetes.io/role=worker \
         --node-labels=flannel=local \
-        --node-labels=kube-proxy=local \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
-        --cluster_dns=10.3.0.10 \
-        --cluster_domain=cluster.local \
+        --cluster-dns=10.3.0.10 \
+        --cluster-domain=cluster.local \
         --kubeconfig=/etc/kubernetes/kubeconfig \
         --require-kubeconfig \
         --healthz-bind-address=0.0.0.0 \
@@ -163,7 +162,6 @@ coreos:
         --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
         --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
         --cloud-provider=aws \
-        --low-diskspace-threshold-mb=1000 \
         --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
         --system-reserved=cpu=100m,memory=164Mi \
         --kube-reserved=cpu=100m,memory=282Mi
@@ -191,7 +189,7 @@ coreos:
           --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
           --mount=volume=kube,target=/etc/kubernetes \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0 \
           --exec=/kubectl -- \
             --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
             label node $(hostname) \
@@ -200,7 +198,7 @@ coreos:
           --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
           --mount=volume=kube,target=/etc/kubernetes \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0 \
           --exec=/kubectl -- \
             --kubeconfig=/etc/kubernetes/kubeconfig \
             drain $(hostname) \
@@ -229,68 +227,6 @@ write_files:
   - path: /etc/kubernetes/ssl/ca.pem
     encoding: gzip+base64
     content: {{CA_CERT}}
-
-  - path: /etc/kubernetes/manifests/kube-proxy.yaml
-    content: |
-        apiVersion: v1
-        kind: Pod
-        metadata:
-          name: kube-proxy-userdata
-          namespace: kube-system
-          labels:
-            application: kube-proxy-userdata
-            version: v1.7.9_coreos.0
-          annotations:
-            scheduler.alpha.kubernetes.io/critical-pod: ''
-            rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
-        spec:
-          tolerations:
-          - key: CriticalAddonsOnly
-            operator: Exists
-          hostNetwork: true
-          containers:
-          - name: kube-proxy
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0
-            command:
-            - /hyperkube
-            - proxy
-            - --kubeconfig=/etc/kubernetes/kubeconfig
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
-            - --v=2
-            securityContext:
-              privileged: true
-            resources:
-              requests:
-                cpu: 50m
-                memory: 75Mi
-              limits:
-                cpu: 200m
-                memory: 200Mi
-            volumeMounts:
-              - mountPath: /etc/ssl/certs
-                name: "ssl-certs"
-              - mountPath: /etc/kubernetes/kubeconfig
-                name: "kubeconfig"
-                readOnly: true
-              - mountPath: /etc/kubernetes/ssl
-                name: "etc-kube-ssl"
-                readOnly: true
-              - mountPath: /var/run/dbus
-                name: dbus
-                readOnly: false
-          volumes:
-            - name: "ssl-certs"
-              hostPath:
-                path: "/usr/share/ca-certificates"
-            - name: "kubeconfig"
-              hostPath:
-                path: "/etc/kubernetes/kubeconfig"
-            - name: "etc-kube-ssl"
-              hostPath:
-                path: "/etc/kubernetes/ssl"
-            - hostPath:
-                path: /var/run/dbus
-              name: dbus
 
   - path: /etc/kubernetes/kubeconfig
     content: |
