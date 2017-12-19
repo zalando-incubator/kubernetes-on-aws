@@ -16,10 +16,9 @@ coreos:
   update:
     reboot-strategy: "off"
   units:
-{{#ETCD_PROXY_ENABLED}}
     - name: etcd-member.service
       command: start
-      enabled: true
+      enable: true
       content: |
         [Unit]
         Wants=network.target
@@ -33,17 +32,6 @@ coreos:
         ExecStop=-/usr/bin/rkt stop --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
         [Install]
         WantedBy=multi-user.target
-{{/ETCD_PROXY_ENABLED}}
-{{^ETCD_PROXY_ENABLED}}
-    - name: etcd-member.service
-      command: start
-      enable: true
-      drop-ins:
-        - name: 40-etcd-gateway.conf
-          content: |
-            [Service]
-            Environment="ETCD_OPTS=gateway start --listen-addr=127.0.0.1:2379 --endpoints={{ ETCD_ENDPOINTS }}"
-{{/ETCD_PROXY_ENABLED}}
 
     - name: docker.service
       drop-ins:
