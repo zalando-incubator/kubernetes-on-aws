@@ -140,7 +140,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_IMAGE_TAG=v1.7.9_coreos.0
+        Environment=KUBELET_IMAGE_TAG=v1.8.5_coreos.0
         Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_RUN_ARGS=--insecure-options=image \
         --uuid-file-save=/var/run/kubelet-pod.uuid \
@@ -165,17 +165,15 @@ coreos:
         --allow-privileged \
         --node-labels=kubernetes.io/role=master,master=true \
         --node-labels=flannel=local \
-        --node-labels=kube-proxy=local \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
-        --cluster_dns=10.3.0.10 \
-        --cluster_domain=cluster.local \
+        --cluster-dns=10.3.0.10 \
+        --cluster-domain=cluster.local \
         --kubeconfig=/etc/kubernetes/kubeconfig \
         --require-kubeconfig \
         --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
         --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
         --cloud-provider=aws \
-        --low-diskspace-threshold-mb=1000 \
         --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
         --system-reserved=cpu=100m,memory=164Mi \
         --kube-reserved=cpu=100m,memory=282Mi
@@ -204,7 +202,7 @@ coreos:
           --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
           --mount=volume=kube,target=/etc/kubernetes \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0 \
           --exec=/kubectl -- \
             --kubeconfig=/etc/kubernetes/kubeconfig \
             label node $(hostname) \
@@ -213,7 +211,7 @@ coreos:
           --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
           --mount=volume=kube,target=/etc/kubernetes \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0 \
           --exec=/kubectl -- \
             --kubeconfig=/etc/kubernetes/kubeconfig \
             drain $(hostname) \
@@ -284,57 +282,6 @@ write_files:
       DOCKER_OPT_BIP=""
       DOCKER_OPT_IPMASQ=""
 
-  - path: /etc/kubernetes/manifests/kube-proxy.yaml
-    content: |
-      apiVersion: v1
-      kind: Pod
-      metadata:
-        name: kube-proxy-userdata
-        namespace: kube-system
-        labels:
-          application: kube-proxy-userdata
-          version: v1.7.9_coreos.0
-        annotations:
-          scheduler.alpha.kubernetes.io/critical-pod: ''
-          rkt.alpha.kubernetes.io/stage1-name-override: coreos.com/rkt/stage1-fly
-      spec:
-        tolerations:
-        - key: CriticalAddonsOnly
-          operator: Exists
-        hostNetwork: true
-        containers:
-        - name: kube-proxy
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0
-          command:
-          - /hyperkube
-          - proxy
-          - --master=http://127.0.0.1:8080
-          - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
-          - --v=2
-          securityContext:
-            privileged: true
-          resources:
-            requests:
-              cpu: 50m
-              memory: 75Mi
-            limits:
-              cpu: 200m
-              memory: 200Mi
-          volumeMounts:
-          - mountPath: /etc/ssl/certs
-            name: ssl-certs-host
-            readOnly: true
-          - mountPath: /var/run/dbus
-            name: dbus
-            readOnly: false
-        volumes:
-        - hostPath:
-            path: /usr/share/ca-certificates
-          name: ssl-certs-host
-        - hostPath:
-            path: /var/run/dbus
-          name: dbus
-
   - path: /etc/kubernetes/manifests/kube-apiserver.yaml
     content: |
       apiVersion: v1
@@ -344,7 +291,7 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.7.9_coreos.0
+          version: v1.8.5_coreos.0
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
           kubernetes-log-watcher/scalyr-parser: |
@@ -356,7 +303,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -526,7 +473,7 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.7.9_coreos.0
+          version: v1.8.5_coreos.0
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
       spec:
@@ -535,7 +482,7 @@ write_files:
           operator: Exists
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -593,7 +540,7 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.7.9_coreos.0
+          version: v1.8.5_coreos.0
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
       spec:
@@ -603,7 +550,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0
           command:
           - /hyperkube
           - scheduler
