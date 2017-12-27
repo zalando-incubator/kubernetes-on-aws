@@ -54,6 +54,11 @@ coreos:
             After=flanneld.service
             [Service]
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
+        - name: 50-downgrade.conf
+          content: |
+            [Unit]
+            Requires=docker-downgrade.service
+            After=docker-downgrade.service
         - name: 60-dockeropts.conf
           content: |
             [Service]
@@ -103,6 +108,15 @@ coreos:
           --jump DNAT \
           --table nat \
           --to-destination $private_ipv4:8181
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: docker-downgrade.service
+      content: |
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/bin/downgrade-docker
 
         [Install]
         WantedBy=multi-user.target
@@ -318,6 +332,19 @@ write_files:
         }
       }
       EOF
+
+  - path: /opt/bin/downgrade-docker
+    owner: root
+    permissions: 0755
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+      if [[ ! -f "/etc/coreos/docker-1.12" ]]; then
+        echo -n "yes" > /etc/coreos/docker-1.12
+        echo "Rebooting to downgrade Docker"
+        reboot
+        exit 1
+      fi
 
   - path: /home/core/.toolboxrc
     owner: core
