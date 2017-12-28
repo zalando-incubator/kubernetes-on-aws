@@ -290,6 +290,9 @@ write_files:
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
           - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
           - --anonymous-auth=false
+          - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
+          - --audit-webhook-mode=batch
+          - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
           livenessProbe:
             httpGet:
               host: 127.0.0.1
@@ -637,6 +640,122 @@ write_files:
           cluster: image-policy-webhook
           user: image-policy-webhook
         name: image-policy-webhook
+
+  - path: /etc/kubernetes/config/audit.yaml
+    permissions: 0644
+    owner: root:root
+    content: |
+      apiVersion: v1
+      kind: Config
+      clusters:
+      - name: audit
+        cluster:
+          server: http://127.0.0.1:8889/audit
+      contexts:
+      - name: audit
+        context:
+          cluster: audit
+          user: audit
+      current-context: audit
+
+  - path: /etc/kubernetes/config/audit-policy.yaml
+    permissions: 0644
+    owner: root:root
+    content: |
+      apiVersion: audit.k8s.io/v1beta1
+      kind: Policy
+      rules:
+        # The following requests were manually identified as high-volume and low-risk,
+        # so drop them.
+        - level: None
+          users: ["system:kube-proxy"]
+          verbs: ["watch"]
+          resources:
+            - group: "" # core
+              resources: ["endpoints", "services", "services/status"]
+        - level: None
+          users: ["kubelet"] # legacy kubelet identity
+          verbs: ["get"]
+          resources:
+            - group: "" # core
+              resources: ["nodes", "nodes/status"]
+        - level: None
+          userGroups: ["system:nodes"]
+          verbs: ["get"]
+          resources:
+            - group: "" # core
+              resources: ["nodes", "nodes/status"]
+        - level: None
+          users:
+            - system:kube-controller-manager
+            - system:kube-scheduler
+            - system:serviceaccount:kube-system:endpoint-controller
+          verbs: ["get", "update"]
+          namespaces: ["kube-system"]
+          resources:
+            - group: "" # core
+              resources: ["endpoints"]
+        - level: None
+          users: ["system:apiserver"]
+          verbs: ["get"]
+          resources:
+            - group: "" # core
+              resources: ["namespaces", "namespaces/status", "namespaces/finalize"]
+        # Don't log HPA fetching metrics.
+        - level: None
+          users:
+            - system:kube-controller-manager
+          verbs: ["get", "list"]
+          resources:
+            - group: "metrics.k8s.io"
+        # Don't log these read-only URLs.
+        - level: None
+          nonResourceURLs:
+            - /healthz*
+            - /version
+            - /swagger*
+        # Don't log events requests.
+        - level: None
+          resources:
+            - group: "" # core
+              resources: ["events"]
+        # node and pod status calls from nodes are high-volume and can be large, don't log responses for expected updates from nodes
+        - level: Request
+          users: ["kubelet"]
+          verbs: ["update","patch"]
+          resources:
+            - group: "" # core
+              resources: ["nodes/status", "pods/status"]
+          omitStages:
+            - "RequestReceived"
+        - level: Request
+          userGroups: ["system:nodes"]
+          verbs: ["update","patch"]
+          resources:
+            - group: "" # core
+              resources: ["nodes/status", "pods/status"]
+          omitStages:
+            - "RequestReceived"
+        # deletecollection calls can be large, don't log responses for expected namespace deletions
+        - level: Request
+          users: ["system:serviceaccount:kube-system:namespace-controller"]
+          verbs: ["deletecollection"]
+          omitStages:
+            - "RequestReceived"
+        # Secrets, ConfigMaps, and TokenReviews can contain sensitive & binary data,
+        # so only log at the Metadata level.
+        - level: Metadata
+          resources:
+            - group: "" # core
+              resources: ["secrets", "configmaps"]
+            - group: authentication.k8s.io
+              resources: ["tokenreviews"]
+          omitStages:
+            - "RequestReceived"
+        # Default level for all other requests.
+        - level: Metadata
+          omitStages:
+            - "RequestReceived"
 
   - path: /etc/kubernetes/ssl/ca.pem
     encoding: gzip+base64
