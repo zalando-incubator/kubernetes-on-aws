@@ -1,0 +1,47 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: audittrail-adapter
+  namespace: kube-system
+  labels:
+    application: audittrail-adapter
+    version: v0.1.0
+spec:
+  selector:
+    matchLabels:
+      application: audittrail-adapter
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        application: audittrail-adapter
+        version: v0.1.0
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: master
+                operator: Exists
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      hostNetwork: true
+      containers:
+      - name: audittrail-adapter
+        image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-3
+        args:
+        - --cluster-id={{ .ID }}
+        - --dry-run
+        - --address=:8889
+        resources:
+          limits:
+            cpu: 50m
+            memory: 50Mi
+          requests:
+            cpu: 20m
+            memory: 20Mi
