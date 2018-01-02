@@ -138,9 +138,9 @@ coreos:
         --network-plugin=cni \
         --container-runtime=docker \
         --rkt-path=/usr/bin/rkt \
-        --register-schedulable=false \
+        --register-with-taints=node-role.kubernetes.io/master=:NoSchedule \
         --allow-privileged \
-        --node-labels=kubernetes.io/role=master,master=true \
+        --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
         --cluster-dns=10.3.0.10 \
@@ -276,6 +276,8 @@ write_files:
         tolerations:
         - key: CriticalAddonsOnly
           operator: Exists
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
         hostNetwork: true
         containers:
         - name: kube-apiserver
@@ -456,6 +458,8 @@ write_files:
         tolerations:
         - key: CriticalAddonsOnly
           operator: Exists
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
         containers:
         - name: kube-controller-manager
           image: registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0
@@ -523,6 +527,8 @@ write_files:
         tolerations:
         - key: CriticalAddonsOnly
           operator: Exists
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
         hostNetwork: true
         containers:
         - name: kube-scheduler
@@ -565,6 +571,8 @@ write_files:
         tolerations:
         - key: CriticalAddonsOnly
           operator: Exists
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
         hostNetwork: true
         containers:
         - image: registry.opensource.zalan.do/teapot/rescheduler:v0.3.1
