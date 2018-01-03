@@ -66,15 +66,8 @@ spec:
         effect: NoExecute
       - operator: Exists
         key: CriticalAddonsOnly
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: flannel
-                operator: NotIn
-                values:
-                - local
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
       volumes:
       - name: runflannel
         hostPath:
