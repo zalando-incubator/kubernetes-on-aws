@@ -30,8 +30,10 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: master
-                operator: DoesNotExist
+              - key: kubernetes.io/role
+                operator: NotIn
+                values:
+                - master
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
