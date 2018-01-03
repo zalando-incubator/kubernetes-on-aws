@@ -36,9 +36,6 @@ coreos:
       drop-ins:
         - name: 40-flannel.conf
           content: |
-            [Unit]
-            Requires=flanneld.service
-            After=flanneld.service
             [Service]
             EnvironmentFile=/etc/kubernetes/cni/docker_opts_cni.env
         - name: 50-downgrade.conf
@@ -50,23 +47,7 @@ coreos:
           content: |
             [Service]
             Environment="DOCKER_OPTS=--log-opt=max-file=2 --log-opt=max-size=50m"
-
-    - name: flanneld.service
-      drop-ins:
-      - name: 20-version.conf
-        content: |
-          [Service]
-          Environment="FLANNELD_IFACE="$private_ipv4"
-          Environment="FLANNELD_ETCD_ENDPOINTS="http://127.0.0.1:2379"
-          Environment="FLANNEL_IMAGE_TAG=v0.9.1"
-          Environment="FLANNEL_OPTS=--ip-masq=true -v 2"
-
-    - name: flannel-docker-opts.service
-      drop-ins:
-      - name: 20-version.conf
-        content: |
-          [Service]
-          Environment="FLANNEL_IMAGE_TAG=v0.9.1"
+            Environment=DOCKER_SELINUX=
 
     - name: timesynced-enable-network-time.service
       command: start
@@ -151,7 +132,6 @@ coreos:
         --register-node \
         --allow-privileged \
         --node-labels=kubernetes.io/role=worker \
-        --node-labels=flannel=local \
         --node-labels={{NODE_LABELS}} \
         --cluster-dns=10.3.0.10 \
         --cluster-domain=cluster.local \
