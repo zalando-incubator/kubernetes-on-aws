@@ -50,6 +50,7 @@ coreos:
           content: |
             [Service]
             Environment="DOCKER_OPTS=--log-opt=max-file=2 --log-opt=max-size=50m"
+            Environment=DOCKER_SELINUX=
 
     - name: flanneld.service
       drop-ins:
@@ -162,9 +163,9 @@ coreos:
         --network-plugin=cni \
         --container-runtime=docker \
         --rkt-path=/usr/bin/rkt \
-        --register-schedulable=false \
+        --register-with-taints=node-role.kubernetes.io/master=:NoSchedule \
         --allow-privileged \
-        --node-labels=kubernetes.io/role=master,master=true \
+        --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
         --node-labels=flannel=local \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
@@ -301,6 +302,8 @@ write_files:
         tolerations:
         - key: CriticalAddonsOnly
           operator: Exists
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
         hostNetwork: true
         containers:
         - name: kube-apiserver
@@ -481,6 +484,8 @@ write_files:
         tolerations:
         - key: CriticalAddonsOnly
           operator: Exists
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
         containers:
         - name: kube-controller-manager
           image: registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0
@@ -548,6 +553,8 @@ write_files:
         tolerations:
         - key: CriticalAddonsOnly
           operator: Exists
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
         hostNetwork: true
         containers:
         - name: kube-scheduler
@@ -590,6 +597,8 @@ write_files:
         tolerations:
         - key: CriticalAddonsOnly
           operator: Exists
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
         hostNetwork: true
         containers:
         - image: registry.opensource.zalan.do/teapot/rescheduler:v0.3.1
