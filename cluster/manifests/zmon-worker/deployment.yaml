@@ -20,6 +20,27 @@ spec:
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
+
+      initContainers:
+      - name: gerry-init
+        image: registry.opensource.zalan.do/teapot/gerry:v0.0.14
+        args:
+        - /meta/credentials
+        - --application-id=gerry
+        - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
+        - --once
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
+        volumeMounts:
+          - name: credentials
+            mountPath: /meta/credentials
+            readOnly: false
+
       containers:
         - name: zmon-worker
           image: "pierone.stups.zalan.do/stups/zmon-worker:zv228"
