@@ -189,6 +189,28 @@ coreos:
         [Install]
         WantedBy=multi-user.target
 
+    - name: docker-watchdog.service
+      content: |
+        [Unit]
+        Description=Try to run date inside a docker container to check if docker works, restart docker in case it is broken.
+
+        [Service]
+        Type=oneshot
+        ExecStart=/home/core/docker-restart.sh
+
+    - name: docker-watchdog.timer
+      enable: true
+      command: start
+      content: |
+        [Unit]
+        Description=Run docker-watchdog every 5 minutes
+
+        [Timer]
+        OnCalendar=*:0/5
+
+        [Install]
+        WantedBy=multi-user.target
+
 write_files:
 
   - path: /etc/kubernetes/cni/docker_opts_cni.env
@@ -284,3 +306,15 @@ write_files:
     content: |
       [Time]
       NTP=0.amazon.pool.ntp.org 1.amazon.pool.ntp.org 2.amazon.pool.ntp.org 3.amazon.pool.ntp.org
+
+  - path: /home/core/docker-restart.sh
+    permissions: 0755
+    content: |
+      #!/bin/sh
+      timeout -s INT -k 240 120 docker run alpine date
+      if [ $? -eq 0 ]; then
+      	exit 0
+      else
+      	echo "restarting docker"
+      	systemctl restart docker
+      fi
