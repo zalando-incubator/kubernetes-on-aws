@@ -164,26 +164,7 @@ coreos:
         RemainAfterExit=true
         ExecStart=/bin/true
         TimeoutStopSec=120s
-        ExecStop=/bin/sh -c '/usr/bin/rkt run --insecure-options=image \
-          --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
-          --mount=volume=kube,target=/etc/kubernetes \
-          --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0 \
-          --exec=/kubectl -- \
-            --kubeconfig=/etc/kubernetes/worker-kubeconfig.yaml \
-            label node $(hostname) \
-            lifecycle-status=draining \
-            --overwrite; /usr/bin/rkt run --insecure-options=image \
-          --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
-          --mount=volume=kube,target=/etc/kubernetes \
-          --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0 \
-          --exec=/kubectl -- \
-            --kubeconfig=/etc/kubernetes/kubeconfig \
-            drain $(hostname) \
-            --ignore-daemonsets \
-            --delete-local-data \
-            --force'
+        ExecStop=/opt/bin/drain-node
 
         [Install]
         WantedBy=multi-user.target
@@ -283,3 +264,37 @@ write_files:
     content: |
       [Time]
       NTP=0.amazon.pool.ntp.org 1.amazon.pool.ntp.org 2.amazon.pool.ntp.org 3.amazon.pool.ntp.org
+
+  - path: /opt/bin/drain-node
+    owner: root:root
+    permissions: 0755
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      /usr/bin/rkt run --insecure-options=image \
+        --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
+        --mount=volume=kube,target=/etc/kubernetes \
+        --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
+        --mount volume=dns,target=/etc/resolv.conf \
+        --net=host \
+        docker://registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0 \
+        --exec=/kubectl -- \
+        --kubeconfig=/etc/kubernetes/kubeconfig \
+        label node "$(hostname)" \
+        lifecycle-status=draining \
+        --overwrite
+
+      /usr/bin/rkt run --insecure-options=image \
+        --volume=kube,kind=host,source=/etc/kubernetes,readOnly=true \
+        --mount=volume=kube,target=/etc/kubernetes \
+        --net=host \
+        --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
+        --mount volume=dns,target=/etc/resolv.conf \
+        docker://registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0 \
+        --exec=/kubectl -- \
+        --kubeconfig=/etc/kubernetes/kubeconfig \
+        drain "$(hostname)" \
+        --ignore-daemonsets \
+        --delete-local-data \
+        --force
