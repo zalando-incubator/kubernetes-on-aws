@@ -1,21 +1,21 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: kube-dns-backup-autoscaler
+  name: kube-dns-b-autoscaler
   namespace: kube-system
   labels:
-    application: kube-dns-backup-autoscaler
+    application: kube-dns-b-autoscaler
     version: v1.1.2
     kubernetes.io/cluster-service: "true"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kube-dns-backup-autoscaler
+      application: kube-dns-b-autoscaler
   template:
     metadata:
       labels:
-        application: kube-dns-backup-autoscaler
+        application: kube-dns-b-autoscaler
         version: v1.1.2
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -34,8 +34,8 @@ spec:
         command:
           - /cluster-proportional-autoscaler
           - --namespace=kube-system
-          - --configmap=kube-dns-backup-autoscaler
-          - --target=Deployment/kube-dns-backup
+          - --configmap=kube-dns-b-autoscaler
+          - --target=Deployment/kube-dns-b
           - --default-params={"linear":{"coresPerReplica":256,"nodesPerReplica":16,"preventSinglePointFailure":true}}
           - --logtostderr=true
           - --v=2
