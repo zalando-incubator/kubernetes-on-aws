@@ -25,13 +25,13 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
             - matchExpressions:
-              - key: kubernetes.io/role
-                operator: In
-                values:
-                - master
+              - key: node-role.kubernetes.io/master
+                operator: Exists
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
       hostNetwork: true
       containers:
       - name: audittrail-adapter
