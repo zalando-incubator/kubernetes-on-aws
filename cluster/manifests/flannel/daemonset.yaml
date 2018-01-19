@@ -38,7 +38,7 @@ spec:
             memory: 25Mi
       containers:
       - name: kube-flannel
-        image: quay.io/coreos/flannel:v0.9.1
+        image: registry.opensource.zalan.do/teapot/flannel:v0.9.1
         args:
         - --etcd-endpoints=http://127.0.0.1:2379
         - --iface=eth0
@@ -68,15 +68,6 @@ spec:
         key: CriticalAddonsOnly
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: flannel
-                operator: NotIn
-                values:
-                - local
       volumes:
       - name: runflannel
         hostPath:
