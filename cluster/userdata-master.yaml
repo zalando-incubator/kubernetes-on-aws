@@ -143,7 +143,7 @@ coreos:
         --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
-        --cluster-dns=10.3.0.10 \
+        --cluster-dns=10.3.0.10,10.3.0.11 \
         --cluster-domain=cluster.local \
         --kubeconfig=/etc/kubernetes/kubeconfig \
         --require-kubeconfig \
@@ -274,7 +274,7 @@ write_files:
           - --storage-backend={{ APISERVER_STORAGE_BACKEND }}
           - --storage-media-type={{ APISERVER_STORAGE_MEDIA_TYPE }}
           - --allow-privileged=true
-          - --service-cluster-ip-range=10.3.0.0/24
+          - --service-cluster-ip-range=10.3.0.0/16
           - --secure-port=443
           - --advertise-address=$private_ipv4
           - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook
