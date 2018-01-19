@@ -1,0 +1,80 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: kube-proxy
+  namespace: kube-system
+  labels:
+    application: kube-proxy
+    version: v1.7.9_coreos.0
+spec:
+  selector:
+    matchLabels:
+      application: kube-proxy
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      name: kube-proxy
+      labels:
+        application: kube-proxy
+        version: v1.7.9_coreos.0
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kube-proxy
+                operator: NotIn
+                values:
+                - local
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
+      - operator: Exists
+        key: CriticalAddonsOnly
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      hostNetwork: true
+      containers:
+      - name: kube-proxy
+        image: registry.opensource.zalan.do/teapot/hyperkube:v1.7.9_coreos.0
+        command:
+        - /hyperkube
+        - proxy
+        - --kubeconfig=/etc/kubernetes/kubeconfig
+        - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
+        - --v=2
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 75Mi
+          limits:
+            cpu: 200m
+            memory: 200Mi
+        volumeMounts:
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs
+          readOnly: true
+        - name: kubeconfig
+          mountPath: /etc/kubernetes/kubeconfig
+          readOnly: true
+        - name: etc-kube-ssl
+          mountPath: /etc/kubernetes/ssl
+          readOnly: true
+      volumes:
+      - name: ssl-certs
+        hostPath:
+          path: /usr/share/ca-certificates
+      - name: kubeconfig
+        hostPath:
+          path: /etc/kubernetes/kubeconfig
+      - name: etc-kube-ssl
+        hostPath:
+          path: /etc/kubernetes/ssl

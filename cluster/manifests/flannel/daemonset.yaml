@@ -1,0 +1,83 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: kube-flannel
+  namespace: kube-system
+  labels:
+    application: flannel
+    version: v0.9.1
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      application: flannel
+  template:
+    metadata:
+      labels:
+        application: flannel
+        version: v0.9.1
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      initContainers:
+      - name: etcdctl
+        image: quay.io/coreos/etcd:v3.2.10
+        args:
+        - etcdctl
+        - --endpoint=http://127.0.0.1:2379
+        - set
+        - /coreos.com/network/config
+        - '{"Network": "10.2.0.0/16", "Backend": {"Type": "vxlan"}}'
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 25m
+            memory: 25Mi
+      containers:
+      - name: kube-flannel
+        image: quay.io/coreos/flannel:v0.9.1
+        args:
+        - --etcd-endpoints=http://127.0.0.1:2379
+        - --iface=eth0
+        - --ip-masq
+        - --healthz-ip=127.0.0.1
+        - --healthz-port=7978
+        - --v=2
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 25m
+            memory: 25Mi
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: runflannel
+          mountPath: /run/flannel
+      hostNetwork: true
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
+      - operator: Exists
+        key: CriticalAddonsOnly
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: flannel
+                operator: NotIn
+                values:
+                - local
+      volumes:
+      - name: runflannel
+        hostPath:
+          path: /run/flannel
