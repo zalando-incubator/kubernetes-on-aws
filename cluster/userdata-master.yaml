@@ -143,7 +143,7 @@ coreos:
         --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
         --node-labels={{NODE_LABELS}} \
         --pod-manifest-path=/etc/kubernetes/manifests \
-        --cluster-dns=10.3.0.10 \
+        --cluster-dns=10.3.0.10,10.3.0.11 \
         --cluster-domain=cluster.local \
         --kubeconfig=/etc/kubernetes/kubeconfig \
         --require-kubeconfig \
@@ -274,7 +274,7 @@ write_files:
           - --storage-backend={{ APISERVER_STORAGE_BACKEND }}
           - --storage-media-type={{ APISERVER_STORAGE_MEDIA_TYPE }}
           - --allow-privileged=true
-          - --service-cluster-ip-range=10.3.0.0/24
+          - --service-cluster-ip-range=10.3.0.0/16
           - --secure-port=443
           - --advertise-address=$private_ipv4
           - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook
@@ -385,7 +385,6 @@ write_files:
           args:
           - --policy={{ IMAGE_POLICY }}
           - --failure-policy=fail
-          - --simulate
           ports:
           - containerPort: 8083
         - name: nginx
@@ -444,6 +443,8 @@ write_files:
           - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
           - --use-service-account-credentials=true
           - --v=4
+          - --allocate-node-cidrs=true
+          - --cluster-cidr=10.2.0.0/16
           resources:
             requests:
               cpu: 100m
