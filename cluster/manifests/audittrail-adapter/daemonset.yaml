@@ -38,8 +38,14 @@ spec:
         image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-8
         args:
         - --cluster-id={{ .ID }}
-        - --dry-run
+        - --no-dry-run
+        - --audittrail-url=https://sb-audittrail-api.torch.zalan.do
         - --address=:8889
+        - --metrics-address=:7980
+        volumeMounts:
+        - name: platform-iam-credentials
+          mountPath: /meta/credentials
+          readOnly: true
         resources:
           limits:
             cpu: 50m
@@ -47,3 +53,7 @@ spec:
           requests:
             cpu: 20m
             memory: 20Mi
+      volumes:
+      - name: platform-iam-credentials
+        secret:
+          secretName: "audittrail-adapter"
