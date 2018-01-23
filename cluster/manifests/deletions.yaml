@@ -4,5 +4,14 @@
 #   namespace: kube-system
 #   kind: deployment
 
-pre_apply: [] # everything defined under here will be deleted before applying the manifests
+pre_apply: # everything defined under here will be deleted before applying the manifests
+# let kubernetes handle podCIDR allocations.
+- name: pod-cidr-controller
+  namespace: kube-system
+  kind: deployment
+# in order to get rid of any apply shenanigans, like initContainers being kept
+- name: kube-flannel
+  namespace: kube-system
+  kind: daemonset
+
 post_apply: [] # everything defined under here will be deleted after applying the manifests

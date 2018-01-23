@@ -385,7 +385,6 @@ write_files:
           args:
           - --policy={{ IMAGE_POLICY }}
           - --failure-policy=fail
-          - --simulate
           ports:
           - containerPort: 8083
         - name: nginx
@@ -444,6 +443,8 @@ write_files:
           - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
           - --use-service-account-credentials=true
           - --v=4
+          - --allocate-node-cidrs=true
+          - --cluster-cidr=10.2.0.0/16
           resources:
             requests:
               cpu: 100m
