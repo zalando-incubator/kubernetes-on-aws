@@ -755,6 +755,9 @@ write_files:
         # Don't audit read-only events.
         - level: None
           verbs: ["watch", "list", "get"]
+        # Don't audit events from system users in kube-system
+        - level: None
+          usersGroups: ["system:serviceaccount:kube-system"]
         # Default level for all other requests.
         - level: Request
           omitStages:
