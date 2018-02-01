@@ -1,3 +1,4 @@
+{{ if eq .Environment "production" }}
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
@@ -5,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: audittrail-adapter
-    version: master-12
+    version: master-14
 spec:
   selector:
     matchLabels:
@@ -16,7 +17,7 @@ spec:
     metadata:
       labels:
         application: audittrail-adapter
-        version: master-12
+        version: master-14
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
@@ -35,11 +36,10 @@ spec:
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-12
+        image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-14
         args:
         - --cluster-id={{ .ID }}
-        - --no-dry-run
-        - --audittrail-url=https://sb-audittrail-api.torch.zalan.do
+        - --audittrail-url=https://audittrail.cloud.zalando.com
         - --address=:8889
         - --metrics-address=:7980
         volumeMounts:
@@ -57,3 +57,4 @@ spec:
       - name: platform-iam-credentials
         secret:
           secretName: "audittrail-adapter"
+{{ end }}
