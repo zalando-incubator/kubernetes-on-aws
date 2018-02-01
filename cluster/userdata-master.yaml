@@ -676,6 +676,11 @@ write_files:
         # don't audit any kubelet events
         - level: None
           users: ["kubelet"] # legacy kubelet identity
+          # don't audit events from the system:unsecured user. This is the user
+          # used when connecting to the apiserver over localhost, and will
+          # usuaully be done by the local kubelet.
+        - level: None
+          users: ["system:unsecured"]
         # don't audit any kube-controller-manager events
         - level: None
           users: ["kube-controller-manager"]
