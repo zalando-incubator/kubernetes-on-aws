@@ -290,6 +290,9 @@ write_files:
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
           - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
           - --anonymous-auth=false
+          - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
+          - --audit-webhook-mode=batch
+          - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
           livenessProbe:
             httpGet:
               host: 127.0.0.1
@@ -637,6 +640,113 @@ write_files:
           cluster: image-policy-webhook
           user: image-policy-webhook
         name: image-policy-webhook
+
+  - path: /etc/kubernetes/config/audit.yaml
+    permissions: 0644
+    owner: root:root
+    content: |
+      apiVersion: v1
+      kind: Config
+      clusters:
+      - name: audit
+        cluster:
+          server: http://127.0.0.1:8889/audit
+      contexts:
+      - name: audit
+        context:
+          cluster: audit
+          user: audit
+      current-context: audit
+
+  - path: /etc/kubernetes/config/audit-policy.yaml
+    permissions: 0644
+    owner: root:root
+    content: |
+      apiVersion: audit.k8s.io/v1beta1
+      kind: Policy
+      rules:
+        # The following requests were manually identified as high-volume and low-risk,
+        # so drop them.
+        - level: None
+          users: ["system:kube-proxy"]
+          verbs: ["watch"]
+          resources:
+            - group: "" # core
+              resources: ["endpoints", "services", "services/status"]
+        # don't audit any kubelet events
+        - level: None
+          users: ["kubelet"] # legacy kubelet identity
+        # don't audit events from the system:unsecured user. This is the user
+        # used when connecting to the apiserver over localhost, and will
+        # usuaully be done by the local kubelet.
+        - level: None
+          users: ["system:unsecured"]
+        # don't audit events from the system:apiserver user
+        - level: None
+          users: ["system:apiserver"]
+        # don't audit any kube-controller-manager events
+        - level: None
+          users: ["kube-controller-manager"]
+        # Don't audit events from system users in kube-system
+        - level: None
+          userGroups: ["system:serviceaccounts:kube-system"]
+        - level: None
+          userGroups: ["system:nodes"]
+          verbs: ["get"]
+          resources:
+            - group: "" # core
+              resources: ["nodes", "nodes/status"]
+        - level: None
+          users:
+            - system:kube-controller-manager
+            - system:kube-scheduler
+            - system:serviceaccount:kube-system:endpoint-controller
+          verbs: ["get", "update"]
+          namespaces: ["kube-system"]
+          resources:
+            - group: "" # core
+              resources: ["endpoints"]
+        - level: None
+          users: ["system:apiserver"]
+          verbs: ["get"]
+          resources:
+            - group: "" # core
+              resources: ["namespaces", "namespaces/status", "namespaces/finalize"]
+        # Don't log HPA fetching metrics.
+        - level: None
+          users:
+            - system:kube-controller-manager
+          verbs: ["get", "list"]
+          resources:
+            - group: "metrics.k8s.io"
+        # Don't log these read-only URLs.
+        - level: None
+          nonResourceURLs:
+            - /healthz*
+            - /version
+            - /swagger*
+        # Don't log events requests.
+        - level: None
+          resources:
+            - group: "" # core
+              resources: ["events"]
+        # Secrets, ConfigMaps, and TokenReviews can contain sensitive & binary data,
+        # so only log at the Metadata level.
+        - level: Metadata
+          resources:
+            - group: "" # core
+              resources: ["secrets", "configmaps"]
+            - group: authentication.k8s.io
+              resources: ["tokenreviews"]
+          omitStages:
+            - "RequestReceived"
+        # Don't audit read-only events.
+        - level: None
+          verbs: ["watch", "list", "get"]
+        # Default level for all other requests.
+        - level: Request
+          omitStages:
+            - "RequestReceived"
 
   - path: /etc/kubernetes/ssl/ca.pem
     encoding: gzip+base64
