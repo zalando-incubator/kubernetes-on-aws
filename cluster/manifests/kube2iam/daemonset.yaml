@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube2iam
-    version: v0.7.0
+    version: master-5
 spec:
   selector:
     matchLabels:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: kube2iam
-        version: v0.7.0
+        version: master-5
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
@@ -27,11 +27,18 @@ spec:
         effect: NoSchedule
       hostNetwork: true
       containers:
-      - image: registry.opensource.zalan.do/teapot/kube2iam:0.7.0
+      # kube2iam 0.9.0 with this patch https://github.com/jtblin/kube2iam/pull/108
+      - image: registry.opensource.zalan.do/teapot/kube2iam:master-5
         name: kube2iam
         args:
         - --auto-discover-base-arn
         - --verbose
+        - --node=$(NODE_NAME)
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         ports:
         - containerPort: 8181
           hostPort: 8181
