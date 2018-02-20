@@ -11,8 +11,6 @@ ssh_authorized_keys:
   - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqAikaHsZWMuJvKZphZPZG0fnKMvVCRfBAbIS6e0Y+YqM0PfsWgB5e4f5TrbisQHdKopbfZVwYIaV/NegEuinrYPKC7t2ese/HjxgjHR95zHOcDP19Cbo+xeyH8zbRd9K3iRSyCUSMNRw5NL6zN8JOSl12m8QWQA4hTjFTmt870fIT4RLxu9qGlbQipUm57E/SotsNC41MQ/PsLQzOAviKrkS1rei2vzRHzAcjz1Z7GT5oH+dFVUC66kKa0XWDvq+VtkRVoLvS2chrIPCgESeeZAyOKyiOoyJxFFFiMVK48MWDBBIYTIsHE0qs/RwBi9+8lQGiHK5Rpk2djcloO0c7 sandor.szuecs@zalando.de'
   - 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINkh52Py+FvH9CRLDQg0gzvjEIrzwA45yMTXTsl2BVxV alexey.ermakov@zalando.de'
 coreos:
-  update:
-    reboot-strategy: "off"
   units:
     - name: etcd-member.service
       command: start
@@ -178,6 +176,9 @@ coreos:
 
         [Install]
         WantedBy=multi-user.target
+
+    - name: locksmithd.service
+      mask: true
 
 write_files:
 
