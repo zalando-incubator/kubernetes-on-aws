@@ -114,6 +114,8 @@ SenzaComponents:
           Value: owned
         - Key: "NodePool"
           Value: "{{ Arguments.WorkerNodePoolName }}"
+        - Key: "k8s.io/role/node"
+          Value: "worker"
 Resources:
   MasterIAMRole:
     Properties:
@@ -248,6 +250,7 @@ Resources:
           - {Action: 'autoscaling:DetachLoadBalancers', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:DetachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:AttachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DescribeLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
           - {Action: 'cloudformation:*', Effect: Allow, Resource: '*'}
           - {Action: 'elasticloadbalancing:*', Effect: Allow, Resource: '*'}
           - {Action: 'elasticloadbalancingv2:*', Effect: Allow, Resource: '*'}
@@ -691,6 +694,8 @@ Resources:
             - "swf:*"
             - "tag:get*"
             - "trustedadvisor:*"
+            - "firehose:*"
+            - "lambda:*"
             Resource: "*"
           Version: '2012-10-17'
         PolicyName: root
