@@ -1,0 +1,52 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kube-cluster-autoscaler
+  namespace: kube-system
+  labels:
+    application: kube-cluster-autoscaler
+    version: v1.0.3
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      application: kube-cluster-autoscaler
+  template:
+    metadata:
+      labels:
+        application: kube-cluster-autoscaler
+        version: v1.0.3
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
+    spec:
+      serviceAccountName: system
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: cluster-autoscaler
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.0.3
+        command:
+          - ./cluster-autoscaler
+          - --v=4
+          - --stderrthreshold=info
+          - --cloud-provider=aws
+          - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,zalando.de/cluster-local-id/{{ .LocalID }}
+          - --skip-nodes-with-system-pods=false
+          - --skip-nodes-with-local-storage=false
+        resources:
+          limits:
+            cpu: 100m
+            memory: 300Mi
+          requests:
+            cpu: 100m
+            memory: 300Mi
+        env:
+          - name: AWS_REGION
+            value: {{ .Region }}
+        imagePullPolicy: "Always"
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
