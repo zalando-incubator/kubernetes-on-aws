@@ -4,9 +4,27 @@ metadata:
   name: kube-flannel-cfg
   namespace: kube-system
   labels:
-    tier: node
-    app: flannel
+    application: flannel
 data:
+  cni-conf.json: |
+    {
+      "name": "cbr0",
+      "plugins": [
+        {
+          "type": "flannel",
+          "delegate": {
+            "hairpinMode": true,
+            "isDefaultGateway": true
+          }
+        },
+        {
+          "type": "portmap",
+          "capabilities": {
+            "portMappings": true
+          }
+        }
+      ]
+    }
   net-conf.json: |
     {
       "Network": "10.2.0.0/16",

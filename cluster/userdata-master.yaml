@@ -134,7 +134,7 @@ coreos:
         ExecStartPre=/bin/mkdir -p /var/lib/cni
         ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
         ExecStart=/usr/lib/coreos/kubelet-wrapper \
-        --cni-conf-dir=/etc/kubernetes/cni/net.d \
+        --cni-conf-dir=/etc/cni/net.d \
         --network-plugin=cni \
         --container-runtime=docker \
         --rkt-path=/usr/bin/rkt \
@@ -770,16 +770,6 @@ write_files:
   - path: /etc/kubernetes/ssl/worker-key.pem
     encoding: gzip+base64
     content: {{WORKER_KEY}}
-
-  - path: /etc/kubernetes/cni/net.d/10-flannel.conf
-    content: |
-        {
-            "name": "podnet",
-            "type": "flannel",
-            "delegate": {
-                "isDefaultGateway": true
-            }
-        }
 
   - path: /etc/kubernetes/cloud-config.ini
     content: |
