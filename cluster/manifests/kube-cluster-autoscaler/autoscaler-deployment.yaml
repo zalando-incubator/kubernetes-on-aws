@@ -33,6 +33,7 @@ spec:
           - ./cluster-autoscaler
           - --v=4
           - --stderrthreshold=info
+          - --scale-down-utilization-threshold={{if index .ConfigItems "autoscaling_utilization_threshold"}}{{.ConfigItems.autoscaling_utilization_threshold}}{{else}}0.75{{end}}
           - --cloud-provider=aws
           - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,zalando.de/cluster-local-id/{{ .LocalID }}
           - --expendable-pods-priority-cutoff=-1000000
