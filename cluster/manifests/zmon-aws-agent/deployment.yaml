@@ -5,7 +5,7 @@ metadata:
   namespace: "kube-system"
   labels:
     application: "zmon-aws-agent"
-    version: "v149"
+    version: "v71-zv153"
 spec:
   replicas: {{ if ne .Alias "db" }}1{{ else }}0{{ end }}
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: "zmon-aws-agent"
-        version: "v149"
+        version: "v71-zv153"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -47,7 +47,7 @@ spec:
 
       containers:
         - name: zmon-aws-agent
-          image: pierone.stups.zalan.do/stups/zmon-aws-agent:zv149
+          image: pierone.stups.zalan.do/zmon/zmon-aws-agent:v71-zv153
           resources:
             limits:
               cpu: 100m
