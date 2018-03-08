@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: flannel
-    version: v0.9.1
+    version: v0.10.0
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -16,21 +16,33 @@ spec:
     metadata:
       labels:
         application: flannel
-        version: v0.9.1
+        version: v0.10.0
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
       serviceAccountName: system
+      initContainers:
+      - name: install-cni
+        image: registry.opensource.zalan.do/teapot/flannel:v0.10.0
+        command:
+        - cp
+        args:
+        - -f
+        - /etc/kube-flannel/cni-conf.json
+        - /etc/cni/net.d/10-flannel.conf
+        volumeMounts:
+        - name: cni
+          mountPath: /etc/cni/net.d
+        - name: flannel-cfg
+          mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-        image: registry.opensource.zalan.do/teapot/flannel:v0.9.1
+        image: registry.opensource.zalan.do/teapot/flannel:v0.10.0
+        command:
+        - /opt/bin/flanneld
         args:
-        - --kube-subnet-mgr
-        - --iface=$(POD_IP)
         - --ip-masq
-        - --healthz-ip=127.0.0.1
-        - --healthz-port=7978
-        - --v=2
+        - --kube-subnet-mgr
         env:
         - name: POD_NAME
           valueFrom:
@@ -40,10 +52,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        - name: POD_IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
         resources:
           limits:
             cpu: 100m
@@ -54,10 +62,10 @@ spec:
         securityContext:
           privileged: true
         volumeMounts:
-        - name: flannelcfg
-          mountPath: /etc/kube-flannel
-        - name: runflannel
-          mountPath: /run/flannel
+        - name: flannel-cfg
+          mountPath: /etc/kube-flannel/
+        - name: run
+          mountPath: /run
       hostNetwork: true
       tolerations:
       - operator: Exists
@@ -69,9 +77,12 @@ spec:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       volumes:
-      - name: flannelcfg
+      - name: flannel-cfg
         configMap:
           name: kube-flannel-cfg
-      - name: runflannel
+      - name: cni
         hostPath:
-          path: /run/flannel
+          path: /etc/kubernetes/cni/net.d
+      - name: run
+        hostPath:
+          path: /run
