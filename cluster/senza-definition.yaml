@@ -114,6 +114,12 @@ SenzaComponents:
           Value: owned
         - Key: "NodePool"
           Value: "{{ Arguments.WorkerNodePoolName }}"
+        - Key: "k8s.io/role/node"
+          Value: "worker"
+        - Key: "k8s.io/cluster-autoscaler/enabled"
+          Value: ""
+        - Key: "zalando.de/cluster-local-id/{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}"
+          Value: owned
 Resources:
   MasterIAMRole:
     Properties:
@@ -174,15 +180,17 @@ Resources:
                 -
                   - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
                   -
-                    Ref: WorkerIAMRole
+                    Ref: MasterIAMRole
         Version: '2012-10-17'
       Path: /
       Policies:
       - PolicyDocument:
           Statement:
           - {Action: 'ec2:Describe*', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DescribeTags', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:DescribeAutoScalingGroups', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:DescribeAutoScalingInstances', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DescribeLaunchConfigurations', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:DescribeScalingActivities', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:SetDesiredCapacity', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:TerminateInstanceInAutoScalingGroup', Effect: Allow, Resource: '*'}
