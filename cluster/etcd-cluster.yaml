@@ -31,6 +31,7 @@ SenzaComponents:
     Tags:
     - Key: "kubernetes:component"
       Value: "etcd-cluster"
+
 SenzaInfo:
   Parameters:
   - HostedZone:
@@ -41,6 +42,17 @@ SenzaInfo:
   - EtcdS3Backup:
       Description: AWS S3 Bucket to backup ETCD to
   StackName: etcd-cluster
+
+Outputs:
+  EtcdSecurityGroupId:
+    Description: "Security Group ID of the etcd cluster"
+    Value:
+      Fn::GetAtt:
+        - EtcdSecurityGroup
+        - GroupId
+    Export:
+      Name: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}:security-group-id"
+
 Resources:
   EtcdSecurityGroup:
     Type: AWS::EC2::SecurityGroup
