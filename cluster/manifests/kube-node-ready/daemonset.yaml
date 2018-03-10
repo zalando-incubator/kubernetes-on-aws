@@ -19,7 +19,6 @@ spec:
         version: v0.0.1
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        iam.amazonaws.com/role: "{{ .LocalID }}-kube-node-ready"
     spec:
       tolerations:
       - key: CriticalAddonsOnly
@@ -32,6 +31,14 @@ spec:
         args:
         - --master-lifecycle-hook={{ .Outputs.MasterAutoscalingLifecycleHook }}
         - --worker-lifecycle-hook={{ .Outputs.WorkerAutoscalingLifecycleHook }}
+        env:
+        # must be set for the AWS SDK/AWS CLI to find the credentials file.
+        - name: AWS_SHARED_CREDENTIALS_FILE
+          value: /meta/aws-iam/credentials
+        volumeMounts:
+        - name: aws-iam-credentials
+          mountPath: /meta/aws-iam
+          readOnly: true
         resources:
           limits:
             cpu: 50m
@@ -39,3 +46,8 @@ spec:
           requests:
             cpu: 20m
             memory: 20Mi
+      volumes:
+      - name: aws-iam-credentials
+        secret:
+          # secret should be named: aws-iam-<name-of-your-aws-iam-role>
+          secretName: aws-iam-{{ .LocalID }}-kube-node-ready

@@ -17,8 +17,6 @@ spec:
           labels:
             application: etcd-backup
             version: "master-5"
-          annotations:
-            iam.amazonaws.com/role: "{{ .LocalID }}-etcd-backup"
         spec:
           restartPolicy: Never
           containers:
@@ -29,6 +27,13 @@ spec:
               value: "{{ .ConfigItems.etcd_s3_backup_bucket }}"
             - name: ETCD_ENDPOINTS
               value: "{{ .ConfigItems.etcd_endpoints }}"
+            # must be set for the AWS SDK/AWS CLI to find the credentials file.
+            - name: AWS_SHARED_CREDENTIALS_FILE
+              value: /meta/aws-iam/credentials
+            volumeMounts:
+            - name: aws-iam-credentials
+              mountPath: /meta/aws-iam
+              readOnly: true
             resources:
               limits:
                 cpu: 100m
@@ -36,6 +41,11 @@ spec:
               requests:
                 cpu: 50m
                 memory: 256Mi
+          volumes:
+          - name: aws-iam-credentials
+            secret:
+              # secret should be named: aws-iam-<name-of-your-aws-iam-role>
+              secretName: aws-iam-{{ .LocalID }}-etcd-backup
           tolerations:
           - key: node-role.kubernetes.io/master
             effect: NoSchedule

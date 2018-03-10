@@ -18,7 +18,6 @@ spec:
         version: v1.1.1
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
     spec:
       serviceAccountName: system
       tolerations:
@@ -39,6 +38,10 @@ spec:
           - --expendable-pods-priority-cutoff=-1000000
           - --skip-nodes-with-system-pods=false
           - --skip-nodes-with-local-storage=false
+        volumeMounts:
+        - name: aws-iam-credentials
+          mountPath: /meta/aws-iam
+          readOnly: true
         resources:
           limits:
             cpu: 100m
@@ -47,7 +50,15 @@ spec:
             cpu: 100m
             memory: 300Mi
         env:
-          - name: AWS_REGION
-            value: {{ .Region }}
+        # must be set for the AWS SDK/AWS CLI to find the credentials file.
+        - name: AWS_SHARED_CREDENTIALS_FILE
+          value: /meta/aws-iam/credentials
+        - name: AWS_REGION
+          value: {{ .Region }}
+      volumes:
+      - name: aws-iam-credentials
+        secret:
+          # secret should be named: aws-iam-<name-of-your-aws-iam-role>
+          secretName: aws-iam-{{ .LocalID }}-app-autoscaler
       nodeSelector:
         node-role.kubernetes.io/master: ""
