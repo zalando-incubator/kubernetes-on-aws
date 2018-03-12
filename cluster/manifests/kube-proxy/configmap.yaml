@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-proxy-config
+  namespace: kube-system
+data:
+  # generated from ./kube-proxy --proxy-mode=iptables --kubeconfig=/etc/kubernetes/kubeconfig --write-config-to kube-proxy.yaml
+  kube-proxy.yaml: |
+    apiVersion: kubeproxy.config.k8s.io/v1alpha1
+    bindAddress: 0.0.0.0
+    clientConnection:
+      acceptContentTypes: ""
+      burst: 10
+      contentType: application/vnd.kubernetes.protobuf
+      kubeconfig: /etc/kubernetes/kubeconfig
+      qps: 5
+    clusterCIDR: ""
+    configSyncPeriod: 15m0s
+    conntrack:
+      max: 0
+      maxPerCore: 32768
+      min: 131072
+      tcpCloseWaitTimeout: 1h0m0s
+      tcpEstablishedTimeout: 24h0m0s
+    enableProfiling: false
+    featureGates: "ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true"
+    healthzBindAddress: 0.0.0.0:10256
+    hostnameOverride: ""
+    iptables:
+      masqueradeAll: false
+      masqueradeBit: 14
+      minSyncPeriod: 0s
+      syncPeriod: 30s
+    ipvs:
+      minSyncPeriod: 0s
+      scheduler: ""
+      syncPeriod: 30s
+    kind: KubeProxyConfiguration
+    metricsBindAddress: 127.0.0.1:10249
+    mode: iptables
+    oomScoreAdj: -999
+    portRange: ""
+    resourceContainer: /kube-proxy
+    udpTimeoutMilliseconds: 250ms

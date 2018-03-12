@@ -1,11 +1,11 @@
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kube-static-egress-controller
   namespace: kube-system
   labels:
     application: kube-static-egress-controller
-    version: v0.0.6
+    version: v0.1.1
 spec:
   replicas: 1
   selector:
@@ -15,14 +15,14 @@ spec:
     metadata:
       labels:
         application: kube-static-egress-controller
-        version: v0.0.6
+        version: v0.1.1
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-static-egress-controller"
     spec:
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.0.6
+        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.1.1
         args:
         - "--log-level=debug"
         - "--provider=aws"
@@ -32,6 +32,7 @@ spec:
         - "--aws-az=eu-central-1a"
         - "--aws-az=eu-central-1b"
         - "--aws-az=eu-central-1c"
+        - "--stack-termination-protection"
         env:
         - name: AWS_REGION
           value: eu-central-1
