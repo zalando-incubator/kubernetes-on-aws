@@ -4,9 +4,16 @@ metadata:
   name: kube-flannel-cfg
   namespace: kube-system
   labels:
-    tier: node
-    app: flannel
+    application: flannel
 data:
+  cni-conf.json: |
+    {
+        "name": "podnet",
+        "type": "flannel",
+        "delegate": {
+            "isDefaultGateway": true
+        }
+    }
   net-conf.json: |
     {
       "Network": "10.2.0.0/16",
