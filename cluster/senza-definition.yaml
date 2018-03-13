@@ -33,6 +33,9 @@ SenzaInfo:
           Description: "Name of the worker node pool (ASG)"
       - EtcdS3BackupBucket:
           Description: "Name of the S3 bucket used for etcd backups"
+      - EtcdStackName:
+          Description: "AWS Stack name of the etcd cluster"
+          Default: "etcd-cluster-etcd"
 
 SenzaComponents:
   - Configuration:
@@ -346,6 +349,15 @@ Resources:
           Value: owned
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
+  EtcdSecurityGroupIngressFromMaster:
+    Properties:
+      FromPort: 2379
+      ToPort: 2379
+      IpProtocol: tcp
+      GroupId:
+        Fn::ImportValue: "{{Arguments.EtcdStackName}}:security-group-id"
+      SourceSecurityGroupId: {Ref: MasterSecurityGroup}
+    Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
     Properties:
       FromPort: 8080
@@ -833,7 +845,7 @@ Resources:
                 -
                   - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
                   -
-                    Ref: WorkerIAMRole
+                    Ref: MasterIAMRole
         Version: '2012-10-17'
       Path: /
       Policies:
