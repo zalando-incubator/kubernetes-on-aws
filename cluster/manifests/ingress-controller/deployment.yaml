@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-ingress-aws-controller
-    version: v0.6.6
+    version: v0.5.0
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: kube-ingress-aws-controller
-        version: v0.6.6
+        version: v0.5.0
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-app-ingr-ctrl"
@@ -26,9 +26,7 @@ spec:
         operator: Exists
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-ingress-aws-controller:v0.6.6
-        args:
-        - -stack-termination-protection
+        image: registry.opensource.zalan.do/teapot/kube-ingress-aws-controller:v0.5.0
         env:
         - name: AWS_REGION
           value: {{ .Region }}
