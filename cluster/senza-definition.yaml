@@ -478,6 +478,17 @@ Resources:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
     Type: AWS::EC2::SecurityGroupIngress
+  WorkerSecurityGroupIngressFromWorkerTocAdvisor:
+    Properties:
+      FromPort: 4194
+      GroupId: {Ref: WorkerSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
+      ToPort: 4194
+      Tags:
+        - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
+          Value: owned
+    Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromFlannelToMaster:
     Properties:
       FromPort: 8472
