@@ -1,12 +1,12 @@
 {{ if eq .Environment "production" }}
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: emergency-access-service
   namespace: kube-system
   labels:
     application: emergency-access-service
-    version: master-49
+    version: master-50
 spec:
   replicas: 1
   selector:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: emergency-access-service
-        version: master-49
+        version: master-50
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "emergency-access-service", "parser": "json-structured-log"}]
@@ -24,7 +24,7 @@ spec:
       serviceAccountName: system
       containers:
       - name: emergency-access-service
-        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-49"
+        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-50"
         args:
         - --insecure-http
         - --community={{ .Owner }}
