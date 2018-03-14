@@ -4,7 +4,7 @@ SenzaComponents:
 - AppServer:
     IamRoles:
     - Ref: EtcdRole
-    InstanceType: t2.medium
+    InstanceType: '{{Arguments.InstanceType}}'
     SecurityGroups:
     - Fn::GetAtt:
       - EtcdSecurityGroup
@@ -13,8 +13,9 @@ SenzaComponents:
       ports:
         2379: 2379
         2380: 2380
+        2381: 2381
       runtime: Docker
-      source: registry.opensource.zalan.do/acid/etcd-cluster:3.3.1-p19
+      source: registry.opensource.zalan.do/acid/etcd-cluster:3.3.1-p20
       environment:
         HOSTED_ZONE: '{{Arguments.HostedZone}}'
       mounts:
@@ -31,6 +32,7 @@ SenzaComponents:
     Tags:
     - Key: "kubernetes:component"
       Value: "etcd-cluster"
+
 SenzaInfo:
   Parameters:
   - HostedZone:
@@ -38,9 +40,23 @@ SenzaInfo:
   - InstanceCount:
       Description: Instance number in ASG
       Default: 5
+  - InstanceType:
+      Description: Instance Type
+      Default: "t2.medium"
   - EtcdS3Backup:
       Description: AWS S3 Bucket to backup ETCD to
   StackName: etcd-cluster
+
+Outputs:
+  EtcdSecurityGroupId:
+    Description: "Security Group ID of the etcd cluster"
+    Value:
+      Fn::GetAtt:
+        - EtcdSecurityGroup
+        - GroupId
+    Export:
+      Name: "{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}:security-group-id"
+
 Resources:
   EtcdSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -53,7 +69,7 @@ Resources:
         CidrIp: 172.16.0.0/12
       - IpProtocol: tcp
         FromPort: 2379
-        ToPort: 2380
+        ToPort: 2381
         CidrIp: 172.16.0.0/12
       - IpProtocol: tcp
         FromPort: 9100
