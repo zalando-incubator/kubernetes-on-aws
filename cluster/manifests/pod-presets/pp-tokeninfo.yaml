@@ -1,0 +1,15 @@
+apiVersion: settings.k8s.io/v1alpha1
+kind: PodPreset
+metadata:
+  name: tokeninfo
+spec:
+  selector:
+    matchLabels:
+      zalando.org/uses-tokeninfo: "true"
+  env:
+  - name: TOKENINFO_URL
+{{ if eq .Environment "production" }}
+    value: https://info.services.auth.zalando.com/oauth2/tokeninfo
+{{ else }}
+    value: https://sandbox.identity.zalando.com
+{{ end }}
