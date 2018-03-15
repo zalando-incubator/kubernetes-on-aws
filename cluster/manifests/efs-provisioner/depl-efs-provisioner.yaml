@@ -1,0 +1,48 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: efs-provisioner
+  namespace: kube-system
+  labels:
+    application: efs-provisioner
+    version: latest
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      application: efs-provisioner
+  template:
+    metadata:
+      labels:
+        application: efs-provisioner
+        version: latest
+    spec:
+      serviceAccountName: system
+      containers:
+      - name: efs-provisioner
+        image: quay.io/external_storage/efs-provisioner:latest
+        env:
+        - name: FILE_SYSTEM_ID
+          valueFrom:
+            configMapKeyRef:
+              name: efs-provisioner
+              key: file.system.id
+        - name: AWS_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: efs-provisioner
+              key: aws.region
+        - name: PROVISIONER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: efs-provisioner
+              key: provisioner.name
+        volumeMounts:
+        - name: pv-volume
+          mountPath: /persistentvolumes
+      volumes:
+        - name: pv-volume
+          nfs:
+            server: "{{ .ConfigItems.efsid }}.efs.{{ .Region }}.amazonaws.com"
+            path: /
