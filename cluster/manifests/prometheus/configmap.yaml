@@ -58,4 +58,12 @@ data:
         target_label: __address__
         regex: (.*)
         replacement: $1:4194
+    - job_name: 'kubelet-metrics'
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_node_address_InternalIP]
+        target_label: __address__
+        regex: (.*)
+        replacement: $1:10255
 
