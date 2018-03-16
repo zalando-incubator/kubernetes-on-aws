@@ -25,17 +25,18 @@ spec:
         args:
         - "--config.file=/etc/prometheus/prometheus.yml"
         - "--storage.tsdb.path=/prometheus/"
+        - "--storage.tsdb.retention=1d"
         ports:
         - name: ingress-port
           containerPort: 9090
           protocol: TCP
         resources:
           limits:
-            cpu: 200m
+            cpu: 300m
             memory: 2000Mi
           requests:
-            cpu: 25m
-            memory: 200Mi
+            cpu: 250m
+            memory: 500Mi
         volumeMounts:
         - name: prometheus-config-volume
           mountPath: /etc/prometheus
