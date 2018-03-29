@@ -37,6 +37,11 @@ SenzaInfo:
           Description: "AWS Stack name of the etcd cluster"
           Default: "etcd-cluster-etcd"
 
+Mappings:
+  Images:
+    eu-central-1:
+      StableCoreOSImage: "ami-862140e9"
+
 SenzaComponents:
   - Configuration:
       Type: Senza::CoreosAutoConfiguration
@@ -67,7 +72,7 @@ SenzaComponents:
   - MasterAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: "{{ Arguments.MasterInstanceType }}"
-      Image: LatestCoreOSImage
+      Image: StableCoreOSImage
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -95,7 +100,7 @@ SenzaComponents:
   - WorkerAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: "{{ Arguments.InstanceType }}"
-      Image: LatestCoreOSImage
+      Image: StableCoreOSImage
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
