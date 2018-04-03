@@ -14,26 +14,6 @@ coreos:
   update:
     reboot-strategy: "off"
   units:
-    - name: etcd-member.service
-      command: start
-      enable: true
-      content: |
-        [Unit]
-        Wants=network.target
-
-        [Service]
-        Type=simple
-        Restart=on-failure
-        RestartSec=5s
-        StartLimitIntervalSec=0
-        ExecStartPre=/usr/bin/mkdir --parents /var/lib/coreos
-        ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
-        ExecStart=/usr/bin/rkt run --uuid-file-save=/var/lib/coreos/etcd-member-wrapper.uuid --port=2379-tcp:2379 --mount volume=dns,target=/etc/resolv.conf --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true --insecure-options=image docker://registry.opensource.zalan.do/teapot/etcd-proxy:master-2 -- {{ETCD_ENDPOINTS}}
-        ExecStop=-/usr/bin/rkt stop --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
-
-        [Install]
-        WantedBy=multi-user.target
-
     - name: docker.service
       drop-ins:
         - name: 40-flannel.conf
