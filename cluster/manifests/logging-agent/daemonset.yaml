@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: logging-agent
@@ -31,7 +31,6 @@ spec:
       initContainers:
       - name: init-scalyr-config
         image: registry.opensource.zalan.do/stups/alpine:3.7.0-1
-        imagePullPolicy: IfNotPresent
         command: ["sh", "-c"]
         args:
         - |
@@ -126,7 +125,7 @@ spec:
 
       - name: scalyr-agent
 
-        image: registry.opensource.zalan.do/eagleeye/scalyr-agent:0.4
+        image: registry.opensource.zalan.do/eagleeye/scalyr-agent:0.5
 
         env:
         # Note: added for scalyr-config-base, but not needed by the scalyr-agent itself.

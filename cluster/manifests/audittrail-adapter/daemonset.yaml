@@ -1,0 +1,60 @@
+{{ if eq .Environment "production" }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: audittrail-adapter
+  namespace: kube-system
+  labels:
+    application: audittrail-adapter
+    version: master-16
+spec:
+  selector:
+    matchLabels:
+      application: audittrail-adapter
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        application: audittrail-adapter
+        version: master-16
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/master
+                operator: Exists
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      hostNetwork: true
+      containers:
+      - name: audittrail-adapter
+        image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-16
+        args:
+        - --cluster-id={{ .ID }}
+        - --audittrail-url=https://audittrail.cloud.zalando.com
+        - --address=:8889
+        - --metrics-address=:7980
+        volumeMounts:
+        - name: platform-iam-credentials
+          mountPath: /meta/credentials
+          readOnly: true
+        resources:
+          limits:
+            cpu: 50m
+            memory: 50Mi
+          requests:
+            cpu: 20m
+            memory: 20Mi
+      volumes:
+      - name: platform-iam-credentials
+        secret:
+          secretName: "audittrail-adapter"
+{{ end }}

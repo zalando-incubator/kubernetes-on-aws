@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+  labels:
+    application: prometheus
+    version: v2.2.1
+  name: prometheus
+  namespace: kube-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      application: prometheus
+  serviceName: prometheus
+  template:
+    metadata:
+      labels:
+        application: prometheus
+        version: v2.2.1
+    spec:
+      containers:
+      - name: prometheus
+        image: registry.opensource.zalan.do/teapot/prometheus:v2.2.1
+        args:
+        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--storage.tsdb.path=/prometheus/"
+        - "--storage.tsdb.retention=1d"
+        ports:
+        - name: ingress-port
+          containerPort: 9090
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 4000Mi
+          requests:
+            cpu: 500m
+            memory: 4000Mi
+        volumeMounts:
+        - name: prometheus-config-volume
+          mountPath: /etc/prometheus
+        - name: prometheus-storage-volume
+          mountPath: /prometheus
+        securityContext:
+          allowPrivilegeEscalation: false
+      volumes:
+        - name: prometheus-config-volume
+          configMap:
+            defaultMode: 420
+            name: prometheus-conf
+      securityContext:
+        runAsUser: 65534
+        fsGroup: 65534
+  volumeClaimTemplates:
+  - metadata:
+      name: prometheus-storage-volume
+    spec:
+      storageClassName: standard
+      accessModes:
+      - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: 50Gi

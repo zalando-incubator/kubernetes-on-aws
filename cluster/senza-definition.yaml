@@ -33,6 +33,14 @@ SenzaInfo:
           Description: "Name of the worker node pool (ASG)"
       - EtcdS3BackupBucket:
           Description: "Name of the S3 bucket used for etcd backups"
+      - EtcdStackName:
+          Description: "AWS Stack name of the etcd cluster"
+          Default: "etcd-cluster-etcd"
+
+Mappings:
+  Images:
+    eu-central-1:
+      StableCoreOSImage: "ami-862140e9"
 
 SenzaComponents:
   - Configuration:
@@ -64,7 +72,7 @@ SenzaComponents:
   - MasterAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: "{{ Arguments.MasterInstanceType }}"
-      Image: LatestCoreOSImage
+      Image: StableCoreOSImage
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -92,7 +100,7 @@ SenzaComponents:
   - WorkerAutoScaling:
       Type: Senza::AutoScalingGroup
       InstanceType: "{{ Arguments.InstanceType }}"
-      Image: LatestCoreOSImage
+      Image: StableCoreOSImage
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -114,6 +122,12 @@ SenzaComponents:
           Value: owned
         - Key: "NodePool"
           Value: "{{ Arguments.WorkerNodePoolName }}"
+        - Key: "k8s.io/role/node"
+          Value: "worker"
+        - Key: "k8s.io/cluster-autoscaler/enabled"
+          Value: ""
+        - Key: "zalando.de/cluster-local-id/{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}"
+          Value: owned
 Resources:
   MasterIAMRole:
     Properties:
@@ -174,15 +188,17 @@ Resources:
                 -
                   - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
                   -
-                    Ref: WorkerIAMRole
+                    Ref: MasterIAMRole
         Version: '2012-10-17'
       Path: /
       Policies:
       - PolicyDocument:
           Statement:
           - {Action: 'ec2:Describe*', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DescribeTags', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:DescribeAutoScalingGroups', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:DescribeAutoScalingInstances', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DescribeLaunchConfigurations', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:DescribeScalingActivities', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:SetDesiredCapacity', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:TerminateInstanceInAutoScalingGroup', Effect: Allow, Resource: '*'}
@@ -248,6 +264,7 @@ Resources:
           - {Action: 'autoscaling:DetachLoadBalancers', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:DetachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
           - {Action: 'autoscaling:AttachLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
+          - {Action: 'autoscaling:DescribeLoadBalancerTargetGroups', Effect: Allow, Resource: '*'}
           - {Action: 'cloudformation:*', Effect: Allow, Resource: '*'}
           - {Action: 'elasticloadbalancing:*', Effect: Allow, Resource: '*'}
           - {Action: 'elasticloadbalancingv2:*', Effect: Allow, Resource: '*'}
@@ -316,6 +333,7 @@ Resources:
       - {CidrIp: 0.0.0.0/0, FromPort: -1, IpProtocol: icmp, ToPort: -1}
       - {CidrIp: 0.0.0.0/0, FromPort: 22, IpProtocol: tcp, ToPort: 22}
       - {CidrIp: 172.31.0.0/16, FromPort: 8082, IpProtocol: tcp, ToPort: 8082}
+      - {CidrIp: 172.31.0.0/16, FromPort: 7980, IpProtocol: tcp, ToPort: 7980}
       - {CidrIp: 172.31.0.0/16, FromPort: 8083, IpProtocol: tcp, ToPort: 8083}
       - {CidrIp: 172.31.0.0/16, FromPort: 9100, IpProtocol: tcp, ToPort: 9100}
       - {CidrIp: 172.31.0.0/16, FromPort: 9911, IpProtocol: tcp, ToPort: 9911}
@@ -336,6 +354,15 @@ Resources:
           Value: owned
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
+  EtcdSecurityGroupIngressFromMaster:
+    Properties:
+      FromPort: 2379
+      ToPort: 2379
+      IpProtocol: tcp
+      GroupId:
+        Fn::ImportValue: "{{Arguments.EtcdStackName}}:security-group-id"
+      SourceSecurityGroupId: {Ref: MasterSecurityGroup}
+    Type: AWS::EC2::SecurityGroupIngress
   MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
     Properties:
       FromPort: 8080
@@ -390,6 +417,10 @@ Resources:
       - {CidrIp: 172.31.0.0/16, FromPort: 9100, IpProtocol: tcp, ToPort: 9100}
       # allow checking kubelet healthz port from within the VPC
       - {CidrIp: 172.31.0.0/16, FromPort: 10248, IpProtocol: tcp, ToPort: 10248}
+      # allow checking kubelet cadvisor metrics port from within the VPC
+      - {CidrIp: 172.31.0.0/16, FromPort: 4194, IpProtocol: tcp, ToPort: 4194}
+      # allow checking kubelet metrics for disk metrics port from within the VPC
+      - {CidrIp: 172.31.0.0/16, FromPort: 10255, IpProtocol: tcp, ToPort: 10255}
       # allow default service NodePort range
       - {CidrIp: 172.31.0.0/16, FromPort: 30000, IpProtocol: tcp, ToPort: 32767}
       Tags:
@@ -690,6 +721,8 @@ Resources:
             - "swf:*"
             - "tag:get*"
             - "trustedadvisor:*"
+            - "firehose:*"
+            - "lambda:*"
             Resource: "*"
           Version: '2012-10-17'
         PolicyName: root
@@ -821,7 +854,7 @@ Resources:
                 -
                   - arn:aws:iam::{{ AccountInfo.AccountID }}:role/
                   -
-                    Ref: WorkerIAMRole
+                    Ref: MasterIAMRole
         Version: '2012-10-17'
       Path: /
       Policies:

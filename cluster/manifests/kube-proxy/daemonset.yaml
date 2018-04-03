@@ -1,11 +1,11 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: kube-proxy
   namespace: kube-system
   labels:
     application: kube-proxy
-    version: v1.8.5_coreos.0
+    version: v1.9.4_coreos.0
 spec:
   selector:
     matchLabels:
@@ -17,7 +17,7 @@ spec:
       name: kube-proxy
       labels:
         application: kube-proxy
-        version: v1.8.5_coreos.0
+        version: v1.9.4_coreos.0
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
@@ -33,12 +33,11 @@ spec:
       hostNetwork: true
       containers:
       - name: kube-proxy
-        image: registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0
+        image: registry.opensource.zalan.do/teapot/hyperkube:v1.9.4_coreos.0
         command:
         - /hyperkube
         - proxy
-        - --kubeconfig=/etc/kubernetes/kubeconfig
-        - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
+        - --config=/config/kube-proxy.yaml
         - --v=2
         securityContext:
           privileged: true
@@ -59,6 +58,9 @@ spec:
         - name: etc-kube-ssl
           mountPath: /etc/kubernetes/ssl
           readOnly: true
+        - name: kube-proxy-config
+          mountPath: /config
+          readOnly: true
       volumes:
       - name: ssl-certs
         hostPath:
@@ -69,3 +71,6 @@ spec:
       - name: etc-kube-ssl
         hostPath:
           path: /etc/kubernetes/ssl
+      - name: kube-proxy-config
+        configMap:
+          name: kube-proxy-config

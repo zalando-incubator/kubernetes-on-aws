@@ -117,7 +117,7 @@ coreos:
       runtime: true
       content: |
         [Service]
-        Environment=KUBELET_IMAGE_TAG=v1.8.5_coreos.0
+        Environment=KUBELET_IMAGE_TAG=v1.9.4_coreos.0
         Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
         Environment="RKT_RUN_ARGS=--insecure-options=image \
         --uuid-file-save=/var/run/kubelet-pod.uuid \
@@ -150,7 +150,7 @@ coreos:
         --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
         --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
         --cloud-provider=aws \
-        --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
+        --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true \
         --system-reserved=cpu=100m,memory=164Mi \
         --kube-reserved=cpu=100m,memory=282Mi
         ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
@@ -248,7 +248,7 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.8.5_coreos.0
+          version: v1.9.4_coreos.0
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
           kubernetes-log-watcher/scalyr-parser: |
@@ -262,7 +262,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.9.4_coreos.0
           command:
           - /hyperkube
           - apiserver
@@ -277,19 +277,22 @@ write_files:
           - --service-cluster-ip-range=10.3.0.0/16
           - --secure-port=443
           - --advertise-address=$private_ipv4
-          - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook
+          - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,extensions/v1beta1/podsecuritypolicy=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true
+          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,extensions/v1beta1/podsecuritypolicy=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
           - --authorization-mode=Webhook
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
+          - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true
           - --anonymous-auth=false
+          - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
+          - --audit-webhook-mode=batch
+          - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
           livenessProbe:
             httpGet:
               host: 127.0.0.1
@@ -318,7 +321,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.3.8
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.4.0
           name: webhook
           ports:
           - containerPort: 8081
@@ -348,7 +351,7 @@ write_files:
             - name: TOKEN_INTROSPECTION_URL
               value: http://127.0.0.1:9021/oauth2/introspect
             - name: USER_GROUPS
-              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,credprov-api-discovery-k8s-cluster-read-only-token=ReadOnly,stups_zmon-zmon=ReadOnly
+              value: stups_autobahn=Administrator,stups_deployment-controller-ui=ReadOnly,credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,stups_cluster-lifecycle-manager=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,credprov-api-discovery-k8s-cluster-read-only-token=ReadOnly,stups_zmon-zmon=ReadOnly
             - name: BUSINESS_PARTNER_IDS
               value: {{ APISERVER_BUSINESS_PARTNER_IDS }}
           volumeMounts:
@@ -380,7 +383,7 @@ write_files:
               value: https://identity.zalando.com/.well-known/openid-configuration
             - name: ENABLE_INTROSPECTION
               value: "true"
-        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.3.2
+        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.3.6
           name: image-policy-webhook
           args:
           - --policy={{ IMAGE_POLICY }}
@@ -419,7 +422,7 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.8.5_coreos.0
+          version: v1.9.4_coreos.0
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
       spec:
@@ -430,7 +433,7 @@ write_files:
           effect: NoSchedule
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.9.4_coreos.0
           command:
           - /hyperkube
           - controller-manager
@@ -440,7 +443,8 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
+          - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true
+          - --horizontal-pod-autoscaler-use-rest-clients=false
           - --use-service-account-credentials=true
           - --v=4
           - --allocate-node-cidrs=true
@@ -487,7 +491,7 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.8.5_coreos.0
+          version: v1.9.4_coreos.0
         annotations:
           scheduler.alpha.kubernetes.io/critical-pod: ''
       spec:
@@ -499,13 +503,13 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0
+          image: registry.opensource.zalan.do/teapot/hyperkube:v1.9.4_coreos.0
           command:
           - /hyperkube
           - scheduler
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
-          - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
+          - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true
           resources:
             requests:
               cpu: 100m
@@ -638,6 +642,116 @@ write_files:
           user: image-policy-webhook
         name: image-policy-webhook
 
+  - path: /etc/kubernetes/config/audit.yaml
+    permissions: 0644
+    owner: root:root
+    content: |
+      apiVersion: v1
+      kind: Config
+      clusters:
+      - name: audit
+        cluster:
+          server: http://127.0.0.1:8889/audit
+      contexts:
+      - name: audit
+        context:
+          cluster: audit
+          user: audit
+      current-context: audit
+
+  - path: /etc/kubernetes/config/audit-policy.yaml
+    permissions: 0644
+    owner: root:root
+    content: |
+      apiVersion: audit.k8s.io/v1beta1
+      kind: Policy
+      rules:
+        # The following requests were manually identified as high-volume and low-risk,
+        # so drop them.
+        - level: None
+          users: ["system:kube-proxy"]
+          verbs: ["watch"]
+          resources:
+            - group: "" # core
+              resources: ["endpoints", "services", "services/status"]
+        # don't audit any kubelet events
+        - level: None
+          users: ["kubelet"] # legacy kubelet identity
+        # don't audit events from the system:unsecured user. This is the user
+        # used when connecting to the apiserver over localhost, and will
+        # usuaully be done by the local kubelet.
+        - level: None
+          users: ["system:unsecured"]
+        # don't audit events from the system:apiserver user
+        - level: None
+          users: ["system:apiserver"]
+        # don't audit any kube-controller-manager events
+        - level: None
+          users: ["kube-controller-manager"]
+        # Don't audit events from system users in kube-system
+        - level: None
+          userGroups: ["system:serviceaccounts:kube-system"]
+        # Don't audit events from high traffic infrastructure components
+        - level: None
+          users: ["credentials-provider"]
+        - level: None
+          userGroups: ["system:nodes"]
+          verbs: ["get"]
+          resources:
+            - group: "" # core
+              resources: ["nodes", "nodes/status"]
+        - level: None
+          users:
+            - system:kube-controller-manager
+            - system:kube-scheduler
+            - system:serviceaccount:kube-system:endpoint-controller
+          verbs: ["get", "update"]
+          namespaces: ["kube-system"]
+          resources:
+            - group: "" # core
+              resources: ["endpoints"]
+        - level: None
+          users: ["system:apiserver"]
+          verbs: ["get"]
+          resources:
+            - group: "" # core
+              resources: ["namespaces", "namespaces/status", "namespaces/finalize"]
+        # Don't log HPA fetching metrics.
+        - level: None
+          users:
+            - system:kube-controller-manager
+          verbs: ["get", "list"]
+          resources:
+            - group: "metrics.k8s.io"
+        # Don't log these read-only URLs.
+        - level: None
+          nonResourceURLs:
+            - /healthz*
+            - /version
+            - /swagger*
+        # Don't log events requests.
+        - level: None
+          resources:
+            - group: "" # core
+              resources: ["events"]
+        # Secrets, ConfigMaps, and TokenReviews can contain sensitive & binary data,
+        # so only log at the Metadata level.
+        - level: Metadata
+          resources:
+            - group: "" # core
+              resources: ["secrets", "configmaps"]
+            - group: authentication.k8s.io
+              resources: ["tokenreviews"]
+          omitStages:
+            - "RequestReceived"
+        # Don't audit read-only events.
+        - level: None
+          verbs: ["watch", "list", "get"]
+        # Default level for all other requests.
+        - level: Request
+          omitStages:
+            - "RequestReceived"
+
   - path: /etc/kubernetes/ssl/ca.pem
     encoding: gzip+base64
     content: {{CA_CERT}}
@@ -657,16 +771,6 @@ write_files:
   - path: /etc/kubernetes/ssl/worker-key.pem
     encoding: gzip+base64
     content: {{WORKER_KEY}}
-
-  - path: /etc/kubernetes/cni/net.d/10-flannel.conf
-    content: |
-        {
-            "name": "podnet",
-            "type": "flannel",
-            "delegate": {
-                "isDefaultGateway": true
-            }
-        }
 
   - path: /etc/kubernetes/cloud-config.ini
     content: |
@@ -734,7 +838,7 @@ write_files:
         --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
         --mount volume=dns,target=/etc/resolv.conf \
         --net=host \
-        docker://registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0 \
+        docker://registry.opensource.zalan.do/teapot/hyperkube:v1.9.4_coreos.0 \
         --exec=/kubectl -- \
         --kubeconfig=/etc/kubernetes/kubeconfig \
         label node "$(hostname)" \
@@ -747,7 +851,7 @@ write_files:
         --net=host \
         --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
         --mount volume=dns,target=/etc/resolv.conf \
-        docker://registry.opensource.zalan.do/teapot/hyperkube:v1.8.5_coreos.0 \
+        docker://registry.opensource.zalan.do/teapot/hyperkube:v1.9.4_coreos.0 \
         --exec=/kubectl -- \
         --kubeconfig=/etc/kubernetes/kubeconfig \
         drain "$(hostname)" \

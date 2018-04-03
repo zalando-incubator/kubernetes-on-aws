@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaling-buffer
+  namespace: kube-system
+  labels:
+    application: autoscaling-buffer
+spec:
+  replicas: {{if index .ConfigItems "autoscaling_buffer_pods"}}{{.ConfigItems.autoscaling_buffer_pods}}{{else}}{{if eq .Environment "production"}}3{{else}}0{{end}}{{end}}
+  selector:
+    matchLabels:
+      application: autoscaling-buffer
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        application: autoscaling-buffer
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                  - key: application
+                    operator: In
+                    values:
+                    - autoscaling-buffer
+                topologyKey: failure-domain.beta.kubernetes.io/zone
+      priorityClassName: autoscaling-buffer
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: pause
+        image: registry.opensource.zalan.do/teapot/pause-amd64:3.0
+        resources:
+          limits:
+            cpu: {{if index .ConfigItems "autoscaling_buffer_cpu"}}{{.ConfigItems.autoscaling_buffer_cpu}}{{else}}1{{end}}
+            memory: {{if index .ConfigItems "autoscaling_buffer_memory"}}{{.ConfigItems.autoscaling_buffer_memory}}{{else}}4000Mi{{end}}
+          requests:
+            cpu: {{if index .ConfigItems "autoscaling_buffer_cpu"}}{{.ConfigItems.autoscaling_buffer_cpu}}{{else}}1{{end}}
+            memory: {{if index .ConfigItems "autoscaling_buffer_memory"}}{{.ConfigItems.autoscaling_buffer_memory}}{{else}}4000Mi{{end}}
