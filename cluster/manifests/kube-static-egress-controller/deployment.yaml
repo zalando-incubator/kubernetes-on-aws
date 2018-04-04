@@ -18,7 +18,6 @@ spec:
         version: v0.1.1
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        iam.amazonaws.com/role: "{{ .LocalID }}-static-egress-controller"
     spec:
       containers:
       - name: controller
@@ -34,8 +33,15 @@ spec:
         - "--aws-az=eu-central-1c"
         - "--stack-termination-protection"
         env:
+        # must be set for the AWS SDK/AWS CLI to find the credentials file.
+        - name: AWS_SHARED_CREDENTIALS_FILE
+          value: /meta/aws-iam/credentials
         - name: AWS_REGION
           value: eu-central-1
+        volumeMounts:
+        - name: aws-iam-credentials
+          mountPath: /meta/aws-iam
+          readOnly: true
         resources:
           limits:
             cpu: 100m
@@ -43,3 +49,8 @@ spec:
           requests:
             cpu: 5m
             memory: 25Mi
+      volumes:
+      - name: aws-iam-credentials
+        secret:
+          # secret should be named: aws-iam-<name-of-your-aws-iam-role>
+          secretName: aws-iam-{{ .LocalID }}-static-egress-controller
