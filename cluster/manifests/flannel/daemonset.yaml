@@ -20,6 +20,7 @@ spec:
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
+      priorityClassName: critical
       serviceAccountName: system
       initContainers:
       - name: install-cni
@@ -73,8 +74,6 @@ spec:
         effect: NoSchedule
       - operator: Exists
         effect: NoExecute
-      - operator: Exists
-        key: CriticalAddonsOnly
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       volumes:

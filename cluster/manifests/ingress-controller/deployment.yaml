@@ -20,10 +20,8 @@ spec:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-app-ingr-ctrl"
     spec:
+      priorityClassName: critical
       serviceAccountName: system
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
       containers:
       - name: controller
         image: registry.opensource.zalan.do/teapot/kube-ingress-aws-controller:v0.6.10

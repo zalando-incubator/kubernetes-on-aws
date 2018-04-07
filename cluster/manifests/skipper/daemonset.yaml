@@ -25,6 +25,7 @@ spec:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
+      priorityClassName: critical
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -34,9 +35,6 @@ spec:
                 operator: NotIn
                 values:
                 - master
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
       hostNetwork: true
       containers:
       - name: skipper-ingress
