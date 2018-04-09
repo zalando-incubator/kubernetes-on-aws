@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-static-egress-controller
-    version: v0.1.1
+    version: v0.1.2
 spec:
   replicas: 1
   selector:
@@ -15,14 +15,14 @@ spec:
     metadata:
       labels:
         application: kube-static-egress-controller
-        version: v0.1.1
+        version: v0.1.2
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-static-egress-controller"
     spec:
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.1.1
+        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.1.2
         args:
         - "--log-level=debug"
         - "--provider=aws"
