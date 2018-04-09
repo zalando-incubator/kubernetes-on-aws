@@ -31,7 +31,7 @@ coreos:
             Environment="DOCKER_OPTS=--log-opt=max-file=2 --log-opt=max-size=50m"
             Environment=DOCKER_SELINUX=
 
-    - name: timesynced-enable-network-time.service
+    - name: timesyncd-enable-network-time.service
       command: start
       runtime: true
       content: |
@@ -232,11 +232,11 @@ write_files:
       TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
       TOOLBOX_DOCKER_TAG=v0.0.4
 
-  - path: /etc/systemd/timesynced.conf
+  - path: /etc/systemd/timesyncd.conf
     owner: root
     content: |
       [Time]
-      NTP=0.amazon.pool.ntp.org 1.amazon.pool.ntp.org 2.amazon.pool.ntp.org 3.amazon.pool.ntp.org
+      NTP=169.254.169.123
 
   - path: /opt/bin/drain-node
     owner: root:root
