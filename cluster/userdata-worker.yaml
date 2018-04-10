@@ -14,26 +14,6 @@ coreos:
   update:
     reboot-strategy: "off"
   units:
-    - name: etcd-member.service
-      command: start
-      enable: true
-      content: |
-        [Unit]
-        Wants=network.target
-
-        [Service]
-        Type=simple
-        Restart=on-failure
-        RestartSec=5s
-        StartLimitIntervalSec=0
-        ExecStartPre=/usr/bin/mkdir --parents /var/lib/coreos
-        ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
-        ExecStart=/usr/bin/rkt run --uuid-file-save=/var/lib/coreos/etcd-member-wrapper.uuid --port=2379-tcp:2379 --mount volume=dns,target=/etc/resolv.conf --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true --insecure-options=image docker://registry.opensource.zalan.do/teapot/etcd-proxy:master-2 -- {{ETCD_ENDPOINTS}}
-        ExecStop=-/usr/bin/rkt stop --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
-
-        [Install]
-        WantedBy=multi-user.target
-
     - name: docker.service
       drop-ins:
         - name: 40-flannel.conf
@@ -51,7 +31,7 @@ coreos:
             Environment="DOCKER_OPTS=--log-opt=max-file=2 --log-opt=max-size=50m"
             Environment=DOCKER_SELINUX=
 
-    - name: timesynced-enable-network-time.service
+    - name: timesyncd-enable-network-time.service
       command: start
       runtime: true
       content: |
@@ -252,11 +232,11 @@ write_files:
       TOOLBOX_DOCKER_IMAGE=registry.opensource.zalan.do/teapot/microscope
       TOOLBOX_DOCKER_TAG=v0.0.4
 
-  - path: /etc/systemd/timesynced.conf
+  - path: /etc/systemd/timesyncd.conf
     owner: root
     content: |
       [Time]
-      NTP=0.amazon.pool.ntp.org 1.amazon.pool.ntp.org 2.amazon.pool.ntp.org 3.amazon.pool.ntp.org
+      NTP=169.254.169.123
 
   - path: /opt/bin/drain-node
     owner: root:root
