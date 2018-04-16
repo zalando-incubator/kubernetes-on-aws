@@ -28,10 +28,9 @@ spec:
         effect: NoSchedule
       containers:
       - name: kube-node-ready
-        image: registry.opensource.zalan.do/teapot/kube-node-ready:9799c3d
+        image: registry.opensource.zalan.do/teapot/kube-node-ready:v0.0.1
         args:
-        - --master-lifecycle-hook={{ .Outputs.MasterAutoscalingLifecycleHook }}
-        - --worker-lifecycle-hook={{ .Outputs.WorkerAutoscalingLifecycleHook }}
+        - --lifecycle-hook=kube-node-ready-lifecycle-hook
         resources:
           limits:
             cpu: 50m
