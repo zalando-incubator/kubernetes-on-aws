@@ -37,6 +37,12 @@ spec:
           requests:
             cpu: 500m
             memory: 4000Mi
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
         volumeMounts:
         - name: prometheus-config-volume
           mountPath: /etc/prometheus
