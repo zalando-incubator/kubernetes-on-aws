@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Kubernetes default worker node pool
+
+Mappings:
+  Images:
+    eu-central-1:
+      LatestCoreOSImage: ami-604e118b
+      StableCoreOSImage: ami-862140e9
+
+Conditions:
+  UseSpotPrice:
+    Fn::Not:
+      - Fn::Equals:
+        - "{{ .Values.spot_price }}"
+        - ""
+
+Resources:
+  AutoScalingGroup:
+    CreationPolicy:
+      ResourceSignal:
+        Count: '0'
+        Timeout: PT15M
+    Properties:
+      HealthCheckGracePeriod: 300
+      HealthCheckType: EC2
+      LaunchConfigurationName: !Ref AutoScalingConfig
+      MinSize: '{{ .NodePool.MinSize }}'
+      MaxSize: '{{ .NodePool.MaxSize }}'
+      Tags:
+      - Key: k8s.io/role/node
+        PropagateAtLaunch: true
+        Value: worker
+      - Key: k8s.io/cluster-autoscaler/enabled
+        PropagateAtLaunch: true
+        Value: ''
+      - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
+        PropagateAtLaunch: true
+        Value: ready
+      - Key: 'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}'
+        PropagateAtLaunch: true
+        Value: owned
+      VPCZoneIdentifier: !Split [",", "{{ .Cluster.ConfigItems.subnets }}"]
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+  AutoScalingConfig:
+    Properties:
+      AssociatePublicIpAddress: true
+      BlockDeviceMappings:
+      - DeviceName: /dev/xvda
+        Ebs:
+          VolumeSize: 50
+          VolumeType: standard
+      EbsOptimized: false
+      IamInstanceProfile: !Ref AutoScalingInstanceProfile
+      # ImageId: !FindInMap
+      #   - Images
+      #   - !Ref 'AWS::Region'
+      #   - StableCoreOSImage
+      # ImageId: " .AMI }}" # TODO: find
+      ImageId: "ami-862140e9" # TODO: find
+      InstanceType: "{{ .NodePool.InstanceType }}"
+      SecurityGroups:
+      - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
+      UserData: "{{ .UserData }}"
+      SpotPrice:
+        Fn::If:
+          - UseSpotPrice
+          - "{{ .Values.spot_price }}"
+          - Ref: AWS::NoValue
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+  AutoScalingInstanceProfile:
+    Properties:
+      Path: /
+      Roles:
+      - !ImportValue '{{ .Cluster.ID }}:worker-iam-role'
+    Type: 'AWS::IAM::InstanceProfile'
+  AutoScalingScaleDown:
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      Cooldown: '60'
+      ScalingAdjustment: '-1'
+    Type: 'AWS::AutoScaling::ScalingPolicy'
+  AutoScalingScaleUp:
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      Cooldown: '60'
+      ScalingAdjustment: '1'
+    Type: 'AWS::AutoScaling::ScalingPolicy'
+  AutoscalingLifecycleHook:
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      LifecycleHookName: "kube-node-ready-lifecycle-hook"
+      DefaultResult: CONTINUE
+      HeartbeatTimeout: '600'
+      LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
+    Type: 'AWS::AutoScaling::LifecycleHook'

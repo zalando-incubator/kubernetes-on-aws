@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Kubernetes default master node pool
+
+Mappings:
+  Images:
+    eu-central-1:
+      LatestCoreOSImage: ami-604e118b
+      StableCoreOSImage: ami-862140e9
+
+Resources:
+  AutoScalingGroup:
+    CreationPolicy:
+      ResourceSignal:
+        Count: '0'
+        Timeout: PT15M
+    Properties:
+      HealthCheckGracePeriod: 480
+      HealthCheckType: EC2
+      LaunchConfigurationName: !Ref AutoScalingConfig
+      LoadBalancerNames:
+      - !ImportValue '{{ .Cluster.ID }}:master-load-balancer'
+      MinSize: '{{ .NodePool.MinSize }}'
+      MaxSize: '{{ .NodePool.MaxSize }}'
+      VPCZoneIdentifier: !Split [",", "{{ .Cluster.ConfigItems.subnets }}"]
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+  AutoScalingConfig:
+    Properties:
+      AssociatePublicIpAddress: true
+      BlockDeviceMappings:
+      - DeviceName: /dev/xvda
+        Ebs:
+          VolumeSize: 20
+          VolumeType: standard
+      EbsOptimized: false
+      IamInstanceProfile: !Ref AutoScalingInstanceProfile
+      # ImageId: " .AMI }}" # TODO: find
+      ImageId: "ami-862140e9"
+      InstanceType: "{{ .NodePool.InstanceType }}"
+      SecurityGroups:
+      - !ImportValue '{{ .Cluster.ID }}:master-security-group'
+      UserData: "{{ .UserData }}"
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+  AutoScalingInstanceProfile:
+    Properties:
+      Path: /
+      Roles:
+      - !ImportValue '{{ .Cluster.ID }}:master-iam-role'
+    Type: 'AWS::IAM::InstanceProfile'
+  AutoScalingScaleDown:
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      Cooldown: '60'
+      ScalingAdjustment: '-1'
+    Type: 'AWS::AutoScaling::ScalingPolicy'
+  AutoScalingScaleUp:
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      Cooldown: '60'
+      ScalingAdjustment: '1'
+    Type: 'AWS::AutoScaling::ScalingPolicy'
+  AutoscalingLifecycleHook:
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      LifecycleHookName: "kube-node-ready-lifecycle-hook"
+      DefaultResult: CONTINUE
+      HeartbeatTimeout: '600'
+      LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
+    Type: 'AWS::AutoScaling::LifecycleHook'
