@@ -23,6 +23,9 @@ SenzaInfo:
           Default: "m3.medium"
       - InstanceType:
           Description: "Type of instance"
+      - WorkerSpotPrice:
+          Description: "Spot price for worker nodes, not used if empty"
+          Default: ""
       - ClusterID:
           Description: "ID of the cluster"
       - HostedZone:
@@ -36,6 +39,13 @@ SenzaInfo:
       - EtcdStackName:
           Description: "AWS Stack name of the etcd cluster"
           Default: "etcd-cluster-etcd"
+
+Conditions:
+  UseWorkerSpotPrice:
+    Fn::Not:
+      - Fn::Equals:
+        - "{{Arguments.WorkerSpotPrice}}"
+        - ""
 
 Mappings:
   Images:
@@ -112,6 +122,11 @@ SenzaComponents:
          - {Ref: WorkerIAMRole}
       AssociatePublicIpAddress: true
       UserData: "{{ Arguments.UserDataWorker }}"
+      SpotPrice:
+        Fn::If:
+          - UseWorkerSpotPrice
+          - "{{Arguments.WorkerSpotPrice}}"
+          - Ref: AWS::NoValue
       AutoScaling:
          Minimum: "{{ Arguments.MinimumWorkerNodes}}"
          Maximum: "{{ Arguments.MaximumWorkerNodes}}"
@@ -147,6 +162,7 @@ Resources:
           - {Action: 'ec2:*', Effect: Allow, Resource: '*'}
           - {Action: 'elasticloadbalancing:*', Effect: Allow, Resource: '*'}
           - {Action: 'kms:Decrypt', Effect: Allow, Resource: '{{ Arguments.KmsKey }}'}
+          - {Action: 's3:GetObject', Effect: Allow, Resource: 'arn:aws:s3:::*'}
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
@@ -169,6 +185,7 @@ Resources:
           - {Action: 'ec2:DetachVolume', Effect: Allow, Resource: '*'}
           - {Action: 'kms:Decrypt', Effect: Allow, Resource: '{{ Arguments.KmsKey }}'}
           - {Action: 'sts:AssumeRole', Effect: Allow, Resource: '*'}
+          - {Action: 's3:GetObject', Effect: Allow, Resource: 'arn:aws:s3:::*'}
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
