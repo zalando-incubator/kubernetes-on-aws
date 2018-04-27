@@ -18,6 +18,8 @@ spec:
       labels:
         application: prometheus
         version: v2.2.1
+      annotations:
+        config/hash: {{"configmap.yaml" | manifestHash}}
     spec:
       containers:
       - name: prometheus
@@ -35,7 +37,7 @@ spec:
             cpu: 1000m
             memory: 4000Mi
           requests:
-            cpu: 500m
+            cpu: 1000m
             memory: 4000Mi
         readinessProbe:
           httpGet:
