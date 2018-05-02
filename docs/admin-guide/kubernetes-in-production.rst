@@ -39,7 +39,7 @@ We always create two AWS Auto Scaling Groups (ASGs, “node pools”) right now:
 
 Both ASGs span multiple Availability Zones (AZ). The API server is exposed with TLS via a “classic” TCP/SSL Elastic Load Balancer (ELB).
 
-We use a custom built Cluster Registry REST service to manage our Kubernetes clusters. Another component (Cluster Lifecycle Manager, CLM) is regularly polling the Cluster Registry and updating clusters to the desired state.
+We use a custom built Cluster Registry REST service to manage our Kubernetes clusters. Another component (`Cluster Lifecycle Manager`_, CLM) is regularly polling the Cluster Registry and updating clusters to the desired state.
 The desired state is expressed with CloudFormation and Kubernetes manifests `stored in git`_.
 
 .. image:: images/cluster-lifecycle-manager.svg
@@ -167,13 +167,13 @@ We are using the HorizontalPodAutoscaler_ resource to scale the number of deploy
 Node Autoscaling
 ----------------
 
-Our `experimental AWS Autoscaler`_ is an attempt to implement a simple and elastic autoscaling with AWS Auto Scaling Groups.
+We use the `official Cluster Autoscaler`_ which controls the desired capacity of AWS Auto Scaling Groups based on resource requests.
 
 Graceful node shutdown is required to allow safe downscaling at any time. We simply added a small `systemd unit to run kubectl drain on shutdown`_.
 
 Upscaling or node replacement poses the risk of race conditions between application pods and required system pods (DaemonSet). We have not yet figured out a good way of postponing application scheduling until the node is fully ready. The kubelet’s Ready condition is not enough as it does not ensure that all system pods such as kube-proxy and kube2iam are running. One idea is using taints during node initialization to prevent application pods to be scheduled until the node is fully ready.
 
-.. _experimental AWS Autoscaler: https://github.com/hjacobs/kube-aws-autoscaler
+.. _official Cluster Autoscaler: https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler
 .. _systemd unit to run kubectl drain on shutdown: https://github.com/zalando-incubator/kubernetes-on-aws/blob/449f8f3bf5c60e0d319be538460ff91266337abc/cluster/userdata-worker.yaml#L92
 
 Monitoring
@@ -258,3 +258,4 @@ The STUPS etcd cluster is deployed across availability zones (AZ) with five node
 .. _STUPS etcd cluster: https://github.com/zalando-incubator/stups-etcd-cluster
 .. _STUPS Taupage AMI: https://github.com/zalando-stups/taupage
 .. _our LimitRange YAML manifest: https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/cluster/manifests/default-limits/limits.yaml
+.. _Cluster Lifecycle Manager: https://github.com/zalando-incubator/cluster-lifecycle-manager
