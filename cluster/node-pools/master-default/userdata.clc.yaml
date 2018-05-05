@@ -307,6 +307,15 @@ storage:
             - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
             - --audit-webhook-mode=batch
             - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
+            # enable aggregated apiservers
+            - --client-ca-file=/etc/kubernetes/ssl/ca.pem
+            - --requestheader-client-ca-file=/etc/kubernetes/ssl/ca.pem
+            - --requestheader-allowed-names=aggregator
+            - --requestheader-extra-headers-prefix=X-Remote-Extra-
+            - --requestheader-group-headers=X-Remote-Group
+            - --requestheader-username-headers=X-Remote-User
+            - --proxy-client-cert-file=/etc/kubernetes/ssl/proxy-client.pem
+            - --proxy-client-key-file=/etc/kubernetes/ssl/proxy-client-key.pem
             livenessProbe:
               httpGet:
                 host: 127.0.0.1
@@ -822,6 +831,20 @@ storage:
     contents:
       remote:
         url: "data:text/plain;base64,{{ .Cluster.ConfigItems.worker_key_decompressed }}"
+
+  - filesystem: root
+    path: /etc/kubernetes/ssl/proxy-client.pem
+    mode: 0664
+    contents:
+      remote:
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.proxy_client_cert }}"
+
+  - filesystem: root
+    path: /etc/kubernetes/ssl/proxy-client-key.pem
+    mode: 0664
+    contents:
+      remote:
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.proxy_client_key }}"
 
   - filesystem: root
     path: /etc/kubernetes/cloud-config.ini

@@ -4,7 +4,6 @@ Description: Kubernetes default master node pool
 Mappings:
   Images:
     eu-central-1:
-      LatestCoreOSImage: ami-604e118b
       StableCoreOSImage: ami-862140e9
 
 Resources:
@@ -21,6 +20,10 @@ Resources:
       - !ImportValue '{{ .Cluster.ID }}:master-load-balancer'
       MinSize: '{{ .NodePool.MinSize }}'
       MaxSize: '{{ .NodePool.MaxSize }}'
+      Tags:
+      - Key: Name
+        PropagateAtLaunch: true
+        Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
       VPCZoneIdentifier: !Split [",", "{{ .Cluster.ConfigItems.subnets }}"]
     Type: 'AWS::AutoScaling::AutoScalingGroup'
   AutoScalingConfig:
@@ -33,8 +36,10 @@ Resources:
           VolumeType: standard
       EbsOptimized: false
       IamInstanceProfile: !Ref AutoScalingInstanceProfile
-      # ImageId: " .AMI }}" # TODO: find
-      ImageId: "ami-862140e9"
+      ImageId: !FindInMap
+      - Images
+      - !Ref 'AWS::Region'
+      - StableCoreOSImage
       InstanceType: "{{ .NodePool.InstanceType }}"
       SecurityGroups:
       - !ImportValue '{{ .Cluster.ID }}:master-security-group'
@@ -46,20 +51,6 @@ Resources:
       Roles:
       - !ImportValue '{{ .Cluster.ID }}:master-iam-role'
     Type: 'AWS::IAM::InstanceProfile'
-  AutoScalingScaleDown:
-    Properties:
-      AdjustmentType: ChangeInCapacity
-      AutoScalingGroupName: !Ref AutoScalingGroup
-      Cooldown: '60'
-      ScalingAdjustment: '-1'
-    Type: 'AWS::AutoScaling::ScalingPolicy'
-  AutoScalingScaleUp:
-    Properties:
-      AdjustmentType: ChangeInCapacity
-      AutoScalingGroupName: !Ref AutoScalingGroup
-      Cooldown: '60'
-      ScalingAdjustment: '1'
-    Type: 'AWS::AutoScaling::ScalingPolicy'
   AutoscalingLifecycleHook:
     Properties:
       AutoScalingGroupName: !Ref AutoScalingGroup

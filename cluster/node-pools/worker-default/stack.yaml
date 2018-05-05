@@ -4,7 +4,6 @@ Description: Kubernetes default worker node pool
 Mappings:
   Images:
     eu-central-1:
-      LatestCoreOSImage: ami-604e118b
       StableCoreOSImage: ami-862140e9
 
 Conditions:
@@ -27,6 +26,9 @@ Resources:
       MinSize: '{{ .NodePool.MinSize }}'
       MaxSize: '{{ .NodePool.MaxSize }}'
       Tags:
+      - Key: Name
+        PropagateAtLaunch: true
+        Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
       - Key: k8s.io/role/node
         PropagateAtLaunch: true
         Value: worker
@@ -51,12 +53,10 @@ Resources:
           VolumeType: standard
       EbsOptimized: false
       IamInstanceProfile: !Ref AutoScalingInstanceProfile
-      # ImageId: !FindInMap
-      #   - Images
-      #   - !Ref 'AWS::Region'
-      #   - StableCoreOSImage
-      # ImageId: " .AMI }}" # TODO: find
-      ImageId: "ami-862140e9" # TODO: find
+      ImageId: !FindInMap
+      - Images
+      - !Ref 'AWS::Region'
+      - StableCoreOSImage
       InstanceType: "{{ .NodePool.InstanceType }}"
       SecurityGroups:
       - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
@@ -73,20 +73,6 @@ Resources:
       Roles:
       - !ImportValue '{{ .Cluster.ID }}:worker-iam-role'
     Type: 'AWS::IAM::InstanceProfile'
-  AutoScalingScaleDown:
-    Properties:
-      AdjustmentType: ChangeInCapacity
-      AutoScalingGroupName: !Ref AutoScalingGroup
-      Cooldown: '60'
-      ScalingAdjustment: '-1'
-    Type: 'AWS::AutoScaling::ScalingPolicy'
-  AutoScalingScaleUp:
-    Properties:
-      AdjustmentType: ChangeInCapacity
-      AutoScalingGroupName: !Ref AutoScalingGroup
-      Cooldown: '60'
-      ScalingAdjustment: '1'
-    Type: 'AWS::AutoScaling::ScalingPolicy'
   AutoscalingLifecycleHook:
     Properties:
       AutoScalingGroupName: !Ref AutoScalingGroup
