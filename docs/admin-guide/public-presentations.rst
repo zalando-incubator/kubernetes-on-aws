@@ -4,6 +4,7 @@
 Public Presentations
 ====================
 
+* `KubeCon Copenhagen 2018: Continuously Deliver your Kubernetes Infrastructure <https://www.youtube.com/watch?v=1xHmCrd8Qn8>`_
 * `Zalando Dortmund Meetup: Kubernetes Deployments: A “Hands-Off” Approach <https://www.youtube.com/watch?v=e0DruWvY-ME>`_
 * `KubeCon Austin 2017: Kubernetes on AWS: Practices & Opinions <https://www.youtube.com/watch?v=gegaGA7Ek9E>`_
 * `AWS re:invent 2017: Mastering Kubernetes on AWS <https://www.youtube.com/watch?v=w34txLmpEuM>`_

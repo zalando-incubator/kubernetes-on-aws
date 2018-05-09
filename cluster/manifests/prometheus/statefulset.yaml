@@ -34,11 +34,11 @@ spec:
           protocol: TCP
         resources:
           limits:
-            cpu: 1000m
-            memory: 4000Mi
+            cpu: {{if index .ConfigItems "prometheus_cpu"}}{{.ConfigItems.prometheus_cpu}}{{else}}1000m{{end}}
+            memory: {{if index .ConfigItems "prometheus_mem"}}{{.ConfigItems.prometheus_mem}}{{else}}4000Mi{{end}}
           requests:
-            cpu: 1000m
-            memory: 4000Mi
+            cpu: {{if index .ConfigItems "prometheus_cpu"}}{{.ConfigItems.prometheus_cpu}}{{else}}1000m{{end}}
+            memory: {{if index .ConfigItems "prometheus_mem"}}{{.ConfigItems.prometheus_mem}}{{else}}4000Mi{{end}}
         readinessProbe:
           httpGet:
             path: /-/ready
