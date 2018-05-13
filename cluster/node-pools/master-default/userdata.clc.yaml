@@ -370,7 +370,7 @@ storage:
               - name: TEAMS_API_URL
                 value: https://teams.auth.zalando.com
               - name: CLUSTER_ID
-                value: {{ .Cluster.ConfigItems.webhook_id }}
+                value: {{if index .Cluster.ConfigItems "webhook_id"}}{{ .Cluster.ConfigItems.webhook_id }}{{else}}{{ .Cluster.ID }}{{end}}
               - name: TOKEN_INTROSPECTION_URL
                 value: http://127.0.0.1:9021/oauth2/introspect
               - name: USER_GROUPS
