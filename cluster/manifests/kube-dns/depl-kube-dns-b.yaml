@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-dns-b
-    version: v1.14.5
+    version: v1.14.10
     kubernetes.io/cluster-service: "true"
 spec:
   # replicas: not specified here:
@@ -23,7 +23,7 @@ spec:
     metadata:
       labels:
         application: kube-dns-b
-        version: v1.14.5
+        version: v1.14.10
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
@@ -50,7 +50,7 @@ spec:
           optional: true
       containers:
       - name: kubedns
-        image: registry.opensource.zalan.do/teapot/k8s-dns-kube-dns:1.14.5
+        image: registry.opensource.zalan.do/teapot/k8s-dns-kube-dns:1.14.10
         resources:
           limits:
             memory: 170Mi
@@ -95,7 +95,7 @@ spec:
         - name: kube-dns-config
           mountPath: /kube-dns-config
       - name: dnsmasq
-        image: registry.opensource.zalan.do/teapot/k8s-dns-dnsmasq-nanny:1.14.5
+        image: registry.opensource.zalan.do/teapot/k8s-dns-dnsmasq-nanny:1.14.10
         livenessProbe:
           httpGet:
             path: /healthcheck/dnsmasq
@@ -133,7 +133,7 @@ spec:
         - name: kube-dns-config
           mountPath: /etc/k8s/dns/dnsmasq-nanny
       - name: sidecar
-        image: registry.opensource.zalan.do/teapot/k8s-dns-sidecar:1.14.5
+        image: registry.opensource.zalan.do/teapot/k8s-dns-sidecar:1.14.10
         livenessProbe:
           httpGet:
             path: /metrics
