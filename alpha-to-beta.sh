@@ -1,9 +1,11 @@
-git co alpha
+#!/bin/sh
+set -e
+git checkout alpha
 git pull --rebase
-git co beta
+git checkout beta
 git pull --rebase
-git br -D alpha-to-beta
-git co -b alpha-to-beta
+git branch -D alpha-to-beta
+git checkout -b alpha-to-beta
 git merge alpha
 git push origin alpha-to-beta
 echo "============================
