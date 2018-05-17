@@ -22,7 +22,9 @@ spec:
         image: registry.opensource.zalan.do/teapot/pdb-controller:v0.0.7
         args:
         - --debug
+        {{ if or (index .ConfigItems "pdb_non_ready_ttl") (eq .Environment "test") }}
         - --non-ready-ttl={{if index .ConfigItems "pdb_non_ready_ttl"}}{{.ConfigItems.pdb_non_ready_ttl}}{{else}}1h{{end}}
+        {{end}}
         resources:
           limits:
             cpu: 200m
