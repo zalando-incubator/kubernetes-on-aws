@@ -123,7 +123,8 @@ systemd:
       --register-node \
       --allow-privileged \
       --node-labels=kubernetes.io/role=worker \
-      --node-labels={{NODE_LABELS}} \
+      --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }} \
+      --node-labels={{ .Values.node_labels }} \
       --cluster-dns=10.3.0.10,10.3.0.11 \
       --cluster-domain=cluster.local \
       --kubeconfig=/etc/kubernetes/kubeconfig \
@@ -172,11 +173,11 @@ storage:
         clusters:
         - name: local
           cluster:
-            server: {{API_SERVER}}
+            server: {{ .Cluster.APIServerURL }}
         users:
         - name: kubelet
           user:
-            token: {{WORKER_SHARED_SECRET}}
+            token: {{ .Cluster.ConfigItems.worker_shared_secret }}
         contexts:
         - context:
             cluster: local
@@ -197,21 +198,21 @@ storage:
     mode: 0664
     contents:
       remote:
-        url: "data:text/plain;base64,{{WORKER_CERT_DECOMPRESSED}}"
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.worker_cert_decompressed }}"
 
   - filesystem: root
     path: /etc/kubernetes/ssl/worker-key.pem
     mode: 0664
     contents:
       remote:
-        url: "data:text/plain;base64,{{WORKER_KEY_DECOMPRESSED}}"
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.worker_key_decompressed }}"
 
   - filesystem: root
     path: /etc/kubernetes/ssl/ca.pem
     mode: 0664
     contents:
       remote:
-        url: "data:text/plain;base64,{{CA_CERT_DECOMPRESSED}}"
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
 
   - filesystem: root
     path: /opt/bin/dockercfg.sh
