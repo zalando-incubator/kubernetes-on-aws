@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpa-updater
+  namespace: kube-system
+  labels:
+    application: vpa-updater
+    version: v0.1.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: vpa-updater
+  template:
+    metadata:
+      labels:
+        application: vpa-updater
+        version: v0.1.0
+    spec:
+      serviceAccountName: system
+      containers:
+      - name: updater
+        image: registry.opensource.zalan.do/teapot/vpa-updater:v0.1.0
+        resources:
+          limits:
+            cpu: 50m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 500Mi
+        ports:
+        - containerPort: 8080
