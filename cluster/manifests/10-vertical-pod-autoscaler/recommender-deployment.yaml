@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpa-recommender
+  namespace: kube-system
+  labels:
+    application: vpa-recommender
+    version: v0.1.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: vpa-recommender
+  template:
+    metadata:
+      labels:
+        application: vpa-recommender
+        version: v0.1.0
+    spec:
+      serviceAccountName: system
+      containers:
+      - name: recommender
+        image: registry.opensource.zalan.do/teapot/vpa-recommender:v0.1.0
+        resources:
+          limits:
+            cpu: 50m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 500Mi
+        ports:
+        - containerPort: 8080
