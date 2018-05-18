@@ -291,7 +291,7 @@ storage:
             - --allow-privileged=true
             - --service-cluster-ip-range=10.3.0.0/16
             - --secure-port=443
-            - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,PersistentVolumeClaimResize
+            - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,MutatingAdmissionWebhook,PersistentVolumeClaimResize
             - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
             - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
             - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
@@ -894,11 +894,13 @@ storage:
           --table nat \
           --to-destination ${PRIVATE_IPV4}:8181
 
+  {{if not (index .Cluster.ConfigItems "upstream_docker")}}
   - filesystem: root
     path: /etc/coreos/docker-1.12
     mode: 0644
     contents:
       inline: yes
+  {{end}}
 
   - filesystem: root
     path: /home/core/.toolboxrc
