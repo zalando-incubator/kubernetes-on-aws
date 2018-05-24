@@ -5,9 +5,9 @@ metadata:
   namespace: "visibility"
   labels:
     application: "zmon-agent"
-    version: "0.1-a52-zv1"
+    version: "0.1-a53-zv1"
 spec:
-  replicas: 1
+  replicas: {{if index .ConfigItems "zmon_agent_replicas"}}{{.ConfigItems.zmon_agent_replicas}}{{else}}1{{end}}
   selector:
     matchLabels:
       application: zmon-agent
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: "zmon-agent"
-        version: "0.1-a52-zv1"
+        version: "0.1-a53-zv1"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
         scheduler.alpha.kubernetes.io/critical-pod: ''
@@ -47,7 +47,7 @@ spec:
 
       containers:
         - name: zmon-agent
-          image: "pierone.stups.zalan.do/zmon/zmon-agent-core:0.1-a52-zv1"
+          image: "pierone.stups.zalan.do/zmon/zmon-agent-core:0.1-a53-zv1"
           resources:
             limits:
               cpu: 100m
