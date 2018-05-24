@@ -304,7 +304,7 @@ storage:
             - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
             - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true,ExpandPersistentVolumes=true
             - --anonymous-auth=false
-            {{ if or (eq .Cluster.Environment "production") (index .ConfigItems "audittrail_url") }}
+            {{ if or (eq .Cluster.Environment "production") (index .Cluster.ConfigItems "audittrail_url") }}
             - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
             - --audit-webhook-mode=batch
             - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
