@@ -22,7 +22,7 @@ systemd:
     mask: true
 
   # this only works for i3.large instances right now
-  - name: data0.mount
+  - name: data-disk0.mount
     enable: true
     contents: |
       [Unit]
@@ -30,7 +30,7 @@ systemd:
 
       [Mount]
       What=/dev/nvme0n1
-      Where=/data0
+      Where=/data/disk0
       Type=ext4
 
       [Install]
@@ -126,6 +126,8 @@ systemd:
       --mount volume=var-lib-cni,target=/var/lib/cni \
       --volume dockercfg,kind=host,source=/root/.docker/config.json \
       --mount volume=dockercfg,target=/root/.docker/config.json \
+      --volume data,kind=host,source=/data \
+      --mount volume=data,target=/data \
       --set-env=HOME=/root"
       ExecStartPre=/usr/bin/mkdir -p /var/log/containers
       ExecStartPre=/bin/mkdir -p /var/lib/cni
