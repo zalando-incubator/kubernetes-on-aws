@@ -1,4 +1,4 @@
-{{ if eq .Environment "production" }}
+{{ if or (eq .Environment "production") (index .ConfigItems "audittrail_url") }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -39,7 +39,7 @@ spec:
         image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-16
         args:
         - --cluster-id={{ .ID }}
-        - --audittrail-url=https://audittrail.cloud.zalando.com
+        - --audittrail-url={{if index .ConfigItems "audittrail_url"}}{{.ConfigItems.audittrail_url}}{{else}}https://audittrail.cloud.zalando.com{{end}}
         - --address=:8889
         - --metrics-address=:7980
         volumeMounts:
