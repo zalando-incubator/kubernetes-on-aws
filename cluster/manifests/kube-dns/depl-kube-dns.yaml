@@ -24,9 +24,8 @@ spec:
       labels:
         application: kube-dns
         version: v1.14.10
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
+      priorityClassName: system-cluster-critical
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -40,9 +39,6 @@ spec:
                     - kube-dns-b
                 topologyKey: kubernetes.io/hostname
       serviceAccountName: system
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
       volumes:
       - name: kube-dns-config
         configMap:
