@@ -19,6 +19,7 @@ spec:
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
+        config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
     spec:
       serviceAccountName: system
       tolerations:
