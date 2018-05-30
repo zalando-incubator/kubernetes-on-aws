@@ -41,7 +41,9 @@ Resources:
       - Key: 'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}'
         PropagateAtLaunch: true
         Value: owned
-      VPCZoneIdentifier: !Split [",", "{{ .Cluster.ConfigItems.subnets }}"]
+{{ with $subnets := index .Values.subnets "*" }}
+      VPCZoneIdentifier: !Split [",", "{{$subnets}}"]
+{{ end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
   AutoScalingConfig:
     Properties:
