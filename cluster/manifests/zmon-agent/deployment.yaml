@@ -18,12 +18,8 @@ spec:
         version: "0.1-a53-zv1"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
-        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-
+      priorityClassName: system-cluster-critical
       initContainers:
       - name: gerry-init
         image: registry.opensource.zalan.do/teapot/gerry:v0.0.14
