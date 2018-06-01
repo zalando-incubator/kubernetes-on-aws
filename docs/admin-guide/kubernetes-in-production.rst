@@ -14,7 +14,7 @@ This document should briefly describe our learnings in Zalando Tech while runnin
 Context
 =======
 
-We are a team of infrastructure engineers provisioning Kubernetes clusters for our Zalando Tech delivery teams. We plan to have more than 30 production Kubernetes clusters. The following goals might help to understand the remainder of the document, our Kubernetes setup and our specific challenges:
+We are a team of infrastructure engineers provisioning Kubernetes clusters for our Zalando Tech delivery teams. We have more than 80 production Kubernetes clusters. The following goals might help to understand the remainder of the document, our Kubernetes setup and our specific challenges:
 
 * No manual operations: all cluster updates and operations need to be fully automated.
 * No pet clusters: clusters should all look the same and not require any specific configurations/tweaking
