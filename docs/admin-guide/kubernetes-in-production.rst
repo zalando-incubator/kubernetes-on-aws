@@ -102,7 +102,7 @@ Default resource requests and limits can be configured via the LimitRange_ resou
 The default limit for CPU is 3 cores as we discovered that this is a sweet spot for JVM apps to startup quickly.
 See `our LimitRange YAML manifest`_ for details.
 
-We provide a `tiny script`_ and use the Downwards API to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size. The container spec of a ``Deployment`` for some JVM app would look like this:
+We provide a `tiny script`_ and use the `Downwards API`_ to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size. The container spec of a ``Deployment`` for some JVM app would look like this:
 
 .. code-block:: yaml
 
@@ -259,3 +259,4 @@ The STUPS etcd cluster is deployed across availability zones (AZ) with five node
 .. _STUPS Taupage AMI: https://github.com/zalando-stups/taupage
 .. _our LimitRange YAML manifest: https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/cluster/manifests/default-limits/limits.yaml
 .. _Cluster Lifecycle Manager: https://github.com/zalando-incubator/cluster-lifecycle-manager
+.. _Downwards API: https://kubernetes.io/docs/tasks/inject-data-application/downward-api-volume-expose-pod-information/
