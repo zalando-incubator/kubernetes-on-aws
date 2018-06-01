@@ -9,6 +9,13 @@ pre_apply:
 - name: logging-agent
   namespace: visibility
   kind: daemonset
-
-# everything defined under here will be deleted after applying the manifests
-post_apply: []
+- name: kube-dns
+  namespace: kube-system
+  kind: deployment
+- name: kube-dns-autoscaler
+  namespace: kube-system
+  kind: deployment
+- name: kube-dns
+  namespace: kube-system
+  kind: service
+post_apply: [] # everything defined under here will be deleted after applying the manifests
