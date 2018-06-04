@@ -14,6 +14,7 @@ passwd:
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqAikaHsZWMuJvKZphZPZG0fnKMvVCRfBAbIS6e0Y+YqM0PfsWgB5e4f5TrbisQHdKopbfZVwYIaV/NegEuinrYPKC7t2ese/HjxgjHR95zHOcDP19Cbo+xeyH8zbRd9K3iRSyCUSMNRw5NL6zN8JOSl12m8QWQA4hTjFTmt870fIT4RLxu9qGlbQipUm57E/SotsNC41MQ/PsLQzOAviKrkS1rei2vzRHzAcjz1Z7GT5oH+dFVUC66kKa0XWDvq+VtkRVoLvS2chrIPCgESeeZAyOKyiOoyJxFFFiMVK48MWDBBIYTIsHE0qs/RwBi9+8lQGiHK5Rpk2djcloO0c7 sandor.szuecs@zalando.de'
     - 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINkh52Py+FvH9CRLDQg0gzvjEIrzwA45yMTXTsl2BVxV alexey.ermakov@zalando.de'
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDakbukcXXmMyyxw5h3J8h41FK8b8/qjiX/u4BP+qQpQ3x/1VkppIpzHwLcjVThNspwOKKU6QwcaLKpJ+g3mYWdilsl7eFT5hAiIXq4OLe9XynXp1ZEduqKk7tgvjClo7OzuSdEfKtWkD35hzXWigVfJFZhSN9bLdiEzuIEHf0jEo2mUXADgAzSwbaTcVUreH/IR6SAYBVh4XgKoQjOmWrizJguYNk+DgBW6/R+5JQi8YYPSuevbcEKXXm1ZfOudNv2ebOL1rA4I+VDe2xW+JVwKIvAN3odt0zOH2NFr1kFU1GTVyD2ZYtyTNNae9a+mQ2Ltw5pzKjA4zjFctQrrI+yPEIcf64mccumIoRMjWozPB801VbZqUVyG0XhzHW7RNmTmmLsNa/STtYI9Xaqfrz2n3PgpYJ/bB42l4Ez9Oblh9rZU0aisr6risLh5XXgCa9NezMjTczMHJE0jVINgeIMsCleNF0HrkF26Uo1MJO1pOMZOGZzXSksB79TmTwjRdvQT/uvSAElBrthmRgj82pDsRdNoipp6VMx54m2KbvRyq79PVZP69NGWdAhJBw1SV0447kT1tuoqDTUskS4es1GoSu5sqtW4eF4Q6oju8+01l3ygLKmPPTbFVRcs6bBvHjnB3RYwgai5z0U16rsh7LKUwhYsRiar3lmrhVvoc95sw== muhammad.muaaz.saleem@zalando.de'
+
 systemd:
   units:
   # disable automatic updates
@@ -91,11 +92,25 @@ systemd:
       [Install]
       WantedBy=multi-user.target
 
+  - name: private-ipv4.service
+    enable: true
+    contents: |
+      [Unit]
+      After=meta-data-iptables.service
+      Description=Set PRIVATE_EC2_IPV4 env
+
+      [Service]
+      ExecStart=/usr/bin/bash -c "/usr/bin/systemctl set-environment PRIVATE_EC2_IPV4=$(/usr/bin/curl --silent --fail http://169.254.169.254/latest/meta-data/local-ipv4)"
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+
   - name: kubelet.service
     enable: true
     contents: |
       [Unit]
-      After=docker.service dockercfg.service meta-data-iptables.service
+      After=docker.service dockercfg.service meta-data-iptables.service private-ipv4.service
 
       [Service]
       Environment=KUBELET_IMAGE_TAG=v1.9.7_coreos.0
@@ -126,7 +141,7 @@ systemd:
       --node-labels=kubernetes.io/role=worker \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }} \
       --node-labels={{ .Values.node_labels }} \
-      --cluster-dns=10.3.0.10,10.3.0.11 \
+      --cluster-dns=${PRIVATE_EC2_IPV4},10.3.0.11 \
       --cluster-domain=cluster.local \
       --kubeconfig=/etc/kubernetes/kubeconfig \
       --require-kubeconfig \
