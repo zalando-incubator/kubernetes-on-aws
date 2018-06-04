@@ -1,19 +1,19 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: kube-dns
+  name: coredns
   namespace: kube-system
   labels:
-    application: kube-dns
+    application: coredns
     kubernetes.io/cluster-service: "true"
-    kubernetes.io/name: "KubeDNS"
+    kubernetes.io/name: "CoreDNS"
   annotations:
-    prometheus.io/path: "/metrics"
-    prometheus.io/port: "10054"
+    prometheus.io/path: /metrics
+    prometheus.io/port: "9153"
     prometheus.io/scrape: "true"
 spec:
   selector:
-    application: kube-dns
+    application: coredns
   clusterIP: 10.3.0.10
   ports:
   - name: dns
