@@ -1,0 +1,23 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: kube-dns-local
+  namespace: kube-system
+  labels:
+    application: kube-dns-local
+    kubernetes.io/cluster-service: "true"
+    kubernetes.io/name: "KubeDNS"
+  annotations:
+    prometheus.io/path: /metrics
+    prometheus.io/port: "9054"
+    prometheus.io/scrape: "true"
+spec:
+  selector:
+    application: dnsmasq-node
+  type: NodePort
+  externalTrafficPolicy: Local
+  ports:
+  - name: monitor
+    port: 9054
+    targetPort: 9054
+    protocol: TCP
