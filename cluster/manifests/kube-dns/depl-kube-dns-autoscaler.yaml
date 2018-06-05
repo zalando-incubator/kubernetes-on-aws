@@ -17,13 +17,9 @@ spec:
       labels:
         application: kube-dns-autoscaler
         version: v1.1.2
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
+      priorityClassName: system-cluster-critical
       serviceAccountName: system
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
       containers:
       - name: autoscaler
         image: registry.opensource.zalan.do/teapot/cluster-proportional-autoscaler:1.1.2-r2
