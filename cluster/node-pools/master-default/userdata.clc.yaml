@@ -11,6 +11,7 @@ passwd:
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCq3oEP8qhMvGtlR1bgVc9tFOVJ5B5RMKtm6UQ/zXQUpm8DQ04SxdM2U7TfuLien2HSfpHAlYe0eLJZUfIqCXUeZ37v0ozj2RglireEcJm0t9XJ7kTS4kqVxrL6iuN6qQVGHs0vxoo/o9+SP0YkuuJoXwJvVI4yKVbnbfA5hKaAffAYPmfgqOZ7+3AMwmaj/D3tI0xVEA48ptGkj5nnOl0pXlfLRNvbnXOCa/dTKUgkma1F0lXoTipkRspsMEiAnwfJ1dwnzgNzllt//Ao/H+yOVR8fWJ7d+nowszIk6zwUR7c6walxKKf5Oy5bQBU49MZ6xLP1oma9F2+llmV7qpqx rodrigo.reis@zalando.de'
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqAikaHsZWMuJvKZphZPZG0fnKMvVCRfBAbIS6e0Y+YqM0PfsWgB5e4f5TrbisQHdKopbfZVwYIaV/NegEuinrYPKC7t2ese/HjxgjHR95zHOcDP19Cbo+xeyH8zbRd9K3iRSyCUSMNRw5NL6zN8JOSl12m8QWQA4hTjFTmt870fIT4RLxu9qGlbQipUm57E/SotsNC41MQ/PsLQzOAviKrkS1rei2vzRHzAcjz1Z7GT5oH+dFVUC66kKa0XWDvq+VtkRVoLvS2chrIPCgESeeZAyOKyiOoyJxFFFiMVK48MWDBBIYTIsHE0qs/RwBi9+8lQGiHK5Rpk2djcloO0c7 sandor.szuecs@zalando.de'
     - 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINkh52Py+FvH9CRLDQg0gzvjEIrzwA45yMTXTsl2BVxV alexey.ermakov@zalando.de'
+    - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDakbukcXXmMyyxw5h3J8h41FK8b8/qjiX/u4BP+qQpQ3x/1VkppIpzHwLcjVThNspwOKKU6QwcaLKpJ+g3mYWdilsl7eFT5hAiIXq4OLe9XynXp1ZEduqKk7tgvjClo7OzuSdEfKtWkD35hzXWigVfJFZhSN9bLdiEzuIEHf0jEo2mUXADgAzSwbaTcVUreH/IR6SAYBVh4XgKoQjOmWrizJguYNk+DgBW6/R+5JQi8YYPSuevbcEKXXm1ZfOudNv2ebOL1rA4I+VDe2xW+JVwKIvAN3odt0zOH2NFr1kFU1GTVyD2ZYtyTNNae9a+mQ2Ltw5pzKjA4zjFctQrrI+yPEIcf64mccumIoRMjWozPB801VbZqUVyG0XhzHW7RNmTmmLsNa/STtYI9Xaqfrz2n3PgpYJ/bB42l4Ez9Oblh9rZU0aisr6risLh5XXgCa9NezMjTczMHJE0jVINgeIMsCleNF0HrkF26Uo1MJO1pOMZOGZzXSksB79TmTwjRdvQT/uvSAElBrthmRgj82pDsRdNoipp6VMx54m2KbvRyq79PVZP69NGWdAhJBw1SV0447kT1tuoqDTUskS4es1GoSu5sqtW4eF4Q6oju8+01l3ygLKmPPTbFVRcs6bBvHjnB3RYwgai5z0U16rsh7LKUwhYsRiar3lmrhVvoc95sw== muhammad.muaaz.saleem@zalando.de'
 systemd:
   units:
   # disable automatic updates
@@ -124,7 +125,7 @@ systemd:
       After=docker.service dockercfg.service meta-data-iptables.service
 
       [Service]
-      Environment=KUBELET_IMAGE_TAG=v1.9.7_coreos.0
+      Environment=KUBELET_IMAGE_TAG=v1.10.2_coreos.0
       Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
       Environment="RKT_RUN_ARGS=--insecure-options=image \
       --uuid-file-save=/var/run/kubelet-pod.uuid \
@@ -144,7 +145,6 @@ systemd:
       --cni-conf-dir=/etc/kubernetes/cni/net.d \
       --network-plugin=cni \
       --container-runtime=docker \
-      --rkt-path=/usr/bin/rkt \
       --register-with-taints=node-role.kubernetes.io/master=:NoSchedule \
       --allow-privileged \
       --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
@@ -154,7 +154,6 @@ systemd:
       --cluster-dns=10.3.0.10,10.3.0.11 \
       --cluster-domain=cluster.local \
       --kubeconfig=/etc/kubernetes/kubeconfig \
-      --require-kubeconfig \
       --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
       --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
       --cloud-provider=aws \
@@ -263,21 +262,19 @@ storage:
           namespace: kube-system
           labels:
             application: kube-apiserver
-            version: v1.9.7_coreos.0
+            version: v1.10.2_coreos.0
           annotations:
-            scheduler.alpha.kubernetes.io/critical-pod: ''
             kubernetes-log-watcher/scalyr-parser: |
               [{"container": "webhook", "parser": "json-structured-log"}]
         spec:
+          priorityClassName: system-node-critical
           tolerations:
-          - key: CriticalAddonsOnly
-            operator: Exists
           - key: node-role.kubernetes.io/master
             effect: NoSchedule
           hostNetwork: true
           containers:
           - name: kube-apiserver
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.9.7_coreos.0
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.10.2_coreos.0
             command:
             - /hyperkube
             - apiserver
@@ -291,11 +288,11 @@ storage:
             - --allow-privileged=true
             - --service-cluster-ip-range=10.3.0.0/16
             - --secure-port=443
-            - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,MutatingAdmissionWebhook,PersistentVolumeClaimResize
+            - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,PersistentVolumeClaimResize
             - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
             - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
             - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-            - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,extensions/v1beta1/podsecuritypolicy=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true
+            - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1/podsecuritypolicy=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
             - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
             - --authentication-token-webhook-cache-ttl=10s
             - --cloud-provider=aws
@@ -452,18 +449,15 @@ storage:
           namespace: kube-system
           labels:
             application: kube-controller-manager
-            version: v1.9.7_coreos.0
-          annotations:
-            scheduler.alpha.kubernetes.io/critical-pod: ''
+            version: v1.10.2_coreos.0
         spec:
+          priorityClassName: system-node-critical
           tolerations:
-          - key: CriticalAddonsOnly
-            operator: Exists
           - key: node-role.kubernetes.io/master
             effect: NoSchedule
           containers:
           - name: kube-controller-manager
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.9.7_coreos.0
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.10.2_coreos.0
             command:
             - /hyperkube
             - controller-manager
@@ -524,19 +518,16 @@ storage:
           namespace: kube-system
           labels:
             application: kube-scheduler
-            version: v1.9.7_coreos.0
-          annotations:
-            scheduler.alpha.kubernetes.io/critical-pod: ''
+            version: v1.10.2_coreos.0
         spec:
+          priorityClassName: system-node-critical
           tolerations:
-          - key: CriticalAddonsOnly
-            operator: Exists
           - key: node-role.kubernetes.io/master
             effect: NoSchedule
           hostNetwork: true
           containers:
           - name: kube-scheduler
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.9.7_coreos.0
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.10.2_coreos.0
             command:
             - /hyperkube
             - scheduler
@@ -554,41 +545,6 @@ storage:
                 port: 10251
               initialDelaySeconds: 15
               timeoutSeconds: 15
-
-  - filesystem: root
-    path: /etc/kubernetes/manifests/rescheduler.yaml
-    mode: 0644
-    contents:
-      inline: |
-        apiVersion: v1
-        kind: Pod
-        metadata:
-          name: rescheduler-v0.3.1
-          namespace: kube-system
-          labels:
-            application: rescheduler
-            version: v0.3.1
-            kubernetes.io/cluster-service: "true"
-            kubernetes.io/name: "Rescheduler"
-            scheduler.alpha.kubernetes.io/critical-pod: ''
-        spec:
-          tolerations:
-          - key: CriticalAddonsOnly
-            operator: Exists
-          - key: node-role.kubernetes.io/master
-            effect: NoSchedule
-          hostNetwork: true
-          containers:
-          - image: registry.opensource.zalan.do/teapot/rescheduler:v0.3.1
-            name: rescheduler
-            resources:
-              requests:
-                cpu: 10m
-                memory: 100Mi
-            command:
-            - /rescheduler
-            args:
-            - --running-in-cluster=false
 
   - filesystem: root
     path: /etc/kubernetes/nginx/nginx.conf
@@ -942,7 +898,7 @@ storage:
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.9.7_coreos.0 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.10.2_coreos.0 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           label node "$(hostname)" \
@@ -955,7 +911,7 @@ storage:
           --net=host \
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.9.7_coreos.0 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.10.2_coreos.0 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain "$(hostname)" \

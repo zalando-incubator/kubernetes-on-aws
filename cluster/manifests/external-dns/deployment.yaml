@@ -18,12 +18,9 @@ spec:
         application: external-dns
         version: v0.5.1
       annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
     spec:
-      tolerations:
-       - key: CriticalAddonsOnly
-         operator: Exists
+      priorityClassName: system-cluster-critical
       containers:
       - name: external-dns
         image: registry.opensource.zalan.do/teapot/external-dns:v0.5.1
