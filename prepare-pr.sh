@@ -30,7 +30,7 @@ MSG="$(printf "%s-to-%s\n\n%s" "${BASE}" "${HEAD}" "${CHANGELOG}")"
 
 if [ -x "$(which hub)" ]
 then
-  hub pull-request -b "${HEAD}" -h "${BASE}-to-${HEAD}" -F "${MSG}" -l ready-to-test
+  hub pull-request -b "${HEAD}" -h "${BASE}-to-${HEAD}" -m "${MSG}" -l ready-to-test
 else
   echo "============================
 create a PR with base ${HEAD} and head ${BASE}-to-${HEAD} at https://github.com/zalando-incubator/kubernetes-on-aws
