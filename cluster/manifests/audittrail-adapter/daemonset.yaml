@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: audittrail-adapter
-    version: master-16
+    version: master-18
 spec:
   selector:
     matchLabels:
@@ -17,10 +17,9 @@ spec:
     metadata:
       labels:
         application: audittrail-adapter
-        version: master-16
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
+        version: master-18
     spec:
+      priorityClassName: system-node-critical
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -29,14 +28,12 @@ spec:
               - key: node-role.kubernetes.io/master
                 operator: Exists
       tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-16
+        image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-18
         args:
         - --cluster-id={{ .ID }}
         - --audittrail-url={{if index .ConfigItems "audittrail_url"}}{{.ConfigItems.audittrail_url}}{{else}}https://audittrail.cloud.zalando.com{{end}}
