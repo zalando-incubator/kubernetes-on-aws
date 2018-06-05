@@ -11,6 +11,7 @@ passwd:
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCq3oEP8qhMvGtlR1bgVc9tFOVJ5B5RMKtm6UQ/zXQUpm8DQ04SxdM2U7TfuLien2HSfpHAlYe0eLJZUfIqCXUeZ37v0ozj2RglireEcJm0t9XJ7kTS4kqVxrL6iuN6qQVGHs0vxoo/o9+SP0YkuuJoXwJvVI4yKVbnbfA5hKaAffAYPmfgqOZ7+3AMwmaj/D3tI0xVEA48ptGkj5nnOl0pXlfLRNvbnXOCa/dTKUgkma1F0lXoTipkRspsMEiAnwfJ1dwnzgNzllt//Ao/H+yOVR8fWJ7d+nowszIk6zwUR7c6walxKKf5Oy5bQBU49MZ6xLP1oma9F2+llmV7qpqx rodrigo.reis@zalando.de'
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqAikaHsZWMuJvKZphZPZG0fnKMvVCRfBAbIS6e0Y+YqM0PfsWgB5e4f5TrbisQHdKopbfZVwYIaV/NegEuinrYPKC7t2ese/HjxgjHR95zHOcDP19Cbo+xeyH8zbRd9K3iRSyCUSMNRw5NL6zN8JOSl12m8QWQA4hTjFTmt870fIT4RLxu9qGlbQipUm57E/SotsNC41MQ/PsLQzOAviKrkS1rei2vzRHzAcjz1Z7GT5oH+dFVUC66kKa0XWDvq+VtkRVoLvS2chrIPCgESeeZAyOKyiOoyJxFFFiMVK48MWDBBIYTIsHE0qs/RwBi9+8lQGiHK5Rpk2djcloO0c7 sandor.szuecs@zalando.de'
     - 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINkh52Py+FvH9CRLDQg0gzvjEIrzwA45yMTXTsl2BVxV alexey.ermakov@zalando.de'
+    - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDakbukcXXmMyyxw5h3J8h41FK8b8/qjiX/u4BP+qQpQ3x/1VkppIpzHwLcjVThNspwOKKU6QwcaLKpJ+g3mYWdilsl7eFT5hAiIXq4OLe9XynXp1ZEduqKk7tgvjClo7OzuSdEfKtWkD35hzXWigVfJFZhSN9bLdiEzuIEHf0jEo2mUXADgAzSwbaTcVUreH/IR6SAYBVh4XgKoQjOmWrizJguYNk+DgBW6/R+5JQi8YYPSuevbcEKXXm1ZfOudNv2ebOL1rA4I+VDe2xW+JVwKIvAN3odt0zOH2NFr1kFU1GTVyD2ZYtyTNNae9a+mQ2Ltw5pzKjA4zjFctQrrI+yPEIcf64mccumIoRMjWozPB801VbZqUVyG0XhzHW7RNmTmmLsNa/STtYI9Xaqfrz2n3PgpYJ/bB42l4Ez9Oblh9rZU0aisr6risLh5XXgCa9NezMjTczMHJE0jVINgeIMsCleNF0HrkF26Uo1MJO1pOMZOGZzXSksB79TmTwjRdvQT/uvSAElBrthmRgj82pDsRdNoipp6VMx54m2KbvRyq79PVZP69NGWdAhJBw1SV0447kT1tuoqDTUskS4es1GoSu5sqtW4eF4Q6oju8+01l3ygLKmPPTbFVRcs6bBvHjnB3RYwgai5z0U16rsh7LKUwhYsRiar3lmrhVvoc95sw== muhammad.muaaz.saleem@zalando.de'
 systemd:
   units:
   # disable automatic updates
@@ -156,7 +157,7 @@ systemd:
       --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
       --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
       --cloud-provider=aws \
-      --feature-gates=TaintBasedEvictions=true,PodPriority=true \
+      --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true \
       --system-reserved=cpu=100m,memory=164Mi \
       --kube-reserved=cpu=100m,memory=282Mi
       ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
@@ -298,7 +299,7 @@ storage:
             - --authorization-mode=Webhook
             - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
             - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-            - --feature-gates=TaintBasedEvictions=true,PodPriority=true,ExpandPersistentVolumes=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true,ExpandPersistentVolumes=true
             - --anonymous-auth=false
             {{ if or (eq .Cluster.Environment "production") (index .Cluster.ConfigItems "audittrail_url") }}
             - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
@@ -466,7 +467,7 @@ storage:
             - --root-ca-file=/etc/kubernetes/ssl/ca.pem
             - --cloud-provider=aws
             - --cloud-config=/etc/kubernetes/cloud-config.ini
-            - --feature-gates=TaintBasedEvictions=true,PodPriority=true,ExpandPersistentVolumes=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true,ExpandPersistentVolumes=true
             - --horizontal-pod-autoscaler-use-rest-clients=true
             - --use-service-account-credentials=true
             - --v=4
@@ -532,7 +533,7 @@ storage:
             - scheduler
             - --master=http://127.0.0.1:8080
             - --leader-elect=true
-            - --feature-gates=TaintBasedEvictions=true,PodPriority=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true
             resources:
               requests:
                 cpu: 100m
