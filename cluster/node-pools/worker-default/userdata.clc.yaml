@@ -54,7 +54,7 @@ systemd:
     enable: true
     contents: |
       [Unit]
-      After=network.target
+      After=private-ipv4.service
 
       [Service]
       Type=simple
@@ -95,7 +95,7 @@ systemd:
     enable: true
     contents: |
       [Unit]
-      After=meta-data-iptables.service
+      After=network.target
       Description=Set PRIVATE_EC2_IPV4 env
 
       [Service]
@@ -255,7 +255,6 @@ storage:
         #!/bin/bash
         set -euo pipefail
 
-        PRIVATE_IPV4="$(/usr/bin/curl --silent --fail http://169.254.169.254/latest/meta-data/local-ipv4)"
         /usr/sbin/iptables \
           --append PREROUTING \
           --protocol tcp \
@@ -265,7 +264,7 @@ storage:
           --match tcp \
           --jump DNAT \
           --table nat \
-          --to-destination ${PRIVATE_IPV4}:8181
+          --to-destination ${PRIVATE_EC2_IPV4}:8181
 
   {{if not (index .Cluster.ConfigItems "upstream_docker")}}
   - filesystem: root
