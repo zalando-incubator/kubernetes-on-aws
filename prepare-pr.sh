@@ -25,7 +25,7 @@ git checkout -b "${BASE}-to-${HEAD}"
 git merge "${BASE}"
 git push origin "${BASE}-to-${HEAD}"
 
-CHANGELOG="$(git log --pretty='* **%w(1000000,0,2)%b**%n  <sup>%w(10000000,0,2)%s</sup>' "${HEAD}".."${BASE}" --grep=Merge)"
+CHANGELOG="$(git log --pretty='* **%w(1000000,0,2)%b**%n  <sup>%w(10000000,0,2)%s</sup>' "${HEAD}".."${BASE}" --grep=Merge | sed 's/\*\*\*\*/(No message)/')"
 MSG="$(printf "%s-to-%s\n\n%s" "${BASE}" "${HEAD}" "${CHANGELOG}")"
 
 if [ -x "$(which hub)" ]
