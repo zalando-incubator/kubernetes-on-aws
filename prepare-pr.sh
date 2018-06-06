@@ -14,7 +14,6 @@ BASE=$1
 HEAD=$2
 
 set -e
-MSG=/tmp/pr-message
 git checkout "${BASE}"
 git pull --rebase
 git checkout "${HEAD}"
@@ -26,18 +25,16 @@ git checkout -b "${BASE}-to-${HEAD}"
 git merge "${BASE}"
 git push origin "${BASE}-to-${HEAD}"
 
-printf "%s-to-%s
-
-" "${BASE}" "${HEAD}" > "${MSG}"
-git log --pretty=format:'%B' "${HEAD}".."${BASE}" | grep -Eiv '^$|^Merge |^Signed-off-by|dev to alpha|alpha to beta' | uniq >> "${MSG}"
+CHANGELOG="$(git log --pretty='* **%w(1000000,0,2)%b**%n  <sup>%w(10000000,0,2)%s</sup>' "${HEAD}".."${BASE}" --grep=Merge | sed 's/\*\*\*\*/(No message)/')"
+MSG="$(printf "%s-to-%s\n\n%s" "${BASE}" "${HEAD}" "${CHANGELOG}")"
 
 if [ -x "$(which hub)" ]
 then
-  hub pull-request -b "${HEAD}" -h "${BASE}-to-${HEAD}" -F "${MSG}" -l ready-to-test
+  hub pull-request -b "${HEAD}" -h "${BASE}-to-${HEAD}" -m "${MSG}" -l ready-to-test
 else
   echo "============================
 create a PR with base ${HEAD} and head ${BASE}-to-${HEAD} at https://github.com/zalando-incubator/kubernetes-on-aws
 release notes:"
-  cat $MSG
+  echo "$MSG"
   echo "============================"
 fi
