@@ -4,32 +4,17 @@
 #   namespace: kube-system
 #   kind: deployment
 
-pre_apply: [] # everything defined under here will be deleted before applying the manifests
-post_apply: # everything defined under here will be deleted after applying the manifests
-- name: logging-agent
-  namespace: kube-system
-  kind: daemonset
-- name: logging-agent
-  namespace: kube-system
-  kind: secret
-- name: zmon-agent
-  namespace: kube-system
-  kind: deployment
-- name: zmon-aws-agent
-  namespace: kube-system
-  kind: deployment
-- name: zmon-redis
-  namespace: kube-system
-  kind: deployment
-- name: zmon-redis
+# everything defined under here will be deleted before applying the manifests
+pre_apply:
+- name: kube-dns-b
   namespace: kube-system
   kind: service
-- name: zmon-scheduler
+- name: kube-dns-b
   namespace: kube-system
   kind: deployment
-- name: zmon-worker
+- name: kube-dns-b-autoscaler
   namespace: kube-system
   kind: deployment
-- name: zmon-worker
-  namespace: kube-system
-  kind: secret
+
+# everything defined under here will be deleted after applying the manifests
+post_apply: []

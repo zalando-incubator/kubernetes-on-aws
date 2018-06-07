@@ -14,7 +14,7 @@ This document should briefly describe our learnings in Zalando Tech while runnin
 Context
 =======
 
-We are a team of infrastructure engineers provisioning Kubernetes clusters for our Zalando Tech delivery teams. We plan to have more than 30 production Kubernetes clusters. The following goals might help to understand the remainder of the document, our Kubernetes setup and our specific challenges:
+We are a team of infrastructure engineers provisioning Kubernetes clusters for our Zalando Tech delivery teams. We have more than 80 production Kubernetes clusters. The following goals might help to understand the remainder of the document, our Kubernetes setup and our specific challenges:
 
 * No manual operations: all cluster updates and operations need to be fully automated.
 * No pet clusters: clusters should all look the same and not require any specific configurations/tweaking
@@ -102,7 +102,7 @@ Default resource requests and limits can be configured via the LimitRange_ resou
 The default limit for CPU is 3 cores as we discovered that this is a sweet spot for JVM apps to startup quickly.
 See `our LimitRange YAML manifest`_ for details.
 
-We provide a `tiny script`_ and use the Downwards API to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size. The container spec of a ``Deployment`` for some JVM app would look like this:
+We provide a `tiny script`_ and use the `Downwards API`_ to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size. The container spec of a ``Deployment`` for some JVM app would look like this:
 
 .. code-block:: yaml
 
@@ -126,8 +126,9 @@ We provide a `tiny script`_ and use the Downwards API to conveniently run JVM ap
 
 .. _LimitRange: https://github.com/kubernetes/community/blob/master/contributors/design-proposals/admission_control_limit_range.md
 .. _tiny script: https://github.com/zalando/docker-openjdk/blob/master/utils/java-dynamic-memory-opts
+.. _Downwards API: https://kubernetes.io/docs/tasks/inject-data-application/downward-api-volume-expose-pod-information/
 .. _Kubelet can be instructed to reserve a certain amount of resources: https://github.com/kubernetes/kubernetes/blob/1fc1e5efb5e5e1f821bfff8e2ef2dc308bfade8a/cmd/kubelet/app/options/options.go#L227
-.. _node’s allocatable resources: https://github.com/kubernetes/community/blob/master/contributors/design-proposals/node-allocatable.md
+.. _node’s allocatable resources: https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable
 
 Graceful Pod Termination
 ========================
