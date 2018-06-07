@@ -4,60 +4,58 @@ SenzaInfo:
     Parameters:
       - StackName:
           Description: "Stack name"
-      - UserDataMaster:
-          Description: "User data of master"
-      - UserDataWorker:
-          Description: "User data of worker"
       - KmsKey:
           Description: "ARN of KMS key to decrypt secrets"
-      - MasterNodes:
-          Description: "Number of master nodes"
-      - WorkerNodes:
-          Description: "Number of worker nodes"
-      - MinimumWorkerNodes:
-          Description: "Minimum number of nodes in the worker ASG"
-      - MaximumWorkerNodes:
-          Description: "Maximum number of nodes in the worker ASG"
-      - MasterInstanceType:
-          Description: "Type of instance for master nodes"
-          Default: "m3.medium"
-      - InstanceType:
-          Description: "Type of instance"
-      - WorkerSpotPrice:
-          Description: "Spot price for worker nodes, not used if empty"
-          Default: ""
       - ClusterID:
           Description: "ID of the cluster"
       - HostedZone:
           Description: "Hosted DNS zone"
-      - MasterNodePoolName:
-          Description: "Name of the master node pool (ASG)"
-      - WorkerNodePoolName:
-          Description: "Name of the worker node pool (ASG)"
       - EtcdS3BackupBucket:
           Description: "Name of the S3 bucket used for etcd backups"
       - EtcdStackName:
           Description: "AWS Stack name of the etcd cluster"
           Default: "etcd-cluster-etcd"
-
-Conditions:
-  UseWorkerSpotPrice:
-    Fn::Not:
-      - Fn::Equals:
-        - "{{Arguments.WorkerSpotPrice}}"
-        - ""
-
-Mappings:
-  Images:
-    eu-central-1:
-      StableCoreOSImage: "ami-604e118b"
+      # Deprecated parameters default to null values
+      - UserDataMaster:
+          Description: "User data of master"
+          Default: ""
+      - UserDataWorker:
+          Description: "User data of worker"
+          Default: ""
+      - MasterNodePoolName:
+          Description: "Name of the master node pool (ASG)"
+          Default: ""
+      - WorkerNodePoolName:
+          Description: "Name of the worker node pool (ASG)"
+          Default: ""
+      - MasterNodes:
+          Description: "Number of master nodes"
+          Default: 0
+      - WorkerNodes:
+          Description: "Number of worker nodes"
+          Default: 0
+      - MinimumWorkerNodes:
+          Description: "Minimum number of nodes in the worker ASG"
+          Default: 0
+      - MaximumWorkerNodes:
+          Description: "Maximum number of nodes in the worker ASG"
+          Default: 0
+      - MasterInstanceType:
+          Description: "Type of instance for master nodes"
+          Default: "m3.medium"
+      - InstanceType:
+          Description: "Type of instance"
+          Default: "m3.medium"
+      - WorkerSpotPrice:
+          Description: "Spot price for worker nodes, not used if empty"
+          Default: ""
 
 SenzaComponents:
   - Configuration:
       Type: Senza::CoreosAutoConfiguration
       PublicOnly: true # use all public subnets
       DefineParameters: false # skip CF template parameter definition
-      ReleaseChannel: stable # see https://coreos.com/os/docs/latest/switching-channels.html
+
   - MasterLoadBalancer:
       Type: Senza::WeightedDnsElasticLoadBalancer
       HTTPPort: 443
@@ -79,72 +77,6 @@ SenzaComponents:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-  - MasterAutoScaling:
-      Type: Senza::AutoScalingGroup
-      InstanceType: "{{ Arguments.MasterInstanceType }}"
-      Image: StableCoreOSImage
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeSize: 20
-            VolumeType: standard
-      SecurityGroups:
-         - {Ref: MasterSecurityGroup}
-      IamRoles:
-         - {Ref: MasterIAMRole}
-      ElasticLoadBalancer: MasterLoadBalancer
-      HealthCheckGracePeriod: 480 # give master node up to 8 min to start up
-      HealthCheckType: EC2
-      AssociatePublicIpAddress: true
-      UserData: "{{ Arguments.UserDataMaster }}"
-      AutoScaling:
-         Minimum: "{{ Arguments.MasterNodes }}"
-         Maximum: "{{ Arguments.MasterNodes }}"
-         DesiredCapacity: "{{ Arguments.MasterNodes }}"
-         SuccessRequires: "0 within 15m"
-      Tags:
-        - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
-          Value: owned
-        - Key: "NodePool"
-          Value: "{{ Arguments.MasterNodePoolName }}"
-  - WorkerAutoScaling:
-      Type: Senza::AutoScalingGroup
-      InstanceType: "{{ Arguments.InstanceType }}"
-      Image: StableCoreOSImage
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeSize: 50
-            VolumeType: standard
-      SecurityGroups:
-         - {Ref: WorkerSecurityGroup}
-      IamRoles:
-         - {Ref: WorkerIAMRole}
-      AssociatePublicIpAddress: true
-      UserData: "{{ Arguments.UserDataWorker }}"
-      SpotPrice:
-        Fn::If:
-          - UseWorkerSpotPrice
-          - "{{Arguments.WorkerSpotPrice}}"
-          - Ref: AWS::NoValue
-      AutoScaling:
-         Minimum: "{{ Arguments.MinimumWorkerNodes}}"
-         Maximum: "{{ Arguments.MaximumWorkerNodes}}"
-         DesiredCapacity: "{{ Arguments.WorkerNodes }}"
-         SuccessRequires: "0 within 15m"
-      Tags:
-        - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
-          Value: owned
-        - Key: "NodePool"
-          Value: "{{ Arguments.WorkerNodePoolName }}"
-        - Key: "k8s.io/role/node"
-          Value: "worker"
-        - Key: "k8s.io/cluster-autoscaler/enabled"
-          Value: ""
-        - Key: "zalando.de/cluster-local-id/{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}"
-          Value: owned
-        - Key: "k8s.io/cluster-autoscaler/node-template/label/lifecycle-status"
-          Value: ready
 Resources:
   MasterIAMRole:
     Properties:
@@ -801,24 +733,6 @@ Resources:
       AliasName: "alias/{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-deployment-secret"
       TargetKeyId:
         Ref: DeploymentSecretKey
-  MasterAutoscalingLifecycleHook:
-    Type: "AWS::AutoScaling::LifecycleHook"
-    Properties:
-      DefaultResult: "CONTINUE"
-      HeartbeatTimeout: "600"
-      AutoScalingGroupName:
-        Ref: MasterAutoScaling
-      LifecycleHookName: "kube-node-ready-lifecycle-hook"
-      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
-  WorkerAutoscalingLifecycleHook:
-    Type: "AWS::AutoScaling::LifecycleHook"
-    Properties:
-      DefaultResult: "CONTINUE"
-      HeartbeatTimeout: "600"
-      AutoScalingGroupName:
-        Ref: WorkerAutoScaling
-      LifecycleHookName: "kube-node-ready-lifecycle-hook"
-      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
   KubeReadyIAMRole:
     Type: AWS::IAM::Role
     Properties:
@@ -921,8 +835,3 @@ Outputs:
       Ref: WorkerIAMRole
     Export:
       Name: "{{ Arguments.ClusterID }}:worker-iam-role"
-  MasterLoadBalancerSecurityGroup:
-    Value:
-      Ref: MasterLoadBalancerSecurityGroup
-    Export:
-      Name: "{{ Arguments.ClusterID }}:master-load-balancer-security-group"
