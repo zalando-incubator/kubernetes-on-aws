@@ -14,7 +14,12 @@ Conditions:
         - ""
 
 Resources:
-  AutoScalingGroupA:
+{{ with $data := . }}
+{{ with $azCount := azCount $data.Values.subnets }}
+{{ range $az, $subnets := $data.Values.subnets }}
+{{ if ne $az "*" }}
+{{ with $azId := azId $az }}
+  AutoScalingGroup{{$azId}}:
     CreationPolicy:
       ResourceSignal:
         Count: '0'
@@ -23,12 +28,12 @@ Resources:
       HealthCheckGracePeriod: 300
       HealthCheckType: EC2
       LaunchConfigurationName: !Ref AutoScalingConfig
-      MinSize: '{{ .NodePool.MinSize }}'
-      MaxSize: '{{ .NodePool.MaxSize }}'
+      MinSize: '{{ asgSize $data.NodePool.MinSize $azCount }}'
+      MaxSize: '{{ asgSize $data.NodePool.MaxSize $azCount }}'
       Tags:
       - Key: Name
         PropagateAtLaunch: true
-        Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
+        Value: "{{ $data.NodePool.Name }} ({{ $data.Cluster.ID }})"
       - Key: k8s.io/role/node
         PropagateAtLaunch: true
         Value: worker
@@ -38,99 +43,24 @@ Resources:
       - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
         PropagateAtLaunch: true
         Value: ready
-      - Key: 'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}'
+      - Key: 'zalando.de/cluster-local-id/{{ $data.Cluster.LocalID }}'
         PropagateAtLaunch: true
         Value: owned
-{{ with $subnets := index .Values.subnets "eu-central-1a" }}
       VPCZoneIdentifier: !Split [",", "{{$subnets}}"]
-{{ end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
-  AutoscalingLifecycleHookA:
+  AutoscalingLifecycleHook{{$azId}}:
     Properties:
-      AutoScalingGroupName: !Ref AutoScalingGroupA
+      AutoScalingGroupName: !Ref AutoScalingGroup{{$azId}}
       LifecycleHookName: "kube-node-ready-lifecycle-hook"
       DefaultResult: CONTINUE
       HeartbeatTimeout: '600'
       LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
     Type: 'AWS::AutoScaling::LifecycleHook'
-  AutoScalingGroupB:
-    CreationPolicy:
-      ResourceSignal:
-        Count: '0'
-        Timeout: PT15M
-    Properties:
-      HealthCheckGracePeriod: 300
-      HealthCheckType: EC2
-      LaunchConfigurationName: !Ref AutoScalingConfig
-      MinSize: '{{ .NodePool.MinSize }}'
-      MaxSize: '{{ .NodePool.MaxSize }}'
-      Tags:
-      - Key: Name
-        PropagateAtLaunch: true
-        Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
-      - Key: k8s.io/role/node
-        PropagateAtLaunch: true
-        Value: worker
-      - Key: k8s.io/cluster-autoscaler/enabled
-        PropagateAtLaunch: true
-        Value: ''
-      - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
-        PropagateAtLaunch: true
-        Value: ready
-      - Key: 'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}'
-        PropagateAtLaunch: true
-        Value: owned
-{{ with $subnets := index .Values.subnets "eu-central-1b" }}
-      VPCZoneIdentifier: !Split [",", "{{$subnets}}"]
 {{ end }}
-    Type: 'AWS::AutoScaling::AutoScalingGroup'
-  AutoscalingLifecycleHookB:
-    Properties:
-      AutoScalingGroupName: !Ref AutoScalingGroupB
-      LifecycleHookName: "kube-node-ready-lifecycle-hook"
-      DefaultResult: CONTINUE
-      HeartbeatTimeout: '600'
-      LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
-    Type: 'AWS::AutoScaling::LifecycleHook'
-  AutoScalingGroupC:
-    CreationPolicy:
-      ResourceSignal:
-        Count: '0'
-        Timeout: PT15M
-    Properties:
-      HealthCheckGracePeriod: 300
-      HealthCheckType: EC2
-      LaunchConfigurationName: !Ref AutoScalingConfig
-      MinSize: '{{ .NodePool.MinSize }}'
-      MaxSize: '{{ .NodePool.MaxSize }}'
-      Tags:
-      - Key: Name
-        PropagateAtLaunch: true
-        Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
-      - Key: k8s.io/role/node
-        PropagateAtLaunch: true
-        Value: worker
-      - Key: k8s.io/cluster-autoscaler/enabled
-        PropagateAtLaunch: true
-        Value: ''
-      - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
-        PropagateAtLaunch: true
-        Value: ready
-      - Key: 'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}'
-        PropagateAtLaunch: true
-        Value: owned
-{{ with $subnets := index .Values.subnets "eu-central-1c" }}
-      VPCZoneIdentifier: !Split [",", "{{$subnets}}"]
 {{ end }}
-    Type: 'AWS::AutoScaling::AutoScalingGroup'
-  AutoscalingLifecycleHookC:
-    Properties:
-      AutoScalingGroupName: !Ref AutoScalingGroupC
-      LifecycleHookName: "kube-node-ready-lifecycle-hook"
-      DefaultResult: CONTINUE
-      HeartbeatTimeout: '600'
-      LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
-    Type: 'AWS::AutoScaling::LifecycleHook'
+{{ end }}
+{{ end }}
+{{ end }}
 
   AutoScalingConfig:
     Properties:
