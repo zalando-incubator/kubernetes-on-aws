@@ -27,4 +27,4 @@ represents the state of clusters in the "alpha" channel. See [Cluster
 Provisioning](https://kubernetes-on-aws.readthedocs.io/en/latest/admin-guide/kubernetes-in-production.html#cluster-provisioning) to learn more. To roll out changes to a particular
 channel, create a PR to it's corresponding branch e.g
 [dev-to-alpha](https://github.com/zalando-incubator/kubernetes-on-aws/pull/1130).
-You may use the [prepare.sh](https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/prepare-pr.sh) script to create a PR.
+You may use the [prepare-pr.sh](https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/prepare-pr.sh) script to create a PR.
