@@ -13,7 +13,7 @@ create a PR to it.
 How do I run tests?
 ===================
 
-Once you add the `"ready-to-test" label`_, tests will automatically be kicked off.
+Once you add the `"ready-to-test"`_ label, tests will automatically be kicked off.
 Our internal `Jenkins instance`_ is used to run the tests. The CI config for the project can
 be found at `teapot/kubernetes-on-aws-e2e`_ on our internal Github Enterprise.
 
@@ -27,10 +27,10 @@ create a PR to it's corresponding branch e.g `dev-to-alpha`_. You may use the `p
 
 
 
-.. _"ready-to-test" label : https://github.com/zalando-incubator/kubernetes-on-aws/labels/ready-to-test
-.. _Jenkins instance: https://teapot.ci.zalan.do/
+.. _"ready-to-test" : https://github.com/zalando-incubator/kubernetes-on-aws/labels/ready-to-test
+.. _Jenkins instance : https://teapot.ci.zalan.do/
 .. _teapot/kubernetes-on-aws-e2e : https://github.bus.zalan.do/teapot/kubernetes-on-aws-e2e
-.. _"alpha" branch: https://github.com/zalando-incubator/kubernetes-on-aws/tree/alpha
-.. _"Cluster Provisioning": https://kubernetes-on-aws.readthedocs.io/en/latest/admin-guide/kubernetes-in-production.html#cluster-provisioning
+.. _"alpha" branch : https://github.com/zalando-incubator/kubernetes-on-aws/tree/alpha
+.. _"Cluster Provisioning" : https://kubernetes-on-aws.readthedocs.io/en/latest/admin-guide/kubernetes-in-production.html#cluster-provisioning
 .. _dev-to-alpha : https://github.com/zalando-incubator/kubernetes-on-aws/pull/1130
 .. _`prepare.sh` : https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/prepare-pr.sh
