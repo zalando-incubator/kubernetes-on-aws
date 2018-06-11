@@ -18,8 +18,8 @@ Resources:
 {{ with $azCount := azCount $data.Values.subnets }}
 {{ range $az, $subnets := $data.Values.subnets }}
 {{ if ne $az "*" }}
-{{ with $azId := azId $az }}
-  AutoScalingGroup{{$azId}}:
+{{ with $azID := azID $az }}
+  AutoScalingGroup{{$azID}}:
     CreationPolicy:
       ResourceSignal:
         Count: '0'
@@ -48,9 +48,9 @@ Resources:
         Value: owned
       VPCZoneIdentifier: !Split [",", "{{$subnets}}"]
     Type: 'AWS::AutoScaling::AutoScalingGroup'
-  AutoscalingLifecycleHook{{$azId}}:
+  AutoscalingLifecycleHook{{$azID}}:
     Properties:
-      AutoScalingGroupName: !Ref AutoScalingGroup{{$azId}}
+      AutoScalingGroupName: !Ref AutoScalingGroup{{$azID}}
       LifecycleHookName: "kube-node-ready-lifecycle-hook"
       DefaultResult: CONTINUE
       HeartbeatTimeout: '600'
