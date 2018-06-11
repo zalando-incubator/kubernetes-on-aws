@@ -23,7 +23,7 @@ How do I roll out changes?
 We only support rolling out changes to our internal clusters so far. Our Kubernetes clusters are divided into multiple channels.
 Each channel has a corresponding branch. For example, the `"alpha" branch`_ represents the state of clusters in the
 "alpha" channel. See `Cluster Provisioning`_ to learn more. To roll out changes to a particular channel,
-create a PR to it's corresponding branch e.g `dev-to-alpha`_. You may use the `prepare.sh` script to create a PR.
+create a PR to it's corresponding branch e.g `dev-to-alpha`_. You may use the `prepare.sh`_ script to create a PR.
 
 
 
