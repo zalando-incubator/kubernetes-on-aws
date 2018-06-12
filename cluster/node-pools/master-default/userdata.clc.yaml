@@ -160,6 +160,7 @@ systemd:
       --network-plugin=cni \
       --container-runtime=docker \
       --register-with-taints=node-role.kubernetes.io/master=:NoSchedule \
+      --register-with-taints={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}} \
       --allow-privileged \
       --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }} \
