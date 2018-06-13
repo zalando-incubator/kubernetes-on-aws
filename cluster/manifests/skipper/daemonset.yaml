@@ -26,17 +26,10 @@ spec:
     spec:
       priorityClassName: system-node-critical
       tolerations:
-      - key: dedicated
+      - operator: Exists
         effect: NoSchedule
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/role
-                operator: NotIn
-                values:
-                - master
+      nodeSelector:
+        kubernetes.io/role=worker
       hostNetwork: true
       containers:
       - name: skipper-ingress
