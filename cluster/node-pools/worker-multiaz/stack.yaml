@@ -43,6 +43,14 @@ Resources:
       - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
         PropagateAtLaunch: true
         Value: ready
+{{- if index .NodePool.ConfigItems "taints"}}
+  {{- range split .NodePool.ConfigItems.taints ","}}
+    {{- $taint := split . "="}}
+      - Key: k8s.io/cluster-autoscaler/node-template/taint/{{index $taint 0}}
+        PropagateAtLaunch: true
+        Value: {{index $taint 1}}
+  {{- end}}
+{{end}}
       - Key: 'zalando.de/cluster-local-id/{{ $data.Cluster.LocalID }}'
         PropagateAtLaunch: true
         Value: owned
