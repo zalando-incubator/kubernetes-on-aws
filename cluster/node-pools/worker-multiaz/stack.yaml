@@ -48,12 +48,12 @@ Resources:
         Value: worker
       - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/node-pool
         PropagateAtLaunch: true
-        Value: {{ .NodePool.Name }}
+        Value: {{ $data.NodePool.Name }}
       - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
         PropagateAtLaunch: true
         Value: ready
-{{- if index .NodePool.ConfigItems "taints"}}
-  {{- range split .NodePool.ConfigItems.taints ","}}
+{{- if index $data.NodePool.ConfigItems "taints"}}
+  {{- range split $data.NodePool.ConfigItems.taints ","}}
     {{- $taint := split . "="}}
       - Key: k8s.io/cluster-autoscaler/node-template/taint/{{index $taint 0}}
         PropagateAtLaunch: true
