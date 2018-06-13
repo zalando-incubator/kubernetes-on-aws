@@ -2,9 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: zmon-worker
-  namespace: kube-system
+  namespace: visibility
+  labels:
+    application: zmon-worker
+    version: "v195-zv244"
 spec:
-  replicas: 4
+  replicas: {{if index .ConfigItems "zmon_worker_replicas"}}{{.ConfigItems.zmon_worker_replicas}}{{else}}4{{end}}
   selector:
     matchLabels:
       application: zmon-worker
@@ -12,15 +15,11 @@ spec:
     metadata:
       labels:
         application: zmon-worker
-        version: "v191-zv244"
+        version: "v195-zv244"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
-        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-
+      priorityClassName: system-cluster-critical
       initContainers:
       - name: gerry-init
         image: registry.opensource.zalan.do/teapot/gerry:v0.0.14
@@ -43,14 +42,14 @@ spec:
 
       containers:
         - name: zmon-worker
-          image: "pierone.stups.zalan.do/zmon/zmon-worker:v191-zv244"
+          image: "pierone.stups.zalan.do/zmon/zmon-worker:v195-zv244"
           resources:
             limits:
-              cpu: 500m
-              memory: 2Gi
+              cpu: {{if index .ConfigItems "zmon_worker_cpu"}}{{.ConfigItems.zmon_worker_cpu}}{{else}}500m{{end}}
+              memory: {{if index .ConfigItems "zmon_worker_mem"}}{{.ConfigItems.zmon_worker_mem}}{{else}}2Gi{{end}}
             requests:
-              cpu: 500m
-              memory: 2Gi
+              cpu: {{if index .ConfigItems "zmon_worker_cpu"}}{{.ConfigItems.zmon_worker_cpu}}{{else}}500m{{end}}
+              memory: {{if index .ConfigItems "zmon_worker_mem"}}{{.ConfigItems.zmon_worker_mem}}{{else}}2Gi{{end}}
 
           ports:
             - containerPort: 8080
@@ -64,7 +63,7 @@ spec:
 
           env:
             - name: WORKER_ZMON_QUEUES
-              value: zmon:queue:default/24
+              value: zmon:queue:default/{{if index .ConfigItems "zmon_worker_count"}}{{.ConfigItems.zmon_worker_count}}{{else}}24{{end}}
             - name: WORKER_REDIS_SERVERS
               value: zmon-redis:6379
             - name: WORKER_PLUGIN_SCALYR_READ_KEY
@@ -76,6 +75,8 @@ spec:
               value: "{{ .InfrastructureAccount }}"
             - name: WORKER_REGION
               value: "{{ .Region }}"
+            - name: WORKER_TEAM
+              value: "{{ .Alias }}"
             - name: WORKER_PLUGIN_SQL_USER
               valueFrom:
                 secretKeyRef:

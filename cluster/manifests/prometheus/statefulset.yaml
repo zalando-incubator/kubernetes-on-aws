@@ -4,7 +4,7 @@ metadata:
   annotations:
   labels:
     application: prometheus
-    version: v2.1.0
+    version: v2.2.1
   name: prometheus
   namespace: kube-system
 spec:
@@ -17,25 +17,35 @@ spec:
     metadata:
       labels:
         application: prometheus
-        version: v2.1.0
+        version: v2.2.1
+      annotations:
+        config/hash: {{"configmap.yaml" | manifestHash}}
     spec:
+      priorityClassName: system-cluster-critical
       containers:
       - name: prometheus
-        image: registry.opensource.zalan.do/teapot/prometheus:v2.1.0
+        image: registry.opensource.zalan.do/teapot/prometheus:v2.2.1
         args:
         - "--config.file=/etc/prometheus/prometheus.yml"
         - "--storage.tsdb.path=/prometheus/"
+        - "--storage.tsdb.retention=1d"
         ports:
         - name: ingress-port
           containerPort: 9090
           protocol: TCP
         resources:
           limits:
-            cpu: 200m
-            memory: 2000Mi
+            cpu: {{if index .ConfigItems "prometheus_cpu"}}{{.ConfigItems.prometheus_cpu}}{{else}}1000m{{end}}
+            memory: {{if index .ConfigItems "prometheus_mem"}}{{.ConfigItems.prometheus_mem}}{{else}}4000Mi{{end}}
           requests:
-            cpu: 25m
-            memory: 200Mi
+            cpu: {{if index .ConfigItems "prometheus_cpu"}}{{.ConfigItems.prometheus_cpu}}{{else}}1000m{{end}}
+            memory: {{if index .ConfigItems "prometheus_mem"}}{{.ConfigItems.prometheus_mem}}{{else}}4000Mi{{end}}
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
         volumeMounts:
         - name: prometheus-config-volume
           mountPath: /etc/prometheus

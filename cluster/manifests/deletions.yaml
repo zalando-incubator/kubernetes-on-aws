@@ -4,17 +4,17 @@
 #   namespace: kube-system
 #   kind: deployment
 
-pre_apply: # everything defined under here will be deleted before applying the manifests
-- name: cluster-autoscaler
+# everything defined under here will be deleted before applying the manifests
+pre_apply: []
+
+# everything defined under here will be deleted after applying the manifests
+post_apply:
+- name: kube-dns
+  namespace: kube-system
+  kind: service
+- name: kube-dns
   namespace: kube-system
   kind: deployment
-- name: cluster-autoscaler-playground
+- name: kube-dns-autoscaler
   namespace: kube-system
-  kind: configmap
-- name: cluster-autoscaler-production
-  namespace: kube-system
-  kind: configmap
-- name: cluster-autoscaler-test
-  namespace: kube-system
-  kind: configmap
-post_apply: [] # everything defined under here will be deleted after applying the manifests
+  kind: deployment

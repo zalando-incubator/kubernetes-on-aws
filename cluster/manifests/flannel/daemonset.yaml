@@ -17,9 +17,8 @@ spec:
       labels:
         application: flannel
         version: v0.10.0
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
+      priorityClassName: system-node-critical
       serviceAccountName: system
       initContainers:
       - name: install-cni
@@ -43,6 +42,7 @@ spec:
         args:
         - --ip-masq
         - --kube-subnet-mgr
+        - --v=2
         env:
         - name: POD_NAME
           valueFrom:
@@ -72,8 +72,6 @@ spec:
         effect: NoSchedule
       - operator: Exists
         effect: NoExecute
-      - operator: Exists
-        key: CriticalAddonsOnly
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       volumes:

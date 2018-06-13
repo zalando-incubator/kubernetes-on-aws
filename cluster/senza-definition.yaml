@@ -4,33 +4,12 @@ SenzaInfo:
     Parameters:
       - StackName:
           Description: "Stack name"
-      - UserDataMaster:
-          Description: "User data of master"
-      - UserDataWorker:
-          Description: "User data of worker"
       - KmsKey:
           Description: "ARN of KMS key to decrypt secrets"
-      - MasterNodes:
-          Description: "Number of master nodes"
-      - WorkerNodes:
-          Description: "Number of worker nodes"
-      - MinimumWorkerNodes:
-          Description: "Minimum number of nodes in the worker ASG"
-      - MaximumWorkerNodes:
-          Description: "Maximum number of nodes in the worker ASG"
-      - MasterInstanceType:
-          Description: "Type of instance for master nodes"
-          Default: "m3.medium"
-      - InstanceType:
-          Description: "Type of instance"
       - ClusterID:
           Description: "ID of the cluster"
       - HostedZone:
           Description: "Hosted DNS zone"
-      - MasterNodePoolName:
-          Description: "Name of the master node pool (ASG)"
-      - WorkerNodePoolName:
-          Description: "Name of the worker node pool (ASG)"
       - EtcdS3BackupBucket:
           Description: "Name of the S3 bucket used for etcd backups"
       - EtcdStackName:
@@ -42,7 +21,7 @@ SenzaComponents:
       Type: Senza::CoreosAutoConfiguration
       PublicOnly: true # use all public subnets
       DefineParameters: false # skip CF template parameter definition
-      ReleaseChannel: stable # see https://coreos.com/os/docs/latest/switching-channels.html
+
   - MasterLoadBalancer:
       Type: Senza::WeightedDnsElasticLoadBalancer
       HTTPPort: 443
@@ -64,65 +43,6 @@ SenzaComponents:
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
-  - MasterAutoScaling:
-      Type: Senza::AutoScalingGroup
-      InstanceType: "{{ Arguments.MasterInstanceType }}"
-      Image: LatestCoreOSImage
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeSize: 20
-            VolumeType: standard
-      SecurityGroups:
-         - {Ref: MasterSecurityGroup}
-      IamRoles:
-         - {Ref: MasterIAMRole}
-      ElasticLoadBalancer: MasterLoadBalancer
-      HealthCheckGracePeriod: 480 # give master node up to 8 min to start up
-      HealthCheckType: EC2
-      AssociatePublicIpAddress: true
-      UserData: "{{ Arguments.UserDataMaster }}"
-      AutoScaling:
-         Minimum: "{{ Arguments.MasterNodes }}"
-         Maximum: "{{ Arguments.MasterNodes }}"
-         DesiredCapacity: "{{ Arguments.MasterNodes }}"
-         SuccessRequires: "0 within 15m"
-      Tags:
-        - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
-          Value: owned
-        - Key: "NodePool"
-          Value: "{{ Arguments.MasterNodePoolName }}"
-  - WorkerAutoScaling:
-      Type: Senza::AutoScalingGroup
-      InstanceType: "{{ Arguments.InstanceType }}"
-      Image: LatestCoreOSImage
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeSize: 50
-            VolumeType: standard
-      SecurityGroups:
-         - {Ref: WorkerSecurityGroup}
-      IamRoles:
-         - {Ref: WorkerIAMRole}
-      AssociatePublicIpAddress: true
-      UserData: "{{ Arguments.UserDataWorker }}"
-      AutoScaling:
-         Minimum: "{{ Arguments.MinimumWorkerNodes}}"
-         Maximum: "{{ Arguments.MaximumWorkerNodes}}"
-         DesiredCapacity: "{{ Arguments.WorkerNodes }}"
-         SuccessRequires: "0 within 15m"
-      Tags:
-        - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
-          Value: owned
-        - Key: "NodePool"
-          Value: "{{ Arguments.WorkerNodePoolName }}"
-        - Key: "k8s.io/role/node"
-          Value: "worker"
-        - Key: "k8s.io/cluster-autoscaler/enabled"
-          Value: ""
-        - Key: "zalando.de/cluster-local-id/{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}"
-          Value: owned
 Resources:
   MasterIAMRole:
     Properties:
@@ -140,6 +60,7 @@ Resources:
           - {Action: 'ec2:*', Effect: Allow, Resource: '*'}
           - {Action: 'elasticloadbalancing:*', Effect: Allow, Resource: '*'}
           - {Action: 'kms:Decrypt', Effect: Allow, Resource: '{{ Arguments.KmsKey }}'}
+          - {Action: 's3:GetObject', Effect: Allow, Resource: 'arn:aws:s3:::*'}
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
@@ -162,6 +83,7 @@ Resources:
           - {Action: 'ec2:DetachVolume', Effect: Allow, Resource: '*'}
           - {Action: 'kms:Decrypt', Effect: Allow, Resource: '{{ Arguments.KmsKey }}'}
           - {Action: 'sts:AssumeRole', Effect: Allow, Resource: '*'}
+          - {Action: 's3:GetObject', Effect: Allow, Resource: 'arn:aws:s3:::*'}
           Version: '2012-10-17'
         PolicyName: root
     Type: AWS::IAM::Role
@@ -333,6 +255,8 @@ Resources:
       - {CidrIp: 172.31.0.0/16, FromPort: 9100, IpProtocol: tcp, ToPort: 9100}
       - {CidrIp: 172.31.0.0/16, FromPort: 9911, IpProtocol: tcp, ToPort: 9911}
       - {CidrIp: 172.31.0.0/16, FromPort: 30080, IpProtocol: tcp, ToPort: 30080}
+      # allow checking kubelet cadvisor metrics port from within the VPC
+      - {CidrIp: 172.31.0.0/16, FromPort: 4194, IpProtocol: tcp, ToPort: 4194}
       Tags:
         - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
           Value: owned
@@ -670,6 +594,7 @@ Resources:
             - "apigateway:*"
             - "automation:*"
             - "autoscaling:*"
+            - "application-autoscaling:*"
             - "aws-marketplace:View*"
             - "aws-portal:View*"
             - "cloudformation:*"
@@ -694,6 +619,7 @@ Resources:
             - "es:*"
             - "events:*"
             - "glacier:*"
+            - "glue:*"
             - "health:*"
             - "iam:*"
             - "kinesis:*"
@@ -773,23 +699,6 @@ Resources:
       AliasName: "alias/{{SenzaInfo.StackName}}-{{SenzaInfo.StackVersion}}-deployment-secret"
       TargetKeyId:
         Ref: DeploymentSecretKey
-  MasterAutoscalingLifecycleHook:
-    Type: "AWS::AutoScaling::LifecycleHook"
-    Properties:
-      DefaultResult: "CONTINUE"
-      HeartbeatTimeout: "600"
-      AutoScalingGroupName:
-        Ref: MasterAutoScaling
-      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
-  WorkerAutoscalingLifecycleHook:
-    Type: "AWS::AutoScaling::LifecycleHook"
-    Properties:
-      DefaultResult: "CONTINUE"
-      HeartbeatTimeout: "600"
-      AutoScalingGroupName:
-        Ref:
-          WorkerAutoScaling
-      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
   KubeReadyIAMRole:
     Type: AWS::IAM::Role
     Properties:
@@ -867,9 +776,28 @@ Resources:
           Version: '2012-10-17'
         PolicyName: root
 Outputs:
-  MasterAutoscalingLifecycleHook:
+  MasterSecurityGroup:
     Value:
-      Ref: MasterAutoscalingLifecycleHook
-  WorkerAutoscalingLifecycleHook:
+      Ref: MasterSecurityGroup
+    Export:
+      Name: "{{ Arguments.ClusterID }}:master-security-group"
+  WorkerSecurityGroup:
     Value:
-      Ref: WorkerAutoscalingLifecycleHook
+      Ref: WorkerSecurityGroup
+    Export:
+      Name: "{{ Arguments.ClusterID }}:worker-security-group"
+  MasterLoadBalancer:
+    Value:
+      Ref: MasterLoadBalancer
+    Export:
+      Name: "{{ Arguments.ClusterID }}:master-load-balancer"
+  MasterIAMRole:
+    Value:
+      Ref: MasterIAMRole
+    Export:
+      Name: "{{ Arguments.ClusterID }}:master-iam-role"
+  WorkerIAMRole:
+    Value:
+      Ref: WorkerIAMRole
+    Export:
+      Name: "{{ Arguments.ClusterID }}:worker-iam-role"

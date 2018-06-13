@@ -2,12 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "zmon-aws-agent"
-  namespace: "kube-system"
+  namespace: "visibility"
   labels:
     application: "zmon-aws-agent"
     version: "v71-zv153"
 spec:
-  replicas: {{ if ne .Alias "db" }}1{{ else }}0{{ end }}
+  replicas: {{if index .ConfigItems "zmon_aws_agent_replicas"}}{{.ConfigItems.zmon_aws_agent_replicas}}{{else}}1{{end}}
   selector:
     matchLabels:
       application: zmon-aws-agent
@@ -18,12 +18,8 @@ spec:
         version: "v71-zv153"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
-        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-
+      priorityClassName: system-cluster-critical
       initContainers:
       - name: gerry-init
         image: registry.opensource.zalan.do/teapot/gerry:v0.0.14

@@ -2,12 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "zmon-redis"
-  namespace: "kube-system"
+  namespace: "visibility"
   labels:
     application: "zmon-redis"
     version: "v0.1"
 spec:
-  replicas: 1
+  replicas: {{if index .ConfigItems "zmon_redis_replicas"}}{{.ConfigItems.zmon_redis_replicas}}{{else}}1{{end}}
   selector:
     matchLabels:
       application: "zmon-redis"
@@ -16,12 +16,8 @@ spec:
       labels:
         application: "zmon-redis"
         version: "v0.1"
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
+      priorityClassName: system-cluster-critical
       containers:
         - name: zmon-redis
           image: registry.opensource.zalan.do/zmon/redis:3.2.9
@@ -41,4 +37,3 @@ spec:
                 - ping
             initialDelaySeconds: 10
             periodSeconds: 60
-

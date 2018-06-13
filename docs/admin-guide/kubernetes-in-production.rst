@@ -14,7 +14,7 @@ This document should briefly describe our learnings in Zalando Tech while runnin
 Context
 =======
 
-We are a team of infrastructure engineers provisioning Kubernetes clusters for our Zalando Tech delivery teams. We plan to have more than 30 production Kubernetes clusters. The following goals might help to understand the remainder of the document, our Kubernetes setup and our specific challenges:
+We are a team of infrastructure engineers provisioning Kubernetes clusters for our Zalando Tech delivery teams. We have more than 80 production Kubernetes clusters. The following goals might help to understand the remainder of the document, our Kubernetes setup and our specific challenges:
 
 * No manual operations: all cluster updates and operations need to be fully automated.
 * No pet clusters: clusters should all look the same and not require any specific configurations/tweaking
@@ -39,7 +39,7 @@ We always create two AWS Auto Scaling Groups (ASGs, “node pools”) right now:
 
 Both ASGs span multiple Availability Zones (AZ). The API server is exposed with TLS via a “classic” TCP/SSL Elastic Load Balancer (ELB).
 
-We use a custom built Cluster Registry REST service to manage our Kubernetes clusters. Another component (Cluster Lifecycle Manager, CLM) is regularly polling the Cluster Registry and updating clusters to the desired state.
+We use a custom built Cluster Registry REST service to manage our Kubernetes clusters. Another component (`Cluster Lifecycle Manager`_, CLM) is regularly polling the Cluster Registry and updating clusters to the desired state.
 The desired state is expressed with CloudFormation and Kubernetes manifests `stored in git`_.
 
 .. image:: images/cluster-lifecycle-manager.svg
@@ -102,7 +102,7 @@ Default resource requests and limits can be configured via the LimitRange_ resou
 The default limit for CPU is 3 cores as we discovered that this is a sweet spot for JVM apps to startup quickly.
 See `our LimitRange YAML manifest`_ for details.
 
-We provide a `tiny script`_ and use the Downwards API to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size. The container spec of a ``Deployment`` for some JVM app would look like this:
+We provide a `tiny script`_ and use the `Downwards API`_ to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size. The container spec of a ``Deployment`` for some JVM app would look like this:
 
 .. code-block:: yaml
 
@@ -126,8 +126,9 @@ We provide a `tiny script`_ and use the Downwards API to conveniently run JVM ap
 
 .. _LimitRange: https://github.com/kubernetes/community/blob/master/contributors/design-proposals/admission_control_limit_range.md
 .. _tiny script: https://github.com/zalando/docker-openjdk/blob/master/utils/java-dynamic-memory-opts
+.. _Downwards API: https://kubernetes.io/docs/tasks/inject-data-application/downward-api-volume-expose-pod-information/
 .. _Kubelet can be instructed to reserve a certain amount of resources: https://github.com/kubernetes/kubernetes/blob/1fc1e5efb5e5e1f821bfff8e2ef2dc308bfade8a/cmd/kubelet/app/options/options.go#L227
-.. _node’s allocatable resources: https://github.com/kubernetes/community/blob/master/contributors/design-proposals/node-allocatable.md
+.. _node’s allocatable resources: https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/#node-allocatable
 
 Graceful Pod Termination
 ========================
@@ -167,13 +168,13 @@ We are using the HorizontalPodAutoscaler_ resource to scale the number of deploy
 Node Autoscaling
 ----------------
 
-Our `experimental AWS Autoscaler`_ is an attempt to implement a simple and elastic autoscaling with AWS Auto Scaling Groups.
+We use the `official Cluster Autoscaler`_ which controls the desired capacity of AWS Auto Scaling Groups based on resource requests.
 
 Graceful node shutdown is required to allow safe downscaling at any time. We simply added a small `systemd unit to run kubectl drain on shutdown`_.
 
 Upscaling or node replacement poses the risk of race conditions between application pods and required system pods (DaemonSet). We have not yet figured out a good way of postponing application scheduling until the node is fully ready. The kubelet’s Ready condition is not enough as it does not ensure that all system pods such as kube-proxy and kube2iam are running. One idea is using taints during node initialization to prevent application pods to be scheduled until the node is fully ready.
 
-.. _experimental AWS Autoscaler: https://github.com/hjacobs/kube-aws-autoscaler
+.. _official Cluster Autoscaler: https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler
 .. _systemd unit to run kubectl drain on shutdown: https://github.com/zalando-incubator/kubernetes-on-aws/blob/449f8f3bf5c60e0d319be538460ff91266337abc/cluster/userdata-worker.yaml#L92
 
 Monitoring
@@ -258,3 +259,4 @@ The STUPS etcd cluster is deployed across availability zones (AZ) with five node
 .. _STUPS etcd cluster: https://github.com/zalando-incubator/stups-etcd-cluster
 .. _STUPS Taupage AMI: https://github.com/zalando-stups/taupage
 .. _our LimitRange YAML manifest: https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/cluster/manifests/default-limits/limits.yaml
+.. _Cluster Lifecycle Manager: https://github.com/zalando-incubator/cluster-lifecycle-manager

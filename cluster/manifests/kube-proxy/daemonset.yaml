@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-proxy
-    version: v1.9.4_coreos.0
+    version: v1.10.2_coreos.0
 spec:
   selector:
     matchLabels:
@@ -17,23 +17,20 @@ spec:
       name: kube-proxy
       labels:
         application: kube-proxy
-        version: v1.9.4_coreos.0
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
+        version: v1.10.2_coreos.0
     spec:
+      priorityClassName: system-node-critical
       tolerations:
       - operator: Exists
         effect: NoSchedule
       - operator: Exists
         effect: NoExecute
-      - operator: Exists
-        key: CriticalAddonsOnly
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       hostNetwork: true
       containers:
       - name: kube-proxy
-        image: registry.opensource.zalan.do/teapot/hyperkube:v1.9.4_coreos.0
+        image: registry.opensource.zalan.do/teapot/hyperkube:v1.10.2_coreos.0
         command:
         - /hyperkube
         - proxy

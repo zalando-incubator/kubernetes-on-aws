@@ -1,3 +1,4 @@
+{{ with $version := "0.7" }}
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
@@ -5,9 +6,9 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-job-cleaner
-    version: "0.5"
+    version: "{{$version}}"
 spec:
-  schedule: "17 * * * *"
+  schedule: "*/5 * * * *"
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 1
   jobTemplate:
@@ -17,14 +18,14 @@ spec:
         metadata:
           labels:
             application: kube-job-cleaner
-            version: "0.5"
+            version: "{{$version}}"
         spec:
           serviceAccountName: system
           restartPolicy: Never
           containers:
           - name: cleaner
-            # delete all completed jobs after one hour
-            image: registry.opensource.zalan.do/teapot/kube-job-cleaner:0.5
+            # delete all completed jobs
+            image: registry.opensource.zalan.do/teapot/kube-job-cleaner:{{$version}}
             resources:
               limits:
                 cpu: 100m
@@ -32,3 +33,4 @@ spec:
               requests:
                 cpu: 50m
                 memory: 50Mi
+{{ end }}

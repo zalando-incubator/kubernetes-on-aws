@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.9.171
+    version: v0.10.20
     component: ingress
 spec:
   selector:
@@ -18,13 +18,13 @@ spec:
       name: skipper-ingress
       labels:
         application: skipper-ingress
-        version: v0.9.171
+        version: v0.10.20
         component: ingress
       annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
+      priorityClassName: system-node-critical
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -34,13 +34,10 @@ spec:
                 operator: NotIn
                 values:
                 - master
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.9.171
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.20
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -49,6 +46,7 @@ spec:
           - "skipper"
           - "-kubernetes"
           - "-kubernetes-in-cluster"
+          - "-kubernetes-path-mode=path-prefix"
           - "-address=:9999"
           - "-proxy-preserve-host"
           - "-serve-host-metrics"
@@ -58,12 +56,13 @@ spec:
           - "-reverse-source-predicate"
           - "-lb-healthcheck-interval=3s"
           - "-metrics-flavour=codahale,prometheus"
+          - "-enable-connection-metrics"
         resources:
           limits:
             memory: 200Mi
           requests:
-            cpu: 30m
-            memory: 35Mi
+            cpu: 150m
+            memory: 50Mi
         readinessProbe:
           httpGet:
             path: /kube-system/healthz

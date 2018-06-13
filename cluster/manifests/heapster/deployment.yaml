@@ -6,7 +6,7 @@ metadata:
   labels:
     application: heapster
     kubernetes.io/cluster-service: "true"
-    version: v1.4.2
+    version: v1.5.2
 spec:
   replicas: 1
   selector:
@@ -16,16 +16,12 @@ spec:
     metadata:
       labels:
         application: heapster
-        version: v1.4.2
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
+        version: v1.5.2
     spec:
-      tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
+      priorityClassName: system-cluster-critical
       serviceAccountName: system
       containers:
-        - image: registry.opensource.zalan.do/teapot/heapster:v1.4.2
+        - image: registry.opensource.zalan.do/teapot/heapster:v1.5.2
           name: heapster
           livenessProbe:
             httpGet:
