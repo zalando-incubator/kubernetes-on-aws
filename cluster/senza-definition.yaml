@@ -347,6 +347,27 @@ Resources:
           Value: owned
       VpcId: "{{ AccountInfo.VpcID }}"
     Type: AWS::EC2::SecurityGroup
+  # optional sg for enabling EFS
+  EFSWorkerSecurityGroup:
+    Properties:
+      GroupName: "worker-efs"
+      GroupDescription: "worker to EFS sg"
+      Tags:
+      - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
+        Value: owned
+      VpcId: "{{ AccountInfo.VpcID }}"
+    Type: AWS::EC2::SecurityGroup
+  EFSSecurityGroupIngressFromWorkerSecurityGroup:
+    Properties:
+      FromPort: 2049
+      ToPort: 2049
+      GroupId: {Ref: EFSWorkerSecurityGroup}
+      IpProtocol: tcp
+      SourceSecurityGroupId: {Ref: WorkerSecurityGroup}
+      Tags:
+      - Key: "kubernetes.io/cluster/{{ Arguments.ClusterID }}"
+        Value: owned
+    Type: AWS::EC2::SecurityGroupIngress
 
   IngressLoadBalancerSecurityGroup:
     Properties:
