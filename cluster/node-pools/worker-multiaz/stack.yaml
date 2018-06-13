@@ -43,6 +43,12 @@ Resources:
       - Key: k8s.io/cluster-autoscaler/enabled
         PropagateAtLaunch: true
         Value: ''
+      - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/role
+        PropagateAtLaunch: true
+        Value: worker
+      - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/node-pool
+        PropagateAtLaunch: true
+        Value: {{ .NodePool.Name }}
       - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
         PropagateAtLaunch: true
         Value: ready
