@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-cluster-autoscaler
-    version: v1.1.2
+    version: v1.1.2-teapot12
 spec:
   replicas: 2
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: kube-cluster-autoscaler
-        version: v1.1.2
+        version: v1.1.2-teapot12
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
@@ -30,7 +30,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.1.2
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler-custom:v1.1.2-teapot12
         command:
           - ./cluster-autoscaler
           - --v=4
@@ -41,6 +41,7 @@ spec:
           - --expendable-pods-priority-cutoff=-1000000
           - --skip-nodes-with-system-pods=false
           - --skip-nodes-with-local-storage=false
+          - --scale-up-cloud-provider-template=true
         resources:
           limits:
             cpu: 100m
