@@ -36,7 +36,9 @@ spec:
         # format <namespace>:<labelKey>=<labelValue>,+
         - "--pod-selector=kube-system:application=kube2iam"
         - "--pod-selector=kube-system:application=kube-proxy"
+{{ if eq .ConfigItems.logging_agent_enabled "true" }}
         - "--pod-selector=kube-system:application=logging-agent"
+{{ end }}
         - "--pod-selector=kube-system:application=prometheus-node-exporter"
         - "--pod-selector=kube-system:application=flannel"
         - "--pod-selector=kube-system:application=kube-node-ready"
