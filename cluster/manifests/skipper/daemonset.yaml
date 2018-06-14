@@ -25,15 +25,11 @@ spec:
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
       priorityClassName: system-node-critical
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/role
-                operator: NotIn
-                values:
-                - master
+      tolerations:
+      - key: dedicated
+        operator: Exists
+      nodeSelector:
+        kubernetes.io/role: worker
       hostNetwork: true
       containers:
       - name: skipper-ingress
