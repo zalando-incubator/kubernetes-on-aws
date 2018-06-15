@@ -19,16 +19,14 @@ spec:
     spec:
       affinity:
         podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                  - key: application
-                    operator: In
-                    values:
-                    - autoscaling-buffer
-                topologyKey: failure-domain.beta.kubernetes.io/zone
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: application
+                operator: In
+                values:
+                - autoscaling-buffer
+            topologyKey: failure-domain.beta.kubernetes.io/zone
       priorityClassName: autoscaling-buffer
       terminationGracePeriodSeconds: 0
       containers:
