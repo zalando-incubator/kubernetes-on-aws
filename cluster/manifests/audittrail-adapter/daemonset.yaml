@@ -18,9 +18,8 @@ spec:
       labels:
         application: audittrail-adapter
         version: master-18
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
+      priorityClassName: system-node-critical
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -29,10 +28,10 @@ spec:
               - key: node-role.kubernetes.io/master
                 operator: Exists
       tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: node-role.kubernetes.io/master
+      - operator: Exists
         effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
       hostNetwork: true
       containers:
       - name: audittrail-adapter
