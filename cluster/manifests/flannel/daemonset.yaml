@@ -35,6 +35,17 @@ spec:
         - name: flannel-cfg
           mountPath: /etc/kube-flannel/
       containers:
+      - name: apiserver-proxy
+        image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
+        command:
+        - /bin/sh
+        args:
+        - -c
+        - "exec /etcd-proxy --listen-address 127.0.0.1:333 $KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT"
+        resources:
+          requests:
+            cpu: 25m
+            memory: 25Mi
       - name: kube-flannel
         image: registry.opensource.zalan.do/teapot/flannel:v0.10.0
         command:
@@ -44,6 +55,10 @@ spec:
         - --kube-subnet-mgr
         - --v=2
         env:
+        - name: KUBERNETES_SERVICE_HOST
+          value: "127.0.0.1"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "333"
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -72,8 +87,6 @@ spec:
         effect: NoSchedule
       - operator: Exists
         effect: NoExecute
-      - key: node-role.kubernetes.io/master
-        effect: NoSchedule
       volumes:
       - name: flannel-cfg
         configMap:

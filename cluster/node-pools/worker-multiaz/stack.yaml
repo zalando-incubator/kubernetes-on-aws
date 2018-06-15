@@ -37,12 +37,29 @@ Resources:
       - Key: k8s.io/role/node
         PropagateAtLaunch: true
         Value: worker
+      - Key: kubernetes.io/role
+        PropagateAtLaunch: true
+        Value: worker
       - Key: k8s.io/cluster-autoscaler/enabled
         PropagateAtLaunch: true
         Value: ''
+      - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/role
+        PropagateAtLaunch: true
+        Value: worker
+      - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/node-pool
+        PropagateAtLaunch: true
+        Value: {{ $data.NodePool.Name }}
       - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
         PropagateAtLaunch: true
         Value: ready
+{{- if index $data.NodePool.ConfigItems "taints"}}
+  {{- range split $data.NodePool.ConfigItems.taints ","}}
+    {{- $taint := split . "="}}
+      - Key: k8s.io/cluster-autoscaler/node-template/taint/{{index $taint 0}}
+        PropagateAtLaunch: true
+        Value: {{index $taint 1}}
+  {{- end}}
+{{end}}
       - Key: 'zalando.de/cluster-local-id/{{ $data.Cluster.LocalID }}'
         PropagateAtLaunch: true
         Value: owned

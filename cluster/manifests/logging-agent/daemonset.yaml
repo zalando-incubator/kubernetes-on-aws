@@ -1,3 +1,4 @@
+{{ if eq .ConfigItems.logging_agent_enabled "true" }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -23,8 +24,10 @@ spec:
     spec:
       priorityClassName: system-node-critical
       tolerations:
-      - key: node-role.kubernetes.io/master
+      - operator: Exists
         effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
       initContainers:
       - name: init-scalyr-config
         image: registry.opensource.zalan.do/stups/alpine:3.7.0-1
@@ -180,3 +183,4 @@ spec:
       - name: scalyr-logs
         hostPath:
           path: /var/log/scalyr-agent
+{{ end }}

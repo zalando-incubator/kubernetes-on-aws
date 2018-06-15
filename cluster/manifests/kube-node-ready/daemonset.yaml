@@ -1,3 +1,5 @@
+{{ $version := "v0.0.2" }}
+
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -5,7 +7,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-node-ready
-    version: v0.0.1
+    version: {{$version}}
 spec:
   selector:
     matchLabels:
@@ -16,19 +18,22 @@ spec:
     metadata:
       labels:
         application: kube-node-ready
-        version: v0.0.1
+        version: {{$version}}
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-kube-node-ready"
     spec:
       priorityClassName: system-node-critical
       tolerations:
-      - key: node-role.kubernetes.io/master
+      - operator: Exists
         effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
       containers:
       - name: kube-node-ready
-        image: registry.opensource.zalan.do/teapot/kube-node-ready:v0.0.1
+        image: registry.opensource.zalan.do/teapot/kube-node-ready:{{$version}}
         args:
         - --lifecycle-hook=kube-node-ready-lifecycle-hook
+        - --startup-delay=3m
         resources:
           limits:
             cpu: 50m
@@ -36,3 +41,9 @@ spec:
           requests:
             cpu: 20m
             memory: 20Mi
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          timeoutSeconds: 300
