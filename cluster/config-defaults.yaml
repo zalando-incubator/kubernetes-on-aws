@@ -5,7 +5,24 @@ autoscaling_buffer_memory_scale: "0.85"
 autoscaling_buffer_cpu_reserved: "1"
 autoscaling_buffer_memory_reserved: "1500Mi"
 {{if eq .Environment "production"}}
-autoscaling_buffer_pods: "3"
+autoscaling_buffer_pods: "1"
 {{else}}
 autoscaling_buffer_pods: "0"
+{{end}}
+
+# Monitoring settings
+{{if eq .Environment "e2e"}}
+logging_agent_enabled: "false"
+zmon_agent_replicas: "0"
+zmon_aws_agent_replicas: "0"
+zmon_redis_replicas: "0"
+zmon_scheduler_replicas: "0"
+zmon_worker_replicas: "0"
+{{else}}
+logging_agent_enabled: "true"
+zmon_agent_replicas: "1"
+zmon_aws_agent_replicas: "1"
+zmon_redis_replicas: "1"
+zmon_scheduler_replicas: "1"
+zmon_worker_replicas: "4"
 {{end}}
