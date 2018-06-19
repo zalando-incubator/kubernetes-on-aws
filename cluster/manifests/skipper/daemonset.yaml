@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.10.13
+    version: v0.10.26
     component: ingress
 spec:
   selector:
@@ -18,29 +18,22 @@ spec:
       name: skipper-ingress
       labels:
         application: skipper-ingress
-        version: v0.10.13
+        version: v0.10.26
         component: ingress
       annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/role
-                operator: NotIn
-                values:
-                - master
+      priorityClassName: system-node-critical
       tolerations:
-      - key: CriticalAddonsOnly
+      - key: dedicated
         operator: Exists
+      nodeSelector:
+        kubernetes.io/role: worker
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.13
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.26
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -49,6 +42,7 @@ spec:
           - "skipper"
           - "-kubernetes"
           - "-kubernetes-in-cluster"
+          - "-kubernetes-path-mode=path-prefix"
           - "-address=:9999"
           - "-proxy-preserve-host"
           - "-serve-host-metrics"

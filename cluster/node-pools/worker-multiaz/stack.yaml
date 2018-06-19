@@ -14,7 +14,12 @@ Conditions:
         - ""
 
 Resources:
-  AutoScalingGroup:
+{{ with $data := . }}
+{{ with $azCount := azCount $data.Values.subnets }}
+{{ range $az, $subnets := $data.Values.subnets }}
+{{ if ne $az "*" }}
+{{ with $azID := azID $az }}
+  AutoScalingGroup{{$azID}}:
     CreationPolicy:
       ResourceSignal:
         Count: '0'
@@ -23,12 +28,12 @@ Resources:
       HealthCheckGracePeriod: 300
       HealthCheckType: EC2
       LaunchConfigurationName: !Ref AutoScalingConfig
-      MinSize: '{{ .NodePool.MinSize }}'
-      MaxSize: '{{ .NodePool.MaxSize }}'
+      MinSize: '{{ asgSize $data.NodePool.MinSize $azCount }}'
+      MaxSize: '{{ asgSize $data.NodePool.MaxSize $azCount }}'
       Tags:
       - Key: Name
         PropagateAtLaunch: true
-        Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
+        Value: "{{ $data.NodePool.Name }} ({{ $data.Cluster.ID }})"
       - Key: k8s.io/role/node
         PropagateAtLaunch: true
         Value: worker
@@ -43,25 +48,37 @@ Resources:
         Value: worker
       - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/node-pool
         PropagateAtLaunch: true
-        Value: {{ .NodePool.Name }}
+        Value: {{ $data.NodePool.Name }}
       - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
         PropagateAtLaunch: true
         Value: ready
-{{- if index .NodePool.ConfigItems "taints"}}
-  {{- range split .NodePool.ConfigItems.taints ","}}
+{{- if index $data.NodePool.ConfigItems "taints"}}
+  {{- range split $data.NodePool.ConfigItems.taints ","}}
     {{- $taint := split . "="}}
       - Key: k8s.io/cluster-autoscaler/node-template/taint/{{index $taint 0}}
         PropagateAtLaunch: true
         Value: {{index $taint 1}}
   {{- end}}
 {{end}}
-      - Key: 'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}'
+      - Key: 'zalando.de/cluster-local-id/{{ $data.Cluster.LocalID }}'
         PropagateAtLaunch: true
         Value: owned
-{{ with $subnets := index .Values.subnets "*" }}
       VPCZoneIdentifier: !Split [",", "{{$subnets}}"]
-{{ end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
+  AutoscalingLifecycleHook{{$azID}}:
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup{{$azID}}
+      LifecycleHookName: "kube-node-ready-lifecycle-hook"
+      DefaultResult: CONTINUE
+      HeartbeatTimeout: '600'
+      LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
+    Type: 'AWS::AutoScaling::LifecycleHook'
+{{ end }}
+{{ end }}
+{{ end }}
+{{ end }}
+{{ end }}
+
   AutoScalingConfig:
     Properties:
       AssociatePublicIpAddress: true
@@ -92,11 +109,3 @@ Resources:
       Roles:
       - !ImportValue '{{ .Cluster.ID }}:worker-iam-role'
     Type: 'AWS::IAM::InstanceProfile'
-  AutoscalingLifecycleHook:
-    Properties:
-      AutoScalingGroupName: !Ref AutoScalingGroup
-      LifecycleHookName: "kube-node-ready-lifecycle-hook"
-      DefaultResult: CONTINUE
-      HeartbeatTimeout: '600'
-      LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
-    Type: 'AWS::AutoScaling::LifecycleHook'
