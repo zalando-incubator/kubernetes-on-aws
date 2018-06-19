@@ -1,3 +1,4 @@
+{{ if eq .ConfigItems.logging_agent_enabled "true" }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -5,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: logging-agent
-    version: v0.17
+    version: v0.19
     component: logging
 spec:
   selector:
@@ -18,16 +19,15 @@ spec:
       name: logging-agent
       labels:
         application: logging-agent
-        version: v0.17
+        version: v0.19
         component: logging
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
+      priorityClassName: system-node-critical
       tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: node-role.kubernetes.io/master
+      - operator: Exists
         effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
       initContainers:
       - name: init-scalyr-config
         image: registry.opensource.zalan.do/stups/alpine:3.7.0-1
@@ -76,7 +76,7 @@ spec:
           mountPath: /mnt/scalyr-checkpoint
       containers:
       - name: log-watcher
-        image: registry.opensource.zalan.do/eagleeye/kubernetes-log-watcher:0.17
+        image: registry.opensource.zalan.do/eagleeye/kubernetes-log-watcher:0.19
         env:
         - name: CLUSTER_NODE_NAME
           valueFrom:
@@ -183,3 +183,4 @@ spec:
       - name: scalyr-logs
         hostPath:
           path: /var/log/scalyr-agent
+{{ end }}
