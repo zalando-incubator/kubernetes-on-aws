@@ -17,14 +17,13 @@ spec:
       labels:
         application: kube2iam
         version: master-6
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
+      priorityClassName: system-node-critical
       tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - key: node-role.kubernetes.io/master
+      - operator: Exists
         effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
       hostNetwork: true
       containers:
       # kube2iam 0.9.0 with these patchs https://github.com/jtblin/kube2iam/pull/108, https://github.com/jtblin/kube2iam/pull/130
