@@ -131,7 +131,7 @@ systemd:
 
       [Service]
       Environment=KUBELET_IMAGE_TAG=v1.10.5
-      Environment=KUBELET_IMAGE_URL=docker://gcr.io/google-containers/hyperkube-amd64
+      Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
       Environment="RKT_RUN_ARGS=--insecure-options=image \
       --uuid-file-save=/var/run/kubelet-pod.uuid \
       --volume dns,kind=host,source=/etc/resolv.conf \
@@ -334,7 +334,7 @@ storage:
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
           --net=host \
-          docker://gcr.io/google-containers/hyperkube-amd64:v1.10.5 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.10.5 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           label node "$(hostname)" \
@@ -347,7 +347,7 @@ storage:
           --net=host \
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
-          docker://gcr.io/google-containers/hyperkube-amd64:v1.10.5 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.10.5 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain "$(hostname)" \
