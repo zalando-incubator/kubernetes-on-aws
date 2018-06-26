@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: internal-dns
+  namespace: kube-system
+  labels:
+    application: internal-dns
+    version: v0.5.2
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      application: internal-dns
+  template:
+    metadata:
+      labels:
+        application: internal-dns
+        version: v0.5.2
+      annotations:
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
+    spec:
+      priorityClassName: system-cluster-critical
+      containers:
+      - name: internal-dns
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.2
+        args:
+        - --source=service
+        - --domain-filter=cluster.local.
+        - --fqdn-template={{`{{.Name}}.{{.Namespace}}.svc.cluster.local.`}}
+        - --publish-internal-services
+        - --provider=aws
+        - --aws-zone-type=private
+        - --registry=txt
+        - --txt-owner-id={{`{{ .Region }}:{{ .LocalID }}:internal`}}
+        - --log-level=debug
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 25m
+            memory: 20Mi
+        securityContext:
+          # see https://github.com/kubernetes-incubator/internal-dns/issues/595
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1000
