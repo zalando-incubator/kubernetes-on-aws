@@ -171,7 +171,7 @@ systemd:
       --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
       --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
       --cloud-provider=aws \
-      --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true \
+      --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
       --system-reserved=cpu=100m,memory=164Mi \
       --kube-reserved=cpu=100m,memory=282Mi
       ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
@@ -313,7 +313,7 @@ storage:
             - --authorization-mode=Webhook
             - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
             - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true,ExpandPersistentVolumes=true,CustomResourceSubresources=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,ExpandPersistentVolumes=true,CustomResourceSubresources=true
             - --anonymous-auth=false
             {{ if or (eq .Cluster.Environment "production") (index .Cluster.ConfigItems "audittrail_url") }}
             - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
@@ -481,7 +481,7 @@ storage:
             - --root-ca-file=/etc/kubernetes/ssl/ca.pem
             - --cloud-provider=aws
             - --cloud-config=/etc/kubernetes/cloud-config.ini
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true,ExpandPersistentVolumes=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,ExpandPersistentVolumes=true
             - --horizontal-pod-autoscaler-use-rest-clients=true
             - --use-service-account-credentials=true
             - --v=4
@@ -547,7 +547,7 @@ storage:
             - scheduler
             - --master=http://127.0.0.1:8080
             - --leader-elect=true
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
             resources:
               requests:
                 cpu: 100m
