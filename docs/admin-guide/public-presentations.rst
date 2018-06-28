@@ -7,7 +7,7 @@ Public Presentations
 * `KubeCon Copenhagen 2018: Continuously Deliver your Kubernetes Infrastructure <https://www.youtube.com/watch?v=1xHmCrd8Qn8>`_
 * `Zalando Dortmund Meetup: Kubernetes Deployments: A “Hands-Off” Approach <https://www.youtube.com/watch?v=e0DruWvY-ME>`_
 * `(Agiles) IT Change-, Release- and Deployment Management: Continuous Delivery to Kubernetes – Deployment Interfaces <https://www.slideshare.net/LotharSchulz1/continuous-delivery-to-kubernetes-deployment-interfaces>`_
-* `KubeCon Austin 2017: Kubernetes on AWS: Practichttps://www.slideshare.net/LotharSchulz1/continuous-delivery-to-kubernetes-deployment-interfaceses & Opinions <https://www.youtube.com/watch?v=gegaGA7Ek9E>`_
+* `KubeCon Austin 2017: Kubernetes on AWS: Practices & Opinions <https://www.youtube.com/watch?v=gegaGA7Ek9E>`_
 * `AWS re:invent 2017: Mastering Kubernetes on AWS <https://www.youtube.com/watch?v=w34txLmpEuM>`_
 * `Kubernetes on AWS at Zalando - First Kubernetes & CNCF meetup in Finland <https://www.youtube.com/watch?time_continue=4&v=H92nfJt3ymo>`_
 * `Large Scale Kubernetes on AWS at Europe's Leading Online Fashion Platform - AWS Tech Community Days Cologne <https://www.slideshare.net/HenningJacobs/large-scale-kubernetes-on-aws-at-europes-leading-online-fashion-platform-aws-tech-community-days-cologne>`_
