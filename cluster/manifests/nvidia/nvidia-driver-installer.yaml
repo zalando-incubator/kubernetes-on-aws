@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-driver-installer
+  namespace: kube-system
+  labels:
+    application: nvidia-driver-installer
+  annotations:
+    scheduler.alpha.kubernetes.io/critical-pod: ''
+spec:
+  selector:
+    matchLabels:
+      application: nvidia-driver-installer
+  template:
+    metadata:
+      labels:
+        application: nvidia-driver-installer
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      tolerations:
+      - effect: NoSchedule
+        key: dedicated
+        value: gpu
+      nodeSelector:
+        kubernetes.io/node-pool: worker-gpu
+      priorityClassName: system-node-critical
+      hostNetwork: true
+      hostPID: true
+      volumes:
+      - name: dev
+        hostPath:
+          path: /dev
+      - name: nvidia-install-dir-host
+        hostPath:
+          path: /opt/nvidia
+      - name: root-mount
+        hostPath:
+          path: /
+      initContainers:
+      - image: "shelmangroup/coreos-nvidia-driver-installer:latest"
+        name: nvidia-driver-installer
+        resources:
+          requests:
+            cpu: 0.15
+        securityContext:
+          privileged: true
+        env:
+          - name: NVIDIA_INSTALL_DIR_HOST
+            value: /opt/nvidia
+          - name: NVIDIA_INSTALL_DIR_CONTAINER
+            value: /usr/local/nvidia
+          - name: ROOT_MOUNT_DIR
+            value: /root
+          - name: NVIDIA_DRIVER_VERSION
+            value: "396.26"
+        volumeMounts:
+        - name: nvidia-install-dir-host
+          mountPath: /usr/local/nvidia
+        - name: dev
+          mountPath: /dev
+        - name: root-mount
+          mountPath: /root
+      containers:
+      - image: "gcr.io/google-containers/pause:2.0"
+        name: pause
