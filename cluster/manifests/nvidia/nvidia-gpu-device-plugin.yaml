@@ -1,3 +1,7 @@
+# based on:
+#
+#   https://github.com/kubernetes/kubernetes/blob/master/cluster/addons/device-plugins/nvidia-gpu/daemonset.yaml
+#
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -5,8 +9,10 @@ metadata:
   namespace: kube-system
   labels:
     application: nvidia-gpu-device-plugin
-    addonmanager.kubernetes.io/mode: Reconcile
+    version: cb2bdea5eb507a9577ce11ff058a2dfa84f54263
 spec:
+  updateStrategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       application: nvidia-gpu-device-plugin
@@ -14,18 +20,16 @@ spec:
     metadata:
       labels:
         application: nvidia-gpu-device-plugin
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
+        version: cb2bdea5eb507a9577ce11ff058a2dfa84f54263
     spec:
       tolerations:
-      - effect: NoSchedule
-        key: dedicated
-        value: gpu
+      - operator: Exists
+        effect: NoExecute
+      - operator: Exists
+        effect: NoSchedule
       nodeSelector:
         kubernetes.io/node-pool: worker-gpu
       priorityClassName: system-node-critical
-      hostNetwork: true
-      hostPID: true
       volumes:
       - name: device-plugin
         hostPath:
@@ -34,9 +38,12 @@ spec:
         hostPath:
           path: /dev
       containers:
-      - image: "k8s.gcr.io/nvidia-gpu-device-plugin@sha256:0842734032018be107fa2490c98156992911e3e1f2a21e059ff0105b07dd8e9e"
-        command: ["/usr/bin/nvidia-gpu-device-plugin", "-logtostderr", "-host-path=/opt/nvidia"]
-        name: nvidia-gpu-device-plugin
+      - name: nvidia-gpu-device-plugin
+        image: registry.opensource.zalan.do/teapot/nvidia-gpu-device-plugin:cb2bdea5eb507a9577ce11ff058a2dfa84f54263
+        command:
+        - /usr/bin/nvidia-gpu-device-plugin
+        - -host-path=/opt/nvidia
+        - -logtostderr
         resources:
           requests:
             cpu: 50m

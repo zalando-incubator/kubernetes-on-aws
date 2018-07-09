@@ -1,3 +1,7 @@
+# based on:
+#
+#   https://github.com/shelmangroup/coreos-gpu-installer/blob/master/daemonset.yaml
+#
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -5,9 +9,10 @@ metadata:
   namespace: kube-system
   labels:
     application: nvidia-driver-installer
-  annotations:
-    scheduler.alpha.kubernetes.io/critical-pod: ''
+    version: c117d39
 spec:
+  updateStrategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       application: nvidia-driver-installer
@@ -15,13 +20,12 @@ spec:
     metadata:
       labels:
         application: nvidia-driver-installer
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
+        version: c117d39
     spec:
       tolerations:
-      - effect: NoSchedule
-        key: dedicated
-        value: gpu
+      - key: nvidia.com/gpu
+        effect: NoSchedule
+        operator: Exists
       nodeSelector:
         kubernetes.io/node-pool: worker-gpu
       priorityClassName: system-node-critical
@@ -38,29 +42,29 @@ spec:
         hostPath:
           path: /
       initContainers:
-      - image: "shelmangroup/coreos-nvidia-driver-installer:latest"
-        name: nvidia-driver-installer
+      - name: nvidia-driver-installer
+        image: registry.opensource.zalan.do/teapot/coreos-nvidia-driver-installer:c117d39
         resources:
           requests:
             cpu: 0.15
         securityContext:
           privileged: true
         env:
-          - name: NVIDIA_INSTALL_DIR_HOST
-            value: /opt/nvidia
-          - name: NVIDIA_INSTALL_DIR_CONTAINER
-            value: /usr/local/nvidia
-          - name: ROOT_MOUNT_DIR
-            value: /root
-          - name: NVIDIA_DRIVER_VERSION
-            value: "396.26"
+        - name: NVIDIA_INSTALL_DIR_HOST
+          value: /opt/nvidia
+        - name: NVIDIA_INSTALL_DIR_CONTAINER
+          value: /usr/local/nvidia
+        - name: ROOT_MOUNT_DIR
+          value: /rootfs
+        - name: NVIDIA_DRIVER_VERSION
+          value: "396.26"
         volumeMounts:
         - name: nvidia-install-dir-host
           mountPath: /usr/local/nvidia
         - name: dev
           mountPath: /dev
         - name: root-mount
-          mountPath: /root
+          mountPath: /rootfs
       containers:
-      - image: "gcr.io/google-containers/pause:2.0"
+      - image: registry.opensource.zalan.do/teapot/pause-amd64:3.1
         name: pause
