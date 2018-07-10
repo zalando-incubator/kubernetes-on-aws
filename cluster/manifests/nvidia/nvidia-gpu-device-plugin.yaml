@@ -27,8 +27,13 @@ spec:
         effect: NoExecute
       - operator: Exists
         effect: NoSchedule
-      nodeSelector:
-        kubernetes.io/node-pool: worker-gpu
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: zalando.org/nvidia-gpu
+                operator: Exists
       priorityClassName: system-node-critical
       volumes:
       - name: device-plugin

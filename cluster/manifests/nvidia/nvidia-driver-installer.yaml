@@ -26,8 +26,13 @@ spec:
       - key: nvidia.com/gpu
         effect: NoSchedule
         operator: Exists
-      nodeSelector:
-        kubernetes.io/node-pool: worker-gpu
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: zalando.org/nvidia-gpu
+                operator: Exists
       priorityClassName: system-node-critical
       hostNetwork: true
       hostPID: true
