@@ -159,7 +159,7 @@ systemd:
       --register-node \
       --allow-privileged \
       --node-labels=kubernetes.io/role=worker \
-      --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }} \
+      --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
       --node-labels={{ .Values.node_labels }} \
       --cluster-dns=${PRIVATE_EC2_IPV4},10.3.0.11 \
       --cluster-domain=cluster.local \
