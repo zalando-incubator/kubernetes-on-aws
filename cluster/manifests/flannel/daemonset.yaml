@@ -84,6 +84,25 @@ spec:
           mountPath: /etc/kube-flannel/
         - name: run
           mountPath: /run
+      - args:
+        - -c
+        - /tc-flannel.sh
+        command:
+        - /bin/bash
+        image: registry.opensource.zalan.do/teapot/flannel-tc:v0.0.2
+        name: flannel-tc
+        resources:
+          requests:
+            cpu: 25m
+            memory: 25Mi
+        securityContext:
+          privileged: true
+        stdin: true
+        volumeMounts:
+        - mountPath: /run
+          name: run
+        - mountPath: /lib/tc
+          name: lib-tc
       hostNetwork: true
       tolerations:
       - operator: Exists
@@ -100,3 +119,7 @@ spec:
       - name: run
         hostPath:
           path: /run
+      - hostPath:
+          path: /lib/tc
+          type: ""
+        name: lib-tc
