@@ -10,6 +10,13 @@ autoscaling_buffer_pods: "1"
 autoscaling_buffer_pods: "0"
 {{end}}
 
+# tokeninfo
+{{if eq .Environment "production"}}
+tokeninfo_url: "https://info.services.auth.zalando.com/oauth2/tokeninfo"
+{{else}}
+tokeninfo_url: "https://sandbox.identity.zalando.com/oauth2/tokeninfo"
+{{end}}
+
 # Monitoring settings
 {{if eq .Environment "e2e"}}
 logging_agent_enabled: "false"
