@@ -162,7 +162,7 @@ systemd:
       --register-with-taints=node-role.kubernetes.io/master=:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}} \
       --allow-privileged \
       --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
-      --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }} \
+      --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
       --node-labels={{ .Values.node_labels }} \
       --pod-manifest-path=/etc/kubernetes/manifests \
       --cluster-dns=${PRIVATE_EC2_IPV4},10.3.0.11 \
@@ -172,6 +172,7 @@ systemd:
       --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
       --cloud-provider=aws \
       --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true \
+      --pod-infra-container-image=registry.opensource.zalan.do/teapot/pause-amd64:3.1 \
       --system-reserved=cpu=100m,memory=164Mi \
       --kube-reserved=cpu=100m,memory=282Mi
       ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
@@ -302,7 +303,7 @@ storage:
             - --allow-privileged=true
             - --service-cluster-ip-range=10.3.0.0/16
             - --secure-port=443
-            - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,PersistentVolumeClaimResize
+            - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,PersistentVolumeClaimResize,ExtendedResourceToleration
             - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
             - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
             - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
