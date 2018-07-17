@@ -160,6 +160,7 @@ systemd:
       --allow-privileged \
       --node-labels=kubernetes.io/role=worker \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
+      --node-labels=spot={{if .Values.spot_price ne ""}}true{{else}}false{{end}} \
       --node-labels={{ .Values.node_labels }} \
       --cluster-dns=${PRIVATE_EC2_IPV4},10.3.0.11 \
       --cluster-domain=cluster.local \
