@@ -32,6 +32,10 @@ Resources:
     Properties:
       LaunchTemplateName: '{{.Cluster.LocalID}}-master'
       LaunchTemplateData:
+{{ if .Values.supports_t2_unlimited }}
+        CreditSpecification:
+          CpuCredits: unlimited
+{{ end }}
         NetworkInterfaces:
         - DeviceIndex: 0
           AssociatePublicIpAddress: true
