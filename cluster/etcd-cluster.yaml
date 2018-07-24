@@ -46,6 +46,9 @@ SenzaInfo:
       Default: "t2.medium"
   - EtcdS3Backup:
       Description: AWS S3 Bucket to backup ETCD to
+  - NetworkCIDR:
+      Description: Network CIDR used for the Security Group configuration.
+      Default: "172.31.0.0/16"
   StackName: etcd-cluster
 
 Outputs:
@@ -67,15 +70,15 @@ Resources:
       - IpProtocol: tcp
         FromPort: 22
         ToPort: 22
-        CidrIp: 172.16.0.0/12
+        CidrIp: "{{Arguments.NetworkCIDR}}"
       - IpProtocol: tcp
         FromPort: 2381
         ToPort: 2381
-        CidrIp: 172.16.0.0/12
+        CidrIp: "{{Arguments.NetworkCIDR}}"
       - IpProtocol: tcp
         FromPort: 9100
         ToPort: 9100
-        CidrIp: 172.16.0.0/12
+        CidrIp: "{{Arguments.NetworkCIDR}}"
   EtcdIngressMembers:
     Type: "AWS::EC2::SecurityGroupIngress"
     Properties:
