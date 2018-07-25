@@ -303,7 +303,7 @@ storage:
             - --allow-privileged=true
             - --service-cluster-ip-range=10.3.0.0/16
             - --secure-port=443
-            - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,PersistentVolumeClaimResize,ExtendedResourceToleration
+            - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,ExtendedResourceToleration
             - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
             - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
             - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
@@ -314,7 +314,7 @@ storage:
             - --authorization-mode=Webhook
             - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
             - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,ExpandPersistentVolumes=true,CustomResourceSubresources=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
             - --anonymous-auth=false
             {{ if or (eq .Cluster.Environment "production") (index .Cluster.ConfigItems "audittrail_url") }}
             - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
@@ -482,7 +482,7 @@ storage:
             - --root-ca-file=/etc/kubernetes/ssl/ca.pem
             - --cloud-provider=aws
             - --cloud-config=/etc/kubernetes/cloud-config.ini
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,ExpandPersistentVolumes=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
             - --horizontal-pod-autoscaler-use-rest-clients=true
             - --use-service-account-credentials=true
             - --allocate-node-cidrs=true
