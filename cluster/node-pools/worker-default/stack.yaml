@@ -47,6 +47,14 @@ Resources:
       - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
         PropagateAtLaunch: true
         Value: ready
+{{- if index .NodePool.ConfigItems "labels"}}
+  {{- range split .NodePool.ConfigItems.labels ","}}
+    {{- $label := split . "="}}
+      - Key: k8s.io/cluster-autoscaler/node-template/label/{{index $label 0}}
+        PropagateAtLaunch: true
+        Value: {{index $label 1}}
+  {{- end}}
+{{end}}
 {{- if index .NodePool.ConfigItems "taints"}}
   {{- range split .NodePool.ConfigItems.taints ","}}
     {{- $taint := split . "="}}
