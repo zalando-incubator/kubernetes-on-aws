@@ -95,6 +95,10 @@ data:
     - job_name: 'kubelet-cadvisor'
       kubernetes_sd_configs:
       - role: node
+      metric_relabel_configs:
+      - source_labels: [__name__]
+        action: keep
+        regex: '(container_cpu_cfs_throttled_seconds_total|container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_network_receive_bytes_total|container_network_transmit_bytes_total)'
       relabel_configs:
       - source_labels: [__meta_kubernetes_node_address_InternalIP]
         target_label: __address__
