@@ -40,3 +40,12 @@ zmon_redis_replicas: "1"
 zmon_scheduler_replicas: "1"
 zmon_worker_replicas: "4"
 {{end}}
+
+# Kubernetes Downscaler (for non-production clusters)
+{{if eq .Environment "test"}}
+downscaler_default_uptime: "Mon-Fri 07:30-20:30 CET"
+{{else if eq .Environment "playground"}}
+downscaler_default_uptime: "Mon-Fri 07:30-20:30 CET"
+{{else}}
+downscaler_default_uptime: "always"
+{{end}}

@@ -1,0 +1,40 @@
+{{ if neq .Environment "production" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-downscaler
+  namespace: kube-system
+  labels:
+    application: kube-downscaler
+    version: v0.2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: kube-downscaler
+  template:
+    metadata:
+      labels:
+        application: kube-downscaler
+        version: v0.2
+    spec:
+      containers:
+      - name: downscaler
+        # see https://github.com/hjacobs/kube-downscaler/releases
+        image: hjacobs/kube-downscaler:0.2
+        args:
+          # run every 3 minutes
+          - --interval=180
+          - --exclude-namespaces=kube-system,visibility
+          - "--default-uptime={{ .ConfigItems.downscaler_default_uptime }}"
+        resources:
+          limits:
+            memory: 100Mi
+          requests:
+            cpu: 5m
+            memory: 50Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+{{ end }}
