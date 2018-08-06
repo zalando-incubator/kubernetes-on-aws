@@ -198,6 +198,24 @@ systemd:
       [Install]
       WantedBy=multi-user.target
 
+{{if eq .NodePool.DiscountStrategy "spot_max_price"}}
+  - name: spot-termination-handler.service
+    enable: true
+    contents: |
+      [Unit]
+      Description=poll for AWS Spot termination signal and force node shutdown
+      After=network.target
+
+      [Service]
+      Type=simple
+      Restart=on-failure
+      RestartSec=5
+      ExecStart=/opt/bin/spot-termination-handler
+
+      [Install]
+      WantedBy=multi-user.target
+{{end}}
+
 storage:
   files:
   - filesystem: root
@@ -356,6 +374,29 @@ storage:
           --ignore-daemonsets \
           --delete-local-data \
           --force
+
+{{if eq .NodePool.DiscountStrategy "spot_max_price"}}
+  - filesystem: root
+    path: /opt/bin/spot-termination-handler
+    mode: 0755
+    contents:
+      inline: |
+        #!/bin/bash
+        set -euo pipefail
+
+        AZ="$(curl -s --max-time 5 --fail http://169.254.169.254/latest/meta-data/placement/availability-zone)"
+        TYPE="$(curl -s --max-time 5 --fail http://169.254.169.254/latest/meta-data/instance-type)"
+        ID="$(curl -s --max-time 5 --fail http://169.254.169.254/latest/meta-data/instance-id)"
+
+        while true; do
+            if curl -s --max-time 5 --fail http://169.254.169.254/latest/meta-data/spot/termination-time; then
+                echo "[az=$AZ type=$TYPE id=$ID] received spot termination notice"
+                shutdown now
+                exit 0
+            fi
+            sleep 5
+        done
+{{end}}
 
   # this should only be enabled for instances with instance storage. e.g.
   # i3.large instances
