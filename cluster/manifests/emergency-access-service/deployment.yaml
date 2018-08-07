@@ -24,6 +24,17 @@ spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: system
       containers:
+      - name: apiserver-proxy
+        image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
+        command:
+        - /bin/sh
+        args:
+        - -c
+        - "exec /etcd-proxy --listen-address 127.0.0.1:333 $KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT"
+        resources:
+          requests:
+            cpu: 25m
+            memory: 25Mi
       - name: emergency-access-service
         image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-58"
         args:
@@ -40,6 +51,10 @@ spec:
         - --jira-url=https://techjira.zalando.net
         - --environment={{ .Environment }}
         env:
+        - name: KUBERNETES_SERVICE_HOST
+          value: "127.0.0.1"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "333"
         - name: CONFIGMAP_NAMESPACE
           valueFrom:
             fieldRef:
