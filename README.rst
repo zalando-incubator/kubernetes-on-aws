@@ -10,10 +10,10 @@ This repo contains configuration templates to provision Kubernetes_ clusters on 
 However, **we are open to ideas from the community at large about potentially turning this idea into a project that provides universal/general value to others**.
 Please contact us via our Issues Tracker with your thoughts and suggestions.
 
-Configuration in this repository initially was based on kube-aws_, but now depends on three components which are not yet open sourced:
+Configuration in this repository initially was based on kube-aws_, but now depends on three components which aren't all yet open sourced:
 
 * Cluster Registry to keep desired cluster states (e.g. used config channel and version)
-* Cluster Lifecycle Manager to provision the cluster's Cloud Formation stack and apply Kubernetes manifests for system components
+* `Cluster Lifecycle Manager`_ to provision the cluster's Cloud Formation stack and apply Kubernetes manifests for system components
 * Authnz Webhook to validate OAuth tokens and authorize access
 
 We plan to release all required components to the community in Q2/2018.
@@ -71,6 +71,7 @@ Directory Structure
 .. _kube-aws: https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/aws
 .. _Senza Cloud Formation tool: https://github.com/zalando-stups/senza
 .. _OAuth Token Info: http://planb.readthedocs.io/en/latest/intro.html#token-info
+.. _Cluster Lifecycle Manager: https://github.com/zalando-incubator/cluster-lifecycle-manager
 .. _External DNS: https://github.com/kubernetes-incubator/external-dns
 .. _kube2iam: https://github.com/jtblin/kube2iam
 .. _kube-aws-autoscaler: https://github.com/hjacobs/kube-aws-autoscaler
