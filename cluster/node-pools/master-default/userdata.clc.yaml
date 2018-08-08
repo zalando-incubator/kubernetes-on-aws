@@ -868,6 +868,14 @@ storage:
           --table nat \
           --to-destination ${PRIVATE_EC2_IPV4}:8181
 
+  {{if not (index .Cluster.ConfigItems "upstream_docker")}}
+  - filesystem: root
+    path: /etc/coreos/docker-1.12
+    mode: 0644
+    contents:
+      inline: yes
+  {{end}}
+
   - filesystem: root
     path: /home/core/.toolboxrc
     mode: 0644
