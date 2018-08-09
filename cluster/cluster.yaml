@@ -148,17 +148,6 @@ Resources:
           Value: owned
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
-  MasterSecurityGroupIngressFromFlannelToMaster:
-    Properties:
-      FromPort: 8472
-      GroupId: !Ref MasterSecurityGroup
-      IpProtocol: udp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 8472
-    Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromLoadBalancer:
     Properties:
       FromPort: 443
@@ -247,6 +236,22 @@ Resources:
               - Action: 's3:GetObject'
                 Effect: Allow
                 Resource: 'arn:aws:s3:::*'
+              - Effect: Allow
+                Action:
+                - ec2:CreateNetworkInterface
+                - ec2:AttachNetworkInterface
+                - ec2:DeleteNetworkInterface
+                - ec2:DetachNetworkInterface
+                - ec2:DescribeNetworkInterfaces
+                - ec2:DescribeInstances
+                - ec2:ModifyNetworkInterfaceAttribute
+                - ec2:AssignPrivateIpAddresses
+                - ec2:UnassignPrivateIpAddresses
+                Resource:
+                - "*"
+              - Effect: Allow
+                Action: ec2:CreateTags
+                Resource: arn:aws:ec2:*:*:network-interface/*
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-worker"
@@ -296,17 +301,6 @@ Resources:
           Value: owned
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
-  WorkerSecurityGroupIngressFromMasterToFlannel:
-    Properties:
-      FromPort: 8472
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: udp
-      SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 8472
-    Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromMasterToKubelet:
     Properties:
       FromPort: 10250
@@ -328,17 +322,6 @@ Resources:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
       ToPort: 4194
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToFlannel:
-    Properties:
-      FromPort: 8472
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: udp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToWorkerKubeletReadOnly:
     Properties:
