@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: kube-cluster-autoscaler
   namespace: kube-system
@@ -7,10 +7,11 @@ metadata:
     application: kube-cluster-autoscaler
     version: v1.2.2-teapot14
 spec:
-  replicas: 2
   selector:
     matchLabels:
       application: kube-cluster-autoscaler
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
