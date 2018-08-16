@@ -26,15 +26,16 @@ git merge "${BASE}"
 
 set +e
 git push origin "${BASE}-to-${HEAD}"
-if [[ ! $? -eq 0 ]]
+if [ $? -eq 0 ]
 then
+	set -e
+else
 	echo "Remote branch ${BASE}-to-${HEAD} might already exist,
 	please check if there is already an open PR, if not delete the
 	remote branch:
 	git push origin :${BASE}-to-${HEAD}"
 	exit 1
 fi
-set -e
 
 CHANGELOG="$(git log --pretty='* **%w(1000000,0,2)%b**%n  <sup>%w(10000000,0,2)%s</sup>' "${HEAD}".."${BASE}" --grep=Merge | sed 's/\*\*\*\*/(No message)/')"
 MSG="$(printf "%s-to-%s\n\n%s" "${BASE}" "${HEAD}" "${CHANGELOG}")"
