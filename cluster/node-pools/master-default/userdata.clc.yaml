@@ -484,10 +484,14 @@ storage:
             - --cloud-provider=aws
             - --cloud-config=/etc/kubernetes/cloud-config.ini
             - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true,ExpandPersistentVolumes=true
-            - --horizontal-pod-autoscaler-use-rest-clients=true
             - --use-service-account-credentials=true
             - --allocate-node-cidrs=true
             - --cluster-cidr=10.2.0.0/16
+            - --horizontal-pod-autoscaler-use-rest-clients=true
+            - --horizontal-pod-autoscaler-downscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_downscale_delay }}
+            - --horizontal-pod-autoscaler-sync-period={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_sync_period }}
+            - --horizontal-pod-autoscaler-tolerance={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_tolerance }}
+            - --horizontal-pod-autoscaler-upscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_upscale_delay }}
             resources:
               requests:
                 cpu: 100m
