@@ -55,3 +55,18 @@ horizontal_pod_autoscaler_downscale_delay: "5m0s"
 horizontal_pod_autoscaler_sync_period: "30s"
 horizontal_pod_autoscaler_tolerance: "0.1"
 horizontal_pod_autoscaler_upscale_delay: "3m0s"
+
+# Cluster update settings
+{{if eq .Environment "production"}}
+drain_grace_period: "6h"
+drain_min_pod_lifetime: "72h"
+drain_min_healthy_sibling_lifetime: "1h"
+drain_min_unhealthy_sibling_lifetime: "6h"
+drain_force_evict_interval: "5m"
+{{else}}
+drain_grace_period: "2h"
+drain_min_pod_lifetime: "8h"
+drain_min_healthy_sibling_lifetime: "1h"
+drain_min_unhealthy_sibling_lifetime: "1h"
+drain_force_evict_interval: "5m"
+{{end}}
