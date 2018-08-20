@@ -75,3 +75,16 @@ drain_force_evict_interval: "5m"
 {{if ne .Environment "production"}}
 etcd_instance_count: "3"
 {{end}}
+
+# Resource requests and limits
+{{if eq .Environment "production"}}
+logging_agent_log_watcher_requests_cpu: "50m"
+logging_agent_log_watcher_requests_memory: "50Mi"
+logging_agent_log_watcher_limits_cpu: "200m"
+logging_agent_log_watcher_limits_memory: "200Mi"
+{{else}}
+logging_agent_log_watcher_requests_cpu: "25m"
+logging_agent_log_watcher_requests_memory: "25Mi"
+logging_agent_log_watcher_limits_cpu: "100m"
+logging_agent_log_watcher_limits_memory: "100Mi"
+{{end}}
