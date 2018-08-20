@@ -174,6 +174,9 @@ systemd:
       --cloud-provider=aws \
       --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
       --pod-infra-container-image=registry.opensource.zalan.do/teapot/pause-amd64:3.1 \
+{{- if index .Cluster.ConfigItems "disable_cfs_quota" }}
+      --cpu-cfs-quota=false \
+{{- end }}
       --system-reserved=cpu=100m,memory=164Mi \
       --kube-reserved=cpu=100m,memory=282Mi
       ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
@@ -488,6 +491,11 @@ storage:
             - --use-service-account-credentials=true
             - --allocate-node-cidrs=true
             - --cluster-cidr=10.2.0.0/16
+            - --horizontal-pod-autoscaler-use-rest-clients=true
+            - --horizontal-pod-autoscaler-downscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_downscale_delay }}
+            - --horizontal-pod-autoscaler-sync-period={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_sync_period }}
+            - --horizontal-pod-autoscaler-tolerance={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_tolerance }}
+            - --horizontal-pod-autoscaler-upscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_upscale_delay }}
             resources:
               requests:
                 cpu: 100m
