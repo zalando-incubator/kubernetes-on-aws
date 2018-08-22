@@ -22,7 +22,7 @@ set +e
 git branch -D "${BASE}-to-${HEAD}"
 set -e
 git checkout -b "${BASE}-to-${HEAD}"
-git merge "${BASE}"
+git merge --signoff "${BASE}"
 
 set +e
 git push origin "${BASE}-to-${HEAD}"
