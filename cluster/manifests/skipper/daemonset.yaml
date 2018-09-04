@@ -38,6 +38,12 @@ spec:
         - name: ingress-port
           containerPort: 9999
           hostPort: 9999
+        env:
+        - name: LIGHTSTEP_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: skipper-ingress
+              key: lightstep-token
         args:
           - "-kubernetes"
           - "-kubernetes-in-cluster"
@@ -54,7 +60,7 @@ spec:
           - "-enable-connection-metrics"
           - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
           - "-histogram-metric-buckets=.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
-          - "-opentracing=lightstep component-name=skipper-ingress token={{ .ConfigItems.lightstep_token }} collector=tracing.zmon.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
+          - "-opentracing=tracing_lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.zmon.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
         resources:
           limits:
             memory: 200Mi
