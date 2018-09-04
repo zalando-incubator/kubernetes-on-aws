@@ -33,13 +33,12 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.59
+        image: registry.opensource.zalan.do/pathfinder/skipper-lightstep:v0.10.68
         ports:
         - name: ingress-port
           containerPort: 9999
           hostPort: 9999
         args:
-          - "skipper"
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
@@ -55,6 +54,7 @@ spec:
           - "-enable-connection-metrics"
           - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
           - "-histogram-metric-buckets=.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
+          - "-plugindir=/plugins"
         resources:
           limits:
             memory: 200Mi
