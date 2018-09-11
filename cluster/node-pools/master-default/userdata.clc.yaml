@@ -173,7 +173,7 @@ systemd:
       --cloud-provider=aws \
       --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
       --pod-infra-container-image=registry.opensource.zalan.do/teapot/pause-amd64:3.1 \
-{{- if index .Cluster.ConfigItems "disable_cfs_quota" }}
+{{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
       --cpu-cfs-quota=false \
 {{- end }}
       --system-reserved=cpu=100m,memory=164Mi \
