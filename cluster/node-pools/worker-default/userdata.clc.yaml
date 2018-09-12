@@ -14,6 +14,7 @@ passwd:
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqAikaHsZWMuJvKZphZPZG0fnKMvVCRfBAbIS6e0Y+YqM0PfsWgB5e4f5TrbisQHdKopbfZVwYIaV/NegEuinrYPKC7t2ese/HjxgjHR95zHOcDP19Cbo+xeyH8zbRd9K3iRSyCUSMNRw5NL6zN8JOSl12m8QWQA4hTjFTmt870fIT4RLxu9qGlbQipUm57E/SotsNC41MQ/PsLQzOAviKrkS1rei2vzRHzAcjz1Z7GT5oH+dFVUC66kKa0XWDvq+VtkRVoLvS2chrIPCgESeeZAyOKyiOoyJxFFFiMVK48MWDBBIYTIsHE0qs/RwBi9+8lQGiHK5Rpk2djcloO0c7 sandor.szuecs@zalando.de'
     - 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINkh52Py+FvH9CRLDQg0gzvjEIrzwA45yMTXTsl2BVxV alexey.ermakov@zalando.de'
     - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDakbukcXXmMyyxw5h3J8h41FK8b8/qjiX/u4BP+qQpQ3x/1VkppIpzHwLcjVThNspwOKKU6QwcaLKpJ+g3mYWdilsl7eFT5hAiIXq4OLe9XynXp1ZEduqKk7tgvjClo7OzuSdEfKtWkD35hzXWigVfJFZhSN9bLdiEzuIEHf0jEo2mUXADgAzSwbaTcVUreH/IR6SAYBVh4XgKoQjOmWrizJguYNk+DgBW6/R+5JQi8YYPSuevbcEKXXm1ZfOudNv2ebOL1rA4I+VDe2xW+JVwKIvAN3odt0zOH2NFr1kFU1GTVyD2ZYtyTNNae9a+mQ2Ltw5pzKjA4zjFctQrrI+yPEIcf64mccumIoRMjWozPB801VbZqUVyG0XhzHW7RNmTmmLsNa/STtYI9Xaqfrz2n3PgpYJ/bB42l4Ez9Oblh9rZU0aisr6risLh5XXgCa9NezMjTczMHJE0jVINgeIMsCleNF0HrkF26Uo1MJO1pOMZOGZzXSksB79TmTwjRdvQT/uvSAElBrthmRgj82pDsRdNoipp6VMx54m2KbvRyq79PVZP69NGWdAhJBw1SV0447kT1tuoqDTUskS4es1GoSu5sqtW4eF4Q6oju8+01l3ygLKmPPTbFVRcs6bBvHjnB3RYwgai5z0U16rsh7LKUwhYsRiar3lmrhVvoc95sw== muhammad.muaaz.saleem@zalando.de'
+    - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQD7rIzckgwfYqM7dvF4nxMh7f8IQ2ydAPX9dq1EbXEL5HpcdSBstXGyUxPpdTHnFxPJH2KTtkLGbvIISEQJoVonK2QdtgGQWwSNDxquLaaFgDJLO9vF2I3QVeO7U9c8sRHjBnpxHExsadsWGcNgRf34KfNAMA/94cEKk7cXZzCBiFdD5TXHmN5SfHlU/Yv7Rw16dT3MXkHAtCPWTYn8eongopygur5v9rOX+0Ntku6sJM5ZxvfVBdLl053vUfmfhLskZ1OSMFMphXpsoaavR3JCf285orONs173bAedmU8YrIjNmZgaik5oT7ITX2zn/cy2I2ZzM6ITjvcwb512+ideGkbWQgiGLSXm94OxPPjXTy+ugGoPY1WBdri1SRoRaaCNF2oJlIcecBJr69eDE3UmJta+bsKZkLyd+6sWZ9xYMRJOtbK1ABNEIowEz1djqMDIQFHRjQcgeZ8N2Zi3cDm71q1TXyLzTwZ2knH0GSwP6lNZaf2jJxMUq/Df9J9M/Keeujp5vQul6PyM/k9/5mWjWGe1aDcMBcx1icV5eyeFyQS36gh066RveIPmcs88aNomf/XdFTbHgWvNq83GienPRhdmeL/Vo46hgtBB7k6SQzR2JA3hpn3rKkVdGSWLRUXSMJO9JnLjpNo6uDwC8Zdnqwcq9SDk2tUBf3gJdnRGEw== arjun.naik@zalando.de'
 systemd:
   units:
   # disable automatic updates
@@ -130,7 +131,7 @@ systemd:
       After=docker.service dockercfg.service meta-data-iptables.service private-ipv4.service
 
       [Service]
-      Environment=KUBELET_IMAGE_TAG=v1.10.5
+      Environment=KUBELET_IMAGE_TAG=v1.11.3
       Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
       Environment="RKT_RUN_ARGS=--insecure-options=image \
       --uuid-file-save=/var/run/kubelet-pod.uuid \
@@ -157,7 +158,6 @@ systemd:
       --container-runtime=docker \
       --register-with-taints={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}} \
       --register-node \
-      --allow-privileged \
       --node-labels=kubernetes.io/role=worker \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
       --node-labels=aws.amazon.com/spot={{if ne .Values.spot_price ""}}true{{else}}false{{end}} \
@@ -170,9 +170,9 @@ systemd:
       --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
       --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
       --cloud-provider=aws \
-      --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true \
+      --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
       --pod-infra-container-image=registry.opensource.zalan.do/teapot/pause-amd64:3.1 \
-{{- if index .Cluster.ConfigItems "disable_cfs_quota" }}
+{{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
       --cpu-cfs-quota=false \
 {{- end }}
       --system-reserved=cpu=100m,memory=164Mi \
@@ -311,7 +311,7 @@ storage:
           --table nat \
           --to-destination ${PRIVATE_EC2_IPV4}:8181
 
-  {{if not (index .Cluster.ConfigItems "upstream_docker")}}
+  {{if index .Cluster.ConfigItems "docker-1.12"}}
   - filesystem: root
     path: /etc/coreos/docker-1.12
     mode: 0644
@@ -357,7 +357,7 @@ storage:
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.10.5 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.11.3 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           label node "$(hostname)" \
@@ -370,7 +370,7 @@ storage:
           --net=host \
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.10.5 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.11.3 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain "$(hostname)" \
