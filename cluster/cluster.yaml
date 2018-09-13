@@ -136,6 +136,10 @@ Resources:
           IpProtocol: tcp
           ToPort: 30080
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 4194
+          IpProtocol: tcp
+          ToPort: 4194
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 9054
           IpProtocol: tcp
           ToPort: 9054
@@ -641,6 +645,9 @@ Resources:
         - PolicyDocument:
             Statement:
               - Action: 'acm:ListCertificates'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'acm:GetCertificate'
                 Effect: Allow
                 Resource: '*'
               - Action: 'acm:DescribeCertificate'
