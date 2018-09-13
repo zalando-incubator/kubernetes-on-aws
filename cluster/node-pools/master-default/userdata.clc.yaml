@@ -160,6 +160,7 @@ systemd:
       --cni-conf-dir=/etc/kubernetes/cni/net.d \
       --network-plugin=cni \
       --container-runtime=docker \
+      --cadvisor-port=4194 \
       --register-with-taints=node-role.kubernetes.io/master=:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}} \
       --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
