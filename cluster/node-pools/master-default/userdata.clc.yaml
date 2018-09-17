@@ -140,7 +140,7 @@ systemd:
       After=docker.service dockercfg.service meta-data-iptables.service private-ipv4.service
 
       [Service]
-      Environment=KUBELET_IMAGE_TAG=v1.10.5
+      Environment=KUBELET_IMAGE_TAG=v1.11.3
       Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
       Environment="RKT_RUN_ARGS=--insecure-options=image \
       --uuid-file-save=/var/run/kubelet-pod.uuid \
@@ -160,8 +160,8 @@ systemd:
       --cni-conf-dir=/etc/kubernetes/cni/net.d \
       --network-plugin=cni \
       --container-runtime=docker \
+      --cadvisor-port=4194 \
       --register-with-taints=node-role.kubernetes.io/master=:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}} \
-      --allow-privileged \
       --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
       --node-labels={{ .Values.node_labels }} \
@@ -172,9 +172,9 @@ systemd:
       --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
       --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
       --cloud-provider=aws \
-      --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true \
+      --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
       --pod-infra-container-image=registry.opensource.zalan.do/teapot/pause-amd64:3.1 \
-{{- if index .Cluster.ConfigItems "disable_cfs_quota" }}
+{{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
       --cpu-cfs-quota=false \
 {{- end }}
       --system-reserved=cpu=100m,memory=164Mi \
@@ -281,7 +281,7 @@ storage:
           namespace: kube-system
           labels:
             application: kube-apiserver
-            version: v1.10.5
+            version: v1.11.3
           annotations:
             kubernetes-log-watcher/scalyr-parser: |
               [{"container": "webhook", "parser": "json-structured-log"}]
@@ -293,7 +293,7 @@ storage:
           hostNetwork: true
           containers:
           - name: kube-apiserver
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.10.5
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.11.3
             command:
             - /hyperkube
             - apiserver
@@ -307,7 +307,7 @@ storage:
             - --allow-privileged=true
             - --service-cluster-ip-range=10.3.0.0/16
             - --secure-port=443
-            - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,PersistentVolumeClaimResize,ExtendedResourceToleration
+            - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,ExtendedResourceToleration
             - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
             - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
             - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
@@ -318,7 +318,7 @@ storage:
             - --authorization-mode=Webhook
             - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
             - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true,ExpandPersistentVolumes=true,CustomResourceSubresources=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
             - --anonymous-auth=false
             {{ if or (eq .Cluster.Environment "production") (index .Cluster.ConfigItems "audittrail_url") }}
             - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
@@ -468,7 +468,7 @@ storage:
           namespace: kube-system
           labels:
             application: kube-controller-manager
-            version: v1.10.5
+            version: v1.11.3
         spec:
           priorityClassName: system-node-critical
           tolerations:
@@ -476,7 +476,7 @@ storage:
             effect: NoSchedule
           containers:
           - name: kube-controller-manager
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.10.5
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.11.3
             command:
             - /hyperkube
             - controller-manager
@@ -486,7 +486,8 @@ storage:
             - --root-ca-file=/etc/kubernetes/ssl/ca.pem
             - --cloud-provider=aws
             - --cloud-config=/etc/kubernetes/cloud-config.ini
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true,ExpandPersistentVolumes=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
+            - --horizontal-pod-autoscaler-use-rest-clients=true
             - --use-service-account-credentials=true
             - --allocate-node-cidrs=true
             - --cluster-cidr=10.2.0.0/16
@@ -540,7 +541,7 @@ storage:
           namespace: kube-system
           labels:
             application: kube-scheduler
-            version: v1.10.5
+            version: v1.11.3
         spec:
           priorityClassName: system-node-critical
           tolerations:
@@ -549,13 +550,13 @@ storage:
           hostNetwork: true
           containers:
           - name: kube-scheduler
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.10.5
+            image: registry.opensource.zalan.do/teapot/hyperkube:v1.11.3
             command:
             - /hyperkube
             - scheduler
             - --master=http://127.0.0.1:8080
             - --leader-elect=true
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true,PodPriority=true
+            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
             env:
             - name: KUBE_MAX_PD_VOLS
               value: "26"
@@ -876,7 +877,7 @@ storage:
           --table nat \
           --to-destination ${PRIVATE_EC2_IPV4}:8181
 
-  {{if not (index .Cluster.ConfigItems "upstream_docker")}}
+  {{if index .Cluster.ConfigItems "docker-1.12"}}
   - filesystem: root
     path: /etc/coreos/docker-1.12
     mode: 0644
@@ -922,7 +923,7 @@ storage:
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.10.5 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.11.3 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           label node "$(hostname)" \
@@ -935,7 +936,7 @@ storage:
           --net=host \
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.10.5 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.11.3 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain "$(hostname)" \
