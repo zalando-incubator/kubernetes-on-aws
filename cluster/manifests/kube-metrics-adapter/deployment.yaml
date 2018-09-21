@@ -1,0 +1,37 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    application: kube-metrics-adapter
+  name: kube-metrics-adapter
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: kube-metrics-adapter
+  template:
+    metadata:
+      annotations:
+        iam.amazonaws.com/role: {{.Cluster.LocalID}}-kube-metrics-adapter
+      labels:
+        application: kube-metrics-adapter
+    spec:
+      containers:
+      - args:
+        - --prometheus-server=http://prometheus.kube-system.svc.cluster.local
+        - --skipper-ingress-metrics
+        - --aws-external-metrics
+        env:
+        - name: AWS_REGION
+          value: eu-central-1
+        image: registry.opensource.zalan.do/teapot/kube-metrics-adapter:master-2
+        imagePullPolicy: Always
+        name: kube-metrics-adapter
+        resources:
+          limits:
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
