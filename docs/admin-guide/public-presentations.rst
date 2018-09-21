@@ -4,6 +4,7 @@
 Public Presentations
 ====================
 
+* `Container Camp UK 2018: Running Kubernetes in Production: A Million Ways to Crash Your Cluster <https://www.slideshare.net/try_except_/running-kubernetes-in-production-a-million-ways-to-crash-your-cluster-container-camp-uk>`_
 * `KubeCon Copenhagen 2018: Continuously Deliver your Kubernetes Infrastructure <https://www.youtube.com/watch?v=1xHmCrd8Qn8>`_
 * `Zalando Dortmund Meetup: Kubernetes Deployments: A “Hands-Off” Approach <https://www.youtube.com/watch?v=e0DruWvY-ME>`_
 * `(Agiles) IT Change-, Release- and Deployment Management: Continuous Delivery to Kubernetes – Deployment Interfaces <https://www.slideshare.net/LotharSchulz1/continuous-delivery-to-kubernetes-deployment-interfaces>`_
