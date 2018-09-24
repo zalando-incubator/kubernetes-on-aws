@@ -214,7 +214,12 @@ systemd:
       Type=simple
       Restart=on-failure
       RestartSec=5
-      ExecStart=/opt/bin/spot-termination-handler
+      ExecStart=/usr/bin/rkt run --insecure-options=image \
+        --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
+        --mount volume=dns,target=/etc/resolv.conf \
+        --net=host \
+        docker://registry.opensource.zalan.do/teapot/spot-termination-handler:master-1
+      ExecStopPost=-/opt/bin/spot-shutdown
 
       [Install]
       WantedBy=multi-user.target
@@ -381,25 +386,16 @@ storage:
 
 {{if eq .NodePool.DiscountStrategy "spot_max_price"}}
   - filesystem: root
-    path: /opt/bin/spot-termination-handler
+    path: /opt/bin/spot-shutdown
     mode: 0755
     contents:
       inline: |
         #!/bin/bash
         set -euo pipefail
 
-        AZ="$(curl -s --max-time 5 --fail http://169.254.169.254/latest/meta-data/placement/availability-zone)"
-        TYPE="$(curl -s --max-time 5 --fail http://169.254.169.254/latest/meta-data/instance-type)"
-        ID="$(curl -s --max-time 5 --fail http://169.254.169.254/latest/meta-data/instance-id)"
-
-        while true; do
-            if curl -s --max-time 5 --fail http://169.254.169.254/latest/meta-data/spot/termination-time; then
-                echo "[az=$AZ type=$TYPE id=$ID] received spot termination notice"
-                shutdown now
-                exit 0
-            fi
-            sleep 5
-        done
+        if [[ $EXIT_CODE -ne 0 ]]; then
+          shutdown now
+        fi
 {{end}}
 
   # this should only be enabled for instances with instance storage. e.g.
