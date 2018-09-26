@@ -52,6 +52,9 @@ Resources:
       - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
         PropagateAtLaunch: true
         Value: ready
+      - Key: k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot
+        PropagateAtLaunch: true
+        Value: {{if eq $data.NodePool.DiscountStrategy "spot_max_price"}}true{{else}}false{{end}}
 {{- if index $data.NodePool.ConfigItems "labels"}}
   {{- range split $data.NodePool.ConfigItems.labels ","}}
     {{- $label := split . "="}}
