@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
   name: skipper-ingress
   namespace: kube-system
@@ -8,11 +8,10 @@ metadata:
     version: v0.10.121-1-g5f1806d
     component: ingress
 spec:
+  replicas: 3
   selector:
     matchLabels:
       application: skipper-ingress
-  updateStrategy:
-    type: RollingUpdate
   template:
     metadata:
       name: skipper-ingress
