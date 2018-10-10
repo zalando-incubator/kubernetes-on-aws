@@ -10,10 +10,10 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: skipper-ingress
-  minReplicas: 3
-  maxReplicas: 10
+  minReplicas: {{ .ConfigItems.skipper_ingress_min_replicas }}
+  maxReplicas: {{ .ConfigItems.skipper_ingress_max_replicas }}
   metrics:
   - type: Resource
     resource:
       name: cpu
-      targetAverageUtilization: 50
+      targetAverageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_cpu }}
