@@ -78,6 +78,13 @@ drain_min_unhealthy_sibling_lifetime: "1h"
 drain_force_evict_interval: "5m"
 {{end}}
 
+# Teapot webhook: gradual rollout
+{{if eq .Environment "e2e"}}
+teapot_webhook_enabled: "true"
+{{else}}
+teapot_webhook_enabled: "false"
+{{end}}
+
 # etcd cluster
 {{if ne .Environment "production"}}
 etcd_instance_count: "3"
