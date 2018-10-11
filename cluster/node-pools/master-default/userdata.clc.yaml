@@ -361,6 +361,29 @@ storage:
               requests:
                 cpu: 100m
                 memory: 200Mi
+          - image: registry.opensource.zalan.do/teapot/admission-controller:master-4
+            name: admission-controller
+            readinessProbe:
+              httpGet:
+                scheme: HTTPS
+                path: /healthz
+                port: 8085
+              initialDelaySeconds: 5
+              timeoutSeconds: 5
+            resources:
+              requests:
+                cpu: 50m
+                memory: 50Mi
+            args:
+              - --address=:8085
+              - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
+              - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
+            ports:
+              - containerPort: 8085
+            volumeMounts:
+              - mountPath: /etc/kubernetes/ssl
+                name: ssl-certs-kubernetes
+                readOnly: true
           - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.4.4
             name: webhook
             ports:
@@ -828,6 +851,20 @@ storage:
     contents:
       remote:
         url: "data:text/plain;base64,{{ .Cluster.ConfigItems.proxy_client_key }}"
+
+  - filesystem: root
+    path: /etc/kubernetes/ssl/admission-controller.pem
+    mode: 0664
+    contents:
+      remote:
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.admission_controller_cert }}"
+
+  - filesystem: root
+    path: /etc/kubernetes/ssl/admission-controller-key.pem
+    mode: 0664
+    contents:
+      remote:
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.admission_controller_key }}"
 
   - filesystem: root
     path: /etc/kubernetes/cloud-config.ini
