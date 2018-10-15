@@ -34,7 +34,7 @@ Features
 * Route53 DNS integration via `External DNS`_
 * AWS IAM integration via kube2iam_
 * Standard components are installed: kube-dns, heapster, dashboard, node exporter, kube-state-metrics
-* Webhook authentication and authorization (roles "ReadOnly", "ProductionDeployer", "Manual", "Emergency", "Administrator")
+* Webhook authentication and authorization (roles "ReadOnly", "PowerUser", "Manual", "Emergency", "Administrator")
 * Emergency Access via internal emergency-access-service, that grant roles "Manual" and "Emergency" with 4 eyes principle and audit logging
 * Log shipping via Scalyr
 * Full Ingress support with ALB/SSL via kube-ingress-aws-controller_ and HTTP routing via skipper_
