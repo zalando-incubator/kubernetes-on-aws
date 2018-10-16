@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: external-dns
-    version: v0.5.7
+    version: v0.5.8
 spec:
   strategy:
     type: Recreate
@@ -16,23 +16,20 @@ spec:
     metadata:
       labels:
         application: external-dns
-        version: v0.5.7
+        version: v0.5.8
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
     spec:
       priorityClassName: system-cluster-critical
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.7
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.8
         args:
         - --source=service
         - --source=ingress
         - --provider=aws
-        - --policy=upsert-only
         - --registry=txt
         - --txt-owner-id={{ .Region }}:{{ .LocalID }}
-        - --compatibility=mate # remove when we switched to the new annotations
-        - --log-level=debug # remove when we are sure external-dns can be trusted
         resources:
           limits:
             cpu: 200m
