@@ -49,21 +49,23 @@ spec:
         - name: prometheus-node-exporter-volume
           mountPath: /prometheus-exporter-data
           readOnly: false
+      {{- if index .ConfigItems "enable_conntrack_log" }}
       - image: registry.opensource.zalan.do/teapot/prometheus-node-exporter-txt-exporter:v0.0.4
         name: prometheus-node-exporter-conntrack-exporter
         resources:
           limits:
             cpu: 10m
-            memory: 40Mi
+            memory: 100Mi
           requests:
             cpu: 10m
-            memory: 40Mi
+            memory: 100Mi
         securityContext:
           privileged: true
         volumeMounts:
         - name: prometheus-node-exporter-volume
           mountPath: /prometheus-exporter-data
           readOnly: false
+      {{- end }}
       hostNetwork: true
       hostPID: true
       volumes:
