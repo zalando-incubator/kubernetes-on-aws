@@ -1,11 +1,3 @@
-{{- define "version" -}}
-  {{- if index .ConfigItems "autoscaler_experimental" -}}
-    v1.3.1-teapot17
-  {{- else -}}
-    v1.3.1-teapot16
-  {{- end -}}
-{{- end -}}
-
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -13,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-cluster-autoscaler
-    version: {{template "version" .}}
+    version: v1.3.1-teapot18
 spec:
   selector:
     matchLabels:
@@ -24,7 +16,7 @@ spec:
     metadata:
       labels:
         application: kube-cluster-autoscaler
-        version: {{template "version" .}}
+        version: v1.3.1-teapot18
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
         config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
@@ -37,7 +29,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler-custom:{{template "version" .}}
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler-custom:v1.3.1-teapot18
         command:
           - ./cluster-autoscaler
           - --v=4
@@ -50,9 +42,7 @@ spec:
           - --skip-nodes-with-local-storage=false
           - --scale-up-cloud-provider-template=true
           - --balance-similar-node-groups
-{{- if index .ConfigItems "autoscaler_experimental"}}
           - --max-node-provision-time=10m
-{{- end}}
         resources:
           limits:
             cpu: 100m
