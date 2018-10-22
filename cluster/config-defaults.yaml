@@ -48,6 +48,9 @@ zmon_scheduler_replicas: "1"
 zmon_worker_replicas: "4"
 {{end}}
 
+metrics_service_cpu: "100m"
+metrics_service_mem: "200Mi"
+
 # Kubernetes Downscaler (for non-production clusters)
 {{if eq .Environment "test"}}
 downscaler_default_uptime: "Mon-Fri 07:30-20:30 CET"
@@ -76,6 +79,19 @@ drain_min_pod_lifetime: "8h"
 drain_min_healthy_sibling_lifetime: "1h"
 drain_min_unhealthy_sibling_lifetime: "1h"
 drain_force_evict_interval: "5m"
+{{end}}
+
+# Teapot webhook: gradual rollout
+teapot_admission_controller_default_cpu_request: "25m"
+teapot_admission_controller_default_memory_request: "100Mi"
+teapot_admission_controller_process_resources: "true"
+
+{{if eq .Environment "e2e"}}
+teapot_admission_controller_enabled: "true"
+teapot_admission_controller_ignore_namespaces: "^kube-system|(e2e-tests-(downward-api|kubectl|projected)-.*)$"
+{{else}}
+teapot_admission_controller_enabled: "false"
+teapot_admission_controller_ignore_namespaces: "^kube-system$"
 {{end}}
 
 # etcd cluster

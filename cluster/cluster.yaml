@@ -266,6 +266,13 @@ Resources:
           FromPort: 22
           IpProtocol: tcp
           ToPort: 22
+{{- if index .Cluster.ConfigItems "open_lightstep_collector_ports" }}
+        # Allow the OpenTracing NLB to target these ports on all workers.
+        - CidrIp: 0.0.0.0/0
+          FromPort: 30443
+          IpProtocol: tcp
+          ToPort: 30444
+{{- end }}
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 9999
           IpProtocol: tcp

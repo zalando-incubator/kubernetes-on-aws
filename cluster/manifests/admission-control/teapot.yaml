@@ -1,0 +1,29 @@
+{{ if eq .ConfigItems.teapot_admission_controller_enabled "true" }}
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: teapot-admission-controller
+  labels:
+    application: teapot-admission-controller
+webhooks:
+  - name: pod-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/pod"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    failurePolicy: Fail
+    rules:
+      - operations: [ "CREATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+  - name: storageclass-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/storageclass"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    failurePolicy: Fail
+    rules:
+      - operations: [ "CREATE" ]
+        apiGroups: ["storage.k8s.io"]
+        apiVersions: ["v1"]
+        resources: ["storageclasses"]
+{{ end }}
