@@ -5,7 +5,7 @@ metadata:
   namespace: "visibility"
   labels:
     application: "zmon-agent"
-    version: "0.1-a56-zv2"
+    version: "0.1-a57-zv2"
 spec:
   replicas: {{.ConfigItems.zmon_agent_replicas}}
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: "zmon-agent"
-        version: "0.1-a56-zv2"
+        version: "0.1-a57-zv2"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
     spec:
@@ -30,11 +30,11 @@ spec:
           - --once
         resources:
           limits:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 5m
+            memory: 20Mi
           requests:
-            cpu: 10m
-            memory: 10Mi
+            cpu: 5m
+            memory: 20Mi
 
         volumeMounts:
           - name: credentials
@@ -43,7 +43,7 @@ spec:
 
       containers:
         - name: zmon-agent
-          image: "pierone.stups.zalan.do/zmon/zmon-agent-core:0.1-a56-zv2"
+          image: "pierone.stups.zalan.do/zmon/zmon-agent-core:0.1-a57-zv2"
           resources:
             limits:
               cpu: 100m
@@ -100,11 +100,11 @@ spec:
             - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
           resources:
             limits:
-              cpu: 100m
-              memory: 100Mi
+              cpu: 5m
+              memory: 20Mi
             requests:
-              cpu: 10m
-              memory: 10Mi
+              cpu: 5m
+              memory: 20Mi
 
           volumeMounts:
             - name: credentials
