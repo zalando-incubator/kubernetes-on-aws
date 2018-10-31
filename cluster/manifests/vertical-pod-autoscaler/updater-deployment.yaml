@@ -6,6 +6,8 @@ metadata:
   namespace: kube-system
   labels:
     application: vpa-updater
+    version: master
+    component: vpa
 spec:
   replicas: 1
   selector:
@@ -15,11 +17,18 @@ spec:
     metadata:
       labels:
         application: vpa-updater
+        version: master
+        component: vpa
     spec:
       serviceAccountName: system
       containers:
       - name: updater
         image: pierone.stups.zalan.do/teapot/vpa-updater:366b393
+        args:
+          - ./updater
+          - --v=4
+          - --stderrthreshold=info
+          - --min-replicas=1
         resources:
           limits:
             memory: 1000Mi
