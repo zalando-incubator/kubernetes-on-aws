@@ -1,11 +1,16 @@
 {{ if eq .ConfigItems.vpa_enabled "true" }}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: vpa-updater
   namespace: kube-system
+  labels:
+    application: vpa-updater
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      application: vpa-updater
   template:
     metadata:
       labels:
@@ -15,7 +20,6 @@ spec:
       containers:
       - name: updater
         image: pierone.stups.zalan.do/teapot/vpa-updater:366b393
-        imagePullPolicy: Always
         resources:
           limits:
             memory: 1000Mi

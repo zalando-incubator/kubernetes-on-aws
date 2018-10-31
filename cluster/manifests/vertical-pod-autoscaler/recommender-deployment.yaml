@@ -1,11 +1,16 @@
 {{ if eq .ConfigItems.vpa_enabled "true" }}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: vpa-recommender
   namespace: kube-system
+  labels:
+    application: vpa-recommender
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      application: vpa-recommender
   template:
     metadata:
       labels:
@@ -15,7 +20,6 @@ spec:
       containers:
       - name: recommender
         image: registry.opensource.zalan.do/teapot/vpa-recommender:d4fc72e
-        imagePullPolicy: Always
         resources:
           limits:
             memory: 1000Mi

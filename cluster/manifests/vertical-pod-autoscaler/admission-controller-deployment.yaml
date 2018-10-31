@@ -1,11 +1,16 @@
 {{ if eq .ConfigItems.vpa_enabled "true" }}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: vpa-admission-controller
   namespace: kube-system
+  labels:
+    application: vpa-admission-controller
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      application: vpa-admission-controller
   template:
     metadata:
       labels:
@@ -15,7 +20,6 @@ spec:
       containers:
       - name: admission-controller
         image: pierone.stups.zalan.do/teapot/vpa-admission-controller:test1
-        imagePullPolicy: Always
         volumeMounts:
           - name: tls-certs
             mountPath: "/etc/tls-certs"
@@ -38,10 +42,13 @@ kind: Service
 metadata:
   name: vpa-webhook
   namespace: kube-system
+  labels:
+    application: vpa-admission-controller
 spec:
+  selector:
+    matchLabels:
+      application: vpa-admission-controller
   ports:
     - port: 443
       targetPort: 8000
-  selector:
-    app: vpa-admission-controller
 {{ end }}
