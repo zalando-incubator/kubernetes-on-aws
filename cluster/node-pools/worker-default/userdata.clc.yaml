@@ -20,10 +20,8 @@ systemd:
   - name: locksmithd.service
     mask: true
 
-  # this should only be enabled for instances with instance storage. e.g.
-  # i3.large instances
-  {{if index .NodePool.ConfigItems "instance_storage"}}
-  - name: data-disk0.mount
+{{if .Values.instance_info.NVMEInstanceStorage }}
+  - name: {{if index .NodePool.ConfigItems "instance_storage_mount_path"}}{{.NodePool.ConfigItems.instance_storage_mount_path | mountUnitName}}{{else}}var-lib-docker{{end}}.mount
     enable: true
     contents: |
       [Unit]
@@ -31,12 +29,12 @@ systemd:
 
       [Mount]
       What=/dev/nvme0n1
-      Where=/data/disk0
+      Where={{if index .NodePool.ConfigItems "instance_storage_mount_path"}}{{.NodePool.ConfigItems.instance_storage_mount_path}}{{else}}/var/lib/docker{{end}}
       Type=ext4
 
       [Install]
       WantedBy=local-fs.target
-  {{end}}
+{{end}}
 
   - name: set-hostname.service
     enable: true
@@ -395,13 +393,11 @@ storage:
         fi
 {{end}}
 
-  # this should only be enabled for instances with instance storage. e.g.
-  # i3.large instances
-  {{if index .NodePool.ConfigItems "instance_storage"}}
+{{if .Values.instance_info.NVMEInstanceStorage }}
   filesystems:
   - name: instance-storage
     mount:
       device: /dev/nvme0n1
       format: ext4
       wipe_filesystem: true
-  {{end}}
+{{end}}
