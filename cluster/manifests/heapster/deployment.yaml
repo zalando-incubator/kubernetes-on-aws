@@ -32,11 +32,11 @@ spec:
             timeoutSeconds: 5
           resources:
             limits:
-              cpu: 200m
+              cpu: 100m # don't remove unless nanny is disabled
               memory: 200Mi
             requests:
               cpu: 100m
-              memory: 25Mi
+              memory: 200Mi
           command:
             - /heapster
             - --source=kubernetes.summary_api:''
@@ -44,11 +44,10 @@ spec:
           name: heapster-nanny
           resources:
             limits:
-              cpu: 100m
-              memory: 50Mi
+              memory: 25Mi
             requests:
               cpu: 25m
-              memory: 10Mi
+              memory: 25Mi
           env:
             - name: MY_POD_NAME
               valueFrom:
