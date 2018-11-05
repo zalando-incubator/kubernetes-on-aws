@@ -316,9 +316,12 @@ storage:
             - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
             - --authentication-token-webhook-cache-ttl=10s
             - --cloud-provider=aws
-            - --authorization-mode=RBAC
-            # - --authorization-mode=Webhook
-            # - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
+            {{ if index .Cluster.ConfigItems "enable_rbac"}}
+            - --authorization-mode=Webhook,rbac
+            {{ else }}
+            - --authorization-mode=Webhook
+            {{ fi }}
+            - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
             - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
             - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
             - --anonymous-auth=false
