@@ -1,11 +1,13 @@
+{{ if eq .ConfigItems.vpa_enabled "true" }}
 apiVersion: poc.autoscaling.k8s.io/v1alpha1
 kind: VerticalPodAutoscaler
 metadata:
-  name: prometheus-vpa
+  name: metrics-server-vpa
   namespace: kube-system
 spec:
   selector:
     matchLabels:
-      application: prometheus
+      application: metrics-server
   updatePolicy:
-    updateMode: Auto
+    updateMode: "Auto"
+{{ end }}
