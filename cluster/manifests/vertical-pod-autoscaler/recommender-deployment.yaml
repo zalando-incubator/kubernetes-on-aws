@@ -1,0 +1,35 @@
+{{ if eq .ConfigItems.vpa_enabled "true" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpa-recommender
+  namespace: kube-system
+  labels:
+    application: vpa-recommender
+    version: patched-master-7
+    component: vpa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: vpa-recommender
+  template:
+    metadata:
+      labels:
+        application: vpa-recommender
+        version: patched-master-7
+        component: vpa
+    spec:
+      serviceAccountName: system
+      containers:
+      - name: recommender
+        image: registry.opensource.zalan.do/teapot/vpa-recommender:patched-master-7
+        resources:
+          limits:
+            memory: 500Mi
+          requests:
+            cpu: 200m
+            memory: 500Mi
+        ports:
+        - containerPort: 8080
+{{ end }}
