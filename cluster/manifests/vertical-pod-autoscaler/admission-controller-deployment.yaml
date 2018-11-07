@@ -1,0 +1,73 @@
+{{ if eq .ConfigItems.vpa_enabled "true" }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vpa-tls-certs
+  namespace: kube-system
+  labels:
+    component: vpa
+type: Opaque
+data:
+  caKey.pem: ""
+  caCert.pem: "{{ .ConfigItems.ca_cert_decompressed }}"
+  serverCert.pem: "{{ .ConfigItems.vpa_webhook_cert }}"
+  serverKey.pem: "{{ .ConfigItems.vpa_webhook_key }}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpa-admission-controller
+  namespace: kube-system
+  labels:
+    application: vpa-admission-controller
+    version: patched-master-7
+    component: vpa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: vpa-admission-controller
+  template:
+    metadata:
+      labels:
+        application: vpa-admission-controller
+        version: patched-master-7
+        component: vpa
+    spec:
+      serviceAccountName: system
+      containers:
+      - name: admission-controller
+        image: registry.opensource.zalan.do/teapot/vpa-admission-controller:patched-master-7
+        volumeMounts:
+          - name: tls-certs
+            mountPath: "/etc/tls-certs"
+            readOnly: true
+        resources:
+          limits:
+            memory: 500Mi
+          requests:
+            cpu: 200m
+            memory: 500Mi
+        ports:
+        - containerPort: 8000
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: vpa-tls-certs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vpa-webhook
+  namespace: kube-system
+  labels:
+    application: vpa-admission-controller
+    version: master
+    component: vpa
+spec:
+  selector:
+    application: vpa-admission-controller
+  ports:
+    - port: 443
+      targetPort: 8000
+{{ end }}

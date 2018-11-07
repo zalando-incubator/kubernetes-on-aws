@@ -1,0 +1,40 @@
+{{ if eq .ConfigItems.vpa_enabled "true" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpa-updater
+  namespace: kube-system
+  labels:
+    application: vpa-updater
+    version: patched-master-7
+    component: vpa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: vpa-updater
+  template:
+    metadata:
+      labels:
+        application: vpa-updater
+        version: patched-master-7
+        component: vpa
+    spec:
+      serviceAccountName: system
+      containers:
+      - name: updater
+        image: registry.opensource.zalan.do/teapot/vpa-updater:patched-master-7
+        args:
+          - ./updater
+          - --v=4
+          - --stderrthreshold=info
+          - --min-replicas=1
+        resources:
+          limits:
+            memory: 500Mi
+          requests:
+            cpu: 200m
+            memory: 500Mi
+        ports:
+        - containerPort: 8080
+{{ end }}
