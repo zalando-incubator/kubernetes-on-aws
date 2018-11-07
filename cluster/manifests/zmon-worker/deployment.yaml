@@ -7,7 +7,7 @@ metadata:
     application: zmon-worker
     version: "v201-zv247"
 spec:
-  replicas: {{if index .ConfigItems "zmon_worker_replicas"}}{{.ConfigItems.zmon_worker_replicas}}{{else}}4{{end}}
+  replicas: {{if index .ConfigItems "zmon_worker_replicas"}}{{.ConfigItems.zmon_worker_replicas}}{{else}}6{{end}}
   selector:
     matchLabels:
       application: zmon-worker
@@ -46,10 +46,10 @@ spec:
           resources:
             limits:
               cpu: {{if index .ConfigItems "zmon_worker_cpu"}}{{.ConfigItems.zmon_worker_cpu}}{{else}}500m{{end}}
-              memory: {{if index .ConfigItems "zmon_worker_mem"}}{{.ConfigItems.zmon_worker_mem}}{{else}}2Gi{{end}}
+              memory: {{if index .ConfigItems "zmon_worker_mem"}}{{.ConfigItems.zmon_worker_mem}}{{else}}4Gi{{end}}
             requests:
               cpu: {{if index .ConfigItems "zmon_worker_cpu"}}{{.ConfigItems.zmon_worker_cpu}}{{else}}500m{{end}}
-              memory: {{if index .ConfigItems "zmon_worker_mem"}}{{.ConfigItems.zmon_worker_mem}}{{else}}2Gi{{end}}
+              memory: {{if index .ConfigItems "zmon_worker_mem"}}{{.ConfigItems.zmon_worker_mem}}{{else}}4Gi{{end}}
 
           ports:
             - containerPort: 8080
@@ -63,7 +63,7 @@ spec:
 
           env:
             - name: WORKER_ZMON_QUEUES
-              value: zmon:queue:default/{{if index .ConfigItems "zmon_worker_count"}}{{.ConfigItems.zmon_worker_count}}{{else}}24{{end}}
+              value: zmon:queue:default/{{if index .ConfigItems "zmon_worker_count"}}{{.ConfigItems.zmon_worker_count}}{{else}}16{{end}}
             - name: WORKER_REDIS_SERVERS
               value: zmon-redis:6379
             - name: WORKER_PLUGIN_SCALYR_READ_KEY
