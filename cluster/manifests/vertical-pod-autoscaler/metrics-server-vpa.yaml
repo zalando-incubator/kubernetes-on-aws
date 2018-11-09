@@ -1,0 +1,13 @@
+{{ if eq .ConfigItems.vpa_enabled "true" }}
+apiVersion: autoscaling.k8s.io/v1beta1
+kind: VerticalPodAutoscaler
+metadata:
+  name: metrics-server-vpa
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      application: metrics-server
+  updatePolicy:
+    updateMode: "Auto"
+{{ end }}
