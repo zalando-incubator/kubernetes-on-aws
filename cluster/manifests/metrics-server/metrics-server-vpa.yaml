@@ -10,4 +10,11 @@ spec:
       application: metrics-server
   updatePolicy:
     updateMode: "Auto"
+  {{if index .ConfigItems "prometheus_mem"}}
+  resourcePolicy:
+    containerPolicies:
+    - containerName: metrics-server
+      maxAllowed:
+        memory: {{.ConfigItems.prometheus_mem}}
+  {{end}}
 {{ end }}

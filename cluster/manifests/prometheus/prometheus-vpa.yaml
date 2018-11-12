@@ -10,4 +10,11 @@ spec:
       application: prometheus
   updatePolicy:
     updateMode: Auto
+  {{if index .ConfigItems "prometheus_mem"}}
+  resourcePolicy:
+    containerPolicies:
+    - containerName: prometheus
+      maxAllowed:
+        memory: {{.ConfigItems.prometheus_mem}}
+  {{end}}
 {{ end }}
