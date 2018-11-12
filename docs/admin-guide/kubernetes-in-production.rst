@@ -35,9 +35,13 @@ Only one Kubernetes cluster is created per AWS account. We create separated AWS 
 We always create two AWS Auto Scaling Groups (ASGs, “node pools”) right now:
 
 * One master ASG with always two nodes which run the API server and controller-manager
-* One worker ASG with 2 to N nodes to run application pods
+* Three worker ASGs with each 1 to N nodes to run application pods
 
-Both ASGs span multiple Availability Zones (AZ). The API server is exposed with TLS via a “classic” TCP/SSL Elastic Load Balancer (ELB).
+The master ASG spans multiple Availability Zones (AZ). The API server
+is exposed with TLS via a “classic” TCP/SSL Elastic Load Balancer (ELB).
+The worker ASG is split into one ASG for each AZ to have better
+cluster-autoscaler support for statefulsets. We provision on demand
+nodepools, like "highcpu", "highmem", "highio" or GPU nodes
 
 We use a custom built Cluster Registry REST service to manage our Kubernetes clusters. Another component (`Cluster Lifecycle Manager`_, CLM) is regularly polling the Cluster Registry and updating clusters to the desired state.
 The desired state is expressed with CloudFormation and Kubernetes manifests `stored in git`_.
@@ -70,17 +74,25 @@ There is no official way of implementing Ingress on AWS. We decided to create a 
 
 * SSL termination by ALB: convenient usage of ACM (free Amazon CA) and certificates upload to AWS IAM
 * Using the “new” ELBv2 Application Load Balancer
+* Cost efficiency by using SNI and create shared ALBs with up to 25 X509 certificates.
+* Support blue-green deployments with `Stackset Controller`_ and Skipper_
 
 .. image:: images/kube-aws-ingress-controller.svg
 
 We use Skipper_ as our HTTP proxy to route based on Host header and path. Skipper is running as a ``DaemonSet`` on all worker nodes for convenient AWS ASG integration (new nodes are automatically registered in the ALB's Target Group).
-Skipper directly comes with a Kubernetes data client to automatically update its routes periodically.
+Skipper_ directly comes with a Kubernetes data client to automatically update its routes periodically.
 
 `External DNS`_ is automatically configuring the Ingress hosts as DNS records in Route53 for us.
+
+`Stackset Controller`_ provides a more user friendly way of defining
+the default microservice objects: deployment, service, ingress. It
+allows to achieve automated blue-green deployments and get rid of many
+duplication you normally have to write in Kubernetes manifests.
 
 .. _Kube AWS Ingress Controller: https://github.com/zalando-incubator/kube-ingress-aws-controller
 .. _Skipper: https://github.com/zalando/skipper
 .. _External DNS: https://github.com/kubernetes-incubator/external-dns
+.. _Stackset Controller: https://github.com/zalando-incubator/stackset-controller
 
 Resources
 =========
@@ -101,6 +113,11 @@ Default resource requests and limits can be configured via the LimitRange_ resou
 
 The default limit for CPU is 3 cores as we discovered that this is a sweet spot for JVM apps to startup quickly.
 See `our LimitRange YAML manifest`_ for details.
+
+We stopped using CPU limits, because it slows down our workloads. We
+wrote a custom admission-controller to make sure that memory requests
+and limits are equal to reduce the risk of having unresponsive
+applications, because of a wrong configured container spec.
 
 We provide a `tiny script`_ and use the `Downwards API`_ to conveniently run JVM applications on Kubernetes without the need to manually set the maximum heap size. The container spec of a ``Deployment`` for some JVM app would look like this:
 
@@ -149,11 +166,12 @@ Keep-alive connections are the default when using connection pools. This means t
 
 Kubernetes’ default behavior is a blocker for seamless migration from our AWS/STUPS infrastructure to Kubernetes. In STUPS, single Docker containers run directly on EC2 instances. Graceful container termination is not needed as AWS automatically deregisters EC2 instances and drains connections from the ELB on instance termination. We therefore consider solving the graceful pod termination issue in Kubernetes on the infrastructure level. This would not require any application code changes by our users (application developers).
 
-For further reading on the topic, you can find a `blog post about graceful shutdown of node.js on Kubernetes`_ and a `small test app to see the pod termination behavior`_.
+For further reading on the topic, you can find a `blog post about graceful shutdown of node.js on Kubernetes`_, `skipper user documentation teardown strategies`_ about how to behave as a backend and a `small test app to see the pod termination behavior`_.
 
 .. _readinessProbe: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
 .. _blog post about graceful shutdown of node.js on Kubernetes: https://blog.risingstack.com/graceful-shutdown-node-js-kubernetes/
 .. _small test app to see the pod termination behavior: https://github.com/mikkeloscar/kube-sigterm-test
+.. _skipper user documentation teardown strategies: https://opensource.zalando.com/skipper/kubernetes/ingress-backends/
 
 Autoscaling
 ===========
@@ -161,9 +179,13 @@ Autoscaling
 Pod Autoscaling
 ---------------
 
-We are using the HorizontalPodAutoscaler_ resource to scale the number of deployment replicas. Pod autoscaling requires implementing graceful pod termination (see above) to downscale safely in all circumstances. We only used the CPU-based pod autoscaling until now.
+We are using the HorizontalPodAutoscaler_ resource to scale the number of deployment replicas. Pod autoscaling requires implementing graceful pod termination (see above) to downscale safely in all circumstances.
+We run `Kubernetes Metrics Server`_, combined with our `Kube Metrics Adapter`_ to support autoscaling based on number of SQS queue size, Skipper_ request per second or custom Prometheus query.
+Additionally we started to use vertical Pod autoscaling to run our Prometheus statefulsets more efficiently.
 
 .. _HorizontalPodAutoscaler: https://kubernetes.io/docs/user-guide/horizontal-pod-autoscaling/
+.. _Kubernetes Metrics Server: https://github.com/kubernetes-incubator/metrics-server
+.. _Kube Metrics Adapter: https://github.com/zalando-incubator/kube-metrics-adapter
 
 Node Autoscaling
 ----------------
@@ -183,6 +205,7 @@ Monitoring
 We use our `Open Source ZMON monitoring platform`_ to monitor all Kubernetes clusters.
 ZMON agent and workers are part of every Kubernetes cluster deployment. The agent automatically pushes both AWS and Kubernetes entities to the global ZMON data service.
 The `Prometheus Node Exporter`_ is deployed on every Kubernetes node (as a ``DaemonSet``) to expose system metrics such as disk space, memory and CPU to ZMON workers.
+Two Prometheus_ statefulsets are deployed in every cluster to scrape metrics from Skipper_, `Prometheus Node Exporter`_, Kubelet and Cadvisor.
 Another component `kube-state-metrics`_ is deployed in every cluster to expose cluster-level metrics such as number of waiting pods. ZMON workers also have access to the internal Kubernetes API server endpoint to build more complex checks. AWS resources can be monitored by using ZMON’s CloudWatch wrapper.
 We defined global ZMON checks for cluster health, e.g.:
 
@@ -195,6 +218,7 @@ We use `Kubernetes Operational View`_ for ad-hoc insights and troubleshooting.
 
 .. _Open Source ZMON monitoring platform: https://zmon.io/
 .. _Prometheus Node Exporter: https://github.com/prometheus/node_exporter
+.. _Prometheus: https://github.com/prometheus/prometheus
 .. _kube-state-metrics: https://github.com/kubernetes/kube-state-metrics
 
 
@@ -244,8 +268,9 @@ Luckily all data can be restored as long as at least one etcd node is alive.
 
 Knowing the criticality of the etcd cluster, we decided to use our existing, production-grade `STUPS etcd cluster`_ running on EC2 instances separate from Kubernetes.
 The STUPS etcd cluster registers all etcd nodes in Route53 DNS and we use etcd's DNS discovery feature to connect Kubernetes to the etcd nodes.
-The STUPS etcd cluster is deployed across availability zones (AZ) with five nodes in total. All etcd nodes run our own `STUPS Taupage AMI`_, which (similar to CoreOS) runs a Docker image specified via AWS user data (cloud-init).
+The STUPS etcd cluster is deployed across availability zones (AZ) with five nodes in total. All etcd nodes run our own `STUPS Taupage AMI`_, which (similar to CoreOS) runs a Docker image specified via AWS user data (cloud-init). Communication from worker nodes to etcd is denied with securitygroups in AWS.
 
+We run backups as hourly cronjob from the master nodes. We backup using etcd snapshots and upload to S3.
 
 .. _proprietary webhook: https://github.com/zalando-incubator/kubernetes-on-aws/blob/449f8f3bf5c60e0d319be538460ff91266337abc/cluster/userdata-master.yaml#L319
 .. _Kubernetes Operational View: https://github.com/hjacobs/kube-ops-view
