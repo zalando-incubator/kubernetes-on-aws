@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.10.112
+    version: v0.10.121
     component: ingress
 spec:
   selector:
@@ -18,7 +18,7 @@ spec:
       name: skipper-ingress
       labels:
         application: skipper-ingress
-        version: v0.10.112
+        version: v0.10.121
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -33,7 +33,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.112
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.121
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -51,6 +51,7 @@ spec:
           - "-kubernetes-path-mode=path-prefix"
           - "-address=:9999"
           - "-wait-first-route-load"
+          - "-enable-kubernetes-east-west"
           - "-proxy-preserve-host"
           - "-serve-host-metrics"
           - "-enable-ratelimits"
