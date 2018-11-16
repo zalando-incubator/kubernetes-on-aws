@@ -1084,6 +1084,21 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-kube-metrics-adapter"
     Type: 'AWS::IAM::Role'
+  AuditTrailBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: "zalando-audittrail-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
+      LifecycleConfiguration:
+        Rules:
+          - AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+            ExpirationInDays: 7
+            NoncurrentVersionExpirationInDays: 1
+            Prefix: ""
+            Status: Enabled
+      VersioningConfiguration:
+        Status: Suspended
 
 Outputs:
   MasterIAMRole:
