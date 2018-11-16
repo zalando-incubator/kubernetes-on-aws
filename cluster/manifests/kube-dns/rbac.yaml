@@ -1,5 +1,5 @@
-apiVersion: v1
 kind: ServiceAccount
+apiVersion: v1
 metadata:
   name: kube-dns
   namespace: kube-system
@@ -44,3 +44,21 @@ roleRef:
   kind: ClusterRole
   name: system:kube-dns-autoscaler
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:kube-dns
+  namespace: ""
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:kube-dns
+subjects:
+- kind: ServiceAccount
+  name: kube-dns
+  namespace: kube-system
