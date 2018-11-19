@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: emergency-access-service
-    version: master-61
+    version: master-64
 spec:
   replicas: 1
   selector:
@@ -16,10 +16,11 @@ spec:
     metadata:
       labels:
         application: emergency-access-service
-        version: master-61
+        version: master-64
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "emergency-access-service", "parser": "json-structured-log"}]
+        iam.amazonaws.com/role: {{.LocalID}}-emergency-access-service
     spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: system
@@ -38,7 +39,7 @@ spec:
           limits:
             memory: 25Mi
       - name: emergency-access-service
-        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-61"
+        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-64"
         args:
         - --insecure-http
         - --community={{ .Owner }}
@@ -52,6 +53,7 @@ spec:
         - --audittrail-url=https://audittrail.cloud.zalando.com
         - --jira-url=https://techjira.zalando.net
         - --environment={{ .Environment }}
+        - --s3-bucket-name=zalando-audittrail-{{accountID .InfrastructureAccount}}-{{.LocalID}}
         env:
         - name: KUBERNETES_SERVICE_HOST
           value: "127.0.0.1"
@@ -61,6 +63,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: AWS_REGION
+          value: {{.Region}}
         ports:
         - containerPort: 8080
         volumeMounts:
