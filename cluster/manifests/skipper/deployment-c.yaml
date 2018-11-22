@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: skipper-ingress
+  name: skipper-ingress-c
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.10.122
+    version: v0.10.121-1-g5f1806d
     component: ingress
 spec:
   selector:
@@ -13,37 +13,30 @@ spec:
       application: skipper-ingress
   template:
     metadata:
-      name: skipper-ingress
+      name: skipper-ingress-c
       labels:
         application: skipper-ingress
-        version: v0.10.122
+        version: v0.10.121-1-g5f1806d
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                - key: application
-                  operator: In
-                  values:
-                  - skipper-ingress
-              topologyKey: "kubernetes.io/hostname"
       priorityClassName: system-node-critical
       tolerations:
       - key: dedicated
         operator: Exists
       nodeSelector:
         kubernetes.io/role: worker
+        failure-domain.beta.kubernetes.io/zone: eu-central-1c
+      hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.122
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.121-1-g5f1806d
         ports:
         - name: ingress-port
           containerPort: 9999
+          hostPort: 9999
         env:
         - name: LIGHTSTEP_TOKEN
           valueFrom:
@@ -57,7 +50,6 @@ spec:
           - "-kubernetes-path-mode=path-prefix"
           - "-address=:9999"
           - "-wait-first-route-load"
-          - "-enable-kubernetes-east-west"
           - "-proxy-preserve-host"
           - "-serve-host-metrics"
           - "-enable-ratelimits"
@@ -73,10 +65,10 @@ spec:
           - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.zmon.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
         resources:
           limits:
-            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+            memory: {{ .ConfigItems.skipper_ingress_cpu }}
           requests:
-            cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
-            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+            cpu: {{ .ConfigItems.skipper_ingress_cpu }}
+            memory: {{ .ConfigItems.skipper_ingress_memory }}
         readinessProbe:
           httpGet:
             path: /kube-system/healthz
