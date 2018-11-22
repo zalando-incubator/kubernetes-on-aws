@@ -22,20 +22,28 @@ spec:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: application
+                  operator: In
+                  values:
+                  - skipper-ingress
+              topologyKey: "kubernetes.io/hostname"
       priorityClassName: system-node-critical
       tolerations:
       - key: dedicated
         operator: Exists
       nodeSelector:
         kubernetes.io/role: worker
-      hostNetwork: true
       containers:
       - name: skipper-ingress
         image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.121-1-g5f1806d
         ports:
         - name: ingress-port
           containerPort: 9999
-          hostPort: 9999
         env:
         - name: LIGHTSTEP_TOKEN
           valueFrom:
