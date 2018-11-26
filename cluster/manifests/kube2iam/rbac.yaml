@@ -9,12 +9,9 @@ kind: ClusterRole
 metadata:
   name: kube2iam
 rules:
-- apiGroups: ["extensions"]
-  resources: ["ingresses", ]
-  verbs: ["get", "list"]
 - apiGroups: [""]
-  resources: ["namespaces", "services", "endpoints"]
-  verbs: ["get"]
+  resources: ["namespaces", "pods"]
+  verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -24,6 +21,20 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: kube2iam
+subjects:
+- kind: ServiceAccount
+  name: kube2iam
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: kube2iam-privileged-psp
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: privileged-psp
 subjects:
 - kind: ServiceAccount
   name: kube2iam
