@@ -1,5 +1,6 @@
-{{ with $region := .Region }}
-{{ with $cfg := .ConfigItems }}
+{{ with $root := . }}
+{{ with $region := $root.Region }}
+{{ with $cfg := $root.ConfigItems }}
 {{ range $suffix := split $cfg.zone_suffixes "," }}
 ---
 apiVersion: apps/v1
@@ -84,6 +85,7 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
+{{end}}
 {{end}}
 {{end}}
 {{end}}
