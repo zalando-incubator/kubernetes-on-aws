@@ -1,7 +1,8 @@
+{{range .ConfigItems.zone_suffixes }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: skipper-ingress-c
+  name: skipper-ingress-{{ . }}
   namespace: kube-system
   labels:
     application: skipper-ingress
@@ -13,7 +14,7 @@ spec:
       application: skipper-ingress
   template:
     metadata:
-      name: skipper-ingress-c
+      name: skipper-ingress-{{ . }}
       labels:
         application: skipper-ingress
         version: v0.10.121-1-g5f1806d
@@ -28,7 +29,7 @@ spec:
         operator: Exists
       nodeSelector:
         kubernetes.io/role: worker
-        failure-domain.beta.kubernetes.io/zone: eu-central-1c
+        failure-domain.beta.kubernetes.io/zone: eu-central-1{{ . }}
       hostNetwork: true
       containers:
       - name: skipper-ingress
@@ -65,10 +66,10 @@ spec:
           - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.zmon.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
         resources:
           limits:
-            memory: {{ .ConfigItems.skipper_ingress_cpu }}
+            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
           requests:
-            cpu: {{ .ConfigItems.skipper_ingress_cpu }}
-            memory: {{ .ConfigItems.skipper_ingress_memory }}
+            cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
+            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
         readinessProbe:
           httpGet:
             path: /kube-system/healthz
@@ -79,3 +80,4 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
+{{end}}
