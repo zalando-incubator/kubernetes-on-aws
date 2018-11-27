@@ -1,9 +1,11 @@
-{{ range .ConfigItems.zone_suffixes }}
+{{ with $cfg := .ConfigItems }}
+{{ with $region := .Region }}
+{{ range $suffix := split $cfg.zone_suffixes "," }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: skipper-ingress-{{ . }}
+  name: skipper-ingress-{{ $suffix }}
   namespace: kube-system
   labels:
     application: skipper-ingress
@@ -15,7 +17,7 @@ spec:
       application: skipper-ingress
   template:
     metadata:
-      name: skipper-ingress-{{ . }}
+      name: skipper-ingress-{{ $suffix }}
       labels:
         application: skipper-ingress
         version: v0.10.122
@@ -30,7 +32,7 @@ spec:
         operator: Exists
       nodeSelector:
         kubernetes.io/role: worker
-        failure-domain.beta.kubernetes.io/zone: eu-central-1{{ . }}
+        failure-domain.beta.kubernetes.io/zone: {{ $region }}{{ $suffix }}
       hostNetwork: true
       containers:
       - name: skipper-ingress
@@ -63,7 +65,7 @@ spec:
           - "-metrics-flavour=codahale,prometheus"
           - "-enable-connection-metrics"
           - "-max-audit-body=0"
-          - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
+          - "-oauth2-tokeninfo-url={{ $cfg.tokeninfo_url }}"
           - "-histogram-metric-buckets=.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
           - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.zmon.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
         resources:
