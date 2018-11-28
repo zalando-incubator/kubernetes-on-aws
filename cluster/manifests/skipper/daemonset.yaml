@@ -24,7 +24,7 @@ spec:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
-      priorityClassName: system-cluster-critical
+      priorityClassName: system-node-critical
       tolerations:
       - key: dedicated
         operator: Exists
@@ -66,10 +66,10 @@ spec:
           - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.zmon.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
         resources:
           limits:
-            memory: {{ .ConfigItems.skipper_ingress_memory }}
+            memory: {{ .ConfigItems.skipper_limits_mem }}
           requests:
-            cpu: {{ .ConfigItems.skipper_ingress_cpu }}
-            memory: {{ .ConfigItems.skipper_ingress_memory }}
+            cpu: {{ .ConfigItems.skipper_requests_cpu }}
+            memory: {{ .ConfigItems.skipper_requests_mem }}
         readinessProbe:
           httpGet:
             path: /kube-system/healthz
