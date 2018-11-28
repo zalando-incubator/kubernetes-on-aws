@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-static-egress-controller
-    version: v0.1.3
+    version: v0.1.4
 spec:
   replicas: 1
   selector:
@@ -15,14 +15,14 @@ spec:
     metadata:
       labels:
         application: kube-static-egress-controller
-        version: v0.1.3
+        version: v0.1.4
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-static-egress-controller"
     spec:
       priorityClassName: system-cluster-critical
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.1.3
+        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.1.4
         args:
         - "--log-level=debug"
         - "--provider=aws"
@@ -38,8 +38,7 @@ spec:
           value: eu-central-1
         resources:
           limits:
-            cpu: 100m
-            memory: 200Mi
+            memory: 50Mi
           requests:
             cpu: 5m
-            memory: 25Mi
+            memory: 50Mi

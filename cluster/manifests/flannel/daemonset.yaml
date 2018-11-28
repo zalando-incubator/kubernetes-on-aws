@@ -5,10 +5,10 @@ metadata:
   namespace: kube-system
   labels:
     application: flannel
-    version: v0.10.0
+    version: v0.10.0-8
 spec:
   updateStrategy:
-    type: RollingUpdate
+    type: OnDelete
   selector:
     matchLabels:
       application: flannel
@@ -16,15 +16,13 @@ spec:
     metadata:
       labels:
         application: flannel
-        version: v0.10.0
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
+        version: v0.10.0-8
     spec:
       priorityClassName: system-node-critical
       serviceAccountName: system
       containers:
       - name: delayed-install-cni
-        image: registry.opensource.zalan.do/teapot/flannel:v0.10.0
+        image: registry.opensource.zalan.do/teapot/flannel:v0.10.0-8
         command:
         - /bin/sh
         args:
@@ -40,6 +38,8 @@ spec:
           requests:
             cpu: 25m
             memory: 25Mi
+          limits:
+            memory: 25Mi
       - name: apiserver-proxy
         image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
         command:
@@ -52,7 +52,7 @@ spec:
             cpu: 25m
             memory: 25Mi
       - name: kube-flannel
-        image: registry.opensource.zalan.do/teapot/flannel:v0.10.0
+        image: registry.opensource.zalan.do/teapot/flannel:v0.10.0-8
         command:
         - /opt/bin/flanneld
         args:
@@ -86,6 +86,25 @@ spec:
           mountPath: /etc/kube-flannel/
         - name: run
           mountPath: /run
+      - args:
+        - -c
+        - /tc-flannel.sh
+        command:
+        - /bin/bash
+        image: registry.opensource.zalan.do/teapot/flannel-tc:v0.0.2
+        name: flannel-tc
+        resources:
+          requests:
+            cpu: 25m
+            memory: 25Mi
+        securityContext:
+          privileged: true
+        stdin: true
+        volumeMounts:
+        - mountPath: /run
+          name: run
+        - mountPath: /lib/tc
+          name: lib-tc
       hostNetwork: true
       tolerations:
       - operator: Exists
@@ -102,3 +121,7 @@ spec:
       - name: run
         hostPath:
           path: /run
+      - hostPath:
+          path: /lib/tc
+          type: ""
+        name: lib-tc

@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.10.26
+    version: v0.10.121-1-g5f1806d
     component: ingress
 spec:
   selector:
@@ -18,7 +18,7 @@ spec:
       name: skipper-ingress
       labels:
         application: skipper-ingress
-        version: v0.10.26
+        version: v0.10.121-1-g5f1806d
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -33,17 +33,24 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.26
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.121-1-g5f1806d
         ports:
         - name: ingress-port
           containerPort: 9999
           hostPort: 9999
+        env:
+        - name: LIGHTSTEP_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: skipper-ingress
+              key: lightstep-token
         args:
           - "skipper"
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
           - "-address=:9999"
+          - "-wait-first-route-load"
           - "-proxy-preserve-host"
           - "-serve-host-metrics"
           - "-enable-ratelimits"
@@ -53,12 +60,16 @@ spec:
           - "-lb-healthcheck-interval=3s"
           - "-metrics-flavour=codahale,prometheus"
           - "-enable-connection-metrics"
+          - "-max-audit-body=0"
+          - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
+          - "-histogram-metric-buckets=.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
+          - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.zmon.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
         resources:
           limits:
-            memory: 200Mi
+            memory: {{ .ConfigItems.skipper_limits_mem }}
           requests:
-            cpu: 150m
-            memory: 50Mi
+            cpu: {{ .ConfigItems.skipper_requests_cpu }}
+            memory: {{ .ConfigItems.skipper_requests_mem }}
         readinessProbe:
           httpGet:
             path: /kube-system/healthz

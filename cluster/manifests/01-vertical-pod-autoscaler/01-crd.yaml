@@ -1,10 +1,13 @@
+{{ if eq .ConfigItems.vpa_enabled "true" }}
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: verticalpodautoscalers.poc.autoscaling.k8s.io
+  name: verticalpodautoscalers.autoscaling.k8s.io
+  labels:
+    component: vpa
 spec:
-  group: poc.autoscaling.k8s.io
-  version: v1alpha1
+  group: autoscaling.k8s.io
+  version: v1beta1
   scope: Namespaced
   names:
     plural: verticalpodautoscalers
@@ -18,7 +21,7 @@ spec:
       properties:
         spec:
           required:
-          - selector
+            - selector
           properties:
             selector:
               type: object
@@ -26,38 +29,20 @@ spec:
               properties:
                 updateMode:
                   type: string
-                  enum:
-                  - "Off"
-                  - "Initial"
-                  - "Auto"
             resourcePolicy:
               properties:
                 containerPolicies:
                   type: array
-                  items:
-                    type: object
-                    required:
-                    - name
-                    properties:
-                      name:
-                        type: string
-                      mode:
-                        type: string
-                        enum:
-                        - "On"
-                        - "Off"
-                      minAllowed:
-                        type: object
-                      maxAllowed:
-                        type: object
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: verticalpodautoscalercheckpoints.poc.autoscaling.k8s.io
+  name: verticalpodautoscalercheckpoints.autoscaling.k8s.io
+  labels:
+    component: vpa
 spec:
-  group: poc.autoscaling.k8s.io
-  version: v1alpha1
+  group: autoscaling.k8s.io
+  version: v1beta1
   scope: Namespaced
   names:
     plural: verticalpodautoscalercheckpoints
@@ -65,3 +50,4 @@ spec:
     kind: VerticalPodAutoscalerCheckpoint
     shortNames:
     - vpacheckpoint
+{{ end }}

@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: emergency-access-service
-    version: master-55
+    version: master-64
 spec:
   replicas: 1
   selector:
@@ -16,16 +16,30 @@ spec:
     metadata:
       labels:
         application: emergency-access-service
-        version: master-55
+        version: master-64
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "emergency-access-service", "parser": "json-structured-log"}]
+        iam.amazonaws.com/role: {{.LocalID}}-emergency-access-service
     spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: system
       containers:
+      - name: apiserver-proxy
+        image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
+        command:
+        - /bin/sh
+        args:
+        - -c
+        - "exec /etcd-proxy --listen-address 127.0.0.1:333 $KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT"
+        resources:
+          requests:
+            cpu: 25m
+            memory: 25Mi
+          limits:
+            memory: 25Mi
       - name: emergency-access-service
-        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-55"
+        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-64"
         args:
         - --insecure-http
         - --community={{ .Owner }}
@@ -39,11 +53,18 @@ spec:
         - --audittrail-url=https://audittrail.cloud.zalando.com
         - --jira-url=https://techjira.zalando.net
         - --environment={{ .Environment }}
+        - --s3-bucket-name=zalando-audittrail-{{accountID .InfrastructureAccount}}-{{.LocalID}}
         env:
+        - name: KUBERNETES_SERVICE_HOST
+          value: "127.0.0.1"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "333"
         - name: CONFIGMAP_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: AWS_REGION
+          value: {{.Region}}
         ports:
         - containerPort: 8080
         volumeMounts:
@@ -67,8 +88,9 @@ spec:
           requests:
             cpu: 50m
             memory: 100Mi
+          limits:
+            memory: 100Mi
         securityContext:
-          readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
       volumes:

@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: etcd-backup
-    version: "master-5"
+    version: "master-9"
 spec:
   schedule: "23 * * * *"
   concurrencyPolicy: Forbid
@@ -16,7 +16,7 @@ spec:
         metadata:
           labels:
             application: etcd-backup
-            version: "master-5"
+            version: "master-9"
           annotations:
             iam.amazonaws.com/role: "{{ .LocalID }}-etcd-backup"
         spec:
@@ -24,7 +24,7 @@ spec:
           restartPolicy: Never
           containers:
           - name: etcd-backup
-            image: pierone.stups.zalan.do/teapot/etcd-backup:master-5
+            image: pierone.stups.zalan.do/teapot/etcd-backup:master-9
             env:
             - name: ETCD_S3_BACKUP_BUCKET
               value: "{{ .ConfigItems.etcd_s3_backup_bucket }}"

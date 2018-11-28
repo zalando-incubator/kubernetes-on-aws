@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    application: kube-metrics-adapter
+  name: kube-metrics-adapter
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: kube-metrics-adapter
+  template:
+    metadata:
+      annotations:
+        iam.amazonaws.com/role: {{ .LocalID}}-kube-metrics-adapter
+      labels:
+        application: kube-metrics-adapter
+    spec:
+      serviceAccountName: system
+      containers:
+      - name: kube-metrics-adapter
+        image: registry.opensource.zalan.do/teapot/kube-metrics-adapter:master-10
+        args:
+        - --prometheus-server=http://prometheus.kube-system.svc.cluster.local
+        - --skipper-ingress-metrics
+        - --aws-external-metrics
+        - --aws-region=eu-central-1
+        - --aws-region=eu-west-1
+        {{ if eq .Environment "production" }}
+        - --zmon-kariosdb-endpoint=https://data-service.zmon.zalan.do/kairosdb-proxy
+        volumeMounts:
+        - name: credentials
+          mountPath: /meta/credentials
+          readOnly: true
+        {{ end }}
+        resources:
+          limits:
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+      {{ if eq .Environment "production" }}
+      volumes:
+      - name: credentials
+        secret:
+          secretName: "kube-metrics-adapter"
+      {{ end }}

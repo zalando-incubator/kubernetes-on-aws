@@ -19,7 +19,7 @@ spec:
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
     spec:
-      priorityClassName: system-cluster-critical
+      priorityClassName: visibility-zmon
       initContainers:
       - name: gerry-init
         image: registry.opensource.zalan.do/teapot/gerry:v0.0.14
@@ -30,11 +30,11 @@ spec:
           - --once
         resources:
           limits:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 5m
+            memory: 20Mi
           requests:
-            cpu: 10m
-            memory: 10Mi
+            cpu: 5m
+            memory: 20Mi
 
         volumeMounts:
           - name: credentials
@@ -46,11 +46,11 @@ spec:
           image: "registry.opensource.zalan.do/stups/zmon-scheduler:v43"
           resources:
             limits:
-              cpu: 2
-              memory: 1.5Gi
+              cpu: 1000m
+              memory: 2.5Gi
             requests:
-              cpu: 100m
-              memory: 512Mi
+              cpu: 1000m
+              memory: 2.5Gi
 
           ports:
             - containerPort: 7979
@@ -118,11 +118,11 @@ spec:
             - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
           resources:
             limits:
-              cpu: 100m
-              memory: 100Mi
+              cpu: 5m
+              memory: 20Mi
             requests:
-              cpu: 10m
-              memory: 10Mi
+              cpu: 5m
+              memory: 20Mi
 
           volumeMounts:
             - name: credentials

@@ -17,17 +17,17 @@ spec:
         application: "zmon-redis"
         version: "v0.1"
     spec:
-      priorityClassName: system-cluster-critical
+      priorityClassName: visibility-zmon
       containers:
         - name: zmon-redis
-          image: registry.opensource.zalan.do/zmon/redis:3.2.9
+          image: registry.opensource.zalan.do/zmon/redis:4.0.9-master-6
           resources:
             limits:
-              cpu: 200m
-              memory: 1Gi
+              cpu: 80m
+              memory: {{.ConfigItems.zmon_redis_mem}}
             requests:
-              cpu: 50m
-              memory: 100Mi
+              cpu: 80m
+              memory: {{.ConfigItems.zmon_redis_mem}}
           ports:
             - containerPort: 6379
           readinessProbe:

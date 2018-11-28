@@ -1,0 +1,1170 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Kubernetes cluster
+Resources:
+  EtcdSecurityGroupIngressFromMaster:
+    Properties:
+      FromPort: 2379
+      GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id'
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+      ToPort: 2379
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  IngressLoadBalancerSecurityGroup:
+    Properties:
+      GroupDescription: !Ref 'AWS::StackName'
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+        - Key: 'kubernetes:application'
+          Value: kube-ingress-aws-controller
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+    Type: 'AWS::EC2::SecurityGroup'
+  MasterKubeletToMasterKubeletSecurityGroup:
+    Properties:
+      FromPort: 10250
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 10250
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  MasterLoadBalancer:
+    Properties:
+      ConnectionDrainingPolicy:
+        Enabled: true
+        Timeout: 60
+      ConnectionSettings:
+        IdleTimeout: 300
+      CrossZone: 'true'
+      HealthCheck:
+        HealthyThreshold: '2'
+        Interval: '10'
+        Target: 'HTTP:8080/healthz'
+        Timeout: '5'
+        UnhealthyThreshold: '2'
+      Listeners:
+        - InstancePort: 443
+          InstanceProtocol: SSL
+          LoadBalancerPort: 443
+          PolicyNames: []
+          Protocol: SSL
+          SSLCertificateId: "{{.Values.load_balancer_certificate}}"
+      LoadBalancerName: "{{.Cluster.LocalID}}"
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref MasterLoadBalancerSecurityGroup
+      Subnets: !Split [",", "{{.Cluster.ConfigItems.subnets}}"]
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+    Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
+  MasterLoadBalancerSecurityGroup:
+    Properties:
+      GroupDescription: !Ref 'AWS::StackName'
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: -1
+          IpProtocol: icmp
+          ToPort: -1
+        - CidrIp: 0.0.0.0/0
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+    Type: 'AWS::EC2::SecurityGroup'
+  MasterLoadBalancerVersionDomain:
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt
+          - MasterLoadBalancer
+          - DNSName
+        HostedZoneId: !GetAtt
+          - MasterLoadBalancer
+          - CanonicalHostedZoneNameID
+      HostedZoneName: "{{.Values.hosted_zone}}."
+      Name: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}."
+      Type: A
+    Type: 'AWS::Route53::RecordSet'
+  MasterSecurityGroup:
+    Properties:
+      GroupDescription: !Ref 'AWS::StackName'
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: -1
+          IpProtocol: icmp
+          ToPort: -1
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 8082
+          IpProtocol: tcp
+          ToPort: 8082
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 7980
+          IpProtocol: tcp
+          ToPort: 7980
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 8083
+          IpProtocol: tcp
+          ToPort: 8083
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9100
+          IpProtocol: tcp
+          ToPort: 9100
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9911
+          IpProtocol: tcp
+          ToPort: 9911
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 30080
+          IpProtocol: tcp
+          ToPort: 30080
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 4194
+          IpProtocol: tcp
+          ToPort: 4194
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9054
+          IpProtocol: tcp
+          ToPort: 9054
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+    Type: 'AWS::EC2::SecurityGroup'
+  MasterSecurityGroupIngressFromFlannelToMaster:
+    Properties:
+      FromPort: 8472
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: udp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 8472
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  MasterSecurityGroupIngressFromLoadBalancer:
+    Properties:
+      FromPort: 443
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref MasterLoadBalancerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 443
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
+    Properties:
+      FromPort: 8080
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref MasterLoadBalancerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 8080
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  MasterSecurityGroupIngressFromMaster:
+    Properties:
+      FromPort: 443
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 443
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  MasterSecurityGroupIngressFromWorker:
+    Properties:
+      FromPort: 443
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 443
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  MasterSecurityGroupIngressFromWorkerToMasterKubeletReadOnly:
+    Properties:
+      FromPort: 10255
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 10255
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'autoscaling:TerminateInstanceInAutoScalingGroup'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:AttachVolume'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DetachVolume'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'kms:Decrypt'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'sts:AssumeRole'
+                Effect: Allow
+                Resource: '*'
+              - Action: 's3:GetObject'
+                Effect: Allow
+                Resource: 'arn:aws:s3:::*'
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-worker"
+    Type: 'AWS::IAM::Role'
+  WorkerSecurityGroup:
+    Properties:
+      GroupDescription: !Ref 'AWS::StackName'
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: -1
+          IpProtocol: icmp
+          ToPort: -1
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+{{- if index .Cluster.ConfigItems "open_lightstep_collector_ports" }}
+        # Allow the OpenTracing NLB to target these ports on all workers.
+        - CidrIp: 0.0.0.0/0
+          FromPort: 30443
+          IpProtocol: tcp
+          ToPort: 30444
+{{- end }}
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9999
+          IpProtocol: tcp
+          ToPort: 9999
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9100
+          IpProtocol: tcp
+          ToPort: 9100
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 10248
+          IpProtocol: tcp
+          ToPort: 10248
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 4194
+          IpProtocol: tcp
+          ToPort: 4194
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9054
+          IpProtocol: tcp
+          ToPort: 9054
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 10255
+          IpProtocol: tcp
+          ToPort: 10255
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 30000
+          IpProtocol: tcp
+          ToPort: 32767
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+    Type: 'AWS::EC2::SecurityGroup'
+  WorkerSecurityGroupIngressFromMasterToFlannel:
+    Properties:
+      FromPort: 8472
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: udp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 8472
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerSecurityGroupIngressFromMasterToKubelet:
+    Properties:
+      FromPort: 10250
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 10250
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerSecurityGroupIngressFromMasterTocAdvisor:
+    Properties:
+      FromPort: 4194
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 4194
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerSecurityGroupIngressFromWorkerToFlannel:
+    Properties:
+      FromPort: 8472
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: udp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 8472
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerSecurityGroupIngressFromWorkerToWorkerKubeletReadOnly:
+    Properties:
+      FromPort: 10255
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 10255
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerSecurityGroupIngressFromWorkerToWorkerSkipperMetrics:
+    Properties:
+      FromPort: 9911
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 9911
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  AutoscalerIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref MasterIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'ec2:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DescribeTags'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DescribeAutoScalingGroups'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DescribeAutoScalingInstances'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DescribeLaunchConfigurations'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DescribeScalingActivities'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:SetDesiredCapacity'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:TerminateInstanceInAutoScalingGroup'
+                Effect: Allow
+                Resource: '*'
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-app-autoscaler"
+    Type: 'AWS::IAM::Role'
+  DeploymentIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref WorkerIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - 'ec2:*'
+                Condition:
+                  StringLike:
+                    'ec2:Region':
+                      - us-*
+                      - ap-*
+                      - sa-*
+                Effect: Deny
+                Resource: '*'
+              - Action:
+                  - 'iam:Update*'
+                  - 'iam:Put*'
+                  - 'iam:Create*'
+                  - 'iam:Delete*'
+                  - 'iam:Attach*'
+                  - 'iam:Detach*'
+                Effect: Deny
+                Resource: 'arn:aws:iam::*:role/Shibboleth*'
+              - Action:
+                  - 'ec2:DeleteRoute'
+                  - 'ec2:DeleteRouteTable'
+                  - 'ec2:DeleteSubnet'
+                  - 'ec2:DeleteVpc'
+                  - 'ec2:DeleteVpcPeeringConnection'
+                  - 'ec2:DeleteVpnConnection'
+                  - 'ec2:DeleteVpnConnectionRoute'
+                  - 'ec2:DeleteVpnGateway'
+                  - 'ec2:CreateRoute'
+                  - 'ec2:CreateRouteTable'
+                  - 'ec2:CreateSubnet'
+                  - 'ec2:CreateVpc'
+                  - 'ec2:CreateVpcPeeringConnection'
+                  - 'ec2:CreateVpnConnection'
+                  - 'ec2:CreateVpnConnectionRoute'
+                  - 'ec2:CreateVpnGateway'
+                  - 'iam:ChangePassword'
+                  - 'iam:CreateAccountAlias'
+                  - 'iam:CreateOpenIDConnectProvider'
+                  - 'iam:CreateSAMLProvider'
+                  - 'iam:DeleteAccountAlias'
+                  - 'iam:DeleteOpenIDConnectProvider'
+                  - 'iam:DeleteSAMLProvider'
+                  - 'iam:UpdateOpenIDConnectProviderThumbprint'
+                  - 'iam:UpdateSAMLProvider'
+                Effect: Deny
+                Resource: '*'
+              - Action:
+                  - 'acm:*'
+                  - 'apigateway:*'
+                  - 'automation:*'
+                  - 'autoscaling:*'
+                  - 'application-autoscaling:*'
+                  - 'aws-marketplace:View*'
+                  - 'aws-portal:View*'
+                  - 'cloudformation:*'
+                  - 'cloudfront:*'
+                  - 'cloudsearch:*'
+                  - 'cloudtrail:DescribeTrails'
+                  - 'cloudtrail:GetTrailStatus'
+                  - 'cloudtrail:LookupEvents'
+                  - 'cloudtrail:StartLogging'
+                  - 'cloudwatch:*'
+                  - 'config:*'
+                  - 'datapipeline:*'
+                  - 'devicefarm:*'
+                  - 'dynamodb:*'
+                  - 'ec2:*'
+                  - 'ec2-reports:*'
+                  - 'elasticache:*'
+                  - 'elasticfilesystem:*'
+                  - 'elasticloadbalancing:*'
+                  - 'elasticmapreduce:*'
+                  - 'elastictranscoder:*'
+                  - 'es:*'
+                  - 'events:*'
+                  - 'glacier:*'
+                  - 'glue:*'
+                  - 'health:*'
+                  - 'iam:*'
+                  - 'kinesis:*'
+                  - 'kms:*'
+                  - 'logs:*'
+                  - 'machinelearning:*'
+                  - 'rds:*'
+                  - 'redshift:*'
+                  - 'rekognition:*'
+                  - 'route53:*'
+                  - 'route53domains:Get*'
+                  - 'route53domains:List*'
+                  - 's3:*'
+                  - 'sdb:*'
+                  - 'ses:*'
+                  - 'sns:*'
+                  - 'sqs:*'
+                  - 'states:*'
+                  - 'sts:*'
+                  - 'support:*'
+                  - 'swf:*'
+                  - 'tag:get*'
+                  - 'trustedadvisor:*'
+                  - 'firehose:*'
+                  - 'lambda:*'
+                Effect: Allow
+                Resource: '*'
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-deployment"
+    Type: 'AWS::IAM::Role'
+  DeploymentSecretKey:
+    Properties:
+      Description: Key used by deployment pipeline for secret encryption/decryption
+      EnableKeyRotation: false
+      Enabled: true
+      KeyPolicy:
+        Id: "{{.Cluster.LocalID}}-deployment-key"
+        Statement:
+          - Action:
+              - 'kms:ReEncrypt*'
+              - 'kms:Create*'
+              - 'kms:Describe*'
+              - 'kms:Enable*'
+              - 'kms:Encrypt'
+              - 'kms:Decrypt'
+              - 'kms:List*'
+              - 'kms:Put*'
+              - 'kms:Update*'
+              - 'kms:Revoke*'
+              - 'kms:Disable*'
+              - 'kms:Get*'
+              - 'kms:Delete*'
+              - 'kms:ScheduleKeyDeletion'
+              - 'kms:CancelKeyDeletion'
+            Effect: Allow
+            Principal:
+              AWS: 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:root'
+            Resource: '*'
+            Sid: Allow access for Key Administrators
+          - Action:
+              - 'kms:Decrypt'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref DeploymentIAMRole
+            Resource: '*'
+            Sid: Allow access for deployment system to decrypt the keys
+        Version: 2012-10-17
+      KeyUsage: ENCRYPT_DECRYPT
+    Type: 'AWS::KMS::Key'
+  DeploymentSecretKeyAlias:
+    Properties:
+      AliasName: "alias/{{.Cluster.LocalID}}-deployment-secret"
+      TargetKeyId: !Ref DeploymentSecretKey
+    Type: 'AWS::KMS::Alias'
+  ExternalDNSIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref WorkerIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'route53:*'
+                Effect: Allow
+                Resource: '*'
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-app-external-dns"
+    Type: 'AWS::IAM::Role'
+  IngressControllerIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref WorkerIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'acm:ListCertificates'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'acm:GetCertificate'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'acm:DescribeCertificate'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DescribeAutoScalingGroups'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:AttachLoadBalancers'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DetachLoadBalancers'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DetachLoadBalancerTargetGroups'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:AttachLoadBalancerTargetGroups'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DescribeLoadBalancerTargetGroups'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'cloudformation:*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'elasticloadbalancing:*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'elasticloadbalancingv2:*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeInstances'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeSubnets'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeSecurityGroups'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeRouteTables'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeVpcs'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'iam:GetServerCertificate'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'iam:ListServerCertificates'
+                Effect: Allow
+                Resource: '*'
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-app-ingr-ctrl"
+    Type: 'AWS::IAM::Role'
+  KubeReadyIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref WorkerIAMRole
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref MasterIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'autoscaling:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:CompleteLifecycleAction'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'sts:AssumeRole'
+                Effect: Allow
+                Resource: '*'
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-kube-node-ready"
+    Type: 'AWS::IAM::Role'
+  MasterIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'ec2:*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'elasticloadbalancing:*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'kms:Decrypt'
+                Effect: Allow
+                Resource: '*'
+              - Action: 's3:GetObject'
+                Effect: Allow
+                Resource: 'arn:aws:s3:::*'
+            Version: 2012-10-17
+          PolicyName: root
+    Type: 'AWS::IAM::Role'
+  EFSSecurityGroupIngressFromWorkerSecurityGroup:
+    Properties:
+      FromPort: 2049
+      GroupId: !Ref EFSWorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 2049
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  EFSWorkerSecurityGroup:
+    Properties:
+      GroupDescription: worker to EFS sg
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+    Type: 'AWS::EC2::SecurityGroup'
+  ETCDS3BackupIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref MasterIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - 's3:ListBucket'
+                Effect: Allow
+                Resource:
+                  - >-
+                    arn:aws:s3:::{{.Cluster.ConfigItems.etcd_s3_backup_bucket}}
+              - Action:
+                  - 's3:PutObject'
+                  - 's3:GetObject'
+                  - 's3:DeleteObject'
+                Effect: Allow
+                Resource:
+                  - >-
+                    arn:aws:s3:::{{.Cluster.ConfigItems.etcd_s3_backup_bucket}}/*
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-etcd-backup"
+    Type: 'AWS::IAM::Role'
+  StaticEgressControllerIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref WorkerIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'cloudformation:*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:AllocateAddress'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:AssociateRouteTable'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DisassociateRouteTable'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:CreateRouteTable'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:CreateRoute'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:CreateNatGateway'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:CreateSubnet'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:CreateTags'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:ReleaseAddress'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DeleteRouteTable'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DeleteRoute'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DeleteNatGateway'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DeleteSubnet'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeAddresses'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeInternetGateways'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeRouteTables'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeNatGateways'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeSubnets'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeVpcs'
+                Effect: Allow
+                Resource: '*'
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-static-egress-controller"
+    Type: 'AWS::IAM::Role'
+  ZmonIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref WorkerIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'acm:DescribeCertificate'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'acm:ListCertificates'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'cloudformation:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'cloudformation:List*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'cloudwatch:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'cloudwatch:Get*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'cloudwatch:List*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'elasticache:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'elasticloadbalancing:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'iam:Get*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'iam:List*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'kinesis:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'opsworks:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'rds:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'rds:ListTagsForResource'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'route53:Get*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'route53:List*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'tag:Get*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'dynamodb:ListTables'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'dynamodb:DescribeTable'
+                Effect: Allow
+                Resource: '*'
+              - Action: 's3:ListBucket'
+                Effect: Allow
+                Resource: '*'
+              - Action: 's3:GetObject'
+                Effect: Allow
+                Resource: "arn:aws:s3:::zalando-stups-mint-{{.Cluster.InfrastructureAccount | getAWSAccountID}}-{{.Cluster.Region}}/gerry/*"
+              - Action: 'sqs:GetQueueAttributes'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'sqs:ListDeadLetterSourceQueues'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'sqs:ListQueues'
+                Effect: Allow
+                Resource: '*'
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-app-zmon"
+    Type: 'AWS::IAM::Role'
+
+  KubeMetricsIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref WorkerIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'sqs:GetQueueUrl'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'sqs:GetQueueAttributes'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'sqs:ListQueues'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'sqs:ListQueueTags'
+                Effect: Allow
+                Resource: '*'
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-kube-metrics-adapter"
+    Type: 'AWS::IAM::Role'
+  AuditTrailBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: "zalando-audittrail-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
+      LifecycleConfiguration:
+        Rules:
+          - AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+            ExpirationInDays: 7
+            NoncurrentVersionExpirationInDays: 1
+            Prefix: ""
+            Status: Enabled
+      VersioningConfiguration:
+        Status: Suspended
+  EmergencyAccessServiceIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref WorkerIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - 's3:ListBucket'
+                Effect: Allow
+                Resource:
+                  - >-
+                    arn:aws:s3:::zalando-audittrail-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}
+              - Action:
+                  - 's3:PutObject'
+                Effect: Allow
+                Resource:
+                  - >-
+                    arn:aws:s3:::zalando-audittrail-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}/*
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-emergency-access-service"
+    Type: 'AWS::IAM::Role'
+{{- if eq .Cluster.ConfigItems.dynamodb_service_link_enabled "true" }}
+  ServiceLinkedRoleAutoScalingDynamoDB:
+    Properties:
+      AWSServiceName: "dynamodb.application-autoscaling.amazonaws.com"
+      Description: "AWS service role for application autoscaling DynamoDB"
+    Type: "AWS::IAM::ServiceLinkedRole"
+{{- end }}
+
+Outputs:
+  MasterIAMRole:
+    Export:
+      Name: '{{.Cluster.ID}}:master-iam-role'
+    Value: !Ref MasterIAMRole
+  MasterLoadBalancer:
+    Export:
+      Name: '{{.Cluster.ID}}:master-load-balancer'
+    Value: !Ref MasterLoadBalancer
+  MasterSecurityGroup:
+    Export:
+      Name: '{{.Cluster.ID}}:master-security-group'
+    Value: !Ref MasterSecurityGroup
+  WorkerIAMRole:
+    Export:
+      Name: '{{.Cluster.ID}}:worker-iam-role'
+    Value: !Ref WorkerIAMRole
+  WorkerSecurityGroup:
+    Export:
+      Name: '{{.Cluster.ID}}:worker-security-group'
+    Value: !Ref WorkerSecurityGroup

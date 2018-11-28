@@ -4,7 +4,7 @@ Description: Kubernetes default worker node pool
 Mappings:
   Images:
     eu-central-1:
-      StableCoreOSImage: ami-604e118b
+      StableCoreOSImage: ami-03ee0a0310474a00e
 
 Conditions:
   UseSpotPrice:
@@ -52,6 +52,17 @@ Resources:
       - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
         PropagateAtLaunch: true
         Value: ready
+      - Key: k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot
+        PropagateAtLaunch: true
+        Value: {{if eq $data.NodePool.DiscountStrategy "spot_max_price"}}true{{else}}false{{end}}
+{{- if index $data.NodePool.ConfigItems "labels"}}
+  {{- range split $data.NodePool.ConfigItems.labels ","}}
+    {{- $label := split . "="}}
+      - Key: k8s.io/cluster-autoscaler/node-template/label/{{index $label 0}}
+        PropagateAtLaunch: true
+        Value: {{index $label 1}}
+  {{- end}}
+{{end}}
 {{- if index $data.NodePool.ConfigItems "taints"}}
   {{- range split $data.NodePool.ConfigItems.taints ","}}
     {{- $taint := split . "="}}

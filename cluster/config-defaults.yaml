@@ -1,13 +1,40 @@
 # Autoscaling settings
+autoscaling_scale_down_enabled: "true"
 autoscaling_buffer_pools: "default-worker"
 autoscaling_buffer_cpu_scale: "1"
 autoscaling_buffer_memory_scale: "0.85"
 autoscaling_buffer_cpu_reserved: "1"
-autoscaling_buffer_memory_reserved: "1500Mi"
+autoscaling_buffer_memory_reserved: "2000Mi"
 {{if eq .Environment "production"}}
 autoscaling_buffer_pods: "1"
 {{else}}
 autoscaling_buffer_pods: "0"
+{{end}}
+
+# skipper
+skipper_limits_mem: "250Mi"
+skipper_requests_cpu: "150m"
+skipper_requests_mem: "50Mi"
+
+# lightstep
+{{if eq .Environment "production"}}
+lightstep_token: "aws:kms:AQICAHgrx06TPoR1aNmcPHJjFu5mmoICT5KJkx2fsTJpmXmbNAH+8Ml18b8ZkUO/0KAwtIZTAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSf79AuT/RI5rvWWjAgEQgDuN7obV7JD4iBMnOJ4Th93DfM5j572dXjf+gWmHx4JKMTTJPX2w6hgfQXX3LjI49l0p479a6IXIlZJOSg=="
+{{else}}
+lightstep_token: "aws:kms:AQICAHgrx06TPoR1aNmcPHJjFu5mmoICT5KJkx2fsTJpmXmbNAHvvYXdV1r7NviF5S+Jyx5zAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMQBqSQk/2TuQOsHGOAgEQgDsrNbCwF4AxoQXZuxXUOPnuQhFCY02EhWcB4xqmjFy8DelZtiCldRtxRdLyDL4uXiEyV8vOFyhxgqso/A=="
+{{end}}
+
+# tokeninfo
+{{if eq .Environment "production"}}
+tokeninfo_url: "https://info.services.auth.zalando.com/oauth2/tokeninfo"
+{{else}}
+tokeninfo_url: "https://sandbox-tokeninfo-bridge.stups.zalan.do/oauth2/tokeninfo"
+{{end}}
+
+# Image Policy Webhook
+{{if eq .Environment "production"}}
+image_policy: "trusted"
+{{else}}
+image_policy: "dev"
 {{end}}
 
 # Monitoring settings
@@ -18,6 +45,19 @@ zmon_aws_agent_replicas: "0"
 zmon_redis_replicas: "0"
 zmon_scheduler_replicas: "0"
 zmon_worker_replicas: "0"
+zmon_worker_mem: "0Gi"
+zmon_worker_cpu: "0"
+zmon_worker_count: "0"
+{{else if eq .Environment "production"}}
+logging_agent_enabled: "true"
+zmon_agent_replicas: "1"
+zmon_aws_agent_replicas: "1"
+zmon_redis_replicas: "1"
+zmon_scheduler_replicas: "1"
+zmon_worker_replicas: "6"
+zmon_worker_mem: "4Gi"
+zmon_worker_cpu: "750m"
+zmon_worker_count: "16"
 {{else}}
 logging_agent_enabled: "true"
 zmon_agent_replicas: "1"
@@ -25,4 +65,71 @@ zmon_aws_agent_replicas: "1"
 zmon_redis_replicas: "1"
 zmon_scheduler_replicas: "1"
 zmon_worker_replicas: "4"
+zmon_worker_mem: "4Gi"
+zmon_worker_cpu: "750m"
+zmon_worker_count: "16"
 {{end}}
+
+zmon_redis_mem: "1Gi"
+
+prometheus_cpu: "1000m"
+prometheus_mem: "4Gi"
+prometheus_mem_max: "10Gi"
+
+metrics_service_cpu: "100m"
+metrics_service_mem: "200Mi"
+metrics_service_mem_max: "1Gi"
+
+
+# Kubernetes Downscaler (for non-production clusters)
+{{if eq .Environment "test"}}
+downscaler_default_uptime: "Mon-Fri 07:30-20:30 CET"
+{{else if eq .Environment "playground"}}
+downscaler_default_uptime: "Mon-Fri 07:30-20:30 CET"
+{{else}}
+downscaler_default_uptime: "always"
+{{end}}
+
+# HPA settings (defaults from https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/)
+horizontal_pod_autoscaler_downscale_delay: "5m0s"
+horizontal_pod_autoscaler_sync_period: "30s"
+horizontal_pod_autoscaler_tolerance: "0.1"
+horizontal_pod_autoscaler_upscale_delay: "3m0s"
+
+# VPA
+vpa_enabled: "false"
+
+# Cluster update settings
+{{if eq .Environment "production"}}
+drain_grace_period: "6h"
+drain_min_pod_lifetime: "72h"
+drain_min_healthy_sibling_lifetime: "1h"
+drain_min_unhealthy_sibling_lifetime: "6h"
+drain_force_evict_interval: "5m"
+{{else}}
+drain_grace_period: "2h"
+drain_min_pod_lifetime: "8h"
+drain_min_healthy_sibling_lifetime: "1h"
+drain_min_unhealthy_sibling_lifetime: "1h"
+drain_force_evict_interval: "5m"
+{{end}}
+
+# Teapot webhook: gradual rollout
+teapot_admission_controller_default_cpu_request: "25m"
+teapot_admission_controller_default_memory_request: "100Mi"
+teapot_admission_controller_process_resources: "true"
+
+{{if eq .Environment "e2e"}}
+teapot_admission_controller_enabled: "true"
+teapot_admission_controller_ignore_namespaces: "^kube-system|(e2e-tests-(downward-api|kubectl|projected)-.*)$"
+{{else}}
+teapot_admission_controller_enabled: "false"
+teapot_admission_controller_ignore_namespaces: "^kube-system$"
+{{end}}
+
+# etcd cluster
+{{if ne .Environment "production"}}
+etcd_instance_count: "3"
+{{end}}
+
+dynamodb_service_link_enabled: "false"

@@ -1,3 +1,4 @@
+{{ if ne .ConfigItems.teapot_admission_controller_enabled "true" }}
 apiVersion: "v1"
 kind: "LimitRange"
 metadata:
@@ -7,12 +8,8 @@ spec:
   limits:
     - type: "Container"
       defaultRequest:
-        cpu: "100m"
+        cpu: "25m"
         memory: 100Mi
       default:
-        # default limit for CPU is 3 cores as we discovered that this is a sweet spot for JVM apps to startup quickly
-        cpu: "3000m"
         memory: 1Gi
-      max:
-        cpu: "16"
-        memory: 64Gi
+{{ end }}

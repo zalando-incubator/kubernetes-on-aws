@@ -5,7 +5,7 @@ metadata:
   namespace: "visibility"
   labels:
     application: "zmon-agent"
-    version: "0.1-a54-zv1"
+    version: "0.1-a58-zv3"
 spec:
   replicas: {{.ConfigItems.zmon_agent_replicas}}
   selector:
@@ -15,11 +15,11 @@ spec:
     metadata:
       labels:
         application: "zmon-agent"
-        version: "0.1-a54-zv1"
+        version: "0.1-a58-zv3"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
     spec:
-      priorityClassName: system-cluster-critical
+      priorityClassName: visibility-zmon
       initContainers:
       - name: gerry-init
         image: registry.opensource.zalan.do/teapot/gerry:v0.0.14
@@ -30,11 +30,11 @@ spec:
           - --once
         resources:
           limits:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 5m
+            memory: 20Mi
           requests:
-            cpu: 10m
-            memory: 10Mi
+            cpu: 5m
+            memory: 20Mi
 
         volumeMounts:
           - name: credentials
@@ -43,14 +43,13 @@ spec:
 
       containers:
         - name: zmon-agent
-          image: "pierone.stups.zalan.do/zmon/zmon-agent-core:0.1-a54-zv1"
+          image: "pierone.stups.zalan.do/zmon/zmon-agent-core:0.1-a58-zv3"
           resources:
             limits:
-              cpu: 100m
               memory: 200Mi
             requests:
-              cpu: 50m
-              memory: 80Mi
+              cpu: 100m
+              memory: 200Mi
 
           env:
             - name: ZMON_AGENT_INFRASTRUCTURE_ACCOUNT
@@ -100,11 +99,11 @@ spec:
             - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
           resources:
             limits:
-              cpu: 100m
-              memory: 100Mi
+              cpu: 5m
+              memory: 20Mi
             requests:
-              cpu: 10m
-              memory: 10Mi
+              cpu: 5m
+              memory: 20Mi
 
           volumeMounts:
             - name: credentials
