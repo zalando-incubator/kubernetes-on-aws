@@ -71,10 +71,10 @@ spec:
           - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.zmon.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
         resources:
           limits:
-            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+            memory: "{{ $cfg.skipper_ingress_memory }}"
           requests:
-            cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
-            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+            cpu: "{{ $cfg.skipper_ingress_cpu }}"
+            memory: "{{ $cfg.skipper_ingress_memory }}"
         readinessProbe:
           httpGet:
             path: /kube-system/healthz
