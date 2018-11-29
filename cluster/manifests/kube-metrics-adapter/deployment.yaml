@@ -17,7 +17,11 @@ spec:
       labels:
         application: kube-metrics-adapter
     spec:
+{{ if index .ConfigItems "enable_rbac"}}
+      serviceAccountName: custom-metrics-apiserver
+{{ else }}
       serviceAccountName: system
+{{ end }}
       containers:
       - name: kube-metrics-adapter
         image: registry.opensource.zalan.do/teapot/kube-metrics-adapter:master-10
