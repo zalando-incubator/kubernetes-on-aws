@@ -396,8 +396,11 @@ storage:
               - mountPath: /etc/kubernetes/ssl
                 name: ssl-certs-kubernetes
                 readOnly: true
-          # - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.4.5
-          - image: mikkeloscar/k8s-authnz-webhook:1
+          {{ if index .Cluster.ConfigItems "enable_rbac"}}
+          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.5.0
+          {{ else }}
+          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.4.5
+          {{ end }}
             name: webhook
             ports:
             - containerPort: 8081
@@ -427,7 +430,7 @@ storage:
               - name: TOKEN_INTROSPECTION_URL
                 value: http://127.0.0.1:9021/oauth2/introspect
               - name: USER_GROUPS
-                value: credentials-provider=system:masters,credprov-kube-ops-view-read-only-token=ReadOnly,stups_cluster-lifecycle-manager=system:masters,credprov-cdp-controller-cluster-token=PowerUser,credprov-api-discovery-k8s-cluster-read-only-token=ReadOnly,stups_zmon-zmon=ReadOnly,stups_kube-resource-report=ReadOnly,kubelet=system:masters
+                value: credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,stups_cluster-lifecycle-manager=Administrator,credprov-cdp-controller-cluster-token=PowerUser,credprov-api-discovery-k8s-cluster-read-only-token=ReadOnly,stups_zmon-zmon=ReadOnly,stups_kube-resource-report=ReadOnly,kubelet=system:masters
               - name: BUSINESS_PARTNER_IDS
                 value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
             volumeMounts:
