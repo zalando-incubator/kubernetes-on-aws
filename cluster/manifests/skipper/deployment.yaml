@@ -1,42 +1,44 @@
+{{ with $root := . }}
+{{ with $region := $root.Region }}
+{{ with $cfg := $root.ConfigItems }}
+{{ range $suffix := split $cfg.zone_suffixes "," }}
+---
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
-  name: skipper-ingress
+  name: skipper-ingress-{{ $suffix }}
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.10.121-1-g5f1806d
+    version: v0.10.122
     component: ingress
 spec:
   selector:
     matchLabels:
       application: skipper-ingress
-  updateStrategy:
-    type: RollingUpdate
+      zone: {{ $region }}{{ $suffix }}
   template:
     metadata:
-      name: skipper-ingress
       labels:
         application: skipper-ingress
-        version: v0.10.121-1-g5f1806d
+        zone: {{ $region }}{{ $suffix }}
+        version: v0.10.122
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
-      priorityClassName: system-cluster-critical
-{{ if index .ConfigItems "enable_rbac"}}
-      serviceAccountName: skipper-ingress
-{{ end }}
+      priorityClassName: system-node-critical
       tolerations:
       - key: dedicated
         operator: Exists
       nodeSelector:
         kubernetes.io/role: worker
+        failure-domain.beta.kubernetes.io/zone: {{ $region }}{{ $suffix }}
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.121-1-g5f1806d
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.122
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -64,15 +66,15 @@ spec:
           - "-metrics-flavour=codahale,prometheus"
           - "-enable-connection-metrics"
           - "-max-audit-body=0"
-          - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
+          - "-oauth2-tokeninfo-url={{ $cfg.tokeninfo_url }}"
           - "-histogram-metric-buckets=.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
           - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.zmon.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
         resources:
           limits:
-            memory: {{ .ConfigItems.skipper_limits_mem }}
+            memory: "{{ $cfg.skipper_ingress_memory }}"
           requests:
-            cpu: {{ .ConfigItems.skipper_requests_cpu }}
-            memory: {{ .ConfigItems.skipper_requests_mem }}
+            cpu: "{{ $cfg.skipper_ingress_cpu }}"
+            memory: "{{ $cfg.skipper_ingress_memory }}"
         readinessProbe:
           httpGet:
             path: /kube-system/healthz
@@ -83,3 +85,7 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
+{{end}}
+{{end}}
+{{end}}
+{{end}}
