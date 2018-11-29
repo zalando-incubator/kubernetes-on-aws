@@ -25,6 +25,9 @@ spec:
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
       priorityClassName: system-cluster-critical
+{{ if index .ConfigItems "enable_rbac"}}
+      serviceAccountName: skipper-ingress
+{{ end }}
       tolerations:
       - key: dedicated
         operator: Exists
