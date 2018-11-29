@@ -316,7 +316,11 @@ storage:
             - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
             - --authentication-token-webhook-cache-ttl=10s
             - --cloud-provider=aws
+            {{ if index .Cluster.ConfigItems "enable_rbac"}}
+            - --authorization-mode=Webhook,RBAC
+            {{ else }}
             - --authorization-mode=Webhook
+            {{ end }}
             - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
             - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
             - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
@@ -392,7 +396,11 @@ storage:
               - mountPath: /etc/kubernetes/ssl
                 name: ssl-certs-kubernetes
                 readOnly: true
-          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.4.4
+          {{ if index .Cluster.ConfigItems "enable_rbac"}}
+          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.5.0
+          {{ else }}
+          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.4.5
+          {{ end }}
             name: webhook
             ports:
             - containerPort: 8081
@@ -422,7 +430,7 @@ storage:
               - name: TOKEN_INTROSPECTION_URL
                 value: http://127.0.0.1:9021/oauth2/introspect
               - name: USER_GROUPS
-                value: credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,stups_cluster-lifecycle-manager=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,credprov-api-discovery-k8s-cluster-read-only-token=ReadOnly,stups_zmon-zmon=ReadOnly,stups_kube-resource-report=ReadOnly
+                value: credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,stups_cluster-lifecycle-manager=Administrator,credprov-cdp-controller-cluster-token=PowerUser,credprov-api-discovery-k8s-cluster-read-only-token=ReadOnly,stups_zmon-zmon=ReadOnly,stups_kube-resource-report=ReadOnly,kubelet=system:masters
               - name: BUSINESS_PARTNER_IDS
                 value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
             volumeMounts:
@@ -660,7 +668,7 @@ storage:
             token: ${token}
         EOF
 
-        echo "${token},kube-controller-manager,kube-controller-manager" >> /etc/kubernetes/config/tokenfile.csv
+        echo "${token},system:kube-controller-manager,system:kube-controller-manager" >> /etc/kubernetes/config/tokenfile.csv
 
   - filesystem: root
     path: /etc/kubernetes/config/tokenfile.csv
@@ -746,7 +754,7 @@ storage:
             users: ["system:apiserver"]
           # don't audit any kube-controller-manager events
           - level: None
-            users: ["kube-controller-manager"]
+            users: ["system:kube-controller-manager"]
           # Don't audit events from system users in kube-system
           - level: None
             userGroups: ["system:serviceaccounts:kube-system"]
