@@ -25,11 +25,17 @@ spec:
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
       priorityClassName: system-cluster-critical
+{{ if index .ConfigItems "enable_rbac"}}
+      serviceAccountName: skipper-ingress
+{{ end }}
       tolerations:
       - key: dedicated
         operator: Exists
       nodeSelector:
         kubernetes.io/role: worker
+{{ if eq .ConfigItems.zone_suffixes "a,b,c" }}
+        dummy.zalando.org/no-nodes: "true"
+{{ end }}
       hostNetwork: true
       containers:
       - name: skipper-ingress

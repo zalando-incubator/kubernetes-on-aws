@@ -15,11 +15,14 @@ spec:
     metadata:
       labels:
         application: zmon-worker
-        version: "v201-zv247"
+        version: "v203-zv248"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
     spec:
       priorityClassName: visibility-zmon
+{{ if index .ConfigItems "enable_rbac"}}
+      serviceAccountName: zmon
+{{ end }}
       initContainers:
       - name: gerry-init
         image: registry.opensource.zalan.do/teapot/gerry:v0.0.14
@@ -39,10 +42,9 @@ spec:
           - name: credentials
             mountPath: /meta/credentials
             readOnly: false
-
       containers:
         - name: zmon-worker
-          image: "pierone.stups.zalan.do/zmon/zmon-worker:v201-zv247"
+          image: "pierone.stups.zalan.do/zmon/zmon-worker:v203-zv248"
           resources:
             limits:
               cpu: {{.ConfigItems.zmon_worker_cpu}}
