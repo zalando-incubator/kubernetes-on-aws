@@ -28,7 +28,17 @@ spec:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
     spec:
-      priorityClassName: system-node-critical
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: application
+                  operator: In
+                  values:
+                  - skipper-ingress
+              topologyKey: kubernetes.io/hostname
+      priorityClassName: system-cluster-critical
 {{ if index $cfg "enable_rbac"}}
       serviceAccountName: skipper-ingress
 {{ end }}
