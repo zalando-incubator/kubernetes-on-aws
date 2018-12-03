@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: external-dns
-    version: v0.5.8
+    version: v0.5.9
 spec:
   strategy:
     type: Recreate
@@ -16,14 +16,17 @@ spec:
     metadata:
       labels:
         application: external-dns
-        version: v0.5.8
+        version: v0.5.9
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
     spec:
       priorityClassName: system-cluster-critical
+{{ if index .ConfigItems "enable_rbac"}}
+      serviceAccountName: external-dns
+{{ end }}
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.8
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.9
         args:
         - --source=service
         - --source=ingress
