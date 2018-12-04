@@ -85,6 +85,15 @@ spec:
           - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
 {{ end }}
           - "-max-audit-body=0"
+{{ if eq $cfg.skipper_clusterratelimit "true"}}
+          - "-enable-swarm"
+          - "-swarm-port=9990"
+          - "-swarm-label-selector-key=application"
+          - "-swarm-label-selector-value=skipper-ingress"
+          - "-swarm-leave-timeout=5s"
+          - "-swarm-max-msg-buffer=4194304"
+          - "-swarm-namespace=kube-system"
+{{ end }}
           - "-oauth2-tokeninfo-url={{ $cfg.tokeninfo_url }}"
           - "-histogram-metric-buckets=.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
           - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.zmon.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
