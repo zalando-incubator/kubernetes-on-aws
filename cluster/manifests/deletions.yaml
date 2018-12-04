@@ -8,4 +8,16 @@ pre_apply:
 #pre_apply: []
 
 # everything defined under here will be deleted after applying the manifests
-post_apply: []
+post_apply:
+- name: coredns
+  namespace: kube-system
+  kind: deployment
+- name: cluster-dns
+  namespace: kube-system
+  kind: poddisruptionbudget
+- name: dnsmasq-node
+  namespace: kube-system
+  kind: daemonset
+- name: kube-dns-local
+  namespace: kube-system
+  kind: service

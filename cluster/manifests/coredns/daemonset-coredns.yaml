@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: coredns
   namespace: kube-system
@@ -10,11 +10,8 @@ metadata:
     kubernetes.io/name: "CoreDNS"
     component: cluster-dns
 spec:
-  replicas: 2
-  strategy:
+  updateStrategy:
     type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
   selector:
     matchLabels:
       application: coredns
@@ -26,34 +23,9 @@ spec:
         version: v1.2.0
         component: cluster-dns
     spec:
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: application
-                  operator: In
-                  values:
-                  - coredns
-              topologyKey: kubernetes.io/hostname
-          - weight: 1
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: component
-                  operator: In
-                  values:
-                  - cluster-dns
-              topologyKey: kubernetes.io/hostname
       containers:
       - name: coredns
         image: registry.opensource.zalan.do/teapot/coredns:1.2.0
-        resources:
-          requests:
-            cpu: 250m
-            memory: 100Mi
         args: [ "-conf", "/etc/coredns/Corefile" ]
         volumeMounts:
         - name: config-volume
@@ -89,7 +61,17 @@ spec:
             memory: 100Mi
           limits:
             memory: 100Mi
+      priorityClassName: system-node-critical
+{{ if index .ConfigItems "enable_rbac"}}
+      serviceAccountName: coredns
+{{ end }}
+      hostNetwork: true
       dnsPolicy: Default
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
       volumes:
       - name: config-volume
         configMap:
