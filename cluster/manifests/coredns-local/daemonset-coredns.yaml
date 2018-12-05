@@ -15,14 +15,24 @@ spec:
   selector:
     matchLabels:
       application: coredns
+      instance: node-dns
   template:
     metadata:
       labels:
         application: coredns
-        instance: cluster-dns
+        instance: node-dns
         version: v1.2.0
         component: cluster-dns
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: cluster-dns
+                operator: NotIn
+                values:
+                - dnsmasq
       containers:
       - name: coredns
         image: registry.opensource.zalan.do/teapot/coredns:1.2.0
