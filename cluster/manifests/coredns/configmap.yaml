@@ -11,11 +11,17 @@ data:
         errors
         health
         kubernetes cluster.local in-addr.arpa ip6.arpa {
+{{ if eq .ConfigItems.coredns_autopath "true" }}
             pods verified
+{{ else }}
+            pods insecure
+{{ end }}
             upstream
             fallthrough in-addr.arpa ip6.arpa
         }
+{{ if eq .ConfigItems.coredns_autopath "true" }}
         autopath @kubernetes
+{{ end }}
         prometheus :9153
         proxy . /etc/resolv.conf
         cache 30
