@@ -1,12 +1,7 @@
-{{ with $root := . }}
-{{ with $region := $root.Region }}
-{{ with $cfg := $root.ConfigItems }}
-{{ range $suffix := split $cfg.zone_suffixes "," }}
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: skipper-ingress-{{ $suffix }}
+  name: skipper-ingress
   namespace: kube-system
   labels:
     application: skipper-ingress
@@ -16,12 +11,10 @@ spec:
   selector:
     matchLabels:
       application: skipper-ingress
-      zone: {{ $region }}{{ $suffix }}
   template:
     metadata:
       labels:
         application: skipper-ingress
-        zone: {{ $region }}{{ $suffix }}
         version: v0.10.122
         component: ingress
       annotations:
@@ -47,7 +40,6 @@ spec:
         operator: Exists
       nodeSelector:
         kubernetes.io/role: worker
-        failure-domain.beta.kubernetes.io/zone: {{ $region }}{{ $suffix }}
       hostNetwork: true
       containers:
       - name: skipper-ingress
@@ -114,7 +106,3 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
-{{end}}
-{{end}}
-{{end}}
-{{end}}
