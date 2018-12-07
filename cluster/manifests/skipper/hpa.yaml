@@ -1,10 +1,7 @@
-{{ with $cfg := .ConfigItems }}
-{{ range $suffix := split $cfg.zone_suffixes "," }}
----
 apiVersion: autoscaling/v2beta1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: skipper-ingress-{{ $suffix }}
+  name: skipper-ingress
   namespace: kube-system
   labels:
     application: skipper-ingress
@@ -12,17 +9,15 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: skipper-ingress-{{ $suffix }}
-  minReplicas: {{ $cfg.skipper_ingress_min_replicas }}
-  maxReplicas: {{ $cfg.skipper_ingress_max_replicas }}
+    name: skipper-ingress
+  minReplicas: {{ .ConfigItems.skipper_ingress_min_replicas }}
+  maxReplicas: {{ .ConfigItems.skipper_ingress_max_replicas }}
   metrics:
   - type: Resource
     resource:
       name: cpu
-      targetAverageUtilization: {{ $cfg.skipper_ingress_target_average_utilization_cpu }}
+      targetAverageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_cpu }}
   - type: Resource
     resource:
       name: memory
-      targetAverageUtilization: {{ $cfg.skipper_ingress_target_average_utilization_memory }}
-{{end}}
-{{end}}
+      targetAverageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_memory }}

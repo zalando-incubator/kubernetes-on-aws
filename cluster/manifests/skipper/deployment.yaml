@@ -1,12 +1,7 @@
-{{ with $root := . }}
-{{ with $region := $root.Region }}
-{{ with $cfg := $root.ConfigItems }}
-{{ range $suffix := split $cfg.zone_suffixes "," }}
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: skipper-ingress-{{ $suffix }}
+  name: skipper-ingress
   namespace: kube-system
   labels:
     application: skipper-ingress
@@ -16,12 +11,10 @@ spec:
   selector:
     matchLabels:
       application: skipper-ingress
-      zone: {{ $region }}{{ $suffix }}
   template:
     metadata:
       labels:
         application: skipper-ingress
-        zone: {{ $region }}{{ $suffix }}
         version: v0.10.122
         component: ingress
       annotations:
@@ -39,7 +32,7 @@ spec:
                   - skipper-ingress
               topologyKey: kubernetes.io/hostname
       priorityClassName: system-cluster-critical
-{{ if index $cfg "enable_rbac"}}
+{{ if index .ConfigItems "enable_rbac"}}
       serviceAccountName: skipper-ingress
 {{ end }}
       tolerations:
@@ -47,7 +40,6 @@ spec:
         operator: Exists
       nodeSelector:
         kubernetes.io/role: worker
-        failure-domain.beta.kubernetes.io/zone: {{ $region }}{{ $suffix }}
       hostNetwork: true
       containers:
       - name: skipper-ingress
@@ -78,14 +70,14 @@ spec:
           - "-lb-healthcheck-interval=3s"
           - "-metrics-flavour=codahale,prometheus"
           - "-enable-connection-metrics"
-{{ if index $cfg "enable_apimonitoring"}}
+{{ if index .ConfigItems "enable_apimonitoring"}}
           - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
           - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
 {{ end }}
           - "-max-audit-body=0"
-{{ if eq $cfg.skipper_clusterratelimit "true"}}
+{{ if eq .ConfigItems.skipper_clusterratelimit "true"}}
           - "-enable-swarm"
           - "-swarm-port=9990"
           - "-swarm-label-selector-key=application"
@@ -94,16 +86,16 @@ spec:
           - "-swarm-max-msg-buffer=4194304"
           - "-swarm-namespace=kube-system"
 {{ end }}
-          - "-oauth2-tokeninfo-url={{ $cfg.tokeninfo_url }}"
+          - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
           - "-histogram-metric-buckets=.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
           - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.zmon.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
         resources:
           limits:
-            cpu: "{{ $cfg.skipper_ingress_cpu }}"
-            memory: "{{ $cfg.skipper_ingress_memory }}"
+            cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
+            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
           requests:
-            cpu: "{{ $cfg.skipper_ingress_cpu }}"
-            memory: "{{ $cfg.skipper_ingress_memory }}"
+            cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
+            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
         readinessProbe:
           httpGet:
             path: /kube-system/healthz
@@ -114,7 +106,3 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
-{{end}}
-{{end}}
-{{end}}
-{{end}}
