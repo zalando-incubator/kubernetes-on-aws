@@ -10,14 +10,14 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: skipper-ingress
-  minReplicas: {{ $cfg.skipper_ingress_min_replicas }}
-  maxReplicas: {{ $cfg.skipper_ingress_max_replicas }}
+  minReplicas: {{ .ConfigItems.skipper_ingress_min_replicas }}
+  maxReplicas: {{ .ConfigItems.skipper_ingress_max_replicas }}
   metrics:
   - type: Resource
     resource:
       name: cpu
-      targetAverageUtilization: {{ $cfg.skipper_ingress_target_average_utilization_cpu }}
+      targetAverageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_cpu }}
   - type: Resource
     resource:
       name: memory
-      targetAverageUtilization: {{ $cfg.skipper_ingress_target_average_utilization_memory }}
+      targetAverageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_memory }}
