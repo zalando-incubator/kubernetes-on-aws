@@ -128,7 +128,7 @@ systemd:
       After=docker.service dockercfg.service meta-data-iptables.service private-ipv4.service
 
       [Service]
-      Environment=KUBELET_IMAGE_TAG=v1.11.3
+      Environment=KUBELET_IMAGE_TAG=v1.11.5
       Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
       Environment="RKT_RUN_ARGS=--insecure-options=image \
       --uuid-file-save=/var/run/kubelet-pod.uuid \
@@ -159,6 +159,7 @@ systemd:
       --node-labels=kubernetes.io/role=worker \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
       --node-labels=aws.amazon.com/spot={{if ne .Values.spot_price ""}}true{{else}}false{{end}} \
+      --node-labels=cluster-dns={{ .Cluster.ConfigItems.cluster_dns }} \
       --node-labels={{ .Values.node_labels }} \
       --cluster-dns=${PRIVATE_EC2_IPV4},10.3.0.11 \
       --cluster-domain=cluster.local \
@@ -168,7 +169,7 @@ systemd:
       --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
       --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
       --cloud-provider=aws \
-      --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
+      --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true \
       --pod-infra-container-image=registry.opensource.zalan.do/teapot/pause-amd64:3.1 \
 {{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
       --cpu-cfs-quota=false \
@@ -360,7 +361,7 @@ storage:
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.11.3 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.11.5 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           label node "$(hostname)" \
@@ -373,7 +374,7 @@ storage:
           --net=host \
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.11.3 \
+          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.11.5 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain "$(hostname)" \

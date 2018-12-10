@@ -8,6 +8,9 @@ metadata:
     version: v0.10.122
     component: ingress
 spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
   selector:
     matchLabels:
       application: skipper-ingress
@@ -35,9 +38,6 @@ spec:
 {{ if index .ConfigItems "enable_rbac"}}
       serviceAccountName: skipper-ingress
 {{ end }}
-      tolerations:
-      - key: dedicated
-        operator: Exists
       nodeSelector:
         kubernetes.io/role: worker
       hostNetwork: true
@@ -70,7 +70,7 @@ spec:
           - "-lb-healthcheck-interval=3s"
           - "-metrics-flavour=codahale,prometheus"
           - "-enable-connection-metrics"
-{{ if index .ConfigItems "enable_apimonitoring"}}
+{{ if eq .ConfigItems.enable_apimonitoring "true"}}
           - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
