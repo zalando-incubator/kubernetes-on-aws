@@ -159,6 +159,7 @@ systemd:
       --node-labels=kubernetes.io/role=worker \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
       --node-labels=aws.amazon.com/spot={{if ne .Values.spot_price ""}}true{{else}}false{{end}} \
+      --node-labels=cluster-dns={{ .Cluster.ConfigItems.cluster_dns }} \
       --node-labels={{ .Values.node_labels }} \
       --cluster-dns=${PRIVATE_EC2_IPV4},10.3.0.11 \
       --cluster-domain=cluster.local \

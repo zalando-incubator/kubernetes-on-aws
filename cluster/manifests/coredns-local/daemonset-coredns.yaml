@@ -1,5 +1,5 @@
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: apps/v1
+kind: DaemonSet
 metadata:
   name: coredns
   namespace: kube-system
@@ -10,51 +10,32 @@ metadata:
     kubernetes.io/name: "CoreDNS"
     component: cluster-dns
 spec:
-  replicas: 2
-  strategy:
+  updateStrategy:
     type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
   selector:
     matchLabels:
       application: coredns
-      instance: cluster-dns
+      instance: node-dns
   template:
     metadata:
       labels:
         application: coredns
-        instance: cluster-dns
+        instance: node-dns
         version: v1.2.0
         component: cluster-dns
     spec:
       affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: application
-                  operator: In
-                  values:
-                  - coredns
-              topologyKey: kubernetes.io/hostname
-          - weight: 1
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: component
-                  operator: In
-                  values:
-                  - cluster-dns
-              topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: cluster-dns
+                operator: NotIn
+                values:
+                - dnsmasq
       containers:
       - name: coredns
         image: registry.opensource.zalan.do/teapot/coredns:1.2.0
-        resources:
-          requests:
-            cpu: 250m
-            memory: 100Mi
         args: [ "-conf", "/etc/coredns/Corefile" ]
         volumeMounts:
         - name: config-volume
@@ -90,7 +71,17 @@ spec:
             memory: 100Mi
           limits:
             memory: 100Mi
+      priorityClassName: system-node-critical
+{{ if index .ConfigItems "enable_rbac"}}
+      serviceAccountName: coredns
+{{ end }}
+      hostNetwork: true
       dnsPolicy: Default
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
       volumes:
       - name: config-volume
         configMap:

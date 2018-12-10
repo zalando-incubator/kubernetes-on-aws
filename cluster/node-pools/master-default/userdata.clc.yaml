@@ -165,6 +165,7 @@ systemd:
       --register-with-taints=node-role.kubernetes.io/master=:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}} \
       --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
+      --node-labels=cluster-dns={{ .Cluster.ConfigItems.cluster_dns }} \
       --node-labels={{ .Values.node_labels }} \
       --pod-manifest-path=/etc/kubernetes/manifests \
       --cluster-dns=${PRIVATE_EC2_IPV4},10.3.0.11 \

@@ -16,6 +16,15 @@ spec:
       labels:
         application: dnsmasq-node
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: cluster-dns
+                operator: In
+                values:
+                - dnsmasq
       priorityClassName: system-node-critical
       serviceAccountName: system
       tolerations:
