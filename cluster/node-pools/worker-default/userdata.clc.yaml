@@ -28,7 +28,7 @@ systemd:
   - name: sshd.socket
     mask: true
 
-{{if .Values.instance_info.NVMEInstanceStorage }}
+{{if gt (len .Values.instance_info.InstanceStorageDevices) 0 }}
   - name: {{if index .NodePool.ConfigItems "instance_storage_mount_path"}}{{.NodePool.ConfigItems.instance_storage_mount_path | mountUnitName}}{{else}}var-lib-docker{{end}}.mount
     enable: true
     contents: |
@@ -36,7 +36,7 @@ systemd:
       Before=local-fs.target
 
       [Mount]
-      What=/dev/nvme0n1
+      What={{(index .Values.instance_info.InstanceStorageDevices 0).Path}}
       Where={{if index .NodePool.ConfigItems "instance_storage_mount_path"}}{{.NodePool.ConfigItems.instance_storage_mount_path}}{{else}}/var/lib/docker{{end}}
       Type=ext4
 
@@ -402,11 +402,11 @@ storage:
         fi
 {{end}}
 
-{{if .Values.instance_info.NVMEInstanceStorage }}
+{{if gt (len .Values.instance_info.InstanceStorageDevices) 0 }}
   filesystems:
   - name: instance-storage
     mount:
-      device: /dev/nvme0n1
+      device: {{(index .Values.instance_info.InstanceStorageDevices 0).Path}}
       format: ext4
       wipe_filesystem: true
 {{end}}
