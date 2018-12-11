@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: coredns-local
+  namespace: kube-system
+  labels:
+    application: coredns
+    kubernetes.io/cluster-service: "true"
+    kubernetes.io/name: "CoreDNS"
+  annotations:
+    prometheus.io/path: /metrics
+    prometheus.io/port: "9153"
+    prometheus.io/scrape: "true"
+spec:
+  selector:
+    application: coredns
+    instance: node-dns
+  ports:
+  - name: monitor
+    port: 9153
+    targetPort: 9153
+    protocol: TCP
