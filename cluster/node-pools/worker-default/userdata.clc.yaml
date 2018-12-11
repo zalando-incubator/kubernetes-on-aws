@@ -22,6 +22,12 @@ systemd:
   - name: locksmithd.service
     mask: true
 
+  # disable socket activation for sshd
+  - name: sshd.service
+    enable: true
+  - name: sshd.socket
+    mask: true
+
 {{if .Values.instance_info.NVMEInstanceStorage }}
   - name: {{if index .NodePool.ConfigItems "instance_storage_mount_path"}}{{.NodePool.ConfigItems.instance_storage_mount_path | mountUnitName}}{{else}}var-lib-docker{{end}}.mount
     enable: true
