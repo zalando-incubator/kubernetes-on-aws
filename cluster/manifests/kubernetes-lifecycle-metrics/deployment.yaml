@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubernetes-lifecycle-metrics
+  namespace: kube-system
+  labels:
+    application: kubernetes-lifecycle-metrics
+    version: master-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: kubernetes-lifecycle-metrics
+  template:
+    metadata:
+      labels:
+        application: kubernetes-lifecycle-metrics
+        version: master-1
+      annotations:
+        kubernetes-log-watcher/scalyr-parser: '[{"container": "kubernetes-lifecycle-metrics", "parser": "json"}]'
+    spec:
+      priorityClassName: system-cluster-critical
+      containers:
+        - name: kubernetes-lifecycle-metrics
+          image: "pierone.stups.zalan.do/teapot/kubernetes-lifecycle-metrics:master-1"
+          ports:
+            - containerPort: 9090
+          resources:
+            limits:
+              memory: 500Mi
+            requests:
+              cpu: 200m
+              memory: 500Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9090
+              scheme: HTTP

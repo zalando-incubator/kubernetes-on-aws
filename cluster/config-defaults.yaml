@@ -19,8 +19,8 @@ skipper_requests_mem: "50Mi"
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "100"
 skipper_ingress_target_average_utilization_memory: "80"
-skipper_ingress_max_replicas: "10"
-skipper_ingress_min_replicas: "1"
+skipper_ingress_max_replicas: "30"
+skipper_ingress_min_replicas: "3"
 skipper_ingress_cpu: "500m"
 skipper_ingress_memory: "500Mi"
 {{if eq .Environment "production"}}
@@ -29,10 +29,8 @@ skipper_clusterratelimit: "false"
 skipper_clusterratelimit: "true"
 {{end}}
 
-# AZ
-zone_suffixes: "a,b,c"
-
 {{if eq .Environment "production"}}
+enable_apimonitoring: "false"
 {{else}}
 enable_apimonitoring: "true"
 {{end}}
@@ -118,7 +116,7 @@ horizontal_pod_autoscaler_tolerance: "0.1"
 horizontal_pod_autoscaler_upscale_delay: "3m0s"
 
 # VPA
-vpa_enabled: "false"
+vpa_enabled: "true"
 
 # Cluster update settings
 {{if eq .Environment "production"}}
@@ -154,5 +152,7 @@ etcd_instance_count: "3"
 {{end}}
 
 dynamodb_service_link_enabled: "false"
+
+cluster_dns: "dnsmasq"
 
 coredns_autopath: "false"

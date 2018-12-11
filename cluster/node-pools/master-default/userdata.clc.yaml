@@ -22,6 +22,12 @@ systemd:
   - name: locksmithd.service
     mask: true
 
+  # disable socket activation for sshd
+  - name: sshd.service
+    enable: true
+  - name: sshd.socket
+    mask: true
+
   - name: set-hostname.service
     enable: true
     contents: |
@@ -165,6 +171,7 @@ systemd:
       --register-with-taints=node-role.kubernetes.io/master=:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}} \
       --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
+      --node-labels=cluster-dns={{ .Cluster.ConfigItems.cluster_dns }} \
       --node-labels={{ .Values.node_labels }} \
       --pod-manifest-path=/etc/kubernetes/manifests \
       --cluster-dns=${PRIVATE_EC2_IPV4},10.3.0.11 \
@@ -173,7 +180,7 @@ systemd:
       --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
       --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
       --cloud-provider=aws \
-      --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true \
+      --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true \
       --pod-infra-container-image=registry.opensource.zalan.do/teapot/pause-amd64:3.1 \
 {{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
       --cpu-cfs-quota=false \
@@ -323,7 +330,7 @@ storage:
             {{ end }}
             - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
             - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
+            - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true
             - --anonymous-auth=false
             {{ if or (eq .Cluster.Environment "production") (index .Cluster.ConfigItems "audittrail_url") }}
             - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
@@ -524,7 +531,7 @@ storage:
             - --root-ca-file=/etc/kubernetes/ssl/ca.pem
             - --cloud-provider=aws
             - --cloud-config=/etc/kubernetes/cloud-config.ini
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
+            - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true
             - --horizontal-pod-autoscaler-use-rest-clients=true
             - --use-service-account-credentials=true
             - --allocate-node-cidrs=true
@@ -594,7 +601,7 @@ storage:
             - scheduler
             - --master=http://127.0.0.1:8080
             - --leader-elect=true
-            - --feature-gates=ExperimentalCriticalPodAnnotation=true,TaintBasedEvictions=true
+            - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true
             env:
             - name: KUBE_MAX_PD_VOLS
               value: "26"
