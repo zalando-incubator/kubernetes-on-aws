@@ -266,19 +266,13 @@ Resources:
           FromPort: 22
           IpProtocol: tcp
           ToPort: 22
-{{- if index .Cluster.ConfigItems "open_lightstep_collector_ports" }}
-        # Allow the OpenTracing NLB to target these ports on all workers.
+{{- if index .Cluster.ConfigItems "open_port_ranges" }}
+{{- range $index, $element := portRanges .Cluster.ConfigItems.open_port_ranges }}
         - CidrIp: 0.0.0.0/0
-          FromPort: 30443
+          FromPort: {{ $element.FromPort }}
           IpProtocol: tcp
-          ToPort: 30444
+          ToPort: {{ $element.ToPort }}
 {{- end }}
-{{- if index .Cluster.ConfigItems "open_cdp_proxy_port" }}
-        # Allow the CDP Proxy NLB to target these ports on all workers.
-        - CidrIp: 0.0.0.0/0
-          FromPort: 30445
-          IpProtocol: tcp
-          ToPort: 30445
 {{- end }}
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 9999
