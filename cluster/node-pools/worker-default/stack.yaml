@@ -6,13 +6,6 @@ Mappings:
     eu-central-1:
       StableCoreOSImage: ami-03ee0a0310474a00e
 
-Conditions:
-  UseSpotPrice:
-    Fn::Not:
-      - Fn::Equals:
-        - "{{ .Values.spot_price }}"
-        - ""
-
 Resources:
   AutoScalingGroup:
     CreationPolicy:
@@ -22,7 +15,9 @@ Resources:
     Properties:
       HealthCheckGracePeriod: 300
       HealthCheckType: EC2
-      LaunchConfigurationName: !Ref AutoScalingConfig
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
       MinSize: '{{ .NodePool.MinSize }}'
       MaxSize: '{{ .NodePool.MaxSize }}'
       Tags:
@@ -73,30 +68,39 @@ Resources:
       VPCZoneIdentifier: !Split [",", "{{$subnets}}"]
 {{ end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
-  AutoScalingConfig:
+  LaunchTemplate:
     Properties:
-      AssociatePublicIpAddress: true
-      BlockDeviceMappings:
-      - DeviceName: /dev/xvda
-        Ebs:
-          VolumeSize: 50
-          VolumeType: standard
-      EbsOptimized: false
-      IamInstanceProfile: !Ref AutoScalingInstanceProfile
-      ImageId: !FindInMap
-      - Images
-      - !Ref 'AWS::Region'
-      - StableCoreOSImage
-      InstanceType: "{{ .NodePool.InstanceType }}"
-      SecurityGroups:
-      - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
-      UserData: "{{ .UserData }}"
-      SpotPrice:
-        Fn::If:
-          - UseSpotPrice
-          - "{{ .Values.spot_price }}"
-          - Ref: AWS::NoValue
-    Type: 'AWS::AutoScaling::LaunchConfiguration'
+      LaunchTemplateName: '{{.Cluster.LocalID}}-worker'
+      LaunchTemplateData:
+        NetworkInterfaces:
+        - DeviceIndex: 0
+          AssociatePublicIpAddress: true
+          Groups:
+          - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
+        BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 50
+            VolumeType: standard
+        EbsOptimized: false
+        IamInstanceProfile:
+          Name: !Ref AutoScalingInstanceProfile
+        InstanceInitiatedShutdownBehavior: terminate
+        ImageId: !FindInMap
+        - Images
+        - !Ref 'AWS::Region'
+        - StableCoreOSImage
+        InstanceType: "{{ .NodePool.InstanceType }}"
+{{- if eq .NodePool.DiscountStrategy "spot_max_price"}}
+        InstanceMarketOptions:
+          SpotOptions:
+            SpotInstanceType: one-time
+            InstanceInterruptionBehavior: terminate
+            MaxPrice: "{{ .Values.spot_price }}"
+          MarketType: spot
+{{end}}
+        UserData: "{{ .UserData }}"
+    Type: 'AWS::EC2::LaunchTemplate'
   AutoScalingInstanceProfile:
     Properties:
       Path: /
