@@ -1,38 +1,36 @@
+{{ if index .ConfigItems "enable_rbac"}}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: skipper-ingress
+  name: coredns
   namespace: kube-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
-  name: skipper-ingress
+  name: coredns
 rules:
-- apiGroups: ["extensions"]
-  resources: ["ingresses", ]
-  verbs: ["get", "list"]
 - apiGroups: [""]
-  resources: ["namespaces", "services", "endpoints", "pods"]
-  verbs: ["get", "list"]
+  resources: ["endpoints", "services", "pods", "namespaces"]
+  verbs: ["list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: skipper-ingress
+  name: coredns
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: skipper-ingress
+  name: coredns
 subjects:
 - kind: ServiceAccount
-  name: skipper-ingress
+  name: coredns
   namespace: kube-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
-  name: skipper-ingress-privileged-psp
+  name: coredns-privileged-psp
   namespace: kube-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -40,5 +38,6 @@ roleRef:
   name: privileged-psp
 subjects:
 - kind: ServiceAccount
-  name: skipper-ingress
+  name: coredns
   namespace: kube-system
+{{ end }}
