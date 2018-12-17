@@ -143,6 +143,10 @@ Resources:
           FromPort: 9054
           IpProtocol: tcp
           ToPort: 9054
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9153
+          IpProtocol: tcp
+          ToPort: 9153
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
@@ -266,12 +270,13 @@ Resources:
           FromPort: 22
           IpProtocol: tcp
           ToPort: 22
-{{- if index .Cluster.ConfigItems "open_lightstep_collector_ports" }}
-        # Allow the OpenTracing NLB to target these ports on all workers.
+{{- if index .Cluster.ConfigItems "open_port_ranges" }}
+{{- range $index, $element := portRanges .Cluster.ConfigItems.open_port_ranges }}
         - CidrIp: 0.0.0.0/0
-          FromPort: 30443
+          FromPort: {{ $element.FromPort }}
           IpProtocol: tcp
-          ToPort: 30444
+          ToPort: {{ $element.ToPort }}
+{{- end }}
 {{- end }}
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 9999
@@ -303,6 +308,10 @@ Resources:
           FromPort: 9054
           IpProtocol: tcp
           ToPort: 9054
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9153
+          IpProtocol: tcp
+          ToPort: 9153
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 10255
           IpProtocol: tcp
