@@ -15,6 +15,11 @@ data:
             upstream
             fallthrough in-addr.arpa ip6.arpa
         }
+        template IN A internal.cluster.local  {
+            match "^.*[.]internal[.]cluster[.]local"
+            answer "{{"{{"}} .Name {{"}}"}} 60 IN A 10.3.99.99"
+            fallthrough
+        }
         prometheus :9153
         proxy . /etc/resolv.conf
         cache 30
