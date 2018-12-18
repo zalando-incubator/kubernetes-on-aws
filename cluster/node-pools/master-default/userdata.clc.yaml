@@ -180,7 +180,7 @@ systemd:
       --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
       --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
       --cloud-provider=aws \
-      --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true \
+      --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true,ScheduleDaemonSetPods=true \
       --pod-infra-container-image=registry.opensource.zalan.do/teapot/pause-amd64:3.1 \
 {{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
       --cpu-cfs-quota=false \
@@ -330,7 +330,7 @@ storage:
             {{ end }}
             - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
             - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-            - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true
+            - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true,ScheduleDaemonSetPods=true
             - --anonymous-auth=false
             {{ if or (eq .Cluster.Environment "production") (index .Cluster.ConfigItems "audittrail_url") }}
             - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
@@ -531,7 +531,7 @@ storage:
             - --root-ca-file=/etc/kubernetes/ssl/ca.pem
             - --cloud-provider=aws
             - --cloud-config=/etc/kubernetes/cloud-config.ini
-            - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true
+            - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true,ScheduleDaemonSetPods=true
             - --horizontal-pod-autoscaler-use-rest-clients=true
             - --use-service-account-credentials=true
             - --allocate-node-cidrs=true
@@ -601,7 +601,7 @@ storage:
             - scheduler
             - --master=http://127.0.0.1:8080
             - --leader-elect=true
-            - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true
+            - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=true,ScheduleDaemonSetPods=true
             env:
             - name: KUBE_MAX_PD_VOLS
               value: "26"
