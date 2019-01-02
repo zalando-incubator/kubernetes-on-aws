@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: logging-agent
-    version: v0.19
+    version: v0.22
     component: logging
 spec:
   selector:
@@ -19,12 +19,14 @@ spec:
       name: logging-agent
       labels:
         application: logging-agent
-        version: v0.19
+        version: v0.22
         component: logging
     spec:
       priorityClassName: system-node-critical
 {{ if index .ConfigItems "enable_rbac"}}
       serviceAccountName: logging-agent
+{{ else }}
+      serviceAccountName: system
 {{ end }}
       tolerations:
       - operator: Exists
@@ -79,7 +81,7 @@ spec:
           mountPath: /mnt/scalyr-checkpoint
       containers:
       - name: log-watcher
-        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:0.21-8-gae90f48
+        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:0.22
         env:
         - name: CLUSTER_NODE_NAME
           valueFrom:
