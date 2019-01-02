@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-proxy
-    version: v1.11.5
+    version: v1.11.6
 spec:
   selector:
     matchLabels:
@@ -17,13 +17,15 @@ spec:
       name: kube-proxy
       labels:
         application: kube-proxy
-        version: v1.11.5
+        version: v1.11.6
       annotations:
         config/hash: {{"configmap.yaml" | manifestHash}}
     spec:
       priorityClassName: system-node-critical
 {{ if index .ConfigItems "enable_rbac"}}
       serviceAccountName: kube-proxy
+{{ else }}
+      serviceAccountName: system
 {{ end }}
       tolerations:
       - operator: Exists
@@ -33,7 +35,7 @@ spec:
       hostNetwork: true
       containers:
       - name: kube-proxy
-        image: registry.opensource.zalan.do/teapot/hyperkube:v1.11.5
+        image: registry.opensource.zalan.do/teapot/hyperkube:v1.11.6
         command:
         - /hyperkube
         - proxy
