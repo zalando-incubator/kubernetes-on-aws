@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.10.134
+    version: v0.10.139
     component: ingress
 spec:
   strategy:
@@ -18,7 +18,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.10.134
+        version: v0.10.139
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -45,11 +45,17 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.134
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.139
         ports:
         - name: ingress-port
           containerPort: 9999
           hostPort: 9999
+{{ if eq .ConfigItems.skipper_clusterratelimit "true"}}
+        - containerPort: 9990
+          hostPort: 9990
+          name: swarm-port
+          protocol: TCP
+{{ end }}
         env:
         - name: LIGHTSTEP_TOKEN
           valueFrom:
