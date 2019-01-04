@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cadvisor
+  namespace: kube-system
+  labels:
+    application: cadvisor
+    version: v0.32.0
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      application: cadvisor
+  template:
+    metadata:
+      labels:
+        application: cadvisor
+        version: v0.32.0
+    spec:
+      priorityClassName: system-node-critical
+{{ if index .ConfigItems "enable_rbac"}}
+      serviceAccountName: cadvisor
+{{ else }}
+      serviceAccountName: system
+{{ end }}
+      containers:
+      - name: cadvisor
+        # images including https://github.com/google/cadvisor/pull/2113
+        image: registry.opensource.zalan.do/teapot/cadvisor:v0.32.0-whitelist-master-3
+        args:
+        - --housekeeping_interval=10s
+        - --max_housekeeping_interval=15s
+        - --event_storage_event_limit=default=0
+        - --event_storage_age_limit=default=0
+        - --disable_metrics=percpu,tcp,udp
+        - --docker_only
+        - --store_container_labels=false
+        - --whitelisted_container_labels=io.kubernetes.container.name,io.kubernetes.pod.name,io.kubernetes.pod.namespace,io.kubernetes.pod.uid,application
+        resources:
+          requests:
+            memory: 150Mi
+            cpu: 150m
+          limits:
+            memory: 150Mi
+            cpu: 150m
+        securityContext:
+          privileged: true # allows reading /dev/kmsg
+        volumeMounts:
+        - name: rootfs
+          mountPath: /rootfs
+          readOnly: true
+        - name: var-run
+          mountPath: /var/run
+          readOnly: true
+        - name: sys
+          mountPath: /sys
+          readOnly: true
+        - name: docker
+          mountPath: /var/lib/docker
+          readOnly: true
+        - name: kmsg
+          mountPath: /dev/kmsg
+          readOnly: true
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: rootfs
+        hostPath:
+          path: /
+      - name: var-run
+        hostPath:
+          path: /var/run
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: docker
+        hostPath:
+          path: /var/lib/docker
+      - name: kmsg
+        hostPath:
+          path: /dev/kmsg
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
