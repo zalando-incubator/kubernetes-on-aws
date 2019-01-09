@@ -165,6 +165,9 @@ systemd:
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
       --node-labels=aws.amazon.com/spot={{if eq .NodePool.DiscountStrategy "spot_max_price"}}true{{else}}false{{end}} \
       --node-labels=cluster-dns={{ .Cluster.ConfigItems.cluster_dns }} \
+{{- if and (ne .NodePool.DiscountStrategy "spot_max_price") (eq .Cluster.ConfigItems.node_update_prepare_replacement_node "true") (eq .Cluster.ConfigItems.experimental_cluster_lifecycle_controller "true") }}
+      --node-labels=cluster-lifecycle-controller.zalan.do/replacement-strategy=prepare-replacement \
+{{- end }}
       --node-labels={{ .Values.node_labels }} \
       --cluster-dns=${PRIVATE_EC2_IPV4},10.3.0.11 \
       --cluster-domain=cluster.local \
