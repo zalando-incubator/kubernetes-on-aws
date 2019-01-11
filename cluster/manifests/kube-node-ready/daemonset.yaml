@@ -9,11 +9,11 @@ metadata:
     application: kube-node-ready
     version: {{$version}}
 spec:
+  updateStrategy:
+    type: OnDelete
   selector:
     matchLabels:
       application: kube-node-ready
-  updateStrategy:
-    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -35,11 +35,11 @@ spec:
         - --lifecycle-hook=kube-node-ready-lifecycle-hook
         resources:
           limits:
-            cpu: 50m
+            cpu: 1m
             memory: 50Mi
           requests:
             cpu: 1m
-            memory: 15Mi
+            memory: 50Mi
         readinessProbe:
           httpGet:
             path: /healthz

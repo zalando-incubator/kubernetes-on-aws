@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-lifecycle-controller
+  namespace: kube-system
+  labels:
+    application: cluster-lifecycle-controller
+    version: master-1
+spec:
+  replicas: {{if eq .ConfigItems.experimental_cluster_lifecycle_controller "true"}}1{{else}}0{{end}}
+  selector:
+    matchLabels:
+      application: cluster-lifecycle-controller
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        application: cluster-lifecycle-controller
+        version: master-1
+      annotations:
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-cluster-lifecycle-controller"
+    spec:
+      priorityClassName: system-cluster-critical
+      serviceAccountName: system
+      dnsPolicy: Default
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: cluster-autoscaler
+        image: registry.opensource.zalan.do/teapot/cluster-lifecycle-controller:master-1
+        args:
+            - --drain-grace-period={{.ConfigItems.drain_grace_period}}
+            - --drain-min-pod-lifetime={{.ConfigItems.drain_min_pod_lifetime}}
+            - --drain-min-healthy-sibling-lifetime={{.ConfigItems.drain_min_healthy_sibling_lifetime}}
+            - --drain-min-unhealthy-sibling-lifetime={{.ConfigItems.drain_min_unhealthy_sibling_lifetime}}
+            - --drain-force-evict-interval={{.ConfigItems.drain_force_evict_interval}}
+        resources:
+          limits:
+            cpu: 100m
+            memory: 250Mi
+          requests:
+            cpu: 100m
+            memory: 250Mi
+        env:
+          - name: AWS_REGION
+            value: {{ .Region }}
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
