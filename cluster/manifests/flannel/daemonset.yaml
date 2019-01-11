@@ -39,6 +39,7 @@ spec:
             cpu: 25m
             memory: 25Mi
           limits:
+            cpu: 25m
             memory: 25Mi
       - name: apiserver-proxy
         image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
@@ -49,6 +50,9 @@ spec:
         - "exec /etcd-proxy --listen-address 127.0.0.1:333 $KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT"
         resources:
           requests:
+            cpu: 25m
+            memory: 25Mi
+          limits:
             cpu: 25m
             memory: 25Mi
       - name: kube-flannel
@@ -74,11 +78,11 @@ spec:
               fieldPath: metadata.namespace
         resources:
           limits:
-            cpu: 100m
+            cpu: 25m
             memory: 100Mi
           requests:
             cpu: 25m
-            memory: 25Mi
+            memory: 100Mi
         securityContext:
           privileged: true
         volumeMounts:
@@ -95,7 +99,10 @@ spec:
         name: flannel-tc
         resources:
           requests:
-            cpu: 25m
+            cpu: 1m
+            memory: 25Mi
+          limits:
+            cpu: 1m
             memory: 25Mi
         securityContext:
           privileged: true
