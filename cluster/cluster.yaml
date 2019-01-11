@@ -147,6 +147,14 @@ Resources:
           FromPort: 9153
           IpProtocol: tcp
           ToPort: 9153
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 53
+          IpProtocol: tcp
+          ToPort: 53
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 53
+          IpProtocol: udp
+          ToPort: 53
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
@@ -320,6 +328,14 @@ Resources:
           FromPort: 30000
           IpProtocol: tcp
           ToPort: 32767
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 53
+          IpProtocol: tcp
+          ToPort: 53
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 53
+          IpProtocol: udp
+          ToPort: 53
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
@@ -441,6 +457,54 @@ Resources:
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-autoscaler"
+    Type: 'AWS::IAM::Role'
+  ClusterLifecycleControllerIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref MasterIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'ec2:DescribeInstanceStatus'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DescribeAutoScalingGroups'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DescribeAutoScalingInstances'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:DescribeLoadBalancers'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:SetDesiredCapacity'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'elasticloadbalancing:DescribeInstanceHealth'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'autoscaling:TerminateInstanceInAutoScalingGroup'
+                Effect: Allow
+                Resource: '*'
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-app-cluster-lifecycle-controller"
     Type: 'AWS::IAM::Role'
   DeploymentIAMRole:
     Properties:

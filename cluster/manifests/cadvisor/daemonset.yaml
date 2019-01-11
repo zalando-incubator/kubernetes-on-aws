@@ -33,17 +33,17 @@ spec:
         - --max_housekeeping_interval=15s
         - --event_storage_event_limit=default=0
         - --event_storage_age_limit=default=0
-        - --disable_metrics=percpu,tcp,udp
+        - --disable_metrics=process,disk,sched,percpu,tcp,udp
         - --docker_only
         - --store_container_labels=false
         - --whitelisted_container_labels=io.kubernetes.container.name,io.kubernetes.pod.name,io.kubernetes.pod.namespace,io.kubernetes.pod.uid,application
         resources:
-          requests:
-            memory: 150Mi
-            cpu: 150m
           limits:
-            memory: 150Mi
-            cpu: 150m
+            cpu: "{{ .ConfigItems.cadvisor_cpu }}"
+            memory: "{{ .ConfigItems.cadvisor_memory }}"
+          requests:
+            cpu: "{{ .ConfigItems.cadvisor_cpu }}"
+            memory: "{{ .ConfigItems.cadvisor_memory }}"
         securityContext:
           privileged: true # allows reading /dev/kmsg
         volumeMounts:
