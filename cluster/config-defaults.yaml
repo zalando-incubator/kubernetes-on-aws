@@ -56,6 +56,10 @@ image_policy: "trusted"
 image_policy: "dev"
 {{end}}
 
+# cadvisor settings
+cadvisor_cpu: "150m"
+cadvisor_memory: "150Mi"
+
 # Monitoring settings
 {{if eq .Environment "e2e"}}
 logging_agent_enabled: "false"
@@ -122,13 +126,18 @@ drain_min_pod_lifetime: "72h"
 drain_min_healthy_sibling_lifetime: "1h"
 drain_min_unhealthy_sibling_lifetime: "6h"
 drain_force_evict_interval: "5m"
+node_update_prepare_replacement_node: "true"
 {{else}}
 drain_grace_period: "2h"
 drain_min_pod_lifetime: "8h"
 drain_min_healthy_sibling_lifetime: "1h"
 drain_min_unhealthy_sibling_lifetime: "1h"
 drain_force_evict_interval: "5m"
+node_update_prepare_replacement_node: "false" # don't wait for a replacement instance for on-demand pools in test clusters
 {{end}}
+
+# Temporary feature toggles for the cluster lifecycle controller
+experimental_cluster_lifecycle_controller: "false"
 
 # Teapot webhook: gradual rollout
 teapot_admission_controller_default_cpu_request: "25m"
