@@ -10,7 +10,7 @@ metadata:
     kubernetes.io/name: "CoreDNS"
     component: cluster-dns
 spec:
-  replicas: 2
+  replicas: {{ .ConfigItems.coredns_replicas }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -51,10 +51,6 @@ spec:
       containers:
       - name: coredns
         image: registry.opensource.zalan.do/teapot/coredns:1.2.0
-        resources:
-          requests:
-            cpu: 250m
-            memory: 100Mi
         args: [ "-conf", "/etc/coredns/Corefile" ]
         volumeMounts:
         - name: config-volume
@@ -85,11 +81,12 @@ spec:
           successThreshold: 1
           failureThreshold: 3
         resources:
-          requests:
-            cpu: 150m
-            memory: 100Mi
           limits:
-            memory: 100Mi
+            cpu: "{{ .ConfigItems.coredns_cpu }}"
+            memory: "{{ .ConfigItems.coredns_memory }}"
+          requests:
+            cpu: "{{ .ConfigItems.coredns_cpu }}"
+            memory: "{{ .ConfigItems.coredns_memory }}"
       dnsPolicy: Default
       volumes:
       - name: config-volume
