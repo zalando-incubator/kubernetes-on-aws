@@ -4,7 +4,7 @@ autoscaling_buffer_pools: "default-worker"
 autoscaling_buffer_cpu_scale: "1"
 autoscaling_buffer_memory_scale: "0.85"
 autoscaling_buffer_cpu_reserved: "1"
-autoscaling_buffer_memory_reserved: "2000Mi"
+autoscaling_buffer_memory_reserved: "3Gi"
 {{if eq .Environment "production"}}
 autoscaling_buffer_pods: "1"
 {{else}}
@@ -29,6 +29,14 @@ skipper_clusterratelimit: "false"
 {{else}}
 skipper_clusterratelimit: "true"
 {{end}}
+
+# skipper backend timeout defaults
+skipper_expect_continue_timeout_backend: "30s"
+skipper_keepalive_backend: "30s"
+skipper_max_idle_connection_backend: "0"
+skipper_response_header_timeout_backend: "1m"
+skipper_timeout_backend: "1m"
+skipper_tls_timeout_backend: "1m"
 
 {{if eq .Environment "production"}}
 enable_apimonitoring: "false"
@@ -159,6 +167,11 @@ etcd_instance_count: "3"
 {{end}}
 
 dynamodb_service_link_enabled: "false"
+
+# coredns resource and replica settings
+coredns_cpu: "150m"
+coredns_memory: "100Mi"
+coredns_replicas: "2"
 
 cluster_dns: "dnsmasq"
 
