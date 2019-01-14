@@ -1013,6 +1013,11 @@ Resources:
                 - ''
                 - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
                   - !Ref WorkerIAMRole
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: '{{.Cluster.ConfigItems.zmon_root_account_role}}'
         Version: 2012-10-17
       Path: /
       Policies:
