@@ -69,6 +69,10 @@ spec:
           - "-kubernetes-path-mode=path-prefix"
           - "-address=:9999"
           - "-wait-first-route-load"
+{{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
+          - "-enable-kubernetes-east-west"
+          - "-kubernetes-east-west-domain=.ingress.cluster.local"
+{{ end }}
           - "-proxy-preserve-host"
           - "-serve-host-metrics"
           - "-enable-profile"
