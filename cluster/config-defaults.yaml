@@ -12,7 +12,7 @@ autoscaling_buffer_pods: "0"
 {{end}}
 experimental_autoscaler_mixed_instance_policy_support: "false"
 
-# skipper daemonset
+# skipper resource settings
 skipper_limits_mem: "250Mi"
 skipper_requests_cpu: "150m"
 skipper_requests_mem: "50Mi"
@@ -24,11 +24,6 @@ skipper_ingress_max_replicas: "30"
 skipper_ingress_min_replicas: "3"
 skipper_ingress_cpu: "500m"
 skipper_ingress_memory: "500Mi"
-{{if eq .Environment "production"}}
-skipper_clusterratelimit: "false"
-{{else}}
-skipper_clusterratelimit: "true"
-{{end}}
 
 # skipper backend timeout defaults
 skipper_expect_continue_timeout_backend: "30s"
@@ -38,10 +33,15 @@ skipper_response_header_timeout_backend: "1m"
 skipper_timeout_backend: "1m"
 skipper_tls_timeout_backend: "1m"
 
+# skipper api GW features
 {{if eq .Environment "production"}}
+skipper_clusterratelimit: "false"
 enable_apimonitoring: "false"
+enable_skipper_eastwest: "false"
 {{else}}
+skipper_clusterratelimit: "true"
 enable_apimonitoring: "true"
+enable_skipper_eastwest: "true"
 {{end}}
 
 # lightstep
