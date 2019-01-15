@@ -15,11 +15,13 @@ data:
             upstream
             fallthrough in-addr.arpa ip6.arpa
         }
+{{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
         template IN A ingress.cluster.local  {
             match "^.*[.]ingress[.]cluster[.]local"
             answer "{{"{{"}} .Name {{"}}"}} 60 IN A 10.3.99.99"
             fallthrough
         }
+{{ end }}
         prometheus :9153
         proxy . /etc/resolv.conf
         cache 30
