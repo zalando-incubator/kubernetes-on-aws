@@ -169,9 +169,7 @@ systemd:
       --container-runtime=docker \
       --register-with-taints=node-role.kubernetes.io/master=:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}} \
       --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
-{{- if eq .Cluster.ConfigItems.experimental_cluster_lifecycle_controller "true" }}
       --node-labels=cluster-lifecycle-controller.zalan.do/replacement-strategy=ensure-minimum-healthy-nodes \
-{{- end }}
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
       --node-labels=cluster-dns={{ .Cluster.ConfigItems.cluster_dns }} \
       --node-labels={{ .Values.node_labels }} \
