@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-cluster-autoscaler
-    version: {{ if eq .ConfigItems.experimental_autoscaler_mixed_instance_policy_support "true" }}v1.12.1-internal-dev17{{ else }}v1.12.1-internal10{{ end }}
+    version: {{ if eq .ConfigItems.experimental_autoscaler_mixed_instance_policy_support "true" }}v1.12.1-internal-dev22{{ else }}v1.12.1-internal10{{ end }}
 spec:
   selector:
     matchLabels:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: kube-cluster-autoscaler
-        version: {{ if eq .ConfigItems.experimental_autoscaler_mixed_instance_policy_support "true" }}v1.12.1-internal-dev17{{ else }}v1.12.1-internal10{{ end }}
+        version: {{ if eq .ConfigItems.experimental_autoscaler_mixed_instance_policy_support "true" }}v1.12.1-internal-dev22{{ else }}v1.12.1-internal10{{ end }}
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
         config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
@@ -29,7 +29,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:{{ if eq .ConfigItems.experimental_autoscaler_mixed_instance_policy_support "true" }}v1.12.1-internal-dev17{{ else }}v1.12.1-internal10{{ end }}
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:{{ if eq .ConfigItems.experimental_autoscaler_mixed_instance_policy_support "true" }}v1.12.1-internal-dev22{{ else }}v1.12.1-internal10{{ end }}
         command:
           - ./cluster-autoscaler
           - --v=4
@@ -41,6 +41,9 @@ spec:
           - --skip-nodes-with-system-pods=false
           - --skip-nodes-with-local-storage=false
           - --scale-up-cloud-provider-template=true
+{{- if eq .ConfigItems.experimental_autoscaler_mixed_instance_policy_support "true" }}
+          - --expander=prefer-spot
+{{- end }}
           - --balance-similar-node-groups
           - --max-node-provision-time=10m
           - --scale-down-enabled={{ .ConfigItems.autoscaling_scale_down_enabled }}
