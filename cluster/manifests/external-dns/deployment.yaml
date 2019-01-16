@@ -37,12 +37,13 @@ spec:
           limits:
             cpu: 50m
             memory: 100Mi
-          requests:
-            cpu: 50m
-            memory: 100Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 7979
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
-          runAsUser: 1000
+          runAsUser: 65534
           capabilities:
             drop: ["ALL"]
