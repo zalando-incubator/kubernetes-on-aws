@@ -1,0 +1,19 @@
+apiVersion: autoscaling.k8s.io/v1beta1
+kind: VerticalPodAutoscaler
+metadata:
+  name: external-dns
+  namespace: kube-system
+  labels:
+    application: external-dns
+spec:
+  selector:
+    matchLabels:
+      application: external-dns
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: external-dns
+      maxAllowed:
+        cpu: 50m
+        memory: 100Mi
