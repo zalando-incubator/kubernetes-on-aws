@@ -34,6 +34,68 @@ spec:
                 values:
                 - dnsmasq
       containers:
+      - name: dnsmasq
+        image: registry.opensource.zalan.do/teapot/k8s-dns-dnsmasq-nanny-amd64:1.14.10
+        securityContext:
+          privileged: true
+        livenessProbe:
+          httpGet:
+            path: /healthcheck/dnsmasq
+            port: 9054
+            scheme: HTTP
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+        args:
+        - -v=2
+        - -logtostderr
+        - -configDir=/etc/k8s/dns/dnsmasq-nanny
+        - -restartDnsmasq=true
+        - --
+        - -k
+        - --cache-size=50000
+        - --dns-forward-max=100
+        - --neg-ttl=60
+        - --server=127.0.0.1#54
+        - --server=10.3.0.11#53
+        ports:
+        - containerPort: 53
+          name: dns
+          protocol: UDP
+        - containerPort: 53
+          name: dns-tcp
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 100m
+            memory: 50Mi
+      - name: sidecar
+        image: registry.opensource.zalan.do/teapot/k8s-dns-sidecar-amd64:1.14.10
+        securityContext:
+          privileged: true
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 9054
+            scheme: HTTP
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+        args:
+        - --v=2
+        - --logtostderr
+        - --probe=dnsmasq,127.0.0.1:9254,ec2.amazonaws.com,5,A
+        - --prometheus-port=9054
+        ports:
+        - containerPort: 9054
+          name: metrics
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 10m
+            memory: 45Mi
       - name: coredns
         image: registry.opensource.zalan.do/teapot/coredns:1.2.0
         args: [ "-conf", "/etc/coredns/Corefile" ]
@@ -41,10 +103,10 @@ spec:
         - name: config-volume
           mountPath: /etc/coredns
         ports:
-        - containerPort: 53
+        - containerPort: 54
           name: dns
           protocol: UDP
-        - containerPort: 53
+        - containerPort: 54
           name: dns-tcp
           protocol: TCP
         livenessProbe:
@@ -67,7 +129,7 @@ spec:
           failureThreshold: 3
         resources:
           limits:
-            cpu: 150m
+            cpu: 50m
             memory: 100Mi
       priorityClassName: system-node-critical
 {{ if index .ConfigItems "enable_rbac"}}
@@ -85,7 +147,7 @@ spec:
       volumes:
       - name: config-volume
         configMap:
-          name: coredns
+          name: coredns-local
           items:
           - key: Corefile
             path: Corefile
