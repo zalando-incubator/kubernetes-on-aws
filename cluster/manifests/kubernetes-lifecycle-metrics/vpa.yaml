@@ -1,0 +1,16 @@
+apiVersion: autoscaling.k8s.io/v1beta1
+kind: VerticalPodAutoscaler
+metadata:
+  name: kubernetes-lifecycle-metrics-vpa
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      application: kubernetes-lifecycle-metrics
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: kubernetes-lifecycle-metrics
+      maxAllowed:
+        memory: 1Gi
