@@ -148,8 +148,8 @@ systemd:
       After=docker.service dockercfg.service meta-data-iptables.service private-ipv4.service collect-instance-metadata.service
 
       [Service]
-      Environment=KUBELET_IMAGE_TAG=v1.12.5
-      Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
+      Environment=KUBELET_IMAGE_TAG={{ .Cluster.ConfigItems.kubernetes_version }}
+      Environment=KUBELET_IMAGE_URL=docker://{{ .Cluster.ConfigItems.hyperkube_image }}
       Environment="RKT_RUN_ARGS=--insecure-options=image \
       --uuid-file-save=/var/run/kubelet-pod.uuid \
       --volume dns,kind=host,source=/etc/resolv.conf \
@@ -383,7 +383,7 @@ storage:
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.12.5 \
+          docker://{{ .Cluster.ConfigItems.hyperkube_image }}:{{ .Cluster.ConfigItems.kubernetes_version }} \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           label node "$(hostname)" \
@@ -396,7 +396,7 @@ storage:
           --net=host \
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.12.5 \
+          docker://{{ .Cluster.ConfigItems.hyperkube_image }}:{{ .Cluster.ConfigItems.kubernetes_version }} \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain "$(hostname)" \

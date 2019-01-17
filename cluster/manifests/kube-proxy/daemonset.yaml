@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-proxy
-    version: v1.12.5
+    version: {{ .ConfigItems.kubernetes_version }}
 spec:
   selector:
     matchLabels:
@@ -17,7 +17,7 @@ spec:
       name: kube-proxy
       labels:
         application: kube-proxy
-        version: v1.12.5
+        version: {{ .ConfigItems.kubernetes_version }}
       annotations:
         config/hash: {{"configmap.yaml" | manifestHash}}
     spec:
@@ -31,7 +31,7 @@ spec:
       hostNetwork: true
       containers:
       - name: kube-proxy
-        image: registry.opensource.zalan.do/teapot/hyperkube:v1.12.5
+        image: {{ .ConfigItems.hyperkube_image }}:{{ .ConfigItems.kubernetes_version }}
         command:
         - /hyperkube
         - proxy
