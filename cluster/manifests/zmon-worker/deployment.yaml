@@ -96,6 +96,10 @@ spec:
               value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
             - name: CREDENTIALS_DIR
               value: /meta/credentials
+{{ if index .ConfigItems "zmon_worker_oauth2_scopes"}}
+            - name: WORKER_PLUGIN_HTTP_OAUTH2_TOKENS
+              value: {{.ConfigItems.zmon_worker_oauth2_scopes }}
+{{ end }}
 
           volumeMounts:
             - name: credentials
