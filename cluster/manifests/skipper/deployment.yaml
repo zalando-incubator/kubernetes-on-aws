@@ -35,11 +35,7 @@ spec:
                   - skipper-ingress
               topologyKey: kubernetes.io/hostname
       priorityClassName: system-cluster-critical
-{{ if index .ConfigItems "enable_rbac"}}
       serviceAccountName: skipper-ingress
-{{ else }}
-      serviceAccountName: system
-{{ end }}
       nodeSelector:
         kubernetes.io/role: worker
       hostNetwork: true
@@ -119,7 +115,7 @@ spec:
           httpGet:
             path: /kube-system/healthz
             port: 9999
-          initialDelaySeconds: 5
+          initialDelaySeconds: 60
           timeoutSeconds: 5
         securityContext:
           readOnlyRootFilesystem: true
