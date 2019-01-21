@@ -20,13 +20,15 @@ spec:
       serviceAccountName: custom-metrics-apiserver
       containers:
       - name: kube-metrics-adapter
-        image: registry.opensource.zalan.do/teapot/kube-metrics-adapter:master-15
+        image: registry.opensource.zalan.do/teapot/kube-metrics-adapter:master-18
         args:
         - --prometheus-server=http://prometheus.kube-system.svc.cluster.local
         - --skipper-ingress-metrics
         - --aws-external-metrics
         - --aws-region=eu-central-1
         - --aws-region=eu-west-1
+        - --skipper-backends-annotation="zalando.org/stack-traffic-weights"
+        - --skipper-backends-annotation="zalando.org/backend-weights"
         {{ if eq .Environment "production" }}
         - --zmon-kariosdb-endpoint=https://data-service.zmon.zalan.do/kairosdb-proxy
         volumeMounts:
