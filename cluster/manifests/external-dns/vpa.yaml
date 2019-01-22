@@ -1,16 +1,19 @@
 apiVersion: autoscaling.k8s.io/v1beta1
 kind: VerticalPodAutoscaler
 metadata:
-  name: kubernetes-lifecycle-metrics-vpa
+  name: external-dns
   namespace: kube-system
+  labels:
+    application: external-dns
 spec:
   selector:
     matchLabels:
-      application: kubernetes-lifecycle-metrics
+      application: external-dns
   updatePolicy:
     updateMode: Auto
   resourcePolicy:
     containerPolicies:
-    - containerName: kubernetes-lifecycle-metrics
+    - containerName: external-dns
       maxAllowed:
-        memory: 1Gi
+        cpu: 50m
+        memory: 100Mi
