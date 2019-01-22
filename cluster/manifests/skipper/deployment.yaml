@@ -104,6 +104,9 @@ spec:
           - "-response-header-timeout-backend={{ .ConfigItems.skipper_response_header_timeout_backend }}"
           - "-timeout-backend={{ .ConfigItems.skipper_timeout_backend }}"
           - "-tls-timeout-backend={{ .ConfigItems.skipper_tls_timeout_backend }}"
+{{ if eq .ConfigItems.skipper_disable_access_logs "true" }}
+          - "-access-log-disabled"
+{{ end }}
         resources:
           limits:
             cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
