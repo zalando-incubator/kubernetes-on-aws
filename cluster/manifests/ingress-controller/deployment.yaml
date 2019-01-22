@@ -20,11 +20,7 @@ spec:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-ingr-ctrl"
     spec:
       priorityClassName: system-cluster-critical
-{{ if index .ConfigItems "enable_rbac"}}
       serviceAccountName: kube-ingress-aws-controller
-{{ else }}
-      serviceAccountName: system
-{{ end }}
       containers:
       - name: controller
         image: registry.opensource.zalan.do/teapot/kube-ingress-aws-controller:v0.8.1

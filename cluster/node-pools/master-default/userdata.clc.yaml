@@ -323,11 +323,7 @@ storage:
             - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
             - --authentication-token-webhook-cache-ttl=10s
             - --cloud-provider=aws
-            {{ if index .Cluster.ConfigItems "enable_rbac"}}
             - --authorization-mode=Webhook,RBAC
-            {{ else }}
-            - --authorization-mode=Webhook
-            {{ end }}
             - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
             - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
             - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition=false,ScheduleDaemonSetPods=false,TTLAfterFinished=true
@@ -403,11 +399,7 @@ storage:
               - mountPath: /etc/kubernetes/ssl
                 name: ssl-certs-kubernetes
                 readOnly: true
-          {{ if index .Cluster.ConfigItems "enable_rbac"}}
           - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.5.0
-          {{ else }}
-          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.4.5
-          {{ end }}
             name: webhook
             ports:
             - containerPort: 8081
@@ -675,11 +667,7 @@ storage:
             token: ${token}
         EOF
 
-        {{ if index .Cluster.ConfigItems "enable_rbac"}}
         echo "${token},system:kube-controller-manager,system:kube-controller-manager" >> /etc/kubernetes/config/tokenfile.csv
-        {{ else }}
-        echo "${token},kube-controller-manager,kube-controller-manager" >> /etc/kubernetes/config/tokenfile.csv
-        {{ end }}
 
   - filesystem: root
     path: /etc/kubernetes/config/tokenfile.csv
