@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+  namespace: kube-system
+data:
+  fluent.conf: |
+    <source>
+      @type tail
+      path /mnt/fluentd-logs/**/*.log
+      pos_file /mnt/buffer/pos_files/kubernetes.pos
+      read_from_head true
+      tag kubernetes.*
+      <parse>
+        @type json
+        time_type string
+        time_format %iso8601
+        keep_time_key true
+      </parse>
+    </source>
+
+    <filter kubernetes.**>
+      @type record_transformer
+      <record>
+        application ${tag_parts[3]}
+        component   ${tag_parts[4]}
+        namespace   ${tag_parts[5]}
+        environment ${tag_parts[6]}
+        version     ${tag_parts[7]}
+        container   ${tag_parts[8]}
+        pod         ${tag_parts[9]}
+      </record>
+    </filter>
+
+    <match kubernetes.**>
+      @type s3
+      s3_bucket to-be-defined
+      s3_region eu-central-1
+      path kubernetes/${application}/${component}/${namespace}/${environment}/${version}/${container}/
+      time_slice_format %Y/%m/%d/%H/${pod}/%Y%m%dT%H%M
+      <buffer time,application,component,namespace,environment,version,container,pod>
+        @type file
+        path /mnt/buffer/kubernetes/
+        timekey 5m
+        timekey_wait 1m
+        timekey_use_utc true
+        chunk_limit_size 4MB
+        total_limit_size 1GB
+        flush_at_shutdown true
+      </buffer>
+      <format>
+        @type csv
+        fields time,log
+      </format>
+    </match>

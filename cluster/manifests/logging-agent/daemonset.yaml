@@ -123,6 +123,8 @@ spec:
           readOnly: false
         - name: scalyr-config
           mountPath: /mnt/scalyr-config
+        - name: fluentd-logs
+          mountPath: /mnt/fluentd-logs
 
       - name: scalyr-agent
 
@@ -164,6 +166,34 @@ spec:
             cpu: 300m
             memory: 500Mi
 
+      - name: fluentd
+
+        image: pierone.stups.zalan.do/logging/fluentd:1.3.3-zal-master-5
+
+        volumeMounts:
+        - name: containerlogs
+          mountPath: /mnt/containers
+          readOnly: true
+        - name: fluentd-logs
+          mountPath: /mnt/fluentd-logs
+          readOnly: true
+        - name: fluentd-buffer
+          mountPath: /mnt/buffer
+        - name: fluentd-config
+          mountPath: /fluentd/etc/
+          readOnly: true
+        - name: journal
+          mountPath: /var/log/journal
+          readOnly: true
+
+        resources:
+          limits:
+            cpu: 300m
+            memory: 500Mi
+          requests:
+            cpu: 300m
+            memory: 500Mi
+
       volumes:
       - name: containerlogs
         hostPath:
@@ -181,7 +211,17 @@ spec:
         hostPath:
           path: /etc/scalyr-agent
 
+      - name: fluentd-config
+        configMap:
+          name: fluentd-config
+
       - name: scalyr-logs
         hostPath:
           path: /var/log/scalyr-agent
+
+      - name: fluentd-logs
+        emptyDir: {}
+
+      - name: fluentd-buffer
+        emptyDir: {}
 {{ end }}
