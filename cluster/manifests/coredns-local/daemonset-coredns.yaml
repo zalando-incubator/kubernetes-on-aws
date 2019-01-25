@@ -55,11 +55,14 @@ spec:
         - --
         - --no-resolv
         - --keep-in-foreground
+        - --log-facility=-
         - --cache-size=50000
-        - --dns-forward-max=100
+        - --dns-forward-max=500
         - --neg-ttl=60
-        - --server=127.0.0.1#9254
+        # send requests to the last server first, only fallback to the previous ones if it's unreachable
+        - --strict-order
         - --server=10.3.0.11#53
+        - --server=127.0.0.1#9254
         ports:
         - containerPort: 53
           name: dns
