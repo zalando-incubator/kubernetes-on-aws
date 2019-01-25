@@ -41,7 +41,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.150
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.159
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -104,6 +104,9 @@ spec:
           - "-response-header-timeout-backend={{ .ConfigItems.skipper_response_header_timeout_backend }}"
           - "-timeout-backend={{ .ConfigItems.skipper_timeout_backend }}"
           - "-tls-timeout-backend={{ .ConfigItems.skipper_tls_timeout_backend }}"
+{{ if eq .ConfigItems.skipper_disable_access_logs "true" }}
+          - "-access-log-disabled"
+{{ end }}
         resources:
           limits:
             cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
