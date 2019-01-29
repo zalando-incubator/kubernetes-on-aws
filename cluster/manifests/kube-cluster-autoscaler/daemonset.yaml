@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-cluster-autoscaler
-    version: v1.3.1-internal8
+    version: v1.12.2-internal28
 spec:
   selector:
     matchLabels:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: kube-cluster-autoscaler
-        version: v1.3.1-internal8
+        version: v1.12.2-internal28
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
         config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
@@ -29,7 +29,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.3.1-internal8
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal28
         command:
           - ./cluster-autoscaler
           - --v=4
@@ -41,6 +41,7 @@ spec:
           - --skip-nodes-with-system-pods=false
           - --skip-nodes-with-local-storage=false
           - --scale-up-cloud-provider-template=true
+          - --expander=prefer-spot
           - --balance-similar-node-groups
           - --max-node-provision-time=10m
           - --scale-down-enabled={{ .ConfigItems.autoscaling_scale_down_enabled }}

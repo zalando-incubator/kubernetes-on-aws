@@ -20,9 +20,24 @@ Resources:
     Properties:
       HealthCheckGracePeriod: 300
       HealthCheckType: EC2
+{{ if gt (len $data.NodePool.InstanceTypes) 1 }}
+      MixedInstancesPolicy:
+        InstancesDistribution:
+          OnDemandPercentageAboveBaseCapacity: {{if eq $data.NodePool.DiscountStrategy "spot_max_price"}}0{{else}}100{{end}}
+          SpotInstancePools: {{ len $data.NodePool.InstanceTypes }}
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref LaunchTemplate
+            Version: !GetAtt LaunchTemplate.LatestVersionNumber
+          Overrides:
+{{ range $type := $data.NodePool.InstanceTypes }}
+            - InstanceType: "{{ $type }}"
+{{ end }}
+{{ else }}
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplate
         Version: !GetAtt LaunchTemplate.LatestVersionNumber
+{{ end }}
       MinSize: '{{ asgSize $data.NodePool.MinSize $azCount }}'
       MaxSize: '{{ asgSize $data.NodePool.MaxSize $azCount }}'
       Tags:
@@ -105,11 +120,11 @@ Resources:
         - Images
         - !Ref 'AWS::Region'
         - StableCoreOSImage
-        InstanceType: "{{ .NodePool.InstanceType }}"
-{{- if eq .NodePool.DiscountStrategy "spot_max_price"}}
+        InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
+{{- if and (eq .NodePool.DiscountStrategy "spot_max_price") (eq (len $data.NodePool.InstanceTypes) 1) }}
         InstanceMarketOptions:
           MarketType: spot
-{{end}}
+{{ end }}
         UserData: "{{ .UserData }}"
     Type: 'AWS::EC2::LaunchTemplate'
 {{ end }}
