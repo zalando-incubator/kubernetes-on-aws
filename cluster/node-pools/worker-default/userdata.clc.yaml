@@ -87,6 +87,21 @@ systemd:
       [Install]
       WantedBy=multi-user.target
 
+  - name: dns-conntrack-iptables.service
+    enable: true
+    contents: |
+      [Unit]
+      After=private-ipv4.service
+
+      [Service]
+      Type=simple
+      Restart=on-failure
+      RestartSec=1
+      ExecStart=/opt/bin/dns-conntrack-iptables
+
+      [Install]
+      WantedBy=multi-user.target
+
   - name: dockercfg.service
     enable: true
     contents: |
@@ -336,6 +351,24 @@ storage:
           --jump DNAT \
           --table nat \
           --to-destination ${PRIVATE_EC2_IPV4}:8181
+
+  - filesystem: root
+    path: /opt/bin/dns-conntrack-iptables
+    mode: 0755
+    contents:
+      inline: |
+        #!/bin/bash
+        set -euo pipefail
+
+        /usr/sbin/iptables -I PREROUTING 1 -t raw -p udp -d "${PRIVATE_EC2_IPV4}" --dport 53 -j NOTRACK
+        /usr/sbin/iptables -I PREROUTING 1 -t raw -p tcp -d "${PRIVATE_EC2_IPV4}" --dport 53 -j NOTRACK
+        /usr/sbin/iptables -I OUTPUT 1 -t raw -p udp -s "${PRIVATE_EC2_IPV4}" --sport 53 -j NOTRACK
+        /usr/sbin/iptables -I OUTPUT 1 -t raw -p tcp -s "${PRIVATE_EC2_IPV4}" --sport 53 -j NOTRACK
+
+        /usr/sbin/iptables -I INPUT 1 -t filter -p udp -d "${PRIVATE_EC2_IPV4}" --dport 53 -j ACCEPT
+        /usr/sbin/iptables -I INPUT 1 -t filter -p tcp -d "${PRIVATE_EC2_IPV4}" --dport 53 -j ACCEPT
+        /usr/sbin/iptables -I OUTPUT 1 -t filter -p udp -s "${PRIVATE_EC2_IPV4}" --sport 53 -j ACCEPT
+        /usr/sbin/iptables -I OUTPUT 1 -t filter -p tcp -s "${PRIVATE_EC2_IPV4}" --sport 53 -j ACCEPT
 
   {{if index .Cluster.ConfigItems "docker-1.12"}}
   - filesystem: root
