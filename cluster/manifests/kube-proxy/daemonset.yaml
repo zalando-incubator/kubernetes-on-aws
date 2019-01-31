@@ -11,7 +11,7 @@ spec:
     matchLabels:
       application: kube-proxy
   updateStrategy:
-    type: OnDelete
+    type: RollingUpdate
   template:
     metadata:
       name: kube-proxy
@@ -41,10 +41,10 @@ spec:
           privileged: true
         resources:
           requests:
-            cpu: 50m
+            cpu: 10m
             memory: 200Mi
           limits:
-            cpu: 50m
+            cpu: 10m
             memory: 200Mi
         volumeMounts:
         - name: ssl-certs
