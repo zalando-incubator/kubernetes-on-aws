@@ -54,7 +54,7 @@ systemd:
       Type=simple
       Restart=on-failure
       RestartSec=1
-      ExecStart=/usr/bin/bash -c "/usr/bin/hostnamectl set-hostname $(/usr/bin/curl --silent --fail http://169.254.169.254/latest/meta-data/local-hostname)"
+      ExecStart=/usr/bin/bash -euo pipefail -c "/usr/bin/hostnamectl set-hostname $(/usr/bin/curl --silent --fail http://169.254.169.254/latest/meta-data/local-hostname)"
 
       [Install]
       WantedBy=multi-user.target
@@ -135,7 +135,7 @@ systemd:
       Description=Set PRIVATE_EC2_IPV4 env
 
       [Service]
-      ExecStart=/usr/bin/bash -c "/usr/bin/systemctl set-environment PRIVATE_EC2_IPV4=$(/usr/bin/curl --silent --fail http://169.254.169.254/latest/meta-data/local-ipv4)"
+      ExecStart=/usr/bin/bash -euo pipefail -c "/usr/bin/systemctl set-environment PRIVATE_EC2_IPV4=$(/usr/bin/curl --silent --fail http://169.254.169.254/latest/meta-data/local-ipv4)"
       RemainAfterExit=yes
 
       [Install]
