@@ -22,13 +22,9 @@ data:
     <filter kubernetes.**>
       @type record_transformer
       <record>
-        application ${tag_parts[3]}
-        component   ${tag_parts[4]}
-        namespace   ${tag_parts[5]}
-        environment ${tag_parts[6]}
-        version     ${tag_parts[7]}
-        container   ${tag_parts[8]}
-        pod         ${tag_parts[9]}
+        # s3_path is: ${application}/${component}/${namespace}/${environment}/${version}/${cont_name}
+        s3_path  ${tag_parts[4]}/${tag_parts[5]}/${tag_parts[6]}/${tag_parts[7]}/${tag_parts[8]}/${tag_parts[9]}
+        pod      ${tag_parts[10]}
       </record>
     </filter>
 
@@ -39,8 +35,8 @@ data:
       <instance_profile_credentials>
         retries 10
       </instance_profile_credentials>
-      s3_object_key_format kubernetes/${application}/${component}/${namespace}/${environment}/${version}/${container}/%Y/%m/%d/%H/${pod}/%Y%m%dT%H%M_%{index}.%{file_extension}
-      <buffer time,application,component,namespace,environment,version,container,pod>
+      s3_object_key_format kubernetes/${s3_path}/%Y/%m/%d/%H/${pod}/%Y%m%dT%H%M_%{index}.%{file_extension}
+      <buffer time,s3_path,pod>
         @type file
         path /mnt/buffer/kubernetes/
         timekey 5m
