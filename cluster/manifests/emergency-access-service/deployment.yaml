@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: emergency-access-service
-    version: master-64
+    version: master-65
 spec:
   replicas: 1
   selector:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: emergency-access-service
-        version: master-64
+        version: master-65
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "emergency-access-service", "parser": "json-structured-log"}]
@@ -40,7 +40,7 @@ spec:
             cpu: 25m
             memory: 25Mi
       - name: emergency-access-service
-        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-64"
+        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-65"
         args:
         - --insecure-http
         - --community={{ .Owner }}
@@ -66,6 +66,17 @@ spec:
               fieldPath: metadata.namespace
         - name: AWS_REGION
           value: {{.Region}}
+        - name: OPENTRACING_LIGHTSTEP_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: "emergency-access-service-secrets"
+              key: opentracing-lightstep-access-token
+        - name: OPENTRACING_LIGHTSTEP_COLLECTOR_HOST
+          value: "tracing.stups.zalan.do"
+        - name: OPENTRACING_LIGHTSTEP_COLLECTOR_PORT
+          value: "8444"
+        - name: OPENTRACING_LIGHTSTEP_COMPONENT_NAME
+          value: "emergency-access-service"
         ports:
         - containerPort: 8080
         volumeMounts:
