@@ -130,4 +130,4 @@ longer than it should have been.
 [vpa]: https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler
 [k8s_dns_issue]: https://github.com/kubernetes/kubernetes/issues/56903
 [conntrack_races]: https://www.weave.works/blog/racy-conntrack-and-dns-lookup-timeouts
-[flannel_tc]: https://github.com/zalando-incubator/kubernetes-on-aws/pull/1228<Paste>
+[flannel_tc]: https://github.com/zalando-incubator/kubernetes-on-aws/pull/1228
