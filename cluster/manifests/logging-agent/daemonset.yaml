@@ -88,7 +88,7 @@ spec:
         - name: CLUSTER_ENVIRONMENT
           value: "{{ .Environment }}"
         - name: WATCHER_AGENTS
-          value: scalyr
+          value: scalyr{{if eq .ConfigItems.logging_fluentd_enabled "true"}},symlinker{{end}}
         - name: WATCHER_SCALYR_API_KEY
           valueFrom:
             secretKeyRef:
@@ -108,6 +108,10 @@ spec:
           value: "200000"
         - name: WATCHER_SCALYR_JOURNALD_WRITE_BURST
           value: "3000000"
+{{ if eq .ConfigItems.logging_fluentd_enabled "true" }}
+        - name: WATCHER_SYMLINK_DIR
+          value: /mnt/fluentd-logs
+{{ end }}
 
         resources:
           limits:
@@ -126,8 +130,10 @@ spec:
           readOnly: false
         - name: scalyr-config
           mountPath: /mnt/scalyr-config
+{{ if eq .ConfigItems.logging_fluentd_enabled "true" }}
         - name: fluentd-logs
           mountPath: /mnt/fluentd-logs
+{{ end }}
 
       - name: scalyr-agent
 
@@ -169,6 +175,7 @@ spec:
             cpu: 300m
             memory: 500Mi
 
+{{ if eq .ConfigItems.logging_fluentd_enabled "true" }}
       - name: fluentd
 
         image: pierone.stups.zalan.do/logging/fluentd:v1.3.3-zal-master-5
@@ -201,6 +208,7 @@ spec:
           requests:
             cpu: 300m
             memory: 500Mi
+{{ end }}
 
       volumes:
       - name: containerlogs
@@ -219,13 +227,14 @@ spec:
         hostPath:
           path: /etc/scalyr-agent
 
-      - name: fluentd-config
-        configMap:
-          name: fluentd-config
-
       - name: scalyr-logs
         hostPath:
           path: /var/log/scalyr-agent
+
+{{ if eq .ConfigItems.logging_fluentd_enabled "true" }}
+      - name: fluentd-config
+        configMap:
+          name: fluentd-config
 
       - name: fluentd-logs
         emptyDir: {}
@@ -236,4 +245,5 @@ spec:
       - name: fluentd-posfiles
         hostPath:
           path: /var/lib/fluentd
+{{ end }}
 {{ end }}
