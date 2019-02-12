@@ -19,6 +19,21 @@ data:
       </parse>
     </source>
 
+    <source>
+      @type prometheus
+      bind 0.0.0.0
+      port 9110
+      metrics_path /metrics
+    </source>
+
+    <source>
+      @type prometheus_output_monitor
+      interval 60
+      <labels>
+        hostname ${hostname}
+      </labels>
+    </source>
+
     <filter kubernetes.**>
       @type age
     </filter>
@@ -27,9 +42,27 @@ data:
       @type record_transformer
       <record>
         # s3_path is: ${application}/${component}/${namespace}/${environment}/${version}/${cont_name}
-        s3_path  ${tag_parts[4]}/${tag_parts[5]}/${tag_parts[6]}/${tag_parts[7]}/${tag_parts[8]}/${tag_parts[9]}
-        pod      ${tag_parts[10]}
+        s3_path     ${tag_parts[4]}/${tag_parts[5]}/${tag_parts[6]}/${tag_parts[7]}/${tag_parts[8]}/${tag_parts[9]}
+        application ${tag_parts[4]}
+        version     ${tag_parts[8]}
+        cont_name   ${tag_parts[9]}
+        pod         ${tag_parts[10]}
       </record>
+    </filter>
+
+    <filter kubernetes.**>
+      @type prometheus
+      <metric>
+        name fluentd_num_records_total
+        type counter
+        desc The total number of incoming records
+        <labels>
+          application ${application}
+          version     ${version}
+          cont_name   ${cont_name}
+          hostname    ${hostname}
+        </labels>
+      </metric>
     </filter>
 
     <match kubernetes.**>
