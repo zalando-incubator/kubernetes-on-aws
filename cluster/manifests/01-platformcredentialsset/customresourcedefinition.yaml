@@ -16,5 +16,45 @@ spec:
     - pcs
     categories:
       - all
+  validation:
+    openAPIV3Schema:
+      required:
+        - spec
+      properties:
+        spec:
+          required:
+            - application
+          properties:
+            application:
+              type: string
+            clients:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  realm:
+                    type: string
+                    enum:
+                      - customers
+                      - users
+                      - services
+                  grant:
+                    type: string
+                    enum:
+                      - authorization-code
+                      - implicit
+                      - resource-owner-password-credentials
+                      - client-credentials
+                  redirectUri:
+                    type: string
+            tokens:
+              type: object
+              additionalProperties:
+                type: object
+            token_version:
+              type: string
+              enum:
+                - v1
+                - v2
   subresources:
     status: {}
