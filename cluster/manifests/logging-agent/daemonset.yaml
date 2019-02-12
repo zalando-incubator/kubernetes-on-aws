@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: logging-agent
-    version: v0.22
+    version: v0.24
     component: logging
 spec:
   selector:
@@ -19,7 +19,7 @@ spec:
       name: logging-agent
       labels:
         application: logging-agent
-        version: v0.22
+        version: v0.24
         component: logging
       annotations:
         iam.amazonaws.com/role: {{.LocalID}}-app-logging-agent
@@ -79,7 +79,7 @@ spec:
           mountPath: /mnt/scalyr-checkpoint
       containers:
       - name: log-watcher
-        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:0.22
+        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:0.24
         env:
         - name: CLUSTER_NODE_NAME
           valueFrom:
@@ -178,7 +178,7 @@ spec:
 {{ if eq .ConfigItems.logging_fluentd_enabled "true" }}
       - name: fluentd
 
-        image: pierone.stups.zalan.do/logging/fluentd:v1.3.3-zal-master-5
+        image: pierone.stups.zalan.do/logging/fluentd:v1.3.3-zal-master-8
 
         volumeMounts:
         - name: containerlogs
