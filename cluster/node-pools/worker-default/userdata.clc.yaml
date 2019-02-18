@@ -402,6 +402,19 @@ storage:
         NTP=169.254.169.123
 
   - filesystem: root
+    path: /etc/ssh/sshd_config
+    mode: 0400
+    contents:
+      inline: |
+        Subsystem sftp internal-sftp
+        ClientAliveInterval 600
+        AuthenticationMethods publickey
+        UseDNS no
+        UsePAM yes
+        PrintLastLog no # handled by PAM
+        PrintMotd no    # handled by PAM
+
+  - filesystem: root
     path: /opt/bin/drain-node
     mode: 0755
     contents:
