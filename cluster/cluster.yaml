@@ -1112,6 +1112,49 @@ Resources:
       RoleName: "{{.Cluster.LocalID}}-app-zmon"
     Type: 'AWS::IAM::Role'
 
+  LoggingAgentIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-app-logging-agent"
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref WorkerIAMRole
+          - Action: ["sts:AssumeRole"]
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref MasterIAMRole
+      Policies:
+        - PolicyName: AllowS3BucketAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+            - Action: ["s3:ListBucket"]
+              Effect: "Allow"
+              Resource: 'arn:aws:s3:::{{.Cluster.ConfigItems.logging_s3_bucket}}'
+            - Action: ["s3:GetObject"]
+              Effect: "Allow"
+              Resource: 'arn:aws:s3:::{{.Cluster.ConfigItems.logging_s3_bucket}}/*'
+            - Action: ["s3:PutObject"]
+              Effect: "Allow"
+              Resource: 'arn:aws:s3:::{{.Cluster.ConfigItems.logging_s3_bucket}}/*'
+
   KubeMetricsIAMRole:
     Properties:
       AssumeRolePolicyDocument:
