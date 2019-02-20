@@ -1,0 +1,32 @@
+{{ if ne .Environment "production" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kube-janitor
+  namespace: kube-system
+data:
+  rules.yaml: |-
+    # example rules configuration to set TTL for arbitrary objects
+    # see https://github.com/hjacobs/kube-janitor for details
+    rules:
+      - id: require-application-label
+        # remove deployments and statefulsets without a label "application"
+        resources:
+          # resources are prefixed with "XXX" to make sure they are not active by accident
+          # modify the rule as needed and remove the "XXX" prefix to activate
+          - XXXdeployments
+          - XXXstatefulsets
+        # see http://jmespath.org/specification.html
+        jmespath: "!(spec.template.metadata.labels.application)"
+        ttl: 4d
+      - id: temporary-pr-namespaces
+        # delete all namespaces with a name starting with "pr-*"
+        resources:
+          # resources are prefixed with "XXX" to make sure they are not active by accident
+          # modify the rule as needed and remove the "XXX" prefix to activate
+          - XXXnamespaces
+        # this uses JMESPath's built-in "starts_with" function
+        # see http://jmespath.org/specification.html#starts-with
+        jmespath: "starts_with(metadata.name, 'pr-')"
+        ttl: 4h
+{{ end }}
