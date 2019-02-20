@@ -51,6 +51,13 @@ data:
         target_label: node_name
       - action: labeldrop
         regex: "^(pod|node|container)$"
+    - job_name: 'etcd-servers'
+      scheme: http
+      dns_sd_configs:
+      - names:
+        - "{{ with $hostPort := splitHostPort .ConfigItems.etcd_endpoints }}{{ .Host }}{{ end }}"
+        type: "A"
+        port: 2381
     - job_name: 'kubernetes-service-endpoints'
       scheme: http
       kubernetes_sd_configs:
@@ -125,7 +132,7 @@ data:
         target_label: uid
       - source_labels: [__name__]
         action: keep
-        regex: '(container_cpu_cfs_throttled_seconds_total|container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_memory_rss|container_memory_cache|container_network_receive_bytes_total|container_network_transmit_bytes_total)'
+        regex: '(container_cpu_cfs_throttled_seconds_total|container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_memory_rss|container_memory_cache|container_network_receive_bytes_total|container_network_transmit_bytes_total|container_fs_usage_bytes|container_fs_limit_bytes|container_fs_reads_bytes_total|container_fs_writes_bytes_total)'
     - job_name: 'kubelet-metrics'
       kubernetes_sd_configs:
       - role: node
