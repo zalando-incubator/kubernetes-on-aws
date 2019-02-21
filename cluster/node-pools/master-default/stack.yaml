@@ -26,6 +26,9 @@ Resources:
       - Key: Name
         PropagateAtLaunch: true
         Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
+      - Key: kubernetes.io/role
+        PropagateAtLaunch: true
+        Value: master
       VPCZoneIdentifier: !Split [",", "{{ .Cluster.ConfigItems.subnets }}"]
     Type: 'AWS::AutoScaling::AutoScalingGroup'
   LaunchTemplate:
