@@ -198,7 +198,7 @@ systemd:
       --node-labels=${REPLACEMENT_STRATEGY_LABEL} \
 {{- end }}
       --node-labels={{ .Values.node_labels }} \
-      --cluster-dns=${PRIVATE_EC2_IPV4},10.3.0.11 \
+      --cluster-dns=${PRIVATE_EC2_IPV4} \
       --cluster-domain=cluster.local \
       --kubeconfig=/etc/kubernetes/kubeconfig \
       --healthz-bind-address=0.0.0.0 \
@@ -400,6 +400,19 @@ storage:
       inline: |
         [Time]
         NTP=169.254.169.123
+
+  - filesystem: root
+    path: /etc/ssh/sshd_config
+    mode: 0400
+    contents:
+      inline: |
+        Subsystem sftp internal-sftp
+        ClientAliveInterval 180
+        AuthenticationMethods publickey
+        UseDNS no
+        UsePAM yes
+        PrintLastLog no # handled by PAM
+        PrintMotd no    # handled by PAM
 
   - filesystem: root
     path: /opt/bin/drain-node
