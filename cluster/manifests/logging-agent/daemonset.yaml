@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: logging-agent
-    version: v0.22
+    version: v0.24
     component: logging
 spec:
   selector:
@@ -19,8 +19,10 @@ spec:
       name: logging-agent
       labels:
         application: logging-agent
-        version: v0.22
+        version: v0.24
         component: logging
+      annotations:
+        iam.amazonaws.com/role: {{.LocalID}}-app-logging-agent
     spec:
       priorityClassName: system-node-critical
       serviceAccountName: logging-agent
@@ -77,15 +79,16 @@ spec:
           mountPath: /mnt/scalyr-checkpoint
       containers:
       - name: log-watcher
-        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:0.22
+        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:0.24
         env:
         - name: CLUSTER_NODE_NAME
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-
+        - name: CLUSTER_ENVIRONMENT
+          value: "{{ .Environment }}"
         - name: WATCHER_AGENTS
-          value: scalyr
+          value: scalyr{{if eq .ConfigItems.logging_fluentd_enabled "true"}},symlinker{{end}}
         - name: WATCHER_SCALYR_API_KEY
           valueFrom:
             secretKeyRef:
@@ -105,14 +108,18 @@ spec:
           value: "200000"
         - name: WATCHER_SCALYR_JOURNALD_WRITE_BURST
           value: "3000000"
+{{ if eq .ConfigItems.logging_fluentd_enabled "true" }}
+        - name: WATCHER_SYMLINK_DIR
+          value: /mnt/fluentd-logs
+{{ end }}
 
         resources:
           limits:
-            cpu: 50m
-            memory: 250Mi
+            cpu: "{{ .ConfigItems.logging_watcher_cpu }}"
+            memory: "{{ .ConfigItems.logging_watcher_mem }}"
           requests:
-            cpu: 50m
-            memory: 250Mi
+            cpu: "{{ .ConfigItems.logging_watcher_cpu }}"
+            memory: "{{ .ConfigItems.logging_watcher_mem }}"
 
         volumeMounts:
         - name: containerlogs
@@ -123,6 +130,10 @@ spec:
           readOnly: false
         - name: scalyr-config
           mountPath: /mnt/scalyr-config
+{{ if eq .ConfigItems.logging_fluentd_enabled "true" }}
+        - name: fluentd-logs
+          mountPath: /mnt/fluentd-logs
+{{ end }}
 
       - name: scalyr-agent
 
@@ -158,11 +169,46 @@ spec:
 
         resources:
           limits:
-            cpu: 300m
-            memory: 500Mi
+            cpu: "{{ .ConfigItems.logging_scalyr_cpu }}"
+            memory: "{{ .ConfigItems.logging_scalyr_mem }}"
           requests:
-            cpu: 300m
-            memory: 500Mi
+            cpu: "{{ .ConfigItems.logging_scalyr_cpu }}"
+            memory: "{{ .ConfigItems.logging_scalyr_mem }}"
+
+{{ if eq .ConfigItems.logging_fluentd_enabled "true" }}
+      - name: fluentd
+
+        image: pierone.stups.zalan.do/logging/fluentd:v1.3.3-zal-master-8
+
+        volumeMounts:
+        - name: containerlogs
+          mountPath: /mnt/containers
+          readOnly: true
+        - name: fluentd-logs
+          mountPath: /mnt/fluentd-logs
+          readOnly: true
+        - name: fluentd-buffer
+          mountPath: /mnt/buffer
+        - name: fluentd-posfiles
+          mountPath: /mnt/posfiles
+        - name: fluentd-config
+          mountPath: /fluentd/etc/
+          readOnly: true
+        - name: journal
+          mountPath: /var/log/journal
+          readOnly: true
+
+        ports:
+          - containerPort: 9110
+
+        resources:
+          limits:
+            cpu: "{{ .ConfigItems.logging_fluentd_cpu }}"
+            memory: "{{ .ConfigItems.logging_fluentd_mem }}"
+          requests:
+            cpu: "{{ .ConfigItems.logging_fluentd_cpu }}"
+            memory: "{{ .ConfigItems.logging_fluentd_mem }}"
+{{ end }}
 
       volumes:
       - name: containerlogs
@@ -184,4 +230,20 @@ spec:
       - name: scalyr-logs
         hostPath:
           path: /var/log/scalyr-agent
+
+{{ if eq .ConfigItems.logging_fluentd_enabled "true" }}
+      - name: fluentd-config
+        configMap:
+          name: fluentd-config
+
+      - name: fluentd-logs
+        emptyDir: {}
+
+      - name: fluentd-buffer
+        emptyDir: {}
+
+      - name: fluentd-posfiles
+        hostPath:
+          path: /var/lib/fluentd
+{{ end }}
 {{ end }}
