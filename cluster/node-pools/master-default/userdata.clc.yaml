@@ -332,7 +332,7 @@ storage:
             - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,ExtendedResourceToleration
             - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
             - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-            - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
+            - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
             - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1/podsecuritypolicy=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
             - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
             - --authentication-token-webhook-cache-ttl=10s
@@ -416,7 +416,7 @@ storage:
               - mountPath: /etc/kubernetes/ssl
                 name: ssl-certs-kubernetes
                 readOnly: true
-          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.5.0
+          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.5.4
             name: webhook
             ports:
             - containerPort: 8081
@@ -536,7 +536,7 @@ storage:
             - controller-manager
             - --kubeconfig=/etc/kubernetes/controller-kubeconfig
             - --leader-elect=true
-            - --service-account-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
+            - --service-account-private-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
             - --root-ca-file=/etc/kubernetes/ssl/ca.pem
             - --cloud-provider=aws
             - --cloud-config=/etc/kubernetes/cloud-config.ini
@@ -899,6 +899,20 @@ storage:
     contents:
       remote:
         url: "data:text/plain;base64,{{ .Cluster.ConfigItems.admission_controller_key }}"
+
+  - filesystem: root
+    path: /etc/kubernetes/ssl/service-account-private-key.pem
+    mode: 0664
+    contents:
+      remote:
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.service_account_private_key }}"
+
+  - filesystem: root
+    path: /etc/kubernetes/ssl/service-account-public-key.pem
+    mode: 0664
+    contents:
+      remote:
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.service_account_private_key | base64Decode | publicKey | base64 }}"
 
   - filesystem: root
     path: /etc/kubernetes/cloud-config.ini
