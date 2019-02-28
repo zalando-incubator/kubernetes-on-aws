@@ -414,6 +414,13 @@ storage:
         PrintMotd no    # handled by PAM
 
   - filesystem: root
+    path: /etc/sysctl.d/01-max-user-watches.conf
+    mode: 0644
+    contents:
+      inline: |
+        fs.inotify.max_user_watches=100000
+
+  - filesystem: root
     path: /opt/bin/drain-node
     mode: 0755
     contents:
