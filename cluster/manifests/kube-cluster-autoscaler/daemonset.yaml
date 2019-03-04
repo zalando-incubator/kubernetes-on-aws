@@ -21,6 +21,10 @@ spec:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
         config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
     spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
       priorityClassName: system-cluster-critical
       serviceAccountName: system
       dnsPolicy: Default
