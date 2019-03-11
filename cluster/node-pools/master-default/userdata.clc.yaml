@@ -43,6 +43,21 @@ systemd:
       [Install]
       WantedBy=multi-user.target
 
+  - name: disable-thp.service
+    enable: true
+    contents: |
+      [Unit]
+      Before=docker.service
+
+      [Service]
+      Type=simple
+      Restart=on-failure
+      RestartSec=1
+      ExecStart=/bin/sh -c '/usr/bin/echo madvise > /sys/kernel/mm/transparent_hugepage/enabled'
+
+      [Install]
+      WantedBy=multi-user.target
+
   - name: etcd-member.service
     enable: true
     contents: |
@@ -161,8 +176,9 @@ systemd:
       After=docker.service dockercfg.service meta-data-iptables.service private-ipv4.service
 
       [Service]
-      Environment=KUBELET_IMAGE_TAG=v1.12.5_custom.master-1
-      Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/hyperkube
+      Environment=KUBELET_IMAGE_TAG=v1.12.6
+      Environment=KUBELET_IMAGE_ARGS=--exec=/kube-component
+      Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/kubelet
       Environment="RKT_RUN_ARGS=--insecure-options=image \
       --uuid-file-save=/var/run/kubelet-pod.uuid \
       --volume dns,kind=host,source=/etc/resolv.conf \
@@ -302,7 +318,7 @@ storage:
           namespace: kube-system
           labels:
             application: kube-apiserver
-            version: v1.12.5
+            version: v1.12.6
           annotations:
             kubernetes-log-watcher/scalyr-parser: |
               [{"container": "webhook", "parser": "json-structured-log"}]
@@ -314,10 +330,8 @@ storage:
           hostNetwork: true
           containers:
           - name: kube-apiserver
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.12.5
-            command:
-            - /hyperkube
-            - apiserver
+            image: registry.opensource.zalan.do/teapot/kube-apiserver:v1.12.6
+            args:
             - --apiserver-count={{ .Values.apiserver_count }}
             - --bind-address=0.0.0.0
             - --insecure-bind-address=0.0.0.0
@@ -521,7 +535,7 @@ storage:
           namespace: kube-system
           labels:
             application: kube-controller-manager
-            version: v1.12.5
+            version: v1.12.6
         spec:
           priorityClassName: system-node-critical
           tolerations:
@@ -529,10 +543,8 @@ storage:
             effect: NoSchedule
           containers:
           - name: kube-controller-manager
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.12.5
-            command:
-            - /hyperkube
-            - controller-manager
+            image: registry.opensource.zalan.do/teapot/kube-controller-manager:v1.12.6
+            args:
             - --kubeconfig=/etc/kubernetes/controller-kubeconfig
             - --leader-elect=true
             - --service-account-private-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
@@ -594,7 +606,7 @@ storage:
           namespace: kube-system
           labels:
             application: kube-scheduler
-            version: v1.12.5
+            version: v1.12.6
         spec:
           priorityClassName: system-node-critical
           tolerations:
@@ -603,10 +615,8 @@ storage:
           hostNetwork: true
           containers:
           - name: kube-scheduler
-            image: registry.opensource.zalan.do/teapot/hyperkube:v1.12.5
-            command:
-            - /hyperkube
-            - scheduler
+            image: registry.opensource.zalan.do/teapot/kube-scheduler:v1.12.6
+            args:
             - --master=http://127.0.0.1:8080
             - --leader-elect=true
             - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}}
@@ -1037,8 +1047,8 @@ storage:
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.12.5 \
-          --exec=/kubectl -- \
+          docker://registry.opensource.zalan.do/teapot/kubectl:v1.12.6 \
+          --exec=/kube-component -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           label node "$(hostname)" \
           lifecycle-status=draining \
@@ -1050,8 +1060,8 @@ storage:
           --net=host \
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
-          docker://registry.opensource.zalan.do/teapot/hyperkube:v1.12.5 \
-          --exec=/kubectl -- \
+          docker://registry.opensource.zalan.do/teapot/kubectl:v1.12.6 \
+          --exec=/kube-component -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain "$(hostname)" \
           --ignore-daemonsets \
