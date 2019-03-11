@@ -22,6 +22,9 @@ data:
             fallthrough
         }
 {{ end }}
+{{ if eq .ConfigItems.coredns_log_svc_names "true"}}
+        log svc.svc.cluster.local.
+{{ end }}
         prometheus :9153
         proxy . /etc/resolv.conf
         pprof 127.0.0.1:9155
