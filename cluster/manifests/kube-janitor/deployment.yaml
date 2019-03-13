@@ -18,6 +18,7 @@ spec:
         application: kube-janitor
         version: v0.2.2
     spec:
+      priorityClassName: system-cluster-critical
       serviceAccountName: system
       containers:
       - name: janitor
@@ -31,6 +32,7 @@ spec:
           - --rules-file=/config/rules.yaml
         resources:
           limits:
+            cpu: 5m
             memory: 150Mi
           requests:
             # this is a background app ==> low priority, low CPU requests
