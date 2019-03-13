@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: cluster-lifecycle-controller
-    version: master-1
+    version: master-3
 spec:
   replicas: {{if eq .ConfigItems.experimental_cluster_lifecycle_controller "true"}}1{{else}}0{{end}}
   selector:
@@ -17,7 +17,7 @@ spec:
     metadata:
       labels:
         application: cluster-lifecycle-controller
-        version: master-1
+        version: master-3
     spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: system
@@ -29,8 +29,8 @@ spec:
       - key: node.kubernetes.io/not-ready
         operator: Exists
       containers:
-      - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/cluster-lifecycle-controller:master-2
+      - name: cluster-lifecycle-controller
+        image: registry.opensource.zalan.do/teapot/cluster-lifecycle-controller:master-3
         args:
             - --drain-grace-period={{.ConfigItems.drain_grace_period}}
             - --drain-min-pod-lifetime={{.ConfigItems.drain_min_pod_lifetime}}
