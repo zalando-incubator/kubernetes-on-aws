@@ -51,8 +51,12 @@ spec:
       - name: nvidia-driver-installer
         image: registry.opensource.zalan.do/teapot/coreos-nvidia-driver-installer:c117d39
         resources:
+          limits:
+            cpu: 150m
+            memory: 256Mi
           requests:
-            cpu: 0.15
+            cpu: 150m
+            memory: 256Mi
         securityContext:
           privileged: true
         env:
@@ -74,3 +78,11 @@ spec:
       containers:
       - image: registry.opensource.zalan.do/teapot/pause-amd64:3.1
         name: pause
+        # Needs to be the same as the init container, because CA doesn't pay any attention to init containers at all
+        resources:
+          limits:
+            cpu: 150m
+            memory: 256Mi
+          requests:
+            cpu: 150m
+            memory: 256Mi
