@@ -16,9 +16,6 @@ skipper_limits_mem: "250Mi"
 skipper_requests_cpu: "150m"
 skipper_requests_mem: "50Mi"
 
-# skipper general settings
-skipper_disable_access_logs: "false"
-
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "100"
 skipper_ingress_target_average_utilization_memory: "80"
@@ -160,13 +157,16 @@ experimental_cluster_lifecycle_controller: "false"
 # Teapot webhook: gradual rollout
 teapot_admission_controller_default_cpu_request: "25m"
 teapot_admission_controller_default_memory_request: "100Mi"
-teapot_admission_controller_process_resources: "true"
+teapot_admission_controller_process_resources: "false"
 
 {{if eq .Environment "e2e"}}
 teapot_admission_controller_enabled: "true"
 teapot_admission_controller_ignore_namespaces: "^kube-system|(e2e-tests-(downward-api|kubectl|projected|statefulset)-.*)$"
-{{else}}
+{{else if eq .Environment "production"}}
 teapot_admission_controller_enabled: "false"
+teapot_admission_controller_ignore_namespaces: "^kube-system$"
+{{else}}
+teapot_admission_controller_enabled: "true"
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
 {{end}}
 
