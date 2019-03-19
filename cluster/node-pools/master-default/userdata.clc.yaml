@@ -199,6 +199,7 @@ systemd:
       --container-runtime=docker \
       --register-with-taints=node-role.kubernetes.io/master=:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}} \
       --node-labels=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true \
+      --node-labels=cluster-lifecycle-controller.zalan.do/decommission-priority=999 \
       --node-labels=cluster-lifecycle-controller.zalan.do/replacement-strategy=ensure-minimum-healthy-nodes \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
       --node-labels={{ .Values.node_labels }} \
@@ -397,7 +398,7 @@ storage:
               requests:
                 cpu: 100m
                 memory: 200Mi
-          - image: registry.opensource.zalan.do/teapot/admission-controller:master-9
+          - image: registry.opensource.zalan.do/teapot/admission-controller:master-10
             name: admission-controller
             readinessProbe:
               httpGet:
@@ -417,6 +418,9 @@ storage:
               - --pod-default-cpu-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}
               - --pod-default-memory-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_memory_request }}
               - --pod-ignore-namespaces={{ .Cluster.ConfigItems.teapot_admission_controller_ignore_namespaces }}
+{{- if index .Cluster.ConfigItems "teapot_admission_controller_ndots" }}
+              - --pod-dns-ndots={{ .Cluster.ConfigItems.teapot_admission_controller_ndots }}
+{{- end }}
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
               - --pod-process-resources
 {{- end }}
