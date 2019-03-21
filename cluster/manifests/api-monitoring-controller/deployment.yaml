@@ -1,0 +1,46 @@
+apiVersion: "extensions/v1beta1"
+kind: Deployment
+metadata:
+  name: api-monitoring-controller
+  labels:
+    application: api-monitoring-controller
+spec:
+  replicas: {{ if eq .ConfigItems.enable_apimonitoring "true"}}1{{else}}0{{end}}
+  selector:
+    matchLabels:
+      application: api-monitoring-controller
+  template:
+    metadata:
+      labels:
+        application: api-monitoring-controller
+        version: v0.0.93
+    spec:
+      serviceAccountName: api-monitoring-controller-operator
+      containers:
+        - name: api-monitoring-controller
+          image: pierone.stups.zalan.do/architecture/api-monitoring-controller:v0.0.93
+          resources:
+            limits:
+              cpu: 200m
+              memory: 32Mi
+            requests:
+              cpu: 10m
+              memory: 32Mi
+          ports:
+            - containerPort: 7979
+              name: management-port
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 7979
+            initialDelaySeconds: 15
+            timeoutSeconds: 1
+          volumeMounts:
+            - name: api-monitoring-controller-credentials
+              mountPath: /meta/credentials
+              readOnly: true
+      volumes:
+        - name: api-monitoring-controller-credentials
+          secret:
+            secretName: api-monitoring-controller-credentials
+
