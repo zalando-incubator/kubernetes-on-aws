@@ -36,11 +36,15 @@ spec:
               port: 7979
             initialDelaySeconds: 15
             timeoutSeconds: 1
+{{ if ne .Environment "production" }}
           volumeMounts:
             - name: api-monitoring-controller-credentials
               mountPath: /meta/credentials
               readOnly: true
+{{ end }}
+{{ if ne .Environment "production" }}
       volumes:
         - name: api-monitoring-controller-credentials
           secret:
             secretName: api-monitoring-controller-credentials
+{{ end }}
