@@ -24,7 +24,7 @@ webhooks:
     rules:
       - operations: [ "CREATE" ]
         apiGroups: ["storage.k8s.io"]
-        apiVersions: ["v1"]
+        apiVersions: ["v1", "v1beta1"]
         resources: ["storageclasses"]
   - name: node-admitter.teapot.zalan.do
     clientConfig:
@@ -36,4 +36,54 @@ webhooks:
         apiGroups: [""]
         apiVersions: ["v1"]
         resources: ["nodes"]
+  - name: cronjob-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/cronjob"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    failurePolicy: Fail
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: ["batch"]
+        apiVersions: ["v1beta1", "v2alpha1"]
+        resources: ["cronjobs"]
+  - name: job-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/job"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    failurePolicy: Fail
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: ["batch"]
+        apiVersions: ["v1"]
+        resources: ["jobs"]
+  - name: deployment-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/deployment"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    failurePolicy: Fail
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: ["apps"]
+        apiVersions: ["v1", "v1beta2", "v1beta1"]
+        resources: ["deployments"]
+  - name: deployment-legacy-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/deployment"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    failurePolicy: Fail
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: ["extensions"]
+        apiVersions: ["v1beta1"]
+        resources: ["deployments"]
+  - name: statefulset-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/statefulset"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    failurePolicy: Fail
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: ["apps"]
+        apiVersions: ["v1", "v1beta2", "v1beta1"]
+        resources: ["statefulsets"]
 {{ end }}

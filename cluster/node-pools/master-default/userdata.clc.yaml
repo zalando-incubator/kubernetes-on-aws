@@ -53,7 +53,7 @@ systemd:
       Type=simple
       Restart=on-failure
       RestartSec=1
-      ExecStartPre=/bin/sh -c 'test -f /sys/module/nvme_core/parameters/io_timeout && /usr/bin/echo 4294967295 > /sys/module/nvme_core/parameters/io_timeout'
+      ExecStartPre=/bin/sh -c 'test -f /sys/module/nvme_core/parameters/io_timeout && /usr/bin/echo 4294967295 > /sys/module/nvme_core/parameters/io_timeout || true'
       ExecStart=/bin/sh -c '/usr/bin/echo madvise > /sys/kernel/mm/transparent_hugepage/enabled'
 
       [Install]
@@ -399,7 +399,7 @@ storage:
               requests:
                 cpu: 100m
                 memory: 200Mi
-          - image: registry.opensource.zalan.do/teapot/admission-controller:master-10
+          - image: registry.opensource.zalan.do/teapot/admission-controller:master-13
             name: admission-controller
             readinessProbe:
               httpGet:
@@ -411,7 +411,7 @@ storage:
             resources:
               requests:
                 cpu: 50m
-                memory: 50Mi
+                memory: 100Mi
             args:
               - --address=:8085
               - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
@@ -427,6 +427,11 @@ storage:
 {{- end }}
 {{- if eq .Cluster.ConfigItems.experimental_schedule_daemonset_pods "true" }}
               - --node-add-not-ready-taint
+{{- end }}
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_validate_application_label "true" }}
+              - --validate-application-label
+              - --validate-application-label-min-creation-time={{ .Cluster.ConfigItems.teapot_admission_controller_application_min_creation_time }}
+              - --application-registry-url=http://127.0.0.1:8285/
 {{- end }}
             ports:
               - containerPort: 8085
