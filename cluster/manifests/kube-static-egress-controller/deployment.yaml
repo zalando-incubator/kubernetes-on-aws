@@ -30,9 +30,9 @@ spec:
         args:
         - "--log-level=debug"
         - "--provider=aws"
-        - "--aws-nat-cidr-block=172.31.64.0/28"
-        - "--aws-nat-cidr-block=172.31.64.16/28"
-        - "--aws-nat-cidr-block=172.31.64.32/28"
+{{- range $index, $element := split .Cluster.ConfigItems.nat_cidr_blocks "," }}
+        - "--aws-nat-cidr-block={{ $element }}"
+{{- end }}
         - "--aws-az=eu-central-1a"
         - "--aws-az=eu-central-1b"
         - "--aws-az=eu-central-1c"
