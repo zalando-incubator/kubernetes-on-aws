@@ -9,7 +9,7 @@ metadata:
   namespace: kube-system
   labels:
     application: nvidia-driver-installer
-    version: c117d39
+    version: 162d624
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -20,7 +20,7 @@ spec:
     metadata:
       labels:
         application: nvidia-driver-installer
-        version: c117d39
+        version: 162d624
     spec:
       serviceAccountName: nvidia
       tolerations:
@@ -49,10 +49,14 @@ spec:
           path: /
       initContainers:
       - name: nvidia-driver-installer
-        image: registry.opensource.zalan.do/teapot/coreos-nvidia-driver-installer:c117d39
+        image: registry.opensource.zalan.do/teapot/coreos-nvidia-driver-installer:162d624
         resources:
+          limits:
+            cpu: 150m
+            memory: 512Mi
           requests:
-            cpu: 0.15
+            cpu: 150m
+            memory: 512Mi
         securityContext:
           privileged: true
         env:
@@ -63,7 +67,7 @@ spec:
         - name: ROOT_MOUNT_DIR
           value: /root
         - name: NVIDIA_DRIVER_VERSION
-          value: "396.26"
+          value: "410.78"
         volumeMounts:
         - name: nvidia-install-dir-host
           mountPath: /usr/local/nvidia
@@ -74,3 +78,11 @@ spec:
       containers:
       - image: registry.opensource.zalan.do/teapot/pause-amd64:3.1
         name: pause
+        # Needs to be the same as the init container, because CA doesn't pay any attention to init containers at all
+        resources:
+          limits:
+            cpu: 150m
+            memory: 512Mi
+          requests:
+            cpu: 150m
+            memory: 512Mi
