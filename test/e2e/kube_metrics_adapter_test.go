@@ -16,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	"k8s.io/kubernetes/test/e2e/framework/ingress"
 )
 
 // Test Scale down with custom metrics from an app's /metrics endpoint
@@ -25,14 +26,14 @@ import (
 var _ = framework.KubeDescribe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metrics from kube-metrics-adapter)", func() {
 	f := framework.NewDefaultFramework("zalando-kube-metrics-adapter")
 	var cs kubernetes.Interface
-	var jig *framework.IngressTestJig
+	var jig *ingress.IngressTestJig
 
 	const (
 		DeploymentName = "sample-custom-metrics-autoscaling-e2e"
 	)
 
 	BeforeEach(func() {
-		jig = framework.NewIngressTestJig(f.ClientSet)
+		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 	})
 
@@ -91,7 +92,7 @@ type CustomMetricTestCase struct {
 	framework       *framework.Framework
 	hpa             *autoscaling.HorizontalPodAutoscaler
 	kubeClient      kubernetes.Interface
-	jig             *framework.IngressTestJig
+	jig             *ingress.IngressTestJig
 	deployment      *appsv1.Deployment
 	pod             *corev1.Pod
 	initialReplicas int
