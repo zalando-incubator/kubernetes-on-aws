@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: logging-agent
-    version: v0.25
+    version: v0.26
     component: logging
 spec:
   selector:
@@ -19,7 +19,7 @@ spec:
       name: logging-agent
       labels:
         application: logging-agent
-        version: v0.25
+        version: v0.26
         component: logging
       annotations:
         iam.amazonaws.com/role: {{.LocalID}}-app-logging-agent
@@ -83,7 +83,7 @@ spec:
           mountPath: /mnt/scalyr-checkpoint
       containers:
       - name: log-watcher
-        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:0.25
+        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:0.26
         env:
         - name: CLUSTER_NODE_NAME
           valueFrom:
@@ -91,6 +91,8 @@ spec:
               fieldPath: spec.nodeName
         - name: CLUSTER_ENVIRONMENT
           value: "{{ .Environment }}"
+        - name: CLUSTER_ALIAS
+          value: "{{ .Alias }}"
         - name: WATCHER_AGENTS
           value: scalyr,symlinker
         - name: WATCHER_SCALYR_API_KEY
