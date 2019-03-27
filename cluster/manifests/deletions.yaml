@@ -3,22 +3,8 @@ pre_apply: []
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
-# drop old DNS setup
-- name: coredns
-  namespace: kube-system
-  kind: Deployment
-- name: coredns
-  namespace: kube-system
-  kind: PodDisruptionBudget
-- name: coredns
-  namespace: kube-system
-  kind: ConfigMap
-- name: dnsmasq-node
-  namespace: kube-system
-  kind: DaemonSet
-- name: dnsmasq-node
-  namespace: kube-system
-  kind: DaemonSet
-- name: kube-dns-local
-  namespace: kube-system
-  kind: Service
+{{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
+- name: limits
+  namespace: default
+  kind: LimitRange
+{{ end }}
