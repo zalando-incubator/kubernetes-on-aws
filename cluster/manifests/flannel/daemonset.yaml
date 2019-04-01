@@ -21,7 +21,6 @@ spec:
       priorityClassName: system-node-critical
       serviceAccountName: system
       containers:
-{{ if eq .ConfigItems.experimental_flannel_awaiter "true" }}
       - name: delayed-install-cni
         image: registry.opensource.zalan.do/teapot/flannel-awaiter:master-2
         command:
@@ -44,28 +43,6 @@ spec:
           limits:
             cpu: 25m
             memory: 50Mi
-{{ else }}
-      - name: delayed-install-cni
-        image: registry.opensource.zalan.do/teapot/flannel:v0.10.0-8
-        command:
-        - /bin/sh
-        args:
-        - -c
-        - "sleep 120 && cp -f /etc/kube-flannel/cni-conf.json /etc/cni/net.d/10-flannel.conf && cat"
-        stdin: true
-        volumeMounts:
-        - name: cni
-          mountPath: /etc/cni/net.d
-        - name: flannel-cfg
-          mountPath: /etc/kube-flannel/
-        resources:
-          requests:
-            cpu: 25m
-            memory: 25Mi
-          limits:
-            cpu: 25m
-            memory: 25Mi
-{{ end }}
       - name: apiserver-proxy
         image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
         command:
