@@ -1,0 +1,30 @@
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: skipper-default-filter-writers
+  namespace: kube-system
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  resourceNames: ["skipper-default-filters"]
+  verbs: ["update", "get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: api-monitoring-controller-skipper-default-filter-writers
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: skipper-default-filter-writers
+subjects:
+- kind: ServiceAccount
+  name: api-monitoring-controller
+  namespace: api-infrastructure
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skipper-default-filters
+  namespace: kube-system
