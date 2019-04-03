@@ -8,3 +8,7 @@ post_apply:
   namespace: default
   kind: LimitRange
 {{ end }}
+{{ if ne .ConfigItems.enable_ingress_template_controller "true" }}
+- name: ingresstemplates.zalando.org
+  kind: CustomResourceDefinition
+{{ end }}
