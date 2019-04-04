@@ -19,7 +19,7 @@ metadata:
   namespace: kube-system
   labels:
     application: vpa-admission-controller
-    version: patched-0.3.0-master-9
+    version: patched-0.4.0-master-14
     component: vpa
 spec:
   replicas: 1
@@ -30,18 +30,23 @@ spec:
     metadata:
       labels:
         application: vpa-admission-controller
-        version: patched-0.3.0-master-9
+        version: patched-0.4.0-master-14
         component: vpa
     spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: system
       containers:
       - name: admission-controller
-        image: registry.opensource.zalan.do/teapot/vpa-admission-controller:patched-0.3.0-master-9
+        image: registry.opensource.zalan.do/teapot/vpa-admission-controller:patched-0.4.0-master-14
         volumeMounts:
           - name: tls-certs
             mountPath: "/etc/tls-certs"
             readOnly: true
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         resources:
           limits:
             cpu: 200m
