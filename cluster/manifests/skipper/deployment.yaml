@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.10.195
+    version: v0.10.200
     component: ingress
 spec:
   strategy:
@@ -18,7 +18,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.10.195
+        version: v0.10.200
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -42,7 +42,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.195
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.200
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -80,6 +80,7 @@ spec:
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
           - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
+          - "-default-filters-dir=/etc/config/default-filters"
 {{ end }}
           - "-max-audit-body=0"
 {{ if eq .ConfigItems.skipper_clusterratelimit "true"}}
