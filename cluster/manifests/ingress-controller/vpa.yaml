@@ -1,20 +1,20 @@
 apiVersion: autoscaling.k8s.io/v1beta1
 kind: VerticalPodAutoscaler
 metadata:
-  name: external-dns
+  name: kube-ingress-aws-controller
   namespace: kube-system
   labels:
-    application: external-dns
+    application: kube-ingress-aws-controller
 spec:
   targetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: external-dns
+    name: kube-ingress-aws-controller
   updatePolicy:
     updateMode: Auto
   resourcePolicy:
     containerPolicies:
-    - containerName: external-dns
+    - containerName: kube-ingress-aws-controller
       maxAllowed:
-        cpu: 500m
-        memory: 2Gi
+        cpu: 250m
+        memory: 1Gi
