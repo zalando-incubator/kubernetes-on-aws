@@ -501,7 +501,7 @@ storage:
                 value: https://identity.zalando.com/.well-known/openid-configuration
               - name: ENABLE_INTROSPECTION
                 value: "true"
-          - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.4.1
+          - image: registry.opensource.zalan.do/teapot/image-policy-webhook:{{if eq .Cluster.ConfigItems.compliance_checker_enabled "true"}}master-44{{else}}v0.4.1{{end}}
             name: image-policy-webhook
             args:
             - --policy={{ .Cluster.ConfigItems.image_policy }}
