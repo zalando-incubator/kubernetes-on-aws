@@ -69,7 +69,7 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 	})
 
 	It("Should not allow deployment using not trusted image [Image-Webhook] [Non-Compliant] [Zalando]", func() {
-		tag := "bc1a6fe-nottrusted"
+		tag := "bc1a6fe-nottrusted2"
 
 		nameprefix := "image-policy-webhook-test-non-compliant"
 		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
