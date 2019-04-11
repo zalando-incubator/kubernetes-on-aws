@@ -3,6 +3,7 @@ package e2e
 import (
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -13,8 +14,8 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -182,6 +183,54 @@ func createNginxDeploymentWithHostNetwork(nameprefix, namespace, serviceAccount 
 									Name:          "http",
 									ContainerPort: port,
 									HostPort:      port,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createSkipperBackendDeployment(nameprefix, namespace, route string, label map[string]string, port, replicas int32) *appsv1.Deployment {
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nameprefix + string(uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    label,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{MatchLabels: label},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: label,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "skipper",
+							Image: "registry.opensource.zalan.do/pathfinder/skipper:latest",
+							Args: []string{
+								"skipper",
+								"-inline-routes",
+								route,
+							},
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "http",
+									ContainerPort: port,
+								},
+							},
+							Resources: corev1.ResourceRequirements{
+								Limits: map[corev1.ResourceName]resource.Quantity{
+									corev1.ResourceCPU:    resource.MustParse("100m"),
+									corev1.ResourceMemory: resource.MustParse("250Mi"),
+								},
+								Requests: map[corev1.ResourceName]resource.Quantity{
+									corev1.ResourceCPU:    resource.MustParse("100m"),
+									corev1.ResourceMemory: resource.MustParse("250Mi"),
 								},
 							},
 						},
@@ -462,4 +511,28 @@ func createVegetaDeployment(hostPath string, rate int) *appsv1.Deployment {
 			},
 		},
 	}
+}
+
+func createHTTPRoundTripper() (http.RoundTripper, chan<- struct{}) {
+	tr := &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		TLSHandshakeTimeout: 5 * time.Second,
+		IdleConnTimeout:     5 * time.Second,
+	}
+	ch := make(chan struct{})
+	go func(transport *http.Transport, quit <-chan struct{}) {
+		for {
+			select {
+			case <-time.After(3 * time.Second):
+				transport.CloseIdleConnections()
+			case <-quit:
+				return
+			}
+		}
+	}(tr, ch)
+	return tr, ch
 }

@@ -14,7 +14,11 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -101,8 +105,102 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// DNS ready
-		By("Waiting for DNS to see that mate and skipper route to service and pod works")
+		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", 10*time.Minute, isSuccess, false)
 		Expect(err).NotTo(HaveOccurred())
+	})
+})
+
+var __ = framework.KubeDescribe("Ingress tests", func() {
+	f := framework.NewDefaultFramework("skipper-ingress")
+	var (
+		cs  kubernetes.Interface
+		jig *framework.IngressTestJig
+	)
+
+	It("Should create simple ingress [sszuecs] [Ingress] [Zalando]", func() {
+		jig = framework.NewIngressTestJig(f.ClientSet)
+		cs = f.ClientSet
+		serviceName := "skipper-ingress-test"
+		//nameprefix := serviceName + "-"
+		ns := f.Namespace.Name
+		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), e2eHostedZone())
+		labels := map[string]string{
+			"app": serviceName,
+		}
+		port := 8080
+		replicas := int32(3)
+		targetPort := 9090
+		backendContent := "mytest"
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, backendContent)
+		waitTime := 10 * time.Minute
+
+		// backend deployment
+		By("Creating a deployment with " + serviceName + " in namespace " + ns)
+		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
+		deployment, err := cs.Apps().Deployments(ns).Create(depl)
+		defer func() {
+			By("deleting the deployment")
+			defer GinkgoRecover()
+			err2 := cs.Apps().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+			Expect(err2).NotTo(HaveOccurred())
+		}()
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating service " + serviceName + " in namespace " + ns)
+		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
+		_, err = cs.Core().Services(ns).Create(service)
+		Expect(err).NotTo(HaveOccurred())
+
+		ing := createIngress(serviceName, hostName, ns, labels, port)
+		ingressCreate, err := cs.Extensions().Ingresses(ns).Create(ing)
+		Expect(err).NotTo(HaveOccurred())
+
+		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = cs.Extensions().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		Expect(err).NotTo(HaveOccurred())
+
+		//  skipper http -> https redirect
+		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
+		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
+		Expect(err).NotTo(HaveOccurred())
+
+		// ALB ready
+		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
+		err = waitForResponse(addr, "https", waitTime, isSuccess, true)
+		Expect(err).NotTo(HaveOccurred())
+
+		// DNS ready
+		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
+		err = waitForResponse(hostName, "https", waitTime, isSuccess, false)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Test that we get content from the default ingress
+		By("By checking the content of the reply we see that the ingress stack works")
+		rt, quit := createHTTPRoundTripper()
+		defer func() {
+			quit <- struct{}{}
+		}()
+		url := "https://" + hostName + "/"
+		req, err := http.NewRequest("GET", url, nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err := rt.RoundTrip(req)
+		Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			log.Fatalf("Failed to get the right response code from backend: %d", resp.StatusCode)
+		}
+		b := make([]byte, 0, 1024)
+		buf := bytes.NewBuffer(b)
+		if n, err := io.Copy(buf, resp.Body); err != nil {
+			log.Fatalf("Failed to copy body: %v", err)
+		} else {
+			log.Printf("copy %d bytes of data: %s", n, buf)
+		}
+		if s := buf.String(); s != backendContent {
+			log.Fatalf("Failed to get the right content got: %s, expected: %s", s, backendContent)
+		}
 	})
 })
