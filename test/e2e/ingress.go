@@ -14,9 +14,7 @@ limitations under the License.
 package e2e
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -188,19 +186,152 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 		resp, err := rt.RoundTrip(req)
 		Expect(err).NotTo(HaveOccurred())
-		defer resp.Body.Close()
-		if resp.StatusCode != 200 {
-			log.Fatalf("Failed to get the right response code from backend: %d", resp.StatusCode)
-		}
-		b := make([]byte, 0, 1024)
-		buf := bytes.NewBuffer(b)
-		if n, err := io.Copy(buf, resp.Body); err != nil {
-			log.Fatalf("Failed to copy body: %v", err)
-		} else {
-			log.Printf("copy %d bytes of data: %s", n, buf)
-		}
-		if s := buf.String(); s != backendContent {
+		s, err := getBody(resp)
+		if s != backendContent {
 			log.Fatalf("Failed to get the right content got: %s, expected: %s", s, backendContent)
 		}
+
+		// Test ingress Predicates with Method("GET")
+		path := "/"
+		updatedIng := updateIngress(ingressCreate.ObjectMeta.Name,
+			ingressCreate.ObjectMeta.Namespace,
+			hostName,
+			serviceName,
+			path,
+			ingressCreate.ObjectMeta.Labels,
+			map[string]string{
+				"zalando.org/skipper-predicate": `Method("GET")`,
+			},
+			port,
+		)
+		ingressUpdate, err := cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
+		Expect(err).NotTo(HaveOccurred())
+		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with the right content for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
+		time.Sleep(10 * time.Second)
+		resp, err = rt.RoundTrip(req)
+		Expect(err).NotTo(HaveOccurred())
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		if s != backendContent {
+			log.Fatalf("Failed to get the right content after update got: %s, expected: %s", s, backendContent)
+		}
+
+		// Test ingress Predicates with Method("PUT")
+		path = "/"
+		updatedIng = updateIngress(ingressCreate.ObjectMeta.Name,
+			ingressCreate.ObjectMeta.Namespace,
+			hostName,
+			serviceName,
+			path,
+			ingressCreate.ObjectMeta.Labels,
+			map[string]string{
+				"zalando.org/skipper-predicate": `Method("PUT")`,
+			},
+			port,
+		)
+		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
+		Expect(err).NotTo(HaveOccurred())
+		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
+		time.Sleep(10 * time.Second)
+		resp, err = rt.RoundTrip(req)
+		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != 404 {
+			log.Fatalf("Failed to get the right the right status code 404, got: %d", resp.StatusCode)
+		}
+
+		// Test ingress Filters
+		path = "/"
+		headerKey := "X-Foo"
+		headerVal := "f00"
+		updatedIng = updateIngress(ingressCreate.ObjectMeta.Name,
+			ingressCreate.ObjectMeta.Namespace,
+			hostName,
+			serviceName,
+			path,
+			ingressCreate.ObjectMeta.Labels,
+			map[string]string{
+				"zalando.org/skipper-filter": fmt.Sprintf(`setResponseHeader("%s", "%s")`, headerKey, headerVal),
+			},
+			port,
+		)
+		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
+		Expect(err).NotTo(HaveOccurred())
+		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with %s header set to %s for the next request", ingressUpdate.Namespace, ingressUpdate.Name, headerKey, headerVal))
+		time.Sleep(10 * time.Second)
+		resp, err = rt.RoundTrip(req)
+		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != 200 {
+			log.Fatalf("Failed to get the right the right status code 200, got: %d", resp.StatusCode)
+		}
+		if got := resp.Header.Get(headerKey); got != headerVal {
+			log.Fatalf("Failed to get Header, got: %s, want: %s", got, headerVal)
+		}
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		if s != backendContent {
+			log.Fatalf("Failed to get the right content after update got: %s, expected: %s", s, backendContent)
+		}
+
+		// Test additional hostname
+		additionalHostname := fmt.Sprintf("foo-%d.%s", time.Now().UTC().Unix(), e2eHostedZone())
+		addHostIng := addHostIngress(updatedIng, additionalHostname)
+		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(addHostIng)
+		Expect(err).NotTo(HaveOccurred())
+		By("Waiting for new DNS hostname to be resolvable " + additionalHostname)
+		err = waitForResponse(additionalHostname, "https", waitTime, isSuccess, false)
+		Expect(err).NotTo(HaveOccurred())
+		By(fmt.Sprintf("Testing the old hostname %s for ingress %s/%s we make sure old routes are working", hostName, ingressUpdate.Namespace, ingressUpdate.Name))
+
+		resp, err = rt.RoundTrip(req)
+		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != 200 {
+			log.Fatalf("Failed to get the right the right status code 200, got: %d", resp.StatusCode)
+		}
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		if s != backendContent {
+			log.Fatalf("Failed to get the right content after update got: %s, expected: %s", s, backendContent)
+		}
+		By(fmt.Sprintf("Testing the new hostname %s for ingress %s/%s we make sure old routes are working", additionalHostname, ingressUpdate.Namespace, ingressUpdate.Name))
+		url = "https://" + additionalHostname + "/"
+		req, err = http.NewRequest("GET", url, nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err = rt.RoundTrip(req)
+		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != 200 {
+			log.Fatalf("Failed to get the right the right status code 200, got: %d", resp.StatusCode)
+		}
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		if s != backendContent {
+			log.Fatalf("Failed to get the right content after update got: %s, expected: %s", s, backendContent)
+		}
+
+		// Test changed path
+		newPath := "/foo"
+		changePathIng := changePathIngress(updatedIng, newPath)
+		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(changePathIng)
+		Expect(err).NotTo(HaveOccurred())
+		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
+		time.Sleep(10 * time.Second)
+		resp, err = rt.RoundTrip(req)
+		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != 404 {
+			log.Fatalf("Failed to get the right the right status code 404, got: %d", resp.StatusCode)
+		}
+		pathURL := "https://" + hostName + newPath
+		pathReq, err := http.NewRequest("GET", pathURL, nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err = rt.RoundTrip(pathReq)
+		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != 200 {
+			log.Fatalf("Failed to get the right the right for %s status code 200, got: %d", newPath, resp.StatusCode)
+		}
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		if s != backendContent {
+			log.Fatalf("Failed to get the right content from %s after update got: %s, expected: %s", newPath, s, backendContent)
+		}
+
 	})
 })

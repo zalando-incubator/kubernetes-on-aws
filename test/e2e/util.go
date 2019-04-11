@@ -1,8 +1,10 @@
 package e2e
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -54,6 +56,65 @@ func createIngress(name, hostname, namespace string, label map[string]string, po
 			},
 		},
 	}
+}
+
+func updateIngress(name, namespace, hostname, svcName, path string, labels, annotations map[string]string, port int) *v1beta1.Ingress {
+	return &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: annotations,
+		},
+		Spec: v1beta1.IngressSpec{
+			Backend: &v1beta1.IngressBackend{
+				ServiceName: name,
+				ServicePort: intstr.FromInt(port),
+			},
+			Rules: []v1beta1.IngressRule{
+				{
+					Host: hostname,
+					IngressRuleValue: v1beta1.IngressRuleValue{
+						HTTP: &v1beta1.HTTPIngressRuleValue{
+							Paths: []v1beta1.HTTPIngressPath{
+								{
+									Path: path,
+									Backend: v1beta1.IngressBackend{
+										ServiceName: svcName,
+										ServicePort: intstr.FromInt(port),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func addHostIngress(ing *v1beta1.Ingress, hostnames ...string) *v1beta1.Ingress {
+	addRules := []v1beta1.IngressRule{}
+	origRules := ing.Spec.Rules
+
+	for _, hostname := range hostnames {
+		for _, rule := range origRules {
+			r := rule
+			r.Host = hostname
+			addRules = append(addRules, r)
+		}
+	}
+	ing.Spec.Rules = append(origRules, addRules...)
+	return ing
+}
+
+func changePathIngress(ing *v1beta1.Ingress, path string) *v1beta1.Ingress {
+	for _, rule := range ing.Spec.Rules {
+		for _, p := range rule.IngressRuleValue.HTTP.Paths {
+			p.Path = path
+		}
+	}
+	return ing
 }
 
 func createNginxDeployment(nameprefix, namespace string, label map[string]string, port, replicas int32) *appsv1.Deployment {
@@ -535,4 +596,17 @@ func createHTTPRoundTripper() (http.RoundTripper, chan<- struct{}) {
 		}
 	}(tr, ch)
 	return tr, ch
+}
+
+func getBody(resp *http.Response) (string, error) {
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return "", fmt.Errorf("response code from backend: %d", resp.StatusCode)
+	}
+	b := make([]byte, 0, 1024)
+	buf := bytes.NewBuffer(b)
+	if _, err := io.Copy(buf, resp.Body); err != nil {
+		return "", fmt.Errorf("failed to copy body: %v", err)
+	}
+	return buf.String(), nil
 }
