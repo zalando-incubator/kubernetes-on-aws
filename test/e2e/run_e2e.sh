@@ -105,7 +105,7 @@ export KUBECONFIG="$KUBECONFIG"
 # * custom 'zalando' tests
 ginkgo -nodes=25 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*CockroachDB|\[Zalando\])" \
-    -skip="(\[Serial\]|\[Egress\])" \
+    -skip="(\[Serial\])" \
     "e2e.test" -- -delete-namespace-on-failure=false
 
 # delete cluster

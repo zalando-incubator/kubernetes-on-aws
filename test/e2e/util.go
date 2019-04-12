@@ -132,7 +132,7 @@ func createPingPod(nameprefix, namespace string) *v1.Pod {
 			Containers: []v1.Container{
 				{
 					Name:  "check-change-myip",
-					Image: "registry.opensource.zalan.do/teapot/check-change-myip:v0.0.1",
+					Image: "registry.opensource.zalan.do/teapot/check-change-myip:master-2",
 				},
 			},
 		},

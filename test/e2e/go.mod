@@ -81,6 +81,7 @@ require (
 	github.com/heketi/rest v0.0.0-20180404230133-aa6a65207413 // indirect
 	github.com/heketi/tests v0.0.0-20151005000721-f3775cbcefd6 // indirect
 	github.com/heketi/utils v0.0.0-20170317161834-435bc5bdfa64 // indirect
+	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.5 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20151117175822-3433f3ea46d9 // indirect
@@ -106,7 +107,7 @@ require (
 	github.com/mrunalp/fileutils v0.0.0-20171103030105-7d4729fb3618 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/natefinch/lumberjack v2.0.0+incompatible // indirect
-	github.com/onsi/ginkgo v1.4.0
+	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.2.0
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
@@ -158,11 +159,13 @@ require (
 	google.golang.org/genproto v0.0.0-20180831171423-11092d34479b // indirect
 	google.golang.org/grpc v1.15.0 // indirect
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
+	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/gcfg.v1 v1.2.0 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 	gopkg.in/inf.v0 v0.9.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20150622162204-20b71e5b60d7 // indirect
 	gopkg.in/square/go-jose.v2 v2.2.0 // indirect
+	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0 // indirect
 	gotest.tools v2.2.0+incompatible // indirect
