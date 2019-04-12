@@ -99,7 +99,7 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 
 		// ALB ready
 		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
-		err = waitForResponse(addr, "https", 10*time.Minute, isSuccess, true)
+		err = waitForResponse(addr, "https", 10*time.Minute, isNotFound, true)
 		Expect(err).NotTo(HaveOccurred())
 
 		// DNS ready
@@ -120,7 +120,6 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 		jig = framework.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test"
-		//nameprefix := serviceName + "-"
 		ns := f.Namespace.Name
 		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), e2eHostedZone())
 		labels := map[string]string{
@@ -133,6 +132,7 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, backendContent)
 		waitTime := 10 * time.Minute
 
+		// CREATE setup
 		// backend deployment
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
@@ -167,7 +167,7 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 
 		// ALB ready
 		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
-		err = waitForResponse(addr, "https", waitTime, isSuccess, true)
+		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
 		Expect(err).NotTo(HaveOccurred())
 
 		// DNS ready
@@ -187,10 +187,12 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 		resp, err := rt.RoundTrip(req)
 		Expect(err).NotTo(HaveOccurred())
 		s, err := getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
 		if s != backendContent {
 			log.Fatalf("Failed to get the right content got: %s, expected: %s", s, backendContent)
 		}
 
+		// Start actual ingress tests
 		// Test ingress Predicates with Method("GET")
 		path := "/"
 		updatedIng := updateIngress(ingressCreate.ObjectMeta.Name,
@@ -207,9 +209,11 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 		ingressUpdate, err := cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with the right content for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
-		time.Sleep(10 * time.Second)
-		resp, err = rt.RoundTrip(req)
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != http.StatusOK {
+			log.Fatalf("Failed to get status code expected status code 200: %d", resp.StatusCode)
+		}
 		s, err = getBody(resp)
 		Expect(err).NotTo(HaveOccurred())
 		if s != backendContent {
@@ -232,10 +236,9 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
-		time.Sleep(10 * time.Second)
-		resp, err = rt.RoundTrip(req)
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
 		Expect(err).NotTo(HaveOccurred())
-		if resp.StatusCode != 404 {
+		if resp.StatusCode != http.StatusNotFound {
 			log.Fatalf("Failed to get the right the right status code 404, got: %d", resp.StatusCode)
 		}
 
@@ -257,10 +260,10 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with %s header set to %s for the next request", ingressUpdate.Namespace, ingressUpdate.Name, headerKey, headerVal))
-		time.Sleep(10 * time.Second)
-		resp, err = rt.RoundTrip(req)
+		time.Sleep(10 * time.Second) // wait for routing change propagation
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
-		if resp.StatusCode != 200 {
+		if resp.StatusCode != http.StatusOK {
 			log.Fatalf("Failed to get the right the right status code 200, got: %d", resp.StatusCode)
 		}
 		if got := resp.Header.Get(headerKey); got != headerVal {
@@ -281,10 +284,9 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 		err = waitForResponse(additionalHostname, "https", waitTime, isSuccess, false)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Testing the old hostname %s for ingress %s/%s we make sure old routes are working", hostName, ingressUpdate.Namespace, ingressUpdate.Name))
-
-		resp, err = rt.RoundTrip(req)
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
-		if resp.StatusCode != 200 {
+		if resp.StatusCode != http.StatusOK {
 			log.Fatalf("Failed to get the right the right status code 200, got: %d", resp.StatusCode)
 		}
 		s, err = getBody(resp)
@@ -296,9 +298,9 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 		url = "https://" + additionalHostname + "/"
 		req, err = http.NewRequest("GET", url, nil)
 		Expect(err).NotTo(HaveOccurred())
-		resp, err = rt.RoundTrip(req)
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
-		if resp.StatusCode != 200 {
+		if resp.StatusCode != http.StatusOK {
 			log.Fatalf("Failed to get the right the right status code 200, got: %d", resp.StatusCode)
 		}
 		s, err = getBody(resp)
@@ -312,19 +314,20 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 		changePathIng := changePathIngress(updatedIng, newPath)
 		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(changePathIng)
 		Expect(err).NotTo(HaveOccurred())
-		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
-		time.Sleep(10 * time.Second)
-		resp, err = rt.RoundTrip(req)
+
+		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the old request, because of the path route", ingressUpdate.Namespace, ingressUpdate.Name))
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
 		Expect(err).NotTo(HaveOccurred())
-		if resp.StatusCode != 404 {
+		if resp.StatusCode != http.StatusNotFound {
 			log.Fatalf("Failed to get the right the right status code 404, got: %d", resp.StatusCode)
 		}
 		pathURL := "https://" + hostName + newPath
 		pathReq, err := http.NewRequest("GET", pathURL, nil)
 		Expect(err).NotTo(HaveOccurred())
-		resp, err = rt.RoundTrip(pathReq)
+		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 for a new request to the path route", ingressUpdate.Namespace, ingressUpdate.Name))
+		resp, err = getAndWaitResponse(rt, pathReq, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
-		if resp.StatusCode != 200 {
+		if resp.StatusCode != http.StatusOK {
 			log.Fatalf("Failed to get the right the right for %s status code 200, got: %d", newPath, resp.StatusCode)
 		}
 		s, err = getBody(resp)

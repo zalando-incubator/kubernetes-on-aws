@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -32,10 +33,6 @@ func createIngress(name, hostname, namespace string, label map[string]string, po
 			Labels:    label,
 		},
 		Spec: v1beta1.IngressSpec{
-			Backend: &v1beta1.IngressBackend{
-				ServiceName: name,
-				ServicePort: intstr.FromInt(port),
-			},
 			Rules: []v1beta1.IngressRule{
 				{
 					Host: hostname,
@@ -67,10 +64,6 @@ func updateIngress(name, namespace, hostname, svcName, path string, labels, anno
 			Annotations: annotations,
 		},
 		Spec: v1beta1.IngressSpec{
-			Backend: &v1beta1.IngressBackend{
-				ServiceName: name,
-				ServicePort: intstr.FromInt(port),
-			},
 			Rules: []v1beta1.IngressRule{
 				{
 					Host: hostname,
@@ -109,12 +102,16 @@ func addHostIngress(ing *v1beta1.Ingress, hostnames ...string) *v1beta1.Ingress 
 }
 
 func changePathIngress(ing *v1beta1.Ingress, path string) *v1beta1.Ingress {
-	for _, rule := range ing.Spec.Rules {
-		for _, p := range rule.IngressRuleValue.HTTP.Paths {
-			p.Path = path
-		}
-	}
-	return ing
+	return updateIngress(
+		ing.ObjectMeta.Name,
+		ing.ObjectMeta.Namespace,
+		ing.Spec.Rules[0].Host,
+		ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServiceName,
+		path,
+		ing.ObjectMeta.Labels,
+		ing.ObjectMeta.Annotations,
+		ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntValue(),
+	)
 }
 
 func createNginxDeployment(nameprefix, namespace string, label map[string]string, port, replicas int32) *appsv1.Deployment {
@@ -428,7 +425,11 @@ func isRedirect(code int) bool {
 }
 
 func isSuccess(code int) bool {
-	return code == 200
+	return code == http.StatusOK
+}
+
+func isNotFound(code int) bool {
+	return code == http.StatusNotFound
 }
 
 func waitForResponse(hostname, scheme string, timeout time.Duration, expectedCode func(int) bool, insecure bool) error {
@@ -596,6 +597,37 @@ func createHTTPRoundTripper() (http.RoundTripper, chan<- struct{}) {
 		}
 	}(tr, ch)
 	return tr, ch
+}
+
+func getAndWaitResponse(rt http.RoundTripper, req *http.Request, timeout time.Duration, expectedStatusCode int) (resp *http.Response, err error) {
+	d := 1 * time.Second
+	if timeout < d {
+		d = timeout - 1
+	}
+	timeoutCH := make(chan struct{})
+	go func() {
+		time.Sleep(timeout)
+		timeoutCH <- struct{}{}
+	}()
+
+	for {
+		resp, err = rt.RoundTrip(req)
+		if err == nil && resp.StatusCode == expectedStatusCode {
+			return
+		}
+		if err != nil {
+			log.Printf("Failed to do rountrip: %v", err)
+		}
+
+		select {
+		case <-timeoutCH:
+			log.Printf("timeout to GET %s", req.URL)
+			return
+		case <-time.After(d):
+			log.Printf("retry to GET %s", req.URL)
+			continue
+		}
+	}
 }
 
 func getBody(resp *http.Response) (string, error) {
