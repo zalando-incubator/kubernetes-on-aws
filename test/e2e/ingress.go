@@ -112,7 +112,7 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 })
 
 var __ = framework.KubeDescribe("Ingress tests simple", func() {
-	f := framework.NewDefaultFramework("skipper-ingress simple")
+	f := framework.NewDefaultFramework("skipper-ingress-simple")
 	var (
 		cs  kubernetes.Interface
 		jig *framework.IngressTestJig
@@ -342,13 +342,13 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 })
 
 var ___ = framework.KubeDescribe("Ingress tests paths", func() {
-	f := framework.NewDefaultFramework("skipper-ingress paths")
+	f := framework.NewDefaultFramework("skipper-ingress-paths")
 	var (
 		cs  kubernetes.Interface
 		jig *framework.IngressTestJig
 	)
 
-	It("Should create complex path routes ingress [sszuecs] [Ingress] [Zalando]", func() {
+	It("Should create path routes ingress [sszuecs] [Ingress] [Zalando]", func() {
 		jig = framework.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test-pr"
@@ -511,6 +511,20 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		Expect(err).NotTo(HaveOccurred())
 		if s != backendContent2 {
 			log.Fatalf("Failed to get the right content after update got: %s, expected: %s", s, backendContent2)
+		}
+
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s without change from the other path", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
+		beurl := "https://" + hostName + bepath
+		bereq, err := http.NewRequest("GET", beurl, nil)
+		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
+		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != http.StatusOK {
+			log.Fatalf("Failed to get status code expected status code 200: %d", resp.StatusCode)
+		}
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		if s != backendContent {
+			log.Fatalf("Failed to get the right content after update got: %s, expected: %s", s, backendContent)
 		}
 	})
 })
