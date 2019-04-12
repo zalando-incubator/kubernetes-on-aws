@@ -101,6 +101,25 @@ func addHostIngress(ing *v1beta1.Ingress, hostnames ...string) *v1beta1.Ingress 
 	return ing
 }
 
+func addPathIngress(ing *v1beta1.Ingress, path string, backend v1beta1.IngressBackend) *v1beta1.Ingress {
+	addRules := []v1beta1.IngressRule{}
+	origRules := ing.Spec.Rules
+
+	for _, rule := range origRules {
+		r := rule
+		r.Host = rule.Host
+		origPaths := r.IngressRuleValue.HTTP.Paths
+		origPaths = append(origPaths, v1beta1.HTTPIngressPath{
+			Path:    path,
+			Backend: backend,
+		})
+		r.IngressRuleValue.HTTP.Paths = origPaths
+		addRules = append(addRules, r)
+	}
+	ing.Spec.Rules = addRules
+	return ing
+}
+
 func changePathIngress(ing *v1beta1.Ingress, path string) *v1beta1.Ingress {
 	return updateIngress(
 		ing.ObjectMeta.Name,

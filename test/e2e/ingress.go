@@ -22,7 +22,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 )
@@ -109,8 +111,8 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 	})
 })
 
-var __ = framework.KubeDescribe("Ingress tests", func() {
-	f := framework.NewDefaultFramework("skipper-ingress")
+var __ = framework.KubeDescribe("Ingress tests simple", func() {
+	f := framework.NewDefaultFramework("skipper-ingress simple")
 	var (
 		cs  kubernetes.Interface
 		jig *framework.IngressTestJig
@@ -336,5 +338,179 @@ var __ = framework.KubeDescribe("Ingress tests", func() {
 			log.Fatalf("Failed to get the right content from %s after update got: %s, expected: %s", newPath, s, backendContent)
 		}
 
+	})
+})
+
+var ___ = framework.KubeDescribe("Ingress tests paths", func() {
+	f := framework.NewDefaultFramework("skipper-ingress paths")
+	var (
+		cs  kubernetes.Interface
+		jig *framework.IngressTestJig
+	)
+
+	It("Should create complex path routes ingress [sszuecs] [Ingress] [Zalando]", func() {
+		jig = framework.NewIngressTestJig(f.ClientSet)
+		cs = f.ClientSet
+		serviceName := "skipper-ingress-test-pr"
+		serviceName2 := "skipper-ingress-test-pr2"
+		ns := f.Namespace.Name
+		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), e2eHostedZone())
+		labels := map[string]string{
+			"app": serviceName,
+		}
+		labels2 := map[string]string{
+			"app": serviceName2,
+		}
+		port := 8080
+		replicas := int32(3)
+		targetPort := 9090
+		backendContent := "be-foo"
+		backendContent2 := "be-bar"
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, backendContent)
+		route2 := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, backendContent2)
+		waitTime := 10 * time.Minute
+
+		// CREATE setup
+		// backend deployment
+		By("Creating a deployment with " + serviceName + " in namespace " + ns)
+		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
+		deployment, err := cs.Apps().Deployments(ns).Create(depl)
+		defer func() {
+			By("deleting the deployment")
+			defer GinkgoRecover()
+			err2 := cs.Apps().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+			Expect(err2).NotTo(HaveOccurred())
+		}()
+		Expect(err).NotTo(HaveOccurred())
+		By("Creating a 2nd deployment with " + serviceName2 + " in namespace " + ns)
+		depl2 := createSkipperBackendDeployment(serviceName2, ns, route2, labels2, int32(targetPort), replicas)
+		deployment2, err := cs.Apps().Deployments(ns).Create(depl2)
+		defer func() {
+			By("deleting the deployment")
+			defer GinkgoRecover()
+			err2 := cs.Apps().Deployments(ns).Delete(deployment2.Name, metav1.NewDeleteOptions(0))
+			Expect(err2).NotTo(HaveOccurred())
+		}()
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating service " + serviceName + " in namespace " + ns)
+		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
+		_, err = cs.Core().Services(ns).Create(service)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating service " + serviceName2 + " in namespace " + ns)
+		service2 := createServiceTypeClusterIP(serviceName2, labels2, port, targetPort)
+		_, err = cs.Core().Services(ns).Create(service2)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
+		ing := createIngress(serviceName, hostName, ns, labels, port)
+		ingressCreate, err := cs.Extensions().Ingresses(ns).Create(ing)
+		Expect(err).NotTo(HaveOccurred())
+
+		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = cs.Extensions().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		Expect(err).NotTo(HaveOccurred())
+
+		//  skipper http -> https redirect
+		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
+		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
+		Expect(err).NotTo(HaveOccurred())
+
+		// ALB ready
+		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
+		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
+		Expect(err).NotTo(HaveOccurred())
+
+		// DNS ready
+		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
+		err = waitForResponse(hostName, "https", waitTime, isSuccess, false)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Test that we get content from the default ingress
+		By("By checking the content of the reply we see that the ingress stack works")
+		rt, quit := createHTTPRoundTripper()
+		defer func() {
+			quit <- struct{}{}
+		}()
+		url := "https://" + hostName + "/"
+		req, err := http.NewRequest("GET", url, nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err := rt.RoundTrip(req)
+		Expect(err).NotTo(HaveOccurred())
+		s, err := getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		if s != backendContent {
+			log.Fatalf("Failed to get the right content got: %s, expected: %s", s, backendContent)
+		}
+
+		// Start actual ingress tests
+		// Test ingress with 1 path
+		bepath := "/foo"
+		updatedIng := updateIngress(ingressCreate.ObjectMeta.Name,
+			ingressCreate.ObjectMeta.Namespace,
+			hostName,
+			serviceName,
+			bepath,
+			ingressCreate.ObjectMeta.Labels,
+			ingressCreate.ObjectMeta.Annotations,
+			port,
+		)
+		ingressUpdate, err := cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
+		Expect(err).NotTo(HaveOccurred())
+
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path /", ingressUpdate.Namespace, ingressUpdate.Name))
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
+		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != http.StatusNotFound {
+			log.Fatalf("Failed to get status code expected status code 404: %d", resp.StatusCode)
+		}
+
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
+		beurl := "https://" + hostName + bepath
+		bereq, err := http.NewRequest("GET", beurl, nil)
+		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
+		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != http.StatusOK {
+			log.Fatalf("Failed to get status code expected status code 200: %d", resp.StatusCode)
+		}
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		if s != backendContent {
+			log.Fatalf("Failed to get the right content after update got: %s, expected: %s", s, backendContent)
+		}
+
+		// Test ingress with 2 paths
+		bepath2 := "/bar"
+		beurl2 := "https://" + hostName + bepath2
+		bereq2, err := http.NewRequest("GET", beurl2, nil)
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
+		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusNotFound)
+		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != http.StatusNotFound {
+			log.Fatalf("Failed to get status code expected status code 404: %d", resp.StatusCode)
+		}
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
+		updatedIng = addPathIngress(updatedIng,
+			bepath2,
+			v1beta1.IngressBackend{
+				ServiceName: serviceName2,
+				ServicePort: intstr.FromInt(port),
+			},
+		)
+		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusOK)
+		Expect(err).NotTo(HaveOccurred())
+		if resp.StatusCode != http.StatusOK {
+			log.Fatalf("Failed to get status code expected status code 200: %d", resp.StatusCode)
+		}
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		if s != backendContent2 {
+			log.Fatalf("Failed to get the right content after update got: %s, expected: %s", s, backendContent2)
+		}
 	})
 })
