@@ -26,7 +26,7 @@ examples of how to write the tests or checkout the files already defined e.g.
   ```bash
   KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org \
     ginkgo -nodes=25 -flakeAttempts=2 \
-    -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*redis|\[Zalando\])" \
+    -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
     "e2e.test" -- -delete-namespace-on-failure=false
   ```
