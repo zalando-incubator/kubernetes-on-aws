@@ -348,7 +348,7 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		jig *framework.IngressTestJig
 	)
 
-	It("Should create path routes ingress [sszuecs] [Ingress] [Zalando]", func() {
+	It("Should create path routes ingress [Ingress] [Zalando]", func() {
 		jig = framework.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test-pr"
