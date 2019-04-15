@@ -89,7 +89,7 @@ spec:
 {{ end }}
           - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
-          - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.stups.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans=4096"
+          - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.stups.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}"
           - "-expect-continue-timeout-backend={{ .ConfigItems.skipper_expect_continue_timeout_backend }}"
           - "-keepalive-backend={{ .ConfigItems.skipper_keepalive_backend }}"
           - "-max-idle-connection-backend={{ .ConfigItems.skipper_max_idle_connection_backend }}"
