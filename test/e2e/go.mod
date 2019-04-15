@@ -59,12 +59,12 @@ require (
 	github.com/go-openapi/validate v0.17.2 // indirect
 	github.com/go-ozzo/ozzo-validation v3.5.0+incompatible // indirect
 	github.com/godbus/dbus v0.0.0-20151105175453-c7fdd8b5cd55 // indirect
-	github.com/gogo/protobuf v0.0.0-20170330071051-c0656edd0d9e // indirect
+	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/golang/groupcache v0.0.0-20160516000752-02826c3e7903 // indirect
 	github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c // indirect
 	github.com/google/cadvisor v0.31.0 // indirect
 	github.com/google/go-cmp v0.2.0 // indirect
-	github.com/google/gofuzz v0.0.0-20161122191042-44d81051d367 // indirect
+	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/googleapis/gnostic v0.0.0-20170426233943-68f4ded48ba9 // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20180330165814-781450b3c4fc // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
@@ -137,7 +137,7 @@ require (
 	github.com/spf13/cast v0.0.0-20160730092037-e31f36ffc91a // indirect
 	github.com/spf13/cobra v0.0.0-20160722081547-f62e98d28ab7 // indirect
 	github.com/spf13/jwalterweatherman v0.0.0-20160311093646-33c24e77fb80 // indirect
-	github.com/spf13/pflag v0.0.0-20170130214245-9ff6c6923cff // indirect
+	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/spf13/viper v0.0.0-20160820190039-7fb2782df3d8 // indirect
 	github.com/storageos/go-api v0.0.0-20180126153955-3a4032328d99 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
@@ -162,7 +162,7 @@ require (
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/gcfg.v1 v1.2.0 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
-	gopkg.in/inf.v0 v0.9.0 // indirect
+	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20150622162204-20b71e5b60d7 // indirect
 	gopkg.in/square/go-jose.v2 v2.2.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
@@ -171,7 +171,7 @@ require (
 	gotest.tools v2.2.0+incompatible // indirect
 	k8s.io/api v0.0.0-20170719033850-4d5cc6efc5e8
 	k8s.io/apiextensions-apiserver v0.0.0-20170616221715-abd4538a1176 // indirect
-	k8s.io/apimachinery v0.0.0-20170616220319-2c6e1537d30b
+	k8s.io/apimachinery v0.0.0-20190409092423-760d1845f48b
 	k8s.io/apiserver v0.0.0-20170616221227-b1c85a6c288c // indirect
 	k8s.io/cli-runtime v0.0.0-20190301175653-0c2382d2cffa // indirect
 	k8s.io/client-go v0.0.0-20170617220358-c1b6a1c0a439
