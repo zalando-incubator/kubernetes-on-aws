@@ -18,6 +18,9 @@ $(MOD_PATH):
 fix-go-modules:	$(MOD_PATH)
 	MOD_PATH=$(MOD_PATH) ./setup_modules.sh
 
+deps: fix-go-modules
+	GO111MODULE=on go get github.com/onsi/ginkgo/ginkgo@v1.8.0
+
 e2e.test: fix-go-modules
 	GO111MODULE=on go test -v -c -o e2e.test
 

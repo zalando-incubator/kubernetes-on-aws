@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: metrics-server
-    version: v0.2.1
+    version: v0.3.2
 spec:
   replicas: 1
   selector:
@@ -16,20 +16,23 @@ spec:
       name: metrics-server
       labels:
         application: metrics-server
-        version: v0.2.1
+        version: v0.3.2
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
       priorityClassName: system-cluster-critical
-      serviceAccountName: system
+      serviceAccountName: metrics-server
       containers:
       - name: metrics-server
-        image: registry.opensource.zalan.do/teapot/metrics-server:v0.2.1
-        command:
-        - /metrics-server
-        - --source=kubernetes.summary_api:''
+        image: registry.opensource.zalan.do/teapot/metrics-server:v0.3.2
+        args:
+        # Connect to kubelet on 'completely insecure' port.
+        # We need to configure kubelet differently to be able to use the secure
+        # port 10250.
+        - --deprecated-kubelet-completely-insecure
+        - --kubelet-port=10255
         resources:
           limits:
             cpu: "{{.ConfigItems.metrics_service_cpu}}"
@@ -37,3 +40,10 @@ spec:
           requests:
             cpu: "{{.ConfigItems.metrics_service_cpu}}"
             memory: "{{.ConfigItems.metrics_service_mem}}"
+        volumeMounts:
+        - name: tmp-dir
+          mountPath: /tmp
+      volumes:
+      # mount in tmp so we can safely use from-scratch images and/or read-only containers
+      - name: tmp-dir
+        emptyDir: {}
