@@ -288,7 +288,7 @@ func createSkipperBackendDeployment(nameprefix, namespace, route string, label m
 					Containers: []corev1.Container{
 						{
 							Name:  "skipper",
-							Image: "registry.opensource.zalan.do/pathfinder/skipper:latest",
+							Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.10.203",
 							Args: []string{
 								"skipper",
 								"-inline-routes",
