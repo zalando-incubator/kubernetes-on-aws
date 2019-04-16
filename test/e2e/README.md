@@ -12,7 +12,7 @@ examples of how to write the tests or checkout the files already defined e.g.
 1. First you need [ginkgo] which is used to orchestrate the tests:
 
   ```bash
-  GO111MODULE=on go get github.com/onsi/ginkgo/ginkgo@v1.8.0
+  make deps
   ```
 
 2. Build the e2e test binary:
@@ -26,8 +26,8 @@ examples of how to write the tests or checkout the files already defined e.g.
   ```bash
   KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org \
     ginkgo -nodes=25 -flakeAttempts=2 \
-    -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*CockroachDB|\[Zalando\])" \
-    -skip="(\[Serial\]|\[Egress\])" \
+    -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
+    -skip="(\[Serial\])" \
     "e2e.test" -- -delete-namespace-on-failure=false
   ```
 

@@ -26,6 +26,7 @@ skipper_ingress_max_replicas: "30"
 skipper_ingress_min_replicas: "3"
 skipper_ingress_cpu: "500m"
 skipper_ingress_memory: "500Mi"
+skipper_ingress_tracing_buffer: "16384"
 
 # skipper backend timeout defaults
 skipper_expect_continue_timeout_backend: "30s"
@@ -65,7 +66,7 @@ image_policy: "trusted"
 {{else}}
 image_policy: "dev"
 {{end}}
-compliance_checker_enabled: "false"
+compliance_checker_enabled: "true"
 
 # Egress configuration
 nat_cidr_blocks: "172.31.64.0/28,172.31.64.16/28,172.31.64.32/28"
@@ -194,4 +195,8 @@ coreos_image: "ami-012abdf0d2781f0a5" # Container Linux 2023.5.0 (HVM, eu-centra
 enable_ingress_template_controller: "false"
 
 # Temporary feature toggle for the new daemonset scheduler
+{{if eq .Environment "e2e"}}
+experimental_schedule_daemonset_pods: "true"
+{{else}}
 experimental_schedule_daemonset_pods: "false"
+{{end}}

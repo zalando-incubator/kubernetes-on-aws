@@ -1,8 +1,12 @@
 package e2e
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
+	"io"
+	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -13,8 +17,8 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -29,10 +33,6 @@ func createIngress(name, hostname, namespace string, label map[string]string, po
 			Labels:    label,
 		},
 		Spec: v1beta1.IngressSpec{
-			Backend: &v1beta1.IngressBackend{
-				ServiceName: name,
-				ServicePort: intstr.FromInt(port),
-			},
 			Rules: []v1beta1.IngressRule{
 				{
 					Host: hostname,
@@ -53,6 +53,84 @@ func createIngress(name, hostname, namespace string, label map[string]string, po
 			},
 		},
 	}
+}
+
+func updateIngress(name, namespace, hostname, svcName, path string, labels, annotations map[string]string, port int) *v1beta1.Ingress {
+	return &v1beta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: annotations,
+		},
+		Spec: v1beta1.IngressSpec{
+			Rules: []v1beta1.IngressRule{
+				{
+					Host: hostname,
+					IngressRuleValue: v1beta1.IngressRuleValue{
+						HTTP: &v1beta1.HTTPIngressRuleValue{
+							Paths: []v1beta1.HTTPIngressPath{
+								{
+									Path: path,
+									Backend: v1beta1.IngressBackend{
+										ServiceName: svcName,
+										ServicePort: intstr.FromInt(port),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func addHostIngress(ing *v1beta1.Ingress, hostnames ...string) *v1beta1.Ingress {
+	addRules := []v1beta1.IngressRule{}
+	origRules := ing.Spec.Rules
+
+	for _, hostname := range hostnames {
+		for _, rule := range origRules {
+			r := rule
+			r.Host = hostname
+			addRules = append(addRules, r)
+		}
+	}
+	ing.Spec.Rules = append(origRules, addRules...)
+	return ing
+}
+
+func addPathIngress(ing *v1beta1.Ingress, path string, backend v1beta1.IngressBackend) *v1beta1.Ingress {
+	addRules := []v1beta1.IngressRule{}
+	origRules := ing.Spec.Rules
+
+	for _, rule := range origRules {
+		r := rule
+		r.Host = rule.Host
+		origPaths := r.IngressRuleValue.HTTP.Paths
+		origPaths = append(origPaths, v1beta1.HTTPIngressPath{
+			Path:    path,
+			Backend: backend,
+		})
+		r.IngressRuleValue.HTTP.Paths = origPaths
+		addRules = append(addRules, r)
+	}
+	ing.Spec.Rules = addRules
+	return ing
+}
+
+func changePathIngress(ing *v1beta1.Ingress, path string) *v1beta1.Ingress {
+	return updateIngress(
+		ing.ObjectMeta.Name,
+		ing.ObjectMeta.Namespace,
+		ing.Spec.Rules[0].Host,
+		ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServiceName,
+		path,
+		ing.ObjectMeta.Labels,
+		ing.ObjectMeta.Annotations,
+		ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntValue(),
+	)
 }
 
 func createNginxDeployment(nameprefix, namespace string, label map[string]string, port, replicas int32) *appsv1.Deployment {
@@ -132,7 +210,7 @@ func createPingPod(nameprefix, namespace string) *v1.Pod {
 			Containers: []v1.Container{
 				{
 					Name:  "check-change-myip",
-					Image: "registry.opensource.zalan.do/teapot/check-change-myip:v0.0.1",
+					Image: "registry.opensource.zalan.do/teapot/check-change-myip:master-2",
 				},
 			},
 		},
@@ -182,6 +260,54 @@ func createNginxDeploymentWithHostNetwork(nameprefix, namespace, serviceAccount 
 									Name:          "http",
 									ContainerPort: port,
 									HostPort:      port,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createSkipperBackendDeployment(nameprefix, namespace, route string, label map[string]string, port, replicas int32) *appsv1.Deployment {
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nameprefix + string(uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    label,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{MatchLabels: label},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: label,
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "skipper",
+							Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.10.203",
+							Args: []string{
+								"skipper",
+								"-inline-routes",
+								route,
+							},
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "http",
+									ContainerPort: port,
+								},
+							},
+							Resources: corev1.ResourceRequirements{
+								Limits: map[corev1.ResourceName]resource.Quantity{
+									corev1.ResourceCPU:    resource.MustParse("100m"),
+									corev1.ResourceMemory: resource.MustParse("250Mi"),
+								},
+								Requests: map[corev1.ResourceName]resource.Quantity{
+									corev1.ResourceCPU:    resource.MustParse("100m"),
+									corev1.ResourceMemory: resource.MustParse("250Mi"),
 								},
 							},
 						},
@@ -318,7 +444,11 @@ func isRedirect(code int) bool {
 }
 
 func isSuccess(code int) bool {
-	return code == 200
+	return code == http.StatusOK
+}
+
+func isNotFound(code int) bool {
+	return code == http.StatusNotFound
 }
 
 func waitForResponse(hostname, scheme string, timeout time.Duration, expectedCode func(int) bool, insecure bool) error {
@@ -462,4 +592,72 @@ func createVegetaDeployment(hostPath string, rate int) *appsv1.Deployment {
 			},
 		},
 	}
+}
+
+func createHTTPRoundTripper() (http.RoundTripper, chan<- struct{}) {
+	tr := &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		TLSHandshakeTimeout: 5 * time.Second,
+		IdleConnTimeout:     5 * time.Second,
+	}
+	ch := make(chan struct{})
+	go func(transport *http.Transport, quit <-chan struct{}) {
+		for {
+			select {
+			case <-time.After(3 * time.Second):
+				transport.CloseIdleConnections()
+			case <-quit:
+				return
+			}
+		}
+	}(tr, ch)
+	return tr, ch
+}
+
+func getAndWaitResponse(rt http.RoundTripper, req *http.Request, timeout time.Duration, expectedStatusCode int) (resp *http.Response, err error) {
+	d := 1 * time.Second
+	if timeout < d {
+		d = timeout - 1
+	}
+	timeoutCH := make(chan struct{})
+	go func() {
+		time.Sleep(timeout)
+		timeoutCH <- struct{}{}
+	}()
+
+	for {
+		resp, err = rt.RoundTrip(req)
+		if err == nil && resp.StatusCode == expectedStatusCode {
+			return
+		}
+		if err != nil {
+			log.Printf("Failed to do rountrip: %v", err)
+		}
+
+		select {
+		case <-timeoutCH:
+			log.Printf("timeout to GET %s", req.URL)
+			return
+		case <-time.After(d):
+			log.Printf("retry to GET %s", req.URL)
+			continue
+		}
+	}
+}
+
+func getBody(resp *http.Response) (string, error) {
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return "", fmt.Errorf("response code from backend: %d", resp.StatusCode)
+	}
+	b := make([]byte, 0, 1024)
+	buf := bytes.NewBuffer(b)
+	if _, err := io.Copy(buf, resp.Body); err != nil {
+		return "", fmt.Errorf("failed to copy body: %v", err)
+	}
+	return buf.String(), nil
 }

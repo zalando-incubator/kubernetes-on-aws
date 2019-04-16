@@ -2,6 +2,8 @@ version: "2017-09-20"
 allow_concurrent_steps: true
 pipeline:
 - id: build
+  when:
+    event: pull_request
   vm: large # speed up building kubernetes/kubernetes
   overlay: ci/golang
   cache:
@@ -15,6 +17,8 @@ pipeline:
       VERSION="$CDP_BUILD_VERSION" make -C test/e2e build.push
 
 - id: e2e-tests
+  when:
+    event: pull_request
   depends_on: [build]
   type: process
   desc: "Kubernetes e2e tests"
@@ -45,7 +49,7 @@ pipeline:
           resources: &resources
             limits:
               cpu: 500m
-              memory: 2Gi
+              memory: 5Gi
             requests:
               cpu: 500m
-              memory: 2Gi
+              memory: 5Gi
