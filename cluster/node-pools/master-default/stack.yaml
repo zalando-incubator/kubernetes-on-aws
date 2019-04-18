@@ -29,7 +29,12 @@ Resources:
       - Key: kubernetes.io/role
         PropagateAtLaunch: true
         Value: master
-      VPCZoneIdentifier: !Split [",", "{{ .Cluster.ConfigItems.subnets }}"]
+      VPCZoneIdentifier:
+{{ with $values := .Values }}
+{{ range $az := $values.availability_zones }}
+        - "{{ index $values.subnets $az }}"
+{{ end }}
+{{ end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
   LaunchTemplate:
     Properties:
