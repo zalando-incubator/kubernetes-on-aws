@@ -33,9 +33,9 @@ spec:
 {{- range $index, $element := split .ConfigItems.nat_cidr_blocks "," }}
         - "--aws-nat-cidr-block={{ $element }}"
 {{- end }}
-        - "--aws-az=eu-central-1a"
-        - "--aws-az=eu-central-1b"
-        - "--aws-az=eu-central-1c"
+{{ range $zone := .Values.availability_zones }}
+        - "--aws-az=$zone"
+{{ end }}
         - "--stack-termination-protection"
         env:
         - name: AWS_REGION
