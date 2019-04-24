@@ -72,6 +72,14 @@ clusters:
     profile: worker-default
     min_size: 1
     max_size: 21
+  - discount_strategy: spot_max_price
+    instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
+    config_items:
+      availability_zones: "eu-central-1a"
+    name: worker-limit-az
+    profile: worker-splitaz
+    min_size: 1
+    max_size: 21
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'
