@@ -1,5 +1,5 @@
-{{ $zone := "eu-central-1c" }}
-
+{{ with $data := . }}
+{{ range $zone := $data.Values.availability_zones }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,7 +9,7 @@ metadata:
     application: autoscaling-buffer
     zone: {{$zone}}
 spec:
-  replicas: {{.ConfigItems.autoscaling_buffer_pods}}
+  replicas: {{$data.ConfigItems.autoscaling_buffer_pods}}
   selector:
     matchLabels:
       application: autoscaling-buffer
@@ -34,11 +34,14 @@ spec:
       - name: pause
         image: registry.opensource.zalan.do/teapot/pause-amd64:3.1
         resources:
-{{ with $resources := autoscalingBufferSettings . }}
+{{ with $resources := autoscalingBufferSettings $data.Cluster }}
           limits:
             cpu: {{$resources.CPU}}
             memory: {{$resources.Memory}}
           requests:
             cpu: {{$resources.CPU}}
             memory: {{$resources.Memory}}
+{{ end }}
+---
+{{ end }}
 {{ end }}
