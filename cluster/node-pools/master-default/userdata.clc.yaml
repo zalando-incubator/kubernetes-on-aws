@@ -789,7 +789,16 @@ storage:
           # don't audit events from the system:apiserver user
           - level: None
             users: ["system:apiserver"]
-          # don't audit any kube-controller-manager events
+          # audit pod events from kube-controller-manager
+          - level: Request
+            users: ["system:kube-controller-manager"]
+            omitStages:
+              - "RequestReceived"
+            verbs: ["create". "delete", "update", "patch", "deletecollection"]
+            resources:
+              - group: "" # core
+                resources: ["pods"]
+          # don't audit any other kube-controller-manager events
           - level: None
             users: ["system:kube-controller-manager"]
           # Don't audit events from system users in kube-system
