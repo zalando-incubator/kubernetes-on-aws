@@ -64,7 +64,12 @@ Resources:
       Scheme: internet-facing
       SecurityGroups:
         - !Ref MasterLoadBalancerSecurityGroup
-      Subnets: !Split [",", "{{.Cluster.ConfigItems.subnets}}"]
+      Subnets:
+{{ with $values := .Values }}
+{{ range $az := $values.availability_zones }}
+        - "{{ index $values.subnets $az }}"
+{{ end }}
+{{ end }}
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
