@@ -8,6 +8,11 @@ post_apply:
   namespace: default
   kind: LimitRange
 {{ end }}
+{{ if ne .Cluster.ConfigItems.kube_job_cleaner_enabled "true" }}
+- name: kube-job-cleaner
+  namespace: kube-system
+  kind: CronJob
+{{ end }}
 {{ if ne .ConfigItems.enable_ingress_template_controller "true" }}
 - name: ingresstemplates.zalando.org
   kind: CustomResourceDefinition
