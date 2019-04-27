@@ -1,0 +1,17 @@
+apiVersion: autoscaling.k8s.io/v1beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: kube-state-metrics
+  namespace: kube-system
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: kube-state-metrics
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: kube-state-metrics
+      maxAllowed:
+        memory: {{.ConfigItems.kube_state_metrics_mem_max}}
