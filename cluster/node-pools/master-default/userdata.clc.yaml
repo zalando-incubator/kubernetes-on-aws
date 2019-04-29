@@ -362,6 +362,12 @@ storage:
             - --audit-webhook-mode=batch
             - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
             {{ end }}
+            {{ if eq .Cluster.Environment "e2e" }}
+            - --audit-log-path=/var/log/kube-audit.log
+            - --audit-log-maxage=0
+            - --audit-log-maxbackup=0
+            - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
+            {{ end }}
             # enable aggregated apiservers
             - --client-ca-file=/etc/kubernetes/ssl/ca.pem
             - --requestheader-client-ca-file=/etc/kubernetes/ssl/ca.pem
@@ -789,6 +795,14 @@ storage:
           # don't audit events from the system:apiserver user
           - level: None
             users: ["system:apiserver"]
+          # audit pod events
+          - level: Request
+            omitStages:
+              - "RequestReceived"
+            verbs: ["create", "delete", "update", "patch", "deletecollection"]
+            resources:
+              - group: "" # core
+                resources: ["pods"]
           # don't audit any kube-controller-manager events
           - level: None
             users: ["system:kube-controller-manager"]
