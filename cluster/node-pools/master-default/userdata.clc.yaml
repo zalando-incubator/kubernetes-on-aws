@@ -785,8 +785,11 @@ storage:
               - group: "" # core
                 resources: ["endpoints", "services", "services/status"]
           # don't audit any kubelet events
+          # only enable it in e2e because we use kubelet as the identity for running e2e
+          {{ if ne .Cluster.Environment "e2e" }}
           - level: None
             users: ["kubelet"] # legacy kubelet identity
+          {{ end }}
           # don't audit events from the system:unsecured user. This is the user
           # used when connecting to the apiserver over localhost, and will
           # usuaully be done by the local kubelet.
