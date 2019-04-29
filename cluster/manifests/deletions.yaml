@@ -3,10 +3,21 @@ pre_apply: []
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
+- name: compute-resources
+  namespace: default
+  kind: ResourceQuota
+- name: compute-resources
+  namespace: kube-system
+  kind: ResourceQuota
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
   kind: LimitRange
+{{ end }}
+{{ if ne .Cluster.ConfigItems.kube_job_cleaner_enabled "true" }}
+- name: kube-job-cleaner
+  namespace: kube-system
+  kind: CronJob
 {{ end }}
 {{ if ne .ConfigItems.enable_ingress_template_controller "true" }}
 - name: ingresstemplates.zalando.org

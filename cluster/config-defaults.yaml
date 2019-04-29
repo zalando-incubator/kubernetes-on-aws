@@ -169,7 +169,7 @@ node_update_prepare_replacement_node: "false" # don't wait for a replacement ins
 # Temporary feature toggles for the cluster lifecycle controller
 experimental_cluster_lifecycle_controller: "false"
 
-# Teapot webhook: gradual rollout
+# Teapot admission controller
 teapot_admission_controller_default_cpu_request: "25m"
 teapot_admission_controller_default_memory_request: "100Mi"
 teapot_admission_controller_process_resources: "false"
@@ -177,13 +177,8 @@ teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_application_min_creation_time: "2999-12-31T23:59:59Z"
 
 {{if eq .Environment "e2e"}}
-teapot_admission_controller_enabled: "true"
 teapot_admission_controller_ignore_namespaces: "^kube-system|(e2e-tests-(downward-api|kubectl|projected|statefulset)-.*)$"
-{{else if eq .Environment "production"}}
-teapot_admission_controller_enabled: "false"
-teapot_admission_controller_ignore_namespaces: "^kube-system$"
 {{else}}
-teapot_admission_controller_enabled: "true"
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
 {{end}}
 
@@ -201,6 +196,9 @@ coreos_image: "ami-012abdf0d2781f0a5" # Container Linux 2023.5.0 (HVM, eu-centra
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
+
+# Feature toggle to allow decommissioning of kube-job-cleaner
+kube_job_cleaner_enabled: "true"
 
 # Temporary feature toggle for the new daemonset scheduler
 {{if eq .Environment "e2e"}}
