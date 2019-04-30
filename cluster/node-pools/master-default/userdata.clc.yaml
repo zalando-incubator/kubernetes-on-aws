@@ -798,6 +798,7 @@ storage:
           # don't audit events from the system:apiserver user
           - level: None
             users: ["system:apiserver"]
+          {{ if eq .ConfigItems.audit_pod_events "true" }}
           # audit pod events
           - level: Request
             omitStages:
@@ -806,6 +807,7 @@ storage:
             resources:
               - group: "" # core
                 resources: ["pods"]
+          {{ end }}
           # don't audit any kube-controller-manager events
           - level: None
             users: ["system:kube-controller-manager"]

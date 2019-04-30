@@ -8,6 +8,7 @@ clusters:
   api_server_url: ${API_SERVER_URL}
   channel: ${1}
   config_items:
+    audit_pod_events: "true"
     scalyr_access_key: no-key-defined
     scalyr_read_key: no-key-defined
     scalyr_server: no-key-defined
