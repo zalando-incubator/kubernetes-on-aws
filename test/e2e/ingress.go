@@ -27,16 +27,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	"k8s.io/kubernetes/test/e2e/framework/ingress"
 )
 
 var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 	f := framework.NewDefaultFramework("ingress")
 	var (
 		cs  kubernetes.Interface
-		jig *framework.IngressTestJig
+		jig *ingress.IngressTestJig
 	)
 	BeforeEach(func() {
-		jig = framework.NewIngressTestJig(f.ClientSet)
+		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 	})
 
@@ -115,11 +116,11 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-simple")
 	var (
 		cs  kubernetes.Interface
-		jig *framework.IngressTestJig
+		jig *ingress.IngressTestJig
 	)
 
 	It("Should create simple ingress [Ingress] [Zalando]", func() {
-		jig = framework.NewIngressTestJig(f.ClientSet)
+		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test"
 		ns := f.Namespace.Name
@@ -345,11 +346,11 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-paths")
 	var (
 		cs  kubernetes.Interface
-		jig *framework.IngressTestJig
+		jig *ingress.IngressTestJig
 	)
 
 	It("Should create path routes ingress [Ingress] [Zalando]", func() {
-		jig = framework.NewIngressTestJig(f.ClientSet)
+		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test-pr"
 		serviceName2 := "skipper-ingress-test-pr2"
@@ -533,11 +534,11 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-custom")
 	var (
 		cs  kubernetes.Interface
-		jig *framework.IngressTestJig
+		jig *ingress.IngressTestJig
 	)
 
 	It("Should create custom routes ingress [Ingress] [Zalando]", func() {
-		jig = framework.NewIngressTestJig(f.ClientSet)
+		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test-custom"
 		ns := f.Namespace.Name
