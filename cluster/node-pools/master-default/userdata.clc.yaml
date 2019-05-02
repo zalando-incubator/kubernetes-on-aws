@@ -360,6 +360,7 @@ storage:
             {{ if or (eq .Cluster.Environment "production") (index .Cluster.ConfigItems "audittrail_url") }}
             - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
             - --audit-webhook-mode=batch
+            - --audit-webhook-version=audit.k8s.io/v1beta1
             - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
             {{ end }}
             {{ if eq .Cluster.Environment "e2e" }}
@@ -405,7 +406,7 @@ storage:
               requests:
                 cpu: 100m
                 memory: 200Mi
-          - image: registry.opensource.zalan.do/teapot/admission-controller:master-17
+          - image: registry.opensource.zalan.do/teapot/admission-controller:master-18
             name: admission-controller
             readinessProbe:
               httpGet:
@@ -570,8 +571,10 @@ storage:
             - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true
             - --horizontal-pod-autoscaler-use-rest-clients=true
             - --use-service-account-credentials=true
+            - --configure-cloud-routes=false
             - --allocate-node-cidrs=true
             - --cluster-cidr=10.2.0.0/16
+            - --terminated-pod-gc-threshold=500
             - --horizontal-pod-autoscaler-use-rest-clients=true
             - --horizontal-pod-autoscaler-downscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_downscale_delay }}
             - --horizontal-pod-autoscaler-sync-period={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_sync_period }}
