@@ -50,7 +50,7 @@ require (
 	github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633 // indirect
 	github.com/emicklei/go-restful-swagger12 v0.0.0-20170208215640-dcef7f557305 // indirect
 	github.com/euank/go-kmsg-parser v2.0.0+incompatible // indirect
-	github.com/evanphx/json-patch v4.1.1-0.20190203023257-5858425f7550+incompatible // indirect
+	github.com/evanphx/json-patch v4.1.1-0.20190203023257-5858425f7550+incompatible
 	github.com/fatih/camelcase v0.0.0-20160318181535-f6a740d52f96 // indirect
 	github.com/fsnotify/fsnotify v0.0.0-20160816051541-f12c6236fe7b // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
@@ -172,7 +172,7 @@ require (
 	k8s.io/api v0.0.0-20170719033850-4d5cc6efc5e8
 	k8s.io/apiextensions-apiserver v0.0.0-20170616221715-abd4538a1176 // indirect
 	k8s.io/apimachinery v0.0.0-20190409092423-760d1845f48b
-	k8s.io/apiserver v0.0.0-20170616221227-b1c85a6c288c // indirect
+	k8s.io/apiserver v0.0.0-20170616221227-b1c85a6c288c
 	k8s.io/cli-runtime v0.0.0-20190301175653-0c2382d2cffa // indirect
 	k8s.io/client-go v0.0.0-20170617220358-c1b6a1c0a439
 	k8s.io/csi-api v0.0.0-20190301175547-a37926bd2215 // indirect
