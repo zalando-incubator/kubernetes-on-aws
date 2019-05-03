@@ -207,6 +207,7 @@ systemd:
       --pod-manifest-path=/etc/kubernetes/manifests \
       --cluster-dns=${PRIVATE_EC2_IPV4} \
       --cluster-domain=cluster.local \
+      --max-pods={{ .Cluster.ConfigItems.node_max_pods }} \
       --kubeconfig=/etc/kubernetes/kubeconfig \
       --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
       --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
@@ -574,6 +575,7 @@ storage:
             - --configure-cloud-routes=false
             - --allocate-node-cidrs=true
             - --cluster-cidr=10.2.0.0/16
+            - --node-cidr-mask-size={{ .Cluster.ConfigItems.node_cidr_mask_size }}
             - --terminated-pod-gc-threshold=500
             - --horizontal-pod-autoscaler-use-rest-clients=true
             - --horizontal-pod-autoscaler-downscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_downscale_delay }}
