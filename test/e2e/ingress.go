@@ -65,14 +65,14 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 
 		// POD
 		By("Creating a POD with prefix " + nameprefix + " in namespace " + ns)
-		pod := createNginxPod(nameprefix, ns, labels, targetPort)
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
+		pod := createSkipperPod(nameprefix, ns, route, labels, targetPort)
 		defer func() {
 			By("deleting the pod")
 			defer GinkgoRecover()
 			err2 := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
 			Expect(err2).NotTo(HaveOccurred())
 		}()
-
 		_, err = cs.CoreV1().Pods(ns).Create(pod)
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
@@ -441,6 +441,7 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
 		beurl := "https://" + hostName + bepath
 		bereq, err := http.NewRequest("GET", beurl, nil)
+		Expect(err).NotTo(HaveOccurred())
 		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -452,6 +453,7 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		bepath2 := "/bar"
 		beurl2 := "https://" + hostName + bepath2
 		bereq2, err := http.NewRequest("GET", beurl2, nil)
+		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
 		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusNotFound)
 		Expect(err).NotTo(HaveOccurred())

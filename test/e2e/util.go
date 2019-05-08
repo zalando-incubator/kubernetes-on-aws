@@ -141,33 +141,31 @@ func changePathIngress(ing *v1beta1.Ingress, path string) *v1beta1.Ingress {
 	)
 }
 
-func createNginxDeployment(nameprefix, namespace string, label map[string]string, port, replicas int32) *appsv1.Deployment {
-	zero := int64(0)
-	return &appsv1.Deployment{
+func createSkipperPod(nameprefix, namespace, route string, labels map[string]string, port int) *v1.Pod {
+	return &v1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: "v1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nameprefix + string(uuid.NewUUID()),
 			Namespace: namespace,
-			Labels:    label,
+			Labels:    labels,
 		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicas,
-			Selector: &metav1.LabelSelector{MatchLabels: label},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: label,
-				},
-				Spec: v1.PodSpec{
-					TerminationGracePeriodSeconds: &zero,
-					Containers: []v1.Container{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:  "skipper",
+					Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.10.210",
+					Args: []string{
+						"-inline-routes",
+						route,
+						fmt.Sprintf("-address=:%d", port),
+					},
+					Ports: []v1.ContainerPort{
 						{
-							Name:  "nginx",
-							Image: "nginx:latest",
-							Ports: []v1.ContainerPort{
-								{
-									Name:          "http",
-									ContainerPort: port,
-								},
-							},
+							Name:          "http",
+							ContainerPort: int32(port),
 						},
 					},
 				},
