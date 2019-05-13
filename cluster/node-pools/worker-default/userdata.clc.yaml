@@ -178,7 +178,7 @@ systemd:
       After=docker.service dockercfg.service meta-data-iptables.service private-ipv4.service collect-instance-metadata.service
 
       [Service]
-      Environment=KUBELET_IMAGE_TAG=v1.12.8
+      Environment=KUBELET_IMAGE_TAG=v1.13.5-1
       Environment=KUBELET_IMAGE_ARGS=--exec=/kubelet
       Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/kubelet
       Environment="RKT_RUN_ARGS=--insecure-options=image \
@@ -216,6 +216,7 @@ systemd:
       --node-labels={{ .Values.node_labels }} \
       --cluster-dns=${PRIVATE_EC2_IPV4} \
       --cluster-domain=cluster.local \
+      --max-pods={{ .Cluster.ConfigItems.node_max_pods }} \
       --kubeconfig=/etc/kubernetes/kubeconfig \
       --healthz-bind-address=0.0.0.0 \
       --healthz-port=10248 \
@@ -451,7 +452,7 @@ storage:
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/kubectl:v1.12.8 \
+          docker://registry.opensource.zalan.do/teapot/kubectl:v1.13.5-1 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           label node "$(hostname)" \
@@ -464,7 +465,7 @@ storage:
           --net=host \
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
-          docker://registry.opensource.zalan.do/teapot/kubectl:v1.12.8 \
+          docker://registry.opensource.zalan.do/teapot/kubectl:v1.13.5-1 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain "$(hostname)" \
