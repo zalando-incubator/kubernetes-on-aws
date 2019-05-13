@@ -138,13 +138,14 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 		// backend deployment
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
-		deployment, err := cs.Apps().Deployments(ns).Create(depl)
-		defer func() {
-			By("deleting the deployment")
-			defer GinkgoRecover()
-			err2 := cs.Apps().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
-			Expect(err2).NotTo(HaveOccurred())
-		}()
+		_, err := cs.Apps().Deployments(ns).Create(depl)
+		//deployment, err := cs.Apps().Deployments(ns).Create(depl)
+		// defer func() {
+		// 	By("deleting the deployment")
+		// 	defer GinkgoRecover()
+		// 	err2 := cs.Apps().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+		// 	Expect(err2).NotTo(HaveOccurred())
+		// }()
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating service " + serviceName + " in namespace " + ns)
@@ -374,23 +375,25 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		// backend deployment
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
-		deployment, err := cs.Apps().Deployments(ns).Create(depl)
-		defer func() {
-			By("deleting the deployment")
-			defer GinkgoRecover()
-			err2 := cs.Apps().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
-			Expect(err2).NotTo(HaveOccurred())
-		}()
+		_, err := cs.Apps().Deployments(ns).Create(depl)
+		//deployment, err := cs.Apps().Deployments(ns).Create(depl)
+		// defer func() {
+		// 	By("deleting the deployment")
+		// 	defer GinkgoRecover()
+		// 	err2 := cs.Apps().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+		// 	Expect(err2).NotTo(HaveOccurred())
+		// }()
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a 2nd deployment with " + serviceName2 + " in namespace " + ns)
 		depl2 := createSkipperBackendDeployment(serviceName2, ns, route2, labels2, int32(targetPort), replicas)
-		deployment2, err := cs.Apps().Deployments(ns).Create(depl2)
-		defer func() {
-			By("deleting the deployment")
-			defer GinkgoRecover()
-			err2 := cs.Apps().Deployments(ns).Delete(deployment2.Name, metav1.NewDeleteOptions(0))
-			Expect(err2).NotTo(HaveOccurred())
-		}()
+		_, err = cs.Apps().Deployments(ns).Create(depl2)
+		//deployment2, err := cs.Apps().Deployments(ns).Create(depl2)
+		// defer func() {
+		// 	By("deleting the deployment")
+		// 	defer GinkgoRecover()
+		// 	err2 := cs.Apps().Deployments(ns).Delete(deployment2.Name, metav1.NewDeleteOptions(0))
+		// 	Expect(err2).NotTo(HaveOccurred())
+		// }()
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating service " + serviceName + " in namespace " + ns)
@@ -556,13 +559,14 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 		// backend deployment
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
-		deployment, err := cs.Apps().Deployments(ns).Create(depl)
-		defer func() {
-			By("deleting the deployment")
-			defer GinkgoRecover()
-			err2 := cs.Apps().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
-			Expect(err2).NotTo(HaveOccurred())
-		}()
+		_, err := cs.Apps().Deployments(ns).Create(depl)
+		//deployment, err := cs.Apps().Deployments(ns).Create(depl)
+		// defer func() {
+		// 	By("deleting the deployment")
+		// 	defer GinkgoRecover()
+		// 	err2 := cs.Apps().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+		// 	Expect(err2).NotTo(HaveOccurred())
+		// }()
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating service " + serviceName + " in namespace " + ns)
