@@ -218,7 +218,11 @@ systemd:
       --cpu-cfs-quota=false \
 {{- end }}
       --system-reserved=cpu=100m,memory=164Mi \
-      --kube-reserved=cpu=100m,memory=282Mi
+      --kube-reserved=cpu=100m,memory=282Mi \
+      --client-ca-file=/etc/kubernetes/ssl/ca.pem \
+      --anonymous-auth=false \
+      --authentication-token-webhook=true \
+      --authorization-mode=Webhook
       ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
       Restart=always
       RestartSec=10
@@ -379,6 +383,10 @@ storage:
             - --requestheader-username-headers=X-Remote-User
             - --proxy-client-cert-file=/etc/kubernetes/ssl/proxy-client.pem
             - --proxy-client-key-file=/etc/kubernetes/ssl/proxy-client-key.pem
+            # kubelet authentication
+            - --kubelet-certificate-authority=/etc/kubernetes/ssl/ca.pem
+            - --kubelet-client-certificate=/etc/kubernetes/ssl/kubelet-client.pem
+            - --kubelet-client-key=/etc/kubernetes/ssl/kubelet-client-key.pem
             livenessProbe:
               httpGet:
                 host: 127.0.0.1
@@ -928,6 +936,20 @@ storage:
     contents:
       remote:
         url: "data:text/plain;base64,{{ .Cluster.ConfigItems.proxy_client_key }}"
+
+  - filesystem: root
+    path: /etc/kubernetes/ssl/kubelet-client.pem
+    mode: 0664
+    contents:
+      remote:
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.kubelet_client_cert }}"
+
+  - filesystem: root
+    path: /etc/kubernetes/ssl/kubelet-client-key.pem
+    mode: 0664
+    contents:
+      remote:
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.kubelet_client_key }}"
 
   - filesystem: root
     path: /etc/kubernetes/ssl/admission-controller.pem

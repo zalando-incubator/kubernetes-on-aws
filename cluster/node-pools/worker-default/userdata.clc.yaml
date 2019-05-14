@@ -229,7 +229,11 @@ systemd:
       --cpu-cfs-quota=false \
 {{- end }}
       --system-reserved=cpu=100m,memory=164Mi \
-      --kube-reserved=cpu=100m,memory=282Mi
+      --kube-reserved=cpu=100m,memory=282Mi \
+      --client-ca-file=/etc/kubernetes/ssl/ca.pem \
+      --anonymous-auth=false \
+      --authentication-token-webhook=true \
+      --authorization-mode=Webhook
       ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
       Restart=always
       RestartSec=10
