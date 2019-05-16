@@ -235,6 +235,17 @@ Resources:
           Value: owned
       ToPort: 10255
     Type: 'AWS::EC2::SecurityGroupIngress'
+  MasterSecurityGroupIngressFromWorkerToMasterKubelet:
+    Properties:
+      FromPort: 10250
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 10250
+    Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -334,6 +345,10 @@ Resources:
           IpProtocol: tcp
           ToPort: 10255
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 10250
+          IpProtocol: tcp
+          ToPort: 10250
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 30000
           IpProtocol: tcp
           ToPort: 32767
@@ -404,6 +419,17 @@ Resources:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
       ToPort: 10255
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerSecurityGroupIngressFromWorkerToWorkerKubelet:
+    Properties:
+      FromPort: 10250
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToWorkerSkipperMetrics:
     Properties:
