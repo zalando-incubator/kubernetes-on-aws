@@ -204,11 +204,21 @@ systemd:
       --node-labels=cluster-lifecycle-controller.zalan.do/replacement-strategy=ensure-minimum-healthy-nodes \
       --node-labels=kubernetes.io/node-pool={{ .NodePool.Name }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}} \
       --node-labels={{ .Values.node_labels }} \
+      --pod-manifest-path=/etc/kubernetes/manifests \
       --cluster-dns=${PRIVATE_EC2_IPV4} \
+      --cluster-domain=cluster.local \
+      --max-pods={{ .Cluster.ConfigItems.node_max_pods }} \
       --kubeconfig=/etc/kubernetes/kubeconfig \
+      --tls-cert-file=/etc/kubernetes/ssl/worker.pem \
+      --tls-private-key-file=/etc/kubernetes/ssl/worker-key.pem \
       --cloud-provider=aws \
+      --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}} \
       --pod-infra-container-image=registry.opensource.zalan.do/teapot/pause-amd64:3.1 \
-      --config=/etc/kubernetes/config/kubelet.yaml
+{{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
+      --cpu-cfs-quota=false \
+{{- end }}
+      --system-reserved=cpu=100m,memory=164Mi \
+      --kube-reserved=cpu=100m,memory=282Mi
       ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
       Restart=always
       RestartSec=10
@@ -252,45 +262,6 @@ storage:
         - context:
             cluster: local
             user: kubelet
-
-  - filesystem: root
-    path: /etc/kubernetes/config/kubelet.yaml
-    mode: 0644
-    contents:
-      inline: |
-        # https://github.com/kubernetes/kubernetes/blob/v1.13.6/staging/src/k8s.io/kubelet/config/v1beta1/types.go
-        apiVersion: kubelet.config.k8s.io/v1beta1
-        kind: KubeletConfiguration
-        staticPodPath: "/etc/kubernetes/manifests"
-        clusterDomain: cluster.local
-{{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
-        cpuCFSQuota: false
-{{- end }}
-        maxPods: {{ .Cluster.ConfigItems.node_max_pods }}
-        healthzPort: 10248
-        healthzBindAddress: "0.0.0.0"
-        tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
-        tlsPrivateKeyFile: "/etc/kubernetes/ssl/worker-key.pem"
-        systemReserved:
-          cpu: "100m"
-          memory: "164Mi"
-        kubeReserved:
-          cpu: "100m"
-          memory: "282Mi"
-        authentication:
-          anonymous:
-            enabled: false
-          webhook:
-            enabled: true
-            cacheTTL: "2m"
-          x509:
-            clientCAFile: "/etc/kubernetes/ssl/ca.pem"
-        authorization:
-          mode: Webhook
-          webhook:
-            cacheAuthorizedTTL: "5m"
-            cacheUnauthorizedTTL: "30s"
-        readOnlyPort: 10255 # TODO: remove after complete rollout of webhook auth
 
   - filesystem: root
     path: /etc/kubernetes/config/authn.yaml
@@ -385,7 +356,7 @@ storage:
             - --authorization-mode=Webhook,RBAC
             - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
             - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-            - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true
+            - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true
             - --anonymous-auth=false
             {{ if or (eq .Cluster.Environment "production") (index .Cluster.ConfigItems "audittrail_url") }}
             - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
@@ -408,10 +379,6 @@ storage:
             - --requestheader-username-headers=X-Remote-User
             - --proxy-client-cert-file=/etc/kubernetes/ssl/proxy-client.pem
             - --proxy-client-key-file=/etc/kubernetes/ssl/proxy-client-key.pem
-            # kubelet authentication
-            - --kubelet-certificate-authority=/etc/kubernetes/ssl/ca.pem
-            - --kubelet-client-certificate=/etc/kubernetes/ssl/kubelet-client.pem
-            - --kubelet-client-key=/etc/kubernetes/ssl/kubelet-client-key.pem
             livenessProbe:
               httpGet:
                 host: 127.0.0.1
@@ -602,7 +569,7 @@ storage:
             - --root-ca-file=/etc/kubernetes/ssl/ca.pem
             - --cloud-provider=aws
             - --cloud-config=/etc/kubernetes/cloud-config.ini
-            - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true
+            - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true
             - --horizontal-pod-autoscaler-use-rest-clients=true
             - --use-service-account-credentials=true
             - --configure-cloud-routes=false
@@ -939,14 +906,14 @@ storage:
     mode: 0664
     contents:
       remote:
-        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.worker_cert }}"
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.worker_cert_decompressed }}"
 
   - filesystem: root
     path: /etc/kubernetes/ssl/worker-key.pem
     mode: 0664
     contents:
       remote:
-        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.worker_key }}"
+        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.worker_key_decompressed }}"
 
   - filesystem: root
     path: /etc/kubernetes/ssl/proxy-client.pem
@@ -961,20 +928,6 @@ storage:
     contents:
       remote:
         url: "data:text/plain;base64,{{ .Cluster.ConfigItems.proxy_client_key }}"
-
-  - filesystem: root
-    path: /etc/kubernetes/ssl/kubelet-client.pem
-    mode: 0664
-    contents:
-      remote:
-        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.kubelet_client_cert }}"
-
-  - filesystem: root
-    path: /etc/kubernetes/ssl/kubelet-client-key.pem
-    mode: 0664
-    contents:
-      remote:
-        url: "data:text/plain;base64,{{ .Cluster.ConfigItems.kubelet_client_key }}"
 
   - filesystem: root
     path: /etc/kubernetes/ssl/admission-controller.pem

@@ -26,12 +26,10 @@ clusters:
     ca_cert_decompressed: ${CA_CERT}
     apiserver_key_decompressed: ${APISERVER_KEY}
     apiserver_cert_decompressed: ${APISERVER_CERT}
-    worker_key: ${WORKER_KEY}
-    worker_cert: ${WORKER_CERT}
+    worker_key_decompressed: ${WORKER_KEY}
+    worker_cert_decompressed: ${WORKER_CERT}
     proxy_client_key: ${PROXY_CLIENT_KEY}
     proxy_client_cert: ${PROXY_CLIENT_CERT}
-    kubelet_client_key: ${KUBELET_CLIENT_KEY}
-    kubelet_client_cert: ${KUBELET_CLIENT_CERT}
     admission_controller_cert: ${ADMISSION_CONTROLLER_CERT}
     admission_controller_key: ${ADMISSION_CONTROLLER_KEY}
     vpa_webhook_key: ${VPA_WEBHOOK_KEY}
