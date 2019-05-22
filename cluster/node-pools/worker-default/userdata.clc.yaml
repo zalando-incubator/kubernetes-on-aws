@@ -314,18 +314,17 @@ storage:
           memory: "282Mi"
         authentication:
           anonymous:
-            enabled: true
+            enabled: false
           webhook:
             enabled: true
             cacheTTL: "2m"
           x509:
             clientCAFile: "/etc/kubernetes/ssl/ca.pem"
         authorization:
-          mode: AlwaysAllow
+          mode: Webhook
           webhook:
             cacheAuthorizedTTL: "5m"
             cacheUnauthorizedTTL: "30s"
-        readOnlyPort: 10255 # TODO: remove after complete rollout of webhook auth
 
   - filesystem: root
     path: /etc/kubernetes/cni/docker_opts_cni.env
