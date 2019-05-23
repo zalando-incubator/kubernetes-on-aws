@@ -1,0 +1,67 @@
+#cloud-config
+
+write_files:
+  - owner: root:root
+    path: /etc/kubernetes/secrets.env
+    content: |
+      NODEPOOL_NAME={{ .NodePool.Name }}
+      KUBELET_ROLE=worker
+
+  - owner: root:root
+    path: /var/run/s3-certs.env
+    content: |
+      S3_CERTS_BUCKET=s3://kuberuntu/pems.tar.gz
+
+  - owner: root:root
+    path: /etc/kubernetes/kubeconfig
+    content: |
+      apiVersion: v1
+      kind: Config
+      clusters:
+      - name: local
+        cluster:
+          server: {{ .Cluster.APIServerURL }}
+      users:
+      - name: kubelet
+        user:
+          token: {{ .Cluster.ConfigItems.worker_shared_secret }}
+      contexts:
+      - context:
+          cluster: local
+          user: kubelet
+        name: kubelet-context
+      current-context: kubelet-context
+
+  - owner: root:root
+    path: /etc/kubernetes/config/kubelet.yaml
+    content: |
+      # https://github.com/kubernetes/kubernetes/blob/v1.13.6/staging/src/k8s.io/kubelet/config/v1beta1/types.go
+      apiVersion: kubelet.config.k8s.io/v1beta1
+      kind: KubeletConfiguration
+      clusterDomain: cluster.local
+      cpuCFSQuota: false
+      maxPods: {{ .Cluster.ConfigItems.node_max_pods }}
+      healthzPort: 10248
+      healthzBindAddress: "0.0.0.0"
+      tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
+      tlsPrivateKeyFile: "/etc/kubernetes/ssl/worker-key.pem"
+      systemReserved:
+        cpu: "100m"
+        memory: "164Mi"
+      kubeReserved:
+        cpu: "100m"
+        memory: "282Mi"
+      authentication:
+        anonymous:
+          enabled: false
+        webhook:
+          enabled: true
+          cacheTTL: "2m"
+        x509:
+          clientCAFile: "/etc/kubernetes/ssl/ca.pem"
+      authorization:
+        mode: Webhook
+        webhook:
+          cacheAuthorizedTTL: "5m"
+          cacheUnauthorizedTTL: "30s"
+      readOnlyPort: 10255 # TODO: remove after complete rollout of webhook auth
