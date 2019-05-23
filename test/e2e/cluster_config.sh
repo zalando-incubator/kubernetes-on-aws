@@ -65,13 +65,13 @@ clusters:
   - discount_strategy: spot_max_price
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker-splitaz
-    profile: worker-splitaz
+    profile: worker-ubuntu-splitaz
     min_size: 3
     max_size: 21
   - discount_strategy: spot_max_price
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker
-    profile: worker-default
+    profile: worker-ubuntu-default
     min_size: 1
     max_size: 21
   - discount_strategy: spot_max_price
@@ -79,7 +79,7 @@ clusters:
     config_items:
       availability_zones: "eu-central-1a"
     name: worker-limit-az
-    profile: worker-splitaz
+    profile: worker-ubuntu-splitaz
     min_size: 1
     max_size: 21
   provider: zalando-aws
