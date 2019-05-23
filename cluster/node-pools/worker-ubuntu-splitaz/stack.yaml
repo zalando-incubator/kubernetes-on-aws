@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Kubernetes default worker node pool
+
+Mappings:
+  Images:
+    eu-central-1:
+      WorkerAMI: '{{ .Cluster.ConfigItems.worker_ami }}'
+
+Resources:
+{{ with $data := . }}
+{{ with $azCount := len $data.Values.availability_zones }}
+{{ range $az := $data.Values.availability_zones }}
+{{ with $azID := azID $az }}
+  AutoScalingGroup{{$azID}}:
+    CreationPolicy:
+      ResourceSignal:
+        Count: '0'
+        Timeout: PT15M
+    Properties:
+      HealthCheckGracePeriod: 300
+      HealthCheckType: EC2
+{{ if gt (len $data.NodePool.InstanceTypes) 1 }}
+      MixedInstancesPolicy:
+        InstancesDistribution:
+          OnDemandPercentageAboveBaseCapacity: {{if eq $data.NodePool.DiscountStrategy "spot_max_price"}}0{{else}}100{{end}}
+          SpotInstancePools: {{ len $data.NodePool.InstanceTypes }}
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref LaunchTemplate
+            Version: !GetAtt LaunchTemplate.LatestVersionNumber
+          Overrides:
+{{ range $type := $data.NodePool.InstanceTypes }}
+            - InstanceType: "{{ $type }}"
+{{ end }}
+{{ else }}
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+{{ end }}
+      MinSize: '{{ asgSize $data.NodePool.MinSize $azCount }}'
+      MaxSize: '{{ asgSize $data.NodePool.MaxSize $azCount }}'
+      Tags:
+      - Key: Name
+        PropagateAtLaunch: true
+        Value: "{{ $data.NodePool.Name }} ({{ $data.Cluster.ID }})"
+      - Key: k8s.io/role/node
+        PropagateAtLaunch: true
+        Value: worker
+      - Key: kubernetes.io/role
+        PropagateAtLaunch: true
+        Value: worker
+      - Key: k8s.io/cluster-autoscaler/enabled
+        PropagateAtLaunch: true
+        Value: ''
+      - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/role
+        PropagateAtLaunch: true
+        Value: worker
+      - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/node-pool
+        PropagateAtLaunch: true
+        Value: {{ $data.NodePool.Name }}
+      - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
+        PropagateAtLaunch: true
+        Value: ready
+      - Key: k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot
+        PropagateAtLaunch: true
+        Value: {{if eq $data.NodePool.DiscountStrategy "spot_max_price"}}true{{else}}false{{end}}
+{{- if index $data.NodePool.ConfigItems "labels"}}
+  {{- range split $data.NodePool.ConfigItems.labels ","}}
+    {{- $label := split . "="}}
+      - Key: k8s.io/cluster-autoscaler/node-template/label/{{index $label 0}}
+        PropagateAtLaunch: true
+        Value: {{index $label 1}}
+  {{- end}}
+{{end}}
+{{- if index $data.NodePool.ConfigItems "taints"}}
+  {{- range split $data.NodePool.ConfigItems.taints ","}}
+    {{- $taint := split . "="}}
+      - Key: k8s.io/cluster-autoscaler/node-template/taint/{{index $taint 0}}
+        PropagateAtLaunch: true
+        Value: {{index $taint 1}}
+  {{- end}}
+{{end}}
+      - Key: 'zalando.de/cluster-local-id/{{ $data.Cluster.LocalID }}'
+        PropagateAtLaunch: true
+        Value: owned
+      VPCZoneIdentifier:
+        - "{{ index $data.Values.subnets $az }}"
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+  AutoscalingLifecycleHook{{$azID}}:
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup{{$azID}}
+      LifecycleHookName: "kube-node-ready-lifecycle-hook"
+      DefaultResult: CONTINUE
+      HeartbeatTimeout: '600'
+      LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
+    Type: 'AWS::AutoScaling::LifecycleHook'
+{{ end }}
+{{ end }}
+{{ end }}
+  LaunchTemplate:
+    Properties:
+      LaunchTemplateName: '{{ $data.Cluster.LocalID }}-{{ $data.NodePool.Name }}'
+      LaunchTemplateData:
+        NetworkInterfaces:
+        - DeviceIndex: 0
+          AssociatePublicIpAddress: true
+          Groups:
+          - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
+        BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 50
+            VolumeType: standard
+        EbsOptimized: false
+        IamInstanceProfile:
+          Name: !Ref AutoScalingInstanceProfile
+        InstanceInitiatedShutdownBehavior: terminate
+        ImageId: !FindInMap
+        - Images
+        - !Ref 'AWS::Region'
+        - WorkerAMI
+        InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
+{{- if and (eq .NodePool.DiscountStrategy "spot_max_price") (eq (len $data.NodePool.InstanceTypes) 1) }}
+        InstanceMarketOptions:
+          MarketType: spot
+{{ end }}
+        UserData: "{{ .UserData }}"
+    Type: 'AWS::EC2::LaunchTemplate'
+{{ end }}
+
+  AutoScalingInstanceProfile:
+    Properties:
+      Path: /
+      Roles:
+      - !ImportValue '{{ .Cluster.ID }}:worker-iam-role'
+    Type: 'AWS::IAM::InstanceProfile'
