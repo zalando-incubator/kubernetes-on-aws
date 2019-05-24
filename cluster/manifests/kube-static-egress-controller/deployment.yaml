@@ -29,8 +29,8 @@ spec:
         image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.1.7
         args:
         - "--provider=aws"
-{{- range $index, $element := split .ConfigItems.nat_cidr_blocks "," }}
-        - "--aws-nat-cidr-block={{ $element }}"
+{{- range $subnet := stupsNATSubnets .Values.vpc_ipv4_cidr }}
+        - "--aws-nat-cidr-block={{ $subnet }}"
 {{- end }}
 {{ range $zone := .Values.availability_zones }}
         - "--aws-az={{ $zone }}"
