@@ -279,14 +279,14 @@ storage:
           memory: "282Mi"
         authentication:
           anonymous:
-            enabled: false
+            enabled: true
           webhook:
             enabled: true
             cacheTTL: "2m"
           x509:
             clientCAFile: "/etc/kubernetes/ssl/ca.pem"
         authorization:
-          mode: Webhook
+          mode: AlwaysAllow
           webhook:
             cacheAuthorizedTTL: "5m"
             cacheUnauthorizedTTL: "30s"
@@ -408,10 +408,6 @@ storage:
             - --requestheader-username-headers=X-Remote-User
             - --proxy-client-cert-file=/etc/kubernetes/ssl/proxy-client.pem
             - --proxy-client-key-file=/etc/kubernetes/ssl/proxy-client-key.pem
-            # kubelet authentication
-            - --kubelet-certificate-authority=/etc/kubernetes/ssl/ca.pem
-            - --kubelet-client-certificate=/etc/kubernetes/ssl/kubelet-client.pem
-            - --kubelet-client-key=/etc/kubernetes/ssl/kubelet-client-key.pem
             livenessProbe:
               httpGet:
                 host: 127.0.0.1
@@ -440,7 +436,7 @@ storage:
               requests:
                 cpu: 100m
                 memory: 200Mi
-          - image: registry.opensource.zalan.do/teapot/admission-controller:master-19
+          - image: registry.opensource.zalan.do/teapot/admission-controller:master-20
             name: admission-controller
             readinessProbe:
               httpGet:
@@ -478,7 +474,7 @@ storage:
               - mountPath: /etc/kubernetes/ssl
                 name: ssl-certs-kubernetes
                 readOnly: true
-          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.5.4
+          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.5.5
             name: webhook
             ports:
             - containerPort: 8081
