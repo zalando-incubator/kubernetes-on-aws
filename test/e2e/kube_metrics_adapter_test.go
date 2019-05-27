@@ -26,7 +26,7 @@ import (
 var _ = framework.KubeDescribe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metrics from kube-metrics-adapter)", func() {
 	f := framework.NewDefaultFramework("zalando-kube-metrics-adapter")
 	var cs kubernetes.Interface
-	var jig *ingress.IngressTestJig
+	var jig *ingress.TestJig
 
 	const (
 		DeploymentName = "sample-custom-metrics-autoscaling-e2e"
@@ -92,7 +92,7 @@ type CustomMetricTestCase struct {
 	framework       *framework.Framework
 	hpa             *autoscaling.HorizontalPodAutoscaler
 	kubeClient      kubernetes.Interface
-	jig             *ingress.IngressTestJig
+	jig             *ingress.TestJig
 	deployment      *appsv1.Deployment
 	pod             *corev1.Pod
 	initialReplicas int

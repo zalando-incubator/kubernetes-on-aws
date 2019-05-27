@@ -119,27 +119,18 @@ export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
 # * statefulset tests
 # * custom 'zalando' tests
 #
-# Broken e2e tests are disabled
+# Disable DNS tests covering DNS names of format: <name>.<namespace>.svc which
+# we don't support with the ndots:2 configuration:
 #
-# * "should provide DNS for the cluster [DNS] [Conformance]"
-#   https://github.com/kubernetes/kubernetes/blob/release-1.13/test/e2e/network/dns.go#L48-L49
-#   Fixed in v1.14.0
+# * "should resolve DNS of partial qualified names for the cluster [DNS] [Conformance]"
+#   https://github.com/kubernetes/kubernetes/blob/66049e3b21efe110454d67df4fa62b08ea79a19b/test/e2e/network/dns.go#L71-L98
 #
-# * "should provide DNS for services [DNS] [Conformance]"
-#   https://github.com/kubernetes/kubernetes/blob/release-1.13/test/e2e/network/dns.go#L105-L109
-#   Fixed in v1.14.0
-#
-# * "should support remote command execution over websockets [NodeConformance] [Conformance]"
-#   https://github.com/kubernetes/kubernetes/pull/73046
-#   Fixed in v1.14.0
-#
-# * "should support retrieving logs from the container over websockets [NodeConformance] [Conformance]"
-#   https://github.com/kubernetes/kubernetes/pull/73046
-#   Fixed in v1.14.0
+# * "should resolve DNS of partial qualified names for services"
+#   https://github.com/kubernetes/kubernetes/blob/66049e3b21efe110454d67df4fa62b08ea79a19b/test/e2e/network/dns.go#L173-L220
 ginkgo -nodes=25 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
-    -skip="(should.provide.DNS.for.the.cluster|should.provide.DNS.for.services|should.support.retrieving.logs.from.the.container.over.websockets|should.support.remote.command.execution.over.websockets|\[Serial\])" \
+    -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.provide.DNS.for.services|\[Serial\])" \
     "e2e.test" -- -delete-namespace-on-failure=false
 
 # delete cluster

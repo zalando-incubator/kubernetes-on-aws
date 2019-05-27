@@ -50,10 +50,10 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 		defer func() {
 			By("deleting the pod")
 			defer GinkgoRecover()
-			cs.Core().Pods(ns).Delete(pingPod.Name, metav1.NewDeleteOptions(0))
+			cs.CoreV1().Pods(ns).Delete(pingPod.Name, metav1.NewDeleteOptions(0))
 			// don't care about POD deletion, because it should exit by itself
 		}()
-		_, err := cs.Core().Pods(ns).Create(pingPod)
+		_, err := cs.CoreV1().Pods(ns).Create(pingPod)
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pingPod.Name))
 
@@ -63,15 +63,15 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 		defer func() {
 			By("deleting the configmap")
 			defer GinkgoRecover()
-			err2 := cs.Core().ConfigMaps(ns).Delete(cmap.Name, metav1.NewDeleteOptions(0))
+			err2 := cs.CoreV1().ConfigMaps(ns).Delete(cmap.Name, metav1.NewDeleteOptions(0))
 			Expect(err2).NotTo(HaveOccurred())
 		}()
-		_, err = cs.Core().ConfigMaps(ns).Create(cmap)
+		_, err = cs.CoreV1().ConfigMaps(ns).Create(cmap)
 		Expect(err).NotTo(HaveOccurred())
 
 		// wait for egress route and NAT GWs ready and POD exit code 0 vs 2
 		for {
-			p, err := cs.Core().Pods(ns).Get(pingPod.Name, metav1.GetOptions{})
+			p, err := cs.CoreV1().Pods(ns).Get(pingPod.Name, metav1.GetOptions{})
 			if err != nil {
 				Expect(fmt.Errorf("Could not get POD %s", pingPod.Name)).NotTo(HaveOccurred())
 				return
