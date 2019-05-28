@@ -20,12 +20,12 @@ skipper_requests_mem: "50Mi"
 skipper_disable_access_logs: "false"
 
 # skipper ingress settings
-skipper_ingress_target_average_utilization_cpu: "100"
+skipper_ingress_target_average_utilization_cpu: "90"
 skipper_ingress_target_average_utilization_memory: "80"
 skipper_ingress_max_replicas: "30"
 skipper_ingress_min_replicas: "3"
-skipper_ingress_cpu: "500m"
-skipper_ingress_memory: "500Mi"
+skipper_ingress_cpu: "1000m"
+skipper_ingress_memory: "1Gi"
 skipper_ingress_tracing_buffer: "8192"
 
 # skipper default filters
@@ -51,6 +51,8 @@ skipper_clusterratelimit: "true"
 enable_skipper_eastwest: "true"
 {{end}}
 
+# opentracing
+skipper_ingress_opentracing_excluded_proxy_tags: "skipper.route"
 # lightstep
 skipper_ingress_lightstep_grpc_max_msg_size: 16384000
 skipper_ingress_lightstep_min_period: "500ms"
@@ -77,9 +79,6 @@ image_policy: "trusted"
 image_policy: "dev"
 {{end}}
 compliance_checker_enabled: "true"
-
-# Egress configuration
-nat_cidr_blocks: "172.31.64.0/28,172.31.64.16/28,172.31.64.32/28"
 
 # cadvisor settings
 cadvisor_cpu: "150m"
@@ -185,6 +184,7 @@ teapot_admission_controller_default_memory_request: "100Mi"
 teapot_admission_controller_process_resources: "true"
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_application_min_creation_time: "2999-12-31T23:59:59Z"
+teapot_admission_controller_ndots: "2"
 
 {{if eq .Environment "e2e"}}
 teapot_admission_controller_ignore_namespaces: "^kube-system|(e2e-tests-(downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
@@ -216,6 +216,10 @@ experimental_schedule_daemonset_pods: "false"
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
+
+# Feature toggle for CustomResourceWebhookConversion (alpha in v1.13)
+# https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definition-versioning/#webhook-conversion
+custom_resource_webhook_conversion: "false"
 
 # CIDR configuration for nodes and pods
 # Changing this will change the number of nodes and pods we can schedule in the
