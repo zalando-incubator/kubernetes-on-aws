@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.10.220
+    version: v0.10.222
     component: ingress
 spec:
   strategy:
@@ -18,7 +18,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.10.220
+        version: v0.10.222
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -42,7 +42,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.220
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.222
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -90,6 +90,7 @@ spec:
           - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
           - "-opentracing=lightstep component-name=skipper-ingress token=$(LIGHTSTEP_TOKEN) collector=tracing.stups.zalan.do:8444 cmd-line=skipper-ingress max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }} tag=cluster={{ .Cluster.Alias }} grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }} max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }} min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }} {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}"
+          - "-opentracing-excluded-proxy-tags={{ .ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
           - "-expect-continue-timeout-backend={{ .ConfigItems.skipper_expect_continue_timeout_backend }}"
           - "-keepalive-backend={{ .ConfigItems.skipper_keepalive_backend }}"
           - "-max-idle-connection-backend={{ .ConfigItems.skipper_max_idle_connection_backend }}"
