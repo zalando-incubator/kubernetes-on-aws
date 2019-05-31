@@ -13,7 +13,7 @@ write_files:
     path: /etc/kubernetes/secrets.env
     content: |
       NODEPOOL_TAINTS=node-role.kubernetes.io/master=:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
-      NODE_LABELS={{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
+      NODE_LABELS=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true,cluster-lifecycle-controller.zalan.do/decommission-priority=999,cluster-lifecycle-controller.zalan.do/replacement-strategy=ensure-minimum-healthy-nodes,{{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=master
 
