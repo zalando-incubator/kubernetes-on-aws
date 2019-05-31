@@ -5,8 +5,8 @@ write_files:
     path: /etc/kubernetes/secrets.env
     content: |
       NODEPOOL_TAINTS={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}}
-      NODEPOOL_NAME={{ .NodePool.Name }}
       NODE_LABELS={{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
+      NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=worker
 
   - owner: root:root
