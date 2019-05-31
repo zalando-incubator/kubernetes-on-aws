@@ -106,6 +106,14 @@ export KUBECONFIG="$KUBECONFIG"
 #
 # Broken e2e tests are disabled
 #
+# * "should provide DNS for the cluster [DNS] [Conformance]"
+#   https://github.com/kubernetes/kubernetes/blob/release-1.13/test/e2e/network/dns.go#L48-L49
+#   Fixed in v1.14.0
+#
+# * "should provide DNS for services [DNS] [Conformance]"
+#   https://github.com/kubernetes/kubernetes/blob/release-1.13/test/e2e/network/dns.go#L105-L109
+#   Fixed in v1.14.0
+#
 # * "should support remote command execution over websockets [NodeConformance] [Conformance]"
 #   https://github.com/kubernetes/kubernetes/pull/73046
 #   Fixed in v1.14.0
@@ -116,7 +124,7 @@ export KUBECONFIG="$KUBECONFIG"
 ginkgo -nodes=25 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
-    -skip="(should.support.retrieving.logs.from.the.container.over.websockets|should.support.remote.command.execution.over.websockets|\[Serial\])" \
+    -skip="(should.provide.DNS.for.the.cluster|should.provide.DNS.for.services|should.support.retrieving.logs.from.the.container.over.websockets|should.support.remote.command.execution.over.websockets|\[Serial\])" \
     "e2e.test" -- -delete-namespace-on-failure=false
 
 # delete cluster
