@@ -59,7 +59,7 @@ clusters:
   - discount_strategy: none
     instance_types: ["t2.medium"]
     name: default-master
-    profile: master-default
+    profile: master-ubuntu-default
     min_size: 1
     max_size: 1
   - discount_strategy: spot_max_price
