@@ -6,7 +6,7 @@ write_files:
     content: |
       NODEPOOL_TAINTS={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
-      NODE_LABELS={{ .Values.node_labels }}
+      NODE_LABELS={{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       KUBELET_ROLE=worker
 
   - owner: root:root
