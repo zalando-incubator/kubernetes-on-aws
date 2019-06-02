@@ -1,4 +1,4 @@
-{{ $version := "v0.0.2" }}
+{{ $version := "v0.0.3" }}
 
 apiVersion: apps/v1
 kind: DaemonSet
@@ -19,8 +19,10 @@ spec:
       labels:
         application: kube-node-ready
         version: {{$version}}
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-kube-node-ready"
+{{ end }}
     spec:
       dnsConfig:
         options:
@@ -37,6 +39,12 @@ spec:
         image: registry.opensource.zalan.do/teapot/kube-node-ready:{{$version}}
         args:
         - --lifecycle-hook=kube-node-ready-lifecycle-hook
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+        env:
+        # must be set for the AWS SDK/AWS CLI to find the credentials file.
+        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
+          value: /meta/aws-iam/credentials.process
+{{ end }}
         resources:
           limits:
             cpu: 1m
@@ -44,6 +52,12 @@ spec:
           requests:
             cpu: 1m
             memory: 50Mi
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+        volumeMounts:
+        - name: aws-iam-credentials
+          mountPath: /meta/aws-iam
+          readOnly: true
+{{ end }}
         readinessProbe:
           httpGet:
             path: /healthz
@@ -54,3 +68,9 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+      volumes:
+      - name: aws-iam-credentials
+        secret:
+          secretName: kube-node-ready-aws-iam-credentials
+{{ end }}
