@@ -59,25 +59,6 @@ systemd:
       [Install]
       WantedBy=multi-user.target
 
-  - name: etcd-member.service
-    enable: true
-    contents: |
-      [Unit]
-      Wants=network.target
-
-      [Service]
-      Type=simple
-      Restart=on-failure
-      RestartSec=5s
-      StartLimitIntervalSec=0
-      ExecStartPre=/usr/bin/mkdir --parents /var/lib/coreos
-      ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
-      ExecStart=/usr/bin/rkt run --uuid-file-save=/var/lib/coreos/etcd-member-wrapper.uuid --port=2379-tcp:2379 --mount volume=dns,target=/etc/resolv.conf --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true --insecure-options=image docker://registry.opensource.zalan.do/teapot/etcd-proxy:master-2 -- {{ .Cluster.ConfigItems.etcd_endpoints }}
-      ExecStop=-/usr/bin/rkt stop --uuid-file=/var/lib/coreos/etcd-member-wrapper.uuid
-
-      [Install]
-      WantedBy=multi-user.target
-
   - name: docker.service
     dropins:
     - name: 40-flannel.conf
@@ -221,7 +202,7 @@ systemd:
     contents: |
       [Unit]
       Description=drain this k8s node to make running pods time to gracefully shut down before stopping kubelet
-      After=docker.service kubelet.service etcd-member.service
+      After=docker.service kubelet.service
 
       [Service]
       Type=oneshot
@@ -558,6 +539,18 @@ storage:
             volumeMounts:
             - name: config-volume
               mountPath: /etc/nginx
+          - name: etcd-proxy
+            image: registry.opensource.zalan.do/teapot/etcd-proxy:master-2
+            - {{ .Cluster.ConfigItems.etcd_endpoints }}
+            ports:
+            - containerPort: 2379
+            resources:
+              requests:
+                cpu: 25m
+                memory: 25Mi
+              limits:
+                cpu: 25m
+                memory: 25Mi
           volumes:
           - hostPath:
               path: /etc/kubernetes/ssl
