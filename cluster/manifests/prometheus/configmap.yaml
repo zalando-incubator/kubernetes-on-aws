@@ -14,7 +14,10 @@ data:
     scrape_configs:
     # scrape from kube-apiserver pods
     - job_name: 'kubernetes-apiservers'
-      scheme: http
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
       kubernetes_sd_configs:
       - role: pod
         namespaces:
@@ -23,7 +26,7 @@ data:
       relabel_configs:
       - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_container_port_number]
         action: keep
-        regex: kube-apiserver;8082
+        regex: kube-apiserver;443
       - action: replace
         source_labels: ['__meta_kubernetes_pod_label_application']
         target_label: application
@@ -150,13 +153,17 @@ data:
         action: keep
         regex: '(container_cpu_cfs_throttled_seconds_total|container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_memory_rss|container_memory_cache|container_network_receive_bytes_total|container_network_transmit_bytes_total|container_fs_usage_bytes|container_fs_limit_bytes|container_fs_reads_bytes_total|container_fs_writes_bytes_total)'
     - job_name: 'kubelet-metrics'
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
       kubernetes_sd_configs:
       - role: node
       relabel_configs:
-      - source_labels: [__meta_kubernetes_node_address_InternalIP]
+      - source_labels: [__meta_kubernetes_node_address_Hostname]
         target_label: __address__
         regex: (.*)
-        replacement: $1:10255
+        replacement: $1:10250
       metric_relabel_configs:
        - source_labels: [ __name__ ]
          regex: 'reflector.*'
