@@ -4,6 +4,7 @@
 Public Presentations
 ====================
 
+* `KubeCon Barcelona 2019: Kubernetes Failure Stories and How to Crash Your Clusters <https://www.youtube.com/watch?v=6sDTB4eV4F8&list=PLMesvuIhAAe3yGlYfkv5PBUuXJsbn_7QY&index=11&t=0s>`_
 * `DevOps Gathering 2019: Ensuring Kubernetes Cost Efficiency across (many) Clusters <https://www.youtube.com/watch?v=4QyecOoPsGU>`_ (`slides <https://www.slideshare.net/try_except_/ensuring-kubernetes-cost-efficiency-across-many-clusters-devops-gathering-2019>`_)
 * `DevOpsCon Munich 2018: Running Kubernetes in Production: A Million Ways to Crash Your Cluster <https://www.slideshare.net/try_except_/running-kubernetes-in-production-a-million-ways-to-crash-your-cluster-devopscon-munich-2018>`_
 * `HighLoad++ Moscow 2018: Optimizing Kubernetes Resource Requests/Limits for Cost-Efficiency and Latency <https://www.youtube.com/watch?v=eBChCFD9hfs>`_ (`slides <https://www.slideshare.net/try_except_/optimizing-kubernetes-resource-requestslimits-for-costefficiency-and-latency-highload>`_)
