@@ -2,6 +2,8 @@
 set -euo pipefail
 set -x
 
+E2E_NODE_OS="${E2E_NODE_OS:="coreos"}"
+
 E2E_SKIP_CLUSTER_UPDATE="${E2E_SKIP_CLUSTER_UPDATE:-"false"}"
 
 # fetch internal configuration values
@@ -29,6 +31,17 @@ export INFRASTRUCTURE_ACCOUNT="$INFRASTRUCTURE_ACCOUNT"
 export ETCD_ENDPOINTS="$ETCD_ENDPOINTS"
 export CLUSTER_ID="$CLUSTER_ID"
 export WORKER_SHARED_SECRET="$WORKER_SHARED_SECRET"
+
+if [[ "${E2E_NODE_OS}" == "coreos" ]]; then
+    export MASTER_PROFILE="master"
+    export WORKER_PROFILE="worker"
+elif [[ "${E2E_NODE_OS}" == "ubuntu" ]]; then
+    export MASTER_PROFILE="master-ubuntu"
+    export WORKER_PROFILE="worker-ubuntu"
+else
+    echo "Unsupported E2E_NODE_OS: ${E2E_NODE_OS}"
+    exit 1
+fi
 
 # if E2E_SKIP_CLUSTER_UPDATE is true, don't create a cluster from base first
 if [ "$E2E_SKIP_CLUSTER_UPDATE" != "true" ]; then
