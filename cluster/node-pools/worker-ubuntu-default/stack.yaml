@@ -4,7 +4,12 @@ Description: Kubernetes default ubuntu worker node pool
 Mappings:
   Images:
     eu-central-1:
+      {{- $distro := split .NodePool.Profile "-" }}
+      {{ if eq $distro "ubuntu" }}
       MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image }}'
+      {{ else }}
+      MachineImage: '{{ .Cluster.ConfigItems.coreos_image }}'
+      {{ end }}
 
 Resources:
   AutoScalingGroup:
