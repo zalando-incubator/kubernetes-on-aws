@@ -18,7 +18,7 @@ CDP_TARGET_COMMIT_ID="${CDP_TARGET_COMMIT_ID:-"dev"}"
 CDP_HEAD_COMMIT_ID="${CDP_HEAD_COMMIT_ID:-"$(git describe --tags --always)"}"
 
 # TODO: we need the date in LOCAL_ID because of CDP retriggering
-LOCAL_ID="${LOCAL_ID:-"kube-e2e-$CDP_BUILD_VERSION-$(date +'%H%M%S')"}"
+LOCAL_ID="${LOCAL_ID:-"e2e-$CDP_BUILD_VERSION-$(date +'%H%M%S')"}-$E2E_NODE_OS"
 API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 ETCD_ENDPOINTS="${ETCD_ENDPOINTS:-"etcd-server.etcd.${HOSTED_ZONE}:2379"}"
