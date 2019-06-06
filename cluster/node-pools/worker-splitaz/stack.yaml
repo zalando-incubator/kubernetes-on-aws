@@ -4,7 +4,7 @@ Description: Kubernetes default worker node pool
 Mappings:
   Images:
     eu-central-1:
-      StableCoreOSImage: '{{ .Cluster.ConfigItems.coreos_image }}'
+      MachineImage: '{{ .Cluster.ConfigItems.coreos_image }}'
 
 Resources:
 {{ with $data := . }}
@@ -118,7 +118,7 @@ Resources:
         ImageId: !FindInMap
         - Images
         - !Ref 'AWS::Region'
-        - StableCoreOSImage
+        - MachineImage
         InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
 {{- if and (eq .NodePool.DiscountStrategy "spot_max_price") (eq (len $data.NodePool.InstanceTypes) 1) }}
         InstanceMarketOptions:

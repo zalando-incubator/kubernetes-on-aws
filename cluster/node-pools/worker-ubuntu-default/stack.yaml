@@ -4,7 +4,7 @@ Description: Kubernetes default ubuntu worker node pool
 Mappings:
   Images:
     eu-central-1:
-      KuberuntuImage: '{{ .Cluster.ConfigItems.kuberuntu_image }}'
+      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image }}'
 
 Resources:
   AutoScalingGroup:
@@ -107,7 +107,7 @@ Resources:
         ImageId: !FindInMap
         - Images
         - !Ref 'AWS::Region'
-        - KuberuntuImage
+        - MachineImage
         InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
 {{- if and (eq .NodePool.DiscountStrategy "spot_max_price") (eq (len .NodePool.InstanceTypes) 1) }}
         InstanceMarketOptions:

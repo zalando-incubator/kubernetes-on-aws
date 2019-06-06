@@ -4,7 +4,7 @@ Description: Kubernetes default master node pool
 Mappings:
   Images:
     eu-central-1:
-      StableCoreOSImage: '{{ .Cluster.ConfigItems.coreos_image }}'
+      MachineImage: '{{ .Cluster.ConfigItems.coreos_image }}'
 
 Resources:
   AutoScalingGroup:
@@ -61,7 +61,7 @@ Resources:
         ImageId: !FindInMap
         - Images
         - !Ref 'AWS::Region'
-        - StableCoreOSImage
+        - MachineImage
         InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
         UserData: "{{ .UserData }}"
     Type: 'AWS::EC2::LaunchTemplate'
