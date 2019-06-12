@@ -1291,7 +1291,43 @@ Resources:
       Description: "AWS service role for application autoscaling DynamoDB"
     Type: "AWS::IAM::ServiceLinkedRole"
 {{- end }}
-
+  RemoteFilesEncryptionKey:
+    Type: "AWS::KMS::Key"
+    Properties:
+      Description: The master key for encryption of remote files
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "remote-files-encryption-key"
+        Statement:
+          - Sid: "Enable IAM User Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: "Allow encryption with the key"
+            Effect: "Allow"
+            Principal:
+              AWS: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+            Action:
+            - "kms:Describe"
+            - "kms:Get*"
+            - "kms:Encrypt"
+            Resource: "*"
+          - Sid: "Enable master and worker nodes to decrypt the remote files"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - "Fn::GetAtt":
+                  - "MasterIAMRole"
+                  - "Arn"
+                - "Fn::GetAtt":
+                  - "WorkerIAMRole"
+                  - "Arn"
+            Resource: "*"
+            Action:
+            - "kms:Decrypt"
 Outputs:
   MasterIAMRole:
     Export:
@@ -1313,3 +1349,7 @@ Outputs:
     Export:
       Name: '{{.Cluster.ID}}:worker-security-group'
     Value: !Ref WorkerSecurityGroup
+  RemoteFilesEncryptionKey:
+    Export:
+      Name: '{{ .Cluster.ID}}:remote-files-encryption-key'
+    Value: !Ref RemoteFilesEncryptionKey
