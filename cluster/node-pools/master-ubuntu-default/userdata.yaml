@@ -180,7 +180,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-24
+        - image: registry.opensource.zalan.do/teapot/admission-controller:pr-26-34
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -195,6 +195,7 @@ write_files:
               memory: 100Mi
           args:
             - --address=:8085
+            - --master=http://127.0.0.1:8080
             - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
             - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
             - --pod-default-cpu-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}
@@ -203,6 +204,14 @@ write_files:
             - --pod-dns-ndots={{ .Cluster.ConfigItems.teapot_admission_controller_ndots }}
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
             - --pod-process-resources
+            - --pod-enable-env-inject
+            - --pod-inject-env=_PLATFORM_ACCOUNT={{ .Cluster.Alias }}
+            - --pod-inject-env=_PLATFORM_TOKENINFO_URL={{ .ConfigItems.tokeninfo_url }}
+
+            - --pod-inject-env=_PLATFORM_OPENTRACING_TAG_ACCOUNT={{ .Cluster.Alias }}
+            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT=8443
+            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST=tracing.stups.zalan.do
+            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN={{ .ConfigItems.lightstep_token }}
 {{- end }}
 {{- if eq .Cluster.ConfigItems.experimental_schedule_daemonset_pods "true" }}
             - --node-add-not-ready-taint
