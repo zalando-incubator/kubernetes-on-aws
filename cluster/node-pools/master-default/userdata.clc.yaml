@@ -558,6 +558,37 @@ storage:
             volumeMounts:
             - name: config-volume
               mountPath: /etc/nginx
+{{- if eq .ConfigItems.apiserver_proxy "true" }}
+          - name: skipper-proxy
+            image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.233
+            args:
+            - skipper
+            - -address=:8443
+            - -tls-cert=/etc/kubernetes/ssl/apiserver.pem
+            - -tls-key=/etc/kubernetes/ssl/apiserver-key.pem
+            - -inline-routes
+            - 'z: JWTPayloadAnyKV("iss", "https://identity.zalando.com") -> disableAccessLog() -> "https://127.0.0.1:443"; all: * -> enableAccessLog() -> "https://127.0.0.1:443";'
+            ports:
+            - containerPort: 8443
+            readinessProbe:
+              httpGet:
+                path: /metrics
+                port: 9911
+              initialDelaySeconds: 60
+              timeoutSeconds: 5
+            resources:
+              requests:
+                cpu: 100m
+                memory: 250Mi
+            securityContext:
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+              runAsUser: 1000
+            volumeMounts:
+            - mountPath: /etc/kubernetes/ssl
+              name: ssl-certs-kubernetes
+              readOnly: true
+{{- end }}
           volumes:
           - hostPath:
               path: /etc/kubernetes/ssl
