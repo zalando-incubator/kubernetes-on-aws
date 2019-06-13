@@ -566,6 +566,9 @@ storage:
             - -tls-key=/etc/kubernetes/ssl/apiserver-key.pem
             - -insecure
             - -experimental-upgrade
+            - -runtime-metrics
+            - -enable-connection-metrics
+            - -enable-prometheus-metrics
             - -inline-routes
             - 'z: JWTPayloadAnyKV("iss", "https://identity.zalando.com") -> disableAccessLog() -> "https://127.0.0.1:443"; h: Path("/kube-system/healthz") -> setPath("/healthz") -> "http://127.0.0.1:8080"; all: * -> enableAccessLog() -> "https://127.0.0.1:443";'
             ports:
