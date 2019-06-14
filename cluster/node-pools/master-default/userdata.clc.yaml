@@ -570,7 +570,7 @@ storage:
             - -enable-connection-metrics
             - -enable-prometheus-metrics
             - -inline-routes
-            - 'z: JWTPayloadAnyKV("iss", "https://identity.zalando.com") -> disableAccessLog() -> "https://127.0.0.1:443"; h: Path("/kube-system/healthz") -> setPath("/healthz") -> "http://127.0.0.1:8080"; all: * -> enableAccessLog() -> "https://127.0.0.1:443";'
+            - 'z: JWTPayloadAnyKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> "https://127.0.0.1:443"; h: Path("/kube-system/healthz") -> setPath("/healthz") -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
             ports:
             - containerPort: 8443
             readinessProbe:
