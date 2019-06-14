@@ -179,7 +179,7 @@ systemd:
       After=docker.service dockercfg.service meta-data-iptables.service private-ipv4.service
 
       [Service]
-      Environment=KUBELET_IMAGE_TAG=v1.13.5-1
+      Environment=KUBELET_IMAGE_TAG=v1.13.7
       Environment=KUBELET_IMAGE_ARGS=--exec=/kubelet
       Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/kubelet
       Environment="RKT_RUN_ARGS=--insecure-options=image \
@@ -281,18 +281,17 @@ storage:
           memory: "282Mi"
         authentication:
           anonymous:
-            enabled: true
+            enabled: false
           webhook:
             enabled: true
             cacheTTL: "2m"
           x509:
             clientCAFile: "/etc/kubernetes/ssl/ca.pem"
         authorization:
-          mode: AlwaysAllow
+          mode: Webhook
           webhook:
             cacheAuthorizedTTL: "5m"
             cacheUnauthorizedTTL: "30s"
-        readOnlyPort: 10255 # TODO: remove after complete rollout of webhook auth
 
   - filesystem: root
     path: /etc/kubernetes/config/authn.yaml
@@ -352,7 +351,7 @@ storage:
           namespace: kube-system
           labels:
             application: kube-apiserver
-            version: v1.13.5-1
+            version: v1.13.7
           annotations:
             kubernetes-log-watcher/scalyr-parser: |
               [{"container": "webhook", "parser": "json-structured-log"}]
@@ -364,7 +363,7 @@ storage:
           hostNetwork: true
           containers:
           - name: kube-apiserver
-            image: registry.opensource.zalan.do/teapot/kube-apiserver:v1.13.5-1
+            image: registry.opensource.zalan.do/teapot/kube-apiserver:v1.13.7
             args:
             - --apiserver-count={{ .Values.apiserver_count }}
             - --bind-address=0.0.0.0
@@ -560,6 +559,40 @@ storage:
             volumeMounts:
             - name: config-volume
               mountPath: /etc/nginx
+          - name: skipper-proxy
+            image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.235
+            args:
+            - skipper
+            - -address=:8443
+            - -tls-cert=/etc/kubernetes/ssl/apiserver.pem
+            - -tls-key=/etc/kubernetes/ssl/apiserver-key.pem
+            - -insecure
+            - -experimental-upgrade
+            - -runtime-metrics
+            - -enable-connection-metrics
+            - -enable-prometheus-metrics
+            - -inline-routes
+            - 'z: JWTPayloadAnyKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> "https://127.0.0.1:443"; h: Path("/kube-system/healthz") -> setPath("/healthz") -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
+            ports:
+            - containerPort: 8443
+            readinessProbe:
+              httpGet:
+                scheme: HTTPS
+                path: /kube-system/healthz
+                port: 8443
+              timeoutSeconds: 5
+            resources:
+              requests:
+                cpu: 100m
+                memory: 250Mi
+            securityContext:
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+              runAsUser: 1000
+            volumeMounts:
+            - mountPath: /etc/kubernetes/ssl
+              name: ssl-certs-kubernetes
+              readOnly: true
 {{ if eq .Cluster.ConfigItems.etcd_proxy_as_sidecar "true"}}
           - name: etcd-proxy
             image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
@@ -598,7 +631,7 @@ storage:
           namespace: kube-system
           labels:
             application: kube-controller-manager
-            version: v1.13.5-1
+            version: v1.13.7
         spec:
           priorityClassName: system-node-critical
           tolerations:
@@ -606,7 +639,7 @@ storage:
             effect: NoSchedule
           containers:
           - name: kube-controller-manager
-            image: registry.opensource.zalan.do/teapot/kube-controller-manager:v1.13.5-1
+            image: registry.opensource.zalan.do/teapot/kube-controller-manager:v1.13.7
             args:
             - --kubeconfig=/etc/kubernetes/controller-kubeconfig
             - --leader-elect=true
@@ -672,7 +705,7 @@ storage:
           namespace: kube-system
           labels:
             application: kube-scheduler
-            version: v1.13.5-1
+            version: v1.13.7
         spec:
           priorityClassName: system-node-critical
           tolerations:
@@ -681,7 +714,7 @@ storage:
           hostNetwork: true
           containers:
           - name: kube-scheduler
-            image: registry.opensource.zalan.do/teapot/kube-scheduler:v1.13.5-1
+            image: registry.opensource.zalan.do/teapot/kube-scheduler:v1.13.7
             args:
             - --master=http://127.0.0.1:8080
             - --leader-elect=true
@@ -1140,7 +1173,7 @@ storage:
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/kubectl:v1.13.5-1 \
+          docker://registry.opensource.zalan.do/teapot/kubectl:v1.13.7 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           label node "$(hostname)" \
@@ -1153,7 +1186,7 @@ storage:
           --net=host \
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
-          docker://registry.opensource.zalan.do/teapot/kubectl:v1.13.5-1 \
+          docker://registry.opensource.zalan.do/teapot/kubectl:v1.13.7 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain "$(hostname)" \

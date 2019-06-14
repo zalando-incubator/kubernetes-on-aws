@@ -54,7 +54,7 @@ Resources:
         Timeout: '5'
         UnhealthyThreshold: '2'
       Listeners:
-        - InstancePort: 443
+        - InstancePort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
           InstanceProtocol: SSL
           LoadBalancerPort: 443
           PolicyNames: []
@@ -182,14 +182,14 @@ Resources:
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromLoadBalancer:
     Properties:
-      FromPort: 443
+      FromPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterLoadBalancerSecurityGroup
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
-      ToPort: 443
+      ToPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
     Properties:
@@ -223,17 +223,6 @@ Resources:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
       ToPort: 443
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  MasterSecurityGroupIngressFromWorkerToMasterKubeletReadOnly:
-    Properties:
-      FromPort: 10255
-      GroupId: !Ref MasterSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 10255
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromWorkerToMasterKubelet:
     Properties:
@@ -341,10 +330,6 @@ Resources:
           IpProtocol: tcp
           ToPort: 9153
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-          FromPort: 10255
-          IpProtocol: tcp
-          ToPort: 10255
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 10250
           IpProtocol: tcp
           ToPort: 10250
@@ -408,17 +393,6 @@ Resources:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
       ToPort: 8472
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToWorkerKubeletReadOnly:
-    Properties:
-      FromPort: 10255
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 10255
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToWorkerKubelet:
     Properties:
@@ -1291,7 +1265,43 @@ Resources:
       Description: "AWS service role for application autoscaling DynamoDB"
     Type: "AWS::IAM::ServiceLinkedRole"
 {{- end }}
-
+  RemoteFilesEncryptionKey:
+    Type: "AWS::KMS::Key"
+    Properties:
+      Description: The master key for encryption of remote files
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "remote-files-encryption-key"
+        Statement:
+          - Sid: "Enable IAM User Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: "Allow encryption with the key"
+            Effect: "Allow"
+            Principal:
+              AWS: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+            Action:
+            - "kms:Describe"
+            - "kms:Get*"
+            - "kms:Encrypt"
+            Resource: "*"
+          - Sid: "Enable master and worker nodes to decrypt the remote files"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - "Fn::GetAtt":
+                  - "MasterIAMRole"
+                  - "Arn"
+                - "Fn::GetAtt":
+                  - "WorkerIAMRole"
+                  - "Arn"
+            Resource: "*"
+            Action:
+            - "kms:Decrypt"
 Outputs:
   MasterIAMRole:
     Export:
@@ -1313,3 +1323,7 @@ Outputs:
     Export:
       Name: '{{.Cluster.ID}}:worker-security-group'
     Value: !Ref WorkerSecurityGroup
+  RemoteFilesEncryptionKey:
+    Export:
+      Name: '{{ .Cluster.ID}}:remote-files-encryption-key'
+    Value: !Ref RemoteFilesEncryptionKey
