@@ -13,7 +13,10 @@ spec:
   resourcePolicy:
     containerPolicies:
     - containerName: prometheus
+  {{ with $resources := autoscalingBufferSettings $data.Cluster }}
       minAllowed:
         memory: {{.ConfigItems.prometheus_mem_min}}
       maxAllowed:
-        memory: {{.ConfigItems.prometheus_mem_max}}
+        # Set the max memory to max available on the Node
+        memory: {{$resources.Memory}}
+  {{ end }}
