@@ -86,7 +86,6 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.13.7
         annotations:
           kubernetes-log-watcher/scalyr-parser: |
             [{"container": "webhook", "parser": "json-structured-log"}]
@@ -98,7 +97,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/kube-apiserver:v1.13.7
+          image: nonexistent.zalan.do/teapot/kube-apiserver:fixed
           args:
           - --apiserver-count={{ .Values.apiserver_count }}
           - --bind-address=0.0.0.0
@@ -352,7 +351,6 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.13.7
       spec:
         priorityClassName: system-node-critical
         tolerations:
@@ -360,7 +358,7 @@ write_files:
           effect: NoSchedule
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/kube-controller-manager:v1.13.7
+          image: nonexistent.zalan.do/teapot/kube-controller-manager:fixed
           args:
           - --kubeconfig=/etc/kubernetes/controller-kubeconfig
           - --leader-elect=true
@@ -424,7 +422,6 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.13.7
       spec:
         priorityClassName: system-node-critical
         tolerations:
@@ -433,7 +430,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/kube-scheduler:v1.13.7
+          image: nonexistent.zalan.do/teapot/kube-scheduler:fixed
           args:
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
