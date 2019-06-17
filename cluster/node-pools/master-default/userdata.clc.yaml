@@ -557,6 +557,40 @@ storage:
             volumeMounts:
             - name: config-volume
               mountPath: /etc/nginx
+          - name: skipper-proxy
+            image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.235
+            args:
+            - skipper
+            - -address=:8443
+            - -tls-cert=/etc/kubernetes/ssl/apiserver.pem
+            - -tls-key=/etc/kubernetes/ssl/apiserver-key.pem
+            - -insecure
+            - -experimental-upgrade
+            - -runtime-metrics
+            - -enable-connection-metrics
+            - -enable-prometheus-metrics
+            - -inline-routes
+            - 'z: JWTPayloadAnyKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> "https://127.0.0.1:443"; h: Path("/kube-system/healthz") -> setPath("/healthz") -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
+            ports:
+            - containerPort: 8443
+            readinessProbe:
+              httpGet:
+                scheme: HTTPS
+                path: /kube-system/healthz
+                port: 8443
+              timeoutSeconds: 5
+            resources:
+              requests:
+                cpu: 100m
+                memory: 250Mi
+            securityContext:
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+              runAsUser: 1000
+            volumeMounts:
+            - mountPath: /etc/kubernetes/ssl
+              name: ssl-certs-kubernetes
+              readOnly: true
           volumes:
           - hostPath:
               path: /etc/kubernetes/ssl
