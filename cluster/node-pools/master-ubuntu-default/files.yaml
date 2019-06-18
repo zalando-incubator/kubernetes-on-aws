@@ -1,0 +1,53 @@
+files:
+  - path: /etc/kubernetes/ssl/worker.pem
+    data: "{{ .Cluster.ConfigItems.worker_cert }}"
+    permissions: 0400
+    encrypted: false
+  - path: /etc/kubernetes/ssl/worker-key.pem
+    data: "{{ .Cluster.ConfigItems.worker_key }}"
+    permissions: 0400
+    encrypted: true
+  - path: /etc/kubernetes/ssl/ca.pem
+    data: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    permissions: 0400
+    encrypted: false
+  - path: /etc/kubernetes/ssl/apiserver.pem
+    data: "{{ .Cluster.ConfigItems.apiserver_cert_decompressed }}"
+    permissions: 0400
+    encrypted: false
+  - path: /etc/kubernetes/ssl/apiserver-key.pem
+    data: "{{ .Cluster.ConfigItems.apiserver_key_decompressed }}"
+    permissions: 0400
+    encrypted: true
+  - path: /etc/kubernetes/ssl/proxy-client.pem
+    data: "{{ .Cluster.ConfigItems.proxy_client_cert }}"
+    permissions: 0400
+    encrypted: false
+  - path: /etc/kubernetes/ssl/proxy-client-key.pem
+    data: "{{ .Cluster.ConfigItems.proxy_client_key }}"
+    permissions: 0400
+    encrypted: true
+  - path: /etc/kubernetes/ssl/kubelet-client-key.pem
+    data: "{{ .Cluster.ConfigItems.kubelet_client_key }}"
+    permissions: 0400
+    encrypted: true
+  - path: /etc/kubernetes/ssl/kubelet-client.pem
+    data: "{{ .Cluster.ConfigItems.kubelet_client_cert }}"
+    permissions: 0400
+    encrypted: false
+  - path: /etc/kubernetes/ssl/admission-controller-key.pem
+    data: "{{ .Cluster.ConfigItems.admission_controller_key }}"
+    permissions: 0400
+    encrypted: true
+  - path: /etc/kubernetes/ssl/admission-controller.pem
+    data: "{{ .Cluster.ConfigItems.admission_controller_cert }}"
+    permissions: 0400
+    encrypted: false
+  - path: /etc/kubernetes/ssl/service-account-private-key.pem
+    data: "{{ .Cluster.ConfigItems.service_account_private_key }}"
+    permissions: 0400
+    encrypted: true
+  - path: /etc/kubernetes/ssl/service-account-public-key.pem
+    data: "{{ .Cluster.ConfigItems.service_account_private_key | base64Decode | publicKey | base64 }}"
+    permissions: 0400
+    encrypted: false
