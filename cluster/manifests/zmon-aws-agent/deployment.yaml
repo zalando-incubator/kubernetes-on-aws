@@ -16,8 +16,10 @@ spec:
       labels:
         application: "zmon-aws-agent"
         version: "v76-7-g67db4f5-zv155-2-g66e06ab"
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
+{{ end }}
     spec:
       dnsConfig:
         options:
@@ -26,12 +28,18 @@ spec:
       priorityClassName: visibility-zmon
       initContainers:
       - name: gerry-init
-        image: registry.opensource.zalan.do/teapot/gerry:v0.0.14
+        image: registry.opensource.zalan.do/teapot/gerry:v0.0.15
         args:
-          - /meta/credentials
-          - --application-id=gerry
-          - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
-          - --once
+        - /meta/credentials
+        - --application-id=gerry
+        - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
+        - --once
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+        env:
+        # must be set for the AWS SDK/AWS CLI to find the credentials file.
+        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
+          value: /meta/aws-iam/credentials.process
+{{ end }}
         resources:
           limits:
             cpu: 5m
@@ -41,10 +49,14 @@ spec:
             memory: 20Mi
 
         volumeMounts:
-          - name: credentials
-            mountPath: /meta/credentials
-            readOnly: false
-
+        - name: credentials
+          mountPath: /meta/credentials
+          readOnly: false
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+        - name: aws-iam-credentials
+          mountPath: /meta/aws-iam
+          readOnly: true
+{{ end }}
       containers:
         - name: zmon-aws-agent
           image: pierone.stups.zalan.do/zmon/zmon-aws-agent:v76-7-g67db4f5-zv155-2-g66e06ab
@@ -56,24 +68,38 @@ spec:
               cpu: {{.ConfigItems.zmon_aws_agent_cpu}}
               memory: {{.ConfigItems.zmon_aws_agent_mem}}
           env:
-            - name: OAUTH2_ACCESS_TOKEN_URL
-              value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
-            - name: CREDENTIALS_DIR
-              value: /meta/credentials
-            - name: EXTRA_ENTITY_FIELDS
-              value: "environment={{ .Environment }}"
-
+          - name: OAUTH2_ACCESS_TOKEN_URL
+            value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
+          - name: CREDENTIALS_DIR
+            value: /meta/credentials
+          - name: EXTRA_ENTITY_FIELDS
+            value: "environment={{ .Environment }}"
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+          # must be set for the AWS SDK/AWS CLI to find the credentials file.
+          - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
+            value: /meta/aws-iam/credentials.process
+{{ end }}
           volumeMounts:
-            - name: credentials
-              mountPath: /meta/credentials
-              readOnly: true
-
+          - name: credentials
+            mountPath: /meta/credentials
+            readOnly: true
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+          - name: aws-iam-credentials
+            mountPath: /meta/aws-iam
+            readOnly: true
+{{ end }}
         - name: gerry
-          image: registry.opensource.zalan.do/teapot/gerry:v0.0.14
+          image: registry.opensource.zalan.do/teapot/gerry:v0.0.15
           args:
-            - /meta/credentials
-            - --application-id=gerry
-            - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
+          - /meta/credentials
+          - --application-id=gerry
+          - --mint-bucket=s3://{{ .ConfigItems.gerry_mint_bucket }}
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+          env:
+          # must be set for the AWS SDK/AWS CLI to find the credentials file.
+          - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
+            value: /meta/aws-iam/credentials.process
+{{ end }}
           resources:
             limits:
               cpu: 5m
@@ -81,13 +107,21 @@ spec:
             requests:
               cpu: 5m
               memory: 20Mi
-
           volumeMounts:
-            - name: credentials
-              mountPath: /meta/credentials
-              readOnly: false
-
+          - name: credentials
+            mountPath: /meta/credentials
+            readOnly: false
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+          - name: aws-iam-credentials
+            mountPath: /meta/aws-iam
+            readOnly: true
+{{ end }}
       volumes:
-        - name: credentials
-          emptyDir:
-            medium: Memory
+      - name: credentials
+        emptyDir:
+          medium: Memory
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+      - name: aws-iam-credentials
+        secret:
+          secretName: zmon-aws-iam-credentials
+{{ end }}

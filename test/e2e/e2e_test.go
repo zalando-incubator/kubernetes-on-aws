@@ -78,10 +78,25 @@ func TestE2E(t *testing.T) {
 	e2e.RunE2ETests(t)
 }
 
-func e2eHostedZone() string {
-	hostedZone := os.Getenv("HOSTED_ZONE")
-	if hostedZone == "" {
-		return "example.org"
+func getenv(envar, def string) string {
+	v := os.Getenv(envar)
+	if v == "" {
+		return def
 	}
-	return hostedZone
+	return v
+}
+
+// E2EHostedZone returns the hosted zone defined for e2e test.
+func E2EHostedZone() string {
+	return getenv("HOSTED_ZONE", "example.org")
+}
+
+// E2ES3AWSIAMBucket returns the s3 bucket name used for AWS IAM e2e tests.
+func E2ES3AWSIAMBucket() string {
+	return getenv("S3_AWS_IAM_BUCKET", "")
+}
+
+// E2EAWSIAMRole returns the AWS IAM role used for AWS IAM e2e tests.
+func E2EAWSIAMRole() string {
+	return getenv("AWS_IAM_ROLE", "")
 }

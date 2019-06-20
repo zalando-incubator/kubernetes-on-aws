@@ -49,6 +49,7 @@ clusters:
     enable_rbac: "true"
     dynamodb_service_link_enabled: "false"
     skipper_ingress_cpu: 100m
+    kube_aws_iam_controller_kube_system_enable: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
