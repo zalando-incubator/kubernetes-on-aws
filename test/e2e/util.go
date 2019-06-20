@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 
+	zv1 "github.com/mikkeloscar/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -229,6 +230,75 @@ func createConfigMap(name, namespace string, labels, data map[string]string) *v1
 			Labels:    labels,
 		},
 		Data: data,
+	}
+}
+
+func createAWSCLIPod(nameprefix, namespace, s3Bucket string) *v1.Pod {
+	return &v1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nameprefix + string(uuid.NewUUID()),
+			Namespace: namespace,
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:    "aws-cli",
+					Image:   "alpine:3.9",
+					Command: []string{"/bin/sh", "-c"},
+					Args: []string{
+						fmt.Sprintf(`
+apk add -U py-pip;
+pip install awscli;
+aws s3 ls s3://%s`, s3Bucket),
+					},
+				},
+			},
+		},
+	}
+}
+
+func createAWSIAMPod(nameprefix, namespace, s3Bucket string) *v1.Pod {
+	pod := createAWSCLIPod(nameprefix, namespace, s3Bucket)
+	pod.Spec.Containers[0].Env = []v1.EnvVar{
+		{
+			Name:  "AWS_SHARED_CREDENTIALS_FILE",
+			Value: "/meta/aws-iam/credentials.process",
+		},
+	}
+	pod.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{
+		{
+			Name:      "aws-iam-credentials",
+			MountPath: "/meta/aws-iam",
+			ReadOnly:  true,
+		},
+	}
+	pod.Spec.Volumes = []v1.Volume{
+		{
+			Name: "aws-iam-credentials",
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: "aws-iam-test",
+				},
+			},
+		},
+	}
+	return pod
+}
+
+func createAWSIAMRole(name, namespace, role string) *zv1.AWSIAMRole {
+	return &zv1.AWSIAMRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: zv1.AWSIAMRoleSpec{
+			RoleReference:       role,
+			RoleSessionDuration: 3600,
+		},
 	}
 }
 
