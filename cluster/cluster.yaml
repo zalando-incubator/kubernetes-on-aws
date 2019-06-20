@@ -922,7 +922,11 @@ Resources:
               AWS: !Join
                 - ''
                 - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
                   - !Ref WorkerIAMRole
+{{ else }}
+                  - !Ref MasterIAMRole
+{{ end }}
         Version: 2012-10-17
       Path: /
       Policies:
