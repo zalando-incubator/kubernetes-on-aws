@@ -54,7 +54,7 @@ Resources:
         Timeout: '5'
         UnhealthyThreshold: '2'
       Listeners:
-        - InstancePort: 443
+        - InstancePort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
           InstanceProtocol: SSL
           LoadBalancerPort: 443
           PolicyNames: []
@@ -182,14 +182,14 @@ Resources:
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromLoadBalancer:
     Properties:
-      FromPort: 443
+      FromPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterLoadBalancerSecurityGroup
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
-      ToPort: 443
+      ToPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
     Properties:
@@ -1302,6 +1302,74 @@ Resources:
             Resource: "*"
             Action:
             - "kms:Decrypt"
+  MasterFilesEncryptionKey:
+    Type: "AWS::KMS::Key"
+    Properties:
+      Description: The KMS key for encryption of remote files for master nodes
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "master-key-policy"
+        Statement:
+          - Sid: "Enable IAM User Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: "Allow encryption with the key for CLM"
+            Effect: "Allow"
+            Principal:
+              AWS: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+            Action:
+            - "kms:Describe"
+            - "kms:Get*"
+            - "kms:Encrypt"
+            Resource: "*"
+          - Sid: "Enable master nodes to decrypt the remote files"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - "Fn::GetAtt":
+                  - "MasterIAMRole"
+                  - "Arn"
+            Resource: "*"
+            Action:
+            - "kms:Decrypt"
+  WorkerFilesEncryptionKey:
+    Type: "AWS::KMS::Key"
+    Properties:
+      Description: The KMS key for encryption of remote files for worker nodes
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "worker-key-policy"
+        Statement:
+          - Sid: "Enable IAM User Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: "Allow encryption with the key for CLM"
+            Effect: "Allow"
+            Principal:
+              AWS: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+            Action:
+            - "kms:Describe"
+            - "kms:Get*"
+            - "kms:Encrypt"
+            Resource: "*"
+          - Sid: "Enable worker nodes to decrypt the remote files"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - "Fn::GetAtt":
+                  - "WorkerIAMRole"
+                  - "Arn"
+            Resource: "*"
+            Action:
+            - "kms:Decrypt"
 Outputs:
   MasterIAMRole:
     Export:
@@ -1327,3 +1395,11 @@ Outputs:
     Export:
       Name: '{{ .Cluster.ID}}:remote-files-encryption-key'
     Value: !Ref RemoteFilesEncryptionKey
+  WorkerFilesEncryptionKey:
+    Export:
+      Name: '{{ .Cluster.ID}}:worker-files-encryption-key'
+    Value: !Ref WorkerFilesEncryptionKey
+  MasterFilesEncryptionKey:
+    Export:
+      Name: '{{ .Cluster.ID}}:master-files-encryption-key'
+    Value: !Ref MasterFilesEncryptionKey
