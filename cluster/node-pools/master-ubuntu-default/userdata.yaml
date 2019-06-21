@@ -55,6 +55,10 @@ write_files:
       healthzBindAddress: "0.0.0.0"
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
       tlsPrivateKeyFile: "/etc/kubernetes/ssl/worker-key.pem"
+      eventRecordQPS: 50
+      eventBurst: 50
+      kubeAPIQPS: 50
+      kubeAPIBurst: 50
       systemReserved:
         cpu: "100m"
         memory: "164Mi"
@@ -373,6 +377,7 @@ write_files:
           - --allocate-node-cidrs=true
           - --cluster-cidr=10.2.0.0/16
           - --node-cidr-mask-size={{ .Cluster.ConfigItems.node_cidr_mask_size }}
+          - --kube-api-qps=50
           - --terminated-pod-gc-threshold=500
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --horizontal-pod-autoscaler-downscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_downscale_delay }}
