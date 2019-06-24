@@ -12,8 +12,10 @@ spec:
       application: kube-metrics-adapter
   template:
     metadata:
+      {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
       annotations:
         iam.amazonaws.com/role: {{ .LocalID}}-kube-metrics-adapter
+      {{ end }}
       labels:
         application: kube-metrics-adapter
     spec:
@@ -26,6 +28,12 @@ spec:
       containers:
       - name: kube-metrics-adapter
         image: registry.opensource.zalan.do/teapot/kube-metrics-adapter:master-31
+        {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+        env:
+        # must be set for the AWS SDK/AWS CLI to find the credentials file.
+        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
+          value: /meta/aws-iam/credentials.process
+        {{ end }}
         args:
         - --prometheus-server=http://prometheus.kube-system.svc.cluster.local
         - --skipper-ingress-metrics
@@ -36,7 +44,14 @@ spec:
         - --skipper-backends-annotation=zalando.org/backend-weights
         {{ if eq .Environment "production" }}
         - --zmon-kariosdb-endpoint=https://data-service.zmon.zalan.do/kairosdb-proxy
+        {{ end }}
         volumeMounts:
+        {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+        - name: aws-iam-credentials
+          mountPath: /meta/aws-iam
+          readOnly: true
+        {{ end }}
+        {{ if eq .Environment "production" }}
         - name: credentials
           mountPath: /meta/credentials
           readOnly: true
@@ -48,8 +63,13 @@ spec:
           requests:
             cpu: 10m
             memory: 100Mi
-      {{ if eq .Environment "production" }}
       volumes:
+      {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+      - name: aws-iam-credentials
+        secret:
+          secretName: kube-metrics-adapter-aws-iam-credentials
+      {{ end }}
+      {{ if eq .Environment "production" }}
       - name: credentials
         secret:
           secretName: "kube-metrics-adapter"

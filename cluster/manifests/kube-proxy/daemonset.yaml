@@ -33,8 +33,14 @@ spec:
       - name: kube-proxy
         image: registry.opensource.zalan.do/teapot/kube-proxy:v1.13.7
         args:
+        - --hostname-override=$(HOSTNAME_OVERRIDE)
         - --config=/config/kube-proxy.yaml
         - --v=2
+        env:
+        - name: HOSTNAME_OVERRIDE
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         securityContext:
           privileged: true
         resources:
