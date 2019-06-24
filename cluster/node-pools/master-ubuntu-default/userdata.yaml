@@ -55,6 +55,10 @@ write_files:
       healthzBindAddress: "0.0.0.0"
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
       tlsPrivateKeyFile: "/etc/kubernetes/ssl/worker-key.pem"
+      eventRecordQPS: 50
+      eventBurst: 50
+      kubeAPIQPS: 50
+      kubeAPIBurst: 50
       systemReserved:
         cpu: "100m"
         memory: "164Mi"
@@ -175,7 +179,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-21
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-23
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -243,7 +247,7 @@ write_files:
             - name: TOKEN_INTROSPECTION_URL
               value: http://127.0.0.1:9021/oauth2/introspect
             - name: USER_GROUPS
-              value: credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,stups_cluster-lifecycle-manager=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,stups_deployment-discovery=ReadOnly,stups_zmon-zmon=ReadOnly,stups_kube-resource-report=ReadOnly,stups_oxygen=ReadOnly,kubelet=system:masters
+              value: credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,stups_cluster-lifecycle-manager=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,stups_deployment-discovery=ReadOnly,stups_cockpit-skipper=ReadOnly,stups_zmon-zmon=ReadOnly,stups_kube-resource-report=ReadOnly,stups_oxygen=ReadOnly,kubelet=system:masters
             - name: BUSINESS_PARTNER_IDS
               value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
           volumeMounts:
@@ -373,6 +377,7 @@ write_files:
           - --allocate-node-cidrs=true
           - --cluster-cidr=10.2.0.0/16
           - --node-cidr-mask-size={{ .Cluster.ConfigItems.node_cidr_mask_size }}
+          - --kube-api-qps=50
           - --terminated-pod-gc-threshold=500
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --horizontal-pod-autoscaler-downscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_downscale_delay }}
