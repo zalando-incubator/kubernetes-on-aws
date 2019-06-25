@@ -54,7 +54,7 @@ var _ = framework.KubeDescribe("External DNS creation", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), e2eHostedZone())
+		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
 		service := createServiceTypeLoadbalancer(serviceName, hostName, labels, port)
 
 		_, err := cs.Core().Services(ns).Create(service)

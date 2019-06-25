@@ -45,7 +45,7 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 		serviceName := "ingress-test"
 		nameprefix := serviceName + "-"
 		ns := f.Namespace.Name
-		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), e2eHostedZone())
+		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
 		labels := map[string]string{
 			"app": serviceName,
 		}
@@ -124,7 +124,7 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test"
 		ns := f.Namespace.Name
-		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), e2eHostedZone())
+		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
 		labels := map[string]string{
 			"app": serviceName,
 		}
@@ -280,7 +280,7 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 		}
 
 		// Test additional hostname
-		additionalHostname := fmt.Sprintf("foo-%d.%s", time.Now().UTC().Unix(), e2eHostedZone())
+		additionalHostname := fmt.Sprintf("foo-%d.%s", time.Now().UTC().Unix(), E2EHostedZone())
 		addHostIng := addHostIngress(updatedIng, additionalHostname)
 		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(addHostIng)
 		Expect(err).NotTo(HaveOccurred())
@@ -356,7 +356,7 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		serviceName := "skipper-ingress-test-pr"
 		serviceName2 := "skipper-ingress-test-pr2"
 		ns := f.Namespace.Name
-		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), e2eHostedZone())
+		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
 		labels := map[string]string{
 			"app": serviceName,
 		}
@@ -545,7 +545,7 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test-custom"
 		ns := f.Namespace.Name
-		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), e2eHostedZone())
+		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
 		labels := map[string]string{
 			"app": serviceName,
 		}

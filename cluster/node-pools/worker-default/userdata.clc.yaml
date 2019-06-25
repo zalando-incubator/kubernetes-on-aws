@@ -178,7 +178,7 @@ systemd:
       After=docker.service dockercfg.service meta-data-iptables.service private-ipv4.service collect-instance-metadata.service
 
       [Service]
-      Environment=KUBELET_IMAGE_TAG=v1.13.5-1
+      Environment=KUBELET_IMAGE_TAG=v1.13.7
       Environment=KUBELET_IMAGE_ARGS=--exec=/kubelet
       Environment=KUBELET_IMAGE_URL=docker://registry.opensource.zalan.do/teapot/kubelet
       Environment="RKT_RUN_ARGS=--insecure-options=image \
@@ -306,6 +306,10 @@ storage:
         healthzBindAddress: "0.0.0.0"
         tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
         tlsPrivateKeyFile: "/etc/kubernetes/ssl/worker-key.pem"
+        eventRecordQPS: 50
+        eventBurst: 50
+        kubeAPIQPS: 50
+        kubeAPIBurst: 50
         systemReserved:
           cpu: "100m"
           memory: "164Mi"
@@ -314,18 +318,17 @@ storage:
           memory: "282Mi"
         authentication:
           anonymous:
-            enabled: true
+            enabled: false
           webhook:
             enabled: true
             cacheTTL: "2m"
           x509:
             clientCAFile: "/etc/kubernetes/ssl/ca.pem"
         authorization:
-          mode: AlwaysAllow
+          mode: Webhook
           webhook:
             cacheAuthorizedTTL: "5m"
             cacheUnauthorizedTTL: "30s"
-        readOnlyPort: 10255 # TODO: remove after complete rollout of webhook auth
 
   - filesystem: root
     path: /etc/kubernetes/cni/docker_opts_cni.env
@@ -479,7 +482,7 @@ storage:
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
           --net=host \
-          docker://registry.opensource.zalan.do/teapot/kubectl:v1.13.5-1 \
+          docker://registry.opensource.zalan.do/teapot/kubectl:v1.13.7 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           label node "$(hostname)" \
@@ -492,7 +495,7 @@ storage:
           --net=host \
           --volume dns,kind=host,source=/run/systemd/resolve/resolv.conf,readOnly=true \
           --mount volume=dns,target=/etc/resolv.conf \
-          docker://registry.opensource.zalan.do/teapot/kubectl:v1.13.5-1 \
+          docker://registry.opensource.zalan.do/teapot/kubectl:v1.13.7 \
           --exec=/kubectl -- \
           --kubeconfig=/etc/kubernetes/kubeconfig \
           drain "$(hostname)" \

@@ -4,7 +4,12 @@ Description: Kubernetes default master node pool
 Mappings:
   Images:
     eu-central-1:
-      StableCoreOSImage: '{{ .Cluster.ConfigItems.coreos_image }}'
+      {{- $distro := split .NodePool.Profile "-" }}
+      {{ if eq (index $distro 1) "ubuntu" }}
+      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image }}'
+      {{ else }}
+      MachineImage: '{{ .Cluster.ConfigItems.coreos_image }}'
+      {{ end }}
 
 Resources:
   AutoScalingGroup:
@@ -38,7 +43,7 @@ Resources:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
   LaunchTemplate:
     Properties:
-      LaunchTemplateName: '{{.Cluster.LocalID}}-master'
+      LaunchTemplateName: '{{.Cluster.LocalID}}-{{ .NodePool.Name }}'
       LaunchTemplateData:
 {{ if .Values.supports_t2_unlimited }}
         CreditSpecification:
@@ -52,6 +57,7 @@ Resources:
         BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
+            DeleteOnTermination: true
             VolumeSize: 20
             VolumeType: standard
         EbsOptimized: false
@@ -61,7 +67,7 @@ Resources:
         ImageId: !FindInMap
         - Images
         - !Ref 'AWS::Region'
-        - StableCoreOSImage
+        - MachineImage
         InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
         UserData: "{{ .UserData }}"
     Type: 'AWS::EC2::LaunchTemplate'
