@@ -57,7 +57,7 @@ var _ = framework.KubeDescribe("[HPA] Horizontal pod autoscaling (scale resource
 	})
 
 	It("should scale down with Custom Metric of type Object from Skipper [Ingress] [CustomMetricsAutoscaling] [Zalando]", func() {
-		hostName := fmt.Sprintf("%s-%d.%s", DeploymentName, time.Now().UTC().Unix(), e2eHostedZone())
+		hostName := fmt.Sprintf("%s-%d.%s", DeploymentName, time.Now().UTC().Unix(), E2EHostedZone())
 
 		initialReplicas := 2
 		scaledReplicas := 1

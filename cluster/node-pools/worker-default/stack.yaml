@@ -4,7 +4,12 @@ Description: Kubernetes default worker node pool
 Mappings:
   Images:
     eu-central-1:
-      StableCoreOSImage: '{{ .Cluster.ConfigItems.coreos_image }}'
+      {{- $distro := split .NodePool.Profile "-" }}
+      {{ if eq (index $distro 1) "ubuntu" }}
+      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image }}'
+      {{ else }}
+      MachineImage: '{{ .Cluster.ConfigItems.coreos_image }}'
+      {{ end }}
 
 Resources:
   AutoScalingGroup:
@@ -107,7 +112,7 @@ Resources:
         ImageId: !FindInMap
         - Images
         - !Ref 'AWS::Region'
-        - StableCoreOSImage
+        - MachineImage
         InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
 {{- if and (eq .NodePool.DiscountStrategy "spot_max_price") (eq (len .NodePool.InstanceTypes) 1) }}
         InstanceMarketOptions:

@@ -14,7 +14,6 @@ require (
 	github.com/Rican7/retry v0.1.0 // indirect
 	github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e // indirect
 	github.com/auth0/go-jwt-middleware v0.0.0-20170425171159-5493cabe49f7 // indirect
-	github.com/aws/aws-sdk-go v1.15.64 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/blang/semver v3.5.0+incompatible // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
@@ -57,12 +56,10 @@ require (
 	github.com/go-ozzo/ozzo-validation v3.5.0+incompatible // indirect
 	github.com/godbus/dbus v0.0.0-20151105175453-c7fdd8b5cd55 // indirect
 	github.com/gogo/protobuf v1.2.1 // indirect
-	github.com/golang/groupcache v0.0.0-20160516000752-02826c3e7903 // indirect
 	github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c // indirect
 	github.com/google/cadvisor v0.32.0 // indirect
 	github.com/google/go-cmp v0.2.0 // indirect
 	github.com/google/gofuzz v1.0.0 // indirect
-	github.com/googleapis/gnostic v0.0.0-20170426233943-68f4ded48ba9 // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20180330165814-781450b3c4fc // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/gorilla/context v1.1.1 // indirect
@@ -72,16 +69,15 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20181110185634-c63ab54fda8f // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v0.0.0-20170330212424-2500245aa611 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.5.1 // indirect
-	github.com/hashicorp/golang-lru v0.5.0 // indirect
 	github.com/heketi/heketi v8.0.0+incompatible // indirect
 	github.com/heketi/rest v0.0.0-20180404230133-aa6a65207413 // indirect
 	github.com/heketi/tests v0.0.0-20151005000721-f3775cbcefd6 // indirect
 	github.com/heketi/utils v0.0.0-20170317161834-435bc5bdfa64 // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/json-iterator/go v1.1.5 // indirect
+	github.com/jteeuwen/go-bindata v3.0.8-0.20180305030458-6025e8de665b+incompatible // indirect
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1 // indirect
 	github.com/karrick/godirwalk v1.8.0 // indirect
@@ -93,9 +89,9 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mesos/mesos-go v0.0.8 // indirect
 	github.com/miekg/dns v1.1.1 // indirect
+	github.com/mikkeloscar/kube-aws-iam-controller v0.1.0
 	github.com/mindprince/gonvml v0.0.0-20180514031326-b364b296c732 // indirect
 	github.com/mistifyio/go-zfs v0.0.0-20151009155749-1b4ae6fb4e77 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/mrunalp/fileutils v0.0.0-20171103030105-7d4729fb3618 // indirect
@@ -108,7 +104,6 @@ require (
 	github.com/opencontainers/runc v1.0.0-rc2.0.20180424185634-871ba2e58e24 // indirect
 	github.com/opencontainers/runtime-spec v1.0.1 // indirect
 	github.com/opencontainers/selinux v1.0.0-rc1 // indirect
-	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.8.0 // indirect
 	github.com/pquerna/ffjson v0.0.0-20181028064349-e517b90714f7 // indirect
 	github.com/prometheus/client_golang v0.8.1-0.20170401103446-08fd2e12372a // indirect
@@ -138,42 +133,33 @@ require (
 	github.com/vmware/photon-controller-go-sdk v0.0.0-20170310013346-4a435daef6cc // indirect
 	github.com/xanzy/go-cloudstack v2.3.3+incompatible // indirect
 	github.com/xiang90/probing v0.0.0-20160813154853-07dd2e8dfe18 // indirect
-	golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9 // indirect
-	golang.org/x/net v0.0.0-20181023162649-9b4f9f5ad519 // indirect
-	golang.org/x/oauth2 v0.0.0-20181017192945-9dcd33a902f4 // indirect
-	golang.org/x/sys v0.0.0-20181205085412-a5c9d58dba9a // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c // indirect
 	google.golang.org/api v0.0.0-20181129220737-af4fc4062c26 // indirect
-	google.golang.org/appengine v1.2.0 // indirect
 	google.golang.org/genproto v0.0.0-20181016170114-94acd270e44e // indirect
 	google.golang.org/grpc v1.15.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/gcfg.v1 v1.2.0 // indirect
-	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20150622162204-20b71e5b60d7 // indirect
 	gopkg.in/square/go-jose.v2 v2.2.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0 // indirect
 	gotest.tools v2.2.0+incompatible // indirect
-	k8s.io/api v0.0.0-20170719033850-4d5cc6efc5e8
+	k8s.io/api v0.0.0-20181221193117-173ce66c1e39
 	k8s.io/apiextensions-apiserver v0.0.0-20170616221715-abd4538a1176 // indirect
 	k8s.io/apimachinery v0.0.0-20190409092423-760d1845f48b
 	k8s.io/apiserver v0.0.0-20170616221227-b1c85a6c288c
 	k8s.io/cli-runtime v0.0.0-20190301175653-0c2382d2cffa // indirect
-	k8s.io/client-go v0.0.0-20170617220358-c1b6a1c0a439
+	k8s.io/client-go v10.0.0+incompatible
 	k8s.io/cloud-provider v0.0.0-20190323031113-9c9d72d1bf90 // indirect
 	k8s.io/cluster-bootstrap v0.0.0-20190313124217-0fa624df11e9 // indirect
 	k8s.io/csi-api v0.0.0-20190301175547-a37926bd2215 // indirect
-	k8s.io/klog v0.2.0 // indirect
 	k8s.io/kube-aggregator v0.0.0-20181126193524-9aab01d6c77d // indirect
-	k8s.io/kube-openapi v0.0.0-20181114233023-0317810137be // indirect
 	k8s.io/kube-proxy v0.0.0-20190301175851-ddc76f82d22d // indirect
 	k8s.io/kubelet v0.0.0-20190301175949-303923139e95 // indirect
 	k8s.io/kubernetes v1.13.5
 	k8s.io/metrics v0.0.0-20170703180439-8efbc8e22d00 // indirect
 	k8s.io/sample-apiserver v0.0.0-20181121072341-dbb2709fc5ec // indirect
 	k8s.io/utils v0.0.0-20180726175726-66066c83e385 // indirect
-	sigs.k8s.io/yaml v1.1.0 // indirect
 )
 
 replace k8s.io/kubernetes => ../e2e_modules/kubernetes
