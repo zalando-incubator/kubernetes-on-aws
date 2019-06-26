@@ -311,7 +311,7 @@ write_files:
           - -enable-prometheus-metrics
           - -write-timeout-server=60m
           - -inline-routes
-          - 'z: JWTPayloadAnyKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> "https://127.0.0.1:443"; h: Path("/kube-system/healthz") -> setPath("/healthz") -> disableAccessLog() -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
+          - 's: JWTPayloadAllKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> {{ if eq .ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }}; h: Path("/kube-system/healthz") -> setPath("/healthz") -> disableAccessLog() -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
           ports:
           - containerPort: 8443
           readinessProbe:
