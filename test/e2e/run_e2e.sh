@@ -107,6 +107,8 @@ EOF
 
 KUBECONFIG="$(pwd)/kubeconfig"
 export KUBECONFIG="$KUBECONFIG"
+export S3_AWS_IAM_BUCKET="zalando-e2e-test-${AWS_ACCOUNT}-${LOCAL_ID}"
+export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
 
 # wait for resouces to be ready
 # TODO: make a feature of CLM --wait-for-kube-system

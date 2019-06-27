@@ -273,6 +273,10 @@ storage:
         healthzBindAddress: "0.0.0.0"
         tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
         tlsPrivateKeyFile: "/etc/kubernetes/ssl/worker-key.pem"
+        eventRecordQPS: 50
+        eventBurst: 50
+        kubeAPIQPS: 50
+        kubeAPIBurst: 50
         systemReserved:
           cpu: "100m"
           memory: "164Mi"
@@ -441,7 +445,7 @@ storage:
               requests:
                 cpu: 100m
                 memory: 200Mi
-          - image: registry.opensource.zalan.do/teapot/admission-controller:master-22
+          - image: registry.opensource.zalan.do/teapot/admission-controller:master-23
             name: admission-controller
             readinessProbe:
               httpGet:
@@ -509,7 +513,7 @@ storage:
               - name: TOKEN_INTROSPECTION_URL
                 value: http://127.0.0.1:9021/oauth2/introspect
               - name: USER_GROUPS
-                value: credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,stups_cluster-lifecycle-manager=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,stups_deployment-discovery=ReadOnly,stups_zmon-zmon=ReadOnly,stups_kube-resource-report=ReadOnly,stups_oxygen=ReadOnly,kubelet=system:masters
+                value: credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,stups_cluster-lifecycle-manager=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,stups_deployment-discovery=ReadOnly,stups_cockpit-skipper=ReadOnly,stups_zmon-zmon=ReadOnly,stups_kube-resource-report=ReadOnly,stups_oxygen=ReadOnly,kubelet=system:masters
               - name: BUSINESS_PARTNER_IDS
                 value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
             volumeMounts:
@@ -560,7 +564,7 @@ storage:
             - name: config-volume
               mountPath: /etc/nginx
           - name: skipper-proxy
-            image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.235
+            image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.243
             args:
             - skipper
             - -address=:8443
@@ -571,8 +575,9 @@ storage:
             - -runtime-metrics
             - -enable-connection-metrics
             - -enable-prometheus-metrics
+            - -write-timeout-server=60m
             - -inline-routes
-            - 'z: JWTPayloadAnyKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> "https://127.0.0.1:443"; h: Path("/kube-system/healthz") -> setPath("/healthz") -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
+            - 's: JWTPayloadAllKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> {{ if eq .ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }}; h: Path("/kube-system/healthz") -> setPath("/healthz") -> disableAccessLog() -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
             ports:
             - containerPort: 8443
             readinessProbe:
@@ -655,6 +660,7 @@ storage:
             - --cluster-cidr=10.2.0.0/16
             - --node-cidr-mask-size={{ .Cluster.ConfigItems.node_cidr_mask_size }}
             - --terminated-pod-gc-threshold=500
+            - --kube-api-qps=50
             - --horizontal-pod-autoscaler-use-rest-clients=true
             - --horizontal-pod-autoscaler-downscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_downscale_delay }}
             - --horizontal-pod-autoscaler-sync-period={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_sync_period }}

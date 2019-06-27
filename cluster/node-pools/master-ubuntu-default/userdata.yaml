@@ -55,6 +55,10 @@ write_files:
       healthzBindAddress: "0.0.0.0"
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
       tlsPrivateKeyFile: "/etc/kubernetes/ssl/worker-key.pem"
+      eventRecordQPS: 50
+      eventBurst: 50
+      kubeAPIQPS: 50
+      kubeAPIBurst: 50
       systemReserved:
         cpu: "100m"
         memory: "164Mi"
@@ -86,7 +90,6 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-apiserver
-          version: v1.13.7
         annotations:
           kubernetes-log-watcher/scalyr-parser: |
             [{"container": "webhook", "parser": "json-structured-log"}]
@@ -98,7 +101,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-apiserver
-          image: registry.opensource.zalan.do/teapot/kube-apiserver:v1.13.7
+          image: nonexistent.zalan.do/teapot/kube-apiserver:fixed
           args:
           - --apiserver-count={{ .Values.apiserver_count }}
           - --bind-address=0.0.0.0
@@ -176,7 +179,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-21
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-23
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -244,7 +247,7 @@ write_files:
             - name: TOKEN_INTROSPECTION_URL
               value: http://127.0.0.1:9021/oauth2/introspect
             - name: USER_GROUPS
-              value: credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,stups_cluster-lifecycle-manager=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,stups_deployment-discovery=ReadOnly,stups_zmon-zmon=ReadOnly,stups_kube-resource-report=ReadOnly,stups_oxygen=ReadOnly,kubelet=system:masters
+              value: credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,stups_cluster-lifecycle-manager=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,stups_deployment-discovery=ReadOnly,stups_cockpit-skipper=ReadOnly,stups_zmon-zmon=ReadOnly,stups_kube-resource-report=ReadOnly,stups_oxygen=ReadOnly,kubelet=system:masters
             - name: BUSINESS_PARTNER_IDS
               value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
           volumeMounts:
@@ -295,7 +298,7 @@ write_files:
           - name: config-volume
             mountPath: /etc/nginx
         - name: skipper-proxy
-          image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.235
+          image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.243
           args:
           - skipper
           - -address=:8443
@@ -306,8 +309,9 @@ write_files:
           - -runtime-metrics
           - -enable-connection-metrics
           - -enable-prometheus-metrics
+          - -write-timeout-server=60m
           - -inline-routes
-          - 'z: JWTPayloadAnyKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> "https://127.0.0.1:443"; h: Path("/kube-system/healthz") -> setPath("/healthz") -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
+          - 's: JWTPayloadAllKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> {{ if eq .ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }}; h: Path("/kube-system/healthz") -> setPath("/healthz") -> disableAccessLog() -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
           ports:
           - containerPort: 8443
           readinessProbe:
@@ -352,7 +356,6 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
-          version: v1.13.7
       spec:
         priorityClassName: system-node-critical
         tolerations:
@@ -360,7 +363,7 @@ write_files:
           effect: NoSchedule
         containers:
         - name: kube-controller-manager
-          image: registry.opensource.zalan.do/teapot/kube-controller-manager:v1.13.7
+          image: nonexistent.zalan.do/teapot/kube-controller-manager:fixed
           args:
           - --kubeconfig=/etc/kubernetes/controller-kubeconfig
           - --leader-elect=true
@@ -375,6 +378,7 @@ write_files:
           - --allocate-node-cidrs=true
           - --cluster-cidr=10.2.0.0/16
           - --node-cidr-mask-size={{ .Cluster.ConfigItems.node_cidr_mask_size }}
+          - --kube-api-qps=50
           - --terminated-pod-gc-threshold=500
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --horizontal-pod-autoscaler-downscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_downscale_delay }}
@@ -424,7 +428,6 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
-          version: v1.13.7
       spec:
         priorityClassName: system-node-critical
         tolerations:
@@ -433,7 +436,7 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: registry.opensource.zalan.do/teapot/kube-scheduler:v1.13.7
+          image: nonexistent.zalan.do/teapot/kube-scheduler:fixed
           args:
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
