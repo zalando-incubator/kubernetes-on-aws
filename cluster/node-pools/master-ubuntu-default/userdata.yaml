@@ -1,13 +1,17 @@
 #cloud-config
 runcmd:
   - [ systemctl, start, gen-controller-manager-config.service ]
+{{ if ne .Cluster.ConfigItems.etcd_proxy_as_sidecar "true"}}
   - [ systemctl, start, etcd-member.service ]
+{{ end }}
 
 write_files:
+{{ if ne .Cluster.ConfigItems.etcd_proxy_as_sidecar "true"}}
   - owner: root:root
     path: /etc/etcd-member/environment
     content: |
       ETCD_ENDPOINT={{ .Cluster.ConfigItems.etcd_endpoints }}
+{{ end }}
 
   - owner: root:root
     path: /etc/kubernetes/secrets.env
@@ -311,7 +315,7 @@ write_files:
           - -enable-prometheus-metrics
           - -write-timeout-server=60m
           - -inline-routes
-          - 'z: JWTPayloadAnyKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> "https://127.0.0.1:443"; h: Path("/kube-system/healthz") -> setPath("/healthz") -> disableAccessLog() -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
+          - 's: JWTPayloadAllKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> {{ if eq .ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }}; h: Path("/kube-system/healthz") -> setPath("/healthz") -> disableAccessLog() -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
           ports:
           - containerPort: 8443
           readinessProbe:
@@ -332,6 +336,18 @@ write_files:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
             readOnly: true
+{{ if eq .Cluster.ConfigItems.etcd_proxy_as_sidecar "true"}}
+        - name: etcd-proxy
+          image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
+          args:
+          - {{ .Cluster.ConfigItems.etcd_endpoints }}
+          ports:
+          - containerPort: 2379
+          resources:
+            requests:
+              cpu: 25m
+              memory: 25Mi
+{{ end }}
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
