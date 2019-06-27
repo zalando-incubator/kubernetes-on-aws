@@ -59,6 +59,7 @@ systemd:
       [Install]
       WantedBy=multi-user.target
 
+{{ if ne .Cluster.ConfigItems.etcd_proxy_as_sidecar "true" }}
   - name: etcd-member.service
     enable: true
     contents: |
@@ -77,6 +78,7 @@ systemd:
 
       [Install]
       WantedBy=multi-user.target
+{{ end }}
 
   - name: docker.service
     dropins:
@@ -221,7 +223,7 @@ systemd:
     contents: |
       [Unit]
       Description=drain this k8s node to make running pods time to gracefully shut down before stopping kubelet
-      After=docker.service kubelet.service etcd-member.service
+      After=docker.service kubelet.service
 
       [Service]
       Type=oneshot
@@ -596,6 +598,18 @@ storage:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
+{{ if eq .Cluster.ConfigItems.etcd_proxy_as_sidecar "true"}}
+          - name: etcd-proxy
+            image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
+            args:
+            - {{ .Cluster.ConfigItems.etcd_endpoints }}
+            ports:
+            - containerPort: 2379
+            resources:
+              requests:
+                cpu: 25m
+                memory: 25Mi
+{{ end }}
           volumes:
           - hostPath:
               path: /etc/kubernetes/ssl

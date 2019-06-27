@@ -1,13 +1,17 @@
 #cloud-config
 runcmd:
   - [ systemctl, start, gen-controller-manager-config.service ]
+{{ if ne .Cluster.ConfigItems.etcd_proxy_as_sidecar "true"}}
   - [ systemctl, start, etcd-member.service ]
+{{ end }}
 
 write_files:
+{{ if ne .Cluster.ConfigItems.etcd_proxy_as_sidecar "true"}}
   - owner: root:root
     path: /etc/etcd-member/environment
     content: |
       ETCD_ENDPOINT={{ .Cluster.ConfigItems.etcd_endpoints }}
+{{ end }}
 
   - owner: root:root
     path: /etc/kubernetes/secrets.env
@@ -332,6 +336,18 @@ write_files:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
             readOnly: true
+{{ if eq .Cluster.ConfigItems.etcd_proxy_as_sidecar "true"}}
+        - name: etcd-proxy
+          image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
+          args:
+          - {{ .Cluster.ConfigItems.etcd_endpoints }}
+          ports:
+          - containerPort: 2379
+          resources:
+            requests:
+              cpu: 25m
+              memory: 25Mi
+{{ end }}
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
