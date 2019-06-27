@@ -133,11 +133,14 @@ zmon_aws_agent_cpu: "100m"
 prometheus_cpu: "1000m"
 prometheus_mem: "4Gi"
 prometheus_mem_min: "512Mi"
-prometheus_mem_max: "10Gi"
 
 metrics_service_cpu: "100m"
 metrics_service_mem: "200Mi"
 metrics_service_mem_max: "1Gi"
+
+kube_aws_iam_controller_cpu: "5m"
+kube_aws_iam_controller_mem: "50Mi"
+kube_aws_iam_controller_mem_max: "1Gi"
 
 kube_state_metrics_cpu: "100m"
 kube_state_metrics_mem: "200Mi"
@@ -182,9 +185,13 @@ experimental_cluster_lifecycle_controller: "false"
 teapot_admission_controller_default_cpu_request: "25m"
 teapot_admission_controller_default_memory_request: "100Mi"
 teapot_admission_controller_process_resources: "true"
-teapot_admission_controller_validate_application_label: "false"
-teapot_admission_controller_application_min_creation_time: "2999-12-31T23:59:59Z"
+teapot_admission_controller_application_min_creation_time: "2019-06-03T12:00:00Z"
 teapot_admission_controller_ndots: "2"
+{{if eq .Environment "production"}}
+teapot_admission_controller_validate_application_label: "true"
+{{else}}
+teapot_admission_controller_validate_application_label: "false"
+{{end}}
 
 {{if eq .Environment "e2e"}}
 teapot_admission_controller_ignore_namespaces: "^kube-system|(e2e-tests-(downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
@@ -202,7 +209,8 @@ dynamodb_service_link_enabled: "false"
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
-coreos_image: "ami-06142be4afc3d5b1b" # Container Linux 2079.4.0 (HVM, eu-central-1)
+coreos_image: "ami-0d1579b60bb706fb7" # Container Linux 2079.6.0 (HVM, eu-central-1)
+kuberuntu_image: "ami-0d856c4c2daf9b569" # Kuberuntu (dev) (HVM, eu-central-1)
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -234,3 +242,8 @@ custom_resource_webhook_conversion: "false"
 node_max_pods: "110" # Default: 110
 # flag passed to controller-manager
 node_cidr_mask_size: "24" # Default: 24
+
+# when set to true, routes external traffic to the apiserver through a skipper sidecar
+apiserver_proxy: "false"
+# use kube-aws-iam-controller for kube-system components
+kube_aws_iam_controller_kube_system_enable: "false"

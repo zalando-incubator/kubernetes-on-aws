@@ -17,8 +17,10 @@ spec:
           labels:
             application: etcd-backup
             version: "master-9"
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
           annotations:
             iam.amazonaws.com/role: "{{ .LocalID }}-etcd-backup"
+{{ end }}
         spec:
           dnsConfig:
             options:
@@ -34,6 +36,11 @@ spec:
               value: "{{ .ConfigItems.etcd_s3_backup_bucket }}"
             - name: ETCD_ENDPOINTS
               value: "{{ .ConfigItems.etcd_endpoints }}"
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+            # must be set for the AWS SDK/AWS CLI to find the credentials file.
+            - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
+              value: /meta/aws-iam/credentials.process
+{{ end }}
             resources:
               limits:
                 cpu: 100m
@@ -41,8 +48,20 @@ spec:
               requests:
                 cpu: 100m
                 memory: 384Mi
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+            volumeMounts:
+            - name: aws-iam-credentials
+              mountPath: /meta/aws-iam
+              readOnly: true
+{{ end }}
           tolerations:
           - key: node-role.kubernetes.io/master
             effect: NoSchedule
           nodeSelector:
             node-role.kubernetes.io/master: ""
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+          volumes:
+          - name: aws-iam-credentials
+            secret:
+              secretName: etcd-backup-aws-iam-credentials
+{{ end }}

@@ -16,4 +16,7 @@ spec:
       minAllowed:
         memory: {{.ConfigItems.prometheus_mem_min}}
       maxAllowed:
-        memory: {{.ConfigItems.prometheus_mem_max}}
+  {{ with $resources := autoscalingBufferSettings .Cluster }}
+        # Set the max memory to max available on the Node
+        memory: {{$resources.Memory}}
+  {{ end }}
