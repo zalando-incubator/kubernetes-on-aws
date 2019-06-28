@@ -11,6 +11,13 @@ autoscaling_buffer_pods: "1"
 autoscaling_buffer_pods: "0"
 {{end}}
 
+# ALB config created by kube-aws-ingress-controller
+{{if eq .Environment "test"}}
+kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+{{else}}
+kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-2016-08"
+{{end}}
+
 # skipper resource settings
 skipper_limits_mem: "250Mi"
 skipper_requests_cpu: "150m"
@@ -204,13 +211,16 @@ teapot_admission_controller_ignore_namespaces: "^kube-system$"
 etcd_instance_count: "3"
 {{end}}
 
+# toggle host vs. sidecar etcd-proxy
+etcd_proxy_as_sidecar: "true"
+
 dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
 coreos_image: "ami-0d1579b60bb706fb7" # Container Linux 2079.6.0 (HVM, eu-central-1)
-kuberuntu_image: "ami-0d856c4c2daf9b569" # Kuberuntu (dev) (HVM, eu-central-1)
+kuberuntu_image: "ami-0d0d49d08e198103c" # Kuberuntu (dev) (HVM, eu-central-1)
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -244,6 +254,10 @@ node_max_pods: "110" # Default: 110
 node_cidr_mask_size: "24" # Default: 24
 
 # when set to true, routes external traffic to the apiserver through a skipper sidecar
-apiserver_proxy: "false"
+apiserver_proxy: "true"
+# when set to true, service account tokens can be used from outside the cluster
+# requires apiserver_proxy to be set to "true"
+allow_external_service_accounts: "true"
+
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "false"
