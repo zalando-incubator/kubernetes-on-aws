@@ -10,6 +10,6 @@ The default Kubelet configuration has an extremely low rate limit on the request
 Due to an unlucky rescaling of the CDP Kubernetes cluster,
 only one node was available for the builder Pods, and the rapid creation and deletion of Pods caused Kubelet to fall behind.
 
-To stop the bleeding, the cluster was manually scaled up so builder Pods would be spread over more than 1 nodes.
+To stop the bleeding, the cluster was manually scaled up so builder Pods would be spread over more than 1 node.
 
 For a permanent fix, the [Kubelet QPS was increased from 5 (default) to 50 via a global cluster configuration](https://github.com/zalando-incubator/kubernetes-on-aws/pull/2247).
