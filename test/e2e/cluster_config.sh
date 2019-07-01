@@ -83,6 +83,12 @@ clusters:
     profile: ${WORKER_PROFILE}-splitaz
     min_size: 1
     max_size: 21
+  - discount_strategy: spot_max_price
+    instance_types: ["m5d.large"]
+    name: worker-instance-storage
+    profile: ${WORKER_PROFILE}-default
+    min_size: 1
+    max_size: 21
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'
