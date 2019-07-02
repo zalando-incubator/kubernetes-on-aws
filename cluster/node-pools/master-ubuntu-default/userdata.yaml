@@ -321,15 +321,20 @@ write_files:
           - -inline-routes
           - |
             health: Path("/healthz") -> inlineContent("ok") -> <shunt>;
-            q2h: Path("/oauth2/tokeninfo") && QueryParam("access_token")
-              -> queryToHeader("access_token", "Authorization", "Bearer %s")
-              -> dropQuery("access_token")
+            q2h: Path("/oauth2/introspect") && QueryParam("token")
+              -> queryToHeader("token", "Authorization", "Bearer %s")
+              -> setRequestHeader("X-Checking-JWT", "true")
               -> <loopback>;
-            prod: Path("/oauth2/introspect") && JWTPayloadAllKV("iss", "https://identity.zalando.com")
+            prod: Path("/oauth2/introspect") && Header("X-Checking-JWT", "true") && JWTPayloadAllKV("iss", "https://identity.zalando.com")
+              -> dropRequestHeader("Authorization") -> dropRequestHeader("X-Checking-JWT")
               -> "http://127.0.0.1:9021/oauth2/introspect";
-            sandbox: Path("/oauth2/introspect") && JWTPayloadAllKV("iss", "https://sandbox.identity.zalando.com")
+            sandbox: Path("/oauth2/introspect") && Header("X-Checking-JWT", "true") && JWTPayloadAllKV("iss", "https://sandbox.identity.zalando.com")
+              -> dropRequestHeader("Authorization") -> dropRequestHeader("X-Checking-JWT")
               -> "http://127.0.0.1:9022/oauth2/introspect";
-            fallback: Path("/oauth2/introspect") -> status(400) -> <shunt>;
+            fallback1: Path("/oauth2/introspect") && QueryParam("token") && Header("X-Checking-JWT", "true")
+              -> inlineContent("{\"active\":false}") -> <shunt>;
+            fallback2: Path("/oauth2/introspect")
+              -> inlineContent("{\"active\":false}") -> <shunt>;
           ports:
           - containerPort: 9023
           readinessProbe:
