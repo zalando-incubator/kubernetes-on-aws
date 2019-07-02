@@ -183,7 +183,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-23
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-24
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -215,6 +215,7 @@ write_files:
             - --validate-application-label-min-creation-time={{ .Cluster.ConfigItems.teapot_admission_controller_application_min_creation_time }}
             - --application-registry-url=http://127.0.0.1:8285/
 {{- end }}
+            - --resource-cutoff-timestamp={{ .Cluster.ConfigItems.teapot_admission_controller_resource_cutoff_timestamp }}
           ports:
             - containerPort: 8085
           volumeMounts:
