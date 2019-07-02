@@ -575,13 +575,14 @@ storage:
               value: "https://sandbox.identity.zalando.com"
             - name: LISTEN_ADDRESS
               value: ":9022"
-          - name: skipper-tokeinfo-bridge
-            image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:2fca26c
+          - name: skipper-tokeninfo-bridge
+            image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.243
             args:
             - skipper
             - -address=:9023
             - -inline-routes
             - |
+              health: Path("/healthz") -> inlineContent("ok") -> <shunt>;
               q2h: Path("/oauth2/tokeninfo") && QueryParam("access_token")
                 -> queryToHeader("access_token", "Authorization", "Bearer %s")
                 -> dropQuery("access_token")
@@ -595,7 +596,7 @@ storage:
             - containerPort: 9023
             readinessProbe:
               httpGet:
-                path: /kube-system/healthz
+                path: /healthz
                 port: 9023
               timeoutSeconds: 5
             resources:
