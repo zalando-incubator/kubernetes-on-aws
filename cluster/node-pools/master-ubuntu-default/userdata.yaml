@@ -284,63 +284,63 @@ write_files:
             - name: ENABLE_INTROSPECTION
               value: "true"
 {{ if ne .Cluster.Environment "production" }}
-          - name: tokeninfo-sandbox
-            image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:2fca26c
-            ports:
-            - containerPort: 9022
-            livenessProbe:
-              httpGet:
-                path: /health
-                port: 9022
-              periodSeconds: 3
-              failureThreshold: 2
-            readinessProbe:
-              httpGet:
-                path: /health
-                port: 9022
-              periodSeconds: 3
-              failureThreshold: 2
-            resources:
-              requests:
-                cpu: 100m
-                memory: 20Mi
-            env:
-            - name: OPENID_PROVIDER_CONFIGURATION_URL
-              value: https://sandbox.identity.zalando.com/.well-known/openid-configuration
-            - name: ENABLE_INTROSPECTION
-              value: "true"
-            - name: ISSUER
-              value: "https://sandbox.identity.zalando.com"
-            - name: LISTEN_ADDRESS
-              value: ":9022"
-          - name: skipper-tokeninfo-bridge
-            image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.243
-            args:
-            - skipper
-            - -address=:9023
-            - -inline-routes
-            - |
-              health: Path("/healthz") -> inlineContent("ok") -> <shunt>;
-              q2h: Path("/oauth2/tokeninfo") && QueryParam("access_token")
-                -> queryToHeader("access_token", "Authorization", "Bearer %s")
-                -> dropQuery("access_token")
-                -> <loopback>;
-              prod: Path("/oauth2/introspect") && JWTPayloadAllKV("iss", "https://identity.zalando.com")
-                -> "http://127.0.0.1:9021/oauth2/introspect";
-              sandbox: Path("/oauth2/introspect") && JWTPayloadAllKV("iss", "https://sandbox.identity.zalando.com")
-                -> "http://127.0.0.1:9022/oauth2/introspect";
-              fallback: Path("/oauth2/introspect") -> status(400) -> <shunt>;
-            ports:
-            - containerPort: 9023
-            readinessProbe:
-              httpGet:
-                path: /healthz
-                port: 9023
-              timeoutSeconds: 5
-            resources:
-              requests:
-                cpu: 100m
-                memory: 20Mi
+        - name: tokeninfo-sandbox
+          image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:2fca26c
+          ports:
+          - containerPort: 9022
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9022
+            periodSeconds: 3
+            failureThreshold: 2
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9022
+            periodSeconds: 3
+            failureThreshold: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 20Mi
+          env:
+          - name: OPENID_PROVIDER_CONFIGURATION_URL
+            value: https://sandbox.identity.zalando.com/.well-known/openid-configuration
+          - name: ENABLE_INTROSPECTION
+            value: "true"
+          - name: ISSUER
+            value: "https://sandbox.identity.zalando.com"
+          - name: LISTEN_ADDRESS
+            value: ":9022"
+        - name: skipper-tokeninfo-bridge
+          image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.243
+          args:
+          - skipper
+          - -address=:9023
+          - -inline-routes
+          - |
+            health: Path("/healthz") -> inlineContent("ok") -> <shunt>;
+            q2h: Path("/oauth2/tokeninfo") && QueryParam("access_token")
+              -> queryToHeader("access_token", "Authorization", "Bearer %s")
+              -> dropQuery("access_token")
+              -> <loopback>;
+            prod: Path("/oauth2/introspect") && JWTPayloadAllKV("iss", "https://identity.zalando.com")
+              -> "http://127.0.0.1:9021/oauth2/introspect";
+            sandbox: Path("/oauth2/introspect") && JWTPayloadAllKV("iss", "https://sandbox.identity.zalando.com")
+              -> "http://127.0.0.1:9022/oauth2/introspect";
+            fallback: Path("/oauth2/introspect") -> status(400) -> <shunt>;
+          ports:
+          - containerPort: 9023
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9023
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 20Mi
 {{ end }}
         - image: registry.opensource.zalan.do/teapot/image-policy-webhook:{{if eq .Cluster.ConfigItems.compliance_checker_enabled "true"}}master-44{{else}}v0.4.1{{end}}
           name: image-policy-webhook
