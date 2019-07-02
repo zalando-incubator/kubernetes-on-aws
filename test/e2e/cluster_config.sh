@@ -83,7 +83,7 @@ clusters:
     min_size: 1
     max_size: 21
   - discount_strategy: spot_max_price
-    instance_types: ["m5d.large"]
+    instance_types: ["m5d.large", "m5d.xlarge", "m5d.2xlarge"]
     name: worker-instance-storage
     profile: ${WORKER_PROFILE}-default
     min_size: 1
