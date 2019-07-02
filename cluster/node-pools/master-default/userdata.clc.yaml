@@ -511,7 +511,7 @@ storage:
               - name: CLUSTER_ID
                 value: {{if index .Cluster.ConfigItems "webhook_id"}}{{ .Cluster.ConfigItems.webhook_id }}{{else}}{{ .Cluster.ID }}{{end}}
               - name: TOKEN_INTROSPECTION_URL
-                value: http://127.0.0.1:9021/oauth2/introspect
+                value: http://127.0.0.1:{{ if eq .Cluster.Environment "production" }}9021{{else}}9023{{end}}/oauth2/introspect
               - name: USER_GROUPS
                 value: credentials-provider=Administrator,credprov-kube-ops-view-read-only-token=ReadOnly,credprov-cluster-lifecycle-manager-cluster-rw-token=Administrator,stups_cluster-lifecycle-manager=Administrator,credprov-cluster-lifecycle-manager-test-cluster-rw-token=Administrator,credprov-cdp-controller-cluster-token=PowerUser,stups_deployment-discovery=ReadOnly,stups_cockpit-skipper=ReadOnly,stups_zmon-zmon=ReadOnly,stups_kube-resource-report=ReadOnly,stups_oxygen=ReadOnly,kubelet=system:masters
               - name: BUSINESS_PARTNER_IDS
@@ -545,6 +545,64 @@ storage:
                 value: https://identity.zalando.com/.well-known/openid-configuration
               - name: ENABLE_INTROSPECTION
                 value: "true"
+{{ if ne .Cluster.Environment "production" }}
+          - name: tokeninfo-sandbox
+            image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:2fca26c
+            ports:
+            - containerPort: 9022
+            livenessProbe:
+              httpGet:
+                path: /health
+                port: 9022
+              periodSeconds: 3
+              failureThreshold: 2
+            readinessProbe:
+              httpGet:
+                path: /health
+                port: 9022
+              periodSeconds: 3
+              failureThreshold: 2
+            resources:
+              requests:
+                cpu: 100m
+                memory: 20Mi
+            env:
+            - name: OPENID_PROVIDER_CONFIGURATION_URL
+              value: https://sandbox.identity.zalando.com/.well-known/openid-configuration
+            - name: ENABLE_INTROSPECTION
+              value: "true"
+            - name: ISSUER
+              value: "https://sandbox.identity.zalando.com"
+            - name: LISTEN_ADDRESS
+              value: ":9022"
+          - name: skipper-tokeinfo-bridge
+            image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:2fca26c
+            args:
+            - skipper
+            - -address=:9023
+            - -inline-routes
+            - |
+              q2h: Path("/oauth2/tokeninfo") && QueryParam("access_token")
+                -> queryToHeader("access_token", "Authorization", "Bearer %s")
+                -> dropQuery("access_token")
+                -> <loopback>;
+              prod: Path("/oauth2/introspect") && JWTPayloadAllKV("iss", "https://identity.zalando.com")
+                -> "http://127.0.0.1:9021/oauth2/introspect";
+              sandbox: Path("/oauth2/introspect") && JWTPayloadAllKV("iss", "https://sandbox.identity.zalando.com")
+                -> "http://127.0.0.1:9022/oauth2/introspect";
+              fallback: Path("/oauth2/introspect") -> status(400) -> <shunt>;
+            ports:
+            - containerPort: 9023
+            readinessProbe:
+              httpGet:
+                path: /kube-system/healthz
+                port: 9023
+              timeoutSeconds: 5
+            resources:
+              requests:
+                cpu: 100m
+                memory: 20Mi
+{{ end }}
           - image: registry.opensource.zalan.do/teapot/image-policy-webhook:{{if eq .Cluster.ConfigItems.compliance_checker_enabled "true"}}master-44{{else}}v0.4.1{{end}}
             name: image-policy-webhook
             args:
@@ -577,7 +635,17 @@ storage:
             - -enable-prometheus-metrics
             - -write-timeout-server=60m
             - -inline-routes
-            - 's: JWTPayloadAllKV("iss", "kubernetes/serviceaccount") -> enableAccessLog() -> {{ if eq .ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }}; h: Path("/kube-system/healthz") -> setPath("/healthz") -> disableAccessLog() -> "http://127.0.0.1:8080"; all: * -> disableAccessLog() -> "https://127.0.0.1:443";'
+            - |
+              s: JWTPayloadAllKV("iss", "kubernetes/serviceaccount")
+                -> enableAccessLog()
+                -> {{ if eq .ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }};
+              h: Path("/kube-system/healthz")
+                -> setPath("/healthz")
+                -> disableAccessLog()
+                -> "http://127.0.0.1:8080";
+              all: *
+                -> disableAccessLog()
+                -> "https://127.0.0.1:443";
             ports:
             - containerPort: 8443
             readinessProbe:
