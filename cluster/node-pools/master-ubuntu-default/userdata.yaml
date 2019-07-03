@@ -326,10 +326,10 @@ write_files:
               -> queryToHeader("token", "Authorization", "Bearer %s")
               -> setRequestHeader("X-Checking-JWT", "true")
               -> <loopback>;
-            prod: Path("/oauth2/introspect") && Header("X-Checking-JWT", "true") && JWTPayloadAllKV("iss", "https://identity.zalando.com")
+            prod: Path("/oauth2/introspect") && QueryParam("token") && Header("X-Checking-JWT", "true") && JWTPayloadAllKV("iss", "https://identity.zalando.com")
               -> dropRequestHeader("Authorization") -> dropRequestHeader("X-Checking-JWT")
               -> "http://127.0.0.1:9021/oauth2/introspect";
-            sandbox: Path("/oauth2/introspect") && Header("X-Checking-JWT", "true") && JWTPayloadAllKV("iss", "https://sandbox.identity.zalando.com")
+            sandbox: Path("/oauth2/introspect") && QueryParam("token") && Header("X-Checking-JWT", "true") && JWTPayloadAllKV("iss", "https://sandbox.identity.zalando.com")
               -> dropRequestHeader("Authorization") -> dropRequestHeader("X-Checking-JWT")
               -> "http://127.0.0.1:9022/oauth2/introspect";
             fallback1: Path("/oauth2/introspect") && QueryParam("token") && Header("X-Checking-JWT", "true")
