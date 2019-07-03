@@ -332,7 +332,9 @@ write_files:
             sandbox: Path("/oauth2/introspect") && Header("X-Checking-JWT", "true") && JWTPayloadAllKV("iss", "https://sandbox.identity.zalando.com")
               -> dropRequestHeader("Authorization") -> dropRequestHeader("X-Checking-JWT")
               -> "http://127.0.0.1:9022/oauth2/introspect";
-            fallback: Path("/oauth2/introspect") && QueryParam("token") && Header("X-Checking-JWT", "true")
+            fallback1: Path("/oauth2/introspect") && QueryParam("token") && Header("X-Checking-JWT", "true")
+              -> inlineContent("{\"active\":false}") -> <shunt>;
+            fallback2: Path("/oauth2/introspect")
               -> inlineContent("{\"active\":false}") -> <shunt>;
           ports:
           - containerPort: 9023
