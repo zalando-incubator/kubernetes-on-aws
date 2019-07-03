@@ -49,7 +49,6 @@ clusters:
     enable_rbac: "true"
     dynamodb_service_link_enabled: "false"
     skipper_ingress_cpu: 100m
-    kube_aws_iam_controller_kube_system_enable: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
@@ -81,6 +80,12 @@ clusters:
       availability_zones: "eu-central-1a"
     name: worker-limit-az
     profile: ${WORKER_PROFILE}-splitaz
+    min_size: 1
+    max_size: 21
+  - discount_strategy: spot_max_price
+    instance_types: ["m5d.large", "m5d.xlarge", "m5d.2xlarge"]
+    name: worker-instance-storage
+    profile: ${WORKER_PROFILE}-default
     min_size: 1
     max_size: 21
   provider: zalando-aws

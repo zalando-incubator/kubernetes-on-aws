@@ -26,7 +26,7 @@ skipper_ingress_memory: "1Gi"
 skipper_ingress_tracing_buffer: "8192"
 
 # skipper default filters
-skipper_default_filters: 'enableAccessLog(4,5) -> lifo(2000,20000,"10s")'
+skipper_default_filters: 'enableAccessLog(4,5) -> lifo(2000,20000,"3s")'
 
 # skipper backend timeout defaults
 skipper_expect_continue_timeout_backend: "30s"
@@ -183,6 +183,7 @@ teapot_admission_controller_default_cpu_request: "25m"
 teapot_admission_controller_default_memory_request: "100Mi"
 teapot_admission_controller_process_resources: "true"
 teapot_admission_controller_application_min_creation_time: "2019-06-03T12:00:00Z"
+teapot_admission_controller_resource_cutoff_timestamp: "2019-07-08T22:00:00Z"
 teapot_admission_controller_ndots: "2"
 {{if eq .Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
@@ -210,7 +211,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
 coreos_image: "ami-0d1579b60bb706fb7" # Container Linux 2079.6.0 (HVM, eu-central-1)
-kuberuntu_image: "ami-0d0d49d08e198103c" # Kuberuntu (dev) (HVM, eu-central-1)
+kuberuntu_image: "ami-0246cbd0cc6622e63" # Kuberuntu (dev) (HVM, eu-central-1)
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -250,4 +251,4 @@ apiserver_proxy: "true"
 allow_external_service_accounts: "true"
 
 # use kube-aws-iam-controller for kube-system components
-kube_aws_iam_controller_kube_system_enable: "false"
+kube_aws_iam_controller_kube_system_enable: "true"
