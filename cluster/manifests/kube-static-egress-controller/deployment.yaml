@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-static-egress-controller
-    version: v0.1.10
+    version: v0.1.13
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: kube-static-egress-controller
-        version: v0.1.10
+        version: v0.1.13
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-static-egress-controller"
@@ -28,7 +28,7 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.1.10
+        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.1.13
         args:
         - "--provider=aws"
 {{- range $subnet := stupsNATSubnets .Values.vpc_ipv4_cidr }}
