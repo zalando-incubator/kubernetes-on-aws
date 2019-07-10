@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: logging-agent
-  namespace: kube-system
+  namespace: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}visibility{{else}}kube-system{{end}}
   labels:
     application: logging-agent
     version: v0.29
