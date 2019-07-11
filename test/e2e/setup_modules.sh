@@ -4,7 +4,7 @@ MOD_PATH="${MOD_PATH:-"../e2e_modules"}"
 
 mkdir -p "$MOD_PATH"
 
-git clone --branch v1.14.3 --depth=1 \
+git clone --branch v1.14.4 --depth=1 \
     https://github.com/kubernetes/kubernetes.git "$MOD_PATH/kubernetes"
 
 # setup go.mod
