@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: logging-agent
-  namespace: kube-system
+  namespace: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}visibility{{else}}kube-system{{end}}
   labels:
     application: logging-agent
     version: v0.29
@@ -13,7 +13,7 @@ spec:
     matchLabels:
       application: logging-agent
   updateStrategy:
-    type: OnDelete
+    type: RollingUpdate
   template:
     metadata:
       name: logging-agent
@@ -28,7 +28,7 @@ spec:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-node-critical
+      priorityClassName: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}visibility-logging{{else}}system-node-critical{{end}}
       serviceAccountName: logging-agent
       tolerations:
       - operator: Exists
