@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: prometheus
+  namespace: kube-system
+  annotations:
+    zalando.org/skipper-filter: |
+      oauthTokeninfoAnyScope("uid")
+  labels:
+    application: prometheus
+spec:
+  rules:
+  - host: system-prometheus.{{ .Alias }}.zalan.do
+    http:
+      paths:
+      - backend:
+          serviceName: prometheus
+          servicePort: 80
