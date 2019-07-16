@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: external-dns
-    version: v0.5.14
+    version: v0.5.15
 spec:
   strategy:
     type: Recreate
@@ -16,9 +16,11 @@ spec:
     metadata:
       labels:
         application: external-dns
-        version: v0.5.14
+        version: v0.5.15
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
+{{ end }}
     spec:
       dnsConfig:
         options:
@@ -28,7 +30,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: pierone.stups.zalan.do/teapot/external-dns:v0.5.14
+        image: pierone.stups.zalan.do/teapot/external-dns:v0.5.15
         args:
         - --source=service
         - --source=ingress
@@ -36,6 +38,12 @@ spec:
         - --registry=txt
         - --txt-owner-id={{ .Region }}:{{ .LocalID }}
         - --aws-batch-change-size=100
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+        env:
+        # must be set for the AWS SDK/AWS CLI to find the credentials file.
+        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
+          value: /meta/aws-iam/credentials.process
+{{ end }}
         resources:
           limits:
             cpu: 50m
@@ -44,9 +52,21 @@ spec:
           httpGet:
             path: /healthz
             port: 7979
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+        volumeMounts:
+        - name: aws-iam-credentials
+          mountPath: /meta/aws-iam
+          readOnly: true
+{{ end }}
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 65534
           capabilities:
             drop: ["ALL"]
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+      volumes:
+      - name: aws-iam-credentials
+        secret:
+          secretName: external-dns-aws-iam-credentials
+{{ end }}
