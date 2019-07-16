@@ -1,8 +1,10 @@
 # everything defined under here will be deleted before applying the manifests
 pre_apply:
+{{ if eq .LifecycleStatus "ready" }}
 - name: logging-agent
   kind: DaemonSet
   namespace: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}kube-system{{else}}visibility{{end}}
+{{ end }}
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
