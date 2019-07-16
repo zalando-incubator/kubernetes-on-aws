@@ -20,7 +20,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -588,16 +588,21 @@ func waitForReplicas(deploymentName, namespace string, kubeClient kubernetes.Int
 
 /** needed for image webhook policy tests: */
 
-func createImagePolicyWebhookTestDeployment(nameprefix, namespace, tag, podname string, replicas int32) *v1beta1.Deployment {
+func createImagePolicyWebhookTestDeployment(nameprefix, namespace, tag, podname string, replicas int32) *appsv1.Deployment {
 	zero := int64(0)
-	return &v1beta1.Deployment{
+	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nameprefix + string(uuid.NewUUID()),
 			Namespace: namespace,
 			Labels:    map[string]string{},
 		},
-		Spec: v1beta1.DeploymentSpec{
+		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": podname,
+				},
+			},
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{

@@ -55,7 +55,6 @@ require (
 	github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c // indirect
 	github.com/google/cadvisor v0.32.0 // indirect
 	github.com/google/certificate-transparency-go v1.0.21 // indirect
-	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20190126172459-c818fa66e4c8 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/gorilla/websocket v1.4.0 // indirect
@@ -70,7 +69,6 @@ require (
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
-	github.com/json-iterator/go v1.1.5 // indirect
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1 // indirect
 	github.com/karrick/godirwalk v1.8.0 // indirect
@@ -85,7 +83,6 @@ require (
 	github.com/mikkeloscar/kube-aws-iam-controller v0.1.0
 	github.com/mindprince/gonvml v0.0.0-20180514031326-b364b296c732 // indirect
 	github.com/mistifyio/go-zfs v0.0.0-20151009155749-1b4ae6fb4e77 // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/mrunalp/fileutils v0.0.0-20171103030105-7d4729fb3618 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30 // indirect
@@ -109,7 +106,6 @@ require (
 	github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d // indirect
 	github.com/smartystreets/goconvey v0.0.0-20181108003508-044398e4856c // indirect
 	github.com/spf13/cobra v0.0.3 // indirect
-	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/spf13/viper v1.2.1 // indirect
 	github.com/storageos/go-api v0.0.0-20180912212459-343b3eff91fc // indirect
 	github.com/syndtr/gocapability v0.0.0-20160928074757-e7cb7fa329f4 // indirect
@@ -132,7 +128,7 @@ require (
 	gotest.tools v2.2.0+incompatible // indirect
 	k8s.io/api v0.0.0-20190515023547-db5a9d1c40eb
 	k8s.io/apiextensions-apiserver v0.0.0-20170616221715-abd4538a1176 // indirect
-	k8s.io/apimachinery v0.0.0-20190515023456-b74e4c97951f
+	k8s.io/apimachinery v0.0.0-20190715170309-6171873045ff
 	k8s.io/apiserver v0.0.0-20170616221227-b1c85a6c288c
 	k8s.io/cli-runtime v0.0.0-20190301175653-0c2382d2cffa // indirect
 	k8s.io/client-go v11.0.0+incompatible

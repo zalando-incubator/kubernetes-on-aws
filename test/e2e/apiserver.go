@@ -50,11 +50,11 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
 		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
-		_, err := cs.ExtensionsV1beta1().Deployments(ns).Create(deployment)
+		_, err := cs.AppsV1().Deployments(ns).Create(deployment)
 		defer func() {
 			By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 			defer GinkgoRecover()
-			err := cs.ExtensionsV1beta1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+			err := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
 			Expect(err).NotTo(HaveOccurred())
 		}()
 		Expect(err).NotTo(HaveOccurred())
@@ -79,12 +79,12 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
 		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
-		_, err := cs.ExtensionsV1beta1().Deployments(ns).Create(deployment)
+		_, err := cs.AppsV1().Deployments(ns).Create(deployment)
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
 			By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 			defer GinkgoRecover()
-			err := cs.ExtensionsV1beta1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+			err := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
 			Expect(err).NotTo(HaveOccurred())
 		}()
 		err = framework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "FailedCreate", appsv1.DeploymentReplicaFailure)
