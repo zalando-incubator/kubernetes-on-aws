@@ -1,5 +1,10 @@
 # everything defined under here will be deleted before applying the manifests
-pre_apply: []
+pre_apply:
+{{ if eq .LifecycleStatus "ready" }}
+- name: logging-agent
+  kind: DaemonSet
+  namespace: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}kube-system{{else}}visibility{{end}}
+{{ end }}
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
@@ -21,3 +26,15 @@ post_apply:
 - name: ingresstemplates.zalando.org
   kind: CustomResourceDefinition
 {{ end }}
+- name: logging-agent
+  kind: Secret
+  namespace: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}kube-system{{else}}visibility{{end}}
+- name: logging-agent
+  kind: ServiceAccount
+  namespace: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}kube-system{{else}}visibility{{end}}
+- name: logging-agent-privileged-psp
+  kind: RoleBinding
+  namespace: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}kube-system{{else}}visibility{{end}}
+- name: fluentd-config
+  kind: ConfigMap
+  namespace: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}kube-system{{else}}visibility{{end}}

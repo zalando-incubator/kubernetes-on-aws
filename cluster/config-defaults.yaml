@@ -11,6 +11,9 @@ autoscaling_buffer_pods: "1"
 autoscaling_buffer_pods: "0"
 {{end}}
 
+# ALB config created by kube-aws-ingress-controller
+kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+
 # skipper resource settings
 skipper_limits_mem: "250Mi"
 skipper_requests_cpu: "150m"
@@ -123,6 +126,7 @@ logging_watcher_cpu: "50m"
 logging_scalyr_cpu: "100m"
 logging_fluentd_cpu: "100m"
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
+logging_agent_in_visibility: "false"
 
 zmon_redis_mem: "1Gi"
 zmon_agent_mem: "500Mi"
@@ -214,7 +218,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
 coreos_image: "ami-0d1579b60bb706fb7" # Container Linux 2079.6.0 (HVM, eu-central-1)
-kuberuntu_image: "ami-0246cbd0cc6622e63" # Kuberuntu (dev) (HVM, eu-central-1)
+kuberuntu_image: "ami-06e3bcc8ee7d981fe" # Kuberuntu (dev) (HVM, eu-central-1)
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -251,7 +255,7 @@ node_cidr_mask_size: "24" # Default: 24
 apiserver_proxy: "true"
 # when set to true, service account tokens can be used from outside the cluster
 # requires apiserver_proxy to be set to "true"
-allow_external_service_accounts: "true"
+allow_external_service_accounts: "false"
 
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "true"
