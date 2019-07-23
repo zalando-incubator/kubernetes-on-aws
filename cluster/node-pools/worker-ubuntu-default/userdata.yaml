@@ -48,7 +48,10 @@ write_files:
       kind: KubeletConfiguration
       clusterDomain: cluster.local
       cpuCFSQuota: false
+      featureGates:
+        SupportPodPidsLimit: true
       maxPods: {{ .Cluster.ConfigItems.node_max_pods }}
+      podPidsLimit: {{ .Cluster.ConfigItems.pod_max_pids }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
