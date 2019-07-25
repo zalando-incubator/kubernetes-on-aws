@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: cadvisor
-    version: v0.32.0
+    version: v0.33.0-g2ccad4b4-master-4
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -16,8 +16,9 @@ spec:
     metadata:
       labels:
         application: cadvisor
-        version: v0.32.0
+        version: v0.33.0-g2ccad4b4-master-4
     spec:
+      hostPID: true
       dnsConfig:
         options:
           - name: ndots
@@ -27,13 +28,13 @@ spec:
       containers:
       - name: cadvisor
         # images including https://github.com/google/cadvisor/pull/2113
-        image: registry.opensource.zalan.do/teapot/cadvisor:v0.32.0-whitelist-master-3
+        image: registry.opensource.zalan.do/teapot/cadvisor:v0.33.0-g2ccad4b4-master-4
         args:
         - --housekeeping_interval=10s
         - --max_housekeeping_interval=15s
         - --event_storage_event_limit=default=0
         - --event_storage_age_limit=default=0
-        - --disable_metrics=process,sched,percpu,tcp,udp
+        - --disable_metrics=sched,percpu,tcp,udp
         - --docker_only
         - --store_container_labels=false
         - --whitelisted_container_labels=io.kubernetes.container.name,io.kubernetes.pod.name,io.kubernetes.pod.namespace,io.kubernetes.pod.uid,application
