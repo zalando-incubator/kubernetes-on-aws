@@ -48,7 +48,8 @@ write_files:
       kind: KubeletConfiguration
       clusterDomain: cluster.local
       cpuCFSQuota: false
-{{- if index .NodePool.ConfigItems "pod_max_pids" }}{{ $pod_max_pids := .NodePool.ConfigItems.pod_max_pids }}{{ else }}{{ $pod_max_pids := .Cluster.ConfigItems.pod_max_pids }}{{ end }}
+{{- $pod_max_pids := .Cluster.ConfigItems.pod_max_pids }}
+{{- if index .NodePool.ConfigItems "pod_max_pids" }}{{ $pod_max_pids = .NodePool.ConfigItems.pod_max_pids }}{{ end }}
 {{- if ne $pod_max_pids "-1" }}
       featureGates:
         SupportPodPidsLimit: true
