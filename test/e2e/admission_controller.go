@@ -103,6 +103,9 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_TAG_ZONE", nodeZone))
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_DOCKER_IMAGE", dockerImage))
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_TAG_ARTIFACT", dockerImage))
+
+		// User-set
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_E2E", "overridden"))
 	})
 
 })
@@ -153,6 +156,12 @@ func createDeploymentWithDeploymentInfo(nameprefix, namespace, podname string, r
 							Command: []string{"sh", "-c"},
 							Args: []string{
 								`env && sleep 100000`,
+							},
+							Env: []v1.EnvVar{
+								{
+									Name:  "_PLATFORM_E2E",
+									Value: "overridden",
+								},
 							},
 						},
 					},
