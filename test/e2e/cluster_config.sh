@@ -4,7 +4,7 @@ set -x
 
 cat <<EOF
 clusters:
-- alias: e2e-test
+- alias: ${CLUSTER_ALIAS}
   api_server_url: ${API_SERVER_URL}
   channel: ${1}
   config_items:

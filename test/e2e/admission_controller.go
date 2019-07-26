@@ -28,9 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 )
@@ -38,6 +36,8 @@ import (
 const (
 	deploymentId = "d-2ajbkvmtqo5isznh3m2raj2bdp"
 	pipelineId   = "l-2kwqgqevuqwsje5a9ukhsk4bdd"
+	application  = "e2e-test-application"
+	dockerImage  = "k8s.gcr.io/busybox"
 )
 
 var _ = framework.KubeDescribe("Admission controller tests", func() {
@@ -48,21 +48,19 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 		cs = f.ClientSet
 	})
 
-	It("Pods should get deployment info from deployment and zone from node [Zalando]", func() {
+	It("Admission controller should inject platform environment variables [Zalando]", func() {
 		nameprefix := "deployment-info-test"
 		podname := fmt.Sprintf("deployment-info-test-pod")
-		var replicas int32 = 2
+		var replicas int32 = 1
 		ns := f.Namespace.Name
 
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
 		deployment := createDeploymentWithDeploymentInfo(nameprefix+"-", ns, podname, replicas)
-		_, err := cs.ExtensionsV1beta1().Deployments(ns).Create(deployment)
+		_, err := cs.AppsV1().Deployments(ns).Create(deployment)
 		Expect(err).NotTo(HaveOccurred())
-		label := map[string]string{
-			"app": podname,
-		}
-		labelSelector := labels.SelectorFromSet(labels.Set(label))
+		labelSelector, err := metav1.LabelSelectorAsSelector(deployment.Spec.Selector)
+		Expect(err).NotTo(HaveOccurred())
 		err = framework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -72,51 +70,78 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 
 		pods, err := cs.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: labelSelector.String()})
 		Expect(err).NotTo(HaveOccurred())
-
-		Expect(len(pods.Items)).To(Equal(2))
+		Expect(len(pods.Items)).To(Equal(1))
 
 		pod := pods.Items[0]
 		Expect(pod.Annotations).To(HaveKeyWithValue("zalando.org/cdp-deployment-id", deploymentId))
 		Expect(pod.Annotations).To(HaveKeyWithValue("zalando.org/cdp-pipeline-id", pipelineId))
 
-		zone := pod.Annotations["failure-domain.beta.kubernetes.io/zone"]
-		Expect(zone).To(HavePrefix("eu-central-"))
+		// Check the injected node zone
+		node, err := cs.CoreV1().Nodes().Get(pod.Spec.NodeName, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		nodeZone := node.Labels["failure-domain.beta.kubernetes.io/zone"]
+		Expect(pod.Annotations).To(HaveKeyWithValue("failure-domain.beta.kubernetes.io/zone", nodeZone))
 
-		platformEnvVar := 0
-		for _, v := range pod.Spec.Containers[0].Env {
-			if strings.HasPrefix(v.Name, "_PLATFORM_") {
-				platformEnvVar++
-			}
-		}
+		envarValues, err := fetchEnvarValues(cs, ns, pod.Name)
+		Expect(err).NotTo(HaveOccurred())
 
-		Expect(platformEnvVar >= 14).To(BeTrue())
+		// Check the environment variable values
 
-		bytes, err := cs.CoreV1().Pods(ns).GetLogs(pod.Name, &v1.PodLogOptions{}).DoRaw()
-		lines := strings.Split(string(bytes), "\n")
-		Expect(lines).To(ContainElement(deploymentId))
-		Expect(lines).To(ContainElement(pipelineId))
-		Expect(lines).To(ContainElement(zone))
+		// Static
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_ACCOUNT", E2EClusterAlias()))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_TAG_ACCOUNT", E2EClusterAlias()))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT", Not(BeEmpty())))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST", Not(BeEmpty())))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN", Not(BeEmpty())))
+
+		// Dynamic
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_APPLICATION", application))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_DEPLOYMENT_ID", deploymentId))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_TAG_DEPLOYMENT_ID", deploymentId))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_PIPELINE_ID", pipelineId))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_ZONE", nodeZone))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_TAG_ZONE", nodeZone))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_DOCKER_IMAGE", dockerImage))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_TAG_ARTIFACT", dockerImage))
 	})
 
 })
 
-func createDeploymentWithDeploymentInfo(nameprefix, namespace, podname string, replicas int32) *v1beta1.Deployment {
+func fetchEnvarValues(client kubernetes.Interface, ns, pod string) (map[string]string, error) {
+	result := make(map[string]string)
+
+	bytes, err := client.CoreV1().Pods(ns).GetLogs(pod, &v1.PodLogOptions{}).DoRaw()
+	if err != nil {
+		return nil, err
+	}
+	for _, line := range strings.Split(string(bytes), "\n") {
+		kv := strings.SplitN(line, "=", 2)
+		if len(kv) == 2 {
+			result[kv[0]] = kv[1]
+		}
+	}
+	return result, nil
+}
+
+func createDeploymentWithDeploymentInfo(nameprefix, namespace, podname string, replicas int32) *appsv1.Deployment {
 	zero := int64(0)
-	return &v1beta1.Deployment{
+	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nameprefix + string(uuid.NewUUID()),
 			Namespace: namespace,
 			Labels: map[string]string{
 				"deployment-id": deploymentId,
 				"pipeline-id":   pipelineId,
+				"application":   application,
 			},
 		},
-		Spec: v1beta1.DeploymentSpec{
+		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"application": application}},
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": podname,
+						"application": application,
 					},
 				},
 				Spec: v1.PodSpec{
@@ -124,15 +149,10 @@ func createDeploymentWithDeploymentInfo(nameprefix, namespace, podname string, r
 					Containers: []v1.Container{
 						{
 							Name:    "admission-controller-test",
-							Image:   "k8s.gcr.io/busybox",
+							Image:   dockerImage,
 							Command: []string{"sh", "-c"},
 							Args: []string{
-								` while true; do
-									printenv _PLATFORM_ZONE;
-									printenv _PLATFORM_DEPLOYMENT_ID;
-									printenv _PLATFORM_PIPELINE_ID;
-									sleep 1000;
-								  done;`,
+								`env && sleep 100000`,
 							},
 						},
 					},
