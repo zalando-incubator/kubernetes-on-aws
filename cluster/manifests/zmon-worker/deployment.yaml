@@ -91,6 +91,7 @@ spec:
                 secretKeyRef:
                   name: zmon-worker
                   key: sql-pass
+
             - name: WORKER_PLUGIN_HTTP_OAUTH2_TOKENS
               valueFrom:
                   configMapKeyRef:
@@ -99,8 +100,8 @@ spec:
                     optional: true
             - name: WORKER_PLUGIN_REDIS_PASSWORD
               valueFrom:
-                  configMapKeyRef:
-                    name: zmon-worker-optional-config
+                  secretKeyRef:
+                    name: zmon-worker-optional-secret
                     key: WORKER_PLUGIN_REDIS_PASSWORD
                     optional: true
             - name: WORKER_PLUGIN_CASSANDRA_USER
@@ -111,8 +112,8 @@ spec:
                     optional: true
             - name: WORKER_PLUGIN_CASSANDRA_PASS
               valueFrom:
-                  configMapKeyRef:
-                    name: zmon-worker-optional-config
+                  secretKeyRef:
+                    name: zmon-worker-optional-secret
                     key: WORKER_PLUGIN_CASSANDRA_PASS
                     optional: true
             - name: WORKER_PLUGIN_ELASTICSEARCH_URL
