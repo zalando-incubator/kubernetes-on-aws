@@ -54,12 +54,10 @@ write_files:
 {{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
       cpuCFSQuota: false
 {{- end }}
-{{- $pod_max_pids := .Cluster.ConfigItems.pod_max_pids }}
-{{- if index .NodePool.ConfigItems "pod_max_pids" }}{{ $pod_max_pids = .NodePool.ConfigItems.pod_max_pids }}{{ end }}
-{{- if ne $pod_max_pids "-1" }}
+{{- if ne .NodePool.ConfigItems.pod_max_pids "-1" }}
       featureGates:
         SupportPodPidsLimit: true
-      podPidsLimit: {{ $pod_max_pids }}
+      podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
 {{- end }}
       maxPods: {{ .Cluster.ConfigItems.node_max_pods }}
       healthzPort: 10248
