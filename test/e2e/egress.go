@@ -41,7 +41,8 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 		}
 
 		data := map[string]string{
-			"readmyip.appspot.com": "216.58.192.0/19",
+			"readmyip.appspot.com":   "216.58.192.0/19",
+			"readmyip.appspot.com-2": "172.217.0.0/16",
 		}
 
 		// create Pod which finds out if it's public IP changes
