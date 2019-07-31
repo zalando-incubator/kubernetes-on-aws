@@ -15,6 +15,7 @@ package e2e
 
 import (
 	"fmt"
+	"net"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -33,6 +34,21 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 	})
 
 	It("Should create valid static egress route [Egress] [Zalando]", func() {
+		ips, err := net.LookupIP("readmyip.appspot.com")
+		Expect(err).NotTo(HaveOccurred())
+
+		knownCIDRs := []string{"216.58.192.0/19", "172.217.0.0/16"}
+		nets := make([]*net.IPNet, 0, len(knownCIDRs))
+		for _, cidr := range knownCIDRs {
+			// ignore error since we know the input
+			_, ipNet, _ := net.ParseCIDR(cidr)
+			nets = append(nets, ipNet)
+		}
+
+		if !ipsInCIDRs(ips, nets) {
+			Expect(fmt.Errorf("IPs %s of 'readmyip.appspot.com' are not in expected ranges: %s", ips, nets)).NotTo(HaveOccurred())
+		}
+
 		configmapName := "egress-test"
 		ns := f.Namespace.Name
 
@@ -40,8 +56,10 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 			"egress": "static",
 		}
 
-		data := map[string]string{
-			"readmyip.appspot.com": "216.58.192.0/19",
+		data := map[string]string{}
+
+		for i, cidr := range knownCIDRs {
+			data[fmt.Sprintf("readmyip.appspot.com-%d", i)] = cidr
 		}
 
 		// create Pod which finds out if it's public IP changes
@@ -53,7 +71,7 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 			cs.Core().Pods(ns).Delete(pingPod.Name, metav1.NewDeleteOptions(0))
 			// don't care about POD deletion, because it should exit by itself
 		}()
-		_, err := cs.Core().Pods(ns).Create(pingPod)
+		_, err = cs.Core().Pods(ns).Create(pingPod)
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pingPod.Name))
 
@@ -93,3 +111,14 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 		}
 	})
 })
+
+func ipsInCIDRs(ips []net.IP, cidrs []*net.IPNet) bool {
+	for _, ip := range ips {
+		for _, cidr := range cidrs {
+			if cidr.Contains(ip) {
+				return true
+			}
+		}
+	}
+	return false
+}
