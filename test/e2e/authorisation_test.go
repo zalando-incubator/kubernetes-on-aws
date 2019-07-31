@@ -2156,8 +2156,38 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				}}`,
 				},
 			},
+			// {
+			// 	// TODO: can be enabled when we have
+			// 	// cdp-controller creating bindings in place
+			// 	msg: "cdp service account can't escalate permissions",
+			// 	reqBody: `{
+			// 		"apiVersion": "authorization.k8s.io/v1beta1",
+			// 		"kind": "SubjectAccessReview",
+			// 		"spec": {
+			// 		"resourceAttributes": {
+			// 			"namespace": "",
+			// 			"verb": "escalate",
+			// 			"group": "*",
+			// 			"resource": "clusterroles"
+			// 		},
+			// 		"user": "system:serviceaccount:default:cdp",
+			// 		"group": []
+			// 		}
+			// 	}`,
+			// 	expect: expect{
+			// 		status: http.StatusCreated,
+			// 		body: `{
+			// 		"apiVersion": "authorization.k8s.io/v1beta1",
+			// 		"kind": "SubjectAccessReview",
+			// 		"status": {
+			// 			"denied": true,
+			// 			"reason": "no one is allowed to escalate"
+			// 		}
+			// 	}}`,
+			// 	},
+			// },
 			{
-				msg: "cdp service account can't escalate permissions",
+				msg: "cdp service account can escalate permissions",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
@@ -2178,10 +2208,37 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"denied": true,
-						"reason": "no one is allowed to escalate"
+						"allowed": true
 					}
 				}}`,
+				},
+			},
+			{
+				msg: "PowerUsers can't escalate permissions",
+				reqBody: `{
+				"apiVersion": "authorization.k8s.io/v1beta1",
+				"kind": "SubjectAccessReview",
+				"spec": {
+				"resourceAttributes": {
+					"namespace": "",
+					"verb": "escalate",
+					"group": "*",
+					"resource": "clusterroles"
+				},
+				"user": "mlarsen",
+				"group": ["PowerUser"]
+				}
+			}`,
+				expect: expect{
+					status: http.StatusCreated,
+					body: `{
+				"apiVersion": "authorization.k8s.io/v1beta1",
+				"kind": "SubjectAccessReview",
+				"status": {
+					"denied": true,
+					"reason": "no one is allowed to escalate"
+				}
+			}}`,
 				},
 			},
 			{

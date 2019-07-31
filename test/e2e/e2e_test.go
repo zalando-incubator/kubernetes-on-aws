@@ -91,6 +91,15 @@ func E2EHostedZone() string {
 	return getenv("HOSTED_ZONE", "example.org")
 }
 
+// E2EClusterAlias returns the alias of the cluster used for e2e tests.
+func E2EClusterAlias() string {
+	result, ok := os.LookupEnv("CLUSTER_ALIAS")
+	if !ok {
+		panic("CLUSTER_ALIAS not defined")
+	}
+	return result
+}
+
 // E2ES3AWSIAMBucket returns the s3 bucket name used for AWS IAM e2e tests.
 func E2ES3AWSIAMBucket() string {
 	return getenv("S3_AWS_IAM_BUCKET", "")

@@ -69,6 +69,7 @@ require (
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
+	github.com/jteeuwen/go-bindata v3.0.8-0.20180305030458-6025e8de665b+incompatible // indirect
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1 // indirect
 	github.com/karrick/godirwalk v1.8.0 // indirect
@@ -139,7 +140,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30 // indirect
 	k8s.io/kube-proxy v0.0.0-20190301175851-ddc76f82d22d // indirect
 	k8s.io/kubelet v0.0.0-20190301175949-303923139e95 // indirect
-	k8s.io/kubernetes v1.14.4
+	k8s.io/kubernetes v1.14.5-beta.0.0.20190729145756-df8cd112a736
 	k8s.io/metrics v0.0.0-20170703180439-8efbc8e22d00 // indirect
 	k8s.io/sample-apiserver v0.0.0-20181121072341-dbb2709fc5ec // indirect
 	k8s.io/utils v0.0.0-20190520173318-324c5df7d3f0 // indirect

@@ -14,7 +14,9 @@ limitations under the License.
 package e2e
 
 import (
+	"errors"
 	"fmt"
+	"net"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -33,6 +35,21 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 	})
 
 	It("Should create valid static egress route [Egress] [Zalando]", func() {
+		ips, err := net.LookupIP("readmyip.appspot.com")
+		Expect(err).NotTo(HaveOccurred())
+
+		knownCIDRs := []string{"216.58.192.0/19", "172.217.0.0/16"}
+		nets := make([]*net.IPNet, 0, len(knownCIDRs))
+		for _, cidr := range knownCIDRs {
+			// ignore error since we know the input
+			_, ipNet, _ := net.ParseCIDR(cidr)
+			nets = append(nets, ipNet)
+		}
+
+		if !ipsInCIDRs(ips, nets) {
+			Expect(fmt.Errorf("IPs %s of 'readmyip.appspot.com' are not in expected ranges: %s", ips, nets)).NotTo(HaveOccurred())
+		}
+
 		configmapName := "egress-test"
 		ns := f.Namespace.Name
 
@@ -40,8 +57,10 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 			"egress": "static",
 		}
 
-		data := map[string]string{
-			"readmyip.appspot.com": "216.58.192.0/19",
+		data := map[string]string{}
+
+		for i, cidr := range knownCIDRs {
+			data[fmt.Sprintf("readmyip.appspot.com-%d", i)] = cidr
 		}
 
 		// create Pod which finds out if it's public IP changes
@@ -53,7 +72,7 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 			cs.CoreV1().Pods(ns).Delete(pingPod.Name, metav1.NewDeleteOptions(0))
 			// don't care about POD deletion, because it should exit by itself
 		}()
-		_, err := cs.CoreV1().Pods(ns).Create(pingPod)
+		_, err = cs.CoreV1().Pods(ns).Create(pingPod)
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pingPod.Name))
 
@@ -70,26 +89,37 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// wait for egress route and NAT GWs ready and POD exit code 0 vs 2
-		for {
-			p, err := cs.CoreV1().Pods(ns).Get(pingPod.Name, metav1.GetOptions{})
-			if err != nil {
-				Expect(fmt.Errorf("Could not get POD %s", pingPod.Name)).NotTo(HaveOccurred())
-				return
-			}
-
-			if p.Status.ContainerStatuses[0].State.Terminated == nil {
-				time.Sleep(10 * time.Second)
-				continue
-			}
-
-			switch n := p.Status.ContainerStatuses[0].State.Terminated.ExitCode; n {
-			case 0:
-				return
-			case 2:
-				// set error
-				Expect(fmt.Errorf("failed to change public IP")).NotTo(HaveOccurred())
-				return
-			}
-		}
+		Eventually(func() error {
+			return containerExitStatus(cs, ns, pingPod.Name)
+		}, 10 * time.Minute, 10 * time.Second).ShouldNot(HaveOccurred())
 	})
 })
+
+func containerExitStatus(cs kubernetes.Interface, namespace string, pingPodName string) error {
+	p, err := cs.CoreV1().Pods(namespace).Get(pingPodName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	if p.Status.ContainerStatuses[0].State.Terminated == nil {
+		return errors.New("container not terminated yet")
+	}
+
+	switch n := p.Status.ContainerStatuses[0].State.Terminated.ExitCode; n {
+	case 0:
+		return nil
+	default:
+		return fmt.Errorf("unexpected exit status: %d", n)
+	}
+}
+
+func ipsInCIDRs(ips []net.IP, cidrs []*net.IPNet) bool {
+	for _, ip := range ips {
+		for _, cidr := range cidrs {
+			if cidr.Contains(ip) {
+				return true
+			}
+		}
+	}
+	return false
+}
