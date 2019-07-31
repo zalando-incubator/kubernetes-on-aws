@@ -14,6 +14,7 @@ limitations under the License.
 package e2e
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -88,29 +89,29 @@ var _ = framework.KubeDescribe("Static Egress creation", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// wait for egress route and NAT GWs ready and POD exit code 0 vs 2
-		for {
-			p, err := cs.CoreV1().Pods(ns).Get(pingPod.Name, metav1.GetOptions{})
-			if err != nil {
-				Expect(fmt.Errorf("Could not get POD %s", pingPod.Name)).NotTo(HaveOccurred())
-				return
-			}
-
-			if p.Status.ContainerStatuses[0].State.Terminated == nil {
-				time.Sleep(10 * time.Second)
-				continue
-			}
-
-			switch n := p.Status.ContainerStatuses[0].State.Terminated.ExitCode; n {
-			case 0:
-				return
-			case 2:
-				// set error
-				Expect(fmt.Errorf("failed to change public IP")).NotTo(HaveOccurred())
-				return
-			}
-		}
+		Eventually(func() error {
+			return containerExitStatus(cs, ns, pingPod.Name)
+		}, 10 * time.Minute, 10 * time.Second).ShouldNot(HaveOccurred())
 	})
 })
+
+func containerExitStatus(cs kubernetes.Interface, namespace string, pingPodName string) error {
+	p, err := cs.CoreV1().Pods(namespace).Get(pingPodName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	if p.Status.ContainerStatuses[0].State.Terminated == nil {
+		return errors.New("container not terminated yet")
+	}
+
+	switch n := p.Status.ContainerStatuses[0].State.Terminated.ExitCode; n {
+	case 0:
+		return nil
+	default:
+		return fmt.Errorf("unexpected exit status: %d", n)
+	}
+}
 
 func ipsInCIDRs(ips []net.IP, cidrs []*net.IPNet) bool {
 	for _, ip := range ips {
