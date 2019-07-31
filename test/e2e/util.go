@@ -260,6 +260,7 @@ aws s3 ls s3://%s`, s3Bucket),
 					},
 				},
 			},
+			RestartPolicy: v1.RestartPolicyNever,
 		},
 	}
 }
