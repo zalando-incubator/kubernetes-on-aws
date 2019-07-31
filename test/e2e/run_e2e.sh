@@ -1,6 +1,5 @@
 #!/bin/bash
 set -euo pipefail
-set -x
 
 E2E_NODE_OS="${E2E_NODE_OS:="coreos"}"
 
@@ -17,20 +16,14 @@ CDP_TARGET_REPOSITORY="${CDP_TARGET_REPOSITORY:-"github.com/zalando-incubator/ku
 CDP_TARGET_COMMIT_ID="${CDP_TARGET_COMMIT_ID:-"dev"}"
 CDP_HEAD_COMMIT_ID="${CDP_HEAD_COMMIT_ID:-"$(git describe --tags --always)"}"
 
+export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-test"}"
 # TODO: we need the date in LOCAL_ID because of CDP retriggering
-LOCAL_ID="${LOCAL_ID:-"e2e-$CDP_BUILD_VERSION-$(date +'%H%M%S')"}-$E2E_NODE_OS"
-API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
-INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
-ETCD_ENDPOINTS="${ETCD_ENDPOINTS:-"etcd-server.etcd.${HOSTED_ZONE}:2379"}"
-CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
-WORKER_SHARED_SECRET="${WORKER_SHARED_SECRET:-"$(pwgen 30 -n1)"}"
-
-export LOCAL_ID="$LOCAL_ID"
-export API_SERVER_URL="$API_SERVER_URL"
-export INFRASTRUCTURE_ACCOUNT="$INFRASTRUCTURE_ACCOUNT"
-export ETCD_ENDPOINTS="$ETCD_ENDPOINTS"
-export CLUSTER_ID="$CLUSTER_ID"
-export WORKER_SHARED_SECRET="$WORKER_SHARED_SECRET"
+export LOCAL_ID="${LOCAL_ID:-"e2e-$CDP_BUILD_VERSION-$(date +'%H%M%S')"}-$E2E_NODE_OS"
+export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
+export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
+export ETCD_ENDPOINTS="${ETCD_ENDPOINTS:-"etcd-server.etcd.${HOSTED_ZONE}:2379"}"
+export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
+export WORKER_SHARED_SECRET="${WORKER_SHARED_SECRET:-"$(pwgen 30 -n1)"}"
 
 if [[ "${E2E_NODE_OS}" == "coreos" ]]; then
     export MASTER_PROFILE="master"

@@ -17,6 +17,8 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 
 	zv1 "github.com/mikkeloscar/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -667,6 +669,13 @@ func createVegetaDeployment(hostPath string, rate int) *appsv1.Deployment {
 			},
 		},
 	}
+}
+
+func deleteDeployment(cs kubernetes.Interface, ns string, deployment *appsv1.Deployment) {
+	By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
+	defer GinkgoRecover()
+	err := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+	Expect(err).NotTo(HaveOccurred())
 }
 
 func createHTTPRoundTripper() (http.RoundTripper, chan<- struct{}) {

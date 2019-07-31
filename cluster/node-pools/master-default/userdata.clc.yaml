@@ -448,7 +448,7 @@ storage:
               requests:
                 cpu: 100m
                 memory: 200Mi
-          - image: registry.opensource.zalan.do/teapot/admission-controller:master-24
+          - image: registry.opensource.zalan.do/teapot/admission-controller:master-28
             name: admission-controller
             readinessProbe:
               httpGet:
@@ -463,6 +463,7 @@ storage:
                 memory: 100Mi
             args:
               - --address=:8085
+              - --master=http://127.0.0.1:8080
               - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
               - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
               - --pod-default-cpu-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}
@@ -471,6 +472,17 @@ storage:
               - --pod-dns-ndots={{ .Cluster.ConfigItems.teapot_admission_controller_ndots }}
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
               - --pod-process-resources
+{{- end }}
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables "true" }}
+              - --pod-enable-env-inject
+              - --pod-inject-env=_PLATFORM_ACCOUNT={{ .Cluster.Alias }}
+              - --pod-inject-env=_PLATFORM_OPENTRACING_TAG_ACCOUNT={{ .Cluster.Alias }}
+              - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT=8443
+              - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST=tracing.stups.zalan.do
+              - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN={{ .ConfigItems.lightstep_token }}
+{{- if eq .Cluster.Environment "e2e" }}
+              - --pod-inject-env=_PLATFORM_E2E=injected
+{{- end }}
 {{- end }}
 {{- if eq .Cluster.ConfigItems.experimental_schedule_daemonset_pods "true" }}
               - --node-add-not-ready-taint
@@ -487,7 +499,7 @@ storage:
               - mountPath: /etc/kubernetes/ssl
                 name: ssl-certs-kubernetes
                 readOnly: true
-          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.5.7
+          - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.5.8
             name: webhook
             ports:
             - containerPort: 8081
@@ -613,7 +625,7 @@ storage:
                 cpu: 100m
                 memory: 20Mi
 {{ end }}
-          - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.5.2
+          - image: registry.opensource.zalan.do/teapot/image-policy-webhook:0.5.3
             name: image-policy-webhook
             args:
             - --policy={{ .Cluster.ConfigItems.image_policy }}
