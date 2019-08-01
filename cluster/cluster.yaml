@@ -112,7 +112,7 @@ Resources:
           FromPort: -1
           IpProtocol: icmp
           ToPort: -1
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+        - CidrIp: {{ if eq .Cluster.ConfigItems.ssh_vpc_only "true" }}"{{.Values.vpc_ipv4_cidr}}"{{ else }}"0.0.0.0/0"{{ end }}
           FromPort: 22
           IpProtocol: tcp
           ToPort: 22
@@ -311,7 +311,7 @@ Resources:
           FromPort: -1
           IpProtocol: icmp
           ToPort: -1
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+        - CidrIp: {{ if eq .Cluster.ConfigItems.ssh_vpc_only "true" }}"{{.Values.vpc_ipv4_cidr}}"{{ else }}"0.0.0.0/0"{{ end }}
           FromPort: 22
           IpProtocol: tcp
           ToPort: 22

@@ -48,6 +48,11 @@ write_files:
       kind: KubeletConfiguration
       clusterDomain: cluster.local
       cpuCFSQuota: false
+{{- if ne .NodePool.ConfigItems.pod_max_pids "-1" }}
+      featureGates:
+        SupportPodPidsLimit: true
+      podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
+{{- end }}
       maxPods: {{ .Cluster.ConfigItems.node_max_pods }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
