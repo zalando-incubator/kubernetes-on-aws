@@ -17,6 +17,8 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 
 	zv1 "github.com/mikkeloscar/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -214,6 +216,7 @@ func createPingPod(nameprefix, namespace string) *v1.Pod {
 					Image: "registry.opensource.zalan.do/teapot/check-change-myip:master-2",
 				},
 			},
+			RestartPolicy: v1.RestartPolicyNever,
 		},
 	}
 }
@@ -257,6 +260,7 @@ aws s3 ls s3://%s`, s3Bucket),
 					},
 				},
 			},
+			RestartPolicy: v1.RestartPolicyNever,
 		},
 	}
 }
@@ -662,6 +666,13 @@ func createVegetaDeployment(hostPath string, rate int) *appsv1.Deployment {
 			},
 		},
 	}
+}
+
+func deleteDeployment(cs kubernetes.Interface, ns string, deployment *v1beta1.Deployment) {
+	By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
+	defer GinkgoRecover()
+	err := cs.Extensions().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+	Expect(err).NotTo(HaveOccurred())
 }
 
 func createHTTPRoundTripper() (http.RoundTripper, chan<- struct{}) {

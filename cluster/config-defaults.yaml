@@ -43,11 +43,10 @@ skipper_idle_timeout_server: "62s"
 
 # skipper api GW features
 enable_apimonitoring: "true"
+skipper_clusterratelimit: "true"
 {{if eq .Environment "production"}}
-skipper_clusterratelimit: "false"
 enable_skipper_eastwest: "false"
 {{else}}
-skipper_clusterratelimit: "true"
 enable_skipper_eastwest: "true"
 {{end}}
 
@@ -78,7 +77,6 @@ image_policy: "trusted"
 {{else}}
 image_policy: "dev"
 {{end}}
-compliance_checker_enabled: "true"
 
 # cadvisor settings
 cadvisor_cpu: "150m"
@@ -123,7 +121,8 @@ logging_watcher_cpu: "50m"
 logging_scalyr_cpu: "100m"
 logging_fluentd_cpu: "100m"
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
-logging_agent_in_visibility: "false"
+logging_agent_in_visibility: "true"
+scalyr_team_token: ""
 logging_agent_version: "v0.29"
 
 zmon_redis_mem: "1Gi"
@@ -198,8 +197,11 @@ teapot_admission_controller_validate_application_label: "false"
 
 {{if eq .Environment "e2e"}}
 teapot_admission_controller_ignore_namespaces: "^kube-system|(e2e-tests-(downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
+teapot_admission_controller_inject_environment_variables: "true"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
+teapot_admission_controller_inject_environment_variables: "false"
+
 {{end}}
 
 # etcd cluster
@@ -216,7 +218,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
 coreos_image: "ami-0d1579b60bb706fb7" # Container Linux 2079.6.0 (HVM, eu-central-1)
-kuberuntu_image: "ami-087d64da45b8052cd" # zalando-ubuntu-kubernetes-production-v1.13.7-master-47 (HVM, eu-central-1)
+kuberuntu_image: "ami-0892b0cf01ee56aa6" # zalando-ubuntu-kubernetes-production-v1.13.7-master-48 (HVM, eu-central-1)
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
