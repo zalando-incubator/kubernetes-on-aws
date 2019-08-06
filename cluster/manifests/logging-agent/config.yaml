@@ -20,6 +20,19 @@ data:
     </source>
 
     <source>
+      @type tail
+      path /mnt/scalyr-agent-logs/*.log
+      pos_file /mnt/posfiles/scalyr-agent.pos
+      read_from_head true
+      tag scalyr-agent.*
+      <parse>
+        @type regexp
+        expression /^(?<time>[^ ]* [^ ]*) (?<log>.*)$/
+        keep_time_key true
+      </parse>
+    </source>
+
+    <source>
       @type prometheus
       bind 0.0.0.0
       port 9110
@@ -42,6 +55,18 @@ data:
       @type token
     </filter>
 
+    <filter scalyr-agent.**>
+      @type record_transformer
+      <record>
+        # s3_path is: ${application}/${component}/${namespace}/${environment}/${version}/${cont_name}
+        s3_path     "logging-agent/logging/visibility/{{.Environment}}/{{.ConfigItems.logging_agent_version}}/scalyr-agent"
+        application "logging-agent"
+        version     "{{.ConfigItems.logging_agent_version}}"
+        cont_name   "scalyr-agent"
+        pod         "#{hostname}"
+      </record>
+    </filter>
+
     <filter kubernetes.**>
       @type record_transformer
       <record>
@@ -54,7 +79,7 @@ data:
       </record>
     </filter>
 
-    <filter kubernetes.**>
+    <filter kubernetes.** scalyr-agent.**>
       @type prometheus
       <metric>
         name fluentd_num_records_total
@@ -69,7 +94,7 @@ data:
       </metric>
     </filter>
 
-    <match kubernetes.**>
+    <match kubernetes.** scalyr-agent.**>
       @type s3
       s3_bucket {{ index .ConfigItems "logging_s3_bucket" }}
       s3_region eu-central-1
