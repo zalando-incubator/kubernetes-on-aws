@@ -2,7 +2,7 @@ module github.com/zalando-incubator/kubernetes-on-aws/tests/e2e
 
 require (
 	bitbucket.org/ww/goautoneg v0.0.0-20120707110453-75cd24fc2f2c // indirect
-	github.com/Azure/azure-sdk-for-go v21.3.0+incompatible // indirect
+	github.com/Azure/azure-sdk-for-go v21.4.0+incompatible // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Azure/go-autorest v11.1.0+incompatible // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
@@ -95,6 +95,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/mrunalp/fileutils v0.0.0-20171103030105-7d4729fb3618 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/natefinch/lumberjack v2.0.0+incompatible // indirect
 	github.com/onsi/ginkgo v1.8.0
