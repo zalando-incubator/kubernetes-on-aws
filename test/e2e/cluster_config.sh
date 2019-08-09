@@ -4,7 +4,7 @@ set -x
 
 cat <<EOF
 clusters:
-- alias: ${CLUSTER_ALIAS}
+- alias: e2e-test
   api_server_url: ${API_SERVER_URL}
   channel: ${1}
   config_items:
@@ -49,7 +49,6 @@ clusters:
     enable_rbac: "true"
     dynamodb_service_link_enabled: "false"
     skipper_ingress_cpu: 100m
-    webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
