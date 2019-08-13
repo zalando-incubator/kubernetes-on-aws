@@ -197,11 +197,8 @@ teapot_admission_controller_validate_application_label: "false"
 
 {{if eq .Environment "e2e"}}
 teapot_admission_controller_ignore_namespaces: "^kube-system|(e2e-tests-(downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
-teapot_admission_controller_inject_environment_variables: "true"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
-teapot_admission_controller_inject_environment_variables: "false"
-
 {{end}}
 
 # etcd cluster
@@ -218,7 +215,8 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
 coreos_image: "ami-0d1579b60bb706fb7" # Container Linux 2079.6.0 (HVM, eu-central-1)
-kuberuntu_image: "ami-0892b0cf01ee56aa6" # zalando-ubuntu-kubernetes-production-v1.13.7-master-48 (HVM, eu-central-1)
+kuberuntu_image: {{ amiID "zalando-ubuntu-kubernetes-production-v1.13.7-master-48" "861068367966" }}
+
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
