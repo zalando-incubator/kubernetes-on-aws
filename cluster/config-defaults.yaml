@@ -82,6 +82,10 @@ image_policy: "dev"
 cadvisor_cpu: "150m"
 cadvisor_memory: "150Mi"
 
+# node exporter settings
+node_exporter_cpu: "20m"
+node_exporter_memory: "75Mi"
+
 # Monitoring settings
 {{if eq .Environment "e2e"}}
 logging_agent_enabled: "false"
@@ -123,7 +127,7 @@ logging_fluentd_cpu: "100m"
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
 logging_agent_in_visibility: "true"
 scalyr_team_token: ""
-logging_agent_version: "v0.30"
+logging_agent_version: "v0.31"
 
 zmon_redis_mem: "1Gi"
 zmon_agent_mem: "500Mi"
@@ -197,11 +201,8 @@ teapot_admission_controller_validate_application_label: "false"
 
 {{if eq .Environment "e2e"}}
 teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
-teapot_admission_controller_inject_environment_variables: "true"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
-teapot_admission_controller_inject_environment_variables: "false"
-
 {{end}}
 
 # etcd cluster
@@ -218,7 +219,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
 coreos_image: "ami-0d1579b60bb706fb7" # Container Linux 2079.6.0 (HVM, eu-central-1)
-kuberuntu_image: "ami-07971d348ef729967" # zalando-ubuntu-kubernetes-production-v1.14.4-master-48 (HVM, eu-central-1)
+kuberuntu_image: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.4-master-49" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
