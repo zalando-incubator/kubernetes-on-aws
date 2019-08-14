@@ -100,6 +100,11 @@ Resources:
           AssociatePublicIpAddress: true
           Groups:
           - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
+        BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 50
+            VolumeType: standard
         EbsOptimized: false
         IamInstanceProfile:
           Name: !Ref AutoScalingInstanceProfile

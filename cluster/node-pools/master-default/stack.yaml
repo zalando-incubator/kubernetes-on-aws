@@ -54,6 +54,12 @@ Resources:
           AssociatePublicIpAddress: true
           Groups:
           - !ImportValue '{{ .Cluster.ID }}:master-security-group'
+        BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            DeleteOnTermination: true
+            VolumeSize: 20
+            VolumeType: standard
         EbsOptimized: false
         IamInstanceProfile:
           Name: !Ref AutoScalingInstanceProfile
