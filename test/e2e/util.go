@@ -214,6 +214,7 @@ func createPingPod(nameprefix, namespace string) *v1.Pod {
 					Image: "registry.opensource.zalan.do/teapot/check-change-myip:master-2",
 				},
 			},
+			RestartPolicy: v1.RestartPolicyNever,
 		},
 	}
 }
@@ -257,6 +258,7 @@ aws s3 ls s3://%s`, s3Bucket),
 					},
 				},
 			},
+			RestartPolicy: v1.RestartPolicyNever,
 		},
 	}
 }
