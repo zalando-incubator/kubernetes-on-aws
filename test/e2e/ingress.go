@@ -21,7 +21,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
@@ -33,7 +33,7 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 	f := framework.NewDefaultFramework("ingress")
 	var (
 		cs  kubernetes.Interface
-		jig *ingress.IngressTestJig
+		jig *ingress.TestJig
 	)
 	BeforeEach(func() {
 		jig = ingress.NewIngressTestJig(f.ClientSet)
@@ -57,10 +57,10 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 		defer func() {
 			By("deleting the service")
 			defer GinkgoRecover()
-			err2 := cs.Core().Services(ns).Delete(service.Name, metav1.NewDeleteOptions(0))
+			err2 := cs.CoreV1().Services(ns).Delete(service.Name, metav1.NewDeleteOptions(0))
 			Expect(err2).NotTo(HaveOccurred())
 		}()
-		_, err := cs.Core().Services(ns).Create(service)
+		_, err := cs.CoreV1().Services(ns).Create(service)
 		Expect(err).NotTo(HaveOccurred())
 
 		// POD
@@ -69,11 +69,11 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 		defer func() {
 			By("deleting the pod")
 			defer GinkgoRecover()
-			err2 := cs.Core().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
+			err2 := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
 			Expect(err2).NotTo(HaveOccurred())
 		}()
 
-		_, err = cs.Core().Pods(ns).Create(pod)
+		_, err = cs.CoreV1().Pods(ns).Create(pod)
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 
@@ -83,14 +83,14 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 		defer func() {
 			By("deleting the ingress")
 			defer GinkgoRecover()
-			err2 := cs.Extensions().Ingresses(ns).Delete(ing.Name, metav1.NewDeleteOptions(0))
+			err2 := cs.NetworkingV1beta1().Ingresses(ns).Delete(ing.Name, metav1.NewDeleteOptions(0))
 			Expect(err2).NotTo(HaveOccurred())
 		}()
-		ingressCreate, err := cs.Extensions().Ingresses(ns).Create(ing)
+		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(ing)
 		Expect(err).NotTo(HaveOccurred())
 		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, 10*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
-		ingress, err := cs.Extensions().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		ingress, err := cs.NetworkingV1beta1().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("ALB endpoint from ingress status: %s", ingress.Status.LoadBalancer.Ingress[0].Hostname))
 
@@ -115,7 +115,7 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-simple")
 	var (
 		cs  kubernetes.Interface
-		jig *ingress.IngressTestJig
+		jig *ingress.TestJig
 	)
 
 	It("Should create simple ingress [Ingress] [Zalando]", func() {
@@ -138,29 +138,29 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 		// backend deployment
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
-		_, err := cs.Apps().Deployments(ns).Create(depl)
-		//deployment, err := cs.Apps().Deployments(ns).Create(depl)
+		_, err := cs.AppsV1().Deployments(ns).Create(depl)
+		//deployment, err := cs.AppsV1().Deployments(ns).Create(depl)
 		// defer func() {
 		// 	By("deleting the deployment")
 		// 	defer GinkgoRecover()
-		// 	err2 := cs.Apps().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+		// 	err2 := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
 		// 	Expect(err2).NotTo(HaveOccurred())
 		// }()
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
-		_, err = cs.Core().Services(ns).Create(service)
+		_, err = cs.CoreV1().Services(ns).Create(service)
 		Expect(err).NotTo(HaveOccurred())
 
 		ing := createIngress(serviceName, hostName, ns, labels, port)
-		ingressCreate, err := cs.Extensions().Ingresses(ns).Create(ing)
+		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(ing)
 		Expect(err).NotTo(HaveOccurred())
 
 		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = cs.Extensions().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
 		//  skipper http -> https redirect
@@ -207,7 +207,7 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 			},
 			port,
 		)
-		ingressUpdate, err := cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
+		ingressUpdate, err := cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with the right content for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
@@ -230,7 +230,7 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 			},
 			port,
 		)
-		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
+		ingressUpdate, err = cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
@@ -252,7 +252,7 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 			},
 			port,
 		)
-		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
+		ingressUpdate, err = cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with %s header set to %s for the next request", ingressUpdate.Namespace, ingressUpdate.Name, headerKey, headerVal))
 		time.Sleep(10 * time.Second) // wait for routing change propagation
@@ -267,7 +267,7 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 		// Test additional hostname
 		additionalHostname := fmt.Sprintf("foo-%d.%s", time.Now().UTC().Unix(), E2EHostedZone())
 		addHostIng := addHostIngress(updatedIng, additionalHostname)
-		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(addHostIng)
+		ingressUpdate, err = cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(addHostIng)
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for new DNS hostname to be resolvable " + additionalHostname)
 		err = waitForResponse(additionalHostname, "https", waitTime, isSuccess, false)
@@ -293,7 +293,7 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 		// Test changed path
 		newPath := "/foo"
 		changePathIng := changePathIngress(updatedIng, newPath)
-		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(changePathIng)
+		ingressUpdate, err = cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(changePathIng)
 		Expect(err).NotTo(HaveOccurred())
 
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the old request, because of the path route", ingressUpdate.Namespace, ingressUpdate.Name))
@@ -317,7 +317,7 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-paths")
 	var (
 		cs  kubernetes.Interface
-		jig *ingress.IngressTestJig
+		jig *ingress.TestJig
 	)
 
 	It("Should create path routes ingress [Ingress] [Zalando]", func() {
@@ -346,46 +346,46 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		// backend deployment
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
-		_, err := cs.Apps().Deployments(ns).Create(depl)
-		//deployment, err := cs.Apps().Deployments(ns).Create(depl)
+		_, err := cs.AppsV1().Deployments(ns).Create(depl)
+		//deployment, err := cs.AppsV1().Deployments(ns).Create(depl)
 		// defer func() {
 		// 	By("deleting the deployment")
 		// 	defer GinkgoRecover()
-		// 	err2 := cs.Apps().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+		// 	err2 := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
 		// 	Expect(err2).NotTo(HaveOccurred())
 		// }()
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a 2nd deployment with " + serviceName2 + " in namespace " + ns)
 		depl2 := createSkipperBackendDeployment(serviceName2, ns, route2, labels2, int32(targetPort), replicas)
-		_, err = cs.Apps().Deployments(ns).Create(depl2)
-		//deployment2, err := cs.Apps().Deployments(ns).Create(depl2)
+		_, err = cs.AppsV1().Deployments(ns).Create(depl2)
+		//deployment2, err := cs.AppsV1().Deployments(ns).Create(depl2)
 		// defer func() {
 		// 	By("deleting the deployment")
 		// 	defer GinkgoRecover()
-		// 	err2 := cs.Apps().Deployments(ns).Delete(deployment2.Name, metav1.NewDeleteOptions(0))
+		// 	err2 := cs.AppsV1().Deployments(ns).Delete(deployment2.Name, metav1.NewDeleteOptions(0))
 		// 	Expect(err2).NotTo(HaveOccurred())
 		// }()
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
-		_, err = cs.Core().Services(ns).Create(service)
+		_, err = cs.CoreV1().Services(ns).Create(service)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating service " + serviceName2 + " in namespace " + ns)
 		service2 := createServiceTypeClusterIP(serviceName2, labels2, port, targetPort)
-		_, err = cs.Core().Services(ns).Create(service2)
+		_, err = cs.CoreV1().Services(ns).Create(service2)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
 		ing := createIngress(serviceName, hostName, ns, labels, port)
-		ingressCreate, err := cs.Extensions().Ingresses(ns).Create(ing)
+		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(ing)
 		Expect(err).NotTo(HaveOccurred())
 
 		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = cs.Extensions().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
 		//  skipper http -> https redirect
@@ -430,7 +430,7 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 			ingressCreate.ObjectMeta.Annotations,
 			port,
 		)
-		ingressUpdate, err := cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
+		ingressUpdate, err := cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
 		Expect(err).NotTo(HaveOccurred())
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path /", ingressUpdate.Namespace, ingressUpdate.Name))
@@ -464,7 +464,7 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 				ServicePort: intstr.FromInt(port),
 			},
 		)
-		ingressUpdate, err = cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
+		ingressUpdate, err = cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
 		Expect(err).NotTo(HaveOccurred())
 		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
@@ -489,7 +489,7 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-custom")
 	var (
 		cs  kubernetes.Interface
-		jig *ingress.IngressTestJig
+		jig *ingress.TestJig
 	)
 
 	It("Should create custom routes ingress [Ingress] [Zalando]", func() {
@@ -512,30 +512,30 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 		// backend deployment
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
-		_, err := cs.Apps().Deployments(ns).Create(depl)
-		//deployment, err := cs.Apps().Deployments(ns).Create(depl)
+		_, err := cs.AppsV1().Deployments(ns).Create(depl)
+		//deployment, err := cs.AppsV1().Deployments(ns).Create(depl)
 		// defer func() {
 		// 	By("deleting the deployment")
 		// 	defer GinkgoRecover()
-		// 	err2 := cs.Apps().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+		// 	err2 := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
 		// 	Expect(err2).NotTo(HaveOccurred())
 		// }()
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
-		_, err = cs.Core().Services(ns).Create(service)
+		_, err = cs.CoreV1().Services(ns).Create(service)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
 		ing := createIngress(serviceName, hostName, ns, labels, port)
-		ingressCreate, err := cs.Extensions().Ingresses(ns).Create(ing)
+		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(ing)
 		Expect(err).NotTo(HaveOccurred())
 
 		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = cs.Extensions().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
 		//  skipper http -> https redirect
@@ -587,7 +587,7 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 			},
 			port,
 		)
-		ingressUpdate, err := cs.Extensions().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
+		ingressUpdate, err := cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(updatedIng)
 		Expect(err).NotTo(HaveOccurred())
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 307 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, redirectPath))

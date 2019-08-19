@@ -36,7 +36,7 @@ var _ = framework.KubeDescribe("PSP use", func() {
 	BeforeEach(func() {
 		cs = f.ClientSet
 		saObj := createServiceAccount(f.Namespace.Name, operatorSA)
-		_, err := cs.Core().ServiceAccounts(f.Namespace.Name).Create(saObj)
+		_, err := cs.CoreV1().ServiceAccounts(f.Namespace.Name).Create(saObj)
 
 		if err != nil {
 			log.Fatalf("could not create service account: %s", err)
@@ -59,10 +59,10 @@ var _ = framework.KubeDescribe("PSP use", func() {
 	// 	defer func() {
 	// 		By(msg)
 	// 		defer GinkgoRecover()
-	// 		err := cs.Core().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
+	// 		err := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
 	// 		Expect(err).To(HaveOccurred())
 	// 	}()
-	// 	_, err := cs.Core().Pods(ns).Create(pod)
+	// 	_, err := cs.CoreV1().Pods(ns).Create(pod)
 	// 	Expect(err).To(HaveOccurred())
 	// 	framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 	// })
@@ -81,11 +81,11 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		defer func() {
 			By(msg)
 			defer GinkgoRecover()
-			err := cs.Core().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
+			err := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err := cs.Core().Pods(ns).Create(pod)
+		_, err := cs.CoreV1().Pods(ns).Create(pod)
 		Expect(err).NotTo(HaveOccurred())
 
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
@@ -108,7 +108,7 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		defer func() {
 			By(fmt.Sprintf("Delete a deployment that creates a privileged POD as %s", operatorSA))
 			defer GinkgoRecover()
-			err := cs.Extensions().Deployments(ns).Delete(d.Name, metav1.NewDeleteOptions(0))
+			err := cs.ExtensionsV1beta1().Deployments(ns).Delete(d.Name, metav1.NewDeleteOptions(0))
 			Expect(err).NotTo(HaveOccurred())
 		}()
 

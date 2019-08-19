@@ -23,7 +23,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -48,8 +50,13 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
 		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
-		_, err := cs.ExtensionsV1beta1().Deployments(ns).Create(deployment)
-		defer deleteDeployment(cs, ns, deployment)
+		_, err := cs.AppsV1().Deployments(ns).Create(deployment)
+		defer func() {
+			By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
+			defer GinkgoRecover()
+			err := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+			Expect(err).NotTo(HaveOccurred())
+		}()
 		Expect(err).NotTo(HaveOccurred())
 		label := map[string]string{
 			"app": podname,
@@ -72,9 +79,14 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
 		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
-		_, err := cs.ExtensionsV1beta1().Deployments(ns).Create(deployment)
+		_, err := cs.AppsV1().Deployments(ns).Create(deployment)
 		Expect(err).NotTo(HaveOccurred())
-		defer deleteDeployment(cs, ns, deployment)
+		defer func() {
+			By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
+			defer GinkgoRecover()
+			err := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+			Expect(err).NotTo(HaveOccurred())
+		}()
 		err = framework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "FailedCreate", appsv1.DeploymentReplicaFailure)
 		Expect(err).NotTo(HaveOccurred())
 	})
