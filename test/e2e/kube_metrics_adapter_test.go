@@ -11,7 +11,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -26,7 +26,7 @@ import (
 var _ = framework.KubeDescribe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metrics from kube-metrics-adapter)", func() {
 	f := framework.NewDefaultFramework("zalando-kube-metrics-adapter")
 	var cs kubernetes.Interface
-	var jig *ingress.IngressTestJig
+	var jig *ingress.TestJig
 
 	const (
 		DeploymentName = "sample-custom-metrics-autoscaling-e2e"
@@ -92,7 +92,7 @@ type CustomMetricTestCase struct {
 	framework       *framework.Framework
 	hpa             *autoscaling.HorizontalPodAutoscaler
 	kubeClient      kubernetes.Interface
-	jig             *ingress.IngressTestJig
+	jig             *ingress.TestJig
 	deployment      *appsv1.Deployment
 	pod             *corev1.Pod
 	initialReplicas int
@@ -127,7 +127,7 @@ func (tc *CustomMetricTestCase) Run() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create an Ingress since RPS based scaling relies on it
-		ingressCreate, err := tc.kubeClient.ExtensionsV1beta1().Ingresses(ns).Create(tc.ingress)
+		ingressCreate, err := tc.kubeClient.NetworkingV1beta1().Ingresses(ns).Create(tc.ingress)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = tc.jig.WaitForIngressAddress(tc.kubeClient, ns, ingressCreate.Name, 10*time.Minute)

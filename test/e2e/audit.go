@@ -118,10 +118,10 @@ func expectEvents(f *framework.Framework, expectedEvents []utils.AuditEvent) {
 		missingReport, err := utils.CheckAuditLines(stream, expectedEvents, auditv1.SchemeGroupVersion)
 		if err != nil {
 			framework.Logf("Failed to observe audit events: %v", err)
-		} else if len(missingReport) > 0 {
+		} else if len(missingReport.MissingEvents) > 0 {
 			framework.Logf("Events %#v not found!", missingReport)
 		}
-		return len(missingReport) == 0, nil
+		return len(missingReport.MissingEvents) == 0, nil
 	})
 	framework.ExpectNoError(err, "after %v failed to observe audit events", pollingTimeout)
 }
