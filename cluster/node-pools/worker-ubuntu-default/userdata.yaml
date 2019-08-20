@@ -2,7 +2,7 @@
 
 {{if gt (len .Values.instance_info.InstanceStorageDevices) 0 }}
 bootcmd:
-- [ /opt/bin/instance-storage.sh, {{(index .Values.instance_info.InstanceStorageDevices 0).Path}}, {{if index .NodePool.ConfigItems "instance_storage_mount_path"}}{{.NodePool.ConfigItems.instance_storage_mount_path}}{{else}}/var/lib/docker{{end}}]
+- [ /opt/bin/instance-storage.sh, {{if index .NodePool.ConfigItems "instance_storage_mount_path"}}{{.NodePool.ConfigItems.instance_storage_mount_path}}{{else}}/var/lib/docker{{end}}]
 {{ end }}
 
 write_files:
