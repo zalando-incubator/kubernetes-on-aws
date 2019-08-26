@@ -43,11 +43,10 @@ skipper_idle_timeout_server: "62s"
 
 # skipper api GW features
 enable_apimonitoring: "true"
+skipper_clusterratelimit: "true"
 {{if eq .Environment "production"}}
-skipper_clusterratelimit: "false"
 enable_skipper_eastwest: "false"
 {{else}}
-skipper_clusterratelimit: "true"
 enable_skipper_eastwest: "true"
 {{end}}
 
@@ -82,6 +81,10 @@ image_policy: "dev"
 # cadvisor settings
 cadvisor_cpu: "150m"
 cadvisor_memory: "150Mi"
+
+# node exporter settings
+node_exporter_cpu: "20m"
+node_exporter_memory: "75Mi"
 
 # Monitoring settings
 {{if eq .Environment "e2e"}}
@@ -123,6 +126,8 @@ logging_scalyr_cpu: "100m"
 logging_fluentd_cpu: "100m"
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
 logging_agent_in_visibility: "true"
+scalyr_team_token: ""
+logging_agent_version: "v0.32"
 
 zmon_redis_mem: "1Gi"
 zmon_agent_mem: "500Mi"
@@ -195,12 +200,9 @@ teapot_admission_controller_validate_application_label: "false"
 {{end}}
 
 {{if eq .Environment "e2e"}}
-teapot_admission_controller_ignore_namespaces: "^kube-system|(e2e-tests-(downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
-teapot_admission_controller_inject_environment_variables: "true"
+teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
-teapot_admission_controller_inject_environment_variables: "false"
-
 {{end}}
 
 # etcd cluster
@@ -217,7 +219,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
 coreos_image: "ami-0d1579b60bb706fb7" # Container Linux 2079.6.0 (HVM, eu-central-1)
-kuberuntu_image: "ami-036931dfa3f2f3272" # zalando-ubuntu-kubernetes-production-v1.13.7-master-48 (HVM, eu-central-1)
+kuberuntu_image: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-56" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -252,6 +254,9 @@ node_cidr_mask_size: "24" # Default: 24
 
 # maximum number of PIDs allowed to be allocated per pod
 pod_max_pids: "4096"
+
+# the cpu management policy which should be used by the kubelet
+cpu_manager_policy: "none"
 
 # when set to true, routes external traffic to the apiserver through a skipper sidecar
 apiserver_proxy: "true"
