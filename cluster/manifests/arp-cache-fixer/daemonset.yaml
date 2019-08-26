@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    application: arp-cache-fixer
+  name: arp-cache-fixer
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      application: arp-cache-fixer
+  template:
+    metadata:
+      labels:
+        application: arp-cache-fixer
+    spec:
+      hostNetwork: true
+      serviceAccountName: skipper-ingress # using this so we don't have to create custom RBAC/Service account for a temporary workaround.
+      initContainers:
+      - name: fix
+        image: registry.opensource.zalan.do/stups/ubuntu:18.04.2-19
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo 1024 > /proc/sys/net/ipv4/neigh/default/gc_thresh1;
+          echo 4096 > /proc/sys/net/ipv4/neigh/default/gc_thresh2;
+          echo 16384 > /proc/sys/net/ipv4/neigh/default/gc_thresh3
+        resources:
+          limits:
+            cpu: 1m
+            memory: 50Mi
+          requests:
+            cpu: 1m
+            memory: 50Mi
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /host/sys
+          name: sys-mount
+      containers:
+      - name: nothing
+        image: registry.opensource.zalan.do/stups/ubuntu:18.04.2-19
+        command:
+        - cat
+        stdin: true
+        resources:
+          limits:
+            cpu: 1m
+            memory: 50Mi
+          requests:
+            cpu: 1m
+            memory: 50Mi
+        volumeMounts:
+        - mountPath: /host/sys
+          name: sys-mount
+      volumes:
+      - hostPath:
+          path: /proc/sys
+          type: ""
+        name: sys-mount
