@@ -5,35 +5,39 @@ metadata:
   namespace: kube-system
   labels:
     application: node-problem-detector
-    version: v0.6.3
+    version: v0.7.0
 spec:
   selector:
     matchLabels:
       application: node-problem-detector
-      version: v0.6.3
+      version: v0.7.0
   template:
     metadata:
       labels:
         application: node-problem-detector
-        version: v0.6.3
+        version: v0.7.0
     spec:
+      serviceAccountName: node-problem-detector
+      priorityClassName: system-node-critical
       containers:
       - name: node-problem-detector
-        image: k8s.gcr.io/node-problem-detector:v0.6.3
+        image: registry.opensource.zalan.do/teapot/node-problem-detector:v0.7.0
         command:
-        - "/bin/sh"
-        - "-c"
-        # Pass both config to support both journald and syslog.
-        - "exec /node-problem-detector --logtostderr --system-log-monitors=/config/kernel-monitor.json,/config/kernel-monitor-filelog.json,/config/docker-monitor.json,/config/docker-monitor-filelog.json"
+        - /node-problem-detector
+        args:
+        - --config.system-log-monitor=/config/abrt-adaptor.json,/config/custom-plugin-monitor.json,/config/docker-monitor-counter.json,/config/docker-monitor-filelog.json,/config/docker-monitor.json,/config/kernel-monitor-counter.json,/config/kernel-monitor-filelog.json,/config/kernel-monitor.json,/config/network-problem-monitor.json,/config/system-stats-monitor.json,/config/systemd-monitor-counter.json,/config/systemd-monitor.json
+        - --prometheus-address=0.0.0.0
+        - --logtostderr
+        - --v=9
         securityContext:
           privileged: true
         resources:
-          limits:
-            cpu: "200m"
-            memory: "100Mi"
           requests:
-            cpu: "20m"
-            memory: "20Mi"
+            cpu: 50m
+            memory: 50Mi
+          limits:
+            cpu: 50m
+            memory: 50Mi
         env:
         - name: NODE_NAME
           valueFrom:
@@ -42,22 +46,20 @@ spec:
         volumeMounts:
         - name: log
           mountPath: /var/log
+          readOnly: true
         - name: localtime
           mountPath: /etc/localtime
           readOnly: true
       volumes:
       - name: log
         hostPath:
-          path: /var/log/
+          path: /var/log
       - name: localtime
         hostPath:
           path: /etc/localtime
-          type: "FileOrCreate"
-      serviceAccountName: node-problem-detector
+          type: FileOrCreate
       tolerations:
-      - operator: "Exists"
-        effect: "NoExecute"
-      - operator: "Exists"
-        effect: "NoSchedule"
-      - key: "CriticalAddonsOnly"
-        operator: "Exists"
+      - operator: Exists
+        effect: NoExecute
+      - operator: Exists
+        effect: NoSchedule
