@@ -224,7 +224,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.5.8
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook-test:pr-118-2
           name: webhook
           ports:
           - containerPort: 8081
@@ -246,11 +246,26 @@ write_files:
               memory: 50Mi
           args:
             - --tokens-file=/etc/kubernetes/config/tokenfile.csv
+
+            # Collaborator roles
+            - --role-mapping=Administrator=cn=Administrator,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
+            - --role-mapping=ReadOnly=cn=ReadOnly,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- if eq .Cluster.Environment "test"}}
+            - --role-mapping=PowerUser=cn=Deployer,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- end}}
+
+            # Member roles
+{{- if eq .Cluster.Environment "production"}}
+            - --role-mapping=Manual=cn=Manual,ou={{.Cluster.InfrastructureAccount}}:{{.Cluster.Region}}:{{.Cluster.LocalID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+            - --role-mapping=Emergency=cn=Emergency,ou={{.Cluster.InfrastructureAccount}}:{{.Cluster.Region}}:{{.Cluster.LocalID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- else }}
+            - --role-mapping=PowerUser=cn=PowerUser,ou={{.Cluster.InfrastructureAccount}}:{{.Cluster.Region}}:{{.Cluster.LocalID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- end }}
+            - --role-mapping=ReadOnly=cn=ReadOnly,ou={{.Cluster.InfrastructureAccount}}:{{.Cluster.Region}}:{{.Cluster.LocalID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+
           env:
             - name: TEAMS_API_URL
               value: https://teams.auth.zalando.com
-            - name: CLUSTER_ID
-              value: {{if index .Cluster.ConfigItems "webhook_id"}}{{ .Cluster.ConfigItems.webhook_id }}{{else}}{{ .Cluster.ID }}{{end}}
             - name: TOKEN_INTROSPECTION_URL
               value: http://127.0.0.1:{{ if eq .Cluster.Environment "production" }}9021{{else}}9023{{end}}/oauth2/introspect
             - name: USER_GROUPS
