@@ -85,11 +85,11 @@ scratch and test the Kubernetes type Foo.
   		defer func() {
   			By("deleting the foo)
   			defer GinkgoRecover()
-  			err2 := cs.Core().Foo(ns).Delete(foo.Name, metav1.NewDeleteOptions(0))
+  			err2 := cs.CoreV1().Foo(ns).Delete(foo.Name, metav1.NewDeleteOptions(0))
   			Expect(err2).NotTo(HaveOccurred())
   		}()
               // creates the Ingress Object
-  		_, err := cs.Core().Foo(ns).Create(foo)
+  		_, err := cs.CoreV1().Foo(ns).Create(foo)
   		Expect(err).NotTo(HaveOccurred())
   	})
   })
@@ -113,10 +113,10 @@ scratch and test the Kubernetes type Foo.
   defer func() {
   	By("deleting the pod")
   	defer GinkgoRecover()
-  	err2 := cs.Core().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
+  	err2 := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
   	Expect(err2).NotTo(HaveOccurred())
   }()
-  _, err = cs.Core().Pods(ns).Create(pod)
+  _, err = cs.CoreV1().Pods(ns).Create(pod)
   Expect(err).NotTo(HaveOccurred())
   framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 ```
@@ -137,10 +137,10 @@ scratch and test the Kubernetes type Foo.
   defer func() {
   	By("deleting the service")
   	defer GinkgoRecover()
-  	err2 := cs.Core().Services(ns).Delete(service.Name, metav1.NewDeleteOptions(0))
+  	err2 := cs.CoreV1().Services(ns).Delete(service.Name, metav1.NewDeleteOptions(0))
   	Expect(err2).NotTo(HaveOccurred())
   }()
-  _, err := cs.Core().Services(ns).Create(service)
+  _, err := cs.CoreV1().Services(ns).Create(service)
   Expect(err).NotTo(HaveOccurred())
 ```
 
@@ -163,14 +163,14 @@ Create Kubernetes ingress object:
   defer func() {
   	By("deleting the ingress")
   	defer GinkgoRecover()
-  	err2 := cs.Extensions().Ingresses(ns).Delete(ing.Name, metav1.NewDeleteOptions(0))
+  	err2 := cs.ExtensionsV1beta1().Ingresses(ns).Delete(ing.Name, metav1.NewDeleteOptions(0))
   	Expect(err2).NotTo(HaveOccurred())
   }()
-  ingressCreate, err := cs.Extensions().Ingresses(ns).Create(ing)
+  ingressCreate, err := cs.ExtensionsV1beta1().Ingresses(ns).Create(ing)
   Expect(err).NotTo(HaveOccurred())
   addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, 3*time.Minute)
   Expect(err).NotTo(HaveOccurred())
-  ingress, err := cs.Extensions().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+  ingress, err := cs.ExtensionsV1beta1().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
   Expect(err).NotTo(HaveOccurred())
   By(fmt.Sprintf("ALB endpoint from ingress status: %s", ingress.Status.LoadBalancer.Ingress[0].Hostname))
 ```

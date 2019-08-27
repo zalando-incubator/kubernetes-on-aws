@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-downscaler
-    version: v0.12
+    version: v0.18
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: kube-downscaler
-        version: v0.12
+        version: v0.18
     spec:
       dnsConfig:
         options:
@@ -26,14 +26,13 @@ spec:
       containers:
       - name: downscaler
         # see https://github.com/hjacobs/kube-downscaler/releases
-        image: registry.opensource.zalan.do/teapot/kube-downscaler:0.14
+        image: registry.opensource.zalan.do/teapot/kube-downscaler:0.18
         args:
           - --interval=30
           - --exclude-namespaces=kube-system,visibility
           - --exclude-deployments=kube-downscaler,downscaler,postgres-operator
           - "--default-uptime={{ .ConfigItems.downscaler_default_uptime }}"
-          - --kind=stack
-          - --kind=deployment
+          - --include-resources=stacks,deployments
         resources:
           limits:
             cpu: 5m
