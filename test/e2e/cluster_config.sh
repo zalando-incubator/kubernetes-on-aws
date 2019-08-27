@@ -68,6 +68,8 @@ clusters:
     profile: ${WORKER_PROFILE}-splitaz
     min_size: 3
     max_size: 21
+    config_items:
+      cpu_manager_policy: static
   - discount_strategy: spot_max_price
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker
