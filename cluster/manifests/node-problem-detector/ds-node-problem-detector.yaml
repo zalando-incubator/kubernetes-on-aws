@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-problem-detector
+  namespace: kube-system
+  labels:
+    application: node-problem-detector
+    version: v0.7.0
+spec:
+  selector:
+    matchLabels:
+      application: node-problem-detector
+      version: v0.7.0
+  template:
+    metadata:
+      labels:
+        application: node-problem-detector
+        version: v0.7.0
+    spec:
+      serviceAccountName: node-problem-detector
+      priorityClassName: system-node-critical
+      containers:
+      - name: node-problem-detector
+        image: registry.opensource.zalan.do/teapot/node-problem-detector:v0.7.0
+        command:
+        - /node-problem-detector
+        args:
+        - --config.system-log-monitor=/config/abrt-adaptor.json,/config/docker-monitor-filelog.json,/config/docker-monitor.json,/config/kernel-monitor-filelog.json,/config/kernel-monitor.json,/config/systemd-monitor.json
+        - --config.custom-plugin-monitor=/config/custom-plugin-monitor.json,/config/docker-monitor-counter.json,/config/kernel-monitor-counter.json,/config/network-problem-monitor.json,/config/systemd-monitor-counter.json
+        - --config.system-stats-monitor=/config/system-stats-monitor.json
+        - --address=0.0.0.0
+        - --prometheus-address=0.0.0.0
+        - --logtostderr
+        securityContext:
+          privileged: true
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 20256
+          timeoutSeconds: 3
+        resources:
+          requests:
+            cpu: 50m
+            memory: 50Mi
+          limits:
+            cpu: 50m
+            memory: 50Mi
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        volumeMounts:
+        - name: log
+          mountPath: /var/log
+          readOnly: true
+        - name: localtime
+          mountPath: /etc/localtime
+          readOnly: true
+      volumes:
+      - name: log
+        hostPath:
+          path: /var/log
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+          type: FileOrCreate
+      tolerations:
+      - operator: Exists
+        effect: NoExecute
+      - operator: Exists
+        effect: NoSchedule
