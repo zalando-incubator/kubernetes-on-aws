@@ -252,6 +252,8 @@ write_files:
             - --role-mapping=ReadOnly=cn=ReadOnly,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
 {{- if eq .Cluster.Environment "test"}}
             - --role-mapping=PowerUser=cn=Deployer,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- else if eq .Cluster.Environment "e2e"}}
+            - --role-mapping=Administrator=cn=Contributor,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
 {{- end}}
 
             # Member roles
