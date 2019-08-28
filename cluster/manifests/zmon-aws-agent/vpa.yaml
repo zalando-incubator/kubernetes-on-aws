@@ -1,0 +1,20 @@
+apiVersion: autoscaling.k8s.io/v1beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: zmon-aws-agent
+  namespace: visibility
+  labels:
+    application: zmon-aws-agent
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: zmon-aws-agent
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: zmon-aws-agent
+      maxAllowed:
+        cpu: 100m
+        memory: 200Mi
