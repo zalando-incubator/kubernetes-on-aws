@@ -36,6 +36,8 @@ else
     exit 1
 fi
 
+echo "Creating cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
+
 # if E2E_SKIP_CLUSTER_UPDATE is true, don't create a cluster from base first
 if [ "$E2E_SKIP_CLUSTER_UPDATE" != "true" ]; then
     BASE_CFG_PATH="base_config"
