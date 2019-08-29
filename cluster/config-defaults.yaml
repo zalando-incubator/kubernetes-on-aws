@@ -79,8 +79,12 @@ image_policy: "dev"
 {{end}}
 
 # cadvisor settings
-cadvisor_cpu: "150m"
-cadvisor_memory: "150Mi"
+cadvisor_cpu: "125m"
+cadvisor_memory: "125Mi"
+
+# node-problem-detector settings
+node_problem_detector_cpu: "25m"
+node_problem_detector_memory: "25Mi"
 
 # node exporter settings
 node_exporter_cpu: "20m"
@@ -154,8 +158,6 @@ kube_state_metrics_mem_max: "1Gi"
 # Kubernetes Downscaler (for non-production clusters)
 {{if eq .Environment "test"}}
 downscaler_default_uptime: "Mon-Fri 07:30-20:30 Europe/Berlin"
-{{else if eq .Environment "playground"}}
-downscaler_default_uptime: "Mon-Fri 07:30-20:30 Europe/Berlin"
 {{else}}
 downscaler_default_uptime: "always"
 {{end}}
@@ -219,8 +221,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
 coreos_image: "ami-0d1579b60bb706fb7" # Container Linux 2079.6.0 (HVM, eu-central-1)
-
-kuberuntu_image: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-56" "861068367966" }}
+kuberuntu_image: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-57" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
