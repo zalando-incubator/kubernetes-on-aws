@@ -5,6 +5,7 @@ metadata:
   name: logging-agent
   namespace: visibility
   labels:
+    cluster_environment: "{{ .Environment }}"
     application: logging-agent
     version: "{{ .ConfigItems.logging_agent_version }}"
     component: logging
@@ -83,7 +84,7 @@ spec:
           mountPath: /mnt/scalyr-checkpoint
       containers:
       - name: log-watcher
-        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:0.33
+        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:0.34
         env:
         - name: CLUSTER_NODE_NAME
           valueFrom:
