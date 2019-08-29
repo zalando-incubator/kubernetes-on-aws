@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: logging-agent
-  namespace: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}visibility{{else}}kube-system{{end}}
+  namespace: visibility
   labels:
     application: logging-agent
     version: "{{ .ConfigItems.logging_agent_version }}"
@@ -28,7 +28,7 @@ spec:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}visibility-logging{{else}}system-node-critical{{end}}
+      priorityClassName: visibility-logging
       serviceAccountName: logging-agent
       tolerations:
       - operator: Exists
