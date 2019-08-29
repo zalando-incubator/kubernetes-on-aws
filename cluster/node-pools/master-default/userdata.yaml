@@ -258,12 +258,12 @@ write_files:
 
             # Member roles
 {{- if eq .Cluster.Environment "production"}}
-            - --role-mapping=Manual=cn=Manual,ou={{.Cluster.InfrastructureAccount}}:{{.Cluster.Region}}:{{.Cluster.LocalID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
-            - --role-mapping=Emergency=cn=Emergency,ou={{.Cluster.InfrastructureAccount}}:{{.Cluster.Region}}:{{.Cluster.LocalID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+            - --role-mapping=Manual=cn=Manual,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+            - --role-mapping=Emergency=cn=Emergency,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
 {{- else }}
-            - --role-mapping=PowerUser=cn=PowerUser,ou={{.Cluster.InfrastructureAccount}}:{{.Cluster.Region}}:{{.Cluster.LocalID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+            - --role-mapping=PowerUser=cn=PowerUser,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
 {{- end }}
-            - --role-mapping=ReadOnly=cn=ReadOnly,ou={{.Cluster.InfrastructureAccount}}:{{.Cluster.Region}}:{{.Cluster.LocalID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+            - --role-mapping=ReadOnly=cn=ReadOnly,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
 
           env:
             - name: TEAMS_API_URL
