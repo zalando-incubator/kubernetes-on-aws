@@ -82,6 +82,12 @@ image_policy: "dev"
 cadvisor_cpu: "150m"
 cadvisor_memory: "150Mi"
 
+# whether to deploy node-problem-detector
+node_problem_detector_enabled: "false"
+# node-problem-detector settings
+node_problem_detector_cpu: "25m"
+node_problem_detector_memory: "75Mi"
+
 # node exporter settings
 node_exporter_cpu: "20m"
 node_exporter_memory: "75Mi"
@@ -125,9 +131,8 @@ logging_watcher_cpu: "50m"
 logging_scalyr_cpu: "100m"
 logging_fluentd_cpu: "100m"
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
-logging_agent_in_visibility: "true"
 scalyr_team_token: ""
-logging_agent_version: "v0.32"
+logging_agent_version: "v0.33"
 
 zmon_redis_mem: "1Gi"
 zmon_agent_mem: "500Mi"
@@ -153,8 +158,6 @@ kube_state_metrics_mem_max: "1Gi"
 
 # Kubernetes Downscaler (for non-production clusters)
 {{if eq .Environment "test"}}
-downscaler_default_uptime: "Mon-Fri 07:30-20:30 Europe/Berlin"
-{{else if eq .Environment "playground"}}
 downscaler_default_uptime: "Mon-Fri 07:30-20:30 Europe/Berlin"
 {{else}}
 downscaler_default_uptime: "always"
@@ -219,8 +222,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
 coreos_image: "ami-0d1579b60bb706fb7" # Container Linux 2079.6.0 (HVM, eu-central-1)
-
-kuberuntu_image: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-56" "861068367966" }}
+kuberuntu_image: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-57" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
