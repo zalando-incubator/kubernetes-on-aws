@@ -4,12 +4,7 @@ Description: Kubernetes default worker node pool
 Mappings:
   Images:
     eu-central-1:
-      {{- $distro := split .NodePool.Profile "-" }}
-      {{ if eq (index $distro 1) "ubuntu" }}
       MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image }}'
-      {{ else }}
-      MachineImage: '{{ .Cluster.ConfigItems.coreos_image }}'
-      {{ end }}
 
 Resources:
   AutoScalingGroup:
@@ -100,11 +95,6 @@ Resources:
           AssociatePublicIpAddress: true
           Groups:
           - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
-        BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeSize: 50
-            VolumeType: standard
         EbsOptimized: false
         IamInstanceProfile:
           Name: !Ref AutoScalingInstanceProfile
