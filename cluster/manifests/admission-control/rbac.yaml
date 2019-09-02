@@ -1,0 +1,29 @@
+{{ if eq .Environment "production" }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admission-controller
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: admission-controller
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admission-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admission-controller
+subjects:
+- kind: ServiceAccount
+  name: admission-controller
+  namespace: kube-system
+{{ end }}
