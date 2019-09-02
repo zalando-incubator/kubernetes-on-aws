@@ -1,0 +1,25 @@
+{{ if eq .ConfigItems.node_problem_detector_enabled "true" }}
+kind: Service
+apiVersion: v1
+metadata:
+  name: node-problem-detector
+  namespace: kube-system
+  labels:
+    application: node-problem-detector
+    kubernetes.io/cluster-service: "true"
+    kubernetes.io/name: "NodeProblemDetector"
+  annotations:
+    prometheus.io/path: /metrics
+    prometheus.io/port: "20257"
+    prometheus.io/scrape: "true"
+spec:
+  selector:
+    application: node-problem-detector
+    version: v0.7.0
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 20257
+    targetPort: 20257
+    protocol: TCP
+{{ end }}

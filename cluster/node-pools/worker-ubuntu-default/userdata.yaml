@@ -15,7 +15,7 @@ write_files:
       KUBELET_ROLE=worker
 
   - owner: root:root
-    path: /var/run/s3-certs.env
+    path: /etc/kuberuntu/s3-certs.env
     content: |
       S3_CERTS_BUCKET={{ .S3GeneratedFilesPath }}
       AWS_DEFAULT_REGION={{ .Cluster.Region }}
@@ -53,6 +53,7 @@ write_files:
         SupportPodPidsLimit: true
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
 {{- end }}
+      cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}
       maxPods: {{ .Cluster.ConfigItems.node_max_pods }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
