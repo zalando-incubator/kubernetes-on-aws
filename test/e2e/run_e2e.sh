@@ -1,6 +1,5 @@
 #!/bin/bash
 set -euo pipefail
-set -x
 
 E2E_NODE_OS="${E2E_NODE_OS:="coreos"}"
 
@@ -17,20 +16,14 @@ CDP_TARGET_REPOSITORY="${CDP_TARGET_REPOSITORY:-"github.com/zalando-incubator/ku
 CDP_TARGET_COMMIT_ID="${CDP_TARGET_COMMIT_ID:-"dev"}"
 CDP_HEAD_COMMIT_ID="${CDP_HEAD_COMMIT_ID:-"$(git describe --tags --always)"}"
 
+export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-test"}"
 # TODO: we need the date in LOCAL_ID because of CDP retriggering
-LOCAL_ID="${LOCAL_ID:-"e2e-$CDP_BUILD_VERSION-$(date +'%H%M%S')"}-$E2E_NODE_OS"
-API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
-INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
-ETCD_ENDPOINTS="${ETCD_ENDPOINTS:-"etcd-server.etcd.${HOSTED_ZONE}:2379"}"
-CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
-WORKER_SHARED_SECRET="${WORKER_SHARED_SECRET:-"$(pwgen 30 -n1)"}"
-
-export LOCAL_ID="$LOCAL_ID"
-export API_SERVER_URL="$API_SERVER_URL"
-export INFRASTRUCTURE_ACCOUNT="$INFRASTRUCTURE_ACCOUNT"
-export ETCD_ENDPOINTS="$ETCD_ENDPOINTS"
-export CLUSTER_ID="$CLUSTER_ID"
-export WORKER_SHARED_SECRET="$WORKER_SHARED_SECRET"
+export LOCAL_ID="${LOCAL_ID:-"e2e-$CDP_BUILD_VERSION-$(date +'%H%M%S')"}-$E2E_NODE_OS"
+export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
+export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
+export ETCD_ENDPOINTS="${ETCD_ENDPOINTS:-"etcd-server.etcd.${HOSTED_ZONE}:2379"}"
+export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
+export WORKER_SHARED_SECRET="${WORKER_SHARED_SECRET:-"$(pwgen 30 -n1)"}"
 
 if [[ "${E2E_NODE_OS}" == "coreos" ]]; then
     export MASTER_PROFILE="master"
@@ -42,6 +35,8 @@ else
     echo "Unsupported E2E_NODE_OS: ${E2E_NODE_OS}"
     exit 1
 fi
+
+echo "Creating cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
 
 # if E2E_SKIP_CLUSTER_UPDATE is true, don't create a cluster from base first
 if [ "$E2E_SKIP_CLUSTER_UPDATE" != "true" ]; then
@@ -119,27 +114,18 @@ export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
 # * statefulset tests
 # * custom 'zalando' tests
 #
-# Broken e2e tests are disabled
+# Disable DNS tests covering DNS names of format: <name>.<namespace>.svc which
+# we don't support with the ndots:2 configuration:
 #
-# * "should provide DNS for the cluster [DNS] [Conformance]"
-#   https://github.com/kubernetes/kubernetes/blob/release-1.13/test/e2e/network/dns.go#L48-L49
-#   Fixed in v1.14.0
+# * "should resolve DNS of partial qualified names for the cluster [DNS] [Conformance]"
+#   https://github.com/kubernetes/kubernetes/blob/66049e3b21efe110454d67df4fa62b08ea79a19b/test/e2e/network/dns.go#L71-L98
 #
-# * "should provide DNS for services [DNS] [Conformance]"
-#   https://github.com/kubernetes/kubernetes/blob/release-1.13/test/e2e/network/dns.go#L105-L109
-#   Fixed in v1.14.0
-#
-# * "should support remote command execution over websockets [NodeConformance] [Conformance]"
-#   https://github.com/kubernetes/kubernetes/pull/73046
-#   Fixed in v1.14.0
-#
-# * "should support retrieving logs from the container over websockets [NodeConformance] [Conformance]"
-#   https://github.com/kubernetes/kubernetes/pull/73046
-#   Fixed in v1.14.0
+# * "should resolve DNS of partial qualified names for services"
+#   https://github.com/kubernetes/kubernetes/blob/66049e3b21efe110454d67df4fa62b08ea79a19b/test/e2e/network/dns.go#L173-L220
 ginkgo -nodes=25 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
-    -skip="(should.provide.DNS.for.the.cluster|should.provide.DNS.for.services|should.support.retrieving.logs.from.the.container.over.websockets|should.support.remote.command.execution.over.websockets|\[Serial\])" \
+    -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.provide.DNS.for.services|\[Serial\])" \
     "e2e.test" -- -delete-namespace-on-failure=false
 
 # delete cluster

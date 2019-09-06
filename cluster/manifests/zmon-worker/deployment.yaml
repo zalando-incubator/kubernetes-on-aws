@@ -5,7 +5,7 @@ metadata:
   namespace: visibility
   labels:
     application: zmon-worker
-    version: "v208-py2eol-zv250-py2eol-2-gbe56be1"
+    version: "v209-py2eol-v251-py2eol"
 spec:
   replicas: {{.ConfigItems.zmon_worker_replicas}}
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: zmon-worker
-        version: "v208-py2eol-zv250-py2eol-2-gbe56be1"
+        version: "v209-py2eol-v251-py2eol"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
     spec:
@@ -46,7 +46,7 @@ spec:
             readOnly: false
       containers:
         - name: zmon-worker
-          image: "pierone.stups.zalan.do/zmon/zmon-worker:v208-py2eol-zv250-py2eol-2-gbe56be1"
+          image: "pierone.stups.zalan.do/zmon/zmon-worker:v209-py2eol-v251-py2eol"
           resources:
             limits:
               cpu: {{.ConfigItems.zmon_worker_cpu}}
@@ -91,12 +91,44 @@ spec:
                 secretKeyRef:
                   name: zmon-worker
                   key: sql-pass
+
             - name: WORKER_PLUGIN_HTTP_OAUTH2_TOKENS
               valueFrom:
                   configMapKeyRef:
                     name: zmon-worker-optional-config
                     key: WORKER_PLUGIN_HTTP_OAUTH2_TOKENS
                     optional: true
+            - name: WORKER_PLUGIN_REDIS_PASSWORD
+              valueFrom:
+                  secretKeyRef:
+                    name: zmon-worker-optional-secret
+                    key: WORKER_PLUGIN_REDIS_PASSWORD
+                    optional: true
+            - name: WORKER_PLUGIN_CASSANDRA_USER
+              valueFrom:
+                  configMapKeyRef:
+                    name: zmon-worker-optional-config
+                    key: WORKER_PLUGIN_CASSANDRA_USER
+                    optional: true
+            - name: WORKER_PLUGIN_CASSANDRA_PASS
+              valueFrom:
+                  secretKeyRef:
+                    name: zmon-worker-optional-secret
+                    key: WORKER_PLUGIN_CASSANDRA_PASS
+                    optional: true
+            - name: WORKER_PLUGIN_ELASTICSEARCH_URL
+              valueFrom:
+                  configMapKeyRef:
+                    name: zmon-worker-optional-config
+                    key: WORKER_PLUGIN_ELASTICSEARCH_URL
+                    optional: true
+            - name: WORKER_PLUGIN_KAIROSDB_URL
+              valueFrom:
+                  configMapKeyRef:
+                    name: zmon-worker-optional-config
+                    key: WORKER_PLUGIN_KAIROSDB_URL
+                    optional: true
+
             - name: OAUTH2_ACCESS_TOKEN_URL
               value: https://token.services.auth.zalando.com/oauth2/access_token?realm=/services
             - name: CREDENTIALS_DIR

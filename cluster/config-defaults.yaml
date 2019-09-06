@@ -39,15 +39,17 @@ skipper_response_header_timeout_backend: "1m"
 skipper_timeout_backend: "1m"
 skipper_tls_timeout_backend: "1m"
 skipper_close_idle_conns_period: "20s"
+
+# skipper server timeout defaults
 skipper_idle_timeout_server: "62s"
+skipper_read_timeout_server: "5m"
 
 # skipper api GW features
 enable_apimonitoring: "true"
+skipper_clusterratelimit: "true"
 {{if eq .Environment "production"}}
-skipper_clusterratelimit: "false"
 enable_skipper_eastwest: "false"
 {{else}}
-skipper_clusterratelimit: "true"
 enable_skipper_eastwest: "true"
 {{end}}
 
@@ -78,11 +80,20 @@ image_policy: "trusted"
 {{else}}
 image_policy: "dev"
 {{end}}
-compliance_checker_enabled: "true"
 
 # cadvisor settings
 cadvisor_cpu: "150m"
 cadvisor_memory: "150Mi"
+
+# whether to deploy node-problem-detector
+node_problem_detector_enabled: "false"
+# node-problem-detector settings
+node_problem_detector_cpu: "25m"
+node_problem_detector_memory: "75Mi"
+
+# node exporter settings
+node_exporter_cpu: "20m"
+node_exporter_memory: "75Mi"
 
 # Monitoring settings
 {{if eq .Environment "e2e"}}
@@ -125,7 +136,9 @@ logging_scalyr_cpu: "100m"
 logging_slo_heartbeat_cpu: "10m"
 logging_fluentd_cpu: "100m"
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
-logging_agent_in_visibility: "false"
+scalyr_team_token: ""
+logging_agent_version: "v0.34"
+logging_watcher_version: "0.36"
 
 zmon_redis_mem: "1Gi"
 zmon_agent_mem: "500Mi"
@@ -151,8 +164,6 @@ kube_state_metrics_mem_max: "1Gi"
 
 # Kubernetes Downscaler (for non-production clusters)
 {{if eq .Environment "test"}}
-downscaler_default_uptime: "Mon-Fri 07:30-20:30 Europe/Berlin"
-{{else if eq .Environment "playground"}}
 downscaler_default_uptime: "Mon-Fri 07:30-20:30 Europe/Berlin"
 {{else}}
 downscaler_default_uptime: "always"
@@ -198,7 +209,7 @@ teapot_admission_controller_validate_application_label: "false"
 {{end}}
 
 {{if eq .Environment "e2e"}}
-teapot_admission_controller_ignore_namespaces: "^kube-system|(e2e-tests-(downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
+teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
 {{end}}
@@ -216,8 +227,7 @@ dynamodb_service_link_enabled: "false"
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
-coreos_image: "ami-0d1579b60bb706fb7" # Container Linux 2079.6.0 (HVM, eu-central-1)
-kuberuntu_image: "ami-087d64da45b8052cd" # zalando-ubuntu-kubernetes-production-v1.13.7-master-47 (HVM, eu-central-1)
+kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-57" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -252,6 +262,9 @@ node_cidr_mask_size: "24" # Default: 24
 
 # maximum number of PIDs allowed to be allocated per pod
 pod_max_pids: "4096"
+
+# the cpu management policy which should be used by the kubelet
+cpu_manager_policy: "none"
 
 # when set to true, routes external traffic to the apiserver through a skipper sidecar
 apiserver_proxy: "true"

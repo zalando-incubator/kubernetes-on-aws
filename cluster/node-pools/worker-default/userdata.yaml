@@ -2,7 +2,7 @@
 
 {{if gt (len .Values.instance_info.InstanceStorageDevices) 0 }}
 bootcmd:
-- [ /opt/bin/instance-storage.sh, {{(index .Values.instance_info.InstanceStorageDevices 0).Path}}, {{if index .NodePool.ConfigItems "instance_storage_mount_path"}}{{.NodePool.ConfigItems.instance_storage_mount_path}}{{else}}/var/lib/docker{{end}}]
+- [ /opt/bin/instance-storage.sh, {{if index .NodePool.ConfigItems "instance_storage_mount_path"}}{{.NodePool.ConfigItems.instance_storage_mount_path}}{{else}}/var/lib/docker{{end}}]
 {{ end }}
 
 write_files:
@@ -15,7 +15,7 @@ write_files:
       KUBELET_ROLE=worker
 
   - owner: root:root
-    path: /var/run/s3-certs.env
+    path: /etc/kuberuntu/s3-certs.env
     content: |
       S3_CERTS_BUCKET={{ .S3GeneratedFilesPath }}
       AWS_DEFAULT_REGION={{ .Cluster.Region }}
@@ -48,10 +48,13 @@ write_files:
       kind: KubeletConfiguration
       clusterDomain: cluster.local
       cpuCFSQuota: false
+{{- if ne .NodePool.ConfigItems.pod_max_pids "-1" }}
       featureGates:
         SupportPodPidsLimit: true
+      podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
+{{- end }}
+      cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}
       maxPods: {{ .Cluster.ConfigItems.node_max_pods }}
-      podPidsLimit: {{ .Cluster.ConfigItems.pod_max_pids }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"

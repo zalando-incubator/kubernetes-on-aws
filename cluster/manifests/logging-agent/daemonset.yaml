@@ -3,10 +3,11 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: logging-agent
-  namespace: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}visibility{{else}}kube-system{{end}}
+  namespace: visibility
   labels:
+    cluster_environment: "{{ .Environment }}"
     application: logging-agent
-    version: v0.29
+    version: "{{ .ConfigItems.logging_agent_version }}"
     component: logging
 spec:
   selector:
@@ -19,7 +20,7 @@ spec:
       name: logging-agent
       labels:
         application: logging-agent
-        version: v0.29
+        version: "{{ .ConfigItems.logging_agent_version }}"
         component: logging
       annotations:
         iam.amazonaws.com/role: {{.LocalID}}-app-logging-agent
@@ -28,7 +29,7 @@ spec:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: {{if eq .ConfigItems.logging_agent_in_visibility "true"}}visibility-logging{{else}}system-node-critical{{end}}
+      priorityClassName: visibility-logging
       serviceAccountName: logging-agent
       tolerations:
       - operator: Exists
@@ -83,7 +84,7 @@ spec:
           mountPath: /mnt/scalyr-checkpoint
       containers:
       - name: log-watcher
-        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:0.29
+        image: registry.opensource.zalan.do/logging/kubernetes-log-watcher:"{{ .ConfigItems.logging_watcher_version }}"
         env:
         - name: CLUSTER_NODE_NAME
           valueFrom:
@@ -139,7 +140,7 @@ spec:
 
       - name: scalyr-agent
 
-        image: registry.opensource.zalan.do/eagleeye/scalyr-agent:0.5
+        image: registry.opensource.zalan.do/eagleeye/scalyr-agent:master-8
 
         env:
         # Note: added for scalyr-config-base, but not needed by the scalyr-agent itself.
@@ -168,6 +169,9 @@ spec:
         - name: journal
           mountPath: /var/log/journal
           readOnly: true
+        - name: scalyr-agent-logs
+          mountPath: /var/log/scalyr-agent-2
+          readOnly: false
 
         resources:
           limits:
@@ -197,6 +201,9 @@ spec:
           readOnly: true
         - name: journal
           mountPath: /var/log/journal
+          readOnly: true
+        - name: scalyr-agent-logs
+          mountPath: /mnt/scalyr-agent-logs
           readOnly: true
 
         ports:
@@ -253,4 +260,7 @@ spec:
       - name: fluentd-posfiles
         hostPath:
           path: /var/lib/fluentd
+
+      - name: scalyr-agent-logs
+        emptyDir: {}
 {{ end }}

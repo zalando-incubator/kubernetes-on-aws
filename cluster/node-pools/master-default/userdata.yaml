@@ -22,7 +22,7 @@ write_files:
       KUBELET_ROLE=master
 
   - owner: root:root
-    path: /var/run/s3-certs.env
+    path: /etc/kuberuntu/s3-certs.env
     content: |
       S3_CERTS_BUCKET={{ .S3GeneratedFilesPath }}
       AWS_DEFAULT_REGION={{ .Cluster.Region }}
@@ -54,10 +54,12 @@ write_files:
 {{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
       cpuCFSQuota: false
 {{- end }}
+{{- if ne .NodePool.ConfigItems.pod_max_pids "-1" }}
       featureGates:
         SupportPodPidsLimit: true
+      podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
+{{- end }}
       maxPods: {{ .Cluster.ConfigItems.node_max_pods }}
-      podPidsLimit: {{ .Cluster.ConfigItems.pod_max_pids }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
@@ -200,6 +202,7 @@ write_files:
             - --address=:8085
             - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
             - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
+            - --pod-min-memory-request=25Mi
             - --pod-default-cpu-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}
             - --pod-default-memory-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_memory_request }}
             - --pod-ignore-namespaces={{ .Cluster.ConfigItems.teapot_admission_controller_ignore_namespaces }}
@@ -222,7 +225,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.5.6
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.6.1
           name: webhook
           ports:
           - containerPort: 8081
@@ -244,15 +247,37 @@ write_files:
               memory: 50Mi
           args:
             - --tokens-file=/etc/kubernetes/config/tokenfile.csv
+
+            # Collaborator roles
+            - --role-mapping=Administrator=cn=Administrator,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
+            - --role-mapping=ReadOnly=cn=ReadOnly,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- if eq .Cluster.Environment "production"}}
+            - --role-mapping=Collaborator24x7=cn=24x7 Emergency,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
+            - --derived-role=CollaboratorEmergency=Collaborator24x7,Emergency
+            - --derived-role=CollaboratorManual=Collaborator24x7,Manual
+{{- else if eq .Cluster.Environment "test"}}
+            - --role-mapping=CollaboratorPowerUser=cn=Deployer,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- else if eq .Cluster.Environment "e2e"}}
+            - --role-mapping=Administrator=cn=Contributor,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- end}}
+
+            # Member roles
+            - --role-mapping=Administrator=cn=Administrator,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- if eq .Cluster.Environment "production"}}
+            - --role-mapping=Manual=cn=Manual,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+            - --role-mapping=Emergency=cn=Emergency,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- else }}
+            - --role-mapping=PowerUser=cn=PowerUser,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- end }}
+            - --role-mapping=ReadOnly=cn=ReadOnly,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
+
           env:
             - name: TEAMS_API_URL
               value: https://teams.auth.zalando.com
-            - name: CLUSTER_ID
-              value: {{if index .Cluster.ConfigItems "webhook_id"}}{{ .Cluster.ConfigItems.webhook_id }}{{else}}{{ .Cluster.ID }}{{end}}
             - name: TOKEN_INTROSPECTION_URL
               value: http://127.0.0.1:{{ if eq .Cluster.Environment "production" }}9021{{else}}9023{{end}}/oauth2/introspect
             - name: USER_GROUPS
-              value: kubelet=system:masters
+              value: kubelet=system:masters,stups_cluster-lifecycle-manager=system:masters
             - name: BUSINESS_PARTNER_IDS
               value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
           volumeMounts:
@@ -348,7 +373,7 @@ write_files:
               cpu: 100m
               memory: 20Mi
 {{ end }}
-        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:{{if eq .Cluster.ConfigItems.compliance_checker_enabled "true"}}master-44{{else}}v0.4.1{{end}}
+        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:0.5.3
           name: image-policy-webhook
           args:
           - --policy={{ .Cluster.ConfigItems.image_policy }}

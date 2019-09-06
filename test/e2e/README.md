@@ -24,7 +24,7 @@ examples of how to write the tests or checkout the files already defined e.g.
 3. Run the e2e tests
 
   ```bash
-  KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org \
+  KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org CLUSTER_ALIAS=example \
     ginkgo -nodes=25 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
@@ -32,7 +32,8 @@ examples of how to write the tests or checkout the files already defined e.g.
   ```
 
   Where `~/.kube/config` is pointing to the cluster you want to run the tests
-  against and `HOSTED_ZONE` is the hosted zone configured for the cluster.
+  against, `HOSTED_ZONE` is the hosted zone configured for the cluster, and
+  `CLUSTER_ALIAS` is the cluster's user-friendly name.
 
   This will run all the tests we normally run on a PR, you can single out tests
   by tweaking the values of the focus/skip flags.
@@ -85,11 +86,11 @@ scratch and test the Kubernetes type Foo.
   		defer func() {
   			By("deleting the foo)
   			defer GinkgoRecover()
-  			err2 := cs.Core().Foo(ns).Delete(foo.Name, metav1.NewDeleteOptions(0))
+  			err2 := cs.CoreV1().Foo(ns).Delete(foo.Name, metav1.NewDeleteOptions(0))
   			Expect(err2).NotTo(HaveOccurred())
   		}()
               // creates the Ingress Object
-  		_, err := cs.Core().Foo(ns).Create(foo)
+  		_, err := cs.CoreV1().Foo(ns).Create(foo)
   		Expect(err).NotTo(HaveOccurred())
   	})
   })
@@ -113,10 +114,10 @@ scratch and test the Kubernetes type Foo.
   defer func() {
   	By("deleting the pod")
   	defer GinkgoRecover()
-  	err2 := cs.Core().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
+  	err2 := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
   	Expect(err2).NotTo(HaveOccurred())
   }()
-  _, err = cs.Core().Pods(ns).Create(pod)
+  _, err = cs.CoreV1().Pods(ns).Create(pod)
   Expect(err).NotTo(HaveOccurred())
   framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 ```
@@ -137,10 +138,10 @@ scratch and test the Kubernetes type Foo.
   defer func() {
   	By("deleting the service")
   	defer GinkgoRecover()
-  	err2 := cs.Core().Services(ns).Delete(service.Name, metav1.NewDeleteOptions(0))
+  	err2 := cs.CoreV1().Services(ns).Delete(service.Name, metav1.NewDeleteOptions(0))
   	Expect(err2).NotTo(HaveOccurred())
   }()
-  _, err := cs.Core().Services(ns).Create(service)
+  _, err := cs.CoreV1().Services(ns).Create(service)
   Expect(err).NotTo(HaveOccurred())
 ```
 
@@ -163,14 +164,14 @@ Create Kubernetes ingress object:
   defer func() {
   	By("deleting the ingress")
   	defer GinkgoRecover()
-  	err2 := cs.Extensions().Ingresses(ns).Delete(ing.Name, metav1.NewDeleteOptions(0))
+  	err2 := cs.ExtensionsV1beta1().Ingresses(ns).Delete(ing.Name, metav1.NewDeleteOptions(0))
   	Expect(err2).NotTo(HaveOccurred())
   }()
-  ingressCreate, err := cs.Extensions().Ingresses(ns).Create(ing)
+  ingressCreate, err := cs.ExtensionsV1beta1().Ingresses(ns).Create(ing)
   Expect(err).NotTo(HaveOccurred())
   addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, 3*time.Minute)
   Expect(err).NotTo(HaveOccurred())
-  ingress, err := cs.Extensions().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+  ingress, err := cs.ExtensionsV1beta1().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
   Expect(err).NotTo(HaveOccurred())
   By(fmt.Sprintf("ALB endpoint from ingress status: %s", ingress.Status.LoadBalancer.Ingress[0].Hostname))
 ```
@@ -211,7 +212,7 @@ Follow up code, that waits for creations to be happen:
 
   ```bash
   # S3_AWS_IAM_BUCKET and AWS_IAM_ROLE is required for the AWS-IAM tests.
-  KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org \
+  KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org CLUSTER_ALIAS=example \
   S3_AWS_IAM_BUCKET=zalando-e2e-aws-iam-test-12345678912-kube-1 \
   AWS_IAM_ROLE=kube-1-e2e-aws-iam-test \
   ginkgo -nodes=25 -flakeAttempts=2 -focus="\[Zalando\]" e2e.test
