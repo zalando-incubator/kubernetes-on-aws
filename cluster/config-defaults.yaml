@@ -39,7 +39,10 @@ skipper_response_header_timeout_backend: "1m"
 skipper_timeout_backend: "1m"
 skipper_tls_timeout_backend: "1m"
 skipper_close_idle_conns_period: "20s"
+
+# skipper server timeout defaults
 skipper_idle_timeout_server: "62s"
+skipper_read_timeout_server: "5m"
 
 # skipper api GW features
 enable_apimonitoring: "true"
@@ -132,7 +135,8 @@ logging_scalyr_cpu: "100m"
 logging_fluentd_cpu: "100m"
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
 scalyr_team_token: ""
-logging_agent_version: "v0.33"
+logging_agent_version: "v0.34"
+logging_watcher_version: "0.36"
 
 zmon_redis_mem: "1Gi"
 zmon_agent_mem: "500Mi"
@@ -221,7 +225,7 @@ dynamodb_service_link_enabled: "false"
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
-kuberuntu_image: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-57" "861068367966" }}
+kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-57" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
