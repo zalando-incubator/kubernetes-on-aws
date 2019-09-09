@@ -15,6 +15,7 @@ webhooks:
         apiGroups: [""]
         apiVersions: ["v1"]
         resources: ["pods"]
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables "true" }}
   - name: pod-binding-admitter.teapot.zalan.do
     clientConfig:
       url: "https://localhost:8085/pod"
@@ -25,6 +26,7 @@ webhooks:
         apiGroups: [""]
         apiVersions: ["v1"]
         resources: ["pods/binding"]
+{{- end }}
   - name: storageclass-admitter.teapot.zalan.do
     clientConfig:
       url: "https://localhost:8085/storageclass"

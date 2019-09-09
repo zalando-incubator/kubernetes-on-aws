@@ -37,7 +37,7 @@ const (
 	deploymentId = "d-2ajbkvmtqo5isznh3m2raj2bdp"
 	pipelineId   = "l-2kwqgqevuqwsje5a9ukhsk4bdd"
 	application  = "e2e-test-application"
-	component  = "e2e-test-component"
+	component    = "e2e-test-component"
 	environment  = "e2e-test-environment"
 	dockerImage  = "k8s.gcr.io/busybox"
 )
@@ -150,7 +150,7 @@ func createDeploymentWithDeploymentInfo(nameprefix, namespace, podname string, r
 					Labels: map[string]string{
 						"application": application,
 						"component":   component,
-						"environment":   environment,
+						"environment": environment,
 					},
 				},
 				Spec: v1.PodSpec{
