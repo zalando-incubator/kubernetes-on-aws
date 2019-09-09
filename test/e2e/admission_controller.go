@@ -37,6 +37,8 @@ const (
 	deploymentId = "d-2ajbkvmtqo5isznh3m2raj2bdp"
 	pipelineId   = "l-2kwqgqevuqwsje5a9ukhsk4bdd"
 	application  = "e2e-test-application"
+	component  = "e2e-test-component"
+	environment  = "e2e-test-environment"
 	dockerImage  = "k8s.gcr.io/busybox"
 )
 
@@ -96,6 +98,8 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 
 		// Dynamic
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_APPLICATION", application))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_COMPONENT", component))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_ENVIRONMENT", environment))
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_DEPLOYMENT_ID", deploymentId))
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_TAG_DEPLOYMENT_ID", deploymentId))
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_PIPELINE_ID", pipelineId))
@@ -145,6 +149,8 @@ func createDeploymentWithDeploymentInfo(nameprefix, namespace, podname string, r
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"application": application,
+						"component":   component,
+						"environment":   environment,
 					},
 				},
 				Spec: v1.PodSpec{
