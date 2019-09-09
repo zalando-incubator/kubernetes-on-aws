@@ -35,6 +35,8 @@ spec:
           - --collector.processes
           - --path.procfs=/host/proc
           - --path.sysfs=/host/sys
+          - --path.rootfs=/host
+          - --collector.filesystem.ignored-mount-points=^/(dev|proc|run|sys|host|var/lib/lxcfs|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
         name: prometheus-node-exporter
         ports:
         - name: prom-node-exp
@@ -53,11 +55,8 @@ spec:
         - name: prometheus-node-exporter-volume
           mountPath: /prometheus-exporter-data
           readOnly: false
-        - name: sys
-          mountPath: /host/sys
-          readOnly: true
-        - name: proc
-          mountPath: /host/proc
+        - name: rootfs
+          mountPath: /host
           readOnly: true
       {{- if index .ConfigItems "enable_conntrack_log" }}
       - image: registry.opensource.zalan.do/teapot/prometheus-node-exporter-txt-exporter:v0.0.4
@@ -82,9 +81,6 @@ spec:
         - name: prometheus-node-exporter-volume
           emptyDir:
             medium: Memory
-        - name: sys
+        - name: rootfs
           hostPath:
-            path: /sys
-        - name: proc
-          hostPath:
-            path: /proc
+            path: /
