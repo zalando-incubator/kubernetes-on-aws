@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-ingress-aws-controller
-    version: v0.8.11
+    version: v0.8.12
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: kube-ingress-aws-controller
-        version: v0.8.11
+        version: v0.8.12
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-ingr-ctrl"
@@ -29,7 +29,7 @@ spec:
       serviceAccountName: kube-ingress-aws-controller
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-ingress-aws-controller:v0.8.11
+        image: registry.opensource.zalan.do/teapot/kube-ingress-aws-controller:v0.8.12
         args:
         - -stack-termination-protection
         - -ssl-policy={{ .ConfigItems.kube_aws_ingress_controller_ssl_policy }}
