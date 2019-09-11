@@ -202,6 +202,7 @@ write_files:
             - --address=:8085
             - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
             - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
+            - --pod-min-memory-request=25Mi
             - --pod-default-cpu-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}
             - --pod-default-memory-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_memory_request }}
             - --pod-ignore-namespaces={{ .Cluster.ConfigItems.teapot_admission_controller_ignore_namespaces }}
@@ -224,7 +225,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.6.0
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.6.1
           name: webhook
           ports:
           - containerPort: 8081
@@ -250,8 +251,12 @@ write_files:
             # Collaborator roles
             - --role-mapping=Administrator=cn=Administrator,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
             - --role-mapping=ReadOnly=cn=ReadOnly,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
-{{- if eq .Cluster.Environment "test"}}
-            - --role-mapping=PowerUser=cn=Deployer,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
+{{- if eq .Cluster.Environment "production"}}
+            - --role-mapping=Collaborator24x7=cn=24x7 Emergency,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
+            - --derived-role=CollaboratorEmergency=Collaborator24x7,Emergency
+            - --derived-role=CollaboratorManual=Collaborator24x7,Manual
+{{- else if eq .Cluster.Environment "test"}}
+            - --role-mapping=CollaboratorPowerUser=cn=Deployer,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
 {{- else if eq .Cluster.Environment "e2e"}}
             - --role-mapping=Administrator=cn=Contributor,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
 {{- end}}
