@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: logging-agent
+  name: logging-agent-legacy
   namespace: visibility
   labels:
     cluster_environment: "{{ .Environment }}"
@@ -37,7 +37,7 @@ spec:
             nodeSelectorTerms:
               - matchExpressions:
                   - key: podruntime
-                    operator: In
+                    operator: NotIn
                     values:
                       - relocated
       tolerations:
@@ -240,7 +240,7 @@ spec:
       volumes:
       - name: containerlogs
         hostPath:
-          path: /opt/podruntime/docker/containers
+          path: /var/lib/docker/containers
 
       - name: journal
         hostPath:
