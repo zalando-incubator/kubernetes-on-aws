@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: cluster-lifecycle-controller
-    version: master-8
+    version: master-11
 spec:
   replicas: 1
   selector:
@@ -17,12 +17,14 @@ spec:
     metadata:
       labels:
         application: cluster-lifecycle-controller
-        version: master-8
+        version: master-11
     spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
       priorityClassName: system-cluster-critical
-      serviceAccountName: system
-      dnsPolicy: Default
-      hostNetwork: true
+      serviceAccountName: cluster-lifecycle-controller
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
@@ -30,13 +32,17 @@ spec:
         operator: Exists
       containers:
       - name: cluster-lifecycle-controller
-        image: registry.opensource.zalan.do/teapot/cluster-lifecycle-controller:master-8
+        image: registry.opensource.zalan.do/teapot/cluster-lifecycle-controller:master-11
         args:
             - --drain-grace-period={{.ConfigItems.drain_grace_period}}
             - --drain-min-pod-lifetime={{.ConfigItems.drain_min_pod_lifetime}}
             - --drain-min-healthy-sibling-lifetime={{.ConfigItems.drain_min_healthy_sibling_lifetime}}
             - --drain-min-unhealthy-sibling-lifetime={{.ConfigItems.drain_min_unhealthy_sibling_lifetime}}
             - --drain-force-evict-interval={{.ConfigItems.drain_force_evict_interval}}
+        volumeMounts:
+        - name: aws-iam-credentials
+          mountPath: /meta/aws-iam
+          readOnly: true
         resources:
           limits:
             cpu: 100m
@@ -45,7 +51,14 @@ spec:
             cpu: 100m
             memory: 250Mi
         env:
-          - name: AWS_REGION
-            value: {{ .Region }}
+        - name: AWS_REGION
+          value: {{ .Region }}
+        # must be set for the AWS SDK/AWS CLI to find the credentials file.
+        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
+          value: /meta/aws-iam/credentials.process
+      volumes:
+      - name: aws-iam-credentials
+        secret:
+          secretName: cluster-lifecycle-controller-aws-iam-credentials
       nodeSelector:
         node-role.kubernetes.io/master: ""
