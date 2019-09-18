@@ -69,6 +69,7 @@ require (
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
+	github.com/jteeuwen/go-bindata v3.0.8-0.20180305030458-6025e8de665b+incompatible // indirect
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1 // indirect
 	github.com/karrick/godirwalk v1.8.0 // indirect
@@ -184,3 +185,5 @@ replace k8s.io/sample-cli-plugin => ../e2e_modules/kubernetes/staging/src/k8s.io
 replace k8s.io/sample-controller => ../e2e_modules/kubernetes/staging/src/k8s.io/sample-controller
 
 replace k8s.io/metrics => ../e2e_modules/kubernetes/staging/src/k8s.io/metrics
+
+go 1.13

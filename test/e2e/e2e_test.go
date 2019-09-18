@@ -49,7 +49,7 @@ import (
 
 var viperConfig = flag.String("viper-config", "", "The name of a viper config file (https://github.com/spf13/viper#what-is-viper). All e2e command line parameters can also be configured in such a file. May contain a path and may or may not contain the file suffix. The default is to look for an optional file with `e2e` as base name. If a file is specified explicitly, it must be present.")
 
-func init() {
+func TestMain(m *testing.M) {
 	// Register framework flags, then handle flags and Viper config.
 	framework.HandleFlags()
 	if err := viperconfig.ViperizeFlags(*viperConfig, ""); err != nil {
@@ -72,6 +72,7 @@ func init() {
 		Asset:      generated.Asset,
 		AssetNames: generated.AssetNames,
 	})
+	os.Exit(m.Run())
 }
 
 func TestE2E(t *testing.T) {
@@ -89,6 +90,15 @@ func getenv(envar, def string) string {
 // E2EHostedZone returns the hosted zone defined for e2e test.
 func E2EHostedZone() string {
 	return getenv("HOSTED_ZONE", "example.org")
+}
+
+// E2EClusterAlias returns the alias of the cluster used for e2e tests.
+func E2EClusterAlias() string {
+	result, ok := os.LookupEnv("CLUSTER_ALIAS")
+	if !ok {
+		panic("CLUSTER_ALIAS not defined")
+	}
+	return result
 }
 
 // E2ES3AWSIAMBucket returns the s3 bucket name used for AWS IAM e2e tests.
