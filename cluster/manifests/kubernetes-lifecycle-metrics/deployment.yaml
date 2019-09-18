@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kubernetes-lifecycle-metrics
-    version: master-1
+    version: master-5
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: kubernetes-lifecycle-metrics
-        version: master-1
+        version: master-5
       annotations:
         kubernetes-log-watcher/scalyr-parser: '[{"container": "kubernetes-lifecycle-metrics", "parser": "system-json-escaped-json"}]'
     spec:
@@ -24,9 +24,10 @@ spec:
           - name: ndots
             value: "1"
       priorityClassName: system-cluster-critical
+      serviceAccountName: kubernetes-lifecycle-metrics
       containers:
         - name: kubernetes-lifecycle-metrics
-          image: "pierone.stups.zalan.do/teapot/kubernetes-lifecycle-metrics:master-1"
+          image: "pierone.stups.zalan.do/teapot/kubernetes-lifecycle-metrics:master-5"
           ports:
             - containerPort: 9090
           resources:
