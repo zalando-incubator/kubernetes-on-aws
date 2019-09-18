@@ -185,3 +185,5 @@ replace k8s.io/sample-cli-plugin => ../e2e_modules/kubernetes/staging/src/k8s.io
 replace k8s.io/sample-controller => ../e2e_modules/kubernetes/staging/src/k8s.io/sample-controller
 
 replace k8s.io/metrics => ../e2e_modules/kubernetes/staging/src/k8s.io/metrics
+
+go 1.13

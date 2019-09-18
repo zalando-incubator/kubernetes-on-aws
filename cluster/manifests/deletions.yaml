@@ -20,6 +20,16 @@ post_apply:
 {{ if ne .ConfigItems.enable_ingress_template_controller "true" }}
 - name: ingresstemplates.zalando.org
   kind: CustomResourceDefinition
+- name: ingress-template-controller
+  namespace: kube-system
+  kind: Deployment
+- name: ingress-template-controller
+  namespace: kube-system
+  kind: ServiceAccount
+- name: ingress-template-controller
+  kind: ClusterRole
+- name: ingress-template-controller
+  kind: ClusterRoleBinding
 {{ end }}
 - name: nvidia-driver-installer
   namespace: kube-system
