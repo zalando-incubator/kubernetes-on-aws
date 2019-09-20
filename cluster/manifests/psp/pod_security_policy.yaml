@@ -7,9 +7,6 @@ spec:
     rule: RunAsAny
   privileged: true
   allowPrivilegeEscalation: true
-  allowedCapabilities:
-  - IPC_LOCK
-  - SYS_RESOURCE
   hostPID: true
   hostNetwork: true
   hostIPC: true
@@ -24,6 +21,31 @@ spec:
     rule: RunAsAny
   volumes:
   - '*'
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: elevated
+spec:
+  allowPrivilegeEscalation: false
+  allowedCapabilities:
+  - IPC_LOCK
+  - SYS_RESOURCE
+  fsGroup:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - emptyDir
+  - awsElasticBlockStore
+  - secret
+  - persistentVolumeClaim
+  - downwardAPI
+  - configMap
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
