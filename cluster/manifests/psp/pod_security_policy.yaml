@@ -25,6 +25,29 @@ spec:
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
+  name: restricted
+spec:
+  allowPrivilegeEscalation: false
+  fsGroup:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - emptyDir
+  - awsElasticBlockStore
+  - secret
+  - persistentVolumeClaim
+  - downwardAPI
+  - configMap
+{{if eq .Environment "test"}}
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
   name: elevated
 spec:
   allowPrivilegeEscalation: false
@@ -46,25 +69,4 @@ spec:
   - persistentVolumeClaim
   - downwardAPI
   - configMap
----
-apiVersion: policy/v1beta1
-kind: PodSecurityPolicy
-metadata:
-  name: restricted
-spec:
-  allowPrivilegeEscalation: false
-  fsGroup:
-    rule: RunAsAny
-  runAsUser:
-    rule: RunAsAny
-  seLinux:
-    rule: RunAsAny
-  supplementalGroups:
-    rule: RunAsAny
-  volumes:
-  - emptyDir
-  - awsElasticBlockStore
-  - secret
-  - persistentVolumeClaim
-  - downwardAPI
-  - configMap
+{{end}}
