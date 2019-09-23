@@ -1,10 +1,5 @@
 #cloud-config
 
-{{if gt (len .Values.instance_info.InstanceStorageDevices) 0 }}
-bootcmd:
-- [ /opt/bin/instance-storage.sh, {{if index .NodePool.ConfigItems "instance_storage_mount_path"}}{{.NodePool.ConfigItems.instance_storage_mount_path}}{{else}}/var/lib/docker{{end}}]
-{{ end }}
-
 write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
@@ -13,6 +8,13 @@ write_files:
       NODE_LABELS={{ .Values.node_labels }},node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=worker
+
+{{if index .NodePool.ConfigItems "instance_storage_mount_path"}}
+  - owner: root:root
+    path: /etc/kuberuntu/instance-storage.env
+    content: |
+      MOUNT_DIRECTORY={{.NodePool.ConfigItems.instance_storage_mount_path}}
+{{end}}
 
   - owner: root:root
     path: /etc/kuberuntu/s3-certs.env

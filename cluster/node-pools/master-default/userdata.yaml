@@ -1,23 +1,10 @@
 #cloud-config
-runcmd:
-  - [ systemctl, start, gen-controller-manager-config.service ]
-{{ if ne .Cluster.ConfigItems.etcd_proxy_as_sidecar "true"}}
-  - [ systemctl, start, etcd-member.service ]
-{{ end }}
-
 write_files:
-{{ if ne .Cluster.ConfigItems.etcd_proxy_as_sidecar "true"}}
-  - owner: root:root
-    path: /etc/etcd-member/environment
-    content: |
-      ETCD_ENDPOINT={{ .Cluster.ConfigItems.etcd_endpoints }}
-{{ end }}
-
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
       NODEPOOL_TAINTS=node-role.kubernetes.io/master=:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
-      NODE_LABELS=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,cluster-lifecycle-controller.zalan.do/replacement-strategy=ensure-minimum-healthy-nodes,{{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
+      NODE_LABELS=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,{{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=master
 
@@ -185,7 +172,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-24
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-31
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -200,6 +187,7 @@ write_files:
               memory: 100Mi
           args:
             - --address=:8085
+            - --master=http://127.0.0.1:8080
             - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
             - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
             - --pod-min-memory-request=25Mi
@@ -209,6 +197,17 @@ write_files:
             - --pod-dns-ndots={{ .Cluster.ConfigItems.teapot_admission_controller_ndots }}
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
             - --pod-process-resources
+{{- end }}
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables "true" }}
+            - --pod-enable-env-inject
+            - --pod-inject-env=_PLATFORM_ACCOUNT={{ .Cluster.Alias }}
+            - --pod-inject-env=_PLATFORM_OPENTRACING_TAG_ACCOUNT={{ .Cluster.Alias }}
+            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT=8443
+            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST=tracing.stups.zalan.do
+            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN={{ .ConfigItems.lightstep_token }}
+{{- if eq .Cluster.Environment "e2e" }}
+            - --pod-inject-env=_PLATFORM_E2E=injected
+{{- end }}
 {{- end }}
 {{- if eq .Cluster.ConfigItems.experimental_schedule_daemonset_pods "true" }}
             - --node-add-not-ready-taint
@@ -436,7 +435,6 @@ write_files:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
             readOnly: true
-{{ if eq .Cluster.ConfigItems.etcd_proxy_as_sidecar "true"}}
         - name: etcd-proxy
           image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
           args:
@@ -447,7 +445,6 @@ write_files:
             requests:
               cpu: 25m
               memory: 25Mi
-{{ end }}
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl

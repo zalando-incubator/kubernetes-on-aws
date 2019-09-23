@@ -43,6 +43,7 @@ skipper_close_idle_conns_period: "20s"
 # skipper server timeout defaults
 skipper_idle_timeout_server: "62s"
 skipper_read_timeout_server: "5m"
+skipper_write_timeout_server: "60s"
 
 # skipper api GW features
 enable_apimonitoring: "true"
@@ -127,16 +128,20 @@ zmon_worker_mem: "4Gi"
 zmon_worker_cpu: "750m"
 zmon_worker_count: "16"
 {{end}}
+zmon_worker_version: "v209-py2eol-2-gcd9ec1c-v251-py2eol"
 logging_watcher_mem: "200Mi"
-logging_scalyr_mem: "200Mi"
+logging_scalyr_mem: "175Mi"
+logging_slo_heartbeat_mem: "25Mi"
 logging_fluentd_mem: "300Mi"
 logging_watcher_cpu: "50m"
-logging_scalyr_cpu: "100m"
+logging_scalyr_cpu: "90m"
+logging_slo_heartbeat_cpu: "10m"
 logging_fluentd_cpu: "100m"
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
 scalyr_team_token: ""
-logging_agent_version: "v0.34"
+logging_agent_version: "v0.35"
 logging_watcher_version: "0.36"
+logging_scalyr_enable_profiling: "false"
 
 zmon_redis_mem: "1Gi"
 zmon_agent_mem: "500Mi"
@@ -205,8 +210,11 @@ teapot_admission_controller_validate_application_label: "false"
 
 {{if eq .Environment "e2e"}}
 teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
+teapot_admission_controller_inject_environment_variables: "true"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
+teapot_admission_controller_inject_environment_variables: "false"
+
 {{end}}
 
 # etcd cluster
@@ -214,15 +222,12 @@ teapot_admission_controller_ignore_namespaces: "^kube-system$"
 etcd_instance_count: "3"
 {{end}}
 
-# toggle host vs. sidecar etcd-proxy
-etcd_proxy_as_sidecar: "true"
-
 dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
-kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-57" "861068367966" }}
+kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-61" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
