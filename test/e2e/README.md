@@ -24,7 +24,7 @@ examples of how to write the tests or checkout the files already defined e.g.
 3. Run the e2e tests
 
   ```bash
-  KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org \
+  KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org CLUSTER_ALIAS=example \
     ginkgo -nodes=25 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
@@ -32,7 +32,8 @@ examples of how to write the tests or checkout the files already defined e.g.
   ```
 
   Where `~/.kube/config` is pointing to the cluster you want to run the tests
-  against and `HOSTED_ZONE` is the hosted zone configured for the cluster.
+  against, `HOSTED_ZONE` is the hosted zone configured for the cluster, and
+  `CLUSTER_ALIAS` is the cluster's user-friendly name.
 
   This will run all the tests we normally run on a PR, you can single out tests
   by tweaking the values of the focus/skip flags.
@@ -211,7 +212,7 @@ Follow up code, that waits for creations to be happen:
 
   ```bash
   # S3_AWS_IAM_BUCKET and AWS_IAM_ROLE is required for the AWS-IAM tests.
-  KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org \
+  KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org CLUSTER_ALIAS=example \
   S3_AWS_IAM_BUCKET=zalando-e2e-aws-iam-test-12345678912-kube-1 \
   AWS_IAM_ROLE=kube-1-e2e-aws-iam-test \
   ginkgo -nodes=25 -flakeAttempts=2 -focus="\[Zalando\]" e2e.test
