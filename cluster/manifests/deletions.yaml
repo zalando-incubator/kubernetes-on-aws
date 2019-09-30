@@ -20,7 +20,41 @@ post_apply:
 {{ if ne .ConfigItems.enable_ingress_template_controller "true" }}
 - name: ingresstemplates.zalando.org
   kind: CustomResourceDefinition
+- name: ingress-template-controller
+  namespace: kube-system
+  kind: Deployment
+- name: ingress-template-controller
+  namespace: kube-system
+  kind: ServiceAccount
+- name: ingress-template-controller
+  kind: ClusterRole
+- name: ingress-template-controller
+  kind: ClusterRoleBinding
 {{ end }}
 - name: nvidia-driver-installer
   namespace: kube-system
   kind: DaemonSet
+- name: admission-controller
+  namespace: kube-system
+  kind: ServiceAccount
+- name: admission-controller
+  kind: ClusterRole
+- name: admission-controller
+  kind: ClusterRoleBinding
+- name: zmon-scheduler
+  kind: VerticalPodAutoscaler
+  namespace: visibility
+- name: kubernetes-dashboard
+  kind: RoleBinding
+  namespace: kube-system
+- name: privileged-psp
+  namespace: kube-system
+  kind: RoleBinding
+- name: cdp-deployer
+  kind: ClusterRoleBinding
+- name: poweruser
+  kind: ClusterRoleBinding
+- name: readonly
+  kind: ClusterRoleBinding
+- name: zmon-external
+  kind: ClusterRoleBinding
