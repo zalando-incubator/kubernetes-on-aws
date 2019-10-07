@@ -1,0 +1,62 @@
+{{ if eq .ConfigItems.node_problem_detector_enabled "true" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: node-problem-detector
+  namespace: kube-system
+data:
+  docker-monitor.json: |
+    {
+      "plugin": "journald",
+      "pluginConfig": {
+        "source": "dockerd"
+      },
+      "logPath": "/var/log/journal",
+      "lookback": "5m",
+      "bufferSize": 10,
+      "source": "docker-monitor",
+      "metricsReporting": true,
+      "conditions": [],
+      "rules": [
+        {
+          "type": "temporary",
+          "reason": "CorruptDockerImage",
+          "pattern": "Error trying v2 registry: failed to register layer: rename /opt/podruntime/docker/image/(.+) /opt/podruntime/docker/image/(.+): directory not empty.*"
+        }
+      ]
+    }
+  docker-monitor-counter.json: |
+    {
+      "plugin": "custom",
+      "pluginConfig": {
+        "invoke_interval": "5m",
+        "timeout": "1m",
+        "max_output_length": 80,
+        "concurrency": 1
+      },
+      "source": "docker-monitor",
+      "conditions": [
+        {
+          "type": "CorruptDockerOverlay2",
+          "reason": "NoCorruptDockerOverlay2",
+          "message": "docker overlay2 is functioning properly"
+        }
+      ],
+      "rules": [
+        {
+          "type": "permanent",
+          "condition": "CorruptDockerOverlay2",
+          "reason": "CorruptDockerOverlay2",
+          "path": "/home/kubernetes/bin/log-counter",
+          "args": [
+            "--journald-source=dockerd",
+            "--log-path=/var/log/journal",
+            "--lookback=5m",
+            "--count=10",
+            "--pattern=returned error: readlink /opt/podruntime/docker/overlay2.*: invalid argument.*"
+          ],
+          "timeout": "1m"
+        }
+      ]
+    }
+{{ end }}
