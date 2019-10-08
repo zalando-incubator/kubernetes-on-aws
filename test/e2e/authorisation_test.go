@@ -1705,6 +1705,36 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				}}`,
 				},
 			},
+			//- administrator can read secrets from kube-system namespaces
+			{
+				msg: "Administrator (system:masters) can read secrets from kube-system namespaces",
+				reqBody: `{
+					"apiVersion": "authorization.k8s.io/v1beta1",
+					"kind": "SubjectAccessReview",
+					"spec": {
+					"resourceAttributes": {
+						"namespace": "kube-system",
+						"verb": "get",
+						"group": "",
+						"resource": "secrets"
+					},
+					"user": "rdifazio",
+					"group": [
+						"system:masters"
+					]
+					}
+				}`,
+				expect: expect{
+					status: http.StatusCreated,
+					body: `{
+					"apiVersion": "authorization.k8s.io/v1beta1",
+					"kind": "SubjectAccessReview",
+					"status": {
+						"allowed": true
+					}
+				}}`,
+				},
+			},
 			//- administrator can read secrets from non kube-system namespaces
 			{
 				msg: "Administrator (system:masters) can read secrets from non kube-system namespaces",
