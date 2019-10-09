@@ -103,6 +103,9 @@ write_files:
           - --etcd-prefix={{ .Cluster.ConfigItems.apiserver_etcd_prefix }}
           - --storage-backend=etcd3
           - --storage-media-type=application/vnd.kubernetes.protobuf
+          {{ if eq .Cluster.ConfigItems.enable_encryption "true" }}
+          - --encryption-provider-config=/etc/kubernetes/config/encryption-config.yaml
+          {{ end }}
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/16
           - --secure-port=443
@@ -693,3 +696,21 @@ write_files:
         - level: Request
           omitStages:
             - "RequestReceived"
+
+{{ if eq .Cluster.ConfigItems.enable_encryption "true" }}
+  - owner: root:root
+    path: /etc/kubernetes/config/encryption-config.yaml
+    permissions: '0400'
+    content: |
+      apiVersion: apiserver.config.k8s.io/v1
+      kind: EncryptionConfiguration
+      resources:
+        - resources:
+          - secrets
+          providers:
+          - aescbc:
+              keys:
+              - name: key1
+                secret: {{ .Cluster.ConfigItems.encryption_key }}
+          - identity: {}
+{{ end }}
