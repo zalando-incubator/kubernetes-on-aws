@@ -10,9 +10,12 @@ autoscaling_buffer_pods: "1"
 {{else}}
 autoscaling_buffer_pods: "0"
 {{end}}
+cluster_autoscaler_cpu: "100m"
+cluster_autoscaler_memory: "300Mi"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+kube_aws_ingress_controller_idle_timeout: "1m"
 
 # skipper resource settings
 skipper_limits_mem: "250Mi"
@@ -128,6 +131,7 @@ zmon_worker_mem: "4Gi"
 zmon_worker_cpu: "750m"
 zmon_worker_count: "16"
 {{end}}
+zmon_scalyr_region: "eu"
 zmon_worker_version: "v209-py2eol-2-gcd9ec1c-v251-py2eol"
 logging_watcher_mem: "200Mi"
 logging_scalyr_mem: "175Mi"
@@ -227,7 +231,7 @@ dynamodb_service_link_enabled: "false"
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
-kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-61" "861068367966" }}
+kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.6-master-72" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
