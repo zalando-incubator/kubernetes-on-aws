@@ -204,14 +204,22 @@ teapot_admission_controller_default_cpu_request: "25m"
 teapot_admission_controller_default_memory_request: "100Mi"
 teapot_admission_controller_process_resources: "true"
 teapot_admission_controller_application_min_creation_time: "2019-06-03T12:00:00Z"
-teapot_admission_controller_resource_cutoff_timestamp: "2019-07-08T22:00:00Z"
 teapot_admission_controller_ndots: "2"
+teapot_admission_controller_inject_environment_variables: "true"
+
 {{if eq .Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
+teapot_admission_controller_resource_cutoff_timestamp: "2019-07-08T22:00:00Z"
+teapot_admission_controller_resource_validate_redeployments: "false"
+{{else if eq .Environment "e2e"}}
+teapot_admission_controller_validate_application_label: "false"
+teapot_admission_controller_resource_cutoff_timestamp: ""
+teapot_admission_controller_resource_validate_redeployments: "false"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
+teapot_admission_controller_resource_cutoff_timestamp: "2019-07-08T22:00:00Z"
+teapot_admission_controller_resource_validate_redeployments: "true"
 {{end}}
-teapot_admission_controller_inject_environment_variables: "true"
 
 {{if eq .Environment "e2e"}}
 teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
