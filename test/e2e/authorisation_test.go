@@ -105,7 +105,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						"subresource": "status"
 					},
 					"user": "system:serviceaccount:kube-system:daemon-set-controller",
-					"group": ["system:serviceaccount:kube-system"]
+					"group": ["system:serviceaccounts:kube-system"]
 					}
 				}`,
 				expect: expect{
@@ -132,7 +132,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						"subresource": "finalizers"
 					},
 					"user": "system:serviceaccount:kube-system:daemon-set-controller",
-					"group": ["system:serviceaccount:kube-system"]
+					"group": ["system:serviceaccounts:kube-system"]
 					}
 				}`,
 				expect: expect{
@@ -157,7 +157,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						"resource": "podtemplates"
 					},
 					"user": "system:serviceaccount:kube-system:default",
-					"group": ["system:serviceaccount:kube-system"]
+					"group": ["system:serviceaccounts:kube-system"]
 					}
 				}`,
 				expect: expect{
