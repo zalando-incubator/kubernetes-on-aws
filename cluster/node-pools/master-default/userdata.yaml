@@ -46,7 +46,7 @@ write_files:
         SupportPodPidsLimit: true
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
 {{- end }}
-      maxPods: {{ .Cluster.ConfigItems.node_max_pods }}
+      maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
