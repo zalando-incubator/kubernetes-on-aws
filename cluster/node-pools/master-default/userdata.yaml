@@ -172,7 +172,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-31
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-35
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -218,6 +218,9 @@ write_files:
             - --application-registry-url=http://127.0.0.1:8285/
 {{- end }}
             - --resource-cutoff-timestamp={{ .Cluster.ConfigItems.teapot_admission_controller_resource_cutoff_timestamp }}
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_resource_validate_redeployments "true" }}
+            - --resource-validate-redeployments
+{{- end }}
           ports:
             - containerPort: 8085
           volumeMounts:
@@ -339,7 +342,7 @@ write_files:
           - name: LISTEN_ADDRESS
             value: ":9022"
         - name: skipper-tokeninfo-bridge
-          image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.243
+          image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.295
           args:
           - skipper
           - -address=:9023
@@ -391,7 +394,7 @@ write_files:
           - name: config-volume
             mountPath: /etc/nginx
         - name: skipper-proxy
-          image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.243
+          image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.295
           args:
           - skipper
           - -address=:8443

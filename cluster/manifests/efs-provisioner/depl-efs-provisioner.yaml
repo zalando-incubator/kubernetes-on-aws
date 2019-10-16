@@ -24,6 +24,7 @@ spec:
           - name: ndots
             value: "1"
       serviceAccountName: efs-provisioner
+      priorityClassName: system-cluster-critical
       containers:
       - name: efs-provisioner
         image: registry.opensource.zalan.do/teapot/efs-provisioner:v0.1.2
@@ -43,6 +44,10 @@ spec:
             configMapKeyRef:
               name: efs-provisioner
               key: provisioner.name
+        resources:
+          limits:
+            cpu: 25m
+            memory: 100Mi
         volumeMounts:
         - name: pv-volume
           mountPath: /persistentvolumes

@@ -6,28 +6,29 @@ metadata:
   namespace: kube-system
   labels:
     application: node-problem-detector
-    version: v0.7.0
+    version: v0.7.1
 spec:
   selector:
     matchLabels:
       application: node-problem-detector
-      version: v0.7.0
   template:
     metadata:
       labels:
         application: node-problem-detector
-        version: v0.7.0
+        version: v0.7.1
+      annotations:
+        config/hash: {{ "cm-node-problem-detector.yaml" | manifestHash }}
     spec:
       serviceAccountName: node-problem-detector
       priorityClassName: system-node-critical
       containers:
       - name: node-problem-detector
-        image: registry.opensource.zalan.do/teapot/node-problem-detector:v0.7.0-1
+        image: registry.opensource.zalan.do/teapot/node-problem-detector:v0.7.1
         command:
         - /node-problem-detector
         args:
-        - --config.system-log-monitor=/config/abrt-adaptor.json,/config/docker-monitor.json,/config/kernel-monitor-filelog.json,/config/kernel-monitor.json,/config/systemd-monitor.json
-        - --config.custom-plugin-monitor=/config/docker-monitor-counter.json,/config/kernel-monitor-counter.json,/config/systemd-monitor-counter.json
+        - --config.system-log-monitor=/config/abrt-adaptor.json,/custom-config/docker-monitor.json,/config/kernel-monitor-filelog.json,/config/kernel-monitor.json,/config/systemd-monitor.json
+        - --config.custom-plugin-monitor=/custom-config/docker-monitor-counter.json,/config/kernel-monitor-counter.json,/config/systemd-monitor-counter.json
         - --config.system-stats-monitor=/config/system-stats-monitor.json
         - --address=0.0.0.0
         - --prometheus-address=0.0.0.0
@@ -52,12 +53,17 @@ spec:
             fieldRef:
               fieldPath: spec.nodeName
         volumeMounts:
+        - name: custom-config
+          mountPath: /custom-config
         - name: log
           mountPath: /var/log
         - name: localtime
           mountPath: /etc/localtime
           readOnly: true
       volumes:
+      - name: custom-config
+        configMap:
+          name: node-problem-detector
       - name: log
         hostPath:
           path: /var/log
