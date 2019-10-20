@@ -146,31 +146,6 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				}}`,
 				},
 			}, {
-				msg: "kube-system default account can list podtemplates",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "list",
-						"resource": "podtemplates"
-					},
-					"user": "system:serviceaccount:kube-system:default",
-					"group": ["system:serviceaccounts:kube-system"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			}, {
 				msg: "default account in default namespace can list statefulsets",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
