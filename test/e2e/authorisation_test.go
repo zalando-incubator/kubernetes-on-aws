@@ -1953,7 +1953,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						"resource": "pods"
 					},
 					"user": "system:serviceaccount:kube-system:daemon-set-controller",
-					"group": []
+					"group": ["system:serviceaccounts:kube-system"]
 					}
 				}`,
 				expect: expect{
