@@ -2008,7 +2008,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						"resource": "persistentvolumeclaims"
 					},
 					"user": "system:serviceaccount:kube-system:persistent-volume-binder",
-					"group": []
+					"group": ["system:serviceaccounts:kube-system"]
 					}
 				}`,
 				expect: expect{
@@ -2036,7 +2036,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						"resource": "persistentvolumes"
 					},
 					"user": "system:serviceaccount:kube-system:persistent-volume-binder",
-					"group": []
+					"group": ["system:serviceaccounts:kube-system"]
 					}
 				}`,
 				expect: expect{
@@ -2064,7 +2064,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						"resource": "*/scale"
 					},
 					"user": "system:serviceaccount:kube-system:horizontal-pod-autoscaler",
-					"group": []
+					"group": ["system:serviceaccounts:kube-system"]
 					}
 				}`,
 				expect: expect{
@@ -2092,7 +2092,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						"resource": "*/scale"
 					},
 					"user": "system:serviceaccount:kube-system:horizontal-pod-autoscaler",
-					"group": []
+					"group": ["system:serviceaccounts:kube-system"]
 					}
 				}`,
 				expect: expect{
@@ -2119,7 +2119,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						"resource": "nodes"
 					},
 					"user": "system:serviceaccount:kube-system:aws-cloud-provider",
-					"group": []
+					"group": ["system:serviceaccounts:kube-system"]
 					}
 				}`,
 				expect: expect{
