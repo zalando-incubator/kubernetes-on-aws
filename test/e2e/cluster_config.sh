@@ -8,6 +8,8 @@ clusters:
   api_server_url: ${API_SERVER_URL}
   channel: ${1}
   config_items:
+    pod_cidr: "10.32.0.0/14"
+    service_cidr: "10.36.0.0/20"
     scalyr_access_key: no-key-defined
     scalyr_read_key: no-key-defined
     scalyr_server: no-key-defined
