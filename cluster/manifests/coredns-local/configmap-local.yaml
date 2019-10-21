@@ -29,9 +29,9 @@ data:
     }
 {{ end }}
 
-    # 10.2.0.0/16, 10.3.0.0/16 defines that this server is authority for revese
+    # `pod_cidr`, `service_cidr` defines that this server is authority for revese
     # lookups for these ranges.
-    cluster.local:9254 10.2.0.0/16:9254 10.3.0.0/16:9254 {
+    cluster.local:9254 {{ .Cluster.ConfigItems.pod_cidr }}:9254 {{ .Cluster.ConfigItems.service_cidr }}:9254 {
         errors
         kubernetes {
             pods insecure
