@@ -46,6 +46,7 @@ clusters:
     zmon_scheduler_replicas: '0'
     zmon_worker_replicas: '0'
     node_pool_feature_enabled: "true"
+    custom_resource_publish_openapi: "true"
     enable_rbac: "true"
     dynamodb_service_link_enabled: "false"
     skipper_ingress_cpu: 100m
