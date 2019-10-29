@@ -120,7 +120,7 @@ write_files:
           - --authorization-mode=Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,CustomResourceWebhookConversion={{.Cluster.ConfigItems.custom_resource_webhook_conversion}}
+          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,CustomResourceWebhookConversion={{.Cluster.ConfigItems.custom_resource_webhook_conversion}},CustomResourcePublishOpenAPI={{.Cluster.ConfigItems.custom_resource_publish_openapi}}
           - --anonymous-auth=false
           {{ if or (eq .Cluster.Environment "production") (index .Cluster.ConfigItems "audittrail_url") }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
@@ -172,7 +172,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-35
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-37
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -346,6 +346,7 @@ write_files:
           args:
           - skipper
           - -address=:9023
+          - -support-listener=:9913
           - -inline-routes
           - |
             health: Path("/healthz") -> inlineContent("ok") -> <shunt>;
@@ -398,6 +399,7 @@ write_files:
           args:
           - skipper
           - -address=:8443
+          - -support-listener=:9911
           - -tls-cert=/etc/kubernetes/ssl/apiserver.pem
           - -tls-key=/etc/kubernetes/ssl/apiserver-key.pem
           - -insecure
