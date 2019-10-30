@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"strconv"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -673,6 +675,41 @@ func createVegetaDeployment(hostPath string, rate int) *appsv1.Deployment {
 	}
 }
 
+const NVIDIAGPUResourceName corev1.ResourceName = "nvidia.com/gpu"
+
+func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1.Pod {
+	return &v1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nameprefix + string(uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:  "cuda-vector-add",
+					Image: "k8s.gcr.io/cuda-vector-add:v0.1",
+					Resources: corev1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							NVIDIAGPUResourceName: *resource.NewQuantity(1, resource.DecimalSI),
+						},
+					},
+				},
+			},
+			Tolerations: []v1.Toleration{
+				{
+					Effect: v1.TaintEffectNoSchedule,
+					Key:    "dedicated",
+					Value:  "gpu-worker",
+				},
+			},
+		},
+	}
+}
 func deleteDeployment(cs kubernetes.Interface, ns string, deployment *appsv1.Deployment) {
 	By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 	defer GinkgoRecover()
@@ -746,4 +783,23 @@ func getBody(resp *http.Response) (string, error) {
 		return "", fmt.Errorf("failed to copy body: %v", err)
 	}
 	return buf.String(), nil
+}
+
+
+func getPodLogs(c kubernetes.Interface, namespace, podName, containerName string, previous bool) (string, error) {
+	logs, err := c.CoreV1().RESTClient().Get().
+		Resource("pods").
+		Namespace(namespace).
+		Name(podName).SubResource("log").
+		Param("container", containerName).
+		Param("previous", strconv.FormatBool(previous)).
+		Do().
+		Raw()
+	if err != nil {
+		return "", err
+	}
+	if err == nil && strings.Contains(string(logs), "Internal Error") {
+		return "", fmt.Errorf("Fetched log contains \"Internal Error\": %q", string(logs))
+	}
+	return string(logs), err
 }
