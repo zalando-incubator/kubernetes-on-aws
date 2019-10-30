@@ -96,10 +96,11 @@ clusters:
   - discount_strategy: spot_max_price
     instance_types: ["p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
     name: worker-gpu
-    profile: ${WORKER_PROFILE}-splitaz
+    profile: ${WORKER_PROFILE}-default
     min_size: 1
     max_size: 3
     config_items:
+      availability_zones: "eu-central-1a"
       taints: dedicated=gpu-worker:NoSchedule
       labels: dedicated=gpu-worker
   provider: zalando-aws
