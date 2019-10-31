@@ -44,12 +44,12 @@ var _ = framework.KubeDescribe("GPU job processing", func() {
 		By("Creating a vector pod which runs on a GPU node")
 		pod := createVectorPod(nameprefix, ns, labels)
 		_, err := cs.CoreV1().Pods(ns).Create(pod)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err, fmt.Errorf("Could not create POD %s", pod.Name))
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 		for {
 			p, err := cs.CoreV1().Pods(ns).Get(pod.Name, metav1.GetOptions{})
 			if err != nil {
-				Expect(fmt.Errorf("Could not get POD %s", pod.Name)).NotTo(HaveOccurred())
+				framework.ExpectNoError(err, fmt.Errorf("Could not get POD %s", pod.Name))
 				return
 			}
 			if p.Status.ContainerStatuses[0].State.Terminated == nil {
