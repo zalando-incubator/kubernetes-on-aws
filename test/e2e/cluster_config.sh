@@ -102,7 +102,7 @@ clusters:
     config_items:
       availability_zones: "eu-central-1a"
       taints: dedicated=gpu-worker:NoSchedule
-      labels: dedicated=gpu-worker
+      labels: dedicated=gpu-worker,zalando.org/nvidia-gpu=nvidia-tesla-k80
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'
