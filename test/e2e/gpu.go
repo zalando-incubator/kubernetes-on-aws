@@ -67,6 +67,8 @@ var _ = framework.KubeDescribe("GPU job processing", func() {
 				framework.ExpectNoError(err, "Expected vector job to succeed")
 				return
 			}
+			framework.ExpectNoError(fmt.Errorf("Expected POD %s to terminate with exit code 0", pod.Name))
+			return
 		}
 	})
 })
