@@ -48,6 +48,7 @@ spec:
           - --expander={{.Cluster.ConfigItems.cluster_autoscaler_expander}}
           - --balance-similar-node-groups
           - --max-node-provision-time=10m
+          - --max-nodes-total={{ nodeCIDRMaxNodes (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}
           - --scale-down-enabled={{ .ConfigItems.autoscaling_scale_down_enabled }}
         resources:
           limits:
