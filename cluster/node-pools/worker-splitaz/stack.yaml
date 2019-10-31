@@ -64,6 +64,15 @@ Resources:
       - Key: k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot
         PropagateAtLaunch: true
         Value: {{if eq $data.NodePool.DiscountStrategy "spot_max_price"}}true{{else}}false{{end}}
+      - Key: k8s.io/cluster-autoscaler/node-template/label/zalando.org/scaling-priority
+        PropaateAtLaunch: true
+{{- if index $data.NodePool.ConfigItems "scaling_priority" }}
+        Value: "{{ .NodePools.ConfigItems.scaling_priority }}"
+{{- else if eq $data.NodePool.DiscountStrategy "spot_max_price" }}
+        Value: "1000"
+{{- else }}
+        Value: "0"
+{{- end }}
 {{- if index $data.NodePool.ConfigItems "labels"}}
   {{- range split $data.NodePool.ConfigItems.labels ","}}
     {{- $label := split . "="}}
