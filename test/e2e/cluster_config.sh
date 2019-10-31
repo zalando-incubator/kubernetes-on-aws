@@ -97,7 +97,7 @@ clusters:
     instance_types: ["p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
     name: worker-gpu
     profile: ${WORKER_PROFILE}-default
-    min_size: 1
+    min_size: 0
     max_size: 3
     config_items:
       availability_zones: "eu-central-1a"

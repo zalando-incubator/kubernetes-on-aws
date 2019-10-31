@@ -55,7 +55,7 @@ var _ = framework.KubeDescribe("GPU job processing", func() {
 
 		f.PodClient().WaitForSuccess(pod.Name, 10*time.Minute)
 		logs, err := getPodLogs(cs, ns, pod.Name, "cuda-vector-add", false)
-		framework.ExpectNoError(err, "Should be5ble to get logs for pod %v", pod.Name)
+		framework.ExpectNoError(err, "Should be able to get logs for pod %v", pod.Name)
 		regex := regexp.MustCompile("PASSED")
 		if regex.MatchString(logs) {
 			return
