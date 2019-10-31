@@ -77,6 +77,13 @@ data:
         - "{{ with $hostPort := splitHostPort .ConfigItems.etcd_endpoints }}{{ .Host }}{{ end }}"
         type: "A"
         port: 2381
+    - job_name: 'etcd-servers-node-metrics'
+      scheme: http
+      dns_sd_configs:
+      - names:
+        - "{{ with $hostPort := splitHostPort .ConfigItems.etcd_endpoints }}{{ .Host }}{{ end }}"
+        type: "A"
+        port: 9100
     - job_name: 'kubernetes-service-endpoints'
       scheme: http
       kubernetes_sd_configs:
