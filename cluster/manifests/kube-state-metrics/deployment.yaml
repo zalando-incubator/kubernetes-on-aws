@@ -24,17 +24,32 @@ spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: kube-state-metrics
       containers:
-      - image: registry.opensource.zalan.do/teapot/kube-state-metrics:v1.8.0
-        name: kube-state-metrics
+      - name: kube-state-metrics
+        image: registry.opensource.zalan.do/teapot/kube-state-metrics:v1.8.0
         ports:
         - containerPort: 8080
-        command:
-        - /kube-state-metrics
-        - --port=8080
+          name: http-metrics
+        - containerPort: 8081
+          name: telemetry
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8081
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
         resources:
           limits:
             cpu: "{{.ConfigItems.kube_state_metrics_cpu}}"
             memory: "{{.ConfigItems.kube_state_metrics_mem}}"
-          requests:
-            cpu: "{{.ConfigItems.kube_state_metrics_cpu}}"
-            memory: "{{.ConfigItems.kube_state_metrics_mem}}"
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65534
+          capabilities:
+            drop: ["ALL"]
