@@ -15,6 +15,7 @@ cluster_autoscaler_memory: "300Mi"
 
 # Temporarily moved to a config item so we could test the new version
 cluster_autoscaler_version: "v1.12.2-internal.4"
+cluster_autoscaler_expander: "prefer-spot"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -153,7 +154,8 @@ zmon_aws_agent_cpu: "100m"
 
 prometheus_cpu: "1000m"
 prometheus_mem: "4Gi"
-prometheus_mem_min: "512Mi"
+prometheus_mem_min: "1Gi"
+prometheus_cpu_min: "0"
 
 metrics_service_cpu: "100m"
 metrics_service_mem: "200Mi"
@@ -260,17 +262,15 @@ custom_resource_publish_openapi: "false"
 
 # CIDR configuration for nodes and pods
 # Changing this will change the number of nodes and pods we can schedule in the
-# cluster
-# The two flags should be changed together to have the right balance between
-# available pod IP addresses per node and maximum pods per node. Roughly the
-# double amount of IP addresses should be available.
-# https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr
-# flag passed to kubelet
-# TODO: pass this flag to worker kublets (will do it with 1.13 to prevent extra
-# rolling of nodes)
-node_max_pods: "110" # Default: 110
-# flag passed to controller-manager
-node_cidr_mask_size: "24" # Default: 24
+# cluster: https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr
+{{if eq .Environment "production"}}
+node_cidr_mask_size: "25"
+{{else}}
+node_cidr_mask_size: "24"
+{{end}}
+# How many nodes to keep reserved (e.g. to allow for increasing the node_cidr_mask_size).
+# Note that this only affects CA settings, someone can still scale up the ASGs manually.
+reserved_nodes: "5"
 
 # maximum number of PIDs allowed to be allocated per pod
 pod_max_pids: "4096"
