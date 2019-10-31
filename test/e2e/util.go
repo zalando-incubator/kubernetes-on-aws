@@ -9,9 +9,9 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"time"
 	"strconv"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -700,6 +700,9 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 					},
 				},
 			},
+			NodeSelector: map[string]string{
+				"dedicated": "gpu-worker",
+			},
 			Tolerations: []v1.Toleration{
 				{
 					Effect: v1.TaintEffectNoSchedule,
@@ -784,7 +787,6 @@ func getBody(resp *http.Response) (string, error) {
 	}
 	return buf.String(), nil
 }
-
 
 func getPodLogs(c kubernetes.Interface, namespace, podName, containerName string, previous bool) (string, error) {
 	logs, err := c.CoreV1().RESTClient().Get().
