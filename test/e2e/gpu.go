@@ -46,20 +46,27 @@ var _ = framework.KubeDescribe("GPU job processing", func() {
 		_, err := cs.CoreV1().Pods(ns).Create(pod)
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
-
-		_, err = cs.CoreV1().Pods(ns).Get(pod.Name, metav1.GetOptions{})
-		if err != nil {
-			Expect(fmt.Errorf("Could not get POD %s", pod.Name)).NotTo(HaveOccurred())
-			return
+		for {
+			p, err := cs.CoreV1().Pods(ns).Get(pod.Name, metav1.GetOptions{})
+			if err != nil {
+				Expect(fmt.Errorf("Could not get POD %s", pod.Name)).NotTo(HaveOccurred())
+				return
+			}
+			if p.Status.ContainerStatuses[0].State.Terminated == nil {
+				time.Sleep(10 * time.Second)
+				continue
+			}
+			n := p.Status.ContainerStatuses[0].State.Terminated.ExitCode
+			if n < 1 {
+				logs, err := getPodLogs(cs, ns, pod.Name, "cuda-vector-add", false)
+				framework.ExpectNoError(err, "Should be able to get logs for pod %v", pod.Name)
+				regex := regexp.MustCompile("PASSED")
+				if regex.MatchString(logs) {
+					return
+				}
+				framework.ExpectNoError(err, "Expected vector job to succeed")
+				return
+			}
 		}
-
-		f.PodClient().WaitForSuccess(pod.Name, 10*time.Minute)
-		logs, err := getPodLogs(cs, ns, pod.Name, "cuda-vector-add", false)
-		framework.ExpectNoError(err, "Should be able to get logs for pod %v", pod.Name)
-		regex := regexp.MustCompile("PASSED")
-		if regex.MatchString(logs) {
-			return
-		}
-		framework.ExpectNoError(err, "Expected vector job to succeed")
 	})
 })
