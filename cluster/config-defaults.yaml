@@ -69,10 +69,16 @@ lightstep_token: "aws:kms:AQICAHgrx06TPoR1aNmcPHJjFu5mmoICT5KJkx2fsTJpmXmbNAHvvY
 {{end}}
 
 # tokeninfo
+skipper_ingress_tokeninfo_cpu: "1000m"
+skipper_ingress_tokeninfo_memory: "512Mi"
 {{if eq .Environment "production"}}
 tokeninfo_url: "https://info.services.auth.zalando.com/oauth2/tokeninfo"
+opendid_provider_cfg_url: "https://identity.zalando.com/.well-known/openid-configuration"
+openid_issuer: "https://identity.zalando.com"
 {{else}}
 tokeninfo_url: "https://sandbox-tokeninfo-bridge.stups.zalan.do/oauth2/tokeninfo"
+opendid_provider_cfg_url: "https://sandbox.identity.zalando.com/.well-known/openid-configuration"
+openid_issuer: "https://sandbox.identity.zalando.com"
 {{end}}
 
 # Image Policy Webhook
