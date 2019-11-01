@@ -128,6 +128,32 @@ spec:
           - name: filters
             mountPath: /etc/config/default-filters
 {{ end }}
+{{ if eq .ConfigItems.tokeninfo_url "http://127.0.0.1:9021/oauth2/tokeninfo" }}
+      - name: tokeninfo
+        image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:master-1
+        ports:
+        - containerPort: 9021
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9021
+          periodSeconds: 3
+          failureThreshold: 2
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 64Mi
+          requests:
+            cpu: 1000m
+            memory: 64Mi
+        env:
+        - name: BUSINESS_PARTNERS
+          value: 810d1d00-4312-43e5-bd31-d8373fdd24c7=com.zalando zalando-legacy=legacy
+        - name: OPENID_PROVIDER_CONFIGURATION_URL
+          value: "{{ .ConfigItems.opendid_provider_cfg_url }}"
+        - name: ISSUER
+          value: "{{ .ConfigItems.openid_issuer }}"
+{{ end }}
 {{ if eq .ConfigItems.enable_apimonitoring "true"}}
       volumes:
         - name: filters
