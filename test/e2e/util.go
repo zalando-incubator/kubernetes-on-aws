@@ -700,16 +700,6 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 					},
 				},
 			},
-			NodeSelector: map[string]string{
-				"dedicated": "gpu-worker",
-			},
-			Tolerations: []v1.Toleration{
-				{
-					Effect: v1.TaintEffectNoSchedule,
-					Key:    "dedicated",
-					Value:  "gpu-worker",
-				},
-			},
 		},
 	}
 }
