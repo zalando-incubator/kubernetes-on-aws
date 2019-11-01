@@ -139,13 +139,21 @@ spec:
             port: 9021
           periodSeconds: 3
           failureThreshold: 2
+        lifecycle:
+          preStop:
+            exec:
+              command: ["sleep","45"]
         resources:
           limits:
-            cpu: 1000m
-            memory: 64Mi
+            cpu: "{{ .ConfigItems.skipper_ingress_tokeninfo_cpu }}"
+            memory: "{{ .ConfigItems.skipper_ingress_tokeninfo_memory }}"
           requests:
-            cpu: 1000m
-            memory: 64Mi
+            cpu: "{{ .ConfigItems.skipper_ingress_tokeninfo_cpu }}"
+            memory: "{{ .ConfigItems.skipper_ingress_tokeninfo_memory }}"
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
         env:
         - name: BUSINESS_PARTNERS
           value: 810d1d00-4312-43e5-bd31-d8373fdd24c7=com.zalando zalando-legacy=legacy
