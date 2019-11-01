@@ -153,6 +153,15 @@ spec:
           value: "{{ .ConfigItems.opendid_provider_cfg_url }}"
         - name: ISSUER
           value: "{{ .ConfigItems.openid_issuer }}"
+        - name: ENABLE_OPENTRACING
+          value: "true"
+        - name: OPENTRACING_LIGHTSTEP_COMPONENT_NAME
+          value: "tokeninfo-skipper-ingress"
+        - name: OPENTRACING_LIGHTSTEP_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: skipper-ingress
+              key: lightstep-token
 {{ end }}
 {{ if eq .ConfigItems.enable_apimonitoring "true"}}
       volumes:
