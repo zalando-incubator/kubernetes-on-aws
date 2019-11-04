@@ -93,6 +93,15 @@ clusters:
     profile: ${WORKER_PROFILE}-default
     min_size: 1
     max_size: 21
+  - discount_strategy: spot_max_price
+    instance_types: ["p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
+    name: worker-gpu
+    profile: ${WORKER_PROFILE}-default
+    min_size: 0
+    max_size: 3
+    config_items:
+      availability_zones: "eu-central-1a"
+      labels: zalando.org/nvidia-gpu=tesla
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'

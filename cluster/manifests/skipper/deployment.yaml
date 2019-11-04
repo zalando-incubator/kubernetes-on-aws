@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.11.1
+    version: v0.11.5
     component: ingress
 spec:
   strategy:
@@ -18,7 +18,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.11.1
+        version: v0.11.5
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -43,7 +43,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.1
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.5
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -69,6 +69,7 @@ spec:
           - "-serve-host-metrics"
           - "-disable-metrics-compat"
           - "-enable-profile"
+          - "-debug-listener=:9922"
           - "-enable-ratelimits"
           - "-experimental-upgrade"
           - "-metrics-exp-decay-sample"
@@ -76,6 +77,7 @@ spec:
           - "-lb-healthcheck-interval=3s"
           - "-metrics-flavour=prometheus"
           - "-enable-connection-metrics"
+          - "-enable-route-lifo-metrics"
 {{ if eq .ConfigItems.enable_apimonitoring "true"}}
           - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
@@ -125,6 +127,49 @@ spec:
         volumeMounts:
           - name: filters
             mountPath: /etc/config/default-filters
+{{ end }}
+{{ if eq .ConfigItems.tokeninfo_url "http://127.0.0.1:9021/oauth2/tokeninfo" }}
+      - name: tokeninfo
+        image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:master-1
+        ports:
+        - containerPort: 9021
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9021
+          periodSeconds: 3
+          failureThreshold: 2
+        lifecycle:
+          preStop:
+            exec:
+              command: ["sleep","45"]
+        resources:
+          limits:
+            cpu: "{{ .ConfigItems.skipper_ingress_tokeninfo_cpu }}"
+            memory: "{{ .ConfigItems.skipper_ingress_tokeninfo_memory }}"
+          requests:
+            cpu: "{{ .ConfigItems.skipper_ingress_tokeninfo_cpu }}"
+            memory: "{{ .ConfigItems.skipper_ingress_tokeninfo_memory }}"
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+        env:
+        - name: BUSINESS_PARTNERS
+          value: 810d1d00-4312-43e5-bd31-d8373fdd24c7=com.zalando zalando-legacy=legacy
+        - name: OPENID_PROVIDER_CONFIGURATION_URL
+          value: "{{ .ConfigItems.opendid_provider_cfg_url }}"
+        - name: ISSUER
+          value: "{{ .ConfigItems.openid_issuer }}"
+        - name: ENABLE_OPENTRACING
+          value: "true"
+        - name: OPENTRACING_LIGHTSTEP_COMPONENT_NAME
+          value: "tokeninfo-skipper-ingress"
+        - name: OPENTRACING_LIGHTSTEP_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: skipper-ingress
+              key: lightstep-token
 {{ end }}
 {{ if eq .ConfigItems.enable_apimonitoring "true"}}
       volumes:
