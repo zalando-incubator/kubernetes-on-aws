@@ -13,8 +13,7 @@ autoscaling_buffer_pods: "0"
 cluster_autoscaler_cpu: "100m"
 cluster_autoscaler_memory: "300Mi"
 
-# Temporarily moved to a config item so we could test the new version
-cluster_autoscaler_version: "v1.12.2-internal.4"
+experimental_autoscaler_1_14: "false"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -70,10 +69,16 @@ lightstep_token: "aws:kms:AQICAHgrx06TPoR1aNmcPHJjFu5mmoICT5KJkx2fsTJpmXmbNAHvvY
 {{end}}
 
 # tokeninfo
+skipper_ingress_tokeninfo_cpu: "1000m"
+skipper_ingress_tokeninfo_memory: "512Mi"
 {{if eq .Environment "production"}}
 tokeninfo_url: "https://info.services.auth.zalando.com/oauth2/tokeninfo"
+opendid_provider_cfg_url: "https://planb-provider.greendale-questionmark.zalan.do/.well-known/openid-configuration"
+openid_issuer: "https://planb-provider.greendale-questionmark.zalan.do"
 {{else}}
 tokeninfo_url: "https://sandbox-tokeninfo-bridge.stups.zalan.do/oauth2/tokeninfo"
+opendid_provider_cfg_url: "https://sandbox.identity.zalando.com/.well-known/openid-configuration"
+openid_issuer: "https://sandbox.identity.zalando.com"
 {{end}}
 
 # Image Policy Webhook
@@ -131,6 +136,7 @@ zmon_worker_count: "16"
 {{end}}
 zmon_scalyr_region: "eu"
 zmon_worker_version: "v209-py2eol-11-g0a79b03-v251-py2eol"
+zmon_agent_version: "0.4-19-ga12da10-zv5"
 logging_watcher_mem: "200Mi"
 logging_scalyr_mem: "175Mi"
 logging_slo_heartbeat_mem: "25Mi"
@@ -153,7 +159,8 @@ zmon_aws_agent_cpu: "100m"
 
 prometheus_cpu: "1000m"
 prometheus_mem: "4Gi"
-prometheus_mem_min: "512Mi"
+prometheus_mem_min: "1Gi"
+prometheus_cpu_min: "0"
 
 metrics_service_cpu: "100m"
 metrics_service_mem: "200Mi"
@@ -208,7 +215,7 @@ teapot_admission_controller_inject_environment_variables: "true"
 {{if eq .Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_resource_cutoff_timestamp: "2019-07-08T22:00:00Z"
-teapot_admission_controller_resource_validate_redeployments: "false"
+teapot_admission_controller_resource_validate_redeployments: "true"
 {{else if eq .Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_resource_cutoff_timestamp: ""
@@ -235,7 +242,7 @@ dynamodb_service_link_enabled: "false"
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
-kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.8-master-74" "861068367966" }}
+kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.8-master-77" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -260,17 +267,15 @@ custom_resource_publish_openapi: "false"
 
 # CIDR configuration for nodes and pods
 # Changing this will change the number of nodes and pods we can schedule in the
-# cluster
-# The two flags should be changed together to have the right balance between
-# available pod IP addresses per node and maximum pods per node. Roughly the
-# double amount of IP addresses should be available.
-# https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr
-# flag passed to kubelet
-# TODO: pass this flag to worker kublets (will do it with 1.13 to prevent extra
-# rolling of nodes)
-node_max_pods: "110" # Default: 110
-# flag passed to controller-manager
-node_cidr_mask_size: "24" # Default: 24
+# cluster: https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr
+{{if eq .Environment "production"}}
+node_cidr_mask_size: "25"
+{{else}}
+node_cidr_mask_size: "24"
+{{end}}
+# How many nodes to keep reserved (e.g. to allow for increasing the node_cidr_mask_size).
+# Note that this only affects CA settings, someone can still scale up the ASGs manually.
+reserved_nodes: "5"
 
 # maximum number of PIDs allowed to be allocated per pod
 pod_max_pids: "4096"
