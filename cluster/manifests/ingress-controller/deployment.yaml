@@ -34,7 +34,9 @@ spec:
         - --stack-termination-protection
         - --ssl-policy={{ .ConfigItems.kube_aws_ingress_controller_ssl_policy }}
         - --idle-connection-timeout={{ .ConfigItems.kube_aws_ingress_controller_idle_timeout }}
-        - --nlb-cross-zone={{ .ConfigItems.kube_aws_ingress_controller_nlb_cross_zone }}
+        {{ if eq .ConfigItems.kube_aws_ingress_controller_nlb_cross_zone "true" }}
+        - --nlb-cross-zone
+        {{ end }}
         env:
         - name: AWS_REGION
           value: {{ .Region }}
