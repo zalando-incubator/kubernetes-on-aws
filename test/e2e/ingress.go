@@ -79,7 +79,7 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 
 		// Ingress
 		By("Creating an ingress with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
-		ing := createIngress(serviceName, hostName, ns, labels, port)
+		ing := createIngress(serviceName, hostName, ns, labels, nil, port)
 		defer func() {
 			By("deleting the ingress")
 			defer GinkgoRecover()
@@ -153,7 +153,7 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 		_, err = cs.CoreV1().Services(ns).Create(service)
 		Expect(err).NotTo(HaveOccurred())
 
-		ing := createIngress(serviceName, hostName, ns, labels, port)
+		ing := createIngress(serviceName, hostName, ns, labels, nil, port)
 		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(ing)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -378,7 +378,7 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
-		ing := createIngress(serviceName, hostName, ns, labels, port)
+		ing := createIngress(serviceName, hostName, ns, labels, nil, port)
 		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(ing)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -528,7 +528,7 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
-		ing := createIngress(serviceName, hostName, ns, labels, port)
+		ing := createIngress(serviceName, hostName, ns, labels, nil, port)
 		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(ing)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -605,6 +605,86 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(s).To(Equal(backendContent))
+	})
+})
+
+var _____ = framework.KubeDescribe("Ingress tests simple NLB", func() {
+	f := framework.NewDefaultFramework("skipper-ingress-simple-nlb")
+	var (
+		cs  kubernetes.Interface
+		jig *ingress.TestJig
+	)
+
+	It("Should create simple NLB ingress [Ingress] [Zalando]", func() {
+		jig = ingress.NewIngressTestJig(f.ClientSet)
+		cs = f.ClientSet
+		serviceName := "skipper-ingress-test"
+		ns := f.Namespace.Name
+		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
+		labels := map[string]string{
+			"app": serviceName,
+		}
+		annotations := map[string]string{
+			"zalando.org/aws-load-balancer-type": "nlb",
+		}
+		port := 8080
+		replicas := int32(3)
+		targetPort := 9090
+		backendContent := "mytest"
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, backendContent)
+		waitTime := 10 * time.Minute
+
+		// CREATE setup
+		// backend deployment
+		By("Creating a deployment with " + serviceName + " in namespace " + ns)
+		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
+		_, err := cs.AppsV1().Deployments(ns).Create(depl)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating service " + serviceName + " in namespace " + ns)
+		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
+		_, err = cs.CoreV1().Services(ns).Create(service)
+		Expect(err).NotTo(HaveOccurred())
+
+		ing := createIngress(serviceName, hostName, ns, labels, annotations, port)
+		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(ing)
+		Expect(err).NotTo(HaveOccurred())
+
+		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		Expect(err).NotTo(HaveOccurred())
+
+		// //  skipper http -> https redirect
+		// By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
+		// err = waitForResponse(addr, "http", waitTime, isRedirect, true)
+		// Expect(err).NotTo(HaveOccurred())
+
+		// ALB ready
+		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
+		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
+		Expect(err).NotTo(HaveOccurred())
+
+		// DNS ready
+		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
+		err = waitForResponse(hostName, "https", waitTime, isSuccess, false)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Test that we get content from the default ingress
+		By("By checking the content of the reply we see that the ingress stack works")
+		rt, quit := createHTTPRoundTripper()
+		defer func() {
+			quit <- struct{}{}
+		}()
+		url := "https://" + hostName + "/"
+		req, err := http.NewRequest("GET", url, nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err := rt.RoundTrip(req)
+		Expect(err).NotTo(HaveOccurred())
+		s, err := getBody(resp)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(s).To(Equal(backendContent))
 	})
