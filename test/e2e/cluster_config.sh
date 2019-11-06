@@ -83,6 +83,7 @@ clusters:
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     config_items:
       availability_zones: "eu-central-1a"
+      scaling_priority: "-100"
     name: worker-limit-az
     profile: ${WORKER_PROFILE}-splitaz
     min_size: 1
@@ -102,6 +103,7 @@ clusters:
     config_items:
       availability_zones: "eu-central-1a"
       labels: zalando.org/nvidia-gpu=tesla
+      scaling_priority: "-100"
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'
