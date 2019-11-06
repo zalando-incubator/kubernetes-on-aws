@@ -339,7 +339,8 @@ func podHPA(deploymentName string, ingressName string, metricTargets map[string]
 					Kind:       "Ingress",
 					Name:       ingressName,
 				},
-				TargetValue: *resource.NewQuantity(target, resource.DecimalSI),
+				TargetValue:  *resource.NewQuantity(target, resource.DecimalSI),
+				AverageValue: resource.NewQuantity(target, resource.DecimalSI),
 			},
 		})
 	}
