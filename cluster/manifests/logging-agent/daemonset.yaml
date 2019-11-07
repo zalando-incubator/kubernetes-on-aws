@@ -94,6 +94,8 @@ spec:
           value: "{{ .Environment }}"
         - name: CLUSTER_ALIAS
           value: "{{ .Alias }}"
+        - name: WATCHER_CONFIG
+          value: /mnt/log-watcher-config/log-watcher.yaml
         - name: WATCHER_AGENTS
           value: scalyr,symlinker
         - name: WATCHER_SCALYR_API_KEY
@@ -131,6 +133,9 @@ spec:
         volumeMounts:
         - name: containerlogs
           mountPath: /mnt/containers
+          readOnly: true
+        - name: log-watcher-config
+          mountPath: /mnt/log-watcher-config
           readOnly: true
         - name: scalyr-logs
           mountPath: /mnt/scalyr-logs
@@ -236,6 +241,10 @@ spec:
       - name: journal
         hostPath:
           path: /var/log/journal
+
+      - name: log-watcher-config
+        configMap:
+          name: log-watcher-config
 
       - name: scalyr-checkpoint
         hostPath:
