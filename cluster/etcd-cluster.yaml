@@ -19,6 +19,7 @@ SenzaComponents:
       source: registry.opensource.zalan.do/acid/etcd-cluster:3.4.2-p23
       environment:
         HOSTED_ZONE: '{{Arguments.HostedZone}}'
+      scalyr_account_key: '{{Arguments.ScalyrAccountKey}}'
       mounts:
         /home/etcd:
           partition: none
@@ -48,6 +49,10 @@ SenzaInfo:
   - NetworkCIDR:
       Description: Network CIDR used for the Security Group configuration.
       Default: "172.32.0.0/16"
+  - KMSKey:
+      Description: KMS key to use for decrypting configuration data
+  - ScalyrAccountKey:
+      Description: Scalyr account key
   - VpcID:
       Description: VpcID to use for the security groups being setup.
   StackName: etcd-cluster
@@ -155,3 +160,10 @@ Resources:
             Action:
             - s3:PutObject
             Resource: [ "arn:aws:s3:::{{Arguments.EtcdS3Backup}}/*" ]
+      - PolicyName: KMSDecrypt
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action: ["kms:Decrypt"]
+            Resource: ["{{Arguments.KMSKey}}"]
