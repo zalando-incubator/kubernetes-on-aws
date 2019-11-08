@@ -135,7 +135,7 @@ zmon_worker_cpu: "750m"
 zmon_worker_count: "16"
 {{end}}
 zmon_scalyr_region: "eu"
-zmon_worker_version: "v209-py2eol-11-g0a79b03-v251-py2eol"
+zmon_worker_version: "v209-py2eol-44-g6f3a030-v251-py2eol"
 zmon_agent_version: "0.4-19-ga12da10-zv5"
 logging_watcher_mem: "200Mi"
 logging_scalyr_mem: "175Mi"
@@ -148,7 +148,7 @@ logging_fluentd_cpu: "100m"
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
 scalyr_team_token: ""
 logging_agent_version: "v0.36"
-logging_watcher_version: "master-64"
+logging_watcher_version: "master-67"
 logging_scalyr_enable_profiling: "false"
 
 zmon_redis_mem: "1Gi"
@@ -233,8 +233,16 @@ teapot_admission_controller_ignore_namespaces: "^kube-system$"
 {{end}}
 
 # etcd cluster
-{{if ne .Environment "production"}}
+{{if eq .Environment "production"}}
+etcd_instance_count: "5"
+{{else}}
 etcd_instance_count: "3"
+{{end}}
+
+{{if ne .Environment "e2e"}}
+etcd_scalyr_key: "aws:kms:AQECAHgNxQ3yghAnRNmN6GyaSh8l0hGHUap3hNqu00tmcgcOxgAAAIwwgYkGCSqGSIb3DQEHBqB8MHoCAQAwdQYJKoZIhvcNAQcBMB4GCWCGSAFlAwQBLjARBAwrD+79PBvwdNnIXGICARCASEVQTLFyRAWL1OWE1WSl19lm5wY6Cj38wWse8esMBlxUvYSDRZqqyKMJieZpDbAxaAnJO6FKEJdpOoyU8GsV8At/43DhtaHkdA=="
+{{else}}
+etcd_scalyr_key: ""
 {{end}}
 
 dynamodb_service_link_enabled: "false"
