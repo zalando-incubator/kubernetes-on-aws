@@ -55,7 +55,12 @@ enable_skipper_eastwest: "true"
 {{end}}
 
 # skipper tcp lifo
+# See: https://opensource.zalando.com/skipper/operation/operation/#tcp-lifo
+{{if eq .Environment "production"}}
+skipper_enable_tcp_queue: "false"
+{{else}}
 skipper_enable_tcp_queue: "true"
+{{end}}
 skipper_expected_bytes_per_request: "51200"
 skipper_max_tcp_listener_concurrency: "-1"
 skipper_max_tcp_listener_queue: "-1"
