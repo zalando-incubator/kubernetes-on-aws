@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.11.5
+    version: v0.11.10
     component: ingress
 spec:
   strategy:
@@ -18,7 +18,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.11.5
+        version: v0.11.10
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -43,7 +43,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.5
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.10
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -106,6 +106,12 @@ spec:
           - "-write-timeout-server={{ .ConfigItems.skipper_write_timeout_server }}"
           - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
           - "-route-creation-metrics"
+{{ if eq .ConfigItems.skipper_enable_tcp_queue "true" }}
+          - "-enable-tcp-queue"
+          - "-expected-bytes-per-request={{ .ConfigItems.skipper_expected_bytes_per_request }}"
+          - "-max-tcp-listener-concurrency={{ .ConfigItems.skipper_max_tcp_listener_concurrency }}"
+          - "-max-tcp-listener-queue={{ .ConfigItems.skipper_max_tcp_listener_queue }}"
+{{ end }}
         resources:
           limits:
             cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
