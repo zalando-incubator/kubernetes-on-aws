@@ -5,6 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-cluster-autoscaler
+    version: v1.12.2-internal-2.3
 spec:
   selector:
     matchLabels:
@@ -15,6 +16,7 @@ spec:
     metadata:
       labels:
         application: kube-cluster-autoscaler
+        version: v1.12.2-internal-2.3
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
         config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
@@ -31,7 +33,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:{{if eq .Cluster.ConfigItems.experimental_autoscaler_1_14 "true" }}v1.14.5-internal.10{{else}}v1.12.2-internal.4{{end}}
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal-2.3
         command:
           - ./cluster-autoscaler
           - --v=4
@@ -43,19 +45,11 @@ spec:
           - --skip-nodes-with-system-pods=false
           - --skip-nodes-with-local-storage=false
           - --scale-up-cloud-provider-template=true
+          - --expander={{ .Cluster.ConfigItems.cluster_autoscaler_expander }}
           - --balance-similar-node-groups
+          - --max-node-provision-time=7m
           - --max-nodes-total={{ nodeCIDRMaxNodes (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}
           - --scale-down-enabled={{ .ConfigItems.autoscaling_scale_down_enabled }}
-{{- if eq .Cluster.ConfigItems.experimental_autoscaler_1_14 "true" }}
-          - --expander=highest-priority
-          - --node-pool-backoff-initial=2h
-          - --node-pool-backoff-max=8h
-          - --node-pool-backoff-reset=12h
-          - --max-node-provision-time=5m
-{{- else }}
-          - --expander=prefer-spot
-          - --max-node-provision-time=10m
-{{- end }}
         resources:
           requests:
             cpu: {{.Cluster.ConfigItems.cluster_autoscaler_cpu}}
