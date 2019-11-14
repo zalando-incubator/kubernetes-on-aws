@@ -55,6 +55,9 @@ spec:
             port: 9090
           initialDelaySeconds: 5
           timeoutSeconds: 5
+          # ensure that we have at least a minute of metrics before marking ourselves as ready
+          periodSeconds: 5
+          successThreshold: 14
         volumeMounts:
         - name: prometheus-config-volume
           mountPath: /etc/prometheus
@@ -70,6 +73,7 @@ spec:
       securityContext:
         runAsUser: 65534
         fsGroup: 65534
+      terminationGracePeriodSeconds: 60
   volumeClaimTemplates:
   - metadata:
       name: prometheus-storage-volume
