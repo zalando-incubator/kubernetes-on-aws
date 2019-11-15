@@ -13,7 +13,8 @@ autoscaling_buffer_pods: "0"
 cluster_autoscaler_cpu: "100m"
 cluster_autoscaler_memory: "300Mi"
 
-experimental_autoscaler_1_14: "false"
+# defines which expander the autoscaler should use
+cluster_autoscaler_expander: highest-priority
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -54,6 +55,17 @@ enable_skipper_eastwest: "false"
 enable_skipper_eastwest: "true"
 {{end}}
 
+# skipper tcp lifo
+# See: https://opensource.zalando.com/skipper/operation/operation/#tcp-lifo
+{{if eq .Environment "production"}}
+skipper_enable_tcp_queue: "false"
+{{else}}
+skipper_enable_tcp_queue: "true"
+{{end}}
+skipper_expected_bytes_per_request: "51200"
+skipper_max_tcp_listener_concurrency: "-1"
+skipper_max_tcp_listener_queue: "-1"
+
 # opentracing
 skipper_ingress_opentracing_excluded_proxy_tags: "skipper.route"
 # lightstep
@@ -74,7 +86,7 @@ skipper_ingress_tokeninfo_memory: "512Mi"
 {{if eq .Environment "production"}}
 tokeninfo_url: "https://info.services.auth.zalando.com/oauth2/tokeninfo"
 opendid_provider_cfg_url: "https://planb-provider.greendale-questionmark.zalan.do/.well-known/openid-configuration"
-openid_issuer: "https://planb-provider.greendale-questionmark.zalan.do"
+openid_issuer: "https://identity.zalando.com"
 {{else}}
 tokeninfo_url: "https://sandbox-tokeninfo-bridge.stups.zalan.do/oauth2/tokeninfo"
 opendid_provider_cfg_url: "https://sandbox.identity.zalando.com/.well-known/openid-configuration"
@@ -135,7 +147,7 @@ zmon_worker_cpu: "750m"
 zmon_worker_count: "16"
 {{end}}
 zmon_scalyr_region: "eu"
-zmon_worker_version: "v209-py2eol-44-g6f3a030-v251-py2eol"
+zmon_worker_version: "v209-py2eol-49-g5836b26-v251-py2eol"
 zmon_agent_version: "0.4-19-ga12da10-zv5"
 logging_watcher_mem: "200Mi"
 logging_scalyr_mem: "175Mi"
