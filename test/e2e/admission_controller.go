@@ -92,6 +92,7 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 		// Static
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_ACCOUNT", E2EClusterAlias()))
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_TAG_ACCOUNT", E2EClusterAlias()))
+		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_TAG_APPLICATION", application))
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT", Not(BeEmpty())))
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST", Not(BeEmpty())))
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN", Not(BeEmpty())))
