@@ -52,7 +52,6 @@ clusters:
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
     node_problem_detector_enabled: true
-    kube_aws_ingress_controller_nlb_enabled: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
