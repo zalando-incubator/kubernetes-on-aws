@@ -30,13 +30,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
-func createIngress(name, hostname, namespace string, labels, annotations map[string]string, port int) *v1beta1.Ingress {
+func createIngress(name, hostname, namespace string, label map[string]string, port int) *v1beta1.Ingress {
 	return &v1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        name + string(uuid.NewUUID()),
-			Namespace:   namespace,
-			Labels:      labels,
-			Annotations: annotations,
+			Name:      name + string(uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    label,
 		},
 		Spec: v1beta1.IngressSpec{
 			Rules: []v1beta1.IngressRule{
