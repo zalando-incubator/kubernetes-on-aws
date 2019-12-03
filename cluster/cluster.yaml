@@ -323,7 +323,7 @@ Resources:
           ToPort: {{ $element.ToPort }}
 {{- end }}
 {{- end }}
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+        - CidrIp: {{ if eq .Cluster.ConfigItems.kube_aws_ingress_controller_nlb_enabled "true" }}"0.0.0.0/0"{{else}}"{{.Values.vpc_ipv4_cidr}}"{{end}}
           FromPort: 9999
           IpProtocol: tcp
           ToPort: 9999
@@ -570,6 +570,7 @@ Resources:
                   - 'apigateway:*'
                   - 'automation:*'
                   - 'autoscaling:*'
+                  - 'autoscaling-plans:*'
                   - 'application-autoscaling:*'
                   - 'aws-marketplace:View*'
                   - 'aws-portal:View*'
