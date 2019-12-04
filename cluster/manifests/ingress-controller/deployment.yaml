@@ -38,6 +38,8 @@ spec:
         - --nlb-cross-zone
         {{ end }}
         env:
+        - name: CUSTOM_FILTERS
+          value: "tag:kubernetes.io/cluster/{{ .Cluster.ID }}=owned tag:node.kubernetes.io/role=worker" # TODO: tag:zalando.org/ingress-enabled=true"
         - name: AWS_REGION
           value: {{ .Region }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
