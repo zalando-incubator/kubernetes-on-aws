@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	deploymentframework "k8s.io/kubernetes/test/e2e/framework/deployment"
 )
 
 var _ = framework.KubeDescribe("API Server webhook tests", func() {
@@ -62,7 +63,7 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 			"app": podname,
 		}
 		labelSelector := labels.SelectorFromSet(labels.Set(label))
-		err = framework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
+		err = deploymentframework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
 		Expect(err).NotTo(HaveOccurred())
 		_, err = framework.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, int(replicas), 1*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
@@ -87,7 +88,7 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 			err := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
 			Expect(err).NotTo(HaveOccurred())
 		}()
-		err = framework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "FailedCreate", appsv1.DeploymentReplicaFailure)
+		err = deploymentframework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "FailedCreate", appsv1.DeploymentReplicaFailure)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
