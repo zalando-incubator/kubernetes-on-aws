@@ -172,7 +172,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-40
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-43
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -221,6 +221,8 @@ write_files:
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_resource_validate_redeployments "true" }}
             - --resource-validate-redeployments
 {{- end }}
+            - --deployment-rolling-update-default-max-surge={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}
+            - --deployment-rolling-update-default-max-unavailable={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}
           ports:
             - containerPort: 8085
           volumeMounts:
