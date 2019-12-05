@@ -164,14 +164,14 @@ Create Kubernetes ingress object:
   defer func() {
   	By("deleting the ingress")
   	defer GinkgoRecover()
-  	err2 := cs.ExtensionsV1beta1().Ingresses(ns).Delete(ing.Name, metav1.NewDeleteOptions(0))
+  	err2 := cs.NetworkingV1beta1().Ingresses(ns).Delete(ing.Name, metav1.NewDeleteOptions(0))
   	Expect(err2).NotTo(HaveOccurred())
   }()
-  ingressCreate, err := cs.ExtensionsV1beta1().Ingresses(ns).Create(ing)
+  ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(ing)
   Expect(err).NotTo(HaveOccurred())
   addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, 3*time.Minute)
   Expect(err).NotTo(HaveOccurred())
-  ingress, err := cs.ExtensionsV1beta1().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+  ingress, err := cs.NetworkingV1beta1().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
   Expect(err).NotTo(HaveOccurred())
   By(fmt.Sprintf("ALB endpoint from ingress status: %s", ingress.Status.LoadBalancer.Ingress[0].Hostname))
 ```

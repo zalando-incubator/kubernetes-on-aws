@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 
 	zv1 "github.com/mikkeloscar/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
 	. "github.com/onsi/ginkgo"
@@ -30,12 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
-func createIngress(name, hostname, namespace string, label map[string]string, port int) *v1beta1.Ingress {
+func createIngress(name, hostname, namespace string, labels, annotations map[string]string, port int) *v1beta1.Ingress {
 	return &v1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name + string(uuid.NewUUID()),
-			Namespace: namespace,
-			Labels:    label,
+			Name:        name + string(uuid.NewUUID()),
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: annotations,
 		},
 		Spec: v1beta1.IngressSpec{
 			Rules: []v1beta1.IngressRule{
@@ -584,7 +586,7 @@ func waitForReplicas(deploymentName, namespace string, kubeClient kubernetes.Int
 			framework.Failf("Failed to get replication controller %s: %v", deployment, err)
 		}
 		replicas := int(deployment.Status.ReadyReplicas)
-		framework.Logf("waiting for %d replicas (current: %d)", desiredReplicas, replicas)
+		e2elog.Logf("waiting for %d replicas (current: %d)", desiredReplicas, replicas)
 		return replicas == desiredReplicas, nil // Expected number of replicas found. Exit.
 	})
 	if err != nil {

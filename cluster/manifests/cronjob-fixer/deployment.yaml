@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cronjob-fixer
+  namespace: kube-system
+  labels:
+    application: cronjob-fixer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: cronjob-fixer
+  template:
+    metadata:
+      labels:
+        application: cronjob-fixer
+    spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      priorityClassName: system-cluster-critical
+      serviceAccountName: cronjob-fixer
+      containers:
+        - name: cronjob-fixer
+          image: "registry.opensource.zalan.do/teapot/cronjob-fixer:master-1"
+          resources:
+            limits:
+              cpu: 5m
+              memory: 150Mi
+            requests:
+              cpu: 5m
+              memory: 150Mi

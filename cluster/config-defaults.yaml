@@ -19,6 +19,10 @@ cluster_autoscaler_expander: highest-priority
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
+# allow using NLBs for ingress
+# This opens port 9999 (skipper-ingress) on all worker nodes.
+kube_aws_ingress_controller_nlb_enabled: "false"
+kube_aws_ingress_controller_nlb_cross_zone: "true"
 
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "70"
@@ -103,12 +107,6 @@ image_policy: "dev"
 # cadvisor settings
 cadvisor_cpu: "150m"
 cadvisor_memory: "150Mi"
-
-# whether to deploy node-problem-detector
-node_problem_detector_enabled: "false"
-# node-problem-detector settings
-node_problem_detector_cpu: "25m"
-node_problem_detector_memory: "75Mi"
 
 # node exporter settings
 node_exporter_cpu: "20m"
@@ -266,6 +264,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
 kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.8-master-77" "861068367966" }}
+kuberuntu_image_v1_15: {{ amiID "zalando-ubuntu-kubernetes-production-v1.15.6-master-81" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
