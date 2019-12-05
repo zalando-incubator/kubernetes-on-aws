@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	deploymentframework "k8s.io/kubernetes/test/e2e/framework/deployment"
 )
 
 const (
@@ -63,7 +64,7 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 		labelSelector, err := metav1.LabelSelectorAsSelector(deployment.Spec.Selector)
 		Expect(err).NotTo(HaveOccurred())
-		err = framework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
+		err = deploymentframework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
 		Expect(err).NotTo(HaveOccurred())
 
 		//pods are not returned here
