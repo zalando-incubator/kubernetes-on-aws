@@ -65,7 +65,7 @@ clusters:
     profile: ${MASTER_PROFILE}-default
     min_size: 1
     max_size: 2
-  - discount_strategy: spot_max_price
+  - discount_strategy: spot
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker-splitaz
     profile: ${WORKER_PROFILE}-splitaz
@@ -73,13 +73,13 @@ clusters:
     max_size: 21
     config_items:
       cpu_manager_policy: static
-  - discount_strategy: spot_max_price
+  - discount_strategy: spot
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker
     profile: ${WORKER_PROFILE}-default
     min_size: 1
     max_size: 21
-  - discount_strategy: spot_max_price
+  - discount_strategy: spot
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     config_items:
       availability_zones: "eu-central-1a"
@@ -88,13 +88,13 @@ clusters:
     profile: ${WORKER_PROFILE}-splitaz
     min_size: 1
     max_size: 21
-  - discount_strategy: spot_max_price
+  - discount_strategy: spot
     instance_types: ["m5d.large", "m5d.xlarge", "m5d.2xlarge"]
     name: worker-instance-storage
     profile: ${WORKER_PROFILE}-default
     min_size: 1
     max_size: 21
-  - discount_strategy: spot_max_price
+  - discount_strategy: spot
     instance_types: ["p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
     name: worker-gpu
     profile: ${WORKER_PROFILE}-default
