@@ -22,7 +22,7 @@ Resources:
 {{ if gt (len $data.NodePool.InstanceTypes) 1 }}
       MixedInstancesPolicy:
         InstancesDistribution:
-          OnDemandPercentageAboveBaseCapacity: {{if eq $data.NodePool.DiscountStrategy "spot_max_price"}}0{{else}}100{{end}}
+          OnDemandPercentageAboveBaseCapacity: {{if or (eq $data.NodePool.DiscountStrategy "spot") (eq $data.NodePool.DiscountStrategy "spot_max_price")}}0{{else}}100{{end}}
           SpotInstancePools: {{ len $data.NodePool.InstanceTypes }}
         LaunchTemplate:
           LaunchTemplateSpecification:
@@ -63,7 +63,7 @@ Resources:
         Value: ready
       - Key: k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot
         PropagateAtLaunch: true
-        Value: {{if eq $data.NodePool.DiscountStrategy "spot_max_price"}}true{{else}}false{{end}}
+        Value: {{if or (eq $data.NodePool.DiscountStrategy "spot") (eq $data.NodePool.DiscountStrategy "spot_max_price")}}true{{else}}false{{end}}
       - Key: k8s.io/cluster-autoscaler/node-template/resources/ephemeral-storage
         PropagateAtLaunch: false
         Value: "30Gi"
@@ -71,7 +71,7 @@ Resources:
         PropagateAtLaunch: true
 {{- if index $data.NodePool.ConfigItems "scaling_priority" }}
         Value: "{{ $data.NodePool.ConfigItems.scaling_priority }}"
-{{- else if eq $data.NodePool.DiscountStrategy "spot_max_price" }}
+{{- else if or (eq $data.NodePool.DiscountStrategy "spot") (eq $data.NodePool.DiscountStrategy "spot_max_price") }}
         Value: "1000"
 {{- else }}
         Value: "0"
@@ -127,7 +127,7 @@ Resources:
         - !Ref 'AWS::Region'
         - MachineImage
         InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
-{{- if and (eq .NodePool.DiscountStrategy "spot_max_price") (eq (len $data.NodePool.InstanceTypes) 1) }}
+{{- if and (or (eq .NodePool.DiscountStrategy "spot") (eq .NodePool.DiscountStrategy "spot_max_price")) (eq (len $data.NodePool.InstanceTypes) 1) }}
         InstanceMarketOptions:
           MarketType: spot
 {{ end }}
