@@ -19,7 +19,7 @@ Resources:
       MixedInstancesPolicy:
         InstancesDistribution:
           OnDemandPercentageAboveBaseCapacity: {{if or (eq .NodePool.DiscountStrategy "spot") (eq .NodePool.DiscountStrategy "spot_max_price")}}0{{else}}100{{end}}
-          SpotInstancePools: {{ len .NodePool.InstanceTypes }}
+          SpotAllocationStrategy: capacity-optimized
         LaunchTemplate:
           LaunchTemplateSpecification:
             LaunchTemplateId: !Ref LaunchTemplate
