@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	deploymentutil "k8s.io/kubernetes/pkg/controller/deployment/util"
 	"k8s.io/kubernetes/test/e2e/framework"
+	deploymentframework "k8s.io/kubernetes/test/e2e/framework/deployment"
 )
 
 var _ = framework.KubeDescribe("PSP use", func() {
@@ -108,7 +109,7 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		defer func() {
 			By(fmt.Sprintf("Delete a deployment that creates a privileged POD as %s", operatorSA))
 			defer GinkgoRecover()
-			err := cs.ExtensionsV1beta1().Deployments(ns).Delete(d.Name, metav1.NewDeleteOptions(0))
+			err := cs.AppsV1().Deployments(ns).Delete(d.Name, metav1.NewDeleteOptions(0))
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
@@ -117,9 +118,9 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for it to be updated to revision 1
-		err = framework.WaitForDeploymentRevisionAndImage(cs, ns, deploy.Name, "1", "nginx:latest")
+		err = deploymentframework.WaitForDeploymentRevisionAndImage(cs, ns, deploy.Name, "1", "nginx:latest")
 		Expect(err).NotTo(HaveOccurred())
-		err = framework.WaitForDeploymentComplete(cs, deploy)
+		err = deploymentframework.WaitForDeploymentComplete(cs, deploy)
 		Expect(err).NotTo(HaveOccurred())
 		deployment, err := cs.AppsV1().Deployments(ns).Get(deploy.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
