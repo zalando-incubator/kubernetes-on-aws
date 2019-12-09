@@ -109,7 +109,7 @@ write_files:
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/16
           - --secure-port=443
-          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,PodSecurityPolicy,ImagePolicyWebhook,Priority,ExtendedResourceToleration
+          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority,ExtendedResourceToleration
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
@@ -122,7 +122,7 @@ write_files:
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
           - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,CustomResourceWebhookConversion={{.Cluster.ConfigItems.custom_resource_webhook_conversion}},CustomResourcePublishOpenAPI={{.Cluster.ConfigItems.custom_resource_publish_openapi}}
           - --anonymous-auth=false
-          {{ if or (eq .Cluster.Environment "production") (index .Cluster.ConfigItems "audittrail_url") }}
+          {{ if ne .Cluster.ConfigItems.audittrail_url "" }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
           - --audit-webhook-version=audit.k8s.io/v1beta1
@@ -172,7 +172,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-40
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-45
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -221,13 +221,15 @@ write_files:
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_resource_validate_redeployments "true" }}
             - --resource-validate-redeployments
 {{- end }}
+            - --deployment-rolling-update-default-max-surge={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}
+            - --deployment-rolling-update-default-max-unavailable={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}
           ports:
             - containerPort: 8085
           volumeMounts:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.6.1
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.6.2
           name: webhook
           ports:
           - containerPort: 8081
