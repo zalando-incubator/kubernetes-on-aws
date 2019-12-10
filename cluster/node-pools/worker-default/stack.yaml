@@ -4,7 +4,7 @@ Description: Kubernetes default worker node pool
 Mappings:
   Images:
     eu-central-1:
-      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_14 }}'
+      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_15 }}'
 
 Resources:
   AutoScalingGroup:
@@ -18,8 +18,8 @@ Resources:
 {{ if gt (len .NodePool.InstanceTypes) 1 }}
       MixedInstancesPolicy:
         InstancesDistribution:
-          OnDemandPercentageAboveBaseCapacity: {{if eq .NodePool.DiscountStrategy "spot_max_price"}}0{{else}}100{{end}}
-          SpotInstancePools: {{ len .NodePool.InstanceTypes }}
+          OnDemandPercentageAboveBaseCapacity: {{if or (eq .NodePool.DiscountStrategy "spot") (eq .NodePool.DiscountStrategy "spot_max_price")}}0{{else}}100{{end}}
+          SpotAllocationStrategy: capacity-optimized
         LaunchTemplate:
           LaunchTemplateSpecification:
             LaunchTemplateId: !Ref LaunchTemplate
@@ -45,13 +45,22 @@ Resources:
       - Key: kubernetes.io/role
         PropagateAtLaunch: true
         Value: worker
+      - Key: node.kubernetes.io/role
+        PropagateAtLaunch: true
+        Value: worker
       - Key: k8s.io/cluster-autoscaler/enabled
         PropagateAtLaunch: true
         Value: ''
       - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/role
         PropagateAtLaunch: true
         Value: worker
+      - Key: k8s.io/cluster-autoscaler/node-template/label/node.kubernetes.io/role
+        PropagateAtLaunch: true
+        Value: worker
       - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/node-pool
+        PropagateAtLaunch: true
+        Value: {{ .NodePool.Name }}
+      - Key: k8s.io/cluster-autoscaler/node-template/label/node.kubernetes.io/node-pool
         PropagateAtLaunch: true
         Value: {{ .NodePool.Name }}
       - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
@@ -59,7 +68,7 @@ Resources:
         Value: ready
       - Key: k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot
         PropagateAtLaunch: true
-        Value: {{if eq .NodePool.DiscountStrategy "spot_max_price"}}true{{else}}false{{end}}
+        Value: {{if or (eq .NodePool.DiscountStrategy "spot") (eq .NodePool.DiscountStrategy "spot_max_price")}}true{{else}}false{{end}}
       - Key: k8s.io/cluster-autoscaler/node-template/resources/ephemeral-storage
         PropagateAtLaunch: false
         Value: "30Gi"
@@ -67,7 +76,7 @@ Resources:
         PropagateAtLaunch: true
 {{- if index .NodePool.ConfigItems "scaling_priority" }}
         Value: "{{ .NodePool.ConfigItems.scaling_priority }}"
-{{- else if eq .NodePool.DiscountStrategy "spot_max_price" }}
+{{- else if or (eq .NodePool.DiscountStrategy "spot") (eq .NodePool.DiscountStrategy "spot_max_price") }}
         Value: "1000"
 {{- else }}
         Value: "0"
@@ -117,7 +126,7 @@ Resources:
         - !Ref 'AWS::Region'
         - MachineImage
         InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
-{{- if and (eq .NodePool.DiscountStrategy "spot_max_price") (eq (len .NodePool.InstanceTypes) 1) }}
+{{- if and (or (eq .NodePool.DiscountStrategy "spot") (eq .NodePool.DiscountStrategy "spot_max_price")) (eq (len .NodePool.InstanceTypes) 1) }}
         InstanceMarketOptions:
           MarketType: spot
 {{ end }}

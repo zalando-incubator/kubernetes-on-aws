@@ -2,12 +2,13 @@
 
 BINARY       ?= kubernetes-on-aws-e2e
 VERSION      ?= $(shell git describe --tags --always --dirty)
-KUBE_VERSION ?= v1.14.6
+KUBE_VERSION ?= v1.15.6
 IMAGE        ?= registry-write.opensource.zalan.do/teapot/$(BINARY)
 TAG          ?= $(VERSION)
 DOCKERFILE   ?= Dockerfile
 MOD_DIR      ?= e2e_modules
-MOD_PATH     ?= ../$(MOD_DIR)
+MOD_PATH     ?= ./$(MOD_DIR)
+GO_BINDATA   = ./build/go-bindata
 
 default: build
 
@@ -15,13 +16,20 @@ default: build
 $(MOD_PATH):
 	mkdir -p $(MOD_PATH)
 
-fix-go-modules:	$(MOD_PATH)
-	MOD_PATH=$(MOD_PATH) ./setup_modules.sh
+$(GO_BINDATA):
+	mkdir -p build
+	GOBIN=$(shell pwd)/build go install github.com/jteeuwen/go-bindata/go-bindata
 
-deps: fix-go-modules
+fix-go-modules:	$(MOD_PATH)
+	MOD_PATH=$(MOD_PATH) KUBE_VERSION=$(KUBE_VERSION) ./setup_modules.sh
+
+generate-code: fix-go-modules $(GO_BINDATA)
+	PATH="$(shell pwd)/build:$(PATH)" "$(MOD_PATH)/kubernetes/hack/generate-bindata.sh"
+
+deps: generate-code
 	GO111MODULE=on go get github.com/onsi/ginkgo/ginkgo@v1.8.0
 
-e2e.test: fix-go-modules
+e2e.test: generate-code
 	GO111MODULE=on go test -v -c -o e2e.test
 
 build: e2e.test
@@ -35,3 +43,4 @@ build.push: build.docker
 clean:
 	rm -rf e2e.test
 	rm -rf $(MOD_PATH)
+	rm -rf build
