@@ -5,7 +5,7 @@ write_files:
     path: /etc/kubernetes/secrets.env
     content: |
       NODEPOOL_TAINTS={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}}
-      NODE_LABELS={{ .Values.node_labels }},{{if eq .Cluster.ConfigItems.legacy_node_pool_label_enabled "true"}}kubernetes.io/node-pool={{.NodePool.Name}},{{end}}kubernetes.io/role=worker,node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
+      NODE_LABELS={{ .Values.node_labels }},node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=worker
       ON_DEMAND_WORKER_REPLACEMENT_STRATEGY={{if eq .Cluster.Environment "production"}}prepare-replacement{{else}}none{{end}}
