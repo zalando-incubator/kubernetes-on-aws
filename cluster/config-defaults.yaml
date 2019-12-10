@@ -175,7 +175,7 @@ teapot_admission_controller_validate_pod_template_resources: "true"
 {{end}}
 
 {{if eq .Environment "e2e"}}
-teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
+teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota)-.*)$"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
 {{end}}
@@ -194,6 +194,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
 kuberuntu_image_v1_15: {{ amiID "zalando-ubuntu-kubernetes-production-v1.15.9-master-89" "861068367966" }}
+kuberuntu_image_v1_16: {{ amiID "zalando-ubuntu-kubernetes-production-v1.16.6-master-89" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -213,14 +214,6 @@ audittrail_url: "https://audittrail.cloud.zalando.com"
 audittrail_url: ""
 {{end}}
 audittrail_root_account_role: ""
-
-# Feature toggle for CustomResourceWebhookConversion (alpha in v1.13)
-# https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definition-versioning/#webhook-conversion
-custom_resource_webhook_conversion: "false"
-
-# Feature toggle for CustomResourcePublishOpenAPI (alpha in v1.14)
-# https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#publish-validation-schema-in-openapi-v2
-custom_resource_publish_openapi: "false"
 
 # CIDR configuration for nodes and pods
 # Changing this will change the number of nodes and pods we can schedule in the
@@ -276,6 +269,9 @@ enable_cdp_sa: "false"
 # virtual memory configuration
 vm_dirty_background_bytes: ""
 vm_dirty_bytes: ""
+
+# Enable FeatureGate EndpointSlice
+enable_endpointslice: "false"
 
 # temporary flag for kubernetes.io/node-pool node label
 legacy_node_pool_label_enabled: "false"

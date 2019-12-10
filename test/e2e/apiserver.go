@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	deploymentframework "k8s.io/kubernetes/test/e2e/framework/deployment"
+	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
 var _ = framework.KubeDescribe("API Server webhook tests", func() {
@@ -65,7 +66,7 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 		labelSelector := labels.SelectorFromSet(labels.Set(label))
 		err = deploymentframework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
 		Expect(err).NotTo(HaveOccurred())
-		_, err = framework.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, int(replicas), 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, int(replicas), 1*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

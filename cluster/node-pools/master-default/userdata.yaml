@@ -3,8 +3,8 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
-      NODEPOOL_TAINTS=node-role.kubernetes.io/master=:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
-      NODE_LABELS=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,{{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
+      NODEPOOL_TAINTS=node.kubernetes.io/role=master:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
+      NODE_LABELS=master=true,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,{{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=master
 
@@ -89,7 +89,8 @@ write_files:
       spec:
         priorityClassName: system-node-critical
         tolerations:
-        - key: node-role.kubernetes.io/master
+        - key: node.kubernetes.io/role
+          value: master
           effect: NoSchedule
         hostNetwork: true
         containers:
@@ -110,14 +111,14 @@ write_files:
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
-          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1/podsecuritypolicy=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
+          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1/podsecuritypolicy=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true{{ if eq .Cluster.ConfigItems.enable_endpointslice "true" }},discovery.k8s.io/v1alpha1=true{{ end }}
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
           - --authorization-mode=Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,CustomResourceWebhookConversion={{.Cluster.ConfigItems.custom_resource_webhook_conversion}},CustomResourcePublishOpenAPI={{.Cluster.ConfigItems.custom_resource_publish_openapi}},BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
+          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }}
           - --anonymous-auth=false
           {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
@@ -451,7 +452,8 @@ write_files:
       spec:
         priorityClassName: system-node-critical
         tolerations:
-        - key: node-role.kubernetes.io/master
+        - key: node.kubernetes.io/role
+          value: master
           effect: NoSchedule
         containers:
         - name: kube-controller-manager
@@ -477,6 +479,9 @@ write_files:
           - --horizontal-pod-autoscaler-sync-period={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_sync_period }}
           - --horizontal-pod-autoscaler-tolerance={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_tolerance }}
           - --horizontal-pod-autoscaler-upscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_upscale_delay }}
+          {{ if eq .Cluster.ConfigItems.enable_endpointslice "true" }}
+          - --controllers=endpointslice
+          {{ end }}
           resources:
             requests:
               cpu: 100m
@@ -517,7 +522,8 @@ write_files:
       spec:
         priorityClassName: system-node-critical
         tolerations:
-        - key: node-role.kubernetes.io/master
+        - key: node.kubernetes.io/role
+          value: master
           effect: NoSchedule
         hostNetwork: true
         containers:
