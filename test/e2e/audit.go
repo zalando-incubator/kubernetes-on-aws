@@ -12,6 +12,7 @@ import (
 	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 	"k8s.io/kubernetes/test/utils"
 
 	jsonpatch "github.com/evanphx/json-patch"
@@ -117,9 +118,9 @@ func expectEvents(f *framework.Framework, expectedEvents []utils.AuditEvent) {
 		defer stream.Close()
 		missingReport, err := utils.CheckAuditLines(stream, expectedEvents, auditv1.SchemeGroupVersion)
 		if err != nil {
-			framework.Logf("Failed to observe audit events: %v", err)
+			e2elog.Logf("Failed to observe audit events: %v", err)
 		} else if len(missingReport.MissingEvents) > 0 {
-			framework.Logf("Events %#v not found!", missingReport)
+			e2elog.Logf("Events %#v not found!", missingReport)
 		}
 		return len(missingReport.MissingEvents) == 0, nil
 	})

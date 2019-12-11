@@ -5,11 +5,12 @@ metadata:
     pdb-controller.zalando.org/non-ready-ttl: "5m"
   labels:
     application: prometheus
-    version: v2.10.0
+    version: v2.14.0
   name: prometheus
   namespace: kube-system
 spec:
   replicas: 2
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       application: prometheus
@@ -18,23 +19,25 @@ spec:
     metadata:
       labels:
         application: prometheus
-        version: v2.10.0
+        version: v2.14.0
       annotations:
         config/hash: {{"configmap.yaml" | manifestHash}}
     spec:
       serviceAccountName: prometheus
       dnsConfig:
         options:
-          - name: ndots
-            value: "1"
+        - name: ndots
+          value: "1"
       priorityClassName: system-cluster-critical
       containers:
       - name: prometheus
-        image: registry.opensource.zalan.do/teapot/prometheus:v2.10.0
+        image: registry.opensource.zalan.do/teapot/prometheus:v2.14.0
         args:
         - "--config.file=/etc/prometheus/prometheus.yml"
         - "--storage.tsdb.path=/prometheus/"
-        - "--storage.tsdb.retention=1d"
+        - "--storage.tsdb.retention.time=1d"
+        - "--storage.tsdb.wal-compression"
+        - "--storage.tsdb.min-block-duration=30m"
         ports:
         - name: ingress-port
           containerPort: 9090
@@ -52,6 +55,9 @@ spec:
             port: 9090
           initialDelaySeconds: 5
           timeoutSeconds: 5
+          # ensure that we have at least two minutes of metrics before marking ourselves as ready
+          periodSeconds: 5
+          successThreshold: 26
         volumeMounts:
         - name: prometheus-config-volume
           mountPath: /etc/prometheus
@@ -60,13 +66,14 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
       volumes:
-        - name: prometheus-config-volume
-          configMap:
-            defaultMode: 420
-            name: prometheus-conf
+      - name: prometheus-config-volume
+        configMap:
+          defaultMode: 420
+          name: prometheus-conf
       securityContext:
         runAsUser: 65534
         fsGroup: 65534
+      terminationGracePeriodSeconds: 60
   volumeClaimTemplates:
   - metadata:
       name: prometheus-storage-volume

@@ -7,11 +7,13 @@ metadata:
     application: etcd-backup
     version: "master-9"
 spec:
-  schedule: "23 * * * *"
+  schedule: "*/1 * * * *"
   concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 5
   failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
+      activeDeadlineSeconds: 600
       template:
         metadata:
           labels:

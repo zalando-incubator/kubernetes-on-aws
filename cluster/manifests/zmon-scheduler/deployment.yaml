@@ -5,7 +5,7 @@ metadata:
   namespace: visibility
   labels:
     application: zmon-scheduler
-    version: "v46-51-g0a0ad78-0.1.6-master-88"
+    version: "v46-55-gd1b34bc-0.1.6-master-92"
 spec:
   replicas: {{.ConfigItems.zmon_scheduler_replicas}}
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: zmon-scheduler
-        version: "v46-51-g0a0ad78-0.1.6-master-88"
+        version: "v46-55-gd1b34bc-0.1.6-master-92"
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-zmon"
     spec:
@@ -47,14 +47,14 @@ spec:
 
       containers:
         - name: zmon-scheduler
-          image: "pierone.stups.zalan.do/zmon/zmon-scheduler:v46-51-g0a0ad78-0.1.6-master-88"
+          image: "pierone.stups.zalan.do/zmon/zmon-scheduler:v46-55-gd1b34bc-0.1.6-master-92"
           resources:
             limits:
               cpu: 1000m
-              memory: 2.5Gi
+              memory: {{.ConfigItems.zmon_scheduler_mem}}
             requests:
               cpu: 1000m
-              memory: 2.5Gi
+              memory: {{.ConfigItems.zmon_scheduler_mem}}
 
           ports:
             - containerPort: 7979

@@ -51,7 +51,7 @@ clusters:
     skipper_ingress_cpu: 100m
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
-    node_problem_detector_enabled: true
+    kube_aws_ingress_controller_nlb_enabled: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
@@ -65,7 +65,7 @@ clusters:
     profile: ${MASTER_PROFILE}-default
     min_size: 1
     max_size: 2
-  - discount_strategy: spot_max_price
+  - discount_strategy: spot
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker-splitaz
     profile: ${WORKER_PROFILE}-splitaz
@@ -73,26 +73,37 @@ clusters:
     max_size: 21
     config_items:
       cpu_manager_policy: static
-  - discount_strategy: spot_max_price
+  - discount_strategy: spot
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker
     profile: ${WORKER_PROFILE}-default
     min_size: 1
     max_size: 21
-  - discount_strategy: spot_max_price
+  - discount_strategy: spot
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     config_items:
       availability_zones: "eu-central-1a"
+      scaling_priority: "-100"
     name: worker-limit-az
     profile: ${WORKER_PROFILE}-splitaz
     min_size: 1
     max_size: 21
-  - discount_strategy: spot_max_price
+  - discount_strategy: spot
     instance_types: ["m5d.large", "m5d.xlarge", "m5d.2xlarge"]
     name: worker-instance-storage
     profile: ${WORKER_PROFILE}-default
     min_size: 1
     max_size: 21
+  - discount_strategy: spot
+    instance_types: ["p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
+    name: worker-gpu
+    profile: ${WORKER_PROFILE}-default
+    min_size: 0
+    max_size: 3
+    config_items:
+      availability_zones: "eu-central-1a"
+      labels: zalando.org/nvidia-gpu=tesla
+      scaling_priority: "-100"
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'

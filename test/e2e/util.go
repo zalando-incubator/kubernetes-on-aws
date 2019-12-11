@@ -9,12 +9,15 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 
 	zv1 "github.com/mikkeloscar/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
 	. "github.com/onsi/ginkgo"
@@ -28,12 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
-func createIngress(name, hostname, namespace string, label map[string]string, port int) *v1beta1.Ingress {
+func createIngress(name, hostname, namespace string, labels, annotations map[string]string, port int) *v1beta1.Ingress {
 	return &v1beta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name + string(uuid.NewUUID()),
-			Namespace: namespace,
-			Labels:    label,
+			Name:        name + string(uuid.NewUUID()),
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: annotations,
 		},
 		Spec: v1beta1.IngressSpec{
 			Rules: []v1beta1.IngressRule{
@@ -582,7 +586,7 @@ func waitForReplicas(deploymentName, namespace string, kubeClient kubernetes.Int
 			framework.Failf("Failed to get replication controller %s: %v", deployment, err)
 		}
 		replicas := int(deployment.Status.ReadyReplicas)
-		framework.Logf("waiting for %d replicas (current: %d)", desiredReplicas, replicas)
+		e2elog.Logf("waiting for %d replicas (current: %d)", desiredReplicas, replicas)
 		return replicas == desiredReplicas, nil // Expected number of replicas found. Exit.
 	})
 	if err != nil {
@@ -673,6 +677,34 @@ func createVegetaDeployment(hostPath string, rate int) *appsv1.Deployment {
 	}
 }
 
+const NVIDIAGPUResourceName corev1.ResourceName = "nvidia.com/gpu"
+
+func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1.Pod {
+	return &v1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nameprefix + string(uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:  "cuda-vector-add",
+					Image: "k8s.gcr.io/cuda-vector-add:v0.1",
+					Resources: corev1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							NVIDIAGPUResourceName: *resource.NewQuantity(1, resource.DecimalSI),
+						},
+					},
+				},
+			},
+		},
+	}
+}
 func deleteDeployment(cs kubernetes.Interface, ns string, deployment *appsv1.Deployment) {
 	By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 	defer GinkgoRecover()
@@ -746,4 +778,22 @@ func getBody(resp *http.Response) (string, error) {
 		return "", fmt.Errorf("failed to copy body: %v", err)
 	}
 	return buf.String(), nil
+}
+
+func getPodLogs(c kubernetes.Interface, namespace, podName, containerName string, previous bool) (string, error) {
+	logs, err := c.CoreV1().RESTClient().Get().
+		Resource("pods").
+		Namespace(namespace).
+		Name(podName).SubResource("log").
+		Param("container", containerName).
+		Param("previous", strconv.FormatBool(previous)).
+		Do().
+		Raw()
+	if err != nil {
+		return "", err
+	}
+	if err == nil && strings.Contains(string(logs), "Internal Error") {
+		return "", fmt.Errorf("Fetched log contains \"Internal Error\": %q", string(logs))
+	}
+	return string(logs), err
 }

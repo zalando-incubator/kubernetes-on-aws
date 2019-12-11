@@ -69,7 +69,7 @@ var _ = framework.KubeDescribe("[HPA] Horizontal pod autoscaling (scale resource
 		port := 80
 		targetPort := 8000
 		targetUrl := hostName + "/metrics"
-		ingress := createIngress(DeploymentName, hostName, f.Namespace.Name, labels, port)
+		ingress := createIngress(DeploymentName, hostName, f.Namespace.Name, labels, nil, port)
 		tc := CustomMetricTestCase{
 			framework:       f,
 			kubeClient:      cs,
@@ -339,7 +339,8 @@ func podHPA(deploymentName string, ingressName string, metricTargets map[string]
 					Kind:       "Ingress",
 					Name:       ingressName,
 				},
-				TargetValue: *resource.NewQuantity(target, resource.DecimalSI),
+				TargetValue:  *resource.NewQuantity(target, resource.DecimalSI),
+				AverageValue: resource.NewQuantity(target, resource.DecimalSI),
 			},
 		})
 	}

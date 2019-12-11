@@ -13,12 +13,16 @@ autoscaling_buffer_pods: "0"
 cluster_autoscaler_cpu: "100m"
 cluster_autoscaler_memory: "300Mi"
 
-# Temporarily moved to a config item so we could test the new version
-cluster_autoscaler_version: "v1.12.2-internal.4"
+# defines which expander the autoscaler should use
+cluster_autoscaler_expander: highest-priority
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
+# allow using NLBs for ingress
+# This opens port 9999 (skipper-ingress) on all worker nodes.
+kube_aws_ingress_controller_nlb_enabled: "false"
+kube_aws_ingress_controller_nlb_cross_zone: "true"
 
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "70"
@@ -55,6 +59,17 @@ enable_skipper_eastwest: "false"
 enable_skipper_eastwest: "true"
 {{end}}
 
+# skipper tcp lifo
+# See: https://opensource.zalando.com/skipper/operation/operation/#tcp-lifo
+{{if eq .Environment "production"}}
+skipper_enable_tcp_queue: "false"
+{{else}}
+skipper_enable_tcp_queue: "true"
+{{end}}
+skipper_expected_bytes_per_request: "51200"
+skipper_max_tcp_listener_concurrency: "-1"
+skipper_max_tcp_listener_queue: "-1"
+
 # opentracing
 skipper_ingress_opentracing_excluded_proxy_tags: "skipper.route"
 # lightstep
@@ -70,10 +85,16 @@ lightstep_token: "aws:kms:AQICAHgrx06TPoR1aNmcPHJjFu5mmoICT5KJkx2fsTJpmXmbNAHvvY
 {{end}}
 
 # tokeninfo
+skipper_ingress_tokeninfo_cpu: "1000m"
+skipper_ingress_tokeninfo_memory: "512Mi"
 {{if eq .Environment "production"}}
 tokeninfo_url: "https://info.services.auth.zalando.com/oauth2/tokeninfo"
+opendid_provider_cfg_url: "https://planb-provider.greendale-questionmark.zalan.do/.well-known/openid-configuration"
+openid_issuer: "https://identity.zalando.com"
 {{else}}
 tokeninfo_url: "https://sandbox-tokeninfo-bridge.stups.zalan.do/oauth2/tokeninfo"
+opendid_provider_cfg_url: "https://sandbox.identity.zalando.com/.well-known/openid-configuration"
+openid_issuer: "https://sandbox.identity.zalando.com"
 {{end}}
 
 # Image Policy Webhook
@@ -87,12 +108,6 @@ image_policy: "dev"
 cadvisor_cpu: "150m"
 cadvisor_memory: "150Mi"
 
-# whether to deploy node-problem-detector
-node_problem_detector_enabled: "false"
-# node-problem-detector settings
-node_problem_detector_cpu: "25m"
-node_problem_detector_memory: "75Mi"
-
 # node exporter settings
 node_exporter_cpu: "20m"
 node_exporter_memory: "75Mi"
@@ -104,6 +119,7 @@ zmon_agent_replicas: "0"
 zmon_aws_agent_replicas: "0"
 zmon_redis_replicas: "0"
 zmon_scheduler_replicas: "0"
+zmon_scheduler_mem: "0Gi"
 zmon_worker_replicas: "0"
 zmon_worker_mem: "0Gi"
 zmon_worker_cpu: "0"
@@ -114,6 +130,7 @@ zmon_agent_replicas: "1"
 zmon_aws_agent_replicas: "1"
 zmon_redis_replicas: "1"
 zmon_scheduler_replicas: "1"
+zmon_scheduler_mem: "2.5Gi"
 zmon_worker_replicas: "6"
 zmon_worker_mem: "4Gi"
 zmon_worker_cpu: "750m"
@@ -124,13 +141,15 @@ zmon_agent_replicas: "1"
 zmon_aws_agent_replicas: "1"
 zmon_redis_replicas: "1"
 zmon_scheduler_replicas: "1"
+zmon_scheduler_mem: "2.5Gi"
 zmon_worker_replicas: "4"
 zmon_worker_mem: "4Gi"
 zmon_worker_cpu: "750m"
 zmon_worker_count: "16"
 {{end}}
 zmon_scalyr_region: "eu"
-zmon_worker_version: "v209-py2eol-2-gcd9ec1c-v251-py2eol"
+zmon_worker_version: "v209-py2eol-53-g458f8ba-v251-py2eol"
+zmon_agent_version: "0.4-19-ga12da10-zv5"
 logging_watcher_mem: "200Mi"
 logging_scalyr_mem: "175Mi"
 logging_slo_heartbeat_mem: "25Mi"
@@ -141,8 +160,8 @@ logging_slo_heartbeat_cpu: "10m"
 logging_fluentd_cpu: "100m"
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
 scalyr_team_token: ""
-logging_agent_version: "v0.36"
-logging_watcher_version: "master-58"
+logging_agent_version: "v0.37"
+logging_watcher_version: "master-68"
 logging_scalyr_enable_profiling: "false"
 
 zmon_redis_mem: "1Gi"
@@ -153,7 +172,8 @@ zmon_aws_agent_cpu: "100m"
 
 prometheus_cpu: "1000m"
 prometheus_mem: "4Gi"
-prometheus_mem_min: "512Mi"
+prometheus_mem_min: "1Gi"
+prometheus_cpu_min: "0"
 
 metrics_service_cpu: "100m"
 metrics_service_mem: "200Mi"
@@ -204,11 +224,13 @@ teapot_admission_controller_process_resources: "true"
 teapot_admission_controller_application_min_creation_time: "2019-06-03T12:00:00Z"
 teapot_admission_controller_ndots: "2"
 teapot_admission_controller_inject_environment_variables: "true"
+teapot_admission_controller_deployment_default_max_surge: "5%"
+teapot_admission_controller_deployment_default_max_unavailable: "1"
 
 {{if eq .Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_resource_cutoff_timestamp: "2019-07-08T22:00:00Z"
-teapot_admission_controller_resource_validate_redeployments: "false"
+teapot_admission_controller_resource_validate_redeployments: "true"
 {{else if eq .Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_resource_cutoff_timestamp: ""
@@ -226,8 +248,16 @@ teapot_admission_controller_ignore_namespaces: "^kube-system$"
 {{end}}
 
 # etcd cluster
-{{if ne .Environment "production"}}
+{{if eq .Environment "production"}}
+etcd_instance_count: "5"
+{{else}}
 etcd_instance_count: "3"
+{{end}}
+
+{{if ne .Environment "e2e"}}
+etcd_scalyr_key: "aws:kms:AQECAHgNxQ3yghAnRNmN6GyaSh8l0hGHUap3hNqu00tmcgcOxgAAAIwwgYkGCSqGSIb3DQEHBqB8MHoCAQAwdQYJKoZIhvcNAQcBMB4GCWCGSAFlAwQBLjARBAwrD+79PBvwdNnIXGICARCASEVQTLFyRAWL1OWE1WSl19lm5wY6Cj38wWse8esMBlxUvYSDRZqqyKMJieZpDbAxaAnJO6FKEJdpOoyU8GsV8At/43DhtaHkdA=="
+{{else}}
+etcd_scalyr_key: ""
 {{end}}
 
 dynamodb_service_link_enabled: "false"
@@ -235,7 +265,8 @@ dynamodb_service_link_enabled: "false"
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
-kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.8-master-74" "861068367966" }}
+kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.8-master-77" "861068367966" }}
+kuberuntu_image_v1_15: {{ amiID "zalando-ubuntu-kubernetes-production-v1.15.6-master-81" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -249,24 +280,31 @@ experimental_schedule_daemonset_pods: "false"
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
+{{if eq .Environment "production"}}
+audittrail_url: "https://audittrail.cloud.zalando.com"
+{{else}}
+audittrail_url: ""
+{{end}}
 
 # Feature toggle for CustomResourceWebhookConversion (alpha in v1.13)
 # https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definition-versioning/#webhook-conversion
 custom_resource_webhook_conversion: "false"
 
+# Feature toggle for CustomResourcePublishOpenAPI (alpha in v1.14)
+# https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#publish-validation-schema-in-openapi-v2
+custom_resource_publish_openapi: "false"
+
 # CIDR configuration for nodes and pods
 # Changing this will change the number of nodes and pods we can schedule in the
-# cluster
-# The two flags should be changed together to have the right balance between
-# available pod IP addresses per node and maximum pods per node. Roughly the
-# double amount of IP addresses should be available.
-# https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr
-# flag passed to kubelet
-# TODO: pass this flag to worker kublets (will do it with 1.13 to prevent extra
-# rolling of nodes)
-node_max_pods: "110" # Default: 110
-# flag passed to controller-manager
-node_cidr_mask_size: "24" # Default: 24
+# cluster: https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr
+{{if eq .Environment "production"}}
+node_cidr_mask_size: "25"
+{{else}}
+node_cidr_mask_size: "24"
+{{end}}
+# How many nodes to keep reserved (e.g. to allow for increasing the node_cidr_mask_size).
+# Note that this only affects CA settings, someone can still scale up the ASGs manually.
+reserved_nodes: "5"
 
 # maximum number of PIDs allowed to be allocated per pod
 pod_max_pids: "4096"
@@ -285,3 +323,7 @@ kube_aws_iam_controller_kube_system_enable: "true"
 
 # allow ssh access for internal VPC IPs only
 ssh_vpc_only: "false"
+
+# configure custom dns zone
+custom_dns_zone: "" # zone name e.g. example.org
+custom_dns_zone_nameservers: "" # space seperated list of nameserver IP addresses

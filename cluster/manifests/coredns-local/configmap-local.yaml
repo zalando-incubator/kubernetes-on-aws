@@ -7,27 +7,51 @@ metadata:
     application: coredns
 data:
   Corefile: |
-    .:9254 {
+{{ if and (ne .ConfigItems.custom_dns_zone "") (ne .ConfigItems.custom_dns_zone_nameservers "") }}
+    {{ .ConfigItems.custom_dns_zone }}:9254 {
         errors
-        health :9154
-        kubernetes cluster.local in-addr.arpa ip6.arpa {
-            pods insecure
-            upstream
-            fallthrough in-addr.arpa ip6.arpa
-        }
+        forward . {{ .ConfigItems.custom_dns_zone_nameservers }}
+        prometheus :9153
+        ready :9155
+        cache 30
+    }
+{{ end }}
+
 {{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
-        template IN A ingress.cluster.local  {
+    ingress.cluster.local:9254 {
+        template IN A {
             match "^.*[.]ingress[.]cluster[.]local"
             answer "{{"{{"}} .Name {{"}}"}} 60 IN A 10.3.99.99"
             fallthrough
         }
+        prometheus :9153
+        ready :9155
+    }
 {{ end }}
+
+    # 10.2.0.0/16, 10.3.0.0/16 defines that this server is authority for revese
+    # lookups for these ranges.
+    cluster.local:9254 10.2.0.0/16:9254 10.3.0.0/16:9254 {
+        errors
+        kubernetes {
+            pods insecure
+            upstream
+        }
+        cache 30
 {{ if eq .ConfigItems.coredns_log_svc_names "true"}}
         log svc.svc.cluster.local.
 {{ end }}
         prometheus :9153
+        ready :9155
+    }
+
+    .:9254 {
+        errors
+        health :9154 # this is global for all servers
+        ready :9155
+        prometheus :9153
         forward . /etc/resolv.conf
-        pprof 127.0.0.1:9155
+        pprof 127.0.0.1:9156
         cache 30
         reload
     }
