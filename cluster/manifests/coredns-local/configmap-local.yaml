@@ -7,6 +7,16 @@ metadata:
     application: coredns
 data:
   Corefile: |
+{{ if and (ne .ConfigItems.custom_dns_zone "") (ne .ConfigItems.custom_dns_zone_nameservers "") }}
+    {{ .ConfigItems.custom_dns_zone }}:9254 {
+        errors
+        forward . {{ .ConfigItems.custom_dns_zone_nameservers }}
+        prometheus :9153
+        ready :9155
+        cache 30
+    }
+{{ end }}
+
 {{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
     ingress.cluster.local:9254 {
         template IN A {
