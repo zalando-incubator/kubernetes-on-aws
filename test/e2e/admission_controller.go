@@ -114,6 +114,18 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 		Expect(envarValues).To(HaveKeyWithValue("_PLATFORM_E2E", "overridden"))
 	})
 
+	It("Admission controller should not prevent pods from being scheduled [Zalando]", func() {
+		ns := f.Namespace.Name
+		podName := "admission-invalid-owner-" + string(uuid.NewUUID())
+
+		By("Creating pod " + podName + " in namespace " + ns)
+		pod := createInvalidOwnerPod(ns, podName)
+		_, err := cs.CoreV1().Pods(ns).Create(pod)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = framework.WaitForPodSuccessInNamespaceSlow(cs, podName, ns)
+		Expect(err).NotTo(HaveOccurred())
+	})
 })
 
 func fetchEnvarValues(client kubernetes.Interface, ns, pod string) (map[string]string, error) {
@@ -130,6 +142,33 @@ func fetchEnvarValues(client kubernetes.Interface, ns, pod string) (map[string]s
 		}
 	}
 	return result, nil
+}
+
+func createInvalidOwnerPod(namespace, podname string) *v1.Pod {
+	return &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      podname,
+			Namespace: namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "foo/v1",
+					Kind:       "Invalid",
+					Name:       "asd",
+					UID:        "abc-213-def",
+				},
+			},
+		},
+		Spec: v1.PodSpec{
+			RestartPolicy: v1.RestartPolicyOnFailure,
+			Containers: []v1.Container{
+				{
+					Name:    "admission-controller-test",
+					Image:   dockerImage,
+					Command: []string{"/bin/true"},
+				},
+			},
+		},
+	}
 }
 
 func createDeploymentWithDeploymentInfo(nameprefix, namespace, podname string, replicas int32) *appsv1.Deployment {
