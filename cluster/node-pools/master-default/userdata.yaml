@@ -172,7 +172,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-45
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-48
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -208,9 +208,6 @@ write_files:
 {{- if eq .Cluster.Environment "e2e" }}
             - --pod-inject-env=_PLATFORM_E2E=injected
 {{- end }}
-{{- end }}
-{{- if eq .Cluster.ConfigItems.experimental_schedule_daemonset_pods "true" }}
-            - --node-add-not-ready-taint
 {{- end }}
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_validate_application_label "true" }}
             - --validate-application-label
