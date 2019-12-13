@@ -1372,6 +1372,59 @@ Resources:
             Status: Enabled
       VersioningConfiguration:
         Status: Suspended
+  AuditTrailBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AuditTrailBucket
+      PolicyDocument:
+        Statement:
+          # In-cluster access
+          - Action:
+              - s3:ListBucket
+            Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt EmergencyAccessServiceIAMRole.Arn
+                - !GetAtt AudittrailAdapterIAMRole.Arn
+            Resource:
+              - !GetAtt AuditTrailBucket.Arn
+
+          - Action:
+              - s3:PutObject
+            Effect: Allow
+            Principal:
+              AWS:
+              - !GetAtt EmergencyAccessServiceIAMRole.Arn
+              - !GetAtt AudittrailAdapterIAMRole.Arn
+            Resource:
+              - !Sub
+                - "${BucketArn}/*"
+                - BucketArn: !GetAtt AuditTrailBucket.Arn
+
+{{- if ne .Cluster.ConfigItems.audittrail_root_account_role "" }}
+          # Central access
+          - Action:
+              - s3:ListBucket
+            Effect: Allow
+            Principal:
+              AWS:
+                - {{.Cluster.ConfigItems.audittrail_root_account_role}}
+            Resource:
+              - !GetAtt AuditTrailBucket.Arn
+
+          - Action:
+              - s3:GetObject
+              - s3:DeleteObject
+            Effect: Allow
+            Principal:
+              AWS:
+                - {{.Cluster.ConfigItems.audittrail_root_account_role}}
+            Resource:
+              - !Sub
+                - "${BucketArn}/*"
+                - BucketArn: !GetAtt AuditTrailBucket.Arn
+{{- end }}
+
   EmergencyAccessServiceIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1396,17 +1449,18 @@ Resources:
         - PolicyDocument:
             Statement:
               - Action:
-                  - 's3:ListBucket'
+                  - s3:ListBucket
                 Effect: Allow
                 Resource:
-                  - >-
-                    arn:aws:s3:::zalando-audittrail-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}
+                  - !GetAtt AuditTrailBucket.Arn
+
               - Action:
-                  - 's3:PutObject'
+                  - s3:PutObject
                 Effect: Allow
                 Resource:
-                  - >-
-                    arn:aws:s3:::zalando-audittrail-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}/*
+                  - !Sub
+                    - "${BucketArn}/*"
+                    - BucketArn: !GetAtt AuditTrailBucket.Arn
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-emergency-access-service"
@@ -1435,17 +1489,18 @@ Resources:
         - PolicyDocument:
             Statement:
               - Action:
-                  - 's3:ListBucket'
+                  - s3:ListBucket
                 Effect: Allow
                 Resource:
-                  - >-
-                    arn:aws:s3:::zalando-audittrail-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}
+                  - !GetAtt AuditTrailBucket.Arn
+
               - Action:
-                  - 's3:PutObject'
+                  - s3:PutObject
                 Effect: Allow
                 Resource:
-                  - >-
-                    arn:aws:s3:::zalando-audittrail-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}/*
+                  - !Sub
+                    - "${BucketArn}/*"
+                    - BucketArn: !GetAtt AuditTrailBucket.Arn
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
