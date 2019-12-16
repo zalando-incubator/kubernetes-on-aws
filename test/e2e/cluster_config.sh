@@ -15,6 +15,7 @@ clusters:
     zmon_worker_plugin_sql_user:
     zmon_worker_plugin_sql_pass:
     zmon_root_account_role: ${ZMON_ROOT_ACCOUNT_ROLE}
+    audittrail_root_account_role: ${AUDITTRAIL_ROOT_ACCOUNT_ROLE}
     apiserver_etcd_prefix: /registry-${LOCAL_ID}
     apiserver_business_partner_ids: ${APISERVER_BUSINESS_PARTNER_IDS}
     etcd_s3_backup_bucket: zalando-kubernetes-etcd-${AWS_ACCOUNT}-${REGION}
