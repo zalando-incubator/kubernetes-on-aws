@@ -52,6 +52,12 @@ Resources:
       - Key: node.kubernetes.io/role
         PropagateAtLaunch: true
         Value: worker
+# only node pools without taints should be attached to Ingress Load balancer
+{{- if not (index $data.NodePool.ConfigItems "taints") }}
+      - Key: zalando.org/ingress-enabled
+        Value: "true"
+        PropagateAtLaunch: true
+{{- end }}
       - Key: k8s.io/cluster-autoscaler/enabled
         PropagateAtLaunch: true
         Value: ''
