@@ -21,13 +21,8 @@ spec:
     spec:
       serviceAccountName: audittrail-adapter
       priorityClassName: system-node-critical
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: node-role.kubernetes.io/master
-                operator: Exists
+      nodeSelector:
+        node.kubernetes.io/role: master
       tolerations:
       - operator: Exists
         effect: NoSchedule
