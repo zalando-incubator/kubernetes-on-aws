@@ -40,10 +40,11 @@ spec:
         - --store_container_labels=false
         - --whitelisted_container_labels=io.kubernetes.container.name,io.kubernetes.pod.name,io.kubernetes.pod.namespace,io.kubernetes.pod.uid,application
         resources:
-          limits:
+          requests:
             cpu: "{{ .ConfigItems.cadvisor_cpu }}"
             memory: "{{ .ConfigItems.cadvisor_memory }}"
-          requests:
+            ephemeral-storage: 256Mi
+          limits:
             cpu: "{{ .ConfigItems.cadvisor_cpu }}"
             memory: "{{ .ConfigItems.cadvisor_memory }}"
         securityContext:
