@@ -1,38 +1,13 @@
 # everything defined under here will be deleted before applying the manifests
-pre_apply:
-- name: kube-state-metrics
-  kind: ClusterRoleBinding
+pre_apply: []
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
-- name: node-problem-detector
-  namespace: kube-system
-  kind: ConfigMap
-- name: node-problem-detector
-  namespace: kube-system
-  kind: DaemonSet
-- name: node-problem-detector
-  namespace: kube-system
-  kind: Service
-- name: node-problem-detector
-  namespace: kube-system
-  kind: ServiceAccount
-- name: node-problem-detector-psp
-  namespace: kube-system
-  kind: RoleBinding
-- name: node-problem-detector
-  kind: ClusterRoleBinding
-- name: compute-resources
-  namespace: visibility
-  kind: ResourceQuota
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
   kind: LimitRange
 {{ end }}
-- name: kube-job-cleaner
-  namespace: kube-system
-  kind: CronJob
 {{ if ne .ConfigItems.enable_ingress_template_controller "true" }}
 - name: ingresstemplates.zalando.org
   kind: CustomResourceDefinition
@@ -47,30 +22,3 @@ post_apply:
 - name: ingress-template-controller
   kind: ClusterRoleBinding
 {{ end }}
-- name: nvidia-driver-installer
-  namespace: kube-system
-  kind: DaemonSet
-- name: admission-controller
-  namespace: kube-system
-  kind: ServiceAccount
-- name: admission-controller
-  kind: ClusterRole
-- name: admission-controller
-  kind: ClusterRoleBinding
-- name: zmon-scheduler
-  kind: VerticalPodAutoscaler
-  namespace: visibility
-- name: kubernetes-dashboard
-  kind: RoleBinding
-  namespace: kube-system
-- name: privileged-psp
-  namespace: kube-system
-  kind: RoleBinding
-- name: cdp-deployer
-  kind: ClusterRoleBinding
-- name: poweruser
-  kind: ClusterRoleBinding
-- name: readonly
-  kind: ClusterRoleBinding
-- name: zmon-external
-  kind: ClusterRoleBinding
