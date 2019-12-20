@@ -29,11 +29,29 @@ spec:
         - name: ndots
           value: "1"
       priorityClassName: system-cluster-critical
+      initContainers:
+      - name: generate-config
+        image: registry.opensource.zalan.do/stups/alpine:3.10.3-5
+        command:
+        - /bin/sh
+        args:
+        - -c
+        - sed s/'@@POD_NAME@@'/${POD_NAME}/g /etc/prometheus/prometheus.yml > /prometheus/prometheus.yaml
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts:
+        - name: prometheus-config-volume
+          mountPath: /etc/prometheus
+        - name: prometheus-storage-volume
+          mountPath: /prometheus
       containers:
       - name: prometheus
         image: registry.opensource.zalan.do/teapot/prometheus:v2.14.0
         args:
-        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--config.file=/prometheus/prometheus.yaml"
         - "--storage.tsdb.path=/prometheus/"
         - "--storage.tsdb.retention.time=1d"
         - "--storage.tsdb.wal-compression"
@@ -59,10 +77,12 @@ spec:
           periodSeconds: 5
           successThreshold: 26
         volumeMounts:
-        - name: prometheus-config-volume
-          mountPath: /etc/prometheus
         - name: prometheus-storage-volume
           mountPath: /prometheus
+{{- if ne .ConfigItems.prometheus_remote_write "disabled" }}
+        - name: prometheus-credentials
+          mountPath: /meta/credentials
+{{- end }}
         securityContext:
           allowPrivilegeEscalation: false
       volumes:
@@ -70,6 +90,11 @@ spec:
         configMap:
           defaultMode: 420
           name: prometheus-conf
+{{- if ne .ConfigItems.prometheus_remote_write "disabled" }}
+      - name: prometheus-credentials
+        secret:
+          secretName: prometheus-credentials
+{{- end }}
       securityContext:
         runAsUser: 65534
         fsGroup: 65534
