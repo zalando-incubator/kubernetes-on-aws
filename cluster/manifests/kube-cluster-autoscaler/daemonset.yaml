@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-cluster-autoscaler
-    version: v1.12.2-internal-2.5
+    version: v1.12.2-internal-2.6
 spec:
   selector:
     matchLabels:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: kube-cluster-autoscaler
-        version: v1.12.2-internal-2.5
+        version: v1.12.2-internal-2.6
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
         config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
@@ -36,7 +36,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal-2.5
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal-2.6
         command:
           - ./cluster-autoscaler
           - --v=4
