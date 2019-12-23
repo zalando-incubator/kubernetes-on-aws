@@ -10,7 +10,8 @@ data:
     global:
       scrape_interval: 15s
       external_labels:
-        monitor: 'skipper-ingress'
+        prometheus_replica: @@POD_NAME@@
+        cluster: {{ .Cluster.Alias }}
     scrape_configs:
     # scrape from kube-apiserver pods
     - job_name: 'kubernetes-apiservers'
@@ -172,3 +173,8 @@ data:
        - source_labels: [ __name__ ]
          regex: 'reflector.*'
          action: drop
+{{- if ne .ConfigItems.prometheus_remote_write "disabled" }}
+    remote_write:
+    - url: {{ .ConfigItems.prometheus_remote_write }}
+      bearer_token_file: /meta/credentials/remote-write
+{{- end }}
