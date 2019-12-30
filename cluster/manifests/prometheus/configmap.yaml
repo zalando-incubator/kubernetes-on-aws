@@ -90,6 +90,10 @@ data:
         - "{{ with $hostPort := splitHostPort .ConfigItems.etcd_endpoints }}{{ .Host }}{{ end }}"
         type: "A"
         port: 9100
+      metric_relabel_configs:
+       - source_labels: [ __name__ ]
+         regex: 'node_textfile.*'
+         action: drop
     - job_name: 'kubernetes-service-endpoints'
       scheme: http
       kubernetes_sd_configs:
