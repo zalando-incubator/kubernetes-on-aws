@@ -10,7 +10,13 @@ data:
     global:
       scrape_interval: 15s
       external_labels:
-        monitor: 'skipper-ingress'
+        prometheus_replica: @@POD_NAME@@
+        cluster: {{ .Cluster.Alias }}
+{{ if ne .ConfigItems.prometheus_remote_write "disabled" }}
+    remote_write:
+    - url: {{ .ConfigItems.prometheus_remote_write }}
+      bearer_token_file: /meta/credentials/remote-write-token-secret
+{{ end }}
     scrape_configs:
     # scrape from kube-apiserver pods
     - job_name: 'kubernetes-apiservers'
@@ -84,6 +90,10 @@ data:
         - "{{ with $hostPort := splitHostPort .ConfigItems.etcd_endpoints }}{{ .Host }}{{ end }}"
         type: "A"
         port: 9100
+      metric_relabel_configs:
+       - source_labels: [ __name__ ]
+         regex: 'node_textfile.*'
+         action: drop
     - job_name: 'kubernetes-service-endpoints'
       scheme: http
       kubernetes_sd_configs:
