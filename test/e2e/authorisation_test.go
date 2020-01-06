@@ -20,7 +20,7 @@ type expect struct {
 }
 
 const (
-	authzAPIVersion          = "authorization.k8s.io/v1beta1"
+	authzAPIVersion          = "authorization.k8s.io/v1"
 	authorizeMessageKind     = "SubjectAccessReview"
 	systemMastersGroup       = "system:masters"
 	operatorGroup            = "Operator"
@@ -31,7 +31,7 @@ const (
 	readOnlyGroup            = "ReadOnly"
 	portForwardPodNamePrefix = "port-forward-"
 	systemNamespace          = "kube-system"
-	accessReviewURL          = "/apis/authorization.k8s.io/v1beta1/subjectaccessreviews"
+	accessReviewURL          = "/apis/authorization.k8s.io/v1/subjectaccessreviews"
 )
 
 type authorizationResponseStatus struct {
@@ -66,7 +66,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "kubelet authorized",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -84,7 +84,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -94,7 +94,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}, {
 				msg: "kube-system default account can update daemonset status",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -111,7 +111,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -121,7 +121,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}, {
 				msg: "kube-system default account can update daemonset finalizers",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -138,7 +138,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -148,7 +148,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}, {
 				msg: "default account in default namespace can list statefulsets",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -163,7 +163,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -173,7 +173,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}, {
 				msg: "default account in non-default namespace can list statefulsets",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -188,7 +188,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -198,7 +198,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}, {
 				msg: "User in admin group can patch daemonsets",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -219,7 +219,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -229,7 +229,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}, {
 				msg: "non-authorized group",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -247,7 +247,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -258,7 +258,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}, {
 				msg: "resource list authorized with ReadOnly group",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -276,7 +276,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -286,7 +286,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}, {
 				msg: "access to non-resource path with ReadOnly group",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"nonResourceAttributes": {
@@ -302,7 +302,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -312,7 +312,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}, {
 				msg: "access to use PodSecurityPolicy for ReadOnly should not be allowed",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -331,7 +331,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -342,7 +342,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}, {
 				msg: "ReadOnly role should not give port-forward access to the 'port-forward-' pod in default namespace",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 						"resourceAttributes": {
@@ -362,7 +362,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false
@@ -372,7 +372,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}, {
 				msg: "ReadOnly role should give read access to nodes",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 						"resourceAttributes": {
@@ -390,7 +390,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": true
@@ -403,7 +403,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "access to use restricted PodSecurityPolicy for PowerUser should be allowed",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 						"resourceAttributes": {
@@ -422,7 +422,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": true
@@ -435,7 +435,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "access to use restricted PodSecurityPolicy for Emergency should be allowed",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -454,7 +454,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": true
@@ -467,7 +467,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "access to use restricted PodSecurityPolicy for Manual role should be allowed",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -486,7 +486,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": true
@@ -500,7 +500,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			//{
 			//	msg: "access to use privileged PodSecurityPolicy for PowerUser should not be allowed",
 			//	reqBody: fmt.Sprintf(`{
-			//		"apiVersion": "authorization.k8s.io/v1beta1",
+			//		"apiVersion": "authorization.k8s.io/v1",
 			//		"kind": "SubjectAccessReview",
 			//		"spec": {
 			//		"resourceAttributes": {
@@ -519,7 +519,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			//	expect: expect{
 			//		status: http.StatusCreated,
 			//		body: fmt.Sprintf(`{
-			//		"apiVersion": "authorization.k8s.io/v1beta1",
+			//		"apiVersion": "authorization.k8s.io/v1",
 			//		"kind": "SubjectAccessReview",
 			//		"status": {
 			//			"allowed": false,
@@ -533,7 +533,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "PowerUser has read access (pods) to kube-system",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -551,7 +551,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -564,7 +564,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "PowerUser has no read access to kube-system secrets",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -582,7 +582,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -597,7 +597,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "PowerUser has read access to non kube-system secrets",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -615,7 +615,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -628,7 +628,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "PowerUser has write access to non kube-system secrets",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -646,7 +646,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -660,7 +660,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "PowerUser has proxy right",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -678,7 +678,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -690,7 +690,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "PowerUser has no create access to daemonsets",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -708,7 +708,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false
@@ -720,7 +720,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "PowerUser has no update access to daemonsets",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -738,7 +738,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false
@@ -750,7 +750,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "PowerUser has no delete access to daemonsets",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -768,7 +768,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false
@@ -780,7 +780,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "PowerUser has no patch access to daemonsets",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -798,7 +798,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false
@@ -813,7 +813,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator is allowed to use privileged PodSecurityPolicy (for own namespace)",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -830,7 +830,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -843,7 +843,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator has read access to own namespace",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -859,7 +859,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -872,7 +872,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator has write access to own namespace",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -888,7 +888,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -900,7 +900,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator has read access to other namespace",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -916,7 +916,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -929,7 +929,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator has no write access to other namespace",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -945,7 +945,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -959,7 +959,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator has read access to secrets in own namespace",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -975,7 +975,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -988,7 +988,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator is not allowed to read secrets in other namespaces",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1004,7 +1004,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -1018,7 +1018,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator has read access to custom resource definitions (CRD) in all namespacese",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1034,7 +1034,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1046,7 +1046,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator has read access to custom resource definitions (CRD) in all namespacese",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1062,7 +1062,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1074,7 +1074,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator has write access to storageclasses in all namespaces",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1089,7 +1089,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1101,7 +1101,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator has read access to storageclasses in all namespaces",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1116,7 +1116,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1128,7 +1128,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator has read access to nodes in global namespace",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1143,7 +1143,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1155,7 +1155,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator has write access to nodes in global namespace",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1170,7 +1170,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1182,7 +1182,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "readonly is not allowed to read secrets all namespaces",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1197,7 +1197,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -1211,7 +1211,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "readonly is not allowed to use proxy",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1227,7 +1227,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -1242,7 +1242,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "readonly has no write access to any resource",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1258,7 +1258,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -1272,7 +1272,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "ReadOnly role cannot delete resources",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1290,7 +1290,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -1304,7 +1304,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Manual role can delete resources in all namespaces except kube-system",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1323,7 +1323,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1336,7 +1336,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Manual role cannot delete resources in kube-sytem namespace",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1355,7 +1355,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -1370,7 +1370,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Manual role can delete namespaces",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1389,7 +1389,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1402,7 +1402,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Manual role can't delete kube-system namespace",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1421,7 +1421,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -1436,7 +1436,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Manual role can create resources",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1455,7 +1455,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1468,7 +1468,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Manual role doesn't affect funtionality of other roles.",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1487,7 +1487,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1500,7 +1500,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "access to use PodSecurityPolicy for Administrator (system:masters) should be allowed",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1519,7 +1519,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1532,7 +1532,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "access to use PodSecurityPolicy for Administrator (system:masters) should be allowed",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1551,7 +1551,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1564,7 +1564,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "access to use PodSecurityPolicy for system:masters should be allowed",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1583,7 +1583,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1596,7 +1596,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "controller manager can list podsecurity policies",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1611,7 +1611,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1624,7 +1624,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Administrator (system:masters) has read access (pods) to kube-system",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1642,7 +1642,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1654,7 +1654,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Administrator (system:masters) has write access (pods) to kube-system",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1672,7 +1672,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1684,7 +1684,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Administrator (system:masters) can read secrets from kube-system namespaces",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1702,7 +1702,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1714,7 +1714,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Administrator (system:masters) can read secrets from non kube-system namespaces",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1732,7 +1732,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1744,7 +1744,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Administrator (system:masters) has write access to non kube-system namespaces",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1762,7 +1762,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1776,7 +1776,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Administrator (system:masters) has proxy right",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1793,7 +1793,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1805,7 +1805,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "Administrator (system:masters) can write daemonsets",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1823,7 +1823,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1834,7 +1834,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "cdp service account can create namespaces",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1850,7 +1850,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1861,7 +1861,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "cdp service account can't escalate permissions",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1877,7 +1877,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false
@@ -1888,7 +1888,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "PowerUsers can't escalate permissions",
 				reqBody: `{
-				"apiVersion": "authorization.k8s.io/v1beta1",
+				"apiVersion": "authorization.k8s.io/v1",
 				"kind": "SubjectAccessReview",
 				"spec": {
 				"resourceAttributes": {
@@ -1904,7 +1904,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-				"apiVersion": "authorization.k8s.io/v1beta1",
+				"apiVersion": "authorization.k8s.io/v1",
 				"kind": "SubjectAccessReview",
 				"status": {
 					"allow": false
@@ -1915,7 +1915,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator service account cannot create namespaces",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1931,7 +1931,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": false,
@@ -1943,7 +1943,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "controller manager service account can create pods",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1959,7 +1959,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true
@@ -1970,7 +1970,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "operator service account can access persistent volumes in other namespaces",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -1986,7 +1986,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true,
@@ -1998,7 +1998,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "persistent volume binder service account can update kube system persistentVolumeClaims",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2014,7 +2014,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true,
@@ -2026,7 +2026,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "persistent volume binder service account can create kube system persistentVolumes",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2042,7 +2042,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true,
@@ -2054,7 +2054,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "horizontal pod autoscaler service account can update kube system autoscalers",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2070,7 +2070,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true,
@@ -2082,7 +2082,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "horizontal pod autoscaler service account can update any autoscaler",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2098,7 +2098,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true,
@@ -2110,7 +2110,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "aws-cloud-provider service account can access patch nodes",
 				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2125,7 +2125,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"status": {
 						"allowed": true,
@@ -2137,7 +2137,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "emergency user should not have update access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2155,7 +2155,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2166,7 +2166,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "manual user should not have non update to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2184,7 +2184,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2195,7 +2195,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "power user should not have update access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2213,7 +2213,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2224,7 +2224,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "emergency user should not have create access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2242,7 +2242,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2253,7 +2253,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "manual user should not have create access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2271,7 +2271,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2282,7 +2282,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "power user should not have create access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2300,7 +2300,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2311,7 +2311,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "emergency user should not have patch access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2329,7 +2329,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2340,7 +2340,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "manual user should not have patch access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2358,7 +2358,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2369,7 +2369,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "power user should not have patch access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2387,7 +2387,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2398,7 +2398,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "emergency user should not have delete access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2416,7 +2416,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2427,7 +2427,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "manual user should not have delete access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2445,7 +2445,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2456,7 +2456,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "power user should not have delete access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2474,7 +2474,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": false
@@ -2485,7 +2485,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "power user should be allowed list access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2503,7 +2503,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": true
@@ -2514,7 +2514,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "emergency user should be allowed list access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2532,7 +2532,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": true
@@ -2543,7 +2543,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "manual user should be allowed list access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2561,7 +2561,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": true
@@ -2572,7 +2572,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "power user should be allowed read access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2590,7 +2590,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": true
@@ -2601,7 +2601,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "emergency user should be allowed read access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2619,7 +2619,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": true
@@ -2630,7 +2630,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			{
 				msg: "manual user should be allowed read access to node resources.",
 				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
+					"apiVersion": "authorization.k8s.io/v1",
 					"kind": "SubjectAccessReview",
 					"spec": {
 					"resourceAttributes": {
@@ -2648,7 +2648,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				expect: expect{
 					status: http.StatusCreated,
 					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
+						"apiVersion": "authorization.k8s.io/v1",
 						"kind": "SubjectAccessReview",
 						"status": {
 							"allowed": true
