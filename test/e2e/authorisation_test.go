@@ -807,6 +807,35 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				},
 			},
 
+			// poweruser can't delete metrics (non-resource endpoint)
+			{
+				msg: "PowerUser can't delete metrics (non-resource endpoint access)",
+				reqBody: fmt.Sprintf(`{
+					"apiVersion": "authorization.k8s.io/v1",
+					"kind": "SubjectAccessReview",
+					"spec": {
+						"resourceAttributes": {
+							"verb": "delete",
+							"path": "/metrics"
+						},
+						"user": "sszuecs",
+						"group": [
+							"%s"
+						]
+					}
+				}`, powerUserGroup),
+				expect: expect{
+					status: http.StatusCreated,
+					body: `{
+						"apiVersion": "authorization.k8s.io/v1",
+						"kind": "SubjectAccessReview",
+						"status": {
+							"allowed": false
+						}
+				}}`,
+				},
+			},
+
 			//- operator is allowed to use privileged PSP
 			// Namespace is currently always empty string, because in Kubernetes PSPs are not namespaced, yet.
 			// Check Kubernetes >= 1.7 if they namespaced it https://github.com/kubernetes/kubernetes/pull/42360
