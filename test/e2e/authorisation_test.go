@@ -1915,6 +1915,33 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				},
 			},
 			{
+				msg: "cdp service account can't bind clusterroles",
+				reqBody: `{
+					"apiVersion": "authorization.k8s.io/v1",
+					"kind": "SubjectAccessReview",
+					"spec": {
+					"resourceAttributes": {
+						"namespace": "",
+						"verb": "bind",
+						"group": "rbac.authorization.k8s.io",
+						"resource": "clusterroles"
+					},
+					"user": "system:serviceaccount:default:cdp",
+					"group": []
+					}
+				}`,
+				expect: expect{
+					status: http.StatusCreated,
+					body: `{
+					"apiVersion": "authorization.k8s.io/v1",
+					"kind": "SubjectAccessReview",
+					"status": {
+						"allowed": false
+					}
+				}}`,
+				},
+			},
+			{
 				msg: "PowerUsers can't escalate permissions",
 				reqBody: `{
 				"apiVersion": "authorization.k8s.io/v1",
