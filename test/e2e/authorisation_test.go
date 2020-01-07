@@ -146,7 +146,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				}}`,
 				},
 			}, {
-				msg: "default account in default namespace can list statefulsets",
+				msg: "default account in default namespace can not list statefulsets",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
@@ -166,12 +166,12 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
 			}, {
-				msg: "default account in non-default namespace can list statefulsets",
+				msg: "default account in non-default namespace can not list statefulsets",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
@@ -191,7 +191,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
@@ -836,11 +836,11 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				},
 			},
 
-			//- operator is allowed to use privileged PSP
+			//- operator is not allowed to use privileged PSP
 			// Namespace is currently always empty string, because in Kubernetes PSPs are not namespaced, yet.
 			// Check Kubernetes >= 1.7 if they namespaced it https://github.com/kubernetes/kubernetes/pull/42360
 			{
-				msg: "operator is allowed to use privileged PodSecurityPolicy (for own namespace)",
+				msg: "operator is not allowed to use privileged PodSecurityPolicy (for own namespace)",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
@@ -862,15 +862,15 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
 			},
 
-			//- operator has read access to own namespace
+			//- operator has no read access to own namespace
 			{
-				msg: "operator has read access to own namespace",
+				msg: "operator has no read access to own namespace",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
@@ -891,15 +891,15 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
 			},
 
-			//- operator has write access to own namespace
+			//- operator has no write access to own namespace
 			{
-				msg: "operator has write access to own namespace",
+				msg: "operator has no write access to own namespace",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
@@ -920,14 +920,14 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
 			},
-			//- operator has read access to other namespaces
+			//- operator has no read access to other namespaces
 			{
-				msg: "operator has read access to other namespace",
+				msg: "operator has no read access to other namespace",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
@@ -948,7 +948,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
@@ -984,7 +984,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				},
 			},
 
-			//- operator has read access to secrets in own namespace
+			//- operator has no read access to secrets in own namespace
 			{
 				msg: "operator has read access to secrets in own namespace",
 				reqBody: `{
@@ -1007,7 +1007,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
@@ -1043,7 +1043,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				},
 			},
 
-			//- operator has read access to custom resource definitions (CRD) in all namespaces
+			//- operator has no read access to custom resource definitions (CRD) in all namespaces
 			{
 				msg: "operator has read access to custom resource definitions (CRD) in all namespacese",
 				reqBody: `{
@@ -1066,12 +1066,12 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
 			},
-			//- operator has write access to custom resource definitions (CRD) in all namespaces
+			//- operator has no write access to custom resource definitions (CRD) in all namespaces
 			{
 				msg: "operator has read access to custom resource definitions (CRD) in all namespacese",
 				reqBody: `{
@@ -1094,12 +1094,12 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
 			},
-			//- operator has write access to storageclasses in all namespaces
+			//- operator has no write access to storageclasses in all namespaces
 			{
 				msg: "operator has write access to storageclasses in all namespaces",
 				reqBody: `{
@@ -1121,12 +1121,12 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
 			},
-			//- operator has read access to storageclasses in all namespaces
+			//- operator has no read access to storageclasses in all namespaces
 			{
 				msg: "operator has read access to storageclasses in all namespaces",
 				reqBody: `{
@@ -1148,12 +1148,12 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
 			},
-			//- operator has read access to nodes in global namespace
+			//- operator has no read access to nodes in global namespace
 			{
 				msg: "operator has read access to nodes in global namespace",
 				reqBody: `{
@@ -1175,12 +1175,12 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
 			},
-			//- operator has write access to nodes in global namespace
+			//- operator has no write access to nodes in global namespace
 			{
 				msg: "operator has write access to nodes in global namespace",
 				reqBody: `{
@@ -1202,7 +1202,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true
+						"allowed": false
 					}
 				}}`,
 				},
@@ -1997,7 +1997,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				},
 			},
 			{
-				msg: "operator service account can access persistent volumes in other namespaces",
+				msg: "operator service account can not access persistent volumes in other namespaces",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
@@ -2018,8 +2018,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": true,
-						"reason": ""
+						"allowed": false
 					}
 				}}`,
 				},
