@@ -184,3 +184,11 @@ spec:
             name: skipper-default-filters
             optional: true
 {{ end }}
+{{ if eq .ConfigItems.enable_dedicate_nodepool_skipper "true"}}
+      nodeSelector:
+        dedicated: skipper-ingress
+      tolerations:
+      - effect: NoSchedule
+        key: dedicated
+        value: skipper-ingress
+{{ end }}
