@@ -1909,7 +1909,8 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 					"apiVersion": "authorization.k8s.io/v1beta1",
 					"kind": "SubjectAccessReview",
 					"status": {
-						"allowed": false
+						"allowed": false,
+						"denied": true
 					}
 				}}`,
 				},
@@ -1936,7 +1937,8 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				"apiVersion": "authorization.k8s.io/v1beta1",
 				"kind": "SubjectAccessReview",
 				"status": {
-					"allow": false
+					"allow": false,
+					"denied": true
 				}
 			}}`,
 				},
