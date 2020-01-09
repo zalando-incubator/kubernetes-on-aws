@@ -172,7 +172,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-48
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-51
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -346,6 +346,7 @@ write_files:
           - skipper
           - -address=:9023
           - -support-listener=:9913
+          - -access-log-strip-query
           - -inline-routes
           - |
             health: Path("/healthz") -> inlineContent("ok") -> <shunt>;
@@ -397,6 +398,7 @@ write_files:
           image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.295
           args:
           - skipper
+          - -access-log-strip-query
           - -address=:8443
           - -support-listener=:9911
           - -tls-cert=/etc/kubernetes/ssl/apiserver.pem
