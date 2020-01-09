@@ -81,6 +81,7 @@ Resources:
         Value: {{if $data.NodePool.IsSpot }}true{{else}}false{{end}}
       - Key: k8s.io/cluster-autoscaler/node-template/resources/ephemeral-storage
         PropagateAtLaunch: false
+        # 40Gi for EBS storage or 95% of instance storage
         Value: "{{ $data.NodePool.AvailableStorage 42949672960 0.95 }}"
       - Key: k8s.io/cluster-autoscaler/node-template/label/zalando.org/scaling-priority
         PropagateAtLaunch: true
