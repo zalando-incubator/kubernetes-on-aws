@@ -81,7 +81,7 @@ Resources:
         Value: {{if or (eq $data.NodePool.DiscountStrategy "spot") (eq $data.NodePool.DiscountStrategy "spot_max_price")}}true{{else}}false{{end}}
       - Key: k8s.io/cluster-autoscaler/node-template/resources/ephemeral-storage
         PropagateAtLaunch: false
-        Value: "30Gi"
+        Value: "{{ $data.NodePool.AvailableStorage 42949672960 0.95 }}"
       - Key: k8s.io/cluster-autoscaler/node-template/label/zalando.org/scaling-priority
         PropagateAtLaunch: true
 {{- if index $data.NodePool.ConfigItems "scaling_priority" }}
