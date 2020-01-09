@@ -226,7 +226,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.6.2
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.0
           name: webhook
           ports:
           - containerPort: 8081
@@ -275,12 +275,10 @@ write_files:
           env:
             - name: TEAMS_API_URL
               value: https://teams.auth.zalando.com
-            - name: TOKEN_INTROSPECTION_URL
-              value: http://127.0.0.1:{{ if eq .Cluster.Environment "production" }}9021{{else}}9023{{end}}/oauth2/introspect
+            - name: TOKENINFO_URLS
+              value: https://identity.zalando.com=http://127.0.0.1:9021/oauth2/tokeninfo{{ if ne .Cluster.Environment "production" }},https://sandbox.identity.zalando.com=http://127.0.0.1:9022/oauth2/tokeninfo{{end}}
             - name: USER_GROUPS
               value: kubelet=system:masters,stups_cluster-lifecycle-manager=system:masters
-            - name: BUSINESS_PARTNER_IDS
-              value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
           volumeMounts:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
@@ -308,8 +306,8 @@ write_files:
           env:
             - name: OPENID_PROVIDER_CONFIGURATION_URL
               value: https://identity.zalando.com/.well-known/openid-configuration
-            - name: ENABLE_INTROSPECTION
-              value: "true"
+            - name: BUSINESS_PARTNERS
+              value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ if ne .Cluster.Environment "production" }}
         - name: tokeninfo-sandbox
           image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:2fca26c
@@ -334,47 +332,12 @@ write_files:
           env:
           - name: OPENID_PROVIDER_CONFIGURATION_URL
             value: https://sandbox.identity.zalando.com/.well-known/openid-configuration
-          - name: ENABLE_INTROSPECTION
-            value: "true"
           - name: ISSUER
             value: "https://sandbox.identity.zalando.com"
           - name: LISTEN_ADDRESS
             value: ":9022"
-        - name: skipper-tokeninfo-bridge
-          image: registry.opensource.zalan.do/pathfinder/skipper:v0.10.295
-          args:
-          - skipper
-          - -address=:9023
-          - -support-listener=:9913
-          - -access-log-strip-query
-          - -inline-routes
-          - |
-            health: Path("/healthz") -> inlineContent("ok") -> <shunt>;
-            q2h: Path("/oauth2/introspect") && QueryParam("token")
-              -> queryToHeader("token", "Authorization", "Bearer %s")
-              -> setRequestHeader("X-Checking-JWT", "true")
-              -> <loopback>;
-            prod: Path("/oauth2/introspect") && QueryParam("token") && Header("X-Checking-JWT", "true") && JWTPayloadAllKV("iss", "https://identity.zalando.com")
-              -> dropRequestHeader("Authorization") -> dropRequestHeader("X-Checking-JWT")
-              -> "http://127.0.0.1:9021/oauth2/introspect";
-            sandbox: Path("/oauth2/introspect") && QueryParam("token") && Header("X-Checking-JWT", "true") && JWTPayloadAllKV("iss", "https://sandbox.identity.zalando.com")
-              -> dropRequestHeader("Authorization") -> dropRequestHeader("X-Checking-JWT")
-              -> "http://127.0.0.1:9022/oauth2/introspect";
-            fallback1: Path("/oauth2/introspect") && QueryParam("token") && Header("X-Checking-JWT", "true")
-              -> inlineContent("{\"active\":false}") -> <shunt>;
-            fallback2: Path("/oauth2/introspect")
-              -> inlineContent("{\"active\":false}") -> <shunt>;
-          ports:
-          - containerPort: 9023
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 9023
-            timeoutSeconds: 5
-          resources:
-            requests:
-              cpu: 100m
-              memory: 20Mi
+          - name: BUSINESS_PARTNERS
+            value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
         - image: registry.opensource.zalan.do/teapot/image-policy-webhook:0.5.3
           name: image-policy-webhook
