@@ -100,6 +100,9 @@ export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
 # TODO: make a feature of CLM --wait-for-kube-system
 "./wait-for-update.py" --timeout 1200
 
+# sleep 90 minutes
+echo "sleep 90 minutes"
+sleep 5400
 # Run e2e tests
 # * conformance tests
 # * statefulset tests
