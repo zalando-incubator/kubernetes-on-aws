@@ -2686,6 +2686,62 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				}}`,
 				},
 			},
+			{
+				msg: "system user (credentials-provider) should be allowed get secrets in kube-system.",
+				reqBody: `{
+					"apiVersion": "authorization.k8s.io/v1beta1",
+					"kind": "SubjectAccessReview",
+					"spec": {
+					"resourceAttributes": {
+						"namespace": "kube-system",
+						"verb": "get",
+						"group": "",
+						"resource": "secrets"
+					},
+					"user": "zalando-iam:zalando:service:credentials-provider",
+					"group": []
+					}
+				}`,
+				expect: expect{
+					status: http.StatusCreated,
+					body: `{
+						"apiVersion": "authorization.k8s.io/v1beta1",
+						"kind": "SubjectAccessReview",
+						"status": {
+							"allowed": true
+						}
+				}}`,
+				},
+			},
+			{
+				msg: "non system user (cdp-controller) should NOT be allowed get secrets in kube-system.",
+				reqBody: `{
+					"apiVersion": "authorization.k8s.io/v1beta1",
+					"kind": "SubjectAccessReview",
+					"spec": {
+					"resourceAttributes": {
+						"namespace": "kube-system",
+						"verb": "get",
+						"group": "",
+						"resource": "secrets"
+					},
+					"user": "zalando-iam:zalando:service:credprov-cdp-controller-cluster-token",
+					"group": []
+					}
+				}`,
+				expect: expect{
+					status: http.StatusCreated,
+					body: `{
+						"apiVersion": "authorization.k8s.io/v1beta1",
+						"kind": "SubjectAccessReview",
+						"status": {
+							"allowed": false,
+							"denied": true,
+							"reason":"unauthorized access to system namespace by zalando-iam:zalando:service:credprov-cdp-controller-cluster-token/[]"
+						}
+				}}`,
+				},
+			},
 		} {
 
 			By(ti.msg)
