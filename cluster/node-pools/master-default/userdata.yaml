@@ -226,7 +226,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.0
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.2
           name: webhook
           ports:
           - containerPort: 8081
@@ -271,7 +271,17 @@ write_files:
             - --role-mapping=PowerUser=cn=PowerUser,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
 {{- end }}
             - --role-mapping=ReadOnly=cn=ReadOnly,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
-
+            # enable legacy serviceaccounts for smooth RBAC migration
+{{ if eq .Cluster.ConfigItems.enable_operator_sa "true"}}
+            - --enable-operator-sa
+{{ end }}
+{{ if eq .Cluster.ConfigItems.enable_default_sa "true"}}
+            - --enable-default-sa
+{{ end }}
+{{ if eq .Cluster.ConfigItems.enable_cdp_sa "true"}}
+            - --enable-cdp-sa
+{{ end }}
+            - --system-users=zalando-iam:zalando:service:credentials-provider
           env:
             - name: TEAMS_API_URL
               value: https://teams.auth.zalando.com
