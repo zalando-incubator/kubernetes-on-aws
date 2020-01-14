@@ -15,12 +15,11 @@ package e2e
 
 import (
 	"fmt"
-	"log"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -30,18 +29,19 @@ import (
 )
 
 var _ = framework.KubeDescribe("PSP use", func() {
-	operatorSA := "operator"
+	privilegedRole := "privileged-psp"
+	privilegedSA := "privileged-sa"
 	f := framework.NewDefaultFramework("psp")
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
 		cs = f.ClientSet
-		saObj := createServiceAccount(f.Namespace.Name, operatorSA)
+		saObj := createServiceAccount(f.Namespace.Name, privilegedSA)
 		_, err := cs.CoreV1().ServiceAccounts(f.Namespace.Name).Create(saObj)
+		Expect(err).NotTo(HaveOccurred())
 
-		if err != nil {
-			log.Fatalf("could not create service account: %s", err)
-		}
+		_, err = cs.RbacV1().RoleBindings(f.Namespace.Name).Create(createRBACRoleBindingSA(privilegedRole, f.Namespace.Name, privilegedSA))
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	// TODO: We have to have a solution to get an unprivileged
@@ -75,10 +75,10 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		}
 		var port int32 = 81
 
-		msg := fmt.Sprintf("Creating a privileged POD as %s", operatorSA)
+		msg := fmt.Sprintf("Creating a privileged POD as %s", privilegedSA)
 
 		By(msg)
-		pod := createNginxPodWithHostNetwork(ns, operatorSA, label, port)
+		pod := createNginxPodWithHostNetwork(ns, privilegedSA, label, port)
 		defer func() {
 			By(msg)
 			defer GinkgoRecover()
@@ -102,12 +102,12 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		replicas := int32(1)
 		port := int32(82)
 
-		By(fmt.Sprintf("Creating a deployment that creates a privileged POD as %s", operatorSA))
-		d := createNginxDeploymentWithHostNetwork("psp-test-", ns, operatorSA, label, port, replicas)
+		By(fmt.Sprintf("Creating a deployment that creates a privileged POD as %s", privilegedSA))
+		d := createNginxDeploymentWithHostNetwork("psp-test-", ns, privilegedSA, label, port, replicas)
 		d.Annotations = map[string]string{"test": "should-copy-to-replica-set", v1.LastAppliedConfigAnnotation: "should-not-copy-to-replica-set"}
 
 		defer func() {
-			By(fmt.Sprintf("Delete a deployment that creates a privileged POD as %s", operatorSA))
+			By(fmt.Sprintf("Delete a deployment that creates a privileged POD as %s", privilegedSA))
 			defer GinkgoRecover()
 			err := cs.AppsV1().Deployments(ns).Delete(d.Name, metav1.NewDeleteOptions(0))
 			Expect(err).NotTo(HaveOccurred())
