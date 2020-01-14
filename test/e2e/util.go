@@ -26,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/networking/v1beta1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -410,27 +409,7 @@ func createServiceAccount(namespace, serviceAccount string) *v1.ServiceAccount {
 		},
 		AutomountServiceAccountToken: &trueValue,
 	}
-}
 
-func createRBACRoleBindingSA(role, namespace, serviceAccount string) *rbacv1.RoleBinding {
-	return &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceAccount,
-			Namespace: namespace,
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      serviceAccount,
-				Namespace: namespace,
-			},
-		},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     role,
-		},
-	}
 }
 
 func createNginxPodWithHostNetwork(namespace, serviceAccount string, label map[string]string, port int32) *v1.Pod {
