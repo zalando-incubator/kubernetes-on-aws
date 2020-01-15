@@ -2742,6 +2742,63 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				}}`,
 				},
 			},
+			{
+				msg: "system user (api-monitoring-controller) can update configmap 'skipper-default-filters' in kube-system.",
+				reqBody: `{
+					"apiVersion": "authorization.k8s.io/v1beta1",
+					"kind": "SubjectAccessReview",
+					"spec": {
+					"resourceAttributes": {
+						"namespace": "kube-system",
+						"verb": "update",
+						"group": "",
+						"resource": "configmaps",
+						"name": "skipper-default-filters"
+					},
+					"user": "system:serviceaccount:api-infrastructure:api-monitoring-controller",
+					"group": []
+					}
+				}`,
+				expect: expect{
+					status: http.StatusCreated,
+					body: `{
+						"apiVersion": "authorization.k8s.io/v1beta1",
+						"kind": "SubjectAccessReview",
+						"status": {
+							"allowed": true
+						}
+				}}`,
+				},
+			},
+			{
+				msg: "system user (api-monitoring-controller) can NOT update any configmap in kube-system.",
+				reqBody: `{
+					"apiVersion": "authorization.k8s.io/v1beta1",
+					"kind": "SubjectAccessReview",
+					"spec": {
+					"resourceAttributes": {
+						"namespace": "kube-system",
+						"verb": "update",
+						"group": "",
+						"resource": "configmaps"
+					},
+					"user": "system:serviceaccount:api-infrastructure:api-monitoring-controller",
+					"group": []
+					}
+				}`,
+				expect: expect{
+					status: http.StatusCreated,
+					body: `{
+						"apiVersion": "authorization.k8s.io/v1beta1",
+						"kind": "SubjectAccessReview",
+						"status": {
+							"allowed": false,
+							"denied": false,
+							"access": "undecided system:serviceaccount:api-infrastructure:api-monitoring-controller/[]"
+						}
+				}}`,
+				},
+			},
 		} {
 
 			By(ti.msg)
