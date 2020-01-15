@@ -101,6 +101,15 @@ func E2EClusterAlias() string {
 	return result
 }
 
+// E2EClusterID returns the ID of the cluster used for e2e tests.
+func E2EClusterID() string {
+	result, ok := os.LookupEnv("CLUSTER_ID")
+	if !ok {
+		panic("CLUSTER_ID not defined")
+	}
+	return result
+}
+
 // E2ES3AWSIAMBucket returns the s3 bucket name used for AWS IAM e2e tests.
 func E2ES3AWSIAMBucket() string {
 	return getenv("S3_AWS_IAM_BUCKET", "")

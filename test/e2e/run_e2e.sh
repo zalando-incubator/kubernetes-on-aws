@@ -1,8 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-E2E_NODE_OS="${E2E_NODE_OS:="coreos"}"
-
 E2E_SKIP_CLUSTER_UPDATE="${E2E_SKIP_CLUSTER_UPDATE:-"false"}"
 
 # fetch internal configuration values
@@ -18,25 +16,18 @@ CDP_HEAD_COMMIT_ID="${CDP_HEAD_COMMIT_ID:-"$(git describe --tags --always)"}"
 
 export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-test"}"
 # TODO: we need the date in LOCAL_ID because of CDP retriggering
-export LOCAL_ID="${LOCAL_ID:-"e2e-$CDP_BUILD_VERSION-$(date +'%H%M%S')"}-$E2E_NODE_OS"
+export LOCAL_ID="${LOCAL_ID:-"e2e-$CDP_BUILD_VERSION-$(date +'%H%M%S')"}"
 export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export ETCD_ENDPOINTS="${ETCD_ENDPOINTS:-"etcd-server.etcd.${HOSTED_ZONE}:2379"}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
 export WORKER_SHARED_SECRET="${WORKER_SHARED_SECRET:-"$(pwgen 30 -n1)"}"
 
-if [[ "${E2E_NODE_OS}" == "coreos" ]]; then
-    export MASTER_PROFILE="master"
-    export WORKER_PROFILE="worker"
-elif [[ "${E2E_NODE_OS}" == "ubuntu" ]]; then
-    export MASTER_PROFILE="master-ubuntu"
-    export WORKER_PROFILE="worker-ubuntu"
-else
-    echo "Unsupported E2E_NODE_OS: ${E2E_NODE_OS}"
-    exit 1
-fi
-
 echo "Creating cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
+
+# TODO drop later
+export MASTER_PROFILE="master"
+export WORKER_PROFILE="worker"
 
 # if E2E_SKIP_CLUSTER_UPDATE is true, don't create a cluster from base first
 if [ "$E2E_SKIP_CLUSTER_UPDATE" != "true" ]; then
