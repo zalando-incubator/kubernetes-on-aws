@@ -172,7 +172,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-51
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-53
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -201,6 +201,7 @@ write_files:
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables "true" }}
             - --pod-enable-env-inject
             - --pod-inject-env=_PLATFORM_ACCOUNT={{ .Cluster.Alias }}
+            - --pod-inject-env=_PLATFORM_CLUSTER_ID={{ .Cluster.ID }}
             - --pod-inject-env=_PLATFORM_OPENTRACING_TAG_ACCOUNT={{ .Cluster.Alias }}
             - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT=8443
             - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST=tracing.stups.zalan.do
@@ -214,9 +215,8 @@ write_files:
             - --validate-application-label-min-creation-time={{ .Cluster.ConfigItems.teapot_admission_controller_application_min_creation_time }}
             - --application-registry-url=http://127.0.0.1:8285/
 {{- end }}
-            - --resource-cutoff-timestamp={{ .Cluster.ConfigItems.teapot_admission_controller_resource_cutoff_timestamp }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_resource_validate_redeployments "true" }}
-            - --resource-validate-redeployments
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_validate_pod_template_resources "true" }}
+            - --validate-pod-template-resources
 {{- end }}
             - --deployment-rolling-update-default-max-surge={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}
             - --deployment-rolling-update-default-max-unavailable={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}
