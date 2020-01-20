@@ -53,6 +53,8 @@ clusters:
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
     kube_aws_ingress_controller_nlb_enabled: "true"
+    vm_dirty_bytes: 134217728
+    vm_dirty_background_bytes: 67108864
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
