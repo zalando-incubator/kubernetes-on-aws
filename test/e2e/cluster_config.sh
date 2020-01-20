@@ -40,7 +40,7 @@ clusters:
     service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
     worker_shared_secret: ${WORKER_SHARED_SECRET}
-    lightstep_token: ${LIGHTSTEP_TOKEN}
+    lightstep_token: "${LIGHTSTEP_TOKEN}"
     zmon_agent_replicas: '0'
     zmon_aws_agent_replicas: '0'
     zmon_redis_replicas: '0'
