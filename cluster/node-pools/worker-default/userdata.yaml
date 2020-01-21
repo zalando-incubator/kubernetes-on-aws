@@ -87,3 +87,19 @@ write_files:
           cacheAuthorizedTTL: "5m"
           cacheUnauthorizedTTL: "30s"
       readOnlyPort: 10255 # TODO: remove after complete rollout of webhook auth
+
+  - owner: root:root
+    path: /etc/sysctl.d/02-vm-max-mmaps.conf
+    content: |
+      vm.max_map_count=524288
+
+{{- if ( and ( ne .Cluster.ConfigItems.vm_dirty_background_bytes "" ) ( ne .Cluster.ConfigItems.vm_dirty_bytes "" ) )}}
+  - owner: root:root
+    path: /etc/sysctl.d/03-vm-dirty-ratios.conf
+    content: |
+      vm.dirty_background_bytes = {{ .Cluster.ConfigItems.vm_dirty_background_bytes }}
+      vm.dirty_bytes = {{ .Cluster.ConfigItems.vm_dirty_bytes }}
+{{- end}}
+
+runcmd:
+- [ "/sbin/sysctl", "--system"]
