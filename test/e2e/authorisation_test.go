@@ -91,7 +91,8 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						}
 					}`,
 				},
-			}, {
+			},
+			{
 				msg: "kube-system daemonset-controller service account can update daemonset status",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
@@ -118,7 +119,8 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						}
 					}`,
 				},
-			}, {
+			},
+			{
 				msg: "kube-system default account can update daemonset finalizers",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
@@ -145,7 +147,8 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						}
 					}`,
 				},
-			}, {
+			},
+			{
 				msg: "default account in default namespace can not list statefulsets",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
@@ -170,7 +173,8 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 						}
 					}`,
 				},
-			}, {
+			},
+			{
 				msg: "default account in non-default namespace can not list statefulsets",
 				reqBody: `{
 					"apiVersion": "authorization.k8s.io/v1beta1",
@@ -493,13 +497,13 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			//	expect: expect{
 			//		status: http.StatusCreated,
 			//		body: fmt.Sprintf(`{
-			//		"apiVersion": "authorization.k8s.io/v1beta1",
-			//		"kind": "SubjectAccessReview",
-			//		"status": {
-			//			"allowed": false,
-			//			"reason":"unauthorized access sszuecs/[%s]"
-			//		}
-			//	}}`, powerUserGroup),
+			//			"apiVersion": "authorization.k8s.io/v1beta1",
+			//			"kind": "SubjectAccessReview",
+			//			"status": {
+			//				"allowed": false,
+			//				"reason":"unauthorized access sszuecs/[%s]"
+			//			}
+			//		}`, powerUserGroup),
 			//	},
 			//},
 
@@ -2798,8 +2802,7 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 			}
 
 			var expectedRspDoc authorizationResp
-			dec := json.NewDecoder(bytes.NewBufferString(ti.expect.body))
-			if err := dec.Decode(&expectedRspDoc); err != nil && err != io.EOF {
+			if err := json.Unmarshal([]byte(ti.expect.body), &expectedRspDoc); err != nil {
 				framework.Failf(ti.msg, err)
 				return
 			}
