@@ -72,7 +72,6 @@ write_files:
         webhook:
           cacheAuthorizedTTL: "5m"
           cacheUnauthorizedTTL: "30s"
-      readOnlyPort: 10255 # TODO: remove after complete rollout of webhook auth
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-apiserver.yaml
@@ -228,7 +227,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.4
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.5
           name: webhook
           ports:
           - containerPort: 8081
