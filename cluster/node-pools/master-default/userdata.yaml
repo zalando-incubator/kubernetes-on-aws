@@ -41,11 +41,9 @@ write_files:
 {{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
       cpuCFSQuota: false
 {{- end }}
-{{- if ne .NodePool.ConfigItems.pod_max_pids "-1" }}
       featureGates:
-        SupportPodPidsLimit: true
+        BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
-{{- end }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
@@ -74,7 +72,6 @@ write_files:
         webhook:
           cacheAuthorizedTTL: "5m"
           cacheUnauthorizedTTL: "30s"
-      readOnlyPort: 10255 # TODO: remove after complete rollout of webhook auth
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-apiserver.yaml
@@ -120,8 +117,12 @@ write_files:
           - --authorization-mode=Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,CustomResourceWebhookConversion={{.Cluster.ConfigItems.custom_resource_webhook_conversion}},CustomResourcePublishOpenAPI={{.Cluster.ConfigItems.custom_resource_publish_openapi}}
+          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,CustomResourceWebhookConversion={{.Cluster.ConfigItems.custom_resource_webhook_conversion}},CustomResourcePublishOpenAPI={{.Cluster.ConfigItems.custom_resource_publish_openapi}},BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
           - --anonymous-auth=false
+          {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
+          - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
+          - --service-account-issuer=kubernetes/serviceaccount
+          {{- end }}
           {{ if ne .Cluster.ConfigItems.audittrail_url "" }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
@@ -172,7 +173,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-53
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-54
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -226,7 +227,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.0
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.5
           name: webhook
           ports:
           - containerPort: 8081
@@ -258,7 +259,7 @@ write_files:
             - --derived-role=CollaboratorManual=Collaborator24x7,Manual
 {{- else if eq .Cluster.Environment "test"}}
             - --role-mapping=CollaboratorPowerUser=cn=Deployer,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
-{{- else if eq .Cluster.Environment "e2e"}}
+{{- else if eq .Cluster.ConfigItems.collaborator_administrator_access "true"}}
             - --role-mapping=Administrator=cn=Contributor,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
 {{- end}}
 
@@ -271,7 +272,18 @@ write_files:
             - --role-mapping=PowerUser=cn=PowerUser,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
 {{- end }}
             - --role-mapping=ReadOnly=cn=ReadOnly,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
-
+            # enable legacy serviceaccounts for smooth RBAC migration
+{{ if eq .Cluster.ConfigItems.enable_operator_sa "true"}}
+            - --enable-operator-sa
+{{ end }}
+{{ if eq .Cluster.ConfigItems.enable_default_sa "true"}}
+            - --enable-default-sa
+{{ end }}
+{{ if eq .Cluster.ConfigItems.enable_cdp_sa "true"}}
+            - --enable-cdp-sa
+{{ end }}
+            - --system-users=zalando-iam:zalando:service:credentials-provider
+            - --system-users=system:serviceaccount:api-infrastructure:api-monitoring-controller
           env:
             - name: TEAMS_API_URL
               value: https://teams.auth.zalando.com
@@ -450,7 +462,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true
+          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
@@ -513,7 +525,7 @@ write_files:
           args:
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
-          - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}}
+          - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
           env:
           - name: KUBE_MAX_PD_VOLS
             value: "26"

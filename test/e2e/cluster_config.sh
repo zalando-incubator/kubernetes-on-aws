@@ -40,7 +40,7 @@ clusters:
     service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
     worker_shared_secret: ${WORKER_SHARED_SECRET}
-    lightstep_token: ${LIGHTSTEP_TOKEN}
+    lightstep_token: "${LIGHTSTEP_TOKEN}"
     zmon_agent_replicas: '0'
     zmon_aws_agent_replicas: '0'
     zmon_redis_replicas: '0'
@@ -53,6 +53,8 @@ clusters:
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
     kube_aws_ingress_controller_nlb_enabled: "true"
+    vm_dirty_bytes: 134217728
+    vm_dirty_background_bytes: 67108864
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
