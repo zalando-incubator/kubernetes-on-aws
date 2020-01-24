@@ -59,7 +59,6 @@ rules:
   - limitranges
   - resourcequotas
   - bindings
-  - events
   - pods/status
   - resourcequotas/status
   - namespaces/status
@@ -69,6 +68,19 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - ""
+  - "events.k8s.io"
+  resources:
+  - events
+  verbs:
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete
 - apiGroups:
   - ""
   resources:
@@ -838,3 +850,37 @@ rules:
   - create
   - update
   - patch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  - clusterroles
+  - clusterrolebindings
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumes
+  verbs:
+  - update
+  - patch
+- apiGroups:
+  - scheduling.k8s.io
+  resources:
+  - priorityclasses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
