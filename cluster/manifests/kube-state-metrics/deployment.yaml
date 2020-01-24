@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-state-metrics
-    version: v1.8.0
+    version: v1.9.2
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: kube-state-metrics
-        version: v1.8.0
+        version: v1.9.2
     spec:
       dnsConfig:
         options:
@@ -25,7 +25,7 @@ spec:
       serviceAccountName: kube-state-metrics
       containers:
       - name: kube-state-metrics
-        image: registry.opensource.zalan.do/teapot/kube-state-metrics:v1.8.0
+        image: registry.opensource.zalan.do/teapot/kube-state-metrics:v1.9.2
         ports:
         - containerPort: 8080
           name: http-metrics
@@ -47,3 +47,5 @@ spec:
           runAsUser: 65534
           capabilities:
             drop: ["ALL"]
+      securityContext:
+        fsGroup: 65534
