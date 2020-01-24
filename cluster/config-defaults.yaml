@@ -71,11 +71,7 @@ skipper_ingress_lightstep_min_period: "500ms"
 skipper_ingress_lightstep_max_period: "2500ms"
 # set to "log-events" to enable
 skipper_ingress_lightstep_log_events: ""
-{{if eq .Environment "production"}}
-lightstep_token: "aws:kms:AQICAHgrx06TPoR1aNmcPHJjFu5mmoICT5KJkx2fsTJpmXmbNAH+8Ml18b8ZkUO/0KAwtIZTAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSf79AuT/RI5rvWWjAgEQgDuN7obV7JD4iBMnOJ4Th93DfM5j572dXjf+gWmHx4JKMTTJPX2w6hgfQXX3LjI49l0p479a6IXIlZJOSg=="
-{{else}}
-lightstep_token: "aws:kms:AQICAHgrx06TPoR1aNmcPHJjFu5mmoICT5KJkx2fsTJpmXmbNAHvvYXdV1r7NviF5S+Jyx5zAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMQBqSQk/2TuQOsHGOAgEQgDsrNbCwF4AxoQXZuxXUOPnuQhFCY02EhWcB4xqmjFy8DelZtiCldRtxRdLyDL4uXiEyV8vOFyhxgqso/A=="
-{{end}}
+lightstep_token: ""
 
 # tokeninfo
 skipper_ingress_tokeninfo_cpu: "1000m"
@@ -105,49 +101,9 @@ cadvisor_memory: "150Mi"
 node_exporter_cpu: "20m"
 node_exporter_memory: "75Mi"
 
-# Monitoring settings
-{{if eq .Environment "e2e"}}
-zmon_agent_replicas: "0"
-zmon_aws_agent_replicas: "0"
-zmon_redis_replicas: "0"
-zmon_scheduler_replicas: "0"
-zmon_scheduler_mem: "0Gi"
-zmon_worker_replicas: "0"
-zmon_worker_mem: "0Gi"
-zmon_worker_cpu: "0"
-zmon_worker_count: "0"
-{{else if eq .Environment "production"}}
-zmon_agent_replicas: "1"
-zmon_aws_agent_replicas: "1"
-zmon_redis_replicas: "1"
-zmon_scheduler_replicas: "1"
-zmon_scheduler_mem: "2.5Gi"
-zmon_worker_replicas: "6"
-zmon_worker_mem: "4Gi"
-zmon_worker_cpu: "750m"
-zmon_worker_count: "16"
-{{else}}
-zmon_agent_replicas: "1"
-zmon_aws_agent_replicas: "1"
-zmon_redis_replicas: "1"
-zmon_scheduler_replicas: "1"
-zmon_scheduler_mem: "2.5Gi"
-zmon_worker_replicas: "4"
-zmon_worker_mem: "4Gi"
-zmon_worker_cpu: "750m"
-zmon_worker_count: "16"
-{{end}}
-zmon_scalyr_region: "eu"
-zmon_worker_version: "v209-py2eol-61-gcd2c760-v251-py2eol"
-zmon_agent_version: "0.4-19-ga12da10-zv5"
+# Logging settings
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
 scalyr_team_token: ""
-
-zmon_redis_mem: "1Gi"
-zmon_agent_mem: "500Mi"
-zmon_agent_cpu: "200m"
-zmon_aws_agent_mem: "200Mi"
-zmon_aws_agent_cpu: "100m"
 
 prometheus_cpu: "1000m"
 prometheus_mem: "4Gi"
@@ -231,19 +187,13 @@ etcd_instance_count: "5"
 etcd_instance_count: "3"
 {{end}}
 
-{{if ne .Environment "e2e"}}
-etcd_scalyr_key: "aws:kms:AQECAHgNxQ3yghAnRNmN6GyaSh8l0hGHUap3hNqu00tmcgcOxgAAAIwwgYkGCSqGSIb3DQEHBqB8MHoCAQAwdQYJKoZIhvcNAQcBMB4GCWCGSAFlAwQBLjARBAwrD+79PBvwdNnIXGICARCASEVQTLFyRAWL1OWE1WSl19lm5wY6Cj38wWse8esMBlxUvYSDRZqqyKMJieZpDbAxaAnJO6FKEJdpOoyU8GsV8At/43DhtaHkdA=="
-{{else}}
 etcd_scalyr_key: ""
-{{end}}
-
 dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
-kuberuntu_image_v1_14: {{ amiID "zalando-ubuntu-kubernetes-production-v1.14.8-master-77" "861068367966" }}
-kuberuntu_image_v1_15: {{ amiID "zalando-ubuntu-kubernetes-production-v1.15.6-master-81" "861068367966" }}
+kuberuntu_image_v1_15: {{ amiID "zalando-ubuntu-kubernetes-production-v1.15.9-master-89" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -295,6 +245,8 @@ apiserver_proxy: "true"
 # when set to true, service account tokens can be used from outside the cluster
 # requires apiserver_proxy to be set to "true"
 allow_external_service_accounts: "false"
+# issue service account tokens with expiration time.
+rotate_service_account_tokens: "false"
 
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "true"
@@ -308,3 +260,19 @@ custom_dns_zone_nameservers: "" # space seperated list of nameserver IP addresse
 
 # prefix prepended to ownership TXT records for external-dns
 external_dns_ownership_prefix: ""
+
+# special roles for test/pet clusters
+{{if eq .Cluster.Environment "e2e"}}
+collaborator_administrator_access: "true"
+{{else}}
+collaborator_administrator_access: "false"
+{{end}}
+
+# enable legacy serviceaccounts for smooth RBAC migration
+enable_operator_sa: "false"
+enable_default_sa: "false"
+enable_cdp_sa: "false"
+
+# virtual memory configuration
+vm_dirty_background_bytes: ""
+vm_dirty_bytes: ""

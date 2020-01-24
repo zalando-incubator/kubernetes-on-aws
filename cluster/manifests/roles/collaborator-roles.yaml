@@ -5,11 +5,10 @@ metadata:
   namespace: visibility
 rules:
 - apiGroups:
-  - ""
+  - apps
+  - extensions
   resources:
   - daemonsets
-  resourceNames:
-  - logging-agent
   verbs:
   - create
   - update
@@ -19,12 +18,12 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: collaborator
+  name: collaborator-binding
   namespace: visibility
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: collaborator-visibility
+  kind: Role
+  name: collaborator
 subjects:
 - kind: Group
   name: CollaboratorPowerUser
