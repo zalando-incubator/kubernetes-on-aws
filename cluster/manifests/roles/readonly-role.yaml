@@ -28,25 +28,20 @@ rules:
   - namespaces
   - namespaces/finalize
   - namespaces/status
+  - nodes
   - nodes/proxy
   - nodes/status
   - persistentvolumeclaims
   - persistentvolumeclaims/status
   - persistentvolumes
   - persistentvolumes/status
-  - pods/attach
-  - pods/binding
-  - pods/eviction
-  - pods/exec
+  - pods
   - pods/log
-  - pods/portforward
-  - pods/proxy
   - pods/status
   - podtemplates
   - replicationcontrollers/status
   - resourcequotas
   - resourcequotas/status
-  - secrets
   - serviceaccounts
   - services
   - services/proxy
@@ -66,7 +61,6 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ''
   - metrics.k8s.io
   resources:
   - nodes
@@ -131,37 +125,10 @@ rules:
 - apiGroups:
   - apps
   resources:
+  - controllerrevisions
   - statefulsets
   - statefulsets/scale
   - statefulsets/status
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - apps
-  - metacontroller.k8s.io
-  resources:
-  - controllerrevisions
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - authentication.k8s.io
-  resources:
-  - tokenreviews
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - authorization.k8s.io
-  resources:
-  - localsubjectaccessreviews
-  - selfsubjectaccessreviews
-  - selfsubjectrulesreviews
-  - subjectaccessreviews
   verbs:
   - get
   - list
@@ -196,16 +163,6 @@ rules:
   - list
   - watch
 - apiGroups:
-  - certificates.k8s.io
-  resources:
-  - certificatesigningrequests
-  - certificatesigningrequests/approval
-  - certificatesigningrequests/status
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
@@ -234,18 +191,10 @@ rules:
   - list
   - watch
 - apiGroups:
-  - external.metrics.k8s.io
-  resources:
-  - sqs-queue-length
-  - zmon-check
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - metacontroller.k8s.io
   resources:
   - compositecontrollers
+  - controllerrevisions
   - decoratorcontrollers
   verbs:
   - get

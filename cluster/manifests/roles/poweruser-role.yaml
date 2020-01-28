@@ -18,22 +18,17 @@ rules:
 - apiGroups:
   - ''
   resources:
-  - bindings
-  - componentstatuses
   - configmaps
   - endpoints
-  - limitranges
   - namespaces
   - namespaces/finalize
   - namespaces/status
-  - nodes/proxy
-  - nodes/status
   - persistentvolumeclaims
   - persistentvolumeclaims/status
   - persistentvolumes
   - persistentvolumes/status
+  - pods
   - pods/attach
-  - pods/binding
   - pods/eviction
   - pods/exec
   - pods/log
@@ -42,8 +37,6 @@ rules:
   - pods/status
   - podtemplates
   - replicationcontrollers/status
-  - resourcequotas
-  - resourcequotas/status
   - secrets
   - serviceaccounts
   - services
@@ -57,22 +50,23 @@ rules:
   - update
 - apiGroups:
   - ''
-  - extensions
   resources:
-  - replicationcontrollers
-  - replicationcontrollers/scale
+  - secrets
   verbs:
   - create
   - delete
   - deletecollection
+  - get
+  - list
   - patch
   - update
+  - watch
 - apiGroups:
   - ''
-  - metrics.k8s.io
+  - extensions
   resources:
-  - nodes
-  - pods
+  - replicationcontrollers
+  - replicationcontrollers/scale
   verbs:
   - create
   - delete
@@ -93,7 +87,6 @@ rules:
 - apiGroups:
   - admissionregistration.k8s.io
   resources:
-  - mutatingwebhookconfigurations
   - validatingwebhookconfigurations
   verbs:
   - create
@@ -113,19 +106,9 @@ rules:
   - patch
   - update
 - apiGroups:
-  - apiregistration.k8s.io
-  resources:
-  - apiservices
-  - apiservices/status
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - patch
-  - update
-- apiGroups:
   - apps
   resources:
+  - controllerrevisions
   - statefulsets
   - statefulsets/scale
   - statefulsets/status
@@ -139,8 +122,6 @@ rules:
   - apps
   - extensions
   resources:
-  - daemonsets
-  - daemonsets/status
   - deployments
   - deployments/rollback
   - deployments/scale
@@ -148,40 +129,6 @@ rules:
   - replicasets
   - replicasets/scale
   - replicasets/status
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - patch
-  - update
-- apiGroups:
-  - apps
-  - metacontroller.k8s.io
-  resources:
-  - controllerrevisions
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - patch
-  - update
-- apiGroups:
-  - authentication.k8s.io
-  resources:
-  - tokenreviews
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - patch
-  - update
-- apiGroups:
-  - authorization.k8s.io
-  resources:
-  - localsubjectaccessreviews
-  - selfsubjectaccessreviews
-  - selfsubjectrulesreviews
-  - subjectaccessreviews
   verbs:
   - create
   - delete
@@ -224,28 +171,6 @@ rules:
   - patch
   - update
 - apiGroups:
-  - certificates.k8s.io
-  resources:
-  - certificatesigningrequests
-  - certificatesigningrequests/approval
-  - certificatesigningrequests/status
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - patch
-  - update
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - patch
-  - update
-- apiGroups:
   - extensions
   - networking.k8s.io
   resources:
@@ -259,42 +184,11 @@ rules:
   - patch
   - update
 - apiGroups:
-  - extensions
-  - policy
-  resources:
-  - podsecuritypolicies
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - patch
-  - update
-- apiGroups:
-  - external.metrics.k8s.io
-  resources:
-  - sqs-queue-length
-  - zmon-check
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - patch
-  - update
-- apiGroups:
   - metacontroller.k8s.io
   resources:
   - compositecontrollers
+  - controllerrevisions
   - decoratorcontrollers
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - patch
-  - update
-- apiGroups:
-  - node.k8s.io
-  resources:
-  - runtimeclasses
   verbs:
   - create
   - delete
@@ -338,11 +232,7 @@ rules:
 - apiGroups:
   - storage.k8s.io
   resources:
-  - csidrivers
-  - csinodes
   - storageclasses
-  - volumeattachments
-  - volumeattachments/status
   verbs:
   - create
   - delete
