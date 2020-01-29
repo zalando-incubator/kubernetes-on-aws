@@ -259,7 +259,8 @@ write_files:
             - --derived-role=CollaboratorManual=Collaborator24x7,Manual
 {{- else if eq .Cluster.Environment "test"}}
             - --role-mapping=CollaboratorPowerUser=cn=Deployer,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
-{{- else if eq .Cluster.ConfigItems.collaborator_administrator_access "true"}}
+{{- end }}
+{{- if eq .Cluster.ConfigItems.collaborator_administrator_access "true"}}
             - --role-mapping=Administrator=cn=Contributor,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
 {{- end}}
 
