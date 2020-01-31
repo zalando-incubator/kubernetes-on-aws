@@ -16,823 +16,69 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-poweruser: "true"
 rules:
 - apiGroups:
-  - ""
+  - ''
   resources:
+  - configmaps
+  - endpoints
+  - namespaces
+  - namespaces/finalize
+  - persistentvolumeclaims
+  - persistentvolumes
   - pods
   - pods/attach
-  - pods/proxy
+  - pods/eviction
   - pods/exec
   - pods/portforward
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-  - deletecollection
-- apiGroups:
-  - ""
-  resources:
-  - replicationcontrollers
-  - replicationcontrollers/scale
+  - pods/proxy
+  - podtemplates
+  - secrets
   - serviceaccounts
   - services
   - services/proxy
-  - endpoints
-  - persistentvolumeclaims
-  - configmaps
-  - secrets
   verbs:
-  - get
-  - list
-  - watch
   - create
-  - update
-  - patch
   - delete
   - deletecollection
+  - patch
+  - update
 - apiGroups:
-  - ""
+  - ''
   resources:
-  - limitranges
-  - resourcequotas
-  - bindings
-  - pods/status
-  - resourcequotas/status
-  - namespaces/status
-  - replicationcontrollers/status
-  - pods/log
+  - secrets
   verbs:
+  - create
+  - delete
+  - deletecollection
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
-  - ""
-  - "events.k8s.io"
+  - ''
+  - extensions
+  resources:
+  - replicationcontrollers
+  - replicationcontrollers/scale
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - patch
+  - update
+- apiGroups:
+  - ''
+  - events.k8s.io
   resources:
   - events
   verbs:
-    - get
-    - list
-    - watch
-    - create
-    - update
-    - patch
-    - delete
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
   - create
-  - update
   - patch
-  - delete
-  - deletecollection
-- apiGroups:
-  - autoscaling
-  resources:
-  - horizontalpodautoscalers
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-  - deletecollection
-- apiGroups:
-  - batch
-  resources:
-  - jobs
-  - cronjobs
-  - scheduledjobs
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-  - deletecollection
-- apiGroups:
-  - extensions
-  resources:
-  - jobs
-  - horizontalpodautoscalers
-  - replicationcontrollers/scale
-  - replicasets
-  - replicasets/scale
-  - deployments
-  - deployments/scale
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-  - deletecollection
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - create
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - delete
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - deletecollection
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - get
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - list
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - patch
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
   - update
 - apiGroups:
-  - apps
+  - admissionregistration.k8s.io
   resources:
-  - deployments
-  verbs:
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - deployments/rollback
-  verbs:
-  - create
-- apiGroups:
-  - apps
-  resources:
-  - deployments/rollback
-  verbs:
-  - delete
-- apiGroups:
-  - apps
-  resources:
-  - deployments/rollback
-  verbs:
-  - deletecollection
-- apiGroups:
-  - apps
-  resources:
-  - deployments/rollback
-  verbs:
-  - get
-- apiGroups:
-  - apps
-  resources:
-  - deployments/rollback
-  verbs:
-  - list
-- apiGroups:
-  - apps
-  resources:
-  - deployments/rollback
-  verbs:
-  - patch
-- apiGroups:
-  - apps
-  resources:
-  - deployments/rollback
-  verbs:
-  - update
-- apiGroups:
-  - apps
-  resources:
-  - deployments/rollback
-  verbs:
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - deployments/scale
-  verbs:
-  - create
-- apiGroups:
-  - apps
-  resources:
-  - deployments/scale
-  verbs:
-  - delete
-- apiGroups:
-  - apps
-  resources:
-  - deployments/scale
-  verbs:
-  - deletecollection
-- apiGroups:
-  - apps
-  resources:
-  - deployments/scale
-  verbs:
-  - get
-- apiGroups:
-  - apps
-  resources:
-  - deployments/scale
-  verbs:
-  - list
-- apiGroups:
-  - apps
-  resources:
-  - deployments/scale
-  verbs:
-  - patch
-- apiGroups:
-  - apps
-  resources:
-  - deployments/scale
-  verbs:
-  - update
-- apiGroups:
-  - apps
-  resources:
-  - deployments/scale
-  verbs:
-  - watch
-- apiGroups:
-  - extensions
-  resources:
-  - deployments/rollback
-  verbs:
-  - create
-- apiGroups:
-  - extensions
-  resources:
-  - deployments/rollback
-  verbs:
-  - delete
-- apiGroups:
-  - extensions
-  resources:
-  - deployments/rollback
-  verbs:
-  - deletecollection
-- apiGroups:
-  - extensions
-  resources:
-  - deployments/rollback
-  verbs:
-  - get
-- apiGroups:
-  - extensions
-  resources:
-  - deployments/rollback
-  verbs:
-  - list
-- apiGroups:
-  - extensions
-  resources:
-  - deployments/rollback
-  verbs:
-  - patch
-- apiGroups:
-  - extensions
-  resources:
-  - deployments/rollback
-  verbs:
-  - update
-- apiGroups:
-  - extensions
-  resources:
-  - deployments/rollback
-  verbs:
-  - watch
-- apiGroups:
-  - extensions
-  resources:
-  - ingresses
-  verbs:
-  - create
-- apiGroups:
-  - extensions
-  resources:
-  - ingresses
-  verbs:
-  - delete
-- apiGroups:
-  - extensions
-  resources:
-  - ingresses
-  verbs:
-  - deletecollection
-- apiGroups:
-  - extensions
-  resources:
-  - ingresses
-  verbs:
-  - get
-- apiGroups:
-  - extensions
-  resources:
-  - ingresses
-  verbs:
-  - list
-- apiGroups:
-  - extensions
-  resources:
-  - ingresses
-  verbs:
-  - patch
-- apiGroups:
-  - extensions
-  resources:
-  - ingresses
-  verbs:
-  - update
-- apiGroups:
-  - extensions
-  resources:
-  - ingresses
-  verbs:
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - replicasets
-  verbs:
-  - create
-- apiGroups:
-  - apps
-  resources:
-  - replicasets
-  verbs:
-  - delete
-- apiGroups:
-  - apps
-  resources:
-  - replicasets
-  verbs:
-  - deletecollection
-- apiGroups:
-  - apps
-  resources:
-  - replicasets
-  verbs:
-  - get
-- apiGroups:
-  - apps
-  resources:
-  - replicasets
-  verbs:
-  - list
-- apiGroups:
-  - apps
-  resources:
-  - replicasets
-  verbs:
-  - patch
-- apiGroups:
-  - apps
-  resources:
-  - replicasets
-  verbs:
-  - update
-- apiGroups:
-  - apps
-  resources:
-  - replicasets
-  verbs:
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - replicasets/scale
-  verbs:
-  - create
-- apiGroups:
-  - apps
-  resources:
-  - replicasets/scale
-  verbs:
-  - delete
-- apiGroups:
-  - apps
-  resources:
-  - replicasets/scale
-  verbs:
-  - deletecollection
-- apiGroups:
-  - apps
-  resources:
-  - replicasets/scale
-  verbs:
-  - get
-- apiGroups:
-  - apps
-  resources:
-  - replicasets/scale
-  verbs:
-  - list
-- apiGroups:
-  - apps
-  resources:
-  - replicasets/scale
-  verbs:
-  - patch
-- apiGroups:
-  - apps
-  resources:
-  - replicasets/scale
-  verbs:
-  - update
-- apiGroups:
-  - apps
-  resources:
-  - replicasets/scale
-  verbs:
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - statefulsets/scale
-  verbs:
-  - create
-- apiGroups:
-  - apps
-  resources:
-  - statefulsets/scale
-  verbs:
-  - delete
-- apiGroups:
-  - apps
-  resources:
-  - statefulsets/scale
-  verbs:
-  - deletecollection
-- apiGroups:
-  - apps
-  resources:
-  - statefulsets/scale
-  verbs:
-  - get
-- apiGroups:
-  - apps
-  resources:
-  - statefulsets/scale
-  verbs:
-  - list
-- apiGroups:
-  - apps
-  resources:
-  - statefulsets/scale
-  verbs:
-  - patch
-- apiGroups:
-  - apps
-  resources:
-  - statefulsets/scale
-  verbs:
-  - update
-- apiGroups:
-  - apps
-  resources:
-  - statefulsets/scale
-  verbs:
-  - watch
-- apiGroups:
-  - extensions
-  resources:
-  - networkpolicies
-  verbs:
-  - create
-- apiGroups:
-  - extensions
-  resources:
-  - networkpolicies
-  verbs:
-  - delete
-- apiGroups:
-  - extensions
-  resources:
-  - networkpolicies
-  verbs:
-  - deletecollection
-- apiGroups:
-  - extensions
-  resources:
-  - networkpolicies
-  verbs:
-  - get
-- apiGroups:
-  - extensions
-  resources:
-  - networkpolicies
-  verbs:
-  - list
-- apiGroups:
-  - extensions
-  resources:
-  - networkpolicies
-  verbs:
-  - patch
-- apiGroups:
-  - extensions
-  resources:
-  - networkpolicies
-  verbs:
-  - update
-- apiGroups:
-  - extensions
-  resources:
-  - networkpolicies
-  verbs:
-  - watch
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - create
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - delete
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - deletecollection
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - get
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - list
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - patch
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - update
-- apiGroups:
-  - policy
-  resources:
-  - poddisruptionbudgets
-  verbs:
-  - watch
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - networkpolicies
-  verbs:
-  - create
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - networkpolicies
-  verbs:
-  - delete
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - networkpolicies
-  verbs:
-  - deletecollection
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - networkpolicies
-  verbs:
-  - get
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - networkpolicies
-  verbs:
-  - list
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - networkpolicies
-  verbs:
-  - patch
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - networkpolicies
-  verbs:
-  - update
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - networkpolicies
-  verbs:
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - controllerrevisions
-  verbs:
-  - create
-- apiGroups:
-  - apps
-  resources:
-  - controllerrevisions
-  verbs:
-  - delete
-- apiGroups:
-  - apps
-  resources:
-  - controllerrevisions
-  verbs:
-  - deletecollection
-- apiGroups:
-  - apps
-  resources:
-  - controllerrevisions
-  verbs:
-  - get
-- apiGroups:
-  - apps
-  resources:
-  - controllerrevisions
-  verbs:
-  - list
-- apiGroups:
-  - apps
-  resources:
-  - controllerrevisions
-  verbs:
-  - patch
-- apiGroups:
-  - apps
-  resources:
-  - controllerrevisions
-  verbs:
-  - update
-- apiGroups:
-  - apps
-  resources:
-  - controllerrevisions
-  verbs:
-  - watch
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - create
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - delete
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - deletecollection
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - patch
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - update
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - replicationcontrollers
-  - replicationcontrollers/scale
-  - serviceaccounts
-  - services
-  - endpoints
-  - persistentvolumeclaims
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - autoscaling
-  resources:
-  - horizontalpodautoscalers
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - batch
-  resources:
-  - jobs
-  - cronjobs
-  - scheduledjobs
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - extensions
-  resources:
-  - jobs
-  - daemonsets
-  - horizontalpodautoscalers
-  - replicationcontrollers/scale
-  - replicasets
-  - replicasets/scale
-  - deployments
-  - deployments/scale
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - get
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - list
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
+  - validatingwebhookconfigurations
   verbs:
   - create
   - delete
@@ -844,64 +90,133 @@ rules:
   resources:
   - customresourcedefinitions
   verbs:
-  - get
-  - list
-  - watch
   - create
-  - update
   - patch
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - controllerrevisions
+  - statefulsets
+  - statefulsets/scale
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - patch
+  - update
+- apiGroups:
+  - apps
+  - extensions
+  resources:
+  - deployments
+  - deployments/rollback
+  - deployments/scale
+  - replicasets
+  - replicasets/scale
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - patch
+  - update
+- apiGroups:
+  - autoscaling.k8s.io
+  resources:
+  - verticalpodautoscalercheckpoints
+  - verticalpodautoscalers
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - patch
+  - update
+- apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - patch
+  - update
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs
+  - jobs
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - patch
+  - update
+- apiGroups:
+  - extensions
+  - networking.k8s.io
+  resources:
+  - ingresses
+  - networkpolicies
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - patch
+  - update
+- apiGroups:
+  - metacontroller.k8s.io
+  resources:
+  - compositecontrollers
+  - controllerrevisions
+  - decoratorcontrollers
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - patch
+  - update
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - patch
+  - update
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
-  - roles
-  - rolebindings
-  - clusterroles
   - clusterrolebindings
+  - clusterroles
+  - rolebindings
+  - roles
   verbs:
-  - get
-  - list
-  - watch
   - create
-  - update
-  - patch
   - delete
-- apiGroups:
-  - ""
-  resources:
-  - persistentvolumes
-  verbs:
-  - update
+  - deletecollection
   - patch
+  - update
 - apiGroups:
   - scheduling.k8s.io
   resources:
   - priorityclasses
   verbs:
-  - get
-  - list
-  - watch
   - create
-  - update
-  - patch
   - delete
+  - deletecollection
+  - patch
+  - update
 - apiGroups:
   - storage.k8s.io
   resources:
   - storageclasses
   verbs:
-  - get
-  - list
-  - watch
   - create
-  - update
-  - patch
   - delete
-- apiGroups:
-  - admissionregistration.k8s.io
-  resources:
-  - validatingwebhookconfigurations
-  verbs:
-  - create
-  - update
+  - deletecollection
   - patch
-  - delete
+  - update
+
