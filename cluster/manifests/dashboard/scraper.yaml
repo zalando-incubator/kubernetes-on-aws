@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard-metrics-scraper
+  namespace: kube-system
+  labels:
+    application: dashboard-metrics-scraper
+spec:
+  selector:
+    application: dashboard-metrics-scraper
+  ports:
+  - port: 8000
+    targetPort: 8000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard-metrics-scraper
+  namespace: kube-system
+  labels:
+    application: dashboard-metrics-scraper
+    version: v1.0.2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: dashboard-metrics-scraper
+  template:
+    metadata:
+      labels:
+        application: dashboard-metrics-scraper
+        version: v1.0.2
+    spec:
+      priorityClassName: system-cluster-critical
+      serviceAccountName: kubernetes-dashboard
+      containers:
+      - name: dashboard-metrics-scraper
+        image: registry.opensource.zalan.do/teapot/metrics-scraper:v1.0.2-2
+        resources:
+          limits:
+            cpu: 50m
+            memory: 200Mi
+          requests:
+            cpu: 50m
+            memory: 200Mi
+        ports:
+        - containerPort: 8000
+        livenessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /
+            port: 8000
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp-volume
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          runAsGroup: 2001
+      securityContext:
+        fsGroup: 2001
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
