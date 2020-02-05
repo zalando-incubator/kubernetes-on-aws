@@ -55,9 +55,7 @@ clusters:
     kube_aws_ingress_controller_nlb_enabled: "true"
     vm_dirty_bytes: 134217728
     vm_dirty_background_bytes: 67108864
-    enable_encryption: true
-    # key used for testing. don't use me for anything
-    encryption_key: Mnz9PR8jacvFAMIhyi0FvlHhg1RBn/0kx2H6NmJc56I=
+    enable_encryption: false
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}

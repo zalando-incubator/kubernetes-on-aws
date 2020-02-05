@@ -103,9 +103,7 @@ write_files:
           - --etcd-prefix={{ .Cluster.ConfigItems.apiserver_etcd_prefix }}
           - --storage-backend=etcd3
           - --storage-media-type=application/vnd.kubernetes.protobuf
-          {{ if eq .Cluster.ConfigItems.enable_encryption "true" }}
           - --encryption-provider-config=/etc/kubernetes/config/encryption-config.yaml
-          {{ end }}
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/16
           - --secure-port=443
@@ -172,6 +170,8 @@ write_files:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
             readOnly: true
+          - mountPath: /var/run/kmsplugin
+            name: var-run-kmsplugin
           resources:
             requests:
               cpu: 100m
@@ -430,6 +430,31 @@ write_files:
             requests:
               cpu: 25m
               memory: 25Mi
+        {{- if index .Values "EtcdEncryptionKey" }}
+        - name: aws-encryption-provider
+          image: quay.io/linki/aws-encryption-provider:latest
+          imagePullPolicy: Always
+          command:
+          - /aws-encryption-provider
+          - --key=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:key/{{ .Values.EtcdEncryptionKey }}
+          - --region={{ .Cluster.Region }}
+          - --listen=/var/run/kmsplugin/socket.sock
+          - --health-port=:8086
+          ports:
+          - containerPort: 8086
+            protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8086
+          resources:
+            requests:
+              cpu: 50m
+              memory: 50Mi
+          volumeMounts:
+          - mountPath: /var/run/kmsplugin
+            name: var-run-kmsplugin
+        {{- end }}
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
@@ -440,6 +465,10 @@ write_files:
         - hostPath:
             path: /etc/kubernetes/nginx
           name: config-volume
+        - name: var-run-kmsplugin
+          hostPath:
+            path: /var/run/kmsplugin
+            type: DirectoryOrCreate
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-controller-manager.yaml
@@ -697,7 +726,6 @@ write_files:
           omitStages:
             - "RequestReceived"
 
-{{ if eq .Cluster.ConfigItems.enable_encryption "true" }}
   - owner: root:root
     path: /etc/kubernetes/config/encryption-config.yaml
     permissions: '0400'
@@ -708,9 +736,14 @@ write_files:
         - resources:
           - secrets
           providers:
-          - aescbc:
-              keys:
-              - name: key1
-                secret: {{ .Cluster.ConfigItems.encryption_key }}
+      {{- if ne .Cluster.ConfigItems.enable_encryption "true" }}
           - identity: {}
-{{ end }}
+      {{- end }}
+          - kms:
+              name: aws-encryption-provider
+              endpoint: unix:///var/run/kmsplugin/socket.sock
+              cachesize: 1000
+              timeout: 3s
+      {{- if eq .Cluster.ConfigItems.enable_encryption "true" }}
+          - identity: {}
+      {{- end }}

@@ -1586,6 +1586,32 @@ Resources:
             Resource: "*"
             Action:
             - "kms:Decrypt"
+  EtcdEncryptionKey:
+    Type: "AWS::KMS::Key"
+    Properties:
+      Description: The KMS key for encryption of secrets in etcd
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "etcd-key-policy"
+        Statement:
+          - Sid: "Enable IAM User Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: "Enable master nodes to encrypt and decrypt secrets in etcd"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - "Fn::GetAtt":
+                  - "MasterIAMRole"
+                  - "Arn"
+            Resource: "*"
+            Action:
+            - "kms:Encrypt"
+            - "kms:Decrypt"
   MasterFilesEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:
@@ -1687,3 +1713,7 @@ Outputs:
     Export:
       Name: '{{ .Cluster.ID}}:master-files-encryption-key'
     Value: !Ref MasterFilesEncryptionKey
+  EtcdEncryptionKey:
+    Export:
+      Name: '{{ .Cluster.ID}}:etcd-encryption-key'
+    Value: !Ref EtcdEncryptionKey
