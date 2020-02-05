@@ -40,6 +40,16 @@ webhooks:
         apiGroups: ["storage.k8s.io"]
         apiVersions: ["v1", "v1beta1"]
         resources: ["storageclasses"]
+  - name: node-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/node"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    failurePolicy: Fail
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["nodes"]
   - name: cronjob-admitter.teapot.zalan.do
     clientConfig:
       url: "https://localhost:8085/cronjob"

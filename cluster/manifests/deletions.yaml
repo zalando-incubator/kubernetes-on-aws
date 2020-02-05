@@ -3,6 +3,22 @@ pre_apply: []
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
+- name: kubernetes-dashboard
+  kind: ClusterRoleBinding
+- name: heapster
+  namespace: kube-system
+  kind: Deployment
+- name: heapster
+  namespace: kube-system
+  kind: ServiceAccount
+- name: heapster
+  kind: ClusterRoleBinding
+- name: heapster
+  namespace: kube-system
+  kind: Service
+- name: heapster
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
@@ -22,3 +38,12 @@ post_apply:
 - name: ingress-template-controller
   kind: ClusterRoleBinding
 {{ end }}
+- name: poweruser-new
+  kind: ClusterRoleBinding
+- name: readonly-new
+  kind: ClusterRoleBinding
+- name: zmon-external-new
+  kind: ClusterRoleBinding
+- name: collaborator
+  namespace: visibility
+  kind: RoleBinding
