@@ -65,8 +65,8 @@ spec:
           requests:
             ephemeral-storage: 256Mi
           limits:
-            cpu: 100m
-            memory: 50Mi
+            cpu: {{.Cluster.ConfigItems.dns_dnsmasq_cpu}}
+            memory: {{.Cluster.ConfigItems.dns_dnsmasq_mem}}
       - name: sidecar
         image: registry.opensource.zalan.do/teapot/k8s-dns-sidecar-amd64:1.15.7-1
         securityContext:
@@ -93,8 +93,8 @@ spec:
           requests:
             ephemeral-storage: 256Mi
           limits:
-            cpu: 10m
-            memory: 45Mi
+            cpu: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_cpu}}
+            memory: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_mem}}
       - name: coredns
         image: registry.opensource.zalan.do/teapot/coredns:1.6.4
         args: [ "-conf", "/etc/coredns/Corefile" ]
@@ -130,8 +130,8 @@ spec:
           requests:
             ephemeral-storage: 256Mi
           limits:
-            cpu: 50m
-            memory: 100Mi
+            cpu: {{.Cluster.ConfigItems.dns_coredns_cpu}}
+            memory: {{.Cluster.ConfigItems.dns_coredns_mem}}
       priorityClassName: system-node-critical
       serviceAccountName: coredns
       hostNetwork: true
