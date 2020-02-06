@@ -261,6 +261,14 @@ custom_dns_zone_nameservers: "" # space seperated list of nameserver IP addresse
 # prefix prepended to ownership TXT records for external-dns
 external_dns_ownership_prefix: ""
 
+# DNS container resources
+dns_dnsmasq_cpu: "100m"
+dns_dnsmasq_mem: "50Mi"
+dns_dnsmasq_sidecar_cpu: "10m"
+dns_dnsmasq_sidecar_mem: "45Mi"
+dns_coredns_cpu: "50m"
+dns_coredns_mem: "100Mi"
+
 # special roles for test/pet clusters
 {{if eq .Cluster.Environment "e2e"}}
 collaborator_administrator_access: "true"
@@ -279,3 +287,6 @@ vm_dirty_bytes: ""
 
 # temporary flag for kubernetes.io/node-pool node label
 legacy_node_pool_label_enabled: "false"
+
+# Disable legacy apiVersions which will be gone in Kubernetes v1.16
+disable_legacy_api_versions: "true"
