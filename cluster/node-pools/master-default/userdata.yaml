@@ -430,7 +430,6 @@ write_files:
             requests:
               cpu: 25m
               memory: 25Mi
-        {{- if index .Values "ClusterStackOutputs" }}
         - name: aws-encryption-provider
           image: registry.opensource.zalan.do/teapot/aws-encryption-provider:master-1
           command:
@@ -453,7 +452,6 @@ write_files:
           volumeMounts:
           - mountPath: /var/run/kmsplugin
             name: var-run-kmsplugin
-        {{- end }}
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
