@@ -432,8 +432,7 @@ write_files:
               memory: 25Mi
         {{- if index .Values "ClusterStackOutputs" }}
         - name: aws-encryption-provider
-          image: quay.io/linki/aws-encryption-provider:latest
-          imagePullPolicy: Always
+          image: registry.opensource.zalan.do/teapot/aws-encryption-provider:master-1
           command:
           - /aws-encryption-provider
           - --key=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:key/{{ .Values.ClusterStackOutputs.EtcdEncryptionKey }}
