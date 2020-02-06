@@ -430,13 +430,13 @@ write_files:
             requests:
               cpu: 25m
               memory: 25Mi
-        {{- if index .Values "EtcdEncryptionKey" }}
+        {{- if index .Values "ClusterStackOutputs" }}
         - name: aws-encryption-provider
           image: quay.io/linki/aws-encryption-provider:latest
           imagePullPolicy: Always
           command:
           - /aws-encryption-provider
-          - --key=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:key/{{ .Values.EtcdEncryptionKey }}
+          - --key=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:key/{{ .Values.ClusterStackOutputs.EtcdEncryptionKey }}
           - --region={{ .Cluster.Region }}
           - --listen=/var/run/kmsplugin/socket.sock
           - --health-port=:8086
