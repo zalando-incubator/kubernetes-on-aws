@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-node-ready
+  namespace: kube-system
+  {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:role/{{ .Cluster.LocalID }}-kube-node-ready"
+  {{ end }}

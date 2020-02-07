@@ -123,6 +123,9 @@ write_files:
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer=kubernetes/serviceaccount
           {{- end }}
+          - --service-account-key-file=/etc/kubernetes/ssl/pod-identity-service-account-public-key.pem
+          - --service-account-signing-key-file=/etc/kubernetes/ssl/pod-identity-service-account-key.pem
+          - --service-account-issuer=https://{{.Cluster.LocalID}}.{{.Values.hosted_zone}}
           {{ if ne .Cluster.ConfigItems.audittrail_url "" }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
@@ -227,6 +230,37 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
+        - image: registry.opensource.zalan.do/teapot/pod-identity-webhook:v0.2.0-master-2
+          name: pod-identity-webhook
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9999
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+          command:
+            - /webhook
+          args:
+            - --in-cluster=false
+            - --namespace=kube-system
+            - --tls-cert=/etc/kubernetes/ssl/pod-identity-webhook.pem
+            - --tls-key=/etc/kubernetes/ssl/pod-identity-webhook-key.pem
+            - --annotation-prefix=eks.amazonaws.com
+            - --token-audience=sts.amazonaws.com
+            - --logtostderr
+            - --port=8086
+            - --kube-api=http://127.0.0.1:8080
+          ports:
+            - containerPort: 8086
+            - containerPort: 9999
+          volumeMounts:
+          - mountPath: /etc/kubernetes/ssl
+            name: ssl-certs-kubernetes
+            readOnly: true
         - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.5
           name: webhook
           ports:
@@ -394,6 +428,14 @@ write_files:
               -> setPath("/healthz")
               -> disableAccessLog()
               -> "http://127.0.0.1:8080";
+            o: Path("/.well-known/openid-configuration")
+              -> setResponseHeader("Content-Type", "application/json")
+              -> static("/.well-known/", "/var/www/openid-configuration/")
+              -> <shunt>;
+            k: Path("/openid-configuration/*")
+              -> setResponseHeader("Content-Type", "application/json")
+              -> static("/openid-configuration/", "/var/www/openid-configuration/")
+              -> <shunt>;
             all: *
               -> disableAccessLog()
               -> "https://127.0.0.1:443";
@@ -417,6 +459,9 @@ write_files:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
             readOnly: true
+          - mountPath: /var/www/openid-configuration
+            name: openid-configuration
+            readOnly: true
         - name: etcd-proxy
           image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
           args:
@@ -437,6 +482,9 @@ write_files:
         - hostPath:
             path: /etc/kubernetes/nginx
           name: config-volume
+        - hostPath:
+            path: /var/www/openid-configuration
+          name: openid-configuration
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-controller-manager.yaml

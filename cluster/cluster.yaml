@@ -125,6 +125,10 @@ Resources:
           IpProtocol: tcp
           ToPort: 8085
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9999 # the metrics port for the pod identity webhook
+          IpProtocol: tcp
+          ToPort: 9999
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 7980
           IpProtocol: tcp
           ToPort: 7980
@@ -714,6 +718,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringLike:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:external-dns"
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -744,6 +756,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{ .Values.hosted_zone }}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringLike:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-ingress-aws-controller"
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -992,6 +1012,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringLike:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:etcd-backup"
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -1041,6 +1069,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringLike:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-static-static-egress-controller"
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -1300,6 +1336,14 @@ Resources:
             Principal:
               Service:
                 - ec2.amazonaws.com
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringLike:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:custom-metrics-apiserver"
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -1461,6 +1505,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringLike:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:emergency-access-service"
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow

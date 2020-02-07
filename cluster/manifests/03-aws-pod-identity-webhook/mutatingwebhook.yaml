@@ -1,0 +1,16 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: pod-identity-webhook
+  namespace: kube-system
+webhooks:
+  - name: pod-identity-webhook.amazonaws.com
+    failurePolicy: Ignore
+    clientConfig:
+      url: "https://localhost:8086/mutate"
+      caBundle: {{ .ConfigItems.ca_cert_decompressed }}
+    rules:
+      - operations: [ "CREATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]

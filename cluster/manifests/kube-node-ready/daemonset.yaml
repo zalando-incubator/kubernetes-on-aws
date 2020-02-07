@@ -19,11 +19,8 @@ spec:
       labels:
         application: kube-node-ready
         version: {{$version}}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
-      annotations:
-        iam.amazonaws.com/role: "{{ .LocalID }}-kube-node-ready"
-{{ end }}
     spec:
+      serviceAccountName: kube-node-ready
       dnsConfig:
         options:
           - name: ndots
