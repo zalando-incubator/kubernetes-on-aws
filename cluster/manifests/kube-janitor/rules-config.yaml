@@ -25,4 +25,12 @@ data:
         # see http://jmespath.org/specification.html#starts-with
         jmespath: "starts_with(metadata.name, 'd-')"
         ttl: 24h
+      - id: cleanup-resources-from-pull-requests
+        # delete all resources in namespaces matching .*-pr-.* which allows to put resources build from
+        # pull requests into a namespace like my-project-pr-123 which get automatically cleaned up after 24h
+        # and don't mess up the cluster, see #2930.
+        resources:
+          - namespaces  
+        jmespath: "contains(metadata.name, '-pr-')"
+        ttl: 24h   
 {{ end }}
