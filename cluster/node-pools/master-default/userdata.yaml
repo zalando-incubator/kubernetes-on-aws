@@ -103,7 +103,9 @@ write_files:
           - --etcd-prefix={{ .Cluster.ConfigItems.apiserver_etcd_prefix }}
           - --storage-backend=etcd3
           - --storage-media-type=application/vnd.kubernetes.protobuf
+          {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
           - --encryption-provider-config=/etc/kubernetes/config/encryption-config.yaml
+          {{- end }}
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/16
           - --secure-port=443
@@ -170,8 +172,10 @@ write_files:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
             readOnly: true
+          {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
           - mountPath: /var/run/kmsplugin
             name: var-run-kmsplugin
+          {{- end }}
           resources:
             requests:
               cpu: 100m
@@ -430,6 +434,7 @@ write_files:
             requests:
               cpu: 25m
               memory: 25Mi
+        {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
         - name: aws-encryption-provider
           image: registry.opensource.zalan.do/teapot/aws-encryption-provider:master-1
           command:
@@ -452,6 +457,7 @@ write_files:
           volumeMounts:
           - mountPath: /var/run/kmsplugin
             name: var-run-kmsplugin
+        {{- end }}
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
@@ -462,10 +468,12 @@ write_files:
         - hostPath:
             path: /etc/kubernetes/nginx
           name: config-volume
+        {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
         - name: var-run-kmsplugin
           hostPath:
             path: /var/run/kmsplugin
             type: DirectoryOrCreate
+        {{- end }}
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-controller-manager.yaml
@@ -723,6 +731,7 @@ write_files:
           omitStages:
             - "RequestReceived"
 
+{{- if eq .Cluster.ConfigItems.support_encryption "true" }}
   - owner: root:root
     path: /etc/kubernetes/config/encryption-config.yaml
     permissions: '0400'
@@ -744,3 +753,4 @@ write_files:
       {{- if eq .Cluster.ConfigItems.enable_encryption "true" }}
           - identity: {}
       {{- end }}
+{{ end }}
