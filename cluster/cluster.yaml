@@ -1597,10 +1597,16 @@ Resources:
         Version: "2012-10-17"
         Id: "etcd-key-policy"
         Statement:
-          - Sid: "Enable IAM User Permissions"
+          - Sid: "Allow CLM to manage this key"
             Effect: "Allow"
             Principal:
-              AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
+              AWS: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: "Allow Administrator to manage and use this key"
+            Effect: "Allow"
+            Principal:
+              AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:role/Shibboleth-Administrator"
             Action: "kms:*"
             Resource: "*"
           - Sid: "Enable master nodes to encrypt and decrypt secrets in etcd"
