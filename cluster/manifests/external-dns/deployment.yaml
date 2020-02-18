@@ -53,8 +53,11 @@ spec:
           httpGet:
             path: /healthz
             port: 7979
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
         volumeMounts:
+        - name: kube-api-access
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          readOnly: true
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
         - name: aws-iam-credentials
           mountPath: /meta/aws-iam
           readOnly: true
@@ -67,8 +70,26 @@ spec:
             drop: ["ALL"]
       securityContext:
         fsGroup: 65534
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
       volumes:
+      - name: kube-api-access
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              expirationSeconds: 3600
+              path: token
+          - configMap:
+              items:
+              - key: ca.crt
+                path: ca.crt
+              name: kube-root-ca.crt
+          - downwardAPI:
+              items:
+              - fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+                path: namespace
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
       - name: aws-iam-credentials
         secret:
           secretName: external-dns-aws-iam-credentials
