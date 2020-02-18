@@ -4,7 +4,7 @@ Description: Kubernetes default worker node pool
 Mappings:
   Images:
     eu-central-1:
-      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_15 }}'
+      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_16 }}'
 
 Resources:
 {{ with $data := . }}
@@ -46,9 +46,6 @@ Resources:
       - Key: k8s.io/role/node
         PropagateAtLaunch: true
         Value: worker
-      - Key: kubernetes.io/role
-        PropagateAtLaunch: true
-        Value: worker
       - Key: node.kubernetes.io/role
         PropagateAtLaunch: true
         Value: worker
@@ -61,17 +58,9 @@ Resources:
       - Key: k8s.io/cluster-autoscaler/enabled
         PropagateAtLaunch: true
         Value: ''
-      - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/role
-        PropagateAtLaunch: true
-        Value: worker
       - Key: k8s.io/cluster-autoscaler/node-template/label/node.kubernetes.io/role
         PropagateAtLaunch: true
         Value: worker
-{{- if eq $data.Cluster.ConfigItems.legacy_node_pool_label_enabled "true" }}
-      - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/node-pool
-        PropagateAtLaunch: true
-        Value: {{ $data.NodePool.Name }}
-{{- end }}
       - Key: k8s.io/cluster-autoscaler/node-template/label/node.kubernetes.io/node-pool
         PropagateAtLaunch: true
         Value: {{ $data.NodePool.Name }}
