@@ -1,23 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vpa-admission-controller
+  name: vpa-admission-controller-new # TODO: drop new later
   namespace: kube-system
   labels:
-    application: vpa-admission-controller
+    application: vertical-pod-autoscaler
+    component: admission-controller
     version: v0.6.1-internal.6
-    component: vpa
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: vpa-admission-controller
+      application: vertical-pod-autoscaler
+      component: admission-controller
   template:
     metadata:
       labels:
-        application: vpa-admission-controller
+        application: vertical-pod-autoscaler
+        component: admission-controller
         version: v0.6.1-internal.6
-        component: vpa
       annotations:
         config/hash: {{"02-secret.yaml" | manifestHash}}
     spec:
