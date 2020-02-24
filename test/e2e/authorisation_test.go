@@ -284,32 +284,6 @@ var _ = framework.KubeDescribe("Authorization tests", func() {
 				}}`,
 				},
 			}, {
-				msg: "access to non-resource path with ReadOnly group",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"nonResourceAttributes": {
-						"path": "/apis",
-						"verb": "get"
-					},
-					"user": "mlarsen",
-					"group": [
-						"ReadOnly"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			}, {
 				msg: "access to use PodSecurityPolicy for ReadOnly should not be allowed",
 				reqBody: fmt.Sprintf(`{
 					"apiVersion": "authorization.k8s.io/v1beta1",
