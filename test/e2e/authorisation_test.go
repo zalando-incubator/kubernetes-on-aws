@@ -103,7 +103,7 @@ func (item testItem) expandOn(subitems []testItem, field func(*testItem) *[]stri
 	for _, subitem := range subitems {
 		// == 1:
 		// - if it's coming from a lower level, then it's either zero or one, and is considered
-		// overridden.
+		// as overriding the current level.
 		// - if it's the item from the current level, then no need to expand when there's only one
 		// value.
 		if len(*field(&subitem)) == 1 {
@@ -266,17 +266,15 @@ func (item testItem) subjectReview() subjectReview {
 		setIfExists(&req.Spec.ResourceAttributes.Subresource, item.request.subresources)
 		setIfExists(&req.Spec.ResourceAttributes.Path, item.request.paths)
 
-		resource := req.Spec.ResourceAttributes.Resource
-		if resource != "" {
-			parts := strings.Split(resource, "/")
-			if len(parts) == 2 && parts[0] == "*" {
-				// e.g. */scale
-				req.Spec.ResourceAttributes.Group = "*"
-				req.Spec.ResourceAttributes.Resource = resource
-			} else if len(parts) == 2 && parts[0] != "*" {
-				req.Spec.ResourceAttributes.Group = parts[0]
-				req.Spec.ResourceAttributes.Resource = parts[1]
-			}
+		parts := strings.Split(req.Spec.ResourceAttributes.Resource, "/")
+		switch {
+		case len(parts) == 2:
+			req.Spec.ResourceAttributes.Group = parts[0]
+			req.Spec.ResourceAttributes.Resource = parts[1]
+		case len(parts) == 3:
+			req.Spec.ResourceAttributes.Group = parts[0]
+			req.Spec.ResourceAttributes.Resource = parts[1]
+			req.Spec.ResourceAttributes.Subresource = parts[2]
 		}
 	}
 
@@ -354,7 +352,6 @@ func newReqBuilder(url, token string) func(subjectReview) (*http.Request, error)
 			return nil, err
 		}
 
-		// println(string(j))
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(j))
 		if err != nil {
 			return nil, err
@@ -492,10 +489,11 @@ var _ = framework.KubeDescribe("Authorization tests [Authorization] [RBAC] [Zala
 						"apps/deployments",
 						"apps/daemonsets",
 						"apps/statefulsets",
+						"apps/deployments/scale",
+						"apps/statefulsets/scale",
 						"services",
 						"persistentvolumes",
 						"persistentvolumeclaims",
-						// "*/scale", // suspiciously, fails
 						"configmaps",
 					),
 					items: []testItem{{
@@ -552,23 +550,22 @@ var _ = framework.KubeDescribe("Authorization tests [Authorization] [RBAC] [Zala
 				request: req().
 					verb("create", "patch", "update", "delete").
 					ns("", "teapot", "kube-system").
-					res("daemonsets"),
+					res("apps/daemonsets"),
 				expect: denied,
-				// }, {
+			}, {
 
-				// TODO: this fails in the teapot cluster
-				// 	name: "no delete of CRDs",
-				// 	request: req().
-				// 		verb("delete").
-				// 		res("apiextensions.k8s.io/customresourcedefinitions"),
-				// 	expect: denied,
-				// }, {
+				name: "delete of CRDs",
+				request: req().
+					verb("delete").
+					res("apiextensions.k8s.io/customresourcedefinitions"),
+				expect: allowed,
+			}, {
 
-				// TODO: how to specify?
-				// 	name: "no delete of kube-system or visibility namespaces",
-				// 	request: req().
-				// 		verb("delete").
-
+				name: "no delete of kube-system or visibility namespaces",
+				request: req().
+					verb("delete").
+					name("kube-system", "visibility"),
+				expect: denied,
 			}, {
 
 				name: "write access to everything, except kube-system and visibility",
@@ -580,10 +577,11 @@ var _ = framework.KubeDescribe("Authorization tests [Authorization] [RBAC] [Zala
 						"pods",
 						"apps/deployments",
 						"apps/statefulsets",
+						"apps/deployments/scale",
+						"apps/statefulsets/scale",
 						"services",
 						"persistentvolumes",
 						"persistentvolumeclaims",
-						// "*/scale", // TODO
 						"configmaps",
 					),
 					items: []testItem{{
@@ -610,9 +608,6 @@ var _ = framework.KubeDescribe("Authorization tests [Authorization] [RBAC] [Zala
 						request: req().res(
 							"nodes",
 							"policy/podsecuritypolicies",
-
-							// TODO:
-							// "rbac.authorization.k8s.io/clusterroles",
 						),
 						expect: denied,
 					}},
@@ -620,102 +615,104 @@ var _ = framework.KubeDescribe("Authorization tests [Authorization] [RBAC] [Zala
 			}},
 		}, {
 
-			name: "collaborator power-user, manual, emergency and 24x7",
+			name: "collaborator power-user, manual and emergency",
 			request: req().
 				user("test-user").
 				setGroups(
-					[]string{"CollaboratorPowerUser"},
-					[]string{"CollaboratorManual"},
-					[]string{"CollaboratorEmergency"},
-					[]string{"Collaborator24x7"},
+					[]string{"CollaboratorPowerUser", "PowerUser"},
+					[]string{"CollaboratorManual", "Manual"},
+					[]string{"CollaboratorEmergency", "Emergency"},
 				),
 			items: []testItem{{
 
-				// TODO: can read secrets in visibility
-				// 		name: "no access to secrets in kube-system or visibility",
-				// 		request: req().
-				// 			verb("get", "list", "watch").
-				// 			ns("kube-system", "visibility").
-				// 			res("secrets"),
-				// 		expect: denied,
-				// 	}, {
+				name: "access to secrets in kube-system or visibility",
+				request: req().
+					verb("get", "list", "watch").
+					ns("kube-system", "visibility").
+					res("secrets"),
+				items: []testItem{{
+					name:    "in visibility",
+					request: req().ns("visibility"),
+					expect:  allowed,
+				}, {
+					name:    "in kube-system",
+					request: req().ns("kube-system"),
+					expect:  denied,
+				}},
+			}, {
 				name: "no write access to nodes",
 				request: req().
 					verb("create", "patch", "update", "delete").
 					res("nodes"),
 				expect: denied,
+			}, {
+				name: "can update to daemonsets",
+				request: req().
+					verb("create", "patch", "update", "delete").
+					ns("visibility").
+					res("apps/daemonsets"),
+				expect: allowed,
+			}, {
 
-				// TODO:
-				// 	}, {
-				// 		name: "can write to daemonsets",
-				// 		request: req().
-				// 			verb("create", "patch", "update", "delete").
-				// 			ns("visibility").
-				// 			res("daemonsets"),
-				// 		expect: allowed,
-				// }, {
+				name: "delete of CRDs",
+				request: req().
+					verb("delete").
+					res("apiextensions.k8s.io/customresourcedefinitions"),
+				expect: allowed,
+			}, {
 
-				// TODO: this fails in the teapot cluster
-				// 	name: "no delete of CRDs",
-				// 	request: req().
-				// 		verb("delete").
-				// 		res("apiextensions.k8s.io/customresourcedefinitions"),
-				// 	expect: denied,
-				// }, {
+				name: "no delete of kube-system or visibility namespaces",
+				request: req().
+					verb("delete").
+					res("namespaces").
+					name("kube-system", "visibility"),
+				expect: denied,
+			}, {
 
-				// TODO: how to specify?
-				// 	name: "no delete of kube-system or visibility namespaces",
-				// 	request: req().
-				// 		verb("delete").
+				name: "write access to everything, except kube-system",
+				request: req().
+					verb("create", "patch", "update", "delete"),
+				items: []testItem{{
+					name: "namespaced",
+					request: req().res(
+						"pods",
+						"apps/deployments",
+						"apps/statefulsets",
+						"services",
+						"persistentvolumes",
+						"persistentvolumeclaims",
+						"configmaps",
+					),
+					items: []testItem{{
+						name:    "kube-system and visibility",
+						request: req().ns("kube-system"),
+						expect:  denied,
+					}, {
+						name:    "others",
+						request: req().ns("", "teapot", "visibility"),
+						expect:  allowed,
+					}},
+				}, {
+					name: "not namespaced",
+					items: []testItem{{
+						name: "allowed",
+						request: req().res(
+							"namespaces",
+							"storage.k8s.io/storageclasses",
+							"apiextensions.k8s.io/customresourcedefinitions",
+						),
+						expect: allowed,
+					}, {
+						name: "not allowed",
+						request: req().res(
+							"nodes",
+							"policy/podsecuritypolicies",
 
-				// TODO
-				// 	}, {
-
-				// 		name: "write access to everything, except kube-system",
-				// 		request: req().
-				// 			verb("create", "patch", "update", "delete"),
-				// 		items: []testItem{{
-				// 			name: "namespaced",
-				// 			request: req().res(
-				// 				"pods",
-				// 				"apps/deployments",
-				// 				"apps/statefulsets",
-				// 				"services",
-				// 				"persistentvolumes",
-				// 				"persistentvolumeclaims",
-				// 				// "*/scale", // TODO
-				// 				"configmaps",
-				// 			),
-				// 			items: []testItem{{
-				// 				name: "kube-system and visibility",
-				// 				request: req().ns("kube-system"),
-				// 				expect: denied,
-				// 			}, {
-				// 				name: "others",
-				// 				request: req().ns("", "teapot", "visibility"),
-				// 				expect: allowed,
-				// 			}},
-				// 		}, {
-				// 			name: "not namespaced",
-				// 			items: []testItem{{
-				// 				name: "allowed",
-				// 				request: req().res(
-				// 					"namespaces",
-				// 					"storage.k8s.io/storageclasses",
-				// 					"apiextensions.k8s.io/customresourcedefinitions",
-				// 				),
-				// 				expect: allowed,
-				// 			}, {
-				// 				name: "not allowed",
-				// 				request: req().res(
-				// 					"nodes",
-				// 					"policy/podsecuritypolicies",
-
-				// 					// "rbac.authorization.k8s.io/clusterroles",
-				// 				),
-				// 				expect: denied,
-				// 			}},
-				// 		}},
+							// "rbac.authorization.k8s.io/clusterroles",
+						),
+						expect: denied,
+					}},
+				}},
 			}},
 		}, {
 
@@ -774,18 +771,6 @@ var _ = framework.KubeDescribe("Authorization tests [Authorization] [RBAC] [Zala
 				name: "persistent volume binder service account can create kube system persistentVolumes",
 				request: req().ns("kube-system").verb("create").res("persistentvolumes").
 					user("system:serviceaccount:kube-system:persistent-volume-binder").
-					setGroups([]string{"system:serviceaccounts:kube-system"}),
-				expect: allowed,
-			}, {
-				name: "horizontal pod autoscaler service account can update kube system autoscalers",
-				request: req().ns("kube-system").verb("update").apiGroup("*").res("*/scale").
-					user("system:serviceaccount:kube-system:horizontal-pod-autoscaler").
-					setGroups([]string{"system:serviceaccounts:kube-system"}),
-				expect: allowed,
-			}, {
-				name: "horizontal pod autoscaler service account can update any autoscaler",
-				request: req().ns("*").verb("update").apiGroup("*").res("*/scale").
-					user("system:serviceaccount:kube-system:horizontal-pod-autoscaler").
 					setGroups([]string{"system:serviceaccounts:kube-system"}),
 				expect: allowed,
 			}, {
