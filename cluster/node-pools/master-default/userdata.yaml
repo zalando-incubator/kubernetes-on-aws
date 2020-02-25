@@ -121,7 +121,7 @@ write_files:
           - --authorization-mode=Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }}
+          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }}
           - --anonymous-auth=false
           {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
@@ -152,6 +152,7 @@ write_files:
           - --kubelet-certificate-authority=/etc/kubernetes/ssl/ca.pem
           - --kubelet-client-certificate=/etc/kubernetes/ssl/kubelet-client.pem
           - --kubelet-client-key=/etc/kubernetes/ssl/kubelet-client-key.pem
+          - --shutdown-delay-duration=60s
           livenessProbe:
             httpGet:
               host: 127.0.0.1
@@ -238,7 +239,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.6
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.7
           name: webhook
           ports:
           - containerPort: 8081
@@ -429,7 +430,7 @@ write_files:
             name: ssl-certs-kubernetes
             readOnly: true
         - name: etcd-proxy
-          image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
+          image: registry.opensource.zalan.do/teapot/etcd-proxy:master-5
           args:
           - {{ .Cluster.ConfigItems.etcd_endpoints }}
           ports:
