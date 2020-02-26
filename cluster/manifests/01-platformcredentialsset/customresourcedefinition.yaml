@@ -1,13 +1,12 @@
 # A specification to declare needed OAuth credentials (tokens, clients) for the
 # Zalando Platform IAM system
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: platformcredentialssets.zalando.org
 spec:
   scope: Namespaced
   group: zalando.org
-  version: v1
   names:
     kind: PlatformCredentialsSet
     plural: platformcredentialssets
@@ -16,66 +15,72 @@ spec:
       - pcs
     categories:
       - all
-  additionalPrinterColumns:
-  - JSONPath: .spec.application
-    description: ID of application registered in application registry
-    name: Application
-    type: string
-  - JSONPath: .status.processingStatus
-    description: Processing status reported by Credentials Provider
-    name: Status
-    type: string
-  - JSONPath: .metadata.creationTimestamp
-    description: Age of the PlatformCredentialsSet
-    name: Age
-    type: date
-  validation:
-    openAPIV3Schema:
-      required:
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    additionalPrinterColumns:
+    - jsonPath: .spec.application
+      description: ID of application registered in application registry
+      name: Application
+      type: string
+    - jsonPath: .status.processingStatus
+      description: Processing status reported by Credentials Provider
+      name: Status
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      description: Age of the PlatformCredentialsSet
+      name: Age
+      type: date
+    schema:
+      openAPIV3Schema:
+        type: object
+        required:
         - spec
-      properties:
-        spec:
-          required:
-            - application
-          properties:
-            application:
-              type: string
-              pattern: "^[a-z][a-z0-9-]*[a-z0-9]$"
-            clients:
-              type: object
-              additionalProperties:
+        properties:
+          spec:
+            type: object
+            required:
+              - application
+            properties:
+              application:
+                type: string
+                pattern: "^[a-z][a-z0-9-]*[a-z0-9]$"
+              clients:
                 type: object
-                properties:
-                  realm:
-                    type: string
-                    enum:
-                      - customers
-                      - users
-                      - services
-                  grant:
-                    type: string
-                    enum:
-                      - authorization-code
-                      - implicit
-                      - resource-owner-password-credentials
-                      - client-credentials
-                  redirectUri:
-                    type: string
-            tokens:
-              type: object
-              additionalProperties:
-                type: object
-                nullable: true
-                properties:
-                  privileges:
-                    type: array
-                    nullable: true
-                    items:
+                additionalProperties:
+                  type: object
+                  properties:
+                    realm:
                       type: string
-            token_version:
-              type: string
-              enum:
-                - v1
-                - v2
-  subresources:
-    status: {}
+                      enum:
+                        - customers
+                        - users
+                        - services
+                    grant:
+                      type: string
+                      enum:
+                        - authorization-code
+                        - implicit
+                        - resource-owner-password-credentials
+                        - client-credentials
+                    redirectUri:
+                      type: string
+              tokens:
+                type: object
+                additionalProperties:
+                  type: object
+                  nullable: true
+                  properties:
+                    privileges:
+                      type: array
+                      nullable: true
+                      items:
+                        type: string
+              token_version:
+                type: string
+                enum:
+                  - v1
+                  - v2
+    subresources:
+      status: {}
