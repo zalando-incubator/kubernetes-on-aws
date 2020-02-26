@@ -26,6 +26,7 @@ import (
 	deploymentutil "k8s.io/kubernetes/pkg/controller/deployment/util"
 	"k8s.io/kubernetes/test/e2e/framework"
 	deploymentframework "k8s.io/kubernetes/test/e2e/framework/deployment"
+	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
 var _ = framework.KubeDescribe("PSP use", func() {
@@ -129,7 +130,7 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		By(fmt.Sprintf("Got rs: %s, from deployment: %s", rs.Name, deploy.Name))
 
 		//pods, err := framework.PodsCreated(f.ClientSet, f.Namespace.Name, rs.Name, replicas)
-		pods, err := framework.PodsCreatedByLabel(f.ClientSet, f.Namespace.Name, rs.Name, replicas, labelSelector)
+		pods, err := e2epod.PodsCreatedByLabel(f.ClientSet, f.Namespace.Name, rs.Name, replicas, labelSelector)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Ensuring each pod is running for rs: %s, pod: %s", rs.Name, pods.Items[0].Name))
 		// Wait for the pods to enter the running state. Waiting loops until the pods
