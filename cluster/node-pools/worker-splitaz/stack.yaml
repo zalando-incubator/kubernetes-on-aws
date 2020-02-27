@@ -50,7 +50,20 @@ Resources:
         PropagateAtLaunch: true
         Value: worker
 # only node pools without taints should be attached to Ingress Load balancer
-{{- if not (index $data.NodePool.ConfigItems "taints") }}
+#
+# This is a complicated way of allowing the following logic:
+# For any nodepool without taints make it a target of Ingress LBs, except when:
+# 1. skipper nodepool support is enabled AND non tainted nodes as target has
+# been *disabled*.
+# 2. or if skipper nodepool support is not enabled.
+#
+# When skipper node pool support is enabled, we only put the skipper nodes as
+# targets in the LBs.
+{{- if and (not (index $data.NodePool.ConfigItems "taints")) (or (and (eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true") (ne .Cluster.ConfigItems.disable_default_nodepool_lb_attach "true")) (ne .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true")) }}
+      - Key: zalando.org/ingress-enabled
+        Value: "true"
+        PropagateAtLaunch: true
+{{- else if and (or (eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true") (ne .Cluster.ConfigItems.disable_default_nodepool_lb_attach "true")) (eq (index $data.NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
       - Key: zalando.org/ingress-enabled
         Value: "true"
         PropagateAtLaunch: true
