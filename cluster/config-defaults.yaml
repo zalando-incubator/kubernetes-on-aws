@@ -183,6 +183,8 @@ teapot_admission_controller_ignore_namespaces: "^kube-system$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "true"
 {{end}}
 
+teapot_admission_controller_experimental_inject_aws_waiter: "false"
+
 # etcd cluster
 {{if eq .Environment "production"}}
 etcd_instance_count: "5"
@@ -289,11 +291,19 @@ enable_hpa_scale_to_zero: "true"
 
 # setup supporting components to enable encryption
 # this flag must only be switched from true to false when enable_encryption is false and all secrets were decrypted
+{{if eq .Environment "test"}}
+support_encryption: "true"
+{{else}}
 support_encryption: "false"
+{{end}}
 # enable encryption of secrets in etcd, requires support_encryption: true
 # this flag can be switched between true and false as long as support_encryption is true
 # to ensure all secrets are encrypted/decrypted all secrets need to be rewritten
+{{if eq .Environment "test"}}
+enable_encryption: "true"
+{{else}}
 enable_encryption: "false"
+{{end}}
 
 # default ttl for kube janitor for resources build from PRs in namespaces matching .*-pr-.*
 kube_janitor_default_pr_ttl: "1w"  # 1 week
