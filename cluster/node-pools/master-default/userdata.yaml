@@ -139,6 +139,11 @@ write_files:
           - --audit-log-maxage=0
           - --audit-log-maxbackup=0
           - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
+          {{ else if and (eq .Cluster.ConfigItems.enable_default_sa "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
+          - --audit-log-path=/dev/stdout
+          - --audit-log-maxage=0
+          - --audit-log-maxbackup=0
+          - --audit-policy-file=/etc/kubernetes/config/audit-policy-ro.yaml
           {{ end }}
           # enable aggregated apiservers
           - --client-ca-file=/etc/kubernetes/ssl/ca.pem
@@ -744,6 +749,24 @@ write_files:
         - level: Request
           omitStages:
             - "RequestReceived"
+
+{{ if and (eq .Cluster.ConfigItems.enable_default_sa "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
+  - owner: root:root
+    path: /etc/kubernetes/config/audit-policy-ro.yaml
+    content: |
+      apiVersion: audit.k8s.io/v1beta1
+      kind: Policy
+      rules:
+      - level: None
+        verbs: ["create", "update", "patch", "delete", "deletecollection"]
+      - level: None
+        userGroups: ["system:serviceaccounts:kube-system"]
+      - level: Request
+        verbs: ["watch", "list", "get"]
+        userGroups: ["system:serviceaccounts"]
+        omitStages:
+        - "RequestReceived"
+{{ end }}
 
 {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
   - owner: root:root

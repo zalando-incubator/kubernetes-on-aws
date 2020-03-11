@@ -248,6 +248,14 @@ allow_external_service_accounts: "false"
 # issue service account tokens with expiration time.
 rotate_service_account_tokens: "false"
 
+# enable auditlogging for read access such that we can identified clients using
+# the default service account to read from the API server.
+{{ if eq .Cluster.Environment "test" }}
+auditlog_read_access: "true"
+{{ else }}
+auditlog_read_access: "false"
+{{ end }}
+
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "true"
 
