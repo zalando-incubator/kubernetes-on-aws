@@ -93,6 +93,7 @@ write_files:
           value: master
           effect: NoSchedule
         hostNetwork: true
+        terminationGracePeriodSeconds: 80
         containers:
         - name: kube-apiserver
           image: nonexistent.zalan.do/teapot/kube-apiserver:fixed
@@ -182,7 +183,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-63
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-65
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -232,6 +233,9 @@ write_files:
             - --deployment-rolling-update-default-max-unavailable={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_crd_ensure_no_resources_on_delete "true" }}
             - --crd-ensure-no-resources-on-delete
+{{- end }}
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
+            - --pod-aws-credentials-waiter-image=pierone.stups.zalan.do/automata/aws-credentials-waiter:master-4
 {{- end }}
           ports:
             - containerPort: 8085
