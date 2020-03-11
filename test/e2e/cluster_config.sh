@@ -56,6 +56,7 @@ clusters:
     vm_dirty_bytes: 134217728
     vm_dirty_background_bytes: 67108864
     prometheus_tsdb_retention_size: enabled
+    apiserver_internal_proxy: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}

@@ -110,7 +110,7 @@ write_files:
           {{- end }}
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/16
-          - --secure-port=443
+          - --secure-port={{ if eq .Cluster.ConfigItems.apiserver_internal_proxy "true" }}6443{{else}}443{{end}}
           - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority,ExtendedResourceToleration
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
@@ -162,8 +162,8 @@ write_files:
             initialDelaySeconds: 120
             timeoutSeconds: 15
           ports:
-          - containerPort: 443
-            hostPort: 443
+          - containerPort: {{ if eq .Cluster.ConfigItems.apiserver_internal_proxy "true" }}6443{{else}}443{{end}}
+            hostPort: {{ if eq .Cluster.ConfigItems.apiserver_internal_proxy "true" }}6443{{else}}443{{end}}
             name: https
           - containerPort: 8080
             hostPort: 8080
@@ -433,6 +433,51 @@ write_files:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
             readOnly: true
+{{ if eq .Cluster.ConfigItems.apiserver_internal_proxy "true" }}
+        - name: skipper-proxy-internal
+          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.35
+          args:
+          - skipper
+          - -access-log-strip-query
+          - -address=:443
+          - -support-listener=:9912
+          - -tls-cert=/etc/kubernetes/ssl/apiserver.pem
+          - -tls-key=/etc/kubernetes/ssl/apiserver-key.pem
+          - -insecure
+          - -experimental-upgrade
+          - -runtime-metrics
+          - -enable-connection-metrics
+          - -enable-prometheus-metrics
+          - -write-timeout-server=60m
+          - -inline-routes
+          - |
+            s: JWTPayloadAllKV("kubernetes.io/serviceaccount/service-account.name", "default")
+              -> enableAccessLog()
+              -> "https://127.0.0.1:6443";
+            h: Path("/kube-system/healthz")
+              -> setPath("/healthz")
+              -> disableAccessLog()
+              -> "http://127.0.0.1:8080";
+            all: *
+              -> disableAccessLog()
+              -> "https://127.0.0.1:6443";
+          ports:
+          - containerPort: 443
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /kube-system/healthz
+              port: 443
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 250Mi
+          volumeMounts:
+          - mountPath: /etc/kubernetes/ssl
+            name: ssl-certs-kubernetes
+            readOnly: true
+{{ end }}
         - name: etcd-proxy
           image: registry.opensource.zalan.do/teapot/etcd-proxy:master-5
           args:
