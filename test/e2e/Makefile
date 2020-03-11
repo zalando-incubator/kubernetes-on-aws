@@ -24,7 +24,7 @@ fix-go-modules:	$(MOD_PATH)
 	MOD_PATH=$(MOD_PATH) KUBE_VERSION=$(KUBE_VERSION) ./setup_modules.sh
 
 generate-code: fix-go-modules $(GO_BINDATA)
-	PATH="$(shell pwd)/build:$(PATH)" make generated_files -C "$(MOD_PATH)/kubernetes"
+	make generated_files -C "$(MOD_PATH)/kubernetes"
 
 deps: generate-code
 	GO111MODULE=on go get github.com/onsi/ginkgo/ginkgo@v1.8.0
