@@ -38,8 +38,6 @@ spec:
               topologyKey: kubernetes.io/hostname
       priorityClassName: system-cluster-critical
       serviceAccountName: skipper-ingress
-      nodeSelector:
-        node.kubernetes.io/role: worker
       dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true
       containers:
@@ -211,4 +209,7 @@ spec:
       - effect: NoSchedule
         key: dedicated
         value: skipper-ingress
+{{ else }}
+      nodeSelector:
+        node.kubernetes.io/role: worker
 {{ end }}
