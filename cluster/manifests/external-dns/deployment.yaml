@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: external-dns
-    version: v0.5.18
+    version: v0.7.0
 spec:
   strategy:
     type: Recreate
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: external-dns
-        version: v0.5.18
+        version: v0.7.0
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
@@ -30,10 +30,11 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.18
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.7.0
         args:
         - --source=service
         - --source=ingress
+        - --source=skipper-routegroup
         - --provider=aws
         - --registry=txt
         - --txt-owner-id={{ .Region }}:{{ .LocalID }}
