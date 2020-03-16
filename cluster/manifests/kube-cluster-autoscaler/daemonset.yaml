@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-cluster-autoscaler
-    version: v1.12.2-internal-2.7
+    version: v1.12.2-internal-2.9
 spec:
   selector:
     matchLabels:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: kube-cluster-autoscaler
-        version: v1.12.2-internal-2.7
+        version: v1.12.2-internal-2.9
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
         config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
@@ -29,14 +29,12 @@ spec:
       serviceAccountName: cluster-autoscaler
       dnsPolicy: Default
       tolerations:
-      - key: node-role.kubernetes.io/master
-        effect: NoSchedule
       - key: node.kubernetes.io/role
         value: master
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal-2.7
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal-2.9
         command:
           - ./cluster-autoscaler
           - --v=4
@@ -53,6 +51,7 @@ spec:
           - --max-node-provision-time=7m
           - --max-nodes-total={{ nodeCIDRMaxNodes (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}
           - --scale-down-enabled={{ .ConfigItems.autoscaling_scale_down_enabled }}
+          - --scale-down-delay-after-add=-1s
         resources:
           requests:
             cpu: {{.Cluster.ConfigItems.cluster_autoscaler_cpu}}

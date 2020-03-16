@@ -107,9 +107,10 @@ scalyr_team_token: ""
 
 prometheus_cpu: "1000m"
 prometheus_mem: "4Gi"
-prometheus_mem_min: "1Gi"
+prometheus_mem_min: "2Gi"
 prometheus_cpu_min: "0"
 prometheus_remote_write: "disabled"
+prometheus_tsdb_retention_size: "disabled"
 
 metrics_service_cpu: "100m"
 metrics_service_mem: "200Mi"
@@ -166,19 +167,25 @@ teapot_admission_controller_deployment_default_max_unavailable: "1"
 {{if eq .Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
+teapot_admission_controller_inject_aws_waiter: "false"
 {{else if eq .Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "false"
+teapot_admission_controller_inject_aws_waiter: "true"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "true"
+teapot_admission_controller_inject_aws_waiter: "true"
 {{end}}
 
 {{if eq .Environment "e2e"}}
-teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network)-.*)$"
+teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota)-.*)$"
+teapot_admission_controller_crd_ensure_no_resources_on_delete: "false"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
+teapot_admission_controller_crd_ensure_no_resources_on_delete: "true"
 {{end}}
+
 
 # etcd cluster
 {{if eq .Environment "production"}}
@@ -193,7 +200,7 @@ dynamodb_service_link_enabled: "false"
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
-kuberuntu_image_v1_15: {{ amiID "zalando-ubuntu-kubernetes-production-v1.15.9-master-89" "861068367966" }}
+kuberuntu_image_v1_16: {{ amiID "zalando-ubuntu-kubernetes-production-v1.16.8-master-96" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -213,14 +220,6 @@ audittrail_url: "https://audittrail.cloud.zalando.com"
 audittrail_url: ""
 {{end}}
 audittrail_root_account_role: ""
-
-# Feature toggle for CustomResourceWebhookConversion (alpha in v1.13)
-# https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definition-versioning/#webhook-conversion
-custom_resource_webhook_conversion: "false"
-
-# Feature toggle for CustomResourcePublishOpenAPI (alpha in v1.14)
-# https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#publish-validation-schema-in-openapi-v2
-custom_resource_publish_openapi: "false"
 
 # CIDR configuration for nodes and pods
 # Changing this will change the number of nodes and pods we can schedule in the
@@ -248,7 +247,16 @@ allow_external_service_accounts: "false"
 # issue service account tokens with expiration time.
 rotate_service_account_tokens: "false"
 
-teapot_admission_controller_service_account_iam: "true"
+# enable auditlogging for read access such that we can identified clients using
+# the default service account to read from the API server.
+{{ if eq .Cluster.Environment "test" }}
+auditlog_read_access: "true"
+{{ else }}
+auditlog_read_access: "false"
+{{ end }}
+
+# enable automatic-injection of OIDC-based AWS API access
+teapot_admission_controller_service_account_iam: "false"
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "true"
 
@@ -261,6 +269,14 @@ custom_dns_zone_nameservers: "" # space seperated list of nameserver IP addresse
 
 # prefix prepended to ownership TXT records for external-dns
 external_dns_ownership_prefix: ""
+
+# DNS container resources
+dns_dnsmasq_cpu: "100m"
+dns_dnsmasq_mem: "50Mi"
+dns_dnsmasq_sidecar_cpu: "10m"
+dns_dnsmasq_sidecar_mem: "45Mi"
+dns_coredns_cpu: "50m"
+dns_coredns_mem: "100Mi"
 
 # special roles for test/pet clusters
 {{if eq .Cluster.Environment "e2e"}}
@@ -275,8 +291,30 @@ enable_default_sa: "false"
 enable_cdp_sa: "false"
 
 # virtual memory configuration
-vm_dirty_background_bytes: ""
-vm_dirty_bytes: ""
+vm_dirty_background_bytes: "67108864"
+vm_dirty_bytes: "134217728"
 
-# temporary flag for kubernetes.io/node-pool node label
-legacy_node_pool_label_enabled: "false"
+# Enable FeatureGate EndpointSlice
+enable_endpointslice: "false"
+
+# Enable FeatureGate HPAScaleToZero
+enable_hpa_scale_to_zero: "true"
+
+# setup supporting components to enable encryption
+# this flag must only be switched from true to false when enable_encryption is false and all secrets were decrypted
+{{if eq .Environment "test"}}
+support_encryption: "true"
+{{else}}
+support_encryption: "false"
+{{end}}
+# enable encryption of secrets in etcd, requires support_encryption: true
+# this flag can be switched between true and false as long as support_encryption is true
+# to ensure all secrets are encrypted/decrypted all secrets need to be rewritten
+{{if eq .Environment "test"}}
+enable_encryption: "true"
+{{else}}
+enable_encryption: "false"
+{{end}}
+
+# default ttl for kube janitor for resources build from PRs in namespaces matching .*-pr-.*
+kube_janitor_default_pr_ttl: "1w"  # 1 week

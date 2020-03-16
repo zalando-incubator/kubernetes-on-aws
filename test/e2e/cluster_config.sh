@@ -58,7 +58,9 @@ clusters:
     aws_pod_identity_service_account_private_key: ${POD_IDENTITY_SERVICE_ACCOUNT_PRIVATE_KEY}
     aws_pod_identity_webhook_key: ${POD_IDENTITY_WEBHOOK_KEY}
     aws_pod_identity_webhook_cert: ${POD_IDENTITY_WEBHOOK_CERT}
+    teapot_admission_controller_service_account_iam: true
     kube_aws_iam_controller_kube_system_enable: false
+    prometheus_tsdb_retention_size: enabled
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}

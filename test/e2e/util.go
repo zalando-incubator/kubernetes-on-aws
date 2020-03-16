@@ -19,9 +19,9 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 
-	zv1 "github.com/mikkeloscar/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	zv1 "github.com/zalando-incubator/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -367,7 +367,7 @@ func createSkipperBackendDeployment(nameprefix, namespace, route string, label m
 					Containers: []corev1.Container{
 						{
 							Name:  "skipper",
-							Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.10.203",
+							Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.11.35",
 							Args: []string{
 								"skipper",
 								"-inline-routes",
