@@ -200,8 +200,7 @@ dynamodb_service_link_enabled: "false"
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 
-kuberuntu_image_v1_15: {{ amiID "zalando-ubuntu-kubernetes-production-v1.15.9-master-89" "861068367966" }}
-kuberuntu_image_v1_16: {{ amiID "zalando-ubuntu-kubernetes-production-v1.16.7-master-91" "861068367966" }}
+kuberuntu_image_v1_16: {{ amiID "zalando-ubuntu-kubernetes-production-v1.16.8-master-96" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -247,6 +246,14 @@ apiserver_proxy: "true"
 allow_external_service_accounts: "false"
 # issue service account tokens with expiration time.
 rotate_service_account_tokens: "false"
+
+# enable auditlogging for read access such that we can identified clients using
+# the default service account to read from the API server.
+{{ if eq .Cluster.Environment "test" }}
+auditlog_read_access: "true"
+{{ else }}
+auditlog_read_access: "false"
+{{ end }}
 
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "true"
