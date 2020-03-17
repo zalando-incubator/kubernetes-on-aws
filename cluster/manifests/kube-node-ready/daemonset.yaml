@@ -1,4 +1,4 @@
-{{ $version := "v0.0.3" }}
+{{ $version := "v0.0.4" }}
 
 apiVersion: apps/v1
 kind: DaemonSet
@@ -66,6 +66,8 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
+      securityContext:
+        fsGroup: 65534
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
       volumes:
       - name: aws-iam-credentials
