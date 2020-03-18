@@ -50,7 +50,7 @@ Resources:
         PropagateAtLaunch: true
         Value: worker
 # only node pools without taints should be attached to Ingress Load balancer
-{{- if not (index $data.NodePool.ConfigItems "taints") }}
+{{- if or (not (index $data.NodePool.ConfigItems "taints")) (eq (index $data.NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
       - Key: zalando.org/ingress-enabled
         Value: "true"
         PropagateAtLaunch: true
