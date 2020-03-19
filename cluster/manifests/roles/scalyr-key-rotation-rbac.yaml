@@ -1,5 +1,5 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: scalyr-key-rotation
   namespace: visibility
@@ -12,13 +12,12 @@ rules:
   - scalyr-keys
   verbs:
   - get
-  - list
   - watch
   - update
   - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: scalyr-key-rotation
 rules:
@@ -30,19 +29,18 @@ rules:
   - scalyr-delegation-token
   verbs:
   - get
-  - list
   - watch
   - update
   - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   name: scalyr-key-rotation
   namespace: visibility
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
+  kind: Role
   name: scalyr-key-rotation
 subjects:
 - apiGroup: rbac.authorization.k8s.io
@@ -50,14 +48,14 @@ subjects:
   name: zalando-iam:zalando:service:scalyr-key-rotation
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   name: scalyr-key-rotation
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
+  kind: Role
   name: scalyr-key-rotation
 subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User
-  name: zalando-iam:zalando:service:scalyr-key-rotation
+  name: zalando-iam:zalando:service:stups_scalyr-key-rotation
