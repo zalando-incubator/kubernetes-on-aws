@@ -458,6 +458,14 @@ Resources:
             Principal:
               Service:
                 - ec2.amazonaws.com
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringLike:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:cluster-autoscaler"
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -855,6 +863,14 @@ Resources:
           Principal:
             Service:
             - ec2.amazonaws.com
+        - Effect: Allow
+          Principal:
+            Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+          Action:
+            - 'sts:AssumeRoleWithWebIdentity'
+          Condition:
+            StringLike:
+              "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:cluster-lifecycle-controller"
         - Action:
           - 'sts:AssumeRole'
           Effect: Allow
@@ -1568,6 +1584,14 @@ Resources:
             Principal:
               Service:
                 - ec2.amazonaws.com
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringLike:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:audittrail-adapter"
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow

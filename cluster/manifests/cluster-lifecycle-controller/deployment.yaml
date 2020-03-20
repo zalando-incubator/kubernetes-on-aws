@@ -40,10 +40,12 @@ spec:
             - --drain-min-healthy-sibling-lifetime={{.ConfigItems.drain_min_healthy_sibling_lifetime}}
             - --drain-min-unhealthy-sibling-lifetime={{.ConfigItems.drain_min_unhealthy_sibling_lifetime}}
             - --drain-force-evict-interval={{.ConfigItems.drain_force_evict_interval}}
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
         volumeMounts:
         - name: aws-iam-credentials
           mountPath: /meta/aws-iam
           readOnly: true
+{{ end }}
         resources:
           limits:
             cpu: 100m
@@ -54,12 +56,16 @@ spec:
         env:
         - name: AWS_REGION
           value: {{ .Region }}
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
         # must be set for the AWS SDK/AWS CLI to find the credentials file.
         - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
           value: /meta/aws-iam/credentials.process
+{{ end }}
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
       volumes:
       - name: aws-iam-credentials
         secret:
           secretName: cluster-lifecycle-controller-aws-iam-credentials
+{{ end }}
       nodeSelector:
         node.kubernetes.io/role: master
