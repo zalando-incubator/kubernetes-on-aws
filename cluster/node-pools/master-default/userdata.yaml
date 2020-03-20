@@ -128,6 +128,11 @@ write_files:
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer=kubernetes/serviceaccount
           {{- end }}
+          {{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+          - --service-account-key-file=/etc/kubernetes/ssl/pod-identity-service-account-public-key.pem
+          - --service-account-signing-key-file=/etc/kubernetes/ssl/pod-identity-service-account-key.pem
+          - --service-account-issuer={{ .Cluster.APIServerURL }}
+          {{- end }}
           {{ if and (ne .Cluster.ConfigItems.audittrail_url "") (ne .Cluster.Environment "e2e") }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
@@ -244,12 +249,48 @@ write_files:
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
             - --pod-aws-credentials-waiter-image=pierone.stups.zalan.do/automata/aws-credentials-waiter:master-7
 {{- end }}
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+            - --service-account-iam
+{{- end }}
           ports:
             - containerPort: 8085
           volumeMounts:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+        - image: registry.opensource.zalan.do/teapot/pod-identity-webhook:v0.2.0-master-2
+          name: pod-identity-webhook
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9999
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+          command:
+            - /webhook
+          args:
+            - --in-cluster=false
+            - --namespace=kube-system
+            - --tls-cert=/etc/kubernetes/ssl/pod-identity-webhook.pem
+            - --tls-key=/etc/kubernetes/ssl/pod-identity-webhook-key.pem
+            - --annotation-prefix=eks.amazonaws.com
+            - --token-audience=sts.amazonaws.com
+            - --logtostderr
+            - --port=8087
+            - --kube-api=http://127.0.0.1:8080
+          ports:
+            - containerPort: 8087
+            - containerPort: 9999
+          volumeMounts:
+          - mountPath: /etc/kubernetes/ssl
+            name: ssl-certs-kubernetes
+            readOnly: true
+{{- end }}
         - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.8
           name: webhook
           ports:
@@ -417,6 +458,16 @@ write_files:
               -> setPath("/healthz")
               -> disableAccessLog()
               -> "http://127.0.0.1:8080";
+          {{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+            o: Path("/.well-known/openid-configuration")
+              -> setResponseHeader("Content-Type", "application/json")
+              -> static("/.well-known/", "/var/www/openid-configuration/")
+              -> <shunt>;
+            k: Path("/openid-configuration/*")
+              -> setResponseHeader("Content-Type", "application/json")
+              -> static("/openid-configuration/", "/var/www/openid-configuration/")
+              -> <shunt>;
+          {{- end }}
             all: *
               -> disableAccessLog()
               -> "https://127.0.0.1:443";
@@ -440,6 +491,11 @@ write_files:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
             readOnly: true
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+          - mountPath: /var/www/openid-configuration
+            name: openid-configuration
+            readOnly: true
+{{- end }}
         - name: etcd-proxy
           image: registry.opensource.zalan.do/teapot/etcd-proxy:master-5
           args:
@@ -484,6 +540,11 @@ write_files:
         - hostPath:
             path: /etc/kubernetes/nginx
           name: config-volume
+        {{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+        - hostPath:
+            path: /var/www/openid-configuration
+          name: openid-configuration
+        {{- end }}
         {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
         - name: var-run-kmsplugin
           hostPath:
