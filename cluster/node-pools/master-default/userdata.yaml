@@ -131,7 +131,7 @@ write_files:
           {{ if and (ne .Cluster.ConfigItems.audittrail_url "") (ne .Cluster.Environment "e2e") }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
-          - --audit-webhook-version=audit.k8s.io/v1beta1
+          - --audit-webhook-version=audit.k8s.io/v1
           - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
           {{ end }}
           {{ if eq .Cluster.Environment "e2e" }}
@@ -190,7 +190,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-66
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-69
           name: admission-controller
           readinessProbe:
             httpGet:
