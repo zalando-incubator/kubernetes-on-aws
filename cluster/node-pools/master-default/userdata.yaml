@@ -258,39 +258,6 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
-        - image: registry.opensource.zalan.do/teapot/pod-identity-webhook:v0.2.0-master-2
-          name: pod-identity-webhook
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 9999
-            initialDelaySeconds: 5
-            timeoutSeconds: 5
-          resources:
-            requests:
-              cpu: 50m
-              memory: 100Mi
-          command:
-            - /webhook
-          args:
-            - --in-cluster=false
-            - --namespace=kube-system
-            - --tls-cert=/etc/kubernetes/ssl/pod-identity-webhook.pem
-            - --tls-key=/etc/kubernetes/ssl/pod-identity-webhook-key.pem
-            - --annotation-prefix=eks.amazonaws.com
-            - --token-audience=sts.amazonaws.com
-            - --logtostderr
-            - --port=8087
-            - --kube-api=http://127.0.0.1:8080
-          ports:
-            - containerPort: 8087
-            - containerPort: 9999
-          volumeMounts:
-          - mountPath: /etc/kubernetes/ssl
-            name: ssl-certs-kubernetes
-            readOnly: true
-{{- end }}
         - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.8
           name: webhook
           ports:
