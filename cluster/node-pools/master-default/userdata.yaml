@@ -123,13 +123,12 @@ write_files:
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
           - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }}
           - --anonymous-auth=false
-          {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
+          {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer=kubernetes/serviceaccount
           {{- end }}
           {{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
-          - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
           {{- end }}
