@@ -163,19 +163,17 @@ teapot_admission_controller_ndots: "2"
 teapot_admission_controller_inject_environment_variables: "true"
 teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
+teapot_admission_controller_inject_aws_waiter: "true"
 
 {{if eq .Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
-teapot_admission_controller_inject_aws_waiter: "false"
 {{else if eq .Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "false"
-teapot_admission_controller_inject_aws_waiter: "true"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "true"
-teapot_admission_controller_inject_aws_waiter: "true"
 {{end}}
 
 {{if eq .Environment "e2e"}}
@@ -256,6 +254,8 @@ auditlog_read_access: "true"
 auditlog_read_access: "false"
 {{ end }}
 
+# enable automatic injection of OIDC-based AWS API access
+teapot_admission_controller_service_account_iam: "false"
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "true"
 
