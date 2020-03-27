@@ -22,14 +22,14 @@ data:
         resources:
           - stacksets
         # see http://jmespath.org/specification.html
-        jmespath: "!spec.stackTemplate.spec.podTemplate.metadata.labels.application"
+        jmespath: "!(spec.stackTemplate.spec.podTemplate.metadata.labels.application) && metadata.creationTimestamp > '2019-04-15'"
         ttl: 7d
       - id: require-application-label-cronjobs
         # remove CronJobs without a pod label "application"
         resources:
           - cronjobs
         # see http://jmespath.org/specification.html
-        jmespath: "!spec.jobTemplate.spec.template.metadata.labels.application"
+        jmespath: "!(spec.jobTemplate.spec.template.metadata.labels.application) && metadata.creationTimestamp > '2019-04-15'"
         ttl: 7d
       - id: temporary-cdp-namespaces
         # delete all temporary e2e namespaces (created by CDP) with a name starting with "d-*"
