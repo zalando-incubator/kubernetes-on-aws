@@ -58,6 +58,7 @@ clusters:
     aws_pod_identity_webhook_key: ${POD_IDENTITY_WEBHOOK_KEY}
     aws_pod_identity_webhook_cert: ${POD_IDENTITY_WEBHOOK_CERT}
     prometheus_tsdb_retention_size: enabled
+    coredns_max_upsteam_concurrency: 30
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
