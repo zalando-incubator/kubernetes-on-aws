@@ -20,7 +20,7 @@ const (
 	emergencyGroup  = "Emergency"
 	manualGroup     = "Manual"
 	readOnlyGroup   = "ReadOnly"
-	accessReviewURL = "/apis/authorization.k8s.io/v1beta1/subjectaccessreviews"
+	accessReviewURL = "/apis/authorization.k8s.io/v1/subjectaccessreviews"
 )
 
 type apiHeader struct {
@@ -47,7 +47,7 @@ type subjectReviewSpec struct {
 	ResourceAttributes    *resourceAttributes    `json:"resourceAttributes,omitempty"`
 	NonResourceAttributes *nonResourceAttributes `json:"nonResourceAttributes,omitempty"`
 	User                  string                 `json:"user,omitempty"`
-	Group                 []string               `json:"group,omitempty"`
+	Groups                []string               `json:"groups,omitempty"`
 }
 
 type subjectReview struct {
@@ -239,7 +239,7 @@ func (r requestData) setGroups(g ...[]string) requestData {
 func (item testItem) subjectReview() subjectReview {
 	req := subjectReview{
 		apiHeader: apiHeader{
-			APIVersion: "authorization.k8s.io/v1beta1",
+			APIVersion: "authorization.k8s.io/v1",
 			Kind:       "SubjectAccessReview",
 		},
 	}
@@ -280,7 +280,7 @@ func (item testItem) subjectReview() subjectReview {
 
 	setIfExists(&req.Spec.User, item.request.users)
 	if len(item.request.groups) > 0 {
-		req.Spec.Group = item.request.groups[0]
+		req.Spec.Groups = item.request.groups[0]
 	}
 
 	return req
