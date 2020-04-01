@@ -197,6 +197,7 @@ dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
+coredns_max_upstream_concurrency: 0 #0 means there is not concurrency limits
 
 kuberuntu_image_v1_16: {{ amiID "zalando-ubuntu-kubernetes-production-v1.16.8-master-96" "861068367966" }}
 kuberuntu_image_v1_17: {{ amiID "zalando-ubuntu-kubernetes-production-v1.17.4-master-98" "861068367966" }}
@@ -310,3 +311,5 @@ enable_encryption: "false"
 
 # default ttl for kube janitor for resources build from PRs in namespaces matching .*-pr-.*
 kube_janitor_default_pr_ttl: "1w"  # 1 week
+# opt-in deletion of unused PVCs
+kube_janitor_default_unused_pvc_ttl: "forever"
