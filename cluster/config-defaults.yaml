@@ -21,7 +21,7 @@ kube_aws_ingress_controller_nlb_enabled: "false"
 kube_aws_ingress_controller_nlb_cross_zone: "true"
 
 # skipper ingress settings
-skipper_ingress_target_average_utilization_cpu: "70"
+skipper_ingress_target_average_utilization_cpu: "60"
 skipper_ingress_target_average_utilization_memory: "80"
 skipper_ingress_max_replicas: "30"
 skipper_ingress_min_replicas: "3"
@@ -163,19 +163,17 @@ teapot_admission_controller_ndots: "2"
 teapot_admission_controller_inject_environment_variables: "true"
 teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
+teapot_admission_controller_inject_aws_waiter: "true"
 
 {{if eq .Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
-teapot_admission_controller_inject_aws_waiter: "false"
 {{else if eq .Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "false"
-teapot_admission_controller_inject_aws_waiter: "true"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "true"
-teapot_admission_controller_inject_aws_waiter: "true"
 {{end}}
 
 {{if eq .Environment "e2e"}}
@@ -199,6 +197,7 @@ dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
+coredns_max_upstream_concurrency: 0 #0 means there is not concurrency limits
 
 kuberuntu_image_v1_16: {{ amiID "zalando-ubuntu-kubernetes-production-v1.16.8-master-96" "861068367966" }}
 
@@ -255,6 +254,8 @@ auditlog_read_access: "true"
 auditlog_read_access: "false"
 {{ end }}
 
+# enable automatic injection of OIDC-based AWS API access
+teapot_admission_controller_service_account_iam: "false"
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "true"
 
@@ -316,3 +317,5 @@ enable_encryption: "false"
 
 # default ttl for kube janitor for resources build from PRs in namespaces matching .*-pr-.*
 kube_janitor_default_pr_ttl: "1w"  # 1 week
+# opt-in deletion of unused PVCs
+kube_janitor_default_unused_pvc_ttl: "forever"
