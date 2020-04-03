@@ -111,6 +111,7 @@ prometheus_mem_min: "2Gi"
 prometheus_cpu_min: "0"
 prometheus_remote_write: "disabled"
 prometheus_tsdb_retention_size: "disabled"
+prometheus_csi_ebs: "true"
 
 metrics_service_cpu: "100m"
 metrics_service_mem: "200Mi"
@@ -197,18 +198,13 @@ dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
+coredns_max_upstream_concurrency: 0 #0 means there is not concurrency limits
 
 kuberuntu_image_v1_16: {{ amiID "zalando-ubuntu-kubernetes-production-v1.16.8-master-96" "861068367966" }}
+kuberuntu_image_v1_17: {{ amiID "zalando-ubuntu-kubernetes-production-v1.17.4-master-98" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
-
-# Temporary feature toggle for the new daemonset scheduler
-{{if eq .Environment "e2e"}}
-experimental_schedule_daemonset_pods: "true"
-{{else}}
-experimental_schedule_daemonset_pods: "false"
-{{end}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -316,3 +312,5 @@ enable_encryption: "false"
 
 # default ttl for kube janitor for resources build from PRs in namespaces matching .*-pr-.*
 kube_janitor_default_pr_ttl: "1w"  # 1 week
+# opt-in deletion of unused PVCs
+kube_janitor_default_unused_pvc_ttl: "forever"

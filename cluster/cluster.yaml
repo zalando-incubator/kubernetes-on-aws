@@ -1340,8 +1340,61 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-kube-metrics-adapter"
     Type: 'AWS::IAM::Role'
-{{ if eq .Cluster.Environment "e2e" }}
-  # This is a hack to easily create an aws iam role and s3 bucket for testing
+
+  EBSCSIControllerIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref MasterIAMRole
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref WorkerIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Effect: Allow # All the policies needed for the EBS CSI driver
+                Action:
+                  - 'ec2:AttachVolume'
+                  - 'ec2:CreateSnapshot'
+                  - 'ec2:CreateTags'
+                  - 'ec2:CreateVolume'
+                  - 'ec2:DeleteSnapshot'
+                  - 'ec2:DeleteTags'
+                  - 'ec2:DeleteVolume'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:DescribeSnapshots'
+                  - 'ec2:DescribeTags'
+                  - 'ec2:DescribeVolumes'
+                  - 'ec2:DetachVolume'
+                  - 'ec2:ModifyVolume'
+                Resource: '*'
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-ebs-csi-controller"
+    Type: 'AWS::IAM::Role'
+
+  {{ if eq .Cluster.Environment "e2e" }}
+# This is a hack to easily create an aws iam role and s3 bucket for testing
   # AWS IAM intergration in e2e tests.
   E2EAWSIAMTestRole:
     Properties:
