@@ -18,6 +18,9 @@ spec:
         application: kube-cluster-autoscaler
         version: v1.12.2-internal-2.9
       annotations:
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
+{{ end }}
         config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
     spec:
       dnsConfig:
