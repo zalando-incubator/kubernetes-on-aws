@@ -33,6 +33,8 @@ SenzaComponents:
     Tags:
     - Key: "kubernetes:component"
       Value: "etcd-cluster"
+    - Key: InfrastructureComponent
+      Value: true
 
 SenzaInfo:
   Parameters:
@@ -86,6 +88,9 @@ Resources:
         ToPort: 9100
         CidrIp: "{{Arguments.NetworkCIDR}}"
       VpcId: "{{Arguments.VpcID}}"
+      Tags:
+        - Key: InfrastructureComponent
+          Value: true
   EtcdIngressMembers:
     Type: "AWS::EC2::SecurityGroupIngress"
     Properties:
