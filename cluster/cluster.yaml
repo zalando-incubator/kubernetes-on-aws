@@ -1761,22 +1761,10 @@ Outputs:
     Export:
       Name: '{{.Cluster.ID}}:master-iam-role'
     Value: !Ref MasterIAMRole
-  MasterLoadBalancer:
-    Export:
-      Name: '{{.Cluster.ID}}:master-load-balancer'
-    Value: !Ref MasterLoadBalancer
-  MasterSecurityGroup:
-    Export:
-      Name: '{{.Cluster.ID}}:master-security-group'
-    Value: !Ref MasterSecurityGroup
   WorkerIAMRole:
     Export:
       Name: '{{.Cluster.ID}}:worker-iam-role'
     Value: !Ref WorkerIAMRole
-  WorkerSecurityGroup:
-    Export:
-      Name: '{{.Cluster.ID}}:worker-security-group'
-    Value: !Ref WorkerSecurityGroup
   RemoteFilesEncryptionKey:
     Export:
       Name: '{{ .Cluster.ID}}:remote-files-encryption-key'
@@ -1789,6 +1777,20 @@ Outputs:
     Export:
       Name: '{{ .Cluster.ID}}:master-files-encryption-key'
     Value: !Ref MasterFilesEncryptionKey
+{{- if .Cluster.ConfigItems.delete_vpc_resources "false" }}
+  MasterLoadBalancer:
+    Export:
+      Name: '{{.Cluster.ID}}:master-load-balancer'
+    Value: !Ref MasterLoadBalancer
+  MasterSecurityGroup:
+    Export:
+      Name: '{{.Cluster.ID}}:master-security-group'
+    Value: !Ref MasterSecurityGroup
+  WorkerSecurityGroup:
+    Export:
+      Name: '{{.Cluster.ID}}:worker-security-group'
+    Value: !Ref WorkerSecurityGroup
+{{- end }}
 {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
   EtcdEncryptionKey:
     Export:
