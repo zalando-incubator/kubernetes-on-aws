@@ -727,6 +727,7 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -735,6 +736,7 @@ Resources:
             Condition:
               StringLike:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:external-dns"
+{{ end }}
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
