@@ -3,10 +3,10 @@ apiVersion: v1
 metadata:
   name: custom-metrics-apiserver
   namespace: kube-system
-  {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
   annotations:
     eks.amazonaws.com/role-arn: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:role/{{ .Cluster.LocalID }}-kube-metrics-adapter"
-  {{ end }}
+{{ end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
