@@ -16,6 +16,12 @@ spec:
       labels:
         application: kube-ingress-aws-controller
         version: v0.10.5
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
+      annotations:
+        iam.amazonaws.com/role: "{{ .LocalID }}-app-ingr-ctrl"
+{{ end }}
+{{ end }}
     spec:
       dnsConfig:
         options:

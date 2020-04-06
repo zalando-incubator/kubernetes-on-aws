@@ -20,6 +20,11 @@ spec:
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "emergency-access-service", "parser": "json-structured-log"}]
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
+        iam.amazonaws.com/role: {{.LocalID}}-emergency-access-service
+{{ end }}
+{{ end }}
     spec:
       dnsConfig:
         options:

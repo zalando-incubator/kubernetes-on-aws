@@ -12,6 +12,12 @@ spec:
       application: kube-metrics-adapter
   template:
     metadata:
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
+      annotations:
+        iam.amazonaws.com/role: {{ .LocalID}}-kube-metrics-adapter
+{{ end }}
+{{ end }}
       labels:
         application: kube-metrics-adapter
     spec:

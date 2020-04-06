@@ -19,6 +19,12 @@ spec:
           labels:
             application: etcd-backup
             version: "master-9"
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
+{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
+          annotations:
+            iam.amazonaws.com/role: "{{ .LocalID }}-etcd-backup"
+{{ end }}
+{{ end }}
         spec:
           serviceAccountName: etcd-backup
           dnsConfig:
