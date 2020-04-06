@@ -314,3 +314,10 @@ enable_encryption: "false"
 kube_janitor_default_pr_ttl: "1w"  # 1 week
 # opt-in deletion of unused PVCs
 kube_janitor_default_unused_pvc_ttl: "forever"
+
+# replacement strategy used for default on-demand worker pool
+{{if eq .Environment "production"}}
+on_demand_worker_replacement_strategy: prepare-replacement
+{{else}}
+on_demand_worker_replacement_strategy: none
+{{end}}
