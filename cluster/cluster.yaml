@@ -452,12 +452,7 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -466,6 +461,13 @@ Resources:
             Condition:
               StringLike:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:cluster-autoscaler"
+{{ end }}
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -767,6 +769,7 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{ .Values.hosted_zone }}"
@@ -775,6 +778,7 @@ Resources:
             Condition:
               StringLike:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-ingress-aws-controller"
+{{ end }}
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -859,12 +863,7 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-        - Action:
-          - 'sts:AssumeRole'
-          Effect: Allow
-          Principal:
-            Service:
-            - ec2.amazonaws.com
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
         - Effect: Allow
           Principal:
             Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -873,6 +872,13 @@ Resources:
           Condition:
             StringLike:
               "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:cluster-lifecycle-controller"
+{{ end }}
+        - Action:
+          - 'sts:AssumeRole'
+          Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
         - Action:
           - 'sts:AssumeRole'
           Effect: Allow
@@ -915,6 +921,7 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -923,6 +930,7 @@ Resources:
             Condition:
               StringLike:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-node-ready"
+{{ end }}
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -1039,6 +1047,7 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1047,6 +1056,7 @@ Resources:
             Condition:
               StringLike:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:etcd-backup"
+{{ end }}
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -1096,6 +1106,7 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1104,6 +1115,7 @@ Resources:
             Condition:
               StringLike:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-static-egress-controller"
+{{ end }}
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -1357,12 +1369,7 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1371,6 +1378,13 @@ Resources:
             Condition:
               StringLike:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:custom-metrics-apiserver"
+{{ end }}
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -1532,6 +1546,7 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1540,6 +1555,7 @@ Resources:
             Condition:
               StringLike:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:emergency-access-service"
+{{ end }}
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -1580,12 +1596,7 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1594,6 +1605,13 @@ Resources:
             Condition:
               StringLike:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:audittrail-adapter"
+{{ end }}
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
