@@ -53,6 +53,10 @@ write_files:
       cpuCFSQuota: false
       featureGates:
         BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
+        CSINodeInfo: true
+        CSIDriverRegistry: true
+        CSIBlockVolume: true
+        CSIMigration: true
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 0 }}
@@ -70,6 +74,10 @@ write_files:
       kubeReserved:
         cpu: "100m"
         memory: "282Mi"
+      allowedUnsafeSysctls:
+        - net.ipv4.tcp_keepalive_time
+        - net.ipv4.tcp_keepalive_intvl
+        - net.ipv4.tcp_keepalive_probes
       authentication:
         anonymous:
           enabled: false
