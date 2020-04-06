@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Kubernetes cluster
 Resources:
-{{if .Cluster.ConfigItems.delete_vpc_resources "false"}}
+{{if ne .Cluster.ConfigItems.delete_vpc_resources "true"}}
   EtcdSecurityGroupIngressFromMaster:
     Properties:
       FromPort: 2379
@@ -1777,7 +1777,7 @@ Outputs:
     Export:
       Name: '{{ .Cluster.ID}}:master-files-encryption-key'
     Value: !Ref MasterFilesEncryptionKey
-{{- if .Cluster.ConfigItems.delete_vpc_resources "false" }}
+{{- if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
   MasterLoadBalancer:
     Export:
       Name: '{{.Cluster.ID}}:master-load-balancer'
