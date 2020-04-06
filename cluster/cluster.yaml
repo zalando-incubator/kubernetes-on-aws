@@ -167,6 +167,8 @@ Resources:
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
+        - Key: InfrastructureComponent
+          Value: true
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
   MasterSecurityGroupIngressFromFlannelToMaster:
@@ -374,6 +376,8 @@ Resources:
           IpProtocol: udp
           ToPort: 53
       Tags:
+        - Key: InfrastructureComponent
+          Value: true
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
