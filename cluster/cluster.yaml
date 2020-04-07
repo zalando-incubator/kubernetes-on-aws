@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Kubernetes cluster
 Resources:
+{{ if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
   EtcdSecurityGroupIngressFromMaster:
     Properties:
       FromPort: 2379
@@ -235,74 +236,6 @@ Resources:
           Value: owned
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerIAMRole:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref MasterIAMRole
-        Version: 2012-10-17
-      Path: /
-      Policies:
-        - PolicyDocument:
-            Statement:
-              - Action: 'autoscaling:TerminateInstanceInAutoScalingGroup'
-                Effect: Allow
-                Resource: '*'
-              - Action: 'ec2:Describe*'
-                Effect: Allow
-                Resource: '*'
-              - Action: 'ec2:AttachVolume'
-                Effect: Allow
-                Resource: '*'
-              - Action: 'ec2:DetachVolume'
-                Effect: Allow
-                Resource: '*'
-              - Action: 'kms:Decrypt'
-                Effect: Allow
-                Resource: '*'
-              - Action: 'sts:AssumeRole'
-                Effect: Allow
-                Resource: '*'
-              - Action: 's3:GetObject'
-                Effect: Allow
-                Resource: 'arn:aws:s3:::*'
-{{ if eq .Cluster.Environment "e2e" }}
-# Add extra permissions to worker IAM role to test that if a pod manages to get
-# the WorkerIAMRole assigned it can list a specific s3 bucket.
-# see ../test/e2e/aws_iam.go for more information about the e2e test where this
-# is relevant.
-              - Action:
-                - 's3:ListBucket'
-                Effect: Allow
-                Resource:
-                - >-
-                  arn:aws:s3:::zalando-e2e-test-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}
-              - Action:
-                - 's3:PutObject'
-                - 's3:GetObject'
-                - 's3:DeleteObject'
-                Effect: Allow
-                Resource:
-                - >-
-                  arn:aws:s3:::zalando-e2e-test-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}/*
-{{ end }}
-            Version: 2012-10-17
-          PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-worker"
-    Type: 'AWS::IAM::Role'
   WorkerSecurityGroup:
     Properties:
       GroupDescription: !Ref 'AWS::StackName'
@@ -444,6 +377,96 @@ Resources:
           Value: owned
       ToPort: 9911
     Type: 'AWS::EC2::SecurityGroupIngress'
+  EFSSecurityGroupIngressFromWorkerSecurityGroup:
+    Properties:
+      FromPort: 2049
+      GroupId: !Ref EFSWorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 2049
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  EFSWorkerSecurityGroup:
+    Properties:
+      GroupDescription: worker to EFS sg
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+    Type: 'AWS::EC2::SecurityGroup'
+
+# end of vpc dependent resources
+{{ end }}
+  WorkerIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
+                  - !Ref MasterIAMRole
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'autoscaling:TerminateInstanceInAutoScalingGroup'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:AttachVolume'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DetachVolume'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'kms:Decrypt'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'sts:AssumeRole'
+                Effect: Allow
+                Resource: '*'
+              - Action: 's3:GetObject'
+                Effect: Allow
+                Resource: 'arn:aws:s3:::*'
+{{ if eq .Cluster.Environment "e2e" }}
+# Add extra permissions to worker IAM role to test that if a pod manages to get
+# the WorkerIAMRole assigned it can list a specific s3 bucket.
+# see ../test/e2e/aws_iam.go for more information about the e2e test where this
+# is relevant.
+              - Action:
+                - 's3:ListBucket'
+                Effect: Allow
+                Resource:
+                - >-
+                  arn:aws:s3:::zalando-e2e-test-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}
+              - Action:
+                - 's3:PutObject'
+                - 's3:GetObject'
+                - 's3:DeleteObject'
+                Effect: Allow
+                Resource:
+                - >-
+                  arn:aws:s3:::zalando-e2e-test-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}/*
+{{ end }}
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-worker"
+    Type: 'AWS::IAM::Role'
   AutoscalerIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -980,25 +1003,6 @@ Resources:
             Version: 2012-10-17
           PolicyName: root
     Type: 'AWS::IAM::Role'
-  EFSSecurityGroupIngressFromWorkerSecurityGroup:
-    Properties:
-      FromPort: 2049
-      GroupId: !Ref EFSWorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 2049
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  EFSWorkerSecurityGroup:
-    Properties:
-      GroupDescription: worker to EFS sg
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
-    Type: 'AWS::EC2::SecurityGroup'
   ETCDS3BackupIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1757,22 +1761,10 @@ Outputs:
     Export:
       Name: '{{.Cluster.ID}}:master-iam-role'
     Value: !Ref MasterIAMRole
-  MasterLoadBalancer:
-    Export:
-      Name: '{{.Cluster.ID}}:master-load-balancer'
-    Value: !Ref MasterLoadBalancer
-  MasterSecurityGroup:
-    Export:
-      Name: '{{.Cluster.ID}}:master-security-group'
-    Value: !Ref MasterSecurityGroup
   WorkerIAMRole:
     Export:
       Name: '{{.Cluster.ID}}:worker-iam-role'
     Value: !Ref WorkerIAMRole
-  WorkerSecurityGroup:
-    Export:
-      Name: '{{.Cluster.ID}}:worker-security-group'
-    Value: !Ref WorkerSecurityGroup
   RemoteFilesEncryptionKey:
     Export:
       Name: '{{ .Cluster.ID}}:remote-files-encryption-key'
@@ -1785,6 +1777,20 @@ Outputs:
     Export:
       Name: '{{ .Cluster.ID}}:master-files-encryption-key'
     Value: !Ref MasterFilesEncryptionKey
+{{- if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
+  MasterLoadBalancer:
+    Export:
+      Name: '{{.Cluster.ID}}:master-load-balancer'
+    Value: !Ref MasterLoadBalancer
+  MasterSecurityGroup:
+    Export:
+      Name: '{{.Cluster.ID}}:master-security-group'
+    Value: !Ref MasterSecurityGroup
+  WorkerSecurityGroup:
+    Export:
+      Name: '{{.Cluster.ID}}:worker-security-group'
+    Value: !Ref WorkerSecurityGroup
+{{- end }}
 {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
   EtcdEncryptionKey:
     Export:
