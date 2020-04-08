@@ -16,9 +16,11 @@ spec:
       labels:
         application: kube-static-egress-controller
         version: v0.2.1
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-static-egress-controller"
+{{ end }}
 {{ end }}
     spec:
       dnsConfig:
@@ -43,16 +45,20 @@ spec:
         env:
         - name: AWS_REGION
           value: eu-central-1
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
         # must be set for the AWS SDK/AWS CLI to find the credentials file.
         - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
           value: /meta/aws-iam/credentials.process
 {{ end }}
+{{ end }}
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
         volumeMounts:
         - name: aws-iam-credentials
           mountPath: /meta/aws-iam
           readOnly: true
+{{ end }}
 {{ end }}
         resources:
           limits:
@@ -61,9 +67,11 @@ spec:
           requests:
             cpu: 5m
             memory: 50Mi
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
       volumes:
       - name: aws-iam-credentials
         secret:
           secretName: kube-static-egress-controller-aws-iam-credentials
+{{ end }}
 {{ end }}
