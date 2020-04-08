@@ -8,7 +8,7 @@ write_files:
       NODE_LABELS={{ .Values.node_labels }},node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=worker
-      ON_DEMAND_WORKER_REPLACEMENT_STRATEGY={{if eq .Cluster.Environment "production"}}prepare-replacement{{else}}none{{end}}
+      ON_DEMAND_WORKER_REPLACEMENT_STRATEGY={{ .Cluster.ConfigItems.on_demand_worker_replacement_strategy }}
 
 {{if index .NodePool.ConfigItems "instance_storage_mount_path"}}
   - owner: root:root
