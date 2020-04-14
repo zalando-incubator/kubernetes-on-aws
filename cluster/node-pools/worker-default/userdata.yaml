@@ -53,10 +53,9 @@ write_files:
       cpuCFSQuota: false
       featureGates:
         BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
-        CSINodeInfo: true
-        CSIDriverRegistry: true
-        CSIBlockVolume: true
-        CSIMigration: true
+        CSIDriverRegistry: {{ .Cluster.ConfigItems.enable_csi_migration }}
+        CSIBlockVolume: {{ .Cluster.ConfigItems.enable_csi_migration }}
+        CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 0 }}
