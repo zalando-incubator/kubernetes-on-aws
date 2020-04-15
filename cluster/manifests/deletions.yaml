@@ -32,8 +32,60 @@ post_apply:{{ if and (ne .ConfigItems.teapot_admission_controller_process_resour
   namespace: default
   kind: RoleBinding
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true"}}
+- name: kube-aws-iam-controller
+  namespace: kube-system
+  kind: Deployment
+- name: kube-aws-iam-controller
+  namespace: kube-system
+  kind: ServiceAccount
+- name: kube-aws-iam-controller
+  kind: ClusterRole
+- name: kube-aws-iam-controller
+  kind: ClusterRoleBinding
+- name: kube-aws-iam-controller-privileged-psp
+  namespace: kube-system
+  kind: RoleBinding
+- name: kube-aws-iam-controller
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
+  apiVersion: autoscaling.k8s.io/v1beta2
+- name: audittrail-adapter-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: cluster-lifecycle-controller-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: emergency-access-service-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: etcd-backup-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
 - name: external-dns-aws-iam-credentials
   namespace: kube-system
   kind: AWSIAMRole
   apiVersion: zalando.org/v1
+- name: kube-ingress-aws-controller-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: kube-metrics-adapter-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: kube-node-ready-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: kube-static-egress-controller-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: awsiamroles.zalando.org
+  kind: CustomResourceDefinition
+  apiVersion: apiextensions.k8s.io/v1
 {{ end }}

@@ -126,6 +126,7 @@ export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
 ginkgo -nodes=25 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
+    -skip="(\[AWS-IAM\])" \
     -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.provide.DNS.for.services|should.be.able.to.change.the.type.from.ExternalName.to.NodePort|should.be.able.to.create.a.functioning.NodePort.service|\[Serial\])" \
     "e2e.test" -- -delete-namespace-on-failure=false -allowed-not-ready-nodes=1
 # TODO: drop the `-allowed-not-ready-nodes=1` flag in v1.17, fixed by https://github.com/kubernetes/kubernetes/commit/877218768019e104f64fbac13307b66ab8c0ba3e
