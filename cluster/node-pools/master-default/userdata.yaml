@@ -43,10 +43,9 @@ write_files:
 {{- end }}
       featureGates:
         BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
-        CSINodeInfo: true
-        CSIDriverRegistry: true
-        CSIBlockVolume: true
-        CSIMigration: true
+        CSIDriverRegistry: {{ .Cluster.ConfigItems.enable_csi_migration }}
+        CSIBlockVolume: {{ .Cluster.ConfigItems.enable_csi_migration }}
+        CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
       healthzPort: 10248
@@ -129,7 +128,7 @@ write_files:
           - --authorization-mode=Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSINodeInfo=true,CSIDriverRegistry=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true,CSIMigration=true
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIDriverRegistry={{ .Cluster.ConfigItems.enable_csi_migration }},CSIBlockVolume={{ .Cluster.ConfigItems.enable_csi_migration }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}
           - --anonymous-auth=false
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
