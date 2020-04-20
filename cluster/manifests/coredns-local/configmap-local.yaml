@@ -50,7 +50,13 @@ data:
         health :9154 # this is global for all servers
         ready :9155
         prometheus :9153
+{{ if ne .ConfigItems.coredns_max_upstream_concurrency "0" }}
+        forward . /etc/resolv.conf {
+          max_concurrent {{ .ConfigItems.coredns_max_upstream_concurrency }}
+        }
+{{ else }}
         forward . /etc/resolv.conf
+{{ end }}
         pprof 127.0.0.1:9156
         cache 30
         reload

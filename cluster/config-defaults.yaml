@@ -21,7 +21,7 @@ kube_aws_ingress_controller_nlb_enabled: "false"
 kube_aws_ingress_controller_nlb_cross_zone: "true"
 
 # skipper ingress settings
-skipper_ingress_target_average_utilization_cpu: "70"
+skipper_ingress_target_average_utilization_cpu: "60"
 skipper_ingress_target_average_utilization_memory: "80"
 skipper_ingress_max_replicas: "30"
 skipper_ingress_min_replicas: "3"
@@ -111,6 +111,7 @@ prometheus_mem_min: "2Gi"
 prometheus_cpu_min: "0"
 prometheus_remote_write: "disabled"
 prometheus_tsdb_retention_size: "disabled"
+prometheus_csi_ebs: "false"
 
 metrics_service_cpu: "100m"
 metrics_service_mem: "200Mi"
@@ -163,19 +164,17 @@ teapot_admission_controller_ndots: "2"
 teapot_admission_controller_inject_environment_variables: "true"
 teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
+teapot_admission_controller_inject_aws_waiter: "true"
 
 {{if eq .Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
-teapot_admission_controller_inject_aws_waiter: "false"
 {{else if eq .Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "false"
-teapot_admission_controller_inject_aws_waiter: "true"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "true"
-teapot_admission_controller_inject_aws_waiter: "true"
 {{end}}
 
 {{if eq .Environment "e2e"}}
@@ -199,18 +198,13 @@ dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
+coredns_max_upstream_concurrency: 0 #0 means there is not concurrency limits
 
 kuberuntu_image_v1_16: {{ amiID "zalando-ubuntu-kubernetes-production-v1.16.8-master-96" "861068367966" }}
+kuberuntu_image_v1_17: {{ amiID "zalando-ubuntu-kubernetes-production-v1.17.4-master-98" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
-
-# Temporary feature toggle for the new daemonset scheduler
-{{if eq .Environment "e2e"}}
-experimental_schedule_daemonset_pods: "true"
-{{else}}
-experimental_schedule_daemonset_pods: "false"
-{{end}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -239,6 +233,9 @@ pod_max_pids: "4096"
 # the cpu management policy which should be used by the kubelet
 cpu_manager_policy: "none"
 
+# enable CSIMigration feature flag
+enable_csi_migration: "false"
+
 # when set to true, routes external traffic to the apiserver through a skipper sidecar
 apiserver_proxy: "true"
 # when set to true, service account tokens can be used from outside the cluster
@@ -255,6 +252,8 @@ auditlog_read_access: "true"
 auditlog_read_access: "false"
 {{ end }}
 
+# enable automatic injection of OIDC-based AWS API access
+teapot_admission_controller_service_account_iam: "false"
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "true"
 
@@ -316,3 +315,15 @@ enable_encryption: "false"
 
 # default ttl for kube janitor for resources build from PRs in namespaces matching .*-pr-.*
 kube_janitor_default_pr_ttl: "1w"  # 1 week
+# opt-in deletion of unused PVCs
+kube_janitor_default_unused_pvc_ttl: "forever"
+
+# deletes all resources in the cluster that rely on a vpc
+# necessary to change the VPC subnet of a cluster
+delete_vpc_resources: "false"
+# replacement strategy used for default on-demand worker pool
+{{if eq .Environment "production"}}
+on_demand_worker_replacement_strategy: prepare-replacement
+{{else}}
+on_demand_worker_replacement_strategy: none
+{{end}}
