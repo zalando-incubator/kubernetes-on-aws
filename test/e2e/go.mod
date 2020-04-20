@@ -2,7 +2,6 @@ module github.com/zalando-incubator/kubernetes-on-aws/tests/e2e
 
 require (
 	github.com/NYTimes/gziphandler v1.0.1 // indirect
-	github.com/cloudflare/cfssl v0.0.0-20190616170404-1bf3e59ec1cf // indirect
 	github.com/containerd/console v0.0.0-20181022165439-0650fd9eeb50 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/evanphx/json-patch v4.2.0+incompatible
@@ -23,7 +22,7 @@ require (
 	k8s.io/apimachinery v0.0.0
 	k8s.io/apiserver v0.0.0
 	k8s.io/client-go v10.0.0+incompatible
-	k8s.io/kubernetes v1.16.8
+	k8s.io/kubernetes v1.17.4
 )
 
 replace k8s.io/kubernetes => ./e2e_modules/kubernetes

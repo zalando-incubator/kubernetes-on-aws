@@ -37,3 +37,35 @@ post_apply:{{ if and (ne .ConfigItems.teapot_admission_controller_process_resour
   kind: AWSIAMRole
   apiVersion: zalando.org/v1
 {{ end }}
+{{ if ne .ConfigItems.enable_csi_migration "true" }}
+- name: csi-node-driver
+  namespace: kube-system
+  kind: DaemonSet
+- name: ebs-csi-controller
+  namespace: kube-system
+  kind: DaemonSet
+- name: ebs
+  kind: StorageClass
+  namespace: kube-system
+{{ end }}
+{{ if ne .ConfigItems.prometheus_csi_ebs "true" }}
+- name: prometheus-csi
+  namespace: kube-system
+  kind: StatefulSet
+- name: prometheus-storage-volume-prometheus-csi-0
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+- name: prometheus-storage-volume-prometheus-csi-1
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+{{ else }}
+- name: prometheus
+  namespace: kube-system
+  kind: StatefulSet
+- name: prometheus-storage-volume-prometheus-0
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+- name: prometheus-storage-volume-prometheus-1
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+{{ end }}
