@@ -4,7 +4,7 @@ Description: Kubernetes default worker node pool
 Mappings:
   Images:
     eu-central-1:
-      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_16 }}'
+      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_17 }}'
 
 Resources:
   AutoScalingGroup:
@@ -36,6 +36,9 @@ Resources:
       MinSize: '{{ .NodePool.MinSize }}'
       MaxSize: '{{ .NodePool.MaxSize }}'
       Tags:
+      - Key: InfrastructureComponent
+        Value: true
+        PropagateAtLaunch: true
       - Key: Name
         PropagateAtLaunch: true
         Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
@@ -46,7 +49,7 @@ Resources:
         PropagateAtLaunch: true
         Value: worker
 # only node pools without taints should be attached to Ingress Load balancer
-{{- if not (index .NodePool.ConfigItems "taints") }}
+{{- if or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
       - Key: zalando.org/ingress-enabled
         Value: "true"
         PropagateAtLaunch: true

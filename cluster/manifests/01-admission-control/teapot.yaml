@@ -1,4 +1,4 @@
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   name: teapot-admission-controller
@@ -9,7 +9,9 @@ webhooks:
     clientConfig:
       url: "https://localhost:8085/pod"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
+    matchPolicy: Equivalent
     sideEffects: "NoneOnDryRun"
     rules:
       - operations: [ "CREATE" ]
@@ -21,6 +23,7 @@ webhooks:
     clientConfig:
       url: "https://localhost:8085/pod"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Ignore
     sideEffects: "NoneOnDryRun"
     rules:
@@ -33,6 +36,7 @@ webhooks:
     clientConfig:
       url: "https://localhost:8085/storageclass"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
     sideEffects: "NoneOnDryRun"
     rules:
@@ -44,7 +48,10 @@ webhooks:
     clientConfig:
       url: "https://localhost:8085/node"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
+    matchPolicy: Equivalent
+    sideEffects: "None"
     rules:
       - operations: [ "CREATE", "UPDATE" ]
         apiGroups: [""]
@@ -54,6 +61,7 @@ webhooks:
     clientConfig:
       url: "https://localhost:8085/cronjob"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
     sideEffects: "NoneOnDryRun"
     rules:
@@ -65,7 +73,9 @@ webhooks:
     clientConfig:
       url: "https://localhost:8085/job"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
+    matchPolicy: Equivalent
     sideEffects: "NoneOnDryRun"
     rules:
       - operations: [ "CREATE", "UPDATE" ]
@@ -76,49 +86,46 @@ webhooks:
     clientConfig:
       url: "https://localhost:8085/deployment"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
+    matchPolicy: Equivalent
     sideEffects: "NoneOnDryRun"
     rules:
       - operations: [ "CREATE", "UPDATE" ]
         apiGroups: ["apps"]
-        apiVersions: ["v1", "v1beta2", "v1beta1"]
-        resources: ["deployments"]
-  - name: deployment-legacy-admitter.teapot.zalan.do
-    clientConfig:
-      url: "https://localhost:8085/deployment"
-      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
-    failurePolicy: Fail
-    sideEffects: "NoneOnDryRun"
-    rules:
-      - operations: [ "CREATE", "UPDATE" ]
-        apiGroups: ["extensions"]
-        apiVersions: ["v1beta1"]
+        apiVersions: ["v1"]
         resources: ["deployments"]
   - name: statefulset-admitter.teapot.zalan.do
     clientConfig:
       url: "https://localhost:8085/statefulset"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
+    matchPolicy: Equivalent
     sideEffects: "NoneOnDryRun"
     rules:
       - operations: [ "CREATE", "UPDATE" ]
         apiGroups: ["apps"]
-        apiVersions: ["v1", "v1beta2", "v1beta1"]
+        apiVersions: ["v1"]
         resources: ["statefulsets"]
   - name: crd-admitter.teapot.zalan.do
     clientConfig:
       url: "https://localhost:8085/crd"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
+    matchPolicy: Equivalent
+    sideEffects: "NoneOnDryRun"
     rules:
       - operations: ["CREATE", "UPDATE", "DELETE"]
         apiGroups: ["apiextensions.k8s.io"]
-        apiVersions: ["v1", "v1beta1"]
+        apiVersions: ["v1"]
         resources: ["customresourcedefinitions"]
   - name: ingress-admitter.teapot.zalan.do
     clientConfig:
       url: "https://localhost:8085/ingress"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
     sideEffects: "NoneOnDryRun"
     rules:
@@ -130,6 +137,7 @@ webhooks:
     clientConfig:
       url: "https://localhost:8085/stack"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
     sideEffects: "NoneOnDryRun"
     rules:
@@ -141,8 +149,9 @@ webhooks:
     clientConfig:
       url: "https://localhost:8085/hpa"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
-    sideEffects: "NoneOnDryRun"
+    sideEffects: "None"
     matchPolicy: Equivalent
     rules:
       - operations: [ "CREATE", "UPDATE" ]
@@ -153,6 +162,7 @@ webhooks:
     clientConfig:
       url: "https://localhost:8085/serviceaccount"
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
     sideEffects: "NoneOnDryRun"
     matchPolicy: Equivalent
