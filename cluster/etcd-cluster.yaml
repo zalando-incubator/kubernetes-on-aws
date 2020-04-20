@@ -6,6 +6,12 @@ SenzaComponents:
     IamRoles:
     - Ref: EtcdRole
     InstanceType: '{{Arguments.InstanceType}}'
+    AssociatePublicIpAddress: true
+    VPCZoneIdentifier:
+      Fn::FindInMap:
+        - LoadBalancerSubnets
+        - Ref: AWS::Region
+        - Subnets
     SecurityGroups:
     - Fn::GetAtt:
       - EtcdSecurityGroup
