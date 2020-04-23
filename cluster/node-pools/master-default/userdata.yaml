@@ -43,6 +43,9 @@ write_files:
 {{- end }}
       featureGates:
         BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
+        CSIDriverRegistry: {{ .Cluster.ConfigItems.enable_csi_migration }}
+        CSIBlockVolume: {{ .Cluster.ConfigItems.enable_csi_migration }}
+        CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
       healthzPort: 10248
@@ -59,6 +62,10 @@ write_files:
       kubeReserved:
         cpu: "100m"
         memory: "282Mi"
+      allowedUnsafeSysctls:
+        - net.ipv4.tcp_keepalive_time
+        - net.ipv4.tcp_keepalive_intvl
+        - net.ipv4.tcp_keepalive_probes
       authentication:
         anonymous:
           enabled: true
@@ -101,7 +108,20 @@ write_files:
           - --apiserver-count={{ .Values.apiserver_count }}
           - --bind-address=0.0.0.0
           - --insecure-bind-address=0.0.0.0
+{{- if eq .Cluster.ConfigItems.etcd_use_proxy "true" }}
           - --etcd-servers=http://127.0.0.1:2379
+{{- else }}
+          - --etcd-servers={{ .Cluster.ConfigItems.etcd_endpoints }}
+{{- end }}
+{{- if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
+          - --etcd-cafile=/etc/kubernetes/ssl/etcd-ca.pem
+{{- end }}
+{{- if index .Cluster.ConfigItems "etcd_client_apiserver_cert" }}
+          - --etcd-certfile=/etc/kubernetes/ssl/etcd-cert.pem
+{{- end }}
+{{- if index .Cluster.ConfigItems "etcd_client_apiserver_key" }}
+          - --etcd-keyfile=/etc/kubernetes/ssl/etcd-key.pem
+{{- end }}
           - --etcd-prefix={{ .Cluster.ConfigItems.apiserver_etcd_prefix }}
           - --storage-backend=etcd3
           - --storage-media-type=application/vnd.kubernetes.protobuf
@@ -114,14 +134,14 @@ write_files:
           - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority,ExtendedResourceToleration
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1/podsecuritypolicy=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true{{ if eq .Cluster.ConfigItems.enable_endpointslice "true" }},discovery.k8s.io/v1alpha1=true{{ end }}
+          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true{{ if eq .Cluster.ConfigItems.enable_endpointslice "true" }},discovery.k8s.io/v1alpha1=true{{ end }}
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
           - --authorization-mode=Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIDriverRegistry={{ .Cluster.ConfigItems.enable_csi_migration }},CSIBlockVolume={{ .Cluster.ConfigItems.enable_csi_migration }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}
           - --anonymous-auth=false
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
@@ -462,6 +482,7 @@ write_files:
             name: openid-configuration
             readOnly: true
 {{- end }}
+{{- if eq .Cluster.ConfigItems.etcd_use_proxy "true" }}
         - name: etcd-proxy
           image: registry.opensource.zalan.do/teapot/etcd-proxy:master-5
           args:
@@ -472,6 +493,7 @@ write_files:
             requests:
               cpu: 25m
               memory: 25Mi
+{{- end }}
         {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
         - name: aws-encryption-provider
           image: registry.opensource.zalan.do/teapot/aws-encryption-provider:master-1
@@ -544,7 +566,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},CSIDriverRegistry={{ .Cluster.ConfigItems.enable_csi_migration }},CSIBlockVolume={{ .Cluster.ConfigItems.enable_csi_migration }}
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
@@ -611,7 +633,7 @@ write_files:
           args:
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
-          - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
+          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
           env:
           - name: KUBE_MAX_PD_VOLS
             value: "26"
