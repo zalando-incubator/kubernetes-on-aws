@@ -111,8 +111,8 @@ export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
 # * "should resolve DNS of partial qualified names for the cluster [DNS] [Conformance]"
 #   https://github.com/kubernetes/kubernetes/blob/66049e3b21efe110454d67df4fa62b08ea79a19b/test/e2e/network/dns.go#L71-L98
 #
-# * "should resolve DNS of partial qualified names for services"
-#   https://github.com/kubernetes/kubernetes/blob/66049e3b21efe110454d67df4fa62b08ea79a19b/test/e2e/network/dns.go#L173-L220
+# * "should resolve DNS of partial qualified names for services [LinuxOnly]"
+#   https://github.com/kubernetes/kubernetes/blob/06ad960bfd03b39c8310aaf92d1e7c12ce618213/test/e2e/network/dns.go#L181-L234
 
 # Disable Tests for setups which we don't support
 #
@@ -126,10 +126,8 @@ export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
 ginkgo -nodes=25 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
-    -skip="(\[AWS-IAM\])" \
-    -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.provide.DNS.for.services|should.be.able.to.change.the.type.from.ExternalName.to.NodePort|should.be.able.to.create.a.functioning.NodePort.service|\[Serial\])" \
-    "e2e.test" -- -delete-namespace-on-failure=false -allowed-not-ready-nodes=1
-# TODO: drop the `-allowed-not-ready-nodes=1` flag in v1.17, fixed by https://github.com/kubernetes/kubernetes/commit/877218768019e104f64fbac13307b66ab8c0ba3e
+    -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.resolve.DNS.of.partial.qualified.names.for.services|should.be.able.to.change.the.type.from.ExternalName.to.NodePort|should.be.able.to.create.a.functioning.NodePort.service|\[Serial\])" \
+    "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role
 
 # delete cluster
 clm decommission \
