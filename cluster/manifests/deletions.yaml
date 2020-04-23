@@ -32,23 +32,6 @@ post_apply:{{ if and (ne .ConfigItems.teapot_admission_controller_process_resour
   namespace: default
   kind: RoleBinding
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true"}}
-- name: kube-aws-iam-controller
-  namespace: kube-system
-  kind: Deployment
-- name: kube-aws-iam-controller
-  namespace: kube-system
-  kind: ServiceAccount
-- name: kube-aws-iam-controller
-  kind: ClusterRole
-- name: kube-aws-iam-controller
-  kind: ClusterRoleBinding
-- name: kube-aws-iam-controller-privileged-psp
-  namespace: kube-system
-  kind: RoleBinding
-- name: kube-aws-iam-controller
-  namespace: kube-system
-  kind: VerticalPodAutoscaler
-  apiVersion: autoscaling.k8s.io/v1beta2
 - name: audittrail-adapter-aws-iam-credentials
   namespace: kube-system
   kind: AWSIAMRole
@@ -85,9 +68,6 @@ post_apply:{{ if and (ne .ConfigItems.teapot_admission_controller_process_resour
   namespace: kube-system
   kind: AWSIAMRole
   apiVersion: zalando.org/v1
-- name: awsiamroles.zalando.org
-  kind: CustomResourceDefinition
-  apiVersion: apiextensions.k8s.io/v1
 {{ end }}
 {{ if ne .ConfigItems.enable_csi_migration "true" }}
 - name: csi-node-driver
