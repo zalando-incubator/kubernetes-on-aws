@@ -72,7 +72,7 @@ files:
     permissions: 0400
     encrypted: true
 {{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+{{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
   - path: /var/www/openid-configuration/openid-configuration
     data: "{{ generateOIDCDiscoveryDocument .Cluster.APIServerURL | base64 }}"
     permissions: 0644
