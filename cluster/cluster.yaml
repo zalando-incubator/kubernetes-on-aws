@@ -1761,7 +1761,6 @@ Resources:
             Resource: "*"
             Action:
             - "kms:Decrypt"
-{{- if eq .Cluster.ConfigItems.support_encryption "true" }}
   EtcdEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:
@@ -1794,7 +1793,6 @@ Resources:
             Action:
             - "kms:Encrypt"
             - "kms:Decrypt"
-{{- end }}
   MasterFilesEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:
@@ -1898,9 +1896,7 @@ Outputs:
       Name: '{{.Cluster.ID}}:worker-security-group'
     Value: !Ref WorkerSecurityGroup
 {{- end }}
-{{- if eq .Cluster.ConfigItems.support_encryption "true" }}
   EtcdEncryptionKey:
     Export:
       Name: '{{ .Cluster.ID}}:etcd-encryption-key'
     Value: !Ref EtcdEncryptionKey
-{{- end }}
