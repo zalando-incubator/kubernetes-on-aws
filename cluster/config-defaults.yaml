@@ -168,6 +168,10 @@ teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
 
+## TODO update defaults
+teapot_admission_controller_daemonset_reserved_cpu: "8"
+teapot_admission_controller_daemonset_reserved_memory: "64Gi"
+
 {{if eq .Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
@@ -182,9 +186,11 @@ teapot_admission_controller_validate_pod_template_resources: "true"
 {{if eq .Environment "e2e"}}
 teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota)-.*)$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "false"
+teapot_admission_controller_check_daemonset_resources: "true"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "true"
+teapot_admission_controller_check_daemonset_resources: "false"
 {{end}}
 
 
@@ -256,6 +262,9 @@ auditlog_read_access: "false"
 
 # enable automatic injection of OIDC-based AWS API access
 teapot_admission_controller_service_account_iam: "false"
+# only configure the userdata part of the OIDC-based AWS API access feature, useful for rolling back
+# has no effect when teapot_admission_controller_service_account_iam is true
+teapot_admission_controller_service_account_iam_userdata: "false"
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "true"
 
@@ -329,3 +338,7 @@ on_demand_worker_replacement_strategy: prepare-replacement
 {{else}}
 on_demand_worker_replacement_strategy: none
 {{end}}
+
+
+# Temporary config items for etcd TLS migration
+etcd_use_proxy: "true"

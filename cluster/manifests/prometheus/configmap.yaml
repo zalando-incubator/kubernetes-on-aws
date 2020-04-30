@@ -80,14 +80,18 @@ data:
       scheme: http
       dns_sd_configs:
       - names:
-        - "{{ with $hostPort := splitHostPort .ConfigItems.etcd_endpoints }}{{ .Host }}{{ end }}"
+{{ range $host := extractEndpointHosts .Cluster.ConfigItems.etcd_endpoints }}
+        - "{{ $host }}"
+{{ end }}
         type: "A"
         port: 2381
     - job_name: 'etcd-servers-node-metrics'
       scheme: http
       dns_sd_configs:
       - names:
-        - "{{ with $hostPort := splitHostPort .ConfigItems.etcd_endpoints }}{{ .Host }}{{ end }}"
+{{ range $host := extractEndpointHosts .Cluster.ConfigItems.etcd_endpoints }}
+        - "{{ $host }}"
+{{ end }}
         type: "A"
         port: 9100
       metric_relabel_configs:
