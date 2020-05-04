@@ -83,8 +83,8 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 		// Check the injected node zone
 		node, err := cs.CoreV1().Nodes().Get(pod.Spec.NodeName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		nodeZone := node.Labels["failure-domain.beta.kubernetes.io/zone"]
-		Expect(pod.Annotations).To(HaveKeyWithValue("failure-domain.beta.kubernetes.io/zone", nodeZone))
+		nodeZone := node.Labels["topology.kubernetes.io/zone"]
+		Expect(pod.Annotations).To(HaveKeyWithValue("topology.kubernetes.io/zone", nodeZone))
 
 		envarValues, err := fetchEnvarValues(cs, ns, pod.Name)
 		Expect(err).NotTo(HaveOccurred())
