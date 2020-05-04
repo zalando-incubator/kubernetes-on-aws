@@ -108,7 +108,20 @@ write_files:
           - --apiserver-count={{ .Values.apiserver_count }}
           - --bind-address=0.0.0.0
           - --insecure-bind-address=0.0.0.0
+{{- if eq .Cluster.ConfigItems.etcd_use_proxy "true" }}
           - --etcd-servers=http://127.0.0.1:2379
+{{- else }}
+          - --etcd-servers={{ .Cluster.ConfigItems.etcd_endpoints }}
+{{- end }}
+{{- if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
+          - --etcd-cafile=/etc/kubernetes/ssl/etcd-ca.pem
+{{- end }}
+{{- if index .Cluster.ConfigItems "etcd_client_apiserver_cert" }}
+          - --etcd-certfile=/etc/kubernetes/ssl/etcd-cert.pem
+{{- end }}
+{{- if index .Cluster.ConfigItems "etcd_client_apiserver_key" }}
+          - --etcd-keyfile=/etc/kubernetes/ssl/etcd-key.pem
+{{- end }}
           - --etcd-prefix={{ .Cluster.ConfigItems.apiserver_etcd_prefix }}
           - --storage-backend=etcd3
           - --storage-media-type=application/vnd.kubernetes.protobuf
@@ -135,7 +148,7 @@ write_files:
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer=kubernetes/serviceaccount
           {{- end }}
-          {{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+          {{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
           {{- end }}
@@ -201,7 +214,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-69
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-70
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -255,7 +268,7 @@ write_files:
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
             - --pod-aws-credentials-waiter-image=pierone.stups.zalan.do/automata/aws-credentials-waiter:master-7
 {{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+{{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
             - --service-account-iam
 {{- end }}
           ports:
@@ -431,7 +444,7 @@ write_files:
               -> setPath("/healthz")
               -> disableAccessLog()
               -> "http://127.0.0.1:8080";
-          {{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+          {{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
             o: Path("/.well-known/openid-configuration")
               -> setResponseHeader("Content-Type", "application/json")
               -> static("/.well-known/", "/var/www/openid-configuration/")
@@ -464,11 +477,12 @@ write_files:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
             readOnly: true
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+{{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
           - mountPath: /var/www/openid-configuration
             name: openid-configuration
             readOnly: true
 {{- end }}
+{{- if eq .Cluster.ConfigItems.etcd_use_proxy "true" }}
         - name: etcd-proxy
           image: registry.opensource.zalan.do/teapot/etcd-proxy:master-5
           args:
@@ -479,6 +493,7 @@ write_files:
             requests:
               cpu: 25m
               memory: 25Mi
+{{- end }}
         {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
         - name: aws-encryption-provider
           image: registry.opensource.zalan.do/teapot/aws-encryption-provider:master-1
@@ -513,7 +528,7 @@ write_files:
         - hostPath:
             path: /etc/kubernetes/nginx
           name: config-volume
-        {{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+        {{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
         - hostPath:
             path: /var/www/openid-configuration
           name: openid-configuration

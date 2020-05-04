@@ -10,6 +10,14 @@ Resources:
       SourceSecurityGroupId: !Ref MasterSecurityGroup
       ToPort: 2379
     Type: 'AWS::EC2::SecurityGroupIngress'
+  EtcdSecurityGroupTLSIngressFromMaster:
+    Properties:
+      FromPort: 2479
+      GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id'
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+      ToPort: 2479
+    Type: 'AWS::EC2::SecurityGroupIngress'
   IngressLoadBalancerSecurityGroup:
     Properties:
       GroupDescription: !Ref 'AWS::StackName'
