@@ -308,16 +308,9 @@ enable_endpointslice: "false"
 # Enable FeatureGate HPAScaleToZero
 enable_hpa_scale_to_zero: "true"
 
-# setup supporting components to enable encryption
-# this flag must only be switched from true to false when enable_encryption is false and all secrets were decrypted
-{{if eq .Environment "test"}}
-support_encryption: "true"
-{{else}}
-support_encryption: "false"
-{{end}}
-# enable encryption of secrets in etcd, requires support_encryption: true
-# this flag can be switched between true and false as long as support_encryption is true
-# to ensure all secrets are encrypted/decrypted all secrets need to be rewritten
+# enable encryption of secrets in etcd
+# this flag can be switched between true and false
+# to ensure all secrets are encrypted/decrypted all secrets need to be rewritten after masters have been rolled
 {{if eq .Environment "test"}}
 enable_encryption: "true"
 {{else}}
