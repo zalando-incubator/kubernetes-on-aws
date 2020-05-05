@@ -17,6 +17,20 @@ data:
         # see http://jmespath.org/specification.html
         jmespath: "!(spec.template.metadata.labels.application) && metadata.creationTimestamp > '2019-04-15'"
         ttl: 7d
+      - id: require-application-label-stacksets
+        # remove StackSets without a pod label "application"
+        resources:
+          - stacksets
+        # StackSet propagates top-level labels to pods, so check podTemplate and StackSet itself
+        jmespath: "!(spec.stackTemplate.spec.podTemplate.metadata.labels.application) && !(metadata.labels.application) && metadata.creationTimestamp > '2019-04-15'"
+        ttl: 7d
+      - id: require-application-label-cronjobs
+        # remove CronJobs without a pod label "application"
+        resources:
+          - cronjobs
+        # see http://jmespath.org/specification.html
+        jmespath: "!(spec.jobTemplate.spec.template.metadata.labels.application) && metadata.creationTimestamp > '2019-04-15'"
+        ttl: 7d
       - id: temporary-cdp-namespaces
         # delete all temporary e2e namespaces (created by CDP) with a name starting with "d-*"
         resources:
@@ -27,11 +41,18 @@ data:
         ttl: 24h
       - id: cleanup-resources-from-pull-requests
         # Delete all resources in namespaces matching .*-pr-.* after configured period:
-        # This allows to put resources build from pull requests into a 
-        # namespace like my-project-pr-123 . They won't mess up the cluster 
+        # This allows to put resources build from pull requests into a
+        # namespace like my-project-pr-123 . They won't mess up the cluster
         # anymore, see #2930.
         resources:
-          - namespaces  
+          - namespaces
         jmespath: "contains(metadata.name, '-pr-')"
         ttl: "{{ .Cluster.ConfigItems.kube_janitor_default_pr_ttl }}"
+      - id: cleanup-unused-pvcs
+        # Delete all unused PersistentVolumeClaims (PVCs) and their EBS volumes
+        # to save costs ($0.119/GiB per month)
+        resources:
+          - persistentvolumeclaims
+        jmespath: "_context.pvc_is_not_mounted && _context.pvc_is_not_referenced"
+        ttl: "{{ .Cluster.ConfigItems.kube_janitor_default_unused_pvc_ttl }}"
 {{ end }}

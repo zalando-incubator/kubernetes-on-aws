@@ -4,7 +4,7 @@ Description: Kubernetes default master node pool
 Mappings:
   Images:
     eu-central-1:
-      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_15 }}'
+      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_17 }}'
 
 Resources:
   AutoScalingGroup:
@@ -23,12 +23,12 @@ Resources:
       MinSize: '{{ .NodePool.MinSize }}'
       MaxSize: '{{ .NodePool.MaxSize }}'
       Tags:
+      - Key: InfrastructureComponent
+        Value: true
+        PropagateAtLaunch: true
       - Key: Name
         PropagateAtLaunch: true
         Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
-      - Key: kubernetes.io/role
-        PropagateAtLaunch: true
-        Value: master
       - Key: node.kubernetes.io/role
         PropagateAtLaunch: true
         Value: master

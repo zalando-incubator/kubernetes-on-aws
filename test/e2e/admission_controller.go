@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	deploymentframework "k8s.io/kubernetes/test/e2e/framework/deployment"
+	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
 const (
@@ -68,7 +69,7 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		//pods are not returned here
-		_, err = framework.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, int(replicas), 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, int(replicas), 1*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
 
 		pods, err := cs.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: labelSelector.String()})
@@ -82,8 +83,8 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 		// Check the injected node zone
 		node, err := cs.CoreV1().Nodes().Get(pod.Spec.NodeName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		nodeZone := node.Labels["failure-domain.beta.kubernetes.io/zone"]
-		Expect(pod.Annotations).To(HaveKeyWithValue("failure-domain.beta.kubernetes.io/zone", nodeZone))
+		nodeZone := node.Labels["topology.kubernetes.io/zone"]
+		Expect(pod.Annotations).To(HaveKeyWithValue("topology.kubernetes.io/zone", nodeZone))
 
 		envarValues, err := fetchEnvarValues(cs, ns, pod.Name)
 		Expect(err).NotTo(HaveOccurred())
@@ -124,7 +125,7 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 		_, err := cs.CoreV1().Pods(ns).Create(pod)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = framework.WaitForPodSuccessInNamespaceSlow(cs, podName, ns)
+		err = e2epod.WaitForPodSuccessInNamespaceSlow(cs, podName, ns)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

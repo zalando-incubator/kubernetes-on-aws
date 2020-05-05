@@ -6,7 +6,11 @@ metadata:
   labels:
     application: prometheus
     version: v2.15.2
+{{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
   name: prometheus
+{{- else }}
+  name: prometheus-csi
+{{- end }}
   namespace: kube-system
 spec:
   replicas: 2
@@ -57,7 +61,11 @@ spec:
         args:
         - "--config.file=/prometheus/prometheus.yaml"
         - "--storage.tsdb.path=/prometheus/"
+{{- if ne .ConfigItems.prometheus_tsdb_retention_size "disabled" }}
+        - "--storage.tsdb.retention.size={{ kubernetesSizeToKiloBytes .ConfigItems.prometheus_mem_min 0.6 }}"
+{{- else }}
         - "--storage.tsdb.retention.time=1d"
+{{- end }}
         - "--storage.tsdb.wal-compression"
         - "--storage.tsdb.min-block-duration=30m"
         ports:
@@ -107,7 +115,11 @@ spec:
   - metadata:
       name: prometheus-storage-volume
     spec:
+{{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
       storageClassName: standard
+{{- else }}
+      storageClassName: ebs
+{{- end }}
       accessModes:
       - "ReadWriteOnce"
       resources:

@@ -19,11 +19,14 @@ spec:
           labels:
             application: etcd-backup
             version: "master-9"
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
           annotations:
             iam.amazonaws.com/role: "{{ .LocalID }}-etcd-backup"
 {{ end }}
+{{ end }}
         spec:
+          serviceAccountName: etcd-backup
           dnsConfig:
             options:
               - name: ndots
@@ -32,41 +35,45 @@ spec:
           restartPolicy: Never
           containers:
           - name: etcd-backup
-            image: pierone.stups.zalan.do/teapot/etcd-backup:master-9
+            image: pierone.stups.zalan.do/teapot/etcd-backup:master-11
             env:
             - name: ETCD_S3_BACKUP_BUCKET
               value: "{{ .ConfigItems.etcd_s3_backup_bucket }}"
             - name: ETCD_ENDPOINTS
               value: "{{ .ConfigItems.etcd_endpoints }}"
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
             # must be set for the AWS SDK/AWS CLI to find the credentials file.
             - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
               value: /meta/aws-iam/credentials.process
 {{ end }}
+{{ end }}
             resources:
               limits:
-                cpu: 100m
+                cpu: 50m
                 memory: 384Mi
               requests:
-                cpu: 100m
+                cpu: 50m
                 memory: 384Mi
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
             volumeMounts:
             - name: aws-iam-credentials
               mountPath: /meta/aws-iam
               readOnly: true
 {{ end }}
+{{ end }}
           tolerations:
-          - key: node-role.kubernetes.io/master
-            effect: NoSchedule
           - key: node.kubernetes.io/role
             value: master
             effect: NoSchedule
           nodeSelector:
             node.kubernetes.io/role: master
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
           volumes:
           - name: aws-iam-credentials
             secret:
               secretName: etcd-backup-aws-iam-credentials
+{{ end }}
 {{ end }}

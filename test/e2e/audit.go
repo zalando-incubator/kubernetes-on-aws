@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/zalando-incubator/kubernetes-on-aws/tests/e2e/utils"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -13,7 +14,6 @@ import (
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
-	"k8s.io/kubernetes/test/utils"
 
 	jsonpatch "github.com/evanphx/json-patch"
 	. "github.com/onsi/ginkgo"

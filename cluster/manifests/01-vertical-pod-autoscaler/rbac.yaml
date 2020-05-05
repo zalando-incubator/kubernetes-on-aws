@@ -3,6 +3,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: system:metrics-reader
+  labels:
+    application: vertical-pod-autoscaler
 rules:
   - apiGroups:
       - "metrics.k8s.io"
@@ -16,6 +18,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: system:vpa-actor
+  labels:
+    application: vertical-pod-autoscaler
 rules:
   - apiGroups:
       - ""
@@ -61,6 +65,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: system:vpa-checkpoint-actor
+  labels:
+    application: vertical-pod-autoscaler
 rules:
   - apiGroups:
       - "poc.autoscaling.k8s.io"
@@ -96,6 +102,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: system:evictioner
+  labels:
+    application: vertical-pod-autoscaler
 rules:
   - apiGroups:
       - "extensions"
@@ -120,6 +128,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: system:metrics-reader
+  labels:
+    application: vertical-pod-autoscaler
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -133,6 +143,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: system:vpa-actor
+  labels:
+    application: vertical-pod-autoscaler
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -149,6 +161,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: system:vpa-checkpoint-actor
+  labels:
+    application: vertical-pod-autoscaler
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -162,6 +176,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: system:vpa-target-reader
+  labels:
+    application: vertical-pod-autoscaler
 rules:
   - apiGroups:
       - ""
@@ -196,6 +212,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: system:vpa-target-reader-binding
+  labels:
+    application: vertical-pod-autoscaler
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -215,6 +233,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: system:vpa-evictionter-binding
+  labels:
+    application: vertical-pod-autoscaler
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -229,23 +249,35 @@ kind: ServiceAccount
 metadata:
   name: vpa-recommender
   namespace: kube-system
+  labels:
+    application: vertical-pod-autoscaler
+    component: recommender
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: vpa-updater
   namespace: kube-system
+  labels:
+    application: vertical-pod-autoscaler
+    component: updater
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: vpa-admission-controller
   namespace: kube-system
+  labels:
+    application: vertical-pod-autoscaler
+    component: admission-controller
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: system:admission-controller
+  labels:
+    application: vertical-pod-autoscaler
+    component: admission-controller
 rules:
   - apiGroups:
       - ""
@@ -288,6 +320,9 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: system:admission-controller
+  labels:
+    application: vertical-pod-autoscaler
+    component: admission-controller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

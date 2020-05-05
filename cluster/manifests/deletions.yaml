@@ -2,23 +2,7 @@
 pre_apply: []
 
 # everything defined under here will be deleted after applying the manifests
-post_apply:
-- name: kubernetes-dashboard
-  kind: ClusterRoleBinding
-- name: heapster
-  namespace: kube-system
-  kind: Deployment
-- name: heapster
-  namespace: kube-system
-  kind: ServiceAccount
-- name: heapster
-  kind: ClusterRoleBinding
-- name: heapster
-  namespace: kube-system
-  kind: Service
-- name: heapster
-  namespace: kube-system
-  kind: VerticalPodAutoscaler
+post_apply:{{ if and (ne .ConfigItems.teapot_admission_controller_process_resources "true") (eq .ConfigItems.enable_ingress_template_controller "true") }} []{{ end }}
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
@@ -41,12 +25,76 @@ post_apply:
 - name: ingress-template-controller
   kind: ClusterRoleBinding
 {{ end }}
-- name: poweruser-new
-  kind: ClusterRoleBinding
-- name: readonly-new
-  kind: ClusterRoleBinding
-- name: zmon-external-new
-  kind: ClusterRoleBinding
-- name: collaborator
-  namespace: visibility
+- name: leader-locking-efs-provisioner
+  namespace: default
   kind: RoleBinding
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true"}}
+- name: audittrail-adapter-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: cluster-lifecycle-controller-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: emergency-access-service-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: etcd-backup-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: external-dns-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: kube-ingress-aws-controller-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: kube-metrics-adapter-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: kube-node-ready-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: kube-static-egress-controller-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+{{ end }}
+{{ if ne .ConfigItems.enable_csi_migration "true" }}
+- name: csi-node-driver
+  namespace: kube-system
+  kind: DaemonSet
+- name: ebs-csi-controller
+  namespace: kube-system
+  kind: DaemonSet
+- name: ebs
+  kind: StorageClass
+  namespace: kube-system
+{{ end }}
+{{ if ne .ConfigItems.prometheus_csi_ebs "true" }}
+- name: prometheus-csi
+  namespace: kube-system
+  kind: StatefulSet
+- name: prometheus-storage-volume-prometheus-csi-0
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+- name: prometheus-storage-volume-prometheus-csi-1
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+{{ else }}
+- name: prometheus
+  namespace: kube-system
+  kind: StatefulSet
+- name: prometheus-storage-volume-prometheus-0
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+- name: prometheus-storage-volume-prometheus-1
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+{{ end }}

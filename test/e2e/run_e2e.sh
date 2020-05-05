@@ -114,13 +114,23 @@ sleep 5400
 # * "should resolve DNS of partial qualified names for the cluster [DNS] [Conformance]"
 #   https://github.com/kubernetes/kubernetes/blob/66049e3b21efe110454d67df4fa62b08ea79a19b/test/e2e/network/dns.go#L71-L98
 #
-# * "should resolve DNS of partial qualified names for services"
-#   https://github.com/kubernetes/kubernetes/blob/66049e3b21efe110454d67df4fa62b08ea79a19b/test/e2e/network/dns.go#L173-L220
+# * "should resolve DNS of partial qualified names for services [LinuxOnly]"
+#   https://github.com/kubernetes/kubernetes/blob/06ad960bfd03b39c8310aaf92d1e7c12ce618213/test/e2e/network/dns.go#L181-L234
+
+# Disable Tests for setups which we don't support
+#
+# These are disabled because they assume nodePorts are reachable via the public
+# IP of the node, we don't currently support that.
+#
+# * "[Fail] [sig-network] Services [It] should be able to change the type from ExternalName to NodePort [Conformance]"
+#   https://github.com/kubernetes/kubernetes/blob/224be7bdce5a9dd0c2fd0d46b83865648e2fe0ba/test/e2e/network/service.go#L1037
+# * "[Fail] [sig-network] Services [It] should be able to create a functioning NodePort service [Conformance]"
+#   https://github.com/kubernetes/kubernetes/blob/224be7bdce5a9dd0c2fd0d46b83865648e2fe0ba/test/e2e/network/service.go#L551
 ginkgo -nodes=25 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
-    -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.provide.DNS.for.services|\[Serial\])" \
-    "e2e.test" -- -delete-namespace-on-failure=false
+    -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.resolve.DNS.of.partial.qualified.names.for.services|should.be.able.to.change.the.type.from.ExternalName.to.NodePort|should.be.able.to.create.a.functioning.NodePort.service|\[Serial\])" \
+    "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role
 
 # delete cluster
 clm decommission \

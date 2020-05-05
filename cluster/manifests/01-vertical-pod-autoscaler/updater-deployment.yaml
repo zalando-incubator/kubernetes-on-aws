@@ -4,26 +4,27 @@ metadata:
   name: vpa-updater
   namespace: kube-system
   labels:
-    application: vpa-updater
-    version: v0.6.1-internal.4
-    component: vpa
+    application: vertical-pod-autoscaler
+    component: updater
+    version: v0.6.1-internal.7
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: vpa-updater
+      application: vertical-pod-autoscaler
+      component: updater
   template:
     metadata:
       labels:
-        application: vpa-updater
-        version: v0.6.1-internal.4
-        component: vpa
+        application: vertical-pod-autoscaler
+        component: updater
+        version: v0.6.1-internal.7
     spec:
       serviceAccountName: vpa-updater
       priorityClassName: system-cluster-critical
       containers:
       - name: updater
-        image: registry.opensource.zalan.do/teapot/vpa-updater:v0.6.1-internal.4
+        image: registry.opensource.zalan.do/teapot/vpa-updater:v0.6.1-internal.7
         command:
           - ./updater
         args:

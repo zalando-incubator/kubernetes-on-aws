@@ -2,7 +2,7 @@
 
 BINARY       ?= kubernetes-on-aws-e2e
 VERSION      ?= $(shell git describe --tags --always --dirty)
-KUBE_VERSION ?= v1.15.9
+KUBE_VERSION ?= v1.17.4
 IMAGE        ?= registry-write.opensource.zalan.do/teapot/$(BINARY)
 TAG          ?= $(VERSION)
 DOCKERFILE   ?= Dockerfile
@@ -24,7 +24,7 @@ fix-go-modules:	$(MOD_PATH)
 	MOD_PATH=$(MOD_PATH) KUBE_VERSION=$(KUBE_VERSION) ./setup_modules.sh
 
 generate-code: fix-go-modules $(GO_BINDATA)
-	PATH="$(shell pwd)/build:$(PATH)" "$(MOD_PATH)/kubernetes/hack/generate-bindata.sh"
+	make generated_files -C "$(MOD_PATH)/kubernetes"
 
 deps: generate-code
 	GO111MODULE=on go get github.com/onsi/ginkgo/ginkgo@v1.8.0
