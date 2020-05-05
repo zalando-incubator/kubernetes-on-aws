@@ -111,6 +111,7 @@ prometheus_mem_min: "2Gi"
 prometheus_cpu_min: "0"
 prometheus_remote_write: "disabled"
 prometheus_tsdb_retention_size: "disabled"
+prometheus_csi_ebs: "false"
 
 metrics_service_cpu: "100m"
 metrics_service_mem: "200Mi"
@@ -127,8 +128,10 @@ kube_state_metrics_mem_max: "1Gi"
 # Kubernetes Downscaler (for non-production clusters)
 {{if eq .Environment "test"}}
 downscaler_default_uptime: "Mon-Fri 07:30-20:30 Europe/Berlin"
+downscaler_default_downtime: "never"
 {{else}}
 downscaler_default_uptime: "always"
+downscaler_default_downtime: "never"
 {{end}}
 
 # HPA settings (defaults from https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/)
@@ -165,6 +168,11 @@ teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
 
+## Defaults are set per-cluster
+teapot_admission_controller_check_daemonset_resources: "true"
+teapot_admission_controller_daemonset_reserved_cpu: "8"
+teapot_admission_controller_daemonset_reserved_memory: "64Gi"
+
 {{if eq .Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
@@ -200,16 +208,10 @@ coredns_log_svc_names: "true"
 coredns_max_upstream_concurrency: 0 #0 means there is not concurrency limits
 
 kuberuntu_image_v1_16: {{ amiID "zalando-ubuntu-kubernetes-production-v1.16.8-master-96" "861068367966" }}
+kuberuntu_image_v1_17: {{ amiID "zalando-ubuntu-kubernetes-production-v1.17.4-master-98" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
-
-# Temporary feature toggle for the new daemonset scheduler
-{{if eq .Environment "e2e"}}
-experimental_schedule_daemonset_pods: "true"
-{{else}}
-experimental_schedule_daemonset_pods: "false"
-{{end}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -238,6 +240,9 @@ pod_max_pids: "4096"
 # the cpu management policy which should be used by the kubelet
 cpu_manager_policy: "none"
 
+# enable CSIMigration feature flag
+enable_csi_migration: "false"
+
 # when set to true, routes external traffic to the apiserver through a skipper sidecar
 apiserver_proxy: "true"
 # when set to true, service account tokens can be used from outside the cluster
@@ -256,6 +261,9 @@ auditlog_read_access: "false"
 
 # enable automatic injection of OIDC-based AWS API access
 teapot_admission_controller_service_account_iam: "false"
+# only configure the userdata part of the OIDC-based AWS API access feature, useful for rolling back
+# has no effect when teapot_admission_controller_service_account_iam is true
+teapot_admission_controller_service_account_iam_userdata: "false"
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "true"
 
@@ -299,16 +307,9 @@ enable_endpointslice: "false"
 # Enable FeatureGate HPAScaleToZero
 enable_hpa_scale_to_zero: "true"
 
-# setup supporting components to enable encryption
-# this flag must only be switched from true to false when enable_encryption is false and all secrets were decrypted
-{{if eq .Environment "test"}}
-support_encryption: "true"
-{{else}}
-support_encryption: "false"
-{{end}}
-# enable encryption of secrets in etcd, requires support_encryption: true
-# this flag can be switched between true and false as long as support_encryption is true
-# to ensure all secrets are encrypted/decrypted all secrets need to be rewritten
+# enable encryption of secrets in etcd
+# this flag can be switched between true and false
+# to ensure all secrets are encrypted/decrypted all secrets need to be rewritten after masters have been rolled
 {{if eq .Environment "test"}}
 enable_encryption: "true"
 {{else}}
@@ -320,9 +321,16 @@ kube_janitor_default_pr_ttl: "1w"  # 1 week
 # opt-in deletion of unused PVCs
 kube_janitor_default_unused_pvc_ttl: "forever"
 
+# deletes all resources in the cluster that rely on a vpc
+# necessary to change the VPC subnet of a cluster
+delete_vpc_resources: "false"
 # replacement strategy used for default on-demand worker pool
 {{if eq .Environment "production"}}
 on_demand_worker_replacement_strategy: prepare-replacement
 {{else}}
 on_demand_worker_replacement_strategy: none
 {{end}}
+
+
+# Temporary config items for etcd TLS migration
+etcd_use_proxy: "true"
