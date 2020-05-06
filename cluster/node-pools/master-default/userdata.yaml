@@ -110,6 +110,8 @@ write_files:
           - --insecure-bind-address=0.0.0.0
 {{- if eq .Cluster.ConfigItems.etcd_use_proxy "true" }}
           - --etcd-servers=http://127.0.0.1:2379
+{{- else if index .NodePool.ConfigItems.etcd_endpoints }}
+          -- -etcd-servers={{ .NodePool.ConfigItems.etcd_endpoints }}
 {{- else }}
           - --etcd-servers={{ .Cluster.ConfigItems.etcd_endpoints }}
 {{- end }}
