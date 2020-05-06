@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stackset-controller
+  namespace: kube-system
+  labels:
+    application: stackset-controller
+    version: "v1.1.23"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: stackset-controller
+  template:
+    metadata:
+      labels:
+        application: stackset-controller
+        version: "v1.1.23"
+    spec:
+      serviceAccountName: stackset-controller
+      containers:
+      - name: stackset-controller
+        image: "registry.opensource.zalan.do/teapot/stackset-controller:v1.1.23"
+        args:
+        - "--interval={{ .Cluster.ConfigItems.stackset_controller_sync_interval }}"
+        - "--migrate-to=stackset"
+        env:
+          - name: CLUSTER_DOMAIN
+            value: "{{ .Cluster.Alias }}.zalan.do"
+        resources:
+          limits:
+            cpu: 10m
+            memory: 100Mi
+          requests:
+            cpu: 10m
+            memory: 100Mi
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 7979
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
