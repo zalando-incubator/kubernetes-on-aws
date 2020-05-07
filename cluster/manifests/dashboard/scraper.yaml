@@ -4,10 +4,12 @@ metadata:
   name: dashboard-metrics-scraper
   namespace: kube-system
   labels:
-    application: dashboard-metrics-scraper
+    application: kubernetes-dashboard
+    component: metrics-scraper
 spec:
   selector:
-    application: dashboard-metrics-scraper
+    application: kubernetes-dashboard
+    component: metrics-scraper
   ports:
   - port: 8000
     targetPort: 8000
@@ -17,20 +19,23 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dashboard-metrics-scraper
+  name: dashboard-metrics-scraper-new # TODO drop -new suffix once migrated
   namespace: kube-system
   labels:
-    application: dashboard-metrics-scraper
+    application: kubernetes-dashboard
+    component: metrics-scraper
     version: v1.0.2
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: dashboard-metrics-scraper
+      application: kubernetes-dashboard
+      component: metrics-scraper
   template:
     metadata:
       labels:
-        application: dashboard-metrics-scraper
+        application: kubernetes-dashboard
+        component: metrics-scraper
         version: v1.0.2
     spec:
       priorityClassName: system-cluster-critical
