@@ -110,6 +110,8 @@ write_files:
           - --insecure-bind-address=0.0.0.0
 {{- if eq .Cluster.ConfigItems.etcd_use_proxy "true" }}
           - --etcd-servers=http://127.0.0.1:2379
+{{- else if index .NodePool.ConfigItems.etcd_endpoints }}
+          - --etcd-servers={{ .NodePool.ConfigItems.etcd_endpoints }}
 {{- else }}
           - --etcd-servers={{ .Cluster.ConfigItems.etcd_endpoints }}
 {{- end }}
@@ -210,7 +212,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-70
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-71
           name: admission-controller
           readinessProbe:
             httpGet:
@@ -273,7 +275,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.8
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.9
           name: webhook
           ports:
           - containerPort: 8081
@@ -331,6 +333,7 @@ write_files:
 {{ end }}
             - --system-users=zalando-iam:zalando:service:credentials-provider
             - --system-users=system:serviceaccount:api-infrastructure:api-monitoring-controller
+            - --collaborator-app-users=zalando-iam:zalando:service:stups_scalyr-key-rotation
           env:
             - name: TEAMS_API_URL
               value: https://teams.auth.zalando.com

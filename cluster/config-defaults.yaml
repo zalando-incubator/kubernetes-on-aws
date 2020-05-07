@@ -168,7 +168,8 @@ teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
 
-## TODO update defaults
+## Defaults are set per-cluster
+teapot_admission_controller_check_daemonset_resources: "true"
 teapot_admission_controller_daemonset_reserved_cpu: "8"
 teapot_admission_controller_daemonset_reserved_memory: "64Gi"
 
@@ -186,11 +187,9 @@ teapot_admission_controller_validate_pod_template_resources: "true"
 {{if eq .Environment "e2e"}}
 teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota)-.*)$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "false"
-teapot_admission_controller_check_daemonset_resources: "true"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "true"
-teapot_admission_controller_check_daemonset_resources: "false"
 {{end}}
 
 
@@ -335,3 +334,6 @@ on_demand_worker_replacement_strategy: none
 
 # Temporary config items for etcd TLS migration
 etcd_use_proxy: "true"
+
+# Stackset controller
+stackset_controller_sync_interval: "10s"
