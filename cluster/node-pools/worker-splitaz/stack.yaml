@@ -23,7 +23,7 @@ Resources:
       MixedInstancesPolicy:
         InstancesDistribution:
           OnDemandPercentageAboveBaseCapacity: {{if $data.NodePool.IsSpot }}0{{else}}100{{end}}
-          SpotAllocationStrategy: {{ .$data.NodePool.SpotAllocationStrategy }}
+          SpotAllocationStrategy: {{ if index $data.NodePools.ConfigItems "SpotAllocationStrategy"}}{{ .$data.NodePool.SpotAllocationStrategy }}{{else}}capacity-optimized{{end}}
         LaunchTemplate:
           LaunchTemplateSpecification:
             LaunchTemplateId: !Ref LaunchTemplate
