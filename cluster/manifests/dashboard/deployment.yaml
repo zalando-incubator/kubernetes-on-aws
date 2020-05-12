@@ -1,10 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kubernetes-dashboard
+  name: kubernetes-dashboard-new # TODO drop -new suffix once migrated
   namespace: kube-system
   labels:
     application: kubernetes-dashboard
+    component: dashboard
     version: v2.0.0-rc2
     kubernetes.io/cluster-service: "true"
 spec:
@@ -12,10 +13,12 @@ spec:
   selector:
     matchLabels:
       application: kubernetes-dashboard
+      component: dashboard
   template:
     metadata:
       labels:
         application: kubernetes-dashboard
+        component: dashboard
         version: v2.0.0-rc2
         kubernetes.io/cluster-service: "true"
     spec:
@@ -75,6 +78,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kubernetes-dashboard
+    component: dashboard
 type: Opaque
 
 ---
@@ -86,6 +90,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kubernetes-dashboard
+    component: dashboard
 type: Opaque
 data:
   csrf: ""
@@ -99,6 +104,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kubernetes-dashboard
+    component: dashboard
 type: Opaque
 
 ---
@@ -110,3 +116,4 @@ metadata:
   namespace: kube-system
   labels:
     application: kubernetes-dashboard
+    component: dashboard
