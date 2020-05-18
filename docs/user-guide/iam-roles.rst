@@ -15,7 +15,7 @@ In order for an AWS IAM role to be assumed by the worker node and passed on
 to a pod running on the node, it must allow the worker node IAM role to assume
 it.
 
-This is achived by adding a trust relation on the role trust relationship
+This is achieved by adding a trust relation on the role trust relationship
 policy document. Assuming the account number is ``12345678912`` and the cluster
 name is ``kube-1``, the policy document would look like this:
 
