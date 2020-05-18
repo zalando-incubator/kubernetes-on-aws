@@ -8,6 +8,7 @@ autoscaling_buffer_memory_reserved: "3Gi"
 autoscaling_buffer_pods: "0"
 cluster_autoscaler_cpu: "100m"
 cluster_autoscaler_memory: "300Mi"
+autoscaling_utilization_threshold: "1.0"
 
 # defines which expander the autoscaler should use
 cluster_autoscaler_expander: highest-priority
@@ -248,6 +249,12 @@ cpu_manager_policy: "none"
 # enable CSIMigration feature flag
 enable_csi_migration: "false"
 
+{{ if eq .Environment "production" }}
+serialize_image_pulls: "true"
+{{ else }}
+serialize_image_pulls: "false"
+{{ end }}
+
 # when set to true, routes external traffic to the apiserver through a skipper sidecar
 apiserver_proxy: "true"
 # when set to true, service account tokens can be used from outside the cluster
@@ -332,6 +339,8 @@ on_demand_worker_replacement_strategy: prepare-replacement
 on_demand_worker_replacement_strategy: none
 {{end}}
 
+# SpotAllocationStrategy for pools
+spot_allocation_strategy: "capacity-optimized"
 
 # Temporary config items for etcd TLS migration
 etcd_use_proxy: "true"
