@@ -113,6 +113,11 @@ prometheus_remote_write: "disabled"
 prometheus_tsdb_retention_size: "disabled"
 prometheus_csi_ebs: "false"
 
+# regex defining labels to be dropped when scraping from kube-state-metrics
+# Simple workaround for: https://github.com/kubernetes/kube-state-metrics/issues/1115
+# TODO: remove when kube-state-metrics is fixed
+prometheus_kube_state_metrics_drop_labels: ""
+
 metrics_service_cpu: "100m"
 metrics_service_mem: "200Mi"
 metrics_service_mem_max: "1Gi"
@@ -310,11 +315,7 @@ enable_hpa_scale_to_zero: "true"
 # enable encryption of secrets in etcd
 # this flag can be switched between true and false
 # to ensure all secrets are encrypted/decrypted all secrets need to be rewritten after masters have been rolled
-{{if eq .Environment "test"}}
 enable_encryption: "true"
-{{else}}
-enable_encryption: "false"
-{{end}}
 
 # default ttl for kube janitor for resources build from PRs in namespaces matching .*-pr-.*
 kube_janitor_default_pr_ttl: "1w"  # 1 week
