@@ -63,7 +63,7 @@ spec:
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
-          image: registry.opensource.zalan.do/teapot/csi-provisioner:v1.3.0-master-2
+          image: registry.opensource.zalan.do/teapot/csi-provisioner:v1.6.0-master-4
           name: csi-provisioner
           resources:
             requests:
@@ -83,7 +83,7 @@ spec:
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
-          image: registry.opensource.zalan.do/teapot/csi-attacher:v1.2.0-master-2
+          image: registry.opensource.zalan.do/teapot/csi-attacher:v2.2.0-master-4
           name: csi-attacher
           resources:
             requests:
@@ -97,7 +97,7 @@ spec:
               name: socket-dir
         - args:
             - --csi-address=/csi/csi.sock
-          image: registry.opensource.zalan.do/teapot/livenessprobe:v1.1.0-master-2
+          image: registry.opensource.zalan.do/teapot/livenessprobe:v2.0.0-master-4
           name: liveness-probe
           resources:
             requests:
@@ -110,7 +110,7 @@ spec:
             - mountPath: /csi
               name: socket-dir
         - name: csi-resizer
-          image: registry.opensource.zalan.do/teapot/csi-resizer:v0.3.0-master-3
+          image: registry.opensource.zalan.do/teapot/csi-resizer:v0.5.0-master-4
           args:
             - --csi-address=$(ADDRESS)
             - --v=5
