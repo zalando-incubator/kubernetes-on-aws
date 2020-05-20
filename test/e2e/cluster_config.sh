@@ -65,11 +65,11 @@ clusters:
   local_id: ${LOCAL_ID}
   node_pools:
   - discount_strategy: none
-    instance_types: ["t2.medium"]
+    instance_types: ["t3.large"]
     name: default-master
     profile: master-default
-    min_size: 1
-    max_size: 2
+    min_size: 2
+    max_size: 3
   - discount_strategy: spot
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker-splitaz
