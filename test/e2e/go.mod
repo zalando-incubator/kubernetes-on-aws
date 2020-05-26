@@ -11,19 +11,21 @@ require (
 	github.com/jteeuwen/go-bindata v0.0.0-20151023091102-a0ff2567cfb7
 	github.com/karrick/godirwalk v1.8.0 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
-	github.com/onsi/ginkgo v1.10.1
+	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.7.0
 	github.com/opencontainers/runtime-spec v1.0.1 // indirect
+	github.com/pkg/errors v0.8.1
 	github.com/pquerna/ffjson v0.0.0-20181028064349-e517b90714f7 // indirect
-	github.com/szuecs/routegroup-client v0.17.7
+	github.com/spf13/viper v1.3.2
+	github.com/szuecs/routegroup-client v0.17.8-0.20200717074340-6a596422b948
 	github.com/vishvananda/netns v0.0.0-20180720170159-13995c7128cc // indirect
-	github.com/zalando-incubator/kube-aws-iam-controller v0.1.1
+	github.com/zalando-incubator/kube-aws-iam-controller v0.1.2
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	k8s.io/api v0.0.0
-	k8s.io/apimachinery v0.17.8
+	k8s.io/api v0.18.5
+	k8s.io/apimachinery v0.18.5
 	k8s.io/apiserver v0.0.0
-	k8s.io/client-go v10.0.0+incompatible
-	k8s.io/kubernetes v1.17.8
+	k8s.io/client-go v0.18.5
+	k8s.io/kubernetes v1.18.5
 )
 
 replace k8s.io/kubernetes => ./e2e_modules/kubernetes
@@ -73,5 +75,7 @@ replace k8s.io/cluster-bootstrap => ./e2e_modules/kubernetes/staging/src/k8s.io/
 replace k8s.io/component-base => ./e2e_modules/kubernetes/staging/src/k8s.io/component-base
 
 replace k8s.io/cri-api => ./e2e_modules/kubernetes/staging/src/k8s.io/cri-api
+
+replace github.com/szuecs/routegroup-client => github.com/mikkeloscar/routegroup-client v0.17.8-0.20200625082607-0f1ebad84234
 
 go 1.13
