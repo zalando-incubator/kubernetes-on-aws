@@ -14,6 +14,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"time"
@@ -42,11 +43,11 @@ var _ = framework.KubeDescribe("GPU job processing", func() {
 
 		By("Creating a vector pod which runs on a GPU node")
 		pod := createVectorPod(nameprefix, ns, labels)
-		_, err := cs.CoreV1().Pods(ns).Create(pod)
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create POD %s", pod.Name)
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 		for {
-			p, err := cs.CoreV1().Pods(ns).Get(pod.Name, metav1.GetOptions{})
+			p, err := cs.CoreV1().Pods(ns).Get(context.TODO(), pod.Name, metav1.GetOptions{})
 			if err != nil {
 				framework.ExpectNoError(err, "Could not get POD %s", pod.Name)
 				return
