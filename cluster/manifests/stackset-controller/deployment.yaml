@@ -35,7 +35,13 @@ spec:
           requests:
             cpu: 10m
             memory: 100Mi
+        livenessProbe:
+          failureThreshold: 10
+          httpGet:
+            path: /healthz
+            port: 7979
         readinessProbe:
+          failureThreshold: 3
           httpGet:
             path: /healthz
             port: 7979
