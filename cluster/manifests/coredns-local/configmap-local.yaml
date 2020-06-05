@@ -10,7 +10,13 @@ data:
 {{ if and (ne .ConfigItems.custom_dns_zone "") (ne .ConfigItems.custom_dns_zone_nameservers "") }}
     {{ .ConfigItems.custom_dns_zone }}:9254 {
         errors
+        {{ if ne .ConfigItems.coredns_max_upstream_concurrency "0" }}
+        forward . {{ .ConfigItems.custom_dns_zone_nameservers }} {
+          max_concurrent {{ .ConfigItems.coredns_max_upstream_concurrency }}
+        }
+{{ else }}
         forward . {{ .ConfigItems.custom_dns_zone_nameservers }}
+{{ end }}
         prometheus :9153
         ready :9155
         cache 30
