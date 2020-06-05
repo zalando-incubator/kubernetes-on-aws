@@ -54,7 +54,6 @@ if [ "$E2E_SKIP_CLUSTER_UPDATE" != "true" ]; then
     clm provision \
         --token="${WORKER_SHARED_SECRET}" \
         --directory="$(pwd)/$BASE_CFG_PATH" \
-        --assumed-role=cluster-lifecycle-manager-entrypoint \
         --debug \
         --registry=base_cluster.yaml
 fi
@@ -65,7 +64,6 @@ fi
 clm provision \
     --token="${WORKER_SHARED_SECRET}" \
     --directory="$(pwd)/../.." \
-    --assumed-role=cluster-lifecycle-manager-entrypoint \
     --debug \
     --registry=head_cluster.yaml
 
