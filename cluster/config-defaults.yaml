@@ -216,8 +216,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 coredns_max_upstream_concurrency: 0 #0 means there is not concurrency limits
 
-kuberuntu_image_v1_16: {{ amiID "zalando-ubuntu-kubernetes-production-v1.16.8-master-96" "861068367966" }}
-kuberuntu_image_v1_17: {{ amiID "zalando-ubuntu-kubernetes-production-v1.17.4-master-98" "861068367966" }}
+kuberuntu_image_v1_17: {{ amiID "zalando-ubuntu-kubernetes-production-v1.17.6-master-109" "861068367966" }}
 
 # Feature toggle to allow gradual decommissioning of ingress-template-controller
 enable_ingress_template_controller: "false"
@@ -252,11 +251,8 @@ cpu_manager_policy: "none"
 # enable CSIMigration feature flag
 enable_csi_migration: "false"
 
-{{ if eq .Environment "production" }}
-serialize_image_pulls: "true"
-{{ else }}
+# pull images in parallel
 serialize_image_pulls: "false"
-{{ end }}
 
 # when set to true, routes external traffic to the apiserver through a skipper sidecar
 apiserver_proxy: "true"
@@ -278,7 +274,7 @@ auditlog_read_access: "false"
 teapot_admission_controller_service_account_iam: "false"
 # only configure the userdata part of the OIDC-based AWS API access feature, useful for rolling back
 # has no effect when teapot_admission_controller_service_account_iam is true
-teapot_admission_controller_service_account_iam_userdata: "false"
+teapot_admission_controller_service_account_iam_userdata: "true"
 # use kube-aws-iam-controller for kube-system components
 kube_aws_iam_controller_kube_system_enable: "true"
 
@@ -336,11 +332,7 @@ kube_janitor_default_unused_pvc_ttl: "forever"
 # necessary to change the VPC subnet of a cluster
 delete_vpc_resources: "false"
 # replacement strategy used for default on-demand worker pool
-{{if eq .Environment "production"}}
-on_demand_worker_replacement_strategy: prepare-replacement
-{{else}}
 on_demand_worker_replacement_strategy: none
-{{end}}
 
 # SpotAllocationStrategy for pools
 spot_allocation_strategy: "capacity-optimized"
