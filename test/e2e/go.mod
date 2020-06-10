@@ -20,7 +20,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
-	k8s.io/apiserver v0.0.0
+	k8s.io/apiserver v0.18.3
 	k8s.io/client-go v10.0.0+incompatible
 	k8s.io/kubernetes v1.17.4
 )
