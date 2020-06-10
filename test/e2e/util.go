@@ -3,6 +3,7 @@ package e2e
 import (
 	"bytes"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -21,6 +22,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	rgclient "github.com/szuecs/routegroup-client"
+	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	zv1 "github.com/zalando-incubator/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -31,6 +34,81 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
+
+var (
+	errTimeout = errors.New("Timeout")
+)
+
+// type ConditionFunc func() (done bool, err error)
+// Poll(interval, timeout time.Duration, condition ConditionFunc)
+func waitForRouteGroup(cs rgclient.ZalandoInterface, name, ns string, d time.Duration) (string, error) {
+	var addr string
+	err := wait.Poll(10*time.Second, d, func() (done bool, err error) {
+		rg, err := cs.ZalandoV1().RouteGroups(ns).Get(name, metav1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return true, err
+		}
+		if len(rg.Status.LoadBalancer.RouteGroup) > 0 {
+			addr = rg.Status.LoadBalancer.RouteGroup[0].Hostname
+			return true, nil
+		}
+		return false, nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("Failed to get active load balancer for Routegroup %s/%s: %w", name, ns, err)
+	}
+
+	return addr, err
+}
+
+func createRouteGroup(name, hostname, namespace string, labels, annotations map[string]string, port int, routes ...rgv1.RouteGroupRouteSpec) *rgv1.RouteGroup {
+	return &rgv1.RouteGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name + string(uuid.NewUUID()),
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: annotations,
+		},
+		Spec: rgv1.RouteGroupSpec{
+			Hosts: []string{hostname},
+			Backends: []rgv1.RouteGroupBackend{
+				{
+					Name:        name,
+					Type:        "service",
+					ServiceName: name,
+					ServicePort: port,
+				},
+				{
+					Name: "router",
+					Type: "shunt",
+				},
+			},
+			DefaultBackends: []rgv1.RouteGroupBackendReference{
+				{
+					BackendName: name,
+					Weight:      1,
+				},
+			},
+			Routes: routes,
+		},
+	}
+}
+
+func createRouteGroupWithBackends(name, hostname, namespace string, labels, annotations map[string]string, port int, backends []rgv1.RouteGroupBackend, routes ...rgv1.RouteGroupRouteSpec) *rgv1.RouteGroup {
+	return &rgv1.RouteGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name + string(uuid.NewUUID()),
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: annotations,
+		},
+		Spec: rgv1.RouteGroupSpec{
+			Hosts:    []string{hostname},
+			Backends: backends,
+			Routes:   routes,
+		},
+	}
+}
 
 func createIngress(name, hostname, namespace string, labels, annotations map[string]string, port int) *v1beta1.Ingress {
 	return &v1beta1.Ingress{
@@ -156,8 +234,9 @@ func createSkipperPod(nameprefix, namespace, route string, labels map[string]str
 			Containers: []v1.Container{
 				{
 					Name:  "skipper",
-					Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.10.210",
+					Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.11.107",
 					Args: []string{
+						"skipper",
 						"-inline-routes",
 						route,
 						fmt.Sprintf("-address=:%d", port),
@@ -595,6 +674,44 @@ func waitForResponse(hostname, scheme string, timeout time.Duration, expectedCod
 	}
 
 	return fmt.Errorf("%s was not reachable after %s", host, timeout)
+}
+
+func waitForResponseReturnResponse(req *http.Request, timeout time.Duration, expectedCode func(int) bool, insecure bool) (*http.Response, error) {
+	localTimeout := 10 * time.Second
+	if timeout < localTimeout {
+		localTimeout = timeout
+	}
+	timeoutEnd := time.Now().UTC().Add(timeout)
+
+	for time.Now().UTC().Before(timeoutEnd) {
+		t := &http.Transport{}
+		if insecure {
+			t = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+		}
+		client := http.Client{
+			Transport: t,
+			Timeout:   localTimeout,
+			CheckRedirect: func(r *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			e2elog.Logf("%s localtimeout", req.URL.String())
+			time.Sleep(localTimeout)
+			continue
+		}
+		//e2elog.Logf("%s , header Foo: '%s', status code: %d", req.URL.String(), req.Header.Get("Foo"), resp.StatusCode)
+		if expectedCode(resp.StatusCode) {
+			return resp, nil
+		}
+		resp.Body.Close()
+		time.Sleep(time.Second)
+		client.CloseIdleConnections()
+	}
+
+	return nil, fmt.Errorf("%s was not reachable after %s", req.URL.String(), timeout)
 }
 
 func waitForReplicas(deploymentName, namespace string, kubeClient kubernetes.Interface, timeout time.Duration, desiredReplicas int) {
