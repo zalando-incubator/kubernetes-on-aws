@@ -22,7 +22,7 @@ require (
 	k8s.io/apimachinery v0.0.0
 	k8s.io/apiserver v0.0.0
 	k8s.io/client-go v10.0.0+incompatible
-	k8s.io/kubernetes v1.17.4
+	k8s.io/kubernetes v1.18.3
 )
 
 replace k8s.io/kubernetes => ./e2e_modules/kubernetes
