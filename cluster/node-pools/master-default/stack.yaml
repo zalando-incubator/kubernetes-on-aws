@@ -18,8 +18,10 @@ Resources:
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplate
         Version: !GetAtt LaunchTemplate.LatestVersionNumber
+{{- if or (eq .Cluster.ConfigItems.apiserver_active_load_balancer "elb") (eq .Cluster.ConfigItems.apiserver_attach_to_elb "true") }}
       LoadBalancerNames:
       - !ImportValue '{{ .Cluster.ID }}:master-load-balancer'
+{{- end }}
       MinSize: '{{ .NodePool.MinSize }}'
       MaxSize: '{{ .NodePool.MaxSize }}'
       Tags:
@@ -38,6 +40,10 @@ Resources:
         - "{{ index $values.subnets $az }}"
 {{ end }}
 {{ end }}
+{{- if or (eq .Cluster.ConfigItems.apiserver_active_load_balancer "nlb") (eq .Cluster.ConfigItems.apiserver_attach_to_nlb "true") }}
+      TargetGroupARNs:
+      - !ImportValue '{{ .Cluster.ID }}:master-load-balancer-nlb-target-group'
+{{- end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
   LaunchTemplate:
     Properties:

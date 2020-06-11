@@ -256,6 +256,24 @@ serialize_image_pulls: "false"
 
 # when set to true, routes external traffic to the apiserver through a skipper sidecar
 apiserver_proxy: "true"
+
+# when set to true provisions an ELB for the apiserver
+apiserver_provision_elb: "true"
+# when set to true attaches master nodes to the apiserver ELB
+#   note: true does not imply `apiserver_provision_elb: true` for the sake of rolling back
+apiserver_attach_to_elb: "true"
+
+# when set to true provisions an NLB for the apiserver
+apiserver_provision_nlb: "true"
+# when set to true attaches master nodes to the apiserver NLB
+#   note: true does not imply `apiserver_provision_nlb: true` for the sake of rolling back
+apiserver_attach_to_nlb: "true"
+
+# defines which load balancer should be used for the main domain, options: [elb, nlb]
+#   if set to elb implies `apiserver_provision_elb: true` and `apiserver_attach_to_elb: true`
+#   if set to nlb implies `apiserver_provision_nlb: true` and `apiserver_attach_to_nlb: true`
+apiserver_active_load_balancer: "elb"
+
 # when set to true, service account tokens can be used from outside the cluster
 # requires apiserver_proxy to be set to "true"
 allow_external_service_accounts: "false"
