@@ -218,6 +218,10 @@ write_files:
               memory: 200Mi
         - image: registry.opensource.zalan.do/teapot/admission-controller:master-73
           name: admission-controller
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           readinessProbe:
             httpGet:
               scheme: HTTPS
@@ -360,6 +364,10 @@ write_files:
           name: tokeninfo
           ports:
             - containerPort: 9021
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /health
@@ -386,6 +394,10 @@ write_files:
           image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:2fca26c
           ports:
           - containerPort: 9022
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /health
@@ -469,6 +481,10 @@ write_files:
               -> "https://127.0.0.1:443";
           ports:
           - containerPort: 8443
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           readinessProbe:
             httpGet:
               scheme: HTTPS
@@ -499,6 +515,10 @@ write_files:
           - {{ .Cluster.ConfigItems.etcd_endpoints }}
           ports:
           - containerPort: 2379
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           resources:
             requests:
               cpu: 25m
@@ -515,6 +535,10 @@ write_files:
           ports:
           - containerPort: 8086
             protocol: TCP
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           readinessProbe:
             httpGet:
               path: /healthz
