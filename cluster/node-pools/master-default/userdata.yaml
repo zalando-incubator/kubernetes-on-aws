@@ -431,6 +431,10 @@ write_files:
           - --failure-policy=fail
           ports:
           - containerPort: 8083
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
         - name: nginx
           image: registry.opensource.zalan.do/teapot/nginx:1.12.1
           ports:
