@@ -286,6 +286,10 @@ write_files:
           name: webhook
           ports:
           - containerPort: 8081
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /healthcheck
