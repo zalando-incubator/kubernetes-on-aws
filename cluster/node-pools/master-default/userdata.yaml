@@ -465,6 +465,7 @@ write_files:
           - -enable-connection-metrics
           - -enable-prometheus-metrics
           - -write-timeout-server=60m
+          - -wait-for-healthcheck-interval=60s
           - -inline-routes
           - |
             s: JWTPayloadAllKV("iss", "kubernetes/serviceaccount")
@@ -489,10 +490,6 @@ write_files:
               -> "https://127.0.0.1:443";
           ports:
           - containerPort: 8443
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c",  " sleep 60"]
           readinessProbe:
             httpGet:
               scheme: HTTPS
