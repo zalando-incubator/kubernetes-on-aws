@@ -105,23 +105,6 @@ Resources:
       LoadBalancerArn: !Ref MasterLoadBalancerNLB
       Port: 443
       Protocol: TLS
-  MasterLoadBalancerNLBDNSName:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      AliasTarget:
-        DNSName: !GetAtt
-          - MasterLoadBalancerNLB
-          - DNSName
-        HostedZoneId: !GetAtt
-          - MasterLoadBalancerNLB
-          - CanonicalHostedZoneID
-      HostedZoneName: "{{.Values.hosted_zone}}."
-    {{- if eq .Cluster.ConfigItems.apiserver_active_load_balancer "nlb" }}
-      Name: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}."
-    {{- else }}
-      Name: "{{.Cluster.LocalID}}-nlb.{{.Values.hosted_zone}}."
-    {{- end }}
-      Type: A
 {{- end }}
 {{- if or (eq .Cluster.ConfigItems.apiserver_active_load_balancer "elb") (eq .Cluster.ConfigItems.apiserver_provision_elb "true") }}
   MasterLoadBalancer:
@@ -180,8 +163,10 @@ Resources:
           Value: owned
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
-  MasterLoadBalancerVersionDomain:
+{{- end }}
+  MasterLoadBalancerDNSRecord:
     Properties:
+    {{- if eq .Cluster.ConfigItems.apiserver_active_load_balancer "elb" }}
       AliasTarget:
         DNSName: !GetAtt
           - MasterLoadBalancer
@@ -189,15 +174,20 @@ Resources:
         HostedZoneId: !GetAtt
           - MasterLoadBalancer
           - CanonicalHostedZoneNameID
-      HostedZoneName: "{{.Values.hosted_zone}}."
-    {{- if eq .Cluster.ConfigItems.apiserver_active_load_balancer "elb" }}
-      Name: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}."
-    {{- else }}
-      Name: "{{.Cluster.LocalID}}-elb.{{.Values.hosted_zone}}."
     {{- end }}
+    {{- if eq .Cluster.ConfigItems.apiserver_active_load_balancer "nlb" }}
+      AliasTarget:
+        DNSName: !GetAtt
+          - MasterLoadBalancerNLB
+          - DNSName
+        HostedZoneId: !GetAtt
+          - MasterLoadBalancerNLB
+          - CanonicalHostedZoneID
+    {{- end }}
+      HostedZoneName: "{{.Values.hosted_zone}}."
+      Name: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}."
       Type: A
     Type: 'AWS::Route53::RecordSet'
-{{- end }}
   MasterSecurityGroup:
     Properties:
       GroupDescription: !Ref 'AWS::StackName'
