@@ -48,7 +48,7 @@ Resources:
           Value: owned
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
-{{- if or (eq .Cluster.ConfigItems.apiserver_active_load_balancer "nlb") (eq .Cluster.ConfigItems.apiserver_provision_nlb "true") }}
+{{- if ne .Cluster.ConfigItems.apiserver_nlb "disabled" }}
   MasterLoadBalancerNLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -106,7 +106,7 @@ Resources:
       Port: 443
       Protocol: TLS
 {{- end }}
-{{- if or (eq .Cluster.ConfigItems.apiserver_active_load_balancer "elb") (eq .Cluster.ConfigItems.apiserver_provision_elb "true") }}
+{{- if ne .Cluster.ConfigItems.apiserver_nlb "exclusive" }}
   MasterLoadBalancer:
     Properties:
       ConnectionDrainingPolicy:
@@ -166,16 +166,7 @@ Resources:
 {{- end }}
   MasterLoadBalancerDNSRecord:
     Properties:
-    {{- if eq .Cluster.ConfigItems.apiserver_active_load_balancer "elb" }}
-      AliasTarget:
-        DNSName: !GetAtt
-          - MasterLoadBalancer
-          - DNSName
-        HostedZoneId: !GetAtt
-          - MasterLoadBalancer
-          - CanonicalHostedZoneNameID
-    {{- end }}
-    {{- if eq .Cluster.ConfigItems.apiserver_active_load_balancer "nlb" }}
+    {{- if or (eq .Cluster.ConfigItems.apiserver_nlb "active") (eq .Cluster.ConfigItems.apiserver_nlb "promoted") (eq .Cluster.ConfigItems.apiserver_nlb "exclusive") }}
       AliasTarget:
         DNSName: !GetAtt
           - MasterLoadBalancerNLB
@@ -183,6 +174,14 @@ Resources:
         HostedZoneId: !GetAtt
           - MasterLoadBalancerNLB
           - CanonicalHostedZoneID
+    {{- else }}
+      AliasTarget:
+        DNSName: !GetAtt
+          - MasterLoadBalancer
+          - DNSName
+        HostedZoneId: !GetAtt
+          - MasterLoadBalancer
+          - CanonicalHostedZoneNameID
     {{- end }}
       HostedZoneName: "{{.Values.hosted_zone}}."
       Name: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}."
@@ -192,7 +191,7 @@ Resources:
     Properties:
       GroupDescription: !Ref 'AWS::StackName'
       SecurityGroupIngress:
-{{- if or (eq .Cluster.ConfigItems.apiserver_active_load_balancer "nlb") (eq .Cluster.ConfigItems.apiserver_provision_nlb "true") }}
+{{- if and (ne .Cluster.ConfigItems.apiserver_nlb "disabled") (ne .Cluster.ConfigItems.apiserver_nlb "provisioned") }}
         - CidrIp: 0.0.0.0/0
           FromPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
           IpProtocol: tcp
@@ -276,7 +275,7 @@ Resources:
           Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
-{{- if or (eq .Cluster.ConfigItems.apiserver_active_load_balancer "elb") (eq .Cluster.ConfigItems.apiserver_provision_elb "true") }}
+{{- if ne .Cluster.ConfigItems.apiserver_nlb "exclusive" }}
   MasterSecurityGroupIngressFromLoadBalancer:
     Properties:
       FromPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
@@ -1991,13 +1990,13 @@ Outputs:
       Name: '{{ .Cluster.ID}}:master-files-encryption-key'
     Value: !Ref MasterFilesEncryptionKey
 {{- if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
-{{- if or (eq .Cluster.ConfigItems.apiserver_active_load_balancer "elb") (eq .Cluster.ConfigItems.apiserver_provision_elb "true") }}
+{{- if ne .Cluster.ConfigItems.apiserver_nlb "exclusive" }}
   MasterLoadBalancer:
     Export:
       Name: '{{.Cluster.ID}}:master-load-balancer'
     Value: !Ref MasterLoadBalancer
 {{- end }}
-{{- if or (eq .Cluster.ConfigItems.apiserver_active_load_balancer "nlb") (eq .Cluster.ConfigItems.apiserver_provision_nlb "true") }}
+{{- if ne .Cluster.ConfigItems.apiserver_nlb "disabled" }}
   MasterLoadBalancerNLBTargetGroup:
     Export:
       Name: '{{.Cluster.ID}}:master-load-balancer-nlb-target-group'
