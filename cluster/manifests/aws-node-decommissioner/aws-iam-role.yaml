@@ -1,29 +1,9 @@
-Metadata:
-  StackName: aws-node-decommissioner-iam-role
-Description: "IAM Role for the AWS node decommissioner"
-Resources:
-  IAMRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: app-aws-node-decommissioner
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-        - Effect: Allow
-          Principal:
-            Federated: arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{ .LocalID }}.{{ .Alias }}.zalan.do
-          Action: sts:AssumeRoleWithWebIdentity
-          Condition:
-            StringLike:
-              {{ .LocalID }}.{{ .Alias }}.zalan.do:sub: system:serviceaccount:default:aws-node-decommissioner
-      Path: /
-      Policies:
-      - PolicyName: AllowDescribeInstance
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - "ec2:DescribeInstances"
-            - "ec2:DescribeInstanceStatus"
-            Resource: "*"
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
+apiVersion: zalando.org/v1
+kind: AWSIAMRole
+metadata:
+  name: aws-node-decommissioner-aws-iam-credentials
+  namespace: default
+spec:
+  roleReference: {{.LocalID}}-aws-node-decommissioner
+{{ end }}

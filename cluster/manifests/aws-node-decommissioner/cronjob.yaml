@@ -15,6 +15,10 @@ spec:
         metadata:
           labels:
             application: aws-node-decommissioner
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
+          annotations:
+            iam.amazonaws.com/role: {{.LocalID}}-aws-node-decommissioner
+{{ end }}
         spec:
           serviceAccountName: aws-node-decommissioner
           restartPolicy: Never
