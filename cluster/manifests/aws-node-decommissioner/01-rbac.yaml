@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "aws-node-decommissioner"
+  namespace: "kube-system"
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:role/app-aws-node-decommissioner"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-patcher
+  namespace: "kube-system"
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["patch"]
+---
+# This role binding allows service-account "aws-node-decommissioner" to
+# patch nodes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: patch-nodes
+  namespace: "kube-system"
+roleRef:
+  kind: ClusterRole
+  name: node-patcher
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: "aws-node-decommissioner"
+  namespace: "kube-system"
