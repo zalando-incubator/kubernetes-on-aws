@@ -1,0 +1,34 @@
+{{ if ne .Environment "production" }}
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: aws-node-decommissioner
+  namespace: "kube-system"
+  labels:
+    application: aws-node-decommissioner
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            application: aws-node-decommissioner
+        spec:
+          serviceAccountName: aws-node-decommissioner
+          restartPolicy: Never
+          containers:
+          - name: aws-node-decommissioner
+            image: registry.opensource.zalan.do/teapot/aws-node-decommissioner:master-75e9979d
+            args:
+              - --debug
+            resources:
+              limits:
+                cpu: 100m
+                memory: 100Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
+{{ end }}
