@@ -1638,8 +1638,11 @@ Resources:
 {{- end }}
 
   AWSNodeDecommissionerIAMRole:
+    Type: 'AWS::IAM::Role'
     Properties:
+      RoleName: "{{.Cluster.LocalID}}-aws-node-decommissioner"
       AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
             Principal:
@@ -1649,18 +1652,17 @@ Resources:
             Condition:
               StringLike:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:aws-node-decommissioner"
-        Version: 2012-10-17
       Path: /
       Policies:
-      - PolicyName: AllowDescribeInstance
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - "ec2:DescribeInstances"
-            - "ec2:DescribeInstanceStatus"
-            Resource: "*"
+          PolicyName: root
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Action:
+              - "ec2:DescribeInstances"
+              - "ec2:DescribeInstanceStatus"
+              Resource: "*"
   EmergencyAccessServiceIAMRole:
     Properties:
       AssumeRolePolicyDocument:
