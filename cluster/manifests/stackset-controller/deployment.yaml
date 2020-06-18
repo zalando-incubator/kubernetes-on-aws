@@ -17,7 +17,9 @@ spec:
         application: stackset-controller
         version: "v1.1.23"
     spec:
+{{- if eq .Cluster.ConfigItems.system_pods_critical "true" }}
       priorityClassName: system-cluster-critical
+{{- end }}
       serviceAccountName: stackset-controller
       containers:
       - name: stackset-controller
