@@ -22,6 +22,7 @@ export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export ETCD_ENDPOINTS="${ETCD_ENDPOINTS:-"etcd-server.etcd.${HOSTED_ZONE}:2379"}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
 export WORKER_SHARED_SECRET="${WORKER_SHARED_SECRET:-"$(pwgen 30 -n1)"}"
+export APISERVER_NLB="${APISERVER_NLB:-"disabled"}"
 
 echo "Creating cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
 
