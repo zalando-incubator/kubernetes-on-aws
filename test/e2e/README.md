@@ -25,10 +25,10 @@ examples of how to write the tests or checkout the files already defined e.g.
 
   ```bash
   KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org CLUSTER_ALIAS=example \
-    ginkgo -nodes=25 -flakeAttempts=2 \
+    ginkgo -nodes=1 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
-    "e2e.test" -- -delete-namespace-on-failure=false
+    "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role
   ```
 
   Where `~/.kube/config` is pointing to the cluster you want to run the tests
