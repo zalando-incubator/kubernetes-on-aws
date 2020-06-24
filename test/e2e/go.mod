@@ -15,11 +15,12 @@ require (
 	github.com/onsi/gomega v1.7.0
 	github.com/opencontainers/runtime-spec v1.0.1 // indirect
 	github.com/pquerna/ffjson v0.0.0-20181028064349-e517b90714f7 // indirect
+	github.com/szuecs/routegroup-client v0.17.7
 	github.com/vishvananda/netns v0.0.0-20180720170159-13995c7128cc // indirect
 	github.com/zalando-incubator/kube-aws-iam-controller v0.1.1
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/api v0.0.0
-	k8s.io/apimachinery v0.0.0
+	k8s.io/apimachinery v0.17.6
 	k8s.io/apiserver v0.0.0
 	k8s.io/client-go v10.0.0+incompatible
 	k8s.io/kubernetes v1.17.4
