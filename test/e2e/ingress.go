@@ -65,14 +65,14 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 
 		// POD
 		By("Creating a POD with prefix " + nameprefix + " in namespace " + ns)
-		pod := createNginxPod(nameprefix, ns, labels, targetPort)
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
+		pod := createSkipperPod(nameprefix, ns, route, labels, targetPort)
 		defer func() {
 			By("deleting the pod")
 			defer GinkgoRecover()
 			err2 := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
 			Expect(err2).NotTo(HaveOccurred())
 		}()
-
 		_, err = cs.CoreV1().Pods(ns).Create(pod)
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
@@ -139,13 +139,6 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(depl)
-		//deployment, err := cs.AppsV1().Deployments(ns).Create(depl)
-		// defer func() {
-		// 	By("deleting the deployment")
-		// 	defer GinkgoRecover()
-		// 	err2 := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
-		// 	Expect(err2).NotTo(HaveOccurred())
-		// }()
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating service " + serviceName + " in namespace " + ns)
@@ -347,24 +340,10 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(depl)
-		//deployment, err := cs.AppsV1().Deployments(ns).Create(depl)
-		// defer func() {
-		// 	By("deleting the deployment")
-		// 	defer GinkgoRecover()
-		// 	err2 := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
-		// 	Expect(err2).NotTo(HaveOccurred())
-		// }()
 		Expect(err).NotTo(HaveOccurred())
 		By("Creating a 2nd deployment with " + serviceName2 + " in namespace " + ns)
 		depl2 := createSkipperBackendDeployment(serviceName2, ns, route2, labels2, int32(targetPort), replicas)
 		_, err = cs.AppsV1().Deployments(ns).Create(depl2)
-		//deployment2, err := cs.AppsV1().Deployments(ns).Create(depl2)
-		// defer func() {
-		// 	By("deleting the deployment")
-		// 	defer GinkgoRecover()
-		// 	err2 := cs.AppsV1().Deployments(ns).Delete(deployment2.Name, metav1.NewDeleteOptions(0))
-		// 	Expect(err2).NotTo(HaveOccurred())
-		// }()
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating service " + serviceName + " in namespace " + ns)
@@ -441,6 +420,7 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
 		beurl := "https://" + hostName + bepath
 		bereq, err := http.NewRequest("GET", beurl, nil)
+		Expect(err).NotTo(HaveOccurred())
 		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -452,6 +432,7 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		bepath2 := "/bar"
 		beurl2 := "https://" + hostName + bepath2
 		bereq2, err := http.NewRequest("GET", beurl2, nil)
+		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
 		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusNotFound)
 		Expect(err).NotTo(HaveOccurred())
@@ -513,13 +494,6 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(depl)
-		//deployment, err := cs.AppsV1().Deployments(ns).Create(depl)
-		// defer func() {
-		// 	By("deleting the deployment")
-		// 	defer GinkgoRecover()
-		// 	err2 := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
-		// 	Expect(err2).NotTo(HaveOccurred())
-		// }()
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating service " + serviceName + " in namespace " + ns)
