@@ -18,7 +18,9 @@ spec:
         application: skipper-ingress-redis
         version: v4.0.9
     spec:
+{{- if eq .Cluster.ConfigItems.system_pods_critical "true" }}
       priorityClassName: system-cluster-critical
+{{- end }}
       containers:
       - image: registry.opensource.zalan.do/zmon/redis:4.0.9-master-6
         name: skipper-ingress-redis

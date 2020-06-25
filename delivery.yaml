@@ -35,7 +35,47 @@ pipeline:
       metadata:
         name: e2e
         annotations:
-          iam.amazonaws.com/role: arn:aws:iam::925511348110:role/cluster-e2e-test
+          iam.amazonaws.com/role: arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint
+        labels:
+          application: teapot-kubernetes-e2e
+      spec:
+        nodeSelector:
+          aws.amazon.com/spot: "false"
+        restartPolicy: Never
+        initContainers:
+        - name: aws-credentials-waiter
+          image: pierone.stups.zalan.do/automata/aws-credentials-waiter:master-2
+          args: ["300"]
+        containers:
+        - name: e2e
+          image: "registry.opensource.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          resources:
+            limits:
+              cpu: 500m
+              memory: 5Gi
+            requests:
+              cpu: 500m
+              memory: 5Gi
+
+- id: e2e-tests-nlb
+  when:
+    event: pull_request
+  depends_on:
+  - build
+  type: process
+  desc: "Kubernetes e2e tests (NLB)"
+  target: stups-test
+  process: microservice_standard_test
+  config:
+    apply_manifests:
+      env:
+      - name: DEPLOYMENT_PATH
+        value: test/e2e
+    end2end_tests:
+      metadata:
+        name: e2e
+        annotations:
+          iam.amazonaws.com/role: arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint
         labels:
           application: teapot-kubernetes-e2e
       spec:
@@ -50,8 +90,8 @@ pipeline:
         - name: e2e
           image: "registry.opensource.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           env:
-          - name: E2E_NODE_OS
-            value: ubuntu
+          - name: APISERVER_NLB
+            value: hooked
           resources:
             limits:
               cpu: 500m

@@ -144,7 +144,7 @@ write_files:
           - --authorization-mode=Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIDriverRegistry={{ .Cluster.ConfigItems.enable_csi_migration }},CSIBlockVolume={{ .Cluster.ConfigItems.enable_csi_migration }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIDriverRegistry={{ .Cluster.ConfigItems.enable_csi_migration }},CSIBlockVolume={{ .Cluster.ConfigItems.enable_csi_migration }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true
           - --anonymous-auth=false
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
@@ -217,6 +217,10 @@ write_files:
               memory: 200Mi
         - image: registry.opensource.zalan.do/teapot/admission-controller:master-73
           name: admission-controller
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           readinessProbe:
             httpGet:
               scheme: HTTPS
@@ -285,6 +289,10 @@ write_files:
           name: webhook
           ports:
           - containerPort: 8081
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /healthcheck
@@ -355,6 +363,10 @@ write_files:
           name: tokeninfo
           ports:
             - containerPort: 9021
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /health
@@ -381,6 +393,10 @@ write_files:
           image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:2fca26c
           ports:
           - containerPort: 9022
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /health
@@ -414,10 +430,18 @@ write_files:
           - --failure-policy=fail
           ports:
           - containerPort: 8083
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
         - name: nginx
           image: registry.opensource.zalan.do/teapot/nginx:1.12.1
           ports:
           - containerPort: 8082
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           resources:
             requests:
               cpu: 5m
@@ -440,6 +464,7 @@ write_files:
           - -enable-connection-metrics
           - -enable-prometheus-metrics
           - -write-timeout-server=60m
+          - -wait-for-healthcheck-interval=60s
           - -inline-routes
           - |
             s: JWTPayloadAllKV("iss", "kubernetes/serviceaccount")
@@ -494,6 +519,10 @@ write_files:
           - {{ .Cluster.ConfigItems.etcd_endpoints }}
           ports:
           - containerPort: 2379
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           resources:
             requests:
               cpu: 25m
@@ -510,6 +539,10 @@ write_files:
           ports:
           - containerPort: 8086
             protocol: TCP
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           readinessProbe:
             httpGet:
               path: /healthz
@@ -634,7 +667,7 @@ write_files:
           args:
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
-          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
+          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},NonPreemptingPriority=true
           env:
           - name: KUBE_MAX_PD_VOLS
             value: "26"

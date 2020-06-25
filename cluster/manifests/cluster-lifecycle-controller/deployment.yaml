@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: cluster-lifecycle-controller
-    version: master-15
+    version: master-17
 spec:
   replicas: 1
   selector:
@@ -17,13 +17,12 @@ spec:
     metadata:
       labels:
         application: cluster-lifecycle-controller
-        version: master-15
+        version: master-17
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: cluster-lifecycle-controller
       tolerations:
       - key: node.kubernetes.io/role
@@ -33,7 +32,7 @@ spec:
         operator: Exists
       containers:
       - name: cluster-lifecycle-controller
-        image: registry.opensource.zalan.do/teapot/cluster-lifecycle-controller:master-15
+        image: registry.opensource.zalan.do/teapot/cluster-lifecycle-controller:master-17
         args:
             - --drain-grace-period={{.ConfigItems.drain_grace_period}}
             - --drain-min-pod-lifetime={{.ConfigItems.drain_min_pod_lifetime}}

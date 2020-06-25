@@ -15,8 +15,9 @@ CDP_TARGET_COMMIT_ID="${CDP_TARGET_COMMIT_ID:-"dev"}"
 CDP_HEAD_COMMIT_ID="${CDP_HEAD_COMMIT_ID:-"$(git describe --tags --always)"}"
 
 export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-test"}"
+export APISERVER_NLB="${APISERVER_NLB:-"disabled"}"
 # TODO: we need the date in LOCAL_ID because of CDP retriggering
-export LOCAL_ID="${LOCAL_ID:-"e2e-$CDP_BUILD_VERSION-$(date +'%H%M%S')"}"
+export LOCAL_ID="${LOCAL_ID:-$(echo "e2e-$CDP_BUILD_VERSION-$(date +'%H%M%S')-$APISERVER_NLB" | cut -c-28)}"
 export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export ETCD_ENDPOINTS="${ETCD_ENDPOINTS:-"etcd-server.etcd.${HOSTED_ZONE}:2379"}"
@@ -54,7 +55,6 @@ if [ "$E2E_SKIP_CLUSTER_UPDATE" != "true" ]; then
     clm provision \
         --token="${WORKER_SHARED_SECRET}" \
         --directory="$(pwd)/$BASE_CFG_PATH" \
-        --assumed-role=cluster-lifecycle-manager-entrypoint \
         --debug \
         --registry=base_cluster.yaml
 fi
@@ -65,7 +65,6 @@ fi
 clm provision \
     --token="${WORKER_SHARED_SECRET}" \
     --directory="$(pwd)/../.." \
-    --assumed-role=cluster-lifecycle-manager-entrypoint \
     --debug \
     --registry=head_cluster.yaml
 
