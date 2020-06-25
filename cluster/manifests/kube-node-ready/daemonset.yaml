@@ -26,6 +26,13 @@ spec:
 {{ end }}
 {{ end }}
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: spot.io
+                operator: DoesNotExist
       serviceAccountName: kube-node-ready
       dnsConfig:
         options:
