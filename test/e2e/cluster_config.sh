@@ -109,6 +109,7 @@ clusters:
     config_items:
       availability_zones: "eu-central-1a"
       labels: zalando.org/nvidia-gpu=tesla
+      taints: nvidia.com/gpu=present:NoSchedule
       scaling_priority: "-100"
   provider: zalando-aws
   region: ${REGION}
