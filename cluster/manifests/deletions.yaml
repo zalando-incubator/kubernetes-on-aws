@@ -124,3 +124,18 @@ post_apply:
 - name: kube-dns-metrics
   namespace: kube-system
   kind: Deployment
+{{ if ne .ConfigItems.downscaler_enabled "true" }}
+- name: kube-downscaler
+  namespace: kube-system
+  kind: Deployment
+- name: kube-downscaler
+  namespace: kube-system
+  kind: ServiceAccount
+- name: kube-downscaler
+  kind: ClusterRole
+- name: kube-downscaler
+  kind: ClusterRoleBinding
+- name: kube-downscaler
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
+{{ end }}
