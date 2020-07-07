@@ -215,7 +215,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-73
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-74
           name: admission-controller
           lifecycle:
             preStop:
@@ -237,47 +237,8 @@ write_files:
             - --master=http://127.0.0.1:8080
             - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
             - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
-            - --pod-min-memory-request=25Mi
-            - --pod-default-cpu-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}
-            - --pod-default-memory-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_memory_request }}
-            - --pod-ignore-namespaces={{ .Cluster.ConfigItems.teapot_admission_controller_ignore_namespaces }}
-            - --pod-dns-ndots={{ .Cluster.ConfigItems.teapot_admission_controller_ndots }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
-            - --pod-process-resources
-{{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables "true" }}
-            - --pod-enable-env-inject
-            - --pod-inject-env=_PLATFORM_ACCOUNT={{ .Cluster.Alias }}
-            - --pod-inject-env=_PLATFORM_CLUSTER_ID={{ .Cluster.ID }}
-            - --pod-inject-env=_PLATFORM_OPENTRACING_TAG_ACCOUNT={{ .Cluster.Alias }}
-            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT=8443
-            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST=tracing.stups.zalan.do
-            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN={{ .ConfigItems.lightstep_token }}
-{{- if eq .Cluster.Environment "e2e" }}
-            - --pod-inject-env=_PLATFORM_E2E=injected
-{{- end }}
-{{- end }}
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_validate_application_label "true" }}
-            - --validate-application-label
-            - --validate-application-label-min-creation-time={{ .Cluster.ConfigItems.teapot_admission_controller_application_min_creation_time }}
             - --application-registry-url=http://127.0.0.1:8285/
-{{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_validate_pod_template_resources "true" }}
-            - --validate-pod-template-resources
-{{- end }}
-            - --deployment-rolling-update-default-max-surge={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}
-            - --deployment-rolling-update-default-max-unavailable={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_crd_ensure_no_resources_on_delete "true" }}
-            - --crd-ensure-no-resources-on-delete
-{{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
-            - --pod-aws-credentials-waiter-image=pierone.stups.zalan.do/automata/aws-credentials-waiter:master-7
-{{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_parent_resource_hash "true" }}
-            - --pod-enable-parent-resource-hash
-{{- end }}
-{{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
-            - --service-account-iam
 {{- end }}
           ports:
             - containerPort: 8085
