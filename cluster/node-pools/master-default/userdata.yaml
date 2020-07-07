@@ -111,13 +111,7 @@ write_files:
           - --apiserver-count={{ .Values.apiserver_count }}
           - --bind-address=0.0.0.0
           - --insecure-bind-address=0.0.0.0
-{{- if eq .Cluster.ConfigItems.etcd_use_proxy "true" }}
-          - --etcd-servers=http://127.0.0.1:2379
-{{- else if index .NodePool.ConfigItems.etcd_endpoints }}
           - --etcd-servers={{ .NodePool.ConfigItems.etcd_endpoints }}
-{{- else }}
-          - --etcd-servers={{ .Cluster.ConfigItems.etcd_endpoints }}
-{{- end }}
 {{- if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
           - --etcd-cafile=/etc/kubernetes/ssl/etcd-ca.pem
 {{- end }}
@@ -472,22 +466,6 @@ write_files:
           - mountPath: /var/www/openid-configuration
             name: openid-configuration
             readOnly: true
-{{- end }}
-{{- if eq .Cluster.ConfigItems.etcd_use_proxy "true" }}
-        - name: etcd-proxy
-          image: registry.opensource.zalan.do/teapot/etcd-proxy:master-5
-          args:
-          - {{ .Cluster.ConfigItems.etcd_endpoints }}
-          ports:
-          - containerPort: 2379
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c",  " sleep 60"]
-          resources:
-            requests:
-              cpu: 25m
-              memory: 25Mi
 {{- end }}
         - name: aws-encryption-provider
           image: registry.opensource.zalan.do/teapot/aws-encryption-provider:master-1
