@@ -26,7 +26,9 @@ spec:
         version: v1.12.2-internal-2.17
         {{- end }}
       annotations:
+        {{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
+        {{- end }}
         {{- if ne .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
         config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
         {{- end }}
