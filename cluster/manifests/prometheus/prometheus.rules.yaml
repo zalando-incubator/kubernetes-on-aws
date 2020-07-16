@@ -1,0 +1,45 @@
+groups:
+- name: skipper code by host
+  rules:
+  - record: job:skipper_code_by_host:sum
+    expr: sum(rate(skipper_serve_host_duration_seconds_count{application="skipper-ingress"}[1m])) by (code)
+
+- name: skipper sum rate serve_host_duration by bucket
+  rules:
+  - record: job:skipper_serve_host_duration:sum
+    expr: sum(rate(skipper_serve_host_duration_seconds_bucket{application="skipper-ingress"}[1m])) by (le)
+
+- name: skipper 2xx sum rate serve_host_duration by bucket
+  rules:
+  - record: job:skipper_serve_host_duration_2xx:sum
+    expr: sum(rate(skipper_serve_host_duration_seconds_bucket{code =~ "2.*",application="skipper-ingress"}[1m])) by (le)
+
+- name: skipper sum rate filter_request_duration by filter
+  rules:
+  - record: job:skipper_req_filter_by_filter:sum
+    expr: sum(rate(skipper_filter_request_duration_seconds_bucket{application="skipper-ingress"}[1m])) by (le,filter)
+
+- name: skipper sum rate filter_response_duration by filter
+  rules:
+  - record: job:skipper_resp_filter_by_filter:sum
+    expr: sum(rate(skipper_filter_response_duration_seconds_bucket{application="skipper-ingress"}[1m])) by (le,filter)
+
+- name: skipper sum rate filter_request_duration by bucket
+  rules:
+  - record: job:skipper_req_filter_by_bucket:sum
+    expr: sum(rate(skipper_filter_request_duration_seconds_bucket{application="skipper-ingress"}[1m])) by (le)
+
+- name: skipper sum rate filter_response_duration by bucket
+  rules:
+  - record: job:skipper_resp_filter_by_bucket:sum
+    expr: sum(rate(skipper_filter_response_duration_seconds_bucket{application="skipper-ingress"}[1m])) by (le)
+
+- name: skipper sum rate custom totals by key
+  rules:
+  - record: job:skipper_custom_totals_by_key:sum
+    expr: sum(rate(skipper_custom_total{key !~ "^apiUsage.*", application="skipper-ingress"}[1m])) by (key)
+
+- name: skipper sum rate average latency
+  rules:
+  - record: job:skipper_average_latency:sum
+    expr: sum(rate(skipper_serve_host_duration_seconds_sum{}[1m])) / sum(rate(skipper_serve_host_duration_seconds_count{}[1m]))
