@@ -6,7 +6,7 @@ metadata:
   name: prometheus-conf
   namespace: kube-system
 data:
-  prometheus.rules.yml: |-
+  prometheus.rules.yaml: |-
     groups:
     - name: skipper code by host
       rules:
@@ -60,7 +60,7 @@ data:
         prometheus_replica: @@POD_NAME@@
         cluster: {{ .Cluster.Alias }}
     rule_files:
-    - "prometheus.rules.yaml"
+    - "/etc/prometheus/prometheus.rules.yaml"
 {{ if ne .ConfigItems.prometheus_remote_write "disabled" }}
     remote_write:
     - url: {{ .ConfigItems.prometheus_remote_write }}
