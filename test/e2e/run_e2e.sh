@@ -147,9 +147,11 @@ if [[ -n "$RESULT_BUCKET" ]]; then
        > junit_reports/metadata.json
 
     TARGET_DIR="$(printf "junit-reports/%04d-%02d/%s" "$(date +%Y)" "$(date +%V)" "$LOCAL_ID")"
+    echo "Uploading test results to S3 ($TARGET_DIR)"
     aws s3 cp \
       --acl bucket-owner-full-control \
       --recursive \
+      --quiet \
       junit_reports/ "s3://$RESULT_BUCKET/$TARGET_DIR/"
 fi
 
