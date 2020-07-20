@@ -13,6 +13,7 @@ CDP_BUILD_VERSION="${CDP_BUILD_VERSION:-"local-1"}"
 CDP_TARGET_REPOSITORY="${CDP_TARGET_REPOSITORY:-"github.com/zalando-incubator/kubernetes-on-aws"}"
 CDP_TARGET_COMMIT_ID="${CDP_TARGET_COMMIT_ID:-"dev"}"
 CDP_HEAD_COMMIT_ID="${CDP_HEAD_COMMIT_ID:-"$(git describe --tags --always)"}"
+RESULT_BUCKET="${RESULT_BUCKET:-""}"
 
 export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-test"}"
 # TODO: we need the date in LOCAL_ID because of CDP retriggering
@@ -121,17 +122,48 @@ export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
 #   https://github.com/kubernetes/kubernetes/blob/224be7bdce5a9dd0c2fd0d46b83865648e2fe0ba/test/e2e/network/service.go#L1037
 # * "[Fail] [sig-network] Services [It] should be able to create a functioning NodePort service [Conformance]"
 #   https://github.com/kubernetes/kubernetes/blob/224be7bdce5a9dd0c2fd0d46b83865648e2fe0ba/test/e2e/network/service.go#L551
+set +e
+
+mkdir -p junit_reports
 ginkgo -nodes=25 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
     -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.resolve.DNS.of.partial.qualified.names.for.services|should.be.able.to.change.the.type.from.ExternalName.to.NodePort|should.be.able.to.create.a.functioning.NodePort.service|\[Serial\])" \
-    "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role
+    "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role -report-dir=junit_reports
+TEST_RESULT="$?"
 
-# delete cluster
-clm decommission \
-    --remove-volumes \
-    --token="${WORKER_SHARED_SECRET}" \
-    --directory="$(pwd)/../.." \
-    --assumed-role=cluster-lifecycle-manager-entrypoint \
-    --debug \
-    --registry=head_cluster.yaml
+set -e
+
+if [[ -n "$RESULT_BUCKET" ]]; then
+    # Prepare metadata.json
+    jq --arg targetBranch "$CDP_TARGET_BRANCH" \
+       --arg head "$CDP_HEAD_COMMIT_ID" \
+       --arg buildVersion "$CDP_BUILD_VERSION" \
+       --argjson prNumber "$CDP_PULL_REQUEST_NUMBER" \
+       --arg author "$CDP_PULL_REQUEST_AUTHOR" \
+       --argjson exitStatus "$TEST_RESULT" \
+       -n \
+       '{timestamp: now | todate, success: ($exitStatus == 0), targetBranch: $targetBranch, author: $author, prNumber: $prNumber, head: $head, version: $buildVersion }' \
+       > junit_reports/metadata.json
+
+    TARGET_DIR="$(printf "junit-reports/%04d-%02d/%s" "$(date +%Y)" "$(date +%V)" "$LOCAL_ID")"
+    echo "Uploading test results to S3 ($TARGET_DIR)"
+    aws s3 cp \
+      --acl bucket-owner-full-control \
+      --recursive \
+      --quiet \
+      junit_reports/ "s3://$RESULT_BUCKET/$TARGET_DIR/"
+fi
+
+if [[ $TEST_RESULT -eq 0 ]]; then
+    # delete cluster
+    clm decommission \
+        --remove-volumes \
+        --token="${WORKER_SHARED_SECRET}" \
+        --directory="$(pwd)/../.." \
+        --assumed-role=cluster-lifecycle-manager-entrypoint \
+        --debug \
+        --registry=head_cluster.yaml
+else
+    exit "$TEST_RESULT"
+fi
