@@ -387,21 +387,6 @@ write_files:
             preStop:
               exec:
                 command: ["/bin/sh", "-c",  " sleep 60"]
-        - name: nginx
-          image: registry.opensource.zalan.do/teapot/nginx:1.12.1
-          ports:
-          - containerPort: 8082
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c",  " sleep 60"]
-          resources:
-            requests:
-              cpu: 5m
-              memory: 50Mi
-          volumeMounts:
-          - name: config-volume
-            mountPath: /etc/nginx
         - name: skipper-proxy
           image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.90
           args:
@@ -498,9 +483,6 @@ write_files:
         - hostPath:
             path: /etc/kubernetes/config
           name: kubernetes-configs
-        - hostPath:
-            path: /etc/kubernetes/nginx
-          name: config-volume
         {{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
         - hostPath:
             path: /var/www/openid-configuration
