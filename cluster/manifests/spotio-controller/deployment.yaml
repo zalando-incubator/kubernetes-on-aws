@@ -32,6 +32,11 @@ spec:
       - name: controller
         image: pierone.stups.zalan.do/teapot/spotinst-kubernetes-cluster-controller:1.0.61
         env:
+        - name: MEM_TOTAL_KB
+          valueFrom:
+            resourceFieldRef:
+              divisor: 1Ki
+              resource: limits.memory
         - name: SPOTINST_TOKEN
           valueFrom:
             secretKeyRef:
