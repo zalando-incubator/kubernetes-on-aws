@@ -48,11 +48,6 @@ data:
       - record: job:skipper_custom_totals_by_key:sum
         expr: sum(rate(skipper_custom_total{key !~ "^apiUsage.*", application="skipper-ingress"}[1m])) by (key)
 
-    - name: skipper sum rate average latency
-      rules:
-      - record: job:skipper_average_latency:sum
-        expr: sum(rate(skipper_serve_host_duration_seconds_sum{}[1m])) / sum(rate(skipper_serve_host_duration_seconds_count{}[1m]))
-
     - name: skipper sum rate serve_host_duration by host,bucket
       rules:
       - record: job:skipper_serve_host_duration_host_bucket:sum
