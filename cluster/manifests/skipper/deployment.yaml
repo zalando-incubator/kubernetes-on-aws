@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.11.137
+    version: {{if eq .Cluster.ConfigItems.hack_skipper_pin_0_11_115 "true"}}v0.11.115{{else}}v0.11.137{{end}}
     component: ingress
 spec:
   strategy:
@@ -19,7 +19,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.11.137
+        version: {{if eq .Cluster.ConfigItems.hack_skipper_pin_0_11_115 "true"}}v0.11.115{{else}}v0.11.137{{end}}
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -44,7 +44,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.137
+        image: registry.opensource.zalan.do/pathfinder/skipper:{{if eq .Cluster.ConfigItems.hack_skipper_pin_0_11_115 "true"}}v0.11.115{{else}}v0.11.137{{end}}
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -103,13 +103,13 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/pathfinder/skipper:v0.11.137
+            tag=artifact=registry.opensource.zalan.do/pathfinder/skipper:{{if eq .Cluster.ConfigItems.hack_skipper_pin_0_11_115 "true"}}v0.11.115{{else}}v0.11.137{{end}}
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
             min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }}
             {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
           - "-opentracing-excluded-proxy-tags={{ .ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
-{{ if eq .ConfigItems.skipper_ingress_opentracing_backend_name_tag "true" }}
+{{ if and (eq .ConfigItems.skipper_ingress_opentracing_backend_name_tag "true") (ne .Cluster.ConfigItems.hack_skipper_pin_0_11_115 "true") }}
           - "-opentracing-backend-name-tag"
 {{ end }}
           - "-expect-continue-timeout-backend={{ .ConfigItems.skipper_expect_continue_timeout_backend }}"
