@@ -21,11 +21,11 @@ require (
 	github.com/vishvananda/netns v0.0.0-20180720170159-13995c7128cc // indirect
 	github.com/zalando-incubator/kube-aws-iam-controller v0.1.2
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	k8s.io/api v0.18.5
-	k8s.io/apimachinery v0.18.5
+	k8s.io/api v0.18.3
+	k8s.io/apimachinery v0.18.4
 	k8s.io/apiserver v0.0.0
-	k8s.io/client-go v0.18.5
-	k8s.io/kubernetes v1.18.5
+	k8s.io/client-go v0.18.4
+	k8s.io/kubernetes v0.0.0
 )
 
 replace k8s.io/kubernetes => ./e2e_modules/kubernetes
