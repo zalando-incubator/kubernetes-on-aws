@@ -2,21 +2,26 @@
 set -euo pipefail
 
 create_cluster=false
-run_e2e=false
+e2e=false
+stackset_e2e=false
 decommission_cluster=false
-COMMAND="${1:-"all"}" # all, create-cluster, run-e2e, decommission-cluster
+COMMAND="${1:-"all"}" # all, create-cluster, e2e, stackset-e2e, decommission-cluster
 
 case "$COMMAND" in
     all)
         create_cluster=true
-        run_e2e=true
+        e2e=true
+        stackset_e2e=true
         decommission_cluster=true
         ;;
     create-cluster)
         create_cluster=true
         ;;
-    run-e2e)
-        run_e2e=true
+    e2e)
+        e2e=true
+        ;;
+    stackset-e2e)
+        stackset_e2e=true
         ;;
     decommission-cluster)
         decommission_cluster=true
@@ -40,7 +45,7 @@ CDP_TARGET_COMMIT_ID="${CDP_TARGET_COMMIT_ID:-"dev"}"
 CDP_HEAD_COMMIT_ID="${CDP_HEAD_COMMIT_ID:-"$(git describe --tags --always)"}"
 RESULT_BUCKET="${RESULT_BUCKET:-""}"
 
-export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-test"}"
+export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"teapot-e2e"}"
 export LOCAL_ID="${LOCAL_ID:-"e2e-${CDP_BUILD_VERSION}"}"
 export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
@@ -123,7 +128,7 @@ if [ "$create_cluster" = true ]; then
     "./wait-for-update.py" --timeout 1200
 fi
 
-if [ "$run_e2e" = true ]; then
+if [ "$e2e" = true ]; then
     export S3_AWS_IAM_BUCKET="zalando-e2e-test-${AWS_ACCOUNT}-${LOCAL_ID}"
     export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
 
@@ -192,6 +197,12 @@ if [ "$run_e2e" = true ]; then
         --registry=head_cluster_autoscaling_enabled.yaml
 
     exit "$TEST_RESULT"
+fi
+
+if [ "$stackset_e2e" = true ]; then
+    namespace="stackset-e2e-$(date +'%H%M%S')"
+    kubectl create namespace "$namespace"
+    E2E_NAMESPACE="${namespace}" ./stackset-e2e -test.parallel 64
 fi
 
 if [ "$decommission_cluster" = true ]; then
