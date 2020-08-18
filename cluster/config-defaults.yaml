@@ -79,11 +79,11 @@ skipper_ingress_tokeninfo_cpu: "1000m"
 skipper_ingress_tokeninfo_memory: "512Mi"
 {{if eq .Environment "production"}}
 tokeninfo_url: "https://info.services.auth.zalando.com/oauth2/tokeninfo"
-opendid_provider_cfg_url: "https://planb-provider.greendale-questionmark.zalan.do/.well-known/openid-configuration"
+openid_provider_cfg_url: "https://identity.zalando.com/.well-known/openid-configuration"
 openid_issuer: "https://identity.zalando.com"
 {{else}}
 tokeninfo_url: "https://sandbox-tokeninfo-bridge.stups.zalan.do/oauth2/tokeninfo"
-opendid_provider_cfg_url: "https://sandbox.identity.zalando.com/.well-known/openid-configuration"
+openid_provider_cfg_url: "https://sandbox.identity.zalando.com/.well-known/openid-configuration"
 openid_issuer: "https://sandbox.identity.zalando.com"
 {{end}}
 
@@ -298,6 +298,8 @@ custom_dns_zone_nameservers: "" # space seperated list of nameserver IP addresse
 
 # prefix prepended to ownership TXT records for external-dns
 external_dns_ownership_prefix: ""
+# domains that should be ignored by ExternalDNS
+external_dns_excluded_domains: cluster.local
 
 # DNS container resources
 dns_dnsmasq_cpu: "100m"
