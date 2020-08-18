@@ -1,4 +1,7 @@
 #cloud-config
+mounts:
+  - [ephemeral0]
+  - [swap]
 
 write_files:
   - owner: root:root
@@ -53,8 +56,6 @@ write_files:
       cpuCFSQuota: false
       featureGates:
         BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
-        CSIDriverRegistry: {{ .Cluster.ConfigItems.enable_csi_migration }}
-        CSIBlockVolume: {{ .Cluster.ConfigItems.enable_csi_migration }}
         CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}

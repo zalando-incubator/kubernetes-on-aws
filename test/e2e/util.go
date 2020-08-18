@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -17,8 +18,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
+	testutil "k8s.io/kubernetes/test/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -36,7 +39,9 @@ import (
 )
 
 var (
-	errTimeout = errors.New("Timeout")
+	errTimeout      = errors.New("Timeout")
+	poll            = 2 * time.Second
+	pollLongTimeout = 5 * time.Minute
 )
 
 // type ConditionFunc func() (done bool, err error)
@@ -44,7 +49,7 @@ var (
 func waitForRouteGroup(cs rgclient.ZalandoInterface, name, ns string, d time.Duration) (string, error) {
 	var addr string
 	err := wait.Poll(10*time.Second, d, func() (done bool, err error) {
-		rg, err := cs.ZalandoV1().RouteGroups(ns).Get(name, metav1.GetOptions{ResourceVersion: "0"})
+		rg, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), name, metav1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return true, err
 		}
@@ -717,7 +722,7 @@ func waitForResponseReturnResponse(req *http.Request, timeout time.Duration, exp
 func waitForReplicas(deploymentName, namespace string, kubeClient kubernetes.Interface, timeout time.Duration, desiredReplicas int) {
 	interval := 20 * time.Second
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		deployment, err := kubeClient.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{})
+		deployment, err := kubeClient.AppsV1().Deployments(namespace).Get(context.TODO(), deploymentName, metav1.GetOptions{})
 		if err != nil {
 			framework.Failf("Failed to get replication controller %s: %v", deployment, err)
 		}
@@ -844,7 +849,7 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 func deleteDeployment(cs kubernetes.Interface, ns string, deployment *appsv1.Deployment) {
 	By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 	defer GinkgoRecover()
-	err := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+	err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -923,7 +928,7 @@ func getPodLogs(c kubernetes.Interface, namespace, podName, containerName string
 		Name(podName).SubResource("log").
 		Param("container", containerName).
 		Param("previous", strconv.FormatBool(previous)).
-		Do().
+		Do(context.TODO()).
 		Raw()
 	if err != nil {
 		return "", err
@@ -932,4 +937,9 @@ func getPodLogs(c kubernetes.Interface, namespace, podName, containerName string
 		return "", fmt.Errorf("Fetched log contains \"Internal Error\": %q", string(logs))
 	}
 	return string(logs), err
+}
+
+// waitForDeploymentWithCondition waits for the specified deployment condition.
+func waitForDeploymentWithCondition(c clientset.Interface, ns, deploymentName, reason string, condType appsv1.DeploymentConditionType) error {
+	return testutil.WaitForDeploymentWithCondition(c, ns, deploymentName, reason, condType, framework.Logf, poll, pollLongTimeout)
 }
