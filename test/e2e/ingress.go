@@ -413,6 +413,9 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		)
 		ingressUpdate, err := cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
+		// wait 20 seconds to ensure the ingress change is applied by
+		// all skippers
+		time.Sleep(20 * time.Second)
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path /", ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
@@ -449,6 +452,9 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		)
 		ingressUpdate, err = cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
+		// wait 20 seconds to ensure the ingress change is applied by
+		// all skippers
+		time.Sleep(20 * time.Second)
 		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -565,6 +571,9 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 		)
 		ingressUpdate, err := cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
+		// wait 20 seconds to ensure the ingress change is applied by
+		// all skippers
+		time.Sleep(20 * time.Second)
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 307 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, redirectPath))
 		req, err = http.NewRequest("GET", redirectURL, nil)
