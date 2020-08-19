@@ -61,6 +61,7 @@ fi
 
 # generate updated clusters.yaml
 "./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" > head_cluster.yaml
+"./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" "true" > head_cluster_autoscaling_enabled.yaml
 # Update cluster
 clm provision \
     --token="${WORKER_SHARED_SECRET}" \
@@ -129,7 +130,7 @@ ginkgo -nodes=25 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
     -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.resolve.DNS.of.partial.qualified.names.for.services|should.be.able.to.change.the.type.from.ExternalName.to.NodePort|should.be.able.to.create.a.functioning.NodePort.service|\[Serial\])" \
-    "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role -report-dir=junit_reports
+    "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu -report-dir=junit_reports
 TEST_RESULT="$?"
 
 set -e
@@ -154,6 +155,13 @@ if [[ -n "$RESULT_BUCKET" ]]; then
       --quiet \
       junit_reports/ "s3://$RESULT_BUCKET/$TARGET_DIR/"
 fi
+
+# enable cluster autoscaling after running e2e
+clm provision \
+    --token="${WORKER_SHARED_SECRET}" \
+    --directory="$(pwd)/../.." \
+    --debug \
+    --registry=head_cluster_autoscaling_enabled.yaml
 
 if [[ $TEST_RESULT -eq 0 ]]; then
     # delete cluster
