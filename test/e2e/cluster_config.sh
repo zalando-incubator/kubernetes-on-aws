@@ -2,6 +2,8 @@
 set -euo pipefail
 set -x
 
+autoscaling_scale_down_enabled="${3:-"false"}"
+
 cat <<EOF
 clusters:
 - alias: ${CLUSTER_ALIAS}
@@ -58,6 +60,7 @@ clusters:
     prometheus_tsdb_retention_size: enabled
     coredns_max_upsteam_concurrency: 30
     ebs_root_volume_size: "550" # required by the limitRanger e2e tests (needs 500Gi ephemoral storage) https://github.com/kubernetes/kubernetes/blob/v1.18.3/test/e2e/scheduling/limit_range.go#L59
+    autoscaling_scale_down_enabled: "${autoscaling_scale_down_enabled}"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
