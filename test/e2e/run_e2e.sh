@@ -129,6 +129,15 @@ if [ "$create_cluster" = true ]; then
 fi
 
 if [ "$e2e" = true ]; then
+    echo "Running e2e against cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
+    # disable cluster downscaling before running e2e
+    "./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" "false" > cluster.yaml
+    clm provision \
+        --token="${WORKER_SHARED_SECRET}" \
+        --directory="$(pwd)/../.." \
+        --debug \
+        --registry=cluster.yaml
+
     export S3_AWS_IAM_BUCKET="zalando-e2e-test-${AWS_ACCOUNT}-${LOCAL_ID}"
     export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
 
@@ -188,13 +197,17 @@ if [ "$e2e" = true ]; then
           junit_reports/ "s3://$RESULT_BUCKET/$TARGET_DIR/"
     fi
 
-    # enable cluster autoscaling after running e2e
-    "./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" "true" > head_cluster_autoscaling_enabled.yaml
+    # enable cluster downscaling after running e2e
+    "./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" "true" > cluster_downscaling_enabled.yaml
     clm provision \
         --token="${WORKER_SHARED_SECRET}" \
         --directory="$(pwd)/../.." \
         --debug \
-        --registry=head_cluster_autoscaling_enabled.yaml
+        --registry=cluster_downscaling_enabled.yaml > clm.log
+    clm_exit="$?"
+    if [ "$clm_exit" -gt 0 ]; then
+        cat clm.log
+    fi
 
     exit "$TEST_RESULT"
 fi
