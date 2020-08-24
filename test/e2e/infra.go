@@ -1,6 +1,8 @@
 package e2e
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
@@ -30,7 +32,7 @@ var _ = framework.KubeDescribe("Infrastructure tests", func() {
 })
 
 func podsForApplication(cs kubernetes.Interface, application string) ([]v1.Pod, error) {
-	matchingPods, err := cs.CoreV1().Pods(kubeapi.NamespaceSystem).List(metav1.ListOptions{
+	matchingPods, err := cs.CoreV1().Pods(kubeapi.NamespaceSystem).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(&metav1.LabelSelector{
 			MatchLabels: map[string]string{"application": application},
 		}),

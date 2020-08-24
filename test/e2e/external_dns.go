@@ -14,6 +14,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -50,14 +51,14 @@ var _ = framework.KubeDescribe("External DNS creation", func() {
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		defer func() {
-			err := cs.CoreV1().Services(ns).Delete(serviceName, nil)
+			err := cs.CoreV1().Services(ns).Delete(context.TODO(), serviceName, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
 		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
 		service := createServiceTypeLoadbalancer(serviceName, hostName, labels, port)
 
-		_, err := cs.CoreV1().Services(ns).Create(service)
+		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Submitting the pod to kubernetes")
@@ -65,11 +66,11 @@ var _ = framework.KubeDescribe("External DNS creation", func() {
 		defer func() {
 			By("deleting the pod")
 			defer GinkgoRecover()
-			err2 := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
+			err2 := cs.CoreV1().Pods(ns).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
 			Expect(err2).NotTo(HaveOccurred())
 		}()
 
-		_, err = cs.CoreV1().Pods(ns).Create(pod)
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
