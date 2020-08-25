@@ -14,6 +14,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
@@ -38,10 +39,10 @@ var _ = framework.KubeDescribe("PSP use", func() {
 	BeforeEach(func() {
 		cs = f.ClientSet
 		saObj := createServiceAccount(f.Namespace.Name, privilegedSA)
-		_, err := cs.CoreV1().ServiceAccounts(f.Namespace.Name).Create(saObj)
+		_, err := cs.CoreV1().ServiceAccounts(f.Namespace.Name).Create(context.TODO(), saObj, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = cs.RbacV1().RoleBindings(f.Namespace.Name).Create(createRBACRoleBindingSA(privilegedRole, f.Namespace.Name, privilegedSA))
+		_, err = cs.RbacV1().RoleBindings(f.Namespace.Name).Create(context.TODO(), createRBACRoleBindingSA(privilegedRole, f.Namespace.Name, privilegedSA), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -83,11 +84,11 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		defer func() {
 			By(msg)
 			defer GinkgoRecover()
-			err := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
+			err := cs.CoreV1().Pods(ns).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err := cs.CoreV1().Pods(ns).Create(pod)
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
@@ -110,11 +111,11 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		defer func() {
 			By(fmt.Sprintf("Delete a deployment that creates a privileged POD as %s", privilegedSA))
 			defer GinkgoRecover()
-			err := cs.AppsV1().Deployments(ns).Delete(d.Name, metav1.NewDeleteOptions(0))
+			err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), d.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		deploy, err := cs.AppsV1().Deployments(ns).Create(d)
+		deploy, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), d, metav1.CreateOptions{})
 
 		Expect(err).NotTo(HaveOccurred())
 
@@ -123,7 +124,7 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = deploymentframework.WaitForDeploymentComplete(cs, deploy)
 		Expect(err).NotTo(HaveOccurred())
-		deployment, err := cs.AppsV1().Deployments(ns).Get(deploy.Name, metav1.GetOptions{})
+		deployment, err := cs.AppsV1().Deployments(ns).Get(context.TODO(), deploy.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		rs, err := deploymentutil.GetNewReplicaSet(deployment, cs.AppsV1())
 		Expect(err).NotTo(HaveOccurred())
