@@ -19,7 +19,7 @@ require (
 	github.com/szuecs/routegroup-client v0.17.8-0.20200717074340-6a596422b948
 	github.com/vishvananda/netns v0.0.0-20180720170159-13995c7128cc // indirect
 	github.com/zalando-incubator/kube-aws-iam-controller v0.1.2
-	github.com/zalando-incubator/stackset-controller v1.3.1
+	github.com/zalando-incubator/stackset-controller v1.3.2
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
