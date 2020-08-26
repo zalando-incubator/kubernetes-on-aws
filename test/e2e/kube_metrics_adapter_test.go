@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -141,13 +142,13 @@ func (tc *CustomMetricTestCase) Run() {
 	ns := tc.framework.Namespace.Name
 
 	// Create a MetricsExporter deployment
-	_, err := tc.kubeClient.AppsV1().Deployments(ns).Create(tc.deployment)
+	_, err := tc.kubeClient.AppsV1().Deployments(ns).Create(context.TODO(), tc.deployment, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	// Wait for the deployment to run
 	waitForReplicas(tc.deployment.ObjectMeta.Name, tc.framework.Namespace.ObjectMeta.Name, tc.kubeClient, 15*time.Minute, tc.initialReplicas)
 
 	for _, deployment := range tc.auxDeployments {
-		_, err := tc.kubeClient.AppsV1().Deployments(ns).Create(deployment)
+		_, err := tc.kubeClient.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		// Wait for the deployment to run
 		waitForReplicas(deployment.ObjectMeta.Name, tc.framework.Namespace.ObjectMeta.Name, tc.kubeClient, 15*time.Minute, int(*(deployment.Spec.Replicas)))
@@ -157,11 +158,11 @@ func (tc *CustomMetricTestCase) Run() {
 	// Check if an Ingress needs to be created
 	if tc.ingress != nil {
 		// Create a Service for the Ingress
-		_, err = tc.kubeClient.CoreV1().Services(ns).Create(tc.service)
+		_, err = tc.kubeClient.CoreV1().Services(ns).Create(context.TODO(), tc.service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create an Ingress since RPS based scaling relies on it
-		ingressCreate, err := tc.kubeClient.NetworkingV1beta1().Ingresses(ns).Create(tc.ingress)
+		ingressCreate, err := tc.kubeClient.NetworkingV1beta1().Ingresses(ns).Create(context.TODO(), tc.ingress, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = tc.jig.WaitForIngressAddress(tc.kubeClient, ns, ingressCreate.Name, 10*time.Minute)
@@ -169,7 +170,7 @@ func (tc *CustomMetricTestCase) Run() {
 
 	}
 	// Autoscale the deployment
-	_, err = tc.kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).Create(tc.hpa)
+	_, err = tc.kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).Create(context.TODO(), tc.hpa, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	waitForReplicas(tc.deployment.ObjectMeta.Name, tc.framework.Namespace.ObjectMeta.Name, tc.kubeClient, 15*time.Minute, tc.scaledReplicas)
@@ -178,7 +179,7 @@ func (tc *CustomMetricTestCase) Run() {
 func cleanDeploymentToScale(f *framework.Framework, kubeClient kubernetes.Interface, deployment *appsv1.Deployment) {
 	if deployment != nil {
 		// Can't do much if there's an error while deleting the deployment, or can we?
-		_ = kubeClient.AppsV1().Deployments(f.Namespace.Name).Delete(deployment.ObjectMeta.Name, &metav1.DeleteOptions{})
+		_ = kubeClient.AppsV1().Deployments(f.Namespace.Name).Delete(context.TODO(), deployment.ObjectMeta.Name, metav1.DeleteOptions{})
 	}
 }
 
