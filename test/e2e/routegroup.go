@@ -14,6 +14,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -60,7 +61,7 @@ var _ = framework.KubeDescribe("RouteGroup ALB creation", func() {
 		// SVC
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
-		_, err := cs.CoreV1().Services(ns).Create(service)
+		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		// POD
@@ -68,7 +69,7 @@ var _ = framework.KubeDescribe("RouteGroup ALB creation", func() {
 		expectedResponse := "OK RG1"
 		pod := createSkipperPod(nameprefix, ns, fmt.Sprintf(`r0: * -> inlineContent("%s") -> <shunt>`, expectedResponse), labels, targetPort)
 
-		_, err = cs.CoreV1().Pods(ns).Create(pod)
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 
@@ -77,11 +78,11 @@ var _ = framework.KubeDescribe("RouteGroup ALB creation", func() {
 		rg := createRouteGroup(serviceName, hostName, ns, labels, nil, port, rgv1.RouteGroupRouteSpec{
 			PathSubtree: "/",
 		})
-		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(rg)
+		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		addr, err := waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
-		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(rg.Name, metav1.GetOptions{ResourceVersion: "0"})
+		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
@@ -126,7 +127,7 @@ var _ = framework.KubeDescribe("RouteGroup ALB creation", func() {
 		// SVC
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
-		_, err := cs.CoreV1().Services(ns).Create(service)
+		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		// POD
@@ -141,7 +142,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 			labels,
 			targetPort)
 
-		_, err = cs.CoreV1().Pods(ns).Create(pod)
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 
@@ -152,11 +153,11 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 			Methods:     []string{"GET"},
 			Predicates:  []string{`Header("Foo", "bar")`},
 		})
-		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(rg)
+		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
-		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(rg.Name, metav1.GetOptions{ResourceVersion: "0"})
+		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
@@ -195,7 +196,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 		// SVC
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
-		_, err := cs.CoreV1().Services(ns).Create(service)
+		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		// POD
@@ -213,7 +214,7 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 			labels,
 			targetPort)
 
-		_, err = cs.CoreV1().Pods(ns).Create(pod)
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 
@@ -249,11 +250,11 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 				},
 			},
 		})
-		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(rg)
+		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
-		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(rg.Name, metav1.GetOptions{ResourceVersion: "0"})
+		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
@@ -326,7 +327,7 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 		// SVC
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
-		_, err := cs.CoreV1().Services(ns).Create(service)
+		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		// POD
@@ -341,7 +342,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 			labels,
 			targetPort)
 
-		_, err = cs.CoreV1().Pods(ns).Create(pod)
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 
@@ -375,11 +376,11 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 				},
 			},
 		})
-		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(rg)
+		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
-		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(rg.Name, metav1.GetOptions{ResourceVersion: "0"})
+		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
@@ -451,9 +452,9 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		By("Creating service2 " + serviceName2 + " in namespace " + ns)
 		service2 := createServiceTypeClusterIP(serviceName2, labels2, port, targetPort)
-		_, err := cs.CoreV1().Services(ns).Create(service)
+		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = cs.CoreV1().Services(ns).Create(service2)
+		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service2, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		// POD
@@ -478,9 +479,9 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 			labels2,
 			targetPort)
 
-		_, err = cs.CoreV1().Pods(ns).Create(pod)
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = cs.CoreV1().Pods(ns).Create(pod2)
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod2, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 		framework.ExpectNoError(f.WaitForPodRunning(pod2.Name))
@@ -529,11 +530,11 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 					},
 				},
 			})
-		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(rg)
+		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
-		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(rg.Name, metav1.GetOptions{ResourceVersion: "0"})
+		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
@@ -589,7 +590,7 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 		// SVC
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
-		_, err := cs.CoreV1().Services(ns).Create(service)
+		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		// POD
@@ -601,7 +602,7 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 			labels,
 			targetPort)
 
-		_, err = cs.CoreV1().Pods(ns).Create(pod)
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 
@@ -610,11 +611,11 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 		rg := createRouteGroup(serviceName, hostName, ns, labels, annotations, port, rgv1.RouteGroupRouteSpec{
 			PathSubtree: "/",
 		})
-		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(rg)
+		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
-		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(rg.Name, metav1.GetOptions{ResourceVersion: "0"})
+		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("NLB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
@@ -638,7 +639,7 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 		// SVC
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
-		_, err := cs.CoreV1().Services(ns).Create(service)
+		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		// POD
@@ -650,7 +651,7 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 			labels,
 			targetPort)
 
-		_, err = cs.CoreV1().Pods(ns).Create(pod)
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 
@@ -660,11 +661,11 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 			PathSubtree: "/",
 		})
 		rg.Spec.Hosts = append(rg.Spec.Hosts, hostName2) // add second hostname
-		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(rg)
+		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
-		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(rg.Name, metav1.GetOptions{ResourceVersion: "0"})
+		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
