@@ -240,6 +240,35 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
+{{- if eq .Cluster.ConfigItems.validate_routegroups "true" }}
+        - image: registry.opensource.zalan.do/pathfinder/skipper-test:pr-1518-1
+          name: routegroups-admission-webhook
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /healthz
+              port: 9085
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+          args:
+            - --address=:9085
+            - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
+            - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
+          ports:
+            - containerPort: 9085
+          volumeMounts:
+            - mountPath: /etc/kubernetes/ssl
+              name: ssl-certs-kubernetes
+              readOnly: true
+{{- end}}
         - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.9
           name: webhook
           ports:
