@@ -60,6 +60,7 @@ clusters:
     prometheus_tsdb_retention_size: enabled
     coredns_max_upsteam_concurrency: 30
     autoscaling_scale_down_enabled: "${autoscaling_scale_down_enabled}"
+    routegroups_validation_enabled: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
