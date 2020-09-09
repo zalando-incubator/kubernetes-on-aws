@@ -32,23 +32,6 @@ post_apply:
   namespace: cron
   kind: LimitRange
 {{ end }}
-{{ if ne .ConfigItems.enable_ingress_template_controller "true" }}
-- name: ingresstemplates.zalando.org
-  kind: CustomResourceDefinition
-- name: ingress-template-controller
-  namespace: kube-system
-  kind: Deployment
-- name: ingress-template-controller
-  namespace: kube-system
-  kind: ServiceAccount
-- name: ingress-template-controller
-  kind: ClusterRole
-- name: ingress-template-controller
-  kind: ClusterRoleBinding
-- name: ingress-template-controller
-  namespace: kube-system
-  kind: VerticalPodAutoscaler
-{{ end }}
 - name: leader-locking-efs-provisioner
   namespace: default
   kind: RoleBinding
