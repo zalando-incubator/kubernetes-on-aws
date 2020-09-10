@@ -40,8 +40,8 @@ spec:
         - --idle-connection-timeout={{ .ConfigItems.kube_aws_ingress_controller_idle_timeout }}
         {{ if eq .ConfigItems.kube_aws_ingress_controller_nlb_cross_zone "true" }}
         - --nlb-cross-zone
-        - --cluster-local-domain=cluster.local
         {{ end }}
+        - --cluster-local-domain=cluster.local
         env:
         - name: CUSTOM_FILTERS
           value: "tag:kubernetes.io/cluster/{{ .Cluster.ID }}=owned tag:node.kubernetes.io/role=worker tag:zalando.org/ingress-enabled=true"
