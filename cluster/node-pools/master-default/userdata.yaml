@@ -241,8 +241,13 @@ write_files:
               name: ssl-certs-kubernetes
               readOnly: true
 {{- if eq .Cluster.ConfigItems.routegroups_validation_enabled "true" }}
-        - image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.149
-          name: routegroups-admission-webhook
+        - name: routegroups-admission-webhook
+          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.149
+          args:
+            - webhook
+            - --address=:9085
+            - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
+            - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
           lifecycle:
             preStop:
               exec:
@@ -258,11 +263,6 @@ write_files:
             requests:
               cpu: 50m
               memory: 100Mi
-          cmd: ["webhook"]
-          args:
-            - --address=:9085
-            - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
-            - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
           ports:
             - containerPort: 9085
           volumeMounts:
