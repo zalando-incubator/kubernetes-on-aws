@@ -183,6 +183,7 @@ write_files:
           - --kubelet-client-certificate=/etc/kubernetes/ssl/kubelet-client.pem
           - --kubelet-client-key=/etc/kubernetes/ssl/kubelet-client-key.pem
           - --shutdown-delay-duration=60s
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           livenessProbe:
             httpGet:
               host: 127.0.0.1
@@ -541,6 +542,7 @@ write_files:
           {{ if eq .Cluster.ConfigItems.enable_endpointslice "true" }}
           - --controllers=endpointslice
           {{ end }}
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           resources:
             requests:
               cpu: 100m
@@ -592,6 +594,7 @@ write_files:
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
           - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},NonPreemptingPriority=true,EvenPodsSpread={{ .Cluster.ConfigItems.enable_even_pods_spread }}
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           env:
           - name: KUBE_MAX_PD_VOLS
             value: "26"
