@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -39,7 +40,7 @@ var _ = framework.KubeDescribe("Audit", func() {
 			Spec: apiv1.PodSpec{
 				Containers: []apiv1.Container{{
 					Name:  "pause",
-					Image: "registry.opensource.zalan.do/teapot/pause-amd64:3.1",
+					Image: "registry.opensource.zalan.do/teapot/pause-amd64:3.2",
 				}},
 			},
 		}
@@ -49,10 +50,10 @@ var _ = framework.KubeDescribe("Audit", func() {
 
 		f.PodClient().Update(pod.Name, updatePod)
 
-		_, err := f.PodClient().Patch(pod.Name, types.JSONPatchType, patch)
+		_, err := f.PodClient().Patch(context.TODO(), pod.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
 		framework.ExpectNoError(err, "failed to patch pod")
 
-		f.PodClient().DeleteSync(pod.Name, &metav1.DeleteOptions{}, framework.DefaultPodDeletionTimeout)
+		f.PodClient().DeleteSync(pod.Name, metav1.DeleteOptions{}, framework.DefaultPodDeletionTimeout)
 
 		expectEvents(f, []utils.AuditEvent{
 			{
@@ -111,7 +112,7 @@ func expectEvents(f *framework.Framework, expectedEvents []utils.AuditEvent) {
 	pollingTimeout := 5 * time.Minute
 	err := wait.Poll(pollingInterval, pollingTimeout, func() (bool, error) {
 		// Fetch the log stream.
-		stream, err := f.ClientSet.CoreV1().RESTClient().Get().AbsPath("/logs/kube-audit.log").Stream()
+		stream, err := f.ClientSet.CoreV1().RESTClient().Get().AbsPath("/logs/kube-audit.log").Stream(context.TODO())
 		if err != nil {
 			return false, err
 		}
