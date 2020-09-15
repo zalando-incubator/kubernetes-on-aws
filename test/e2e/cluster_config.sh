@@ -10,6 +10,7 @@ clusters:
   api_server_url: ${API_SERVER_URL}
   channel: ${1}
   config_items:
+    cluster_autoscaler_release: 1_18
     scalyr_access_key: no-key-defined
     scalyr_read_key: no-key-defined
     scalyr_server: no-key-defined
