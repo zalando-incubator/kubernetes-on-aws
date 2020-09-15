@@ -79,7 +79,7 @@ clusters:
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker-splitaz
     profile: worker-splitaz
-    min_size: 3
+    min_size: 0
     max_size: 21
     config_items:
       cpu_manager_policy: static
@@ -87,22 +87,13 @@ clusters:
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker
     profile: worker-default
-    min_size: 1
-    max_size: 21
-  - discount_strategy: spot
-    instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
-    config_items:
-      availability_zones: "eu-central-1a"
-      scaling_priority: "-100"
-    name: worker-limit-az
-    profile: worker-splitaz
-    min_size: 1
+    min_size: 0
     max_size: 21
   - discount_strategy: spot
     instance_types: ["m5d.large", "m5d.xlarge", "m5d.2xlarge"]
     name: worker-instance-storage
     profile: worker-default
-    min_size: 1
+    min_size: 0
     max_size: 21
   - discount_strategy: spot
     instance_types: ["p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
