@@ -73,8 +73,8 @@ clusters:
     instance_types: ["m5a.large"]
     name: default-master
     profile: master-default
-    min_size: 2
-    max_size: 3
+    min_size: 1
+    max_size: 2
   - discount_strategy: spot
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker-splitaz
