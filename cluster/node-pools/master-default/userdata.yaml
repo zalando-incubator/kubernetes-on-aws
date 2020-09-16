@@ -242,7 +242,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-{{- if eq .Cluster.ConfigItems.routegroups_validation_enabled "true" }}
+{{- if or (eq .Cluster.ConfigItems.routegroups_validation "provisioned") (eq .Cluster.ConfigItems.routegroups_validation "enabled") }}
         - name: routegroups-admission-webhook
           image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.151
           args:
