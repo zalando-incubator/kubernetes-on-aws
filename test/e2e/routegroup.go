@@ -150,7 +150,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 		By("Creating a routegroup with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
 		rg := createRouteGroup(serviceName, hostName, ns, labels, nil, port, rgv1.RouteGroupRouteSpec{
 			PathSubtree: "/backend",
-			Methods:     []string{"GET"},
+			Methods:     []rgv1.HTTPMethod{rgv1.MethodGet},
 			Predicates:  []string{`Header("Foo", "bar")`},
 		})
 		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
@@ -222,7 +222,7 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 		By("Creating a routegroup with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
 		rg := createRouteGroup(serviceName, hostName, ns, labels, nil, port, rgv1.RouteGroupRouteSpec{
 			PathSubtree: "/backend",
-			Methods:     []string{"GET"},
+			Methods:     []rgv1.HTTPMethod{rgv1.MethodGet},
 			Predicates: []string{
 				`Header("Foo", "bar")`,
 			},
@@ -234,10 +234,10 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 			Predicates:  []string{`Method("HEAD")`},
 		}, rgv1.RouteGroupRouteSpec{
 			PathSubtree: "/no-match2",
-			Methods:     []string{"HEAD"},
+			Methods:     []rgv1.HTTPMethod{rgv1.MethodHead},
 		}, rgv1.RouteGroupRouteSpec{
 			PathSubtree: "/multi-methods",
-			Methods:     []string{"GET", "HEAD"},
+			Methods:     []rgv1.HTTPMethod{rgv1.MethodGet, rgv1.MethodHead},
 		}, rgv1.RouteGroupRouteSpec{
 			PathSubtree: "/router-response",
 			Filters: []string{
@@ -492,19 +492,19 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 			[]rgv1.RouteGroupBackend{
 				{
 					Name:        expectedResponse,
-					Type:        "service",
+					Type:        rgv1.ServiceRouteGroupBackend,
 					ServiceName: serviceName,
 					ServicePort: port,
 				},
 				{
 					Name:        expectedResponse2,
-					Type:        "service",
+					Type:        rgv1.ServiceRouteGroupBackend,
 					ServiceName: serviceName2,
 					ServicePort: port,
 				},
 				{
 					Name: "router",
-					Type: "shunt",
+					Type: rgv1.ShuntRouteGroupBackend,
 				},
 			}, rgv1.RouteGroupRouteSpec{
 				Path: "/",
