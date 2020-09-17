@@ -43,9 +43,10 @@ write_files:
 {{- end }}
       featureGates:
         BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
-        CSIDriverRegistry: {{ .Cluster.ConfigItems.enable_csi_migration }}
-        CSIBlockVolume: {{ .Cluster.ConfigItems.enable_csi_migration }}
         CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
+{{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
+        EphemeralContainers: true
+{{- end }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
 {{- if ne .Cluster.ConfigItems.serialize_image_pulls "true" }}
@@ -138,7 +139,7 @@ write_files:
           - --authorization-mode=Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIDriverRegistry={{ .Cluster.ConfigItems.enable_csi_migration }},CSIBlockVolume={{ .Cluster.ConfigItems.enable_csi_migration }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true,EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }}
           - --anonymous-auth=false
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
@@ -182,6 +183,7 @@ write_files:
           - --kubelet-client-certificate=/etc/kubernetes/ssl/kubelet-client.pem
           - --kubelet-client-key=/etc/kubernetes/ssl/kubelet-client-key.pem
           - --shutdown-delay-duration=60s
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           livenessProbe:
             httpGet:
               host: 127.0.0.1
@@ -209,7 +211,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-74
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-76
           name: admission-controller
           lifecycle:
             preStop:
@@ -240,6 +242,36 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
+{{- if or (eq .Cluster.ConfigItems.routegroups_validation "provisioned") (eq .Cluster.ConfigItems.routegroups_validation "enabled") }}
+        - name: routegroups-admission-webhook
+          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.151
+          args:
+            - webhook
+            - --address=:9085
+            - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
+            - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /healthz
+              port: 9085
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+          ports:
+            - containerPort: 9085
+          volumeMounts:
+            - mountPath: /etc/kubernetes/ssl
+              name: ssl-certs-kubernetes
+              readOnly: true
+{{- end}}
         - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.9
           name: webhook
           ports:
@@ -378,7 +410,7 @@ write_files:
           - name: BUSINESS_PARTNERS
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
-        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:0.5.3
+        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.5.4
           name: image-policy-webhook
           args:
           - --policy={{ .Cluster.ConfigItems.image_policy }}
@@ -391,7 +423,7 @@ write_files:
               exec:
                 command: ["/bin/sh", "-c",  " sleep 60"]
         - name: skipper-proxy
-          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.90
+          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.150
           args:
           - skipper
           - -access-log-strip-query
@@ -522,7 +554,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},CSIDriverRegistry={{ .Cluster.ConfigItems.enable_csi_migration }},CSIBlockVolume={{ .Cluster.ConfigItems.enable_csi_migration }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }}
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
@@ -540,6 +572,7 @@ write_files:
           {{ if eq .Cluster.ConfigItems.enable_endpointslice "true" }}
           - --controllers=endpointslice
           {{ end }}
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           resources:
             requests:
               cpu: 100m
@@ -590,7 +623,8 @@ write_files:
           args:
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
-          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},NonPreemptingPriority=true
+          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},NonPreemptingPriority=true,EvenPodsSpread={{ .Cluster.ConfigItems.enable_even_pods_spread }}
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           env:
           - name: KUBE_MAX_PD_VOLS
             value: "26"

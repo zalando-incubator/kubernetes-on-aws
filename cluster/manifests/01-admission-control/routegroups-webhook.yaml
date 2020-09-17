@@ -1,0 +1,21 @@
+{{ if eq .Cluster.ConfigItems.routegroups_validation "enabled" }}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: "routegroup-admitter.teapot.zalan.do"
+  labels:
+    application: routegroups-admission-webhook
+webhooks:
+  - name: "routegroup-admitter.teapot.zalan.do"
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["zalando.org"]
+        apiVersions: ["v1"]
+        resources: ["routegroups"]
+    clientConfig:
+      url: "https://localhost:9085/routegroups"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    timeoutSeconds: 5
+{{ end }}

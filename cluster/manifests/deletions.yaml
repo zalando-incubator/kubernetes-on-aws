@@ -15,6 +15,10 @@ pre_apply:
 - name: dashboard-metrics-scraper-new
   namespace: kube-system
   kind: Deployment
+{{ if ne .Cluster.ConfigItems.routegroups_validation "enabled" }}
+- name: "routegroup-admitter.teapot.zalan.do"
+  kind: ValidatingWebhookConfiguration
+{{ end }}
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
@@ -31,23 +35,6 @@ post_apply:
 - name: limits
   namespace: cron
   kind: LimitRange
-{{ end }}
-{{ if ne .ConfigItems.enable_ingress_template_controller "true" }}
-- name: ingresstemplates.zalando.org
-  kind: CustomResourceDefinition
-- name: ingress-template-controller
-  namespace: kube-system
-  kind: Deployment
-- name: ingress-template-controller
-  namespace: kube-system
-  kind: ServiceAccount
-- name: ingress-template-controller
-  kind: ClusterRole
-- name: ingress-template-controller
-  kind: ClusterRoleBinding
-- name: ingress-template-controller
-  namespace: kube-system
-  kind: VerticalPodAutoscaler
 {{ end }}
 - name: leader-locking-efs-provisioner
   namespace: default

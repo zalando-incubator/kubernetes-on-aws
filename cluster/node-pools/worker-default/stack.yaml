@@ -1,10 +1,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Kubernetes default worker node pool
+Metadata:
+  Tags:
+    InfrastructureComponent: "true"
 
 Mappings:
   Images:
     eu-central-1:
-      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_17 }}'
+      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_18 }}'
 
 Resources:
   AutoScalingGroup:
@@ -117,7 +120,7 @@ Resources:
         BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
-            DeleteOnTermination: true
+            DeleteOnTermination: {{.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
             VolumeSize: {{.NodePool.ConfigItems.ebs_root_volume_size}}
 {{ end }}
         NetworkInterfaces:

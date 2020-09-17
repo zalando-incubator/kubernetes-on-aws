@@ -59,7 +59,9 @@ clusters:
     vm_dirty_background_bytes: 67108864
     prometheus_tsdb_retention_size: enabled
     coredns_max_upsteam_concurrency: 30
+    ebs_root_volume_size: "550" # required by the limitRanger e2e tests (needs 500Gi ephemoral storage) https://github.com/kubernetes/kubernetes/blob/v1.18.3/test/e2e/scheduling/limit_range.go#L59
     autoscaling_scale_down_enabled: "${autoscaling_scale_down_enabled}"
+    routegroups_validation: "enabled"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
@@ -68,16 +70,16 @@ clusters:
   local_id: ${LOCAL_ID}
   node_pools:
   - discount_strategy: none
-    instance_types: ["t3.large"]
+    instance_types: ["m5a.large"]
     name: default-master
     profile: master-default
-    min_size: 2
-    max_size: 3
+    min_size: 1
+    max_size: 2
   - discount_strategy: spot
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker-splitaz
     profile: worker-splitaz
-    min_size: 3
+    min_size: 0
     max_size: 21
     config_items:
       cpu_manager_policy: static
@@ -85,7 +87,7 @@ clusters:
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
     name: default-worker
     profile: worker-default
-    min_size: 1
+    min_size: 0
     max_size: 21
   - discount_strategy: spot
     instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
@@ -94,13 +96,13 @@ clusters:
       scaling_priority: "-100"
     name: worker-limit-az
     profile: worker-splitaz
-    min_size: 1
+    min_size: 0
     max_size: 21
   - discount_strategy: spot
     instance_types: ["m5d.large", "m5d.xlarge", "m5d.2xlarge"]
     name: worker-instance-storage
     profile: worker-default
-    min_size: 1
+    min_size: 0
     max_size: 21
   - discount_strategy: spot
     instance_types: ["p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
