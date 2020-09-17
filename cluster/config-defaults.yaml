@@ -74,6 +74,10 @@ skipper_ingress_lightstep_max_period: "2500ms"
 skipper_ingress_lightstep_log_events: ""
 lightstep_token: ""
 
+# skipper routegroup validation webhook
+routegroups_validation_enabled: "false"
+
+
 # tokeninfo
 skipper_ingress_tokeninfo_cpu: "1000m"
 skipper_ingress_tokeninfo_memory: "512Mi"
@@ -225,8 +229,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 coredns_max_upstream_concurrency: 0 #0 means there is not concurrency limits
 
-kuberuntu_image_v1_17: {{ amiID "zalando-ubuntu-kubernetes-production-v1.17.8-master-114" "861068367966" }}
-kuberuntu_image_v1_18: {{ amiID "zalando-ubuntu-kubernetes-production-v1.18.8-master-119" "861068367966" }}
+kuberuntu_image_v1_18: {{ amiID "zalando-ubuntu-kubernetes-production-v1.18.8-master-120" "861068367966" }}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -364,6 +367,7 @@ stackset_controller_mem_max: "1Gi"
 
 # EBS settings for the root volume
 ebs_root_volume_size: "50"
+ebs_root_volume_delete_on_termination: "true"
 
 # Migration off priority classes
 {{if eq .Environment "production"}}
@@ -388,3 +392,6 @@ kubernetes_event_logger_enabled: "true"
 
 # enable/disable stackset validation (preserveUnknownFields)
 stackset_validation_enabled: "true"
+
+# Enable/Disable profiling for Kubernetes components
+enable_control_plane_profiling: "false"
