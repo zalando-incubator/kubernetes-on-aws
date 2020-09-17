@@ -15,6 +15,11 @@ cluster_autoscaler_expander: highest-priority
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
+{{if eq .Environment "e2e"}}
+kube_aws_ingress_controller_deregistration_delay_timeout: "1m"
+{{else}}
+kube_aws_ingress_controller_deregistration_delay_timeout: "5m"
+{{end}}
 # allow using NLBs for ingress
 # This opens port 9999 (skipper-ingress) on all worker nodes.
 kube_aws_ingress_controller_nlb_enabled: "false"
@@ -74,8 +79,9 @@ skipper_ingress_lightstep_max_period: "2500ms"
 skipper_ingress_lightstep_log_events: ""
 lightstep_token: ""
 
-# skipper routegroup validation webhook
-routegroups_validation_enabled: "false"
+# disabled|provisioned|enabled routegroup validation ( skipper webhook )
+# can be one of disabled|provisioned|enabled
+routegroups_validation: "disabled"
 
 
 # tokeninfo
