@@ -15,6 +15,10 @@ pre_apply:
 - name: dashboard-metrics-scraper-new
   namespace: kube-system
   kind: Deployment
+{{ if ne .Cluster.ConfigItems.routegroups_validation "enabled" }}
+- name: "routegroup-admitter.teapot.zalan.do"
+  kind: ValidatingWebhookConfiguration
+{{ end }}
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
