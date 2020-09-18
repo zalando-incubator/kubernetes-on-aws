@@ -132,14 +132,15 @@ write_files:
           - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true{{ if eq .Cluster.ConfigItems.enable_endpointslice "true" }},discovery.k8s.io/v1alpha1=true{{ end }}
+          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
           - --authorization-mode=Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
+          - --authorization-webhook-version=v1
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true,EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true,EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }}
           - --anonymous-auth=false
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
@@ -272,7 +273,7 @@ write_files:
               name: ssl-certs-kubernetes
               readOnly: true
 {{- end}}
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.9
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.8.0
           name: webhook
           ports:
           - containerPort: 8081
@@ -554,7 +555,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
@@ -564,14 +565,9 @@ write_files:
           - --kube-api-qps=50
           - --terminated-pod-gc-threshold=500
           - --horizontal-pod-autoscaler-use-rest-clients=true
-          - --horizontal-pod-autoscaler-downscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_downscale_delay }}
           - --horizontal-pod-autoscaler-sync-period={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_sync_period }}
           - --horizontal-pod-autoscaler-tolerance={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_tolerance }}
-          - --horizontal-pod-autoscaler-upscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_upscale_delay }}
           - --horizontal-pod-autoscaler-downscale-stabilization={{ .Cluster.ConfigItems.horizontal_pod_downscale_stabilization }}
-          {{ if eq .Cluster.ConfigItems.enable_endpointslice "true" }}
-          - --controllers=endpointslice
-          {{ end }}
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           resources:
             requests:
