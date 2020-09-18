@@ -242,7 +242,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-{{- if eq .Cluster.ConfigItems.routegroups_validation_enabled "true" }}
+{{- if or (eq .Cluster.ConfigItems.routegroups_validation "provisioned") (eq .Cluster.ConfigItems.routegroups_validation "enabled") }}
         - name: routegroups-admission-webhook
           image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.151
           args:
@@ -423,7 +423,7 @@ write_files:
               exec:
                 command: ["/bin/sh", "-c",  " sleep 60"]
         - name: skipper-proxy
-          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.117
+          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.150
           args:
           - skipper
           - -access-log-strip-query

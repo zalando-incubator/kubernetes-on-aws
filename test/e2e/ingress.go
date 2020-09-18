@@ -648,8 +648,8 @@ var _____ = framework.KubeDescribe("Ingress tests simple NLB", func() {
 		// err = waitForResponse(addr, "http", waitTime, isRedirect, true)
 		// Expect(err).NotTo(HaveOccurred())
 
-		// ALB ready
-		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
+		// NLB ready
+		By("Waiting for NLB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
 		Expect(err).NotTo(HaveOccurred())
 
