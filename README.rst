@@ -45,7 +45,7 @@ Features
 * EFS support
 * GPU support
 * ETCD backup via Kubernetes cronjob and etcdctl snapshot and upload to S3
-* Monitoring via Prometheus and zmon_
+* Monitoring via Prometheus
 * Fully automated cluster updates via `Cluster Lifecycle Manager`_
 * Automated downscaling for test clusters with kube-downscaler_
 * Fallback node pools
@@ -102,7 +102,6 @@ Directory Structure
 .. _Fabric API Gateway: https://github.com/zalando-incubator/fabric-gateway
 .. _kube-static-egress-controller: https://github.com/szuecs/kube-static-egress-controller
 .. _kube-metrics-adapter: https://github.com/zalando-incubator/kube-metrics-adapter
-.. _zmon: https://zmon.io
 .. _Zalando Case Study on kubernetes.io: https://kubernetes.io/case-studies/zalando/
 .. _cluster/manifests: https://github.com/zalando-incubator/kubernetes-on-aws/tree/dev/cluster/manifests
 .. _kube-downscaler: https://github.com/hjacobs/kube-downscaler
