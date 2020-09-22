@@ -45,7 +45,7 @@ Features
 * EFS support
 * GPU support
 * ETCD backup via Kubernetes cronjob and etcdctl snapshot and upload to S3
-* Monitoring via Prometheus
+* Monitoring via Prometheus and OpenTracing_
 * Fully automated cluster updates via `Cluster Lifecycle Manager`_
 * Automated downscaling for test clusters with kube-downscaler_
 * Fallback node pools
@@ -106,3 +106,4 @@ Directory Structure
 .. _cluster/manifests: https://github.com/zalando-incubator/kubernetes-on-aws/tree/dev/cluster/manifests
 .. _kube-downscaler: https://github.com/hjacobs/kube-downscaler
 .. _pdb-controller: https://github.com/mikkeloscar/pdb-controller
+.. _OpenTracing: https://opentracing.io
