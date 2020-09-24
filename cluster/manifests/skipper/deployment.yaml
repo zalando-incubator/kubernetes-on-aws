@@ -89,7 +89,7 @@ spec:
           - "-max-audit-body=0"
 {{ if ne .ConfigItems.skipper_redis_replicas "0" }}
           - "-enable-swarm"
-          - "-swarm-redis-urls={{ indexedList skipper-ingress-redis-$.skipper-ingress-redis.kube-system.svc.cluster.local:6379 .ConfigItems.skipper_redis_replicas }}"
+          - "-swarm-redis-urls={{ indexedListindexedList "skipper-ingress-redis-$.skipper-ingress-redis.kube-system.svc.cluster.local:6379" .ConfigItems.skipper_redis_replicas }}"
 {{ end }}
           - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
