@@ -15,6 +15,8 @@ spec:
     metadata:
       labels:
         application: node-monitor
+      annotations:
+        kubernetes-log-watcher/scalyr-parser: '[{"container": "journald-reader", "parser": "journald"}]'
     spec:
       hostNetwork: true
       hostPID: true
@@ -95,6 +97,24 @@ spec:
             - name: rootfs
               mountPath: /host
               readOnly: true
+{{- if eq .Cluster.ConfigItems.journald_reader_enabled "true" }}
+        - image: registry.opensource.zalan.do/logging/journald-reader:master-2
+          name: journald-reader
+          resources:
+            requests:
+              cpu: {{.Cluster.ConfigItems.journald_reader_cpu}}
+              memory: {{.Cluster.ConfigItems.journald_reader_memory}}
+              ephemeral-storage: 256Mi
+            limits:
+              cpu: {{.Cluster.ConfigItems.journald_reader_cpu}}
+              memory: {{.Cluster.ConfigItems.journald_reader_memory}}
+          volumeMounts:
+            - mountPath: /var/log/journal
+              name: journald-logs
+              readOnly: true
+            - mountPath: /cursorfiles
+              name: journald-reader-state
+{{- end }}
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
       volumes:
@@ -113,6 +133,15 @@ spec:
         - name: kmsg
           hostPath:
             path: /dev/kmsg
+{{- if eq .Cluster.ConfigItems.journald_reader_enabled "true" }}
+        - name: journald-logs
+          hostPath:
+            path: /var/log/journal
+        - name: journald-reader-state
+          hostPath:
+            path: /var/run/journald-reader
+            type: DirectoryOrCreate
+{{- end }}
       tolerations:
         - operator: Exists
           effect: NoSchedule
