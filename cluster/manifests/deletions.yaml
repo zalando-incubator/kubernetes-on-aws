@@ -15,6 +15,12 @@ pre_apply:
 - name: dashboard-metrics-scraper-new
   namespace: kube-system
   kind: Deployment
+- name: cadvisor
+  namespace: kube-system
+  kind: DaemonSet
+- name: prometheus-node-exporter
+  namespace: kube-system
+  kind: DaemonSet
 {{ if ne .Cluster.ConfigItems.routegroups_validation "enabled" }}
 - name: "routegroup-admitter.teapot.zalan.do"
   kind: ValidatingWebhookConfiguration
@@ -137,3 +143,21 @@ post_apply:
   kind: RoleBinding
 - name: node-patcher
   kind: ClusterRole
+- name: cadvisor
+  namespace: kube-system
+  kind: ServiceAccount
+- name: cadvisor
+  namespace: kube-system
+  kind: Service
+- name: cadvisor-privileged-psp
+  namespace: kube-system
+  kind: RoleBinding
+- name: prometheus-node-exporter
+  namespace: kube-system
+  kind: ServiceAccount
+- name: prometheus-node-exporter
+  namespace: kube-system
+  kind: Service
+- name: prometheus-node-exporter-privileged-psp
+  namespace: kube-system
+  kind: RoleBinding

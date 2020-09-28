@@ -153,10 +153,6 @@ Resources:
           IpProtocol: tcp
           ToPort: 8083
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-          FromPort: 9100
-          IpProtocol: tcp
-          ToPort: 9100
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 9911
           IpProtocol: tcp
           ToPort: 9911
@@ -164,10 +160,6 @@ Resources:
           FromPort: 30080
           IpProtocol: tcp
           ToPort: 30080
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-          FromPort: 4194
-          IpProtocol: tcp
-          ToPort: 4194
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 9054
           IpProtocol: tcp
@@ -233,6 +225,17 @@ Resources:
           Value: owned
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
+  MasterSecurityGroupIngressFromWorkerToNodeMonitor:
+    Properties:
+      FromPort: 9100
+      ToPort: 9101
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+    Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroup:
     Properties:
       GroupDescription: !Ref 'AWS::StackName'
@@ -268,17 +271,9 @@ Resources:
           ToPort: 9990
 {{- end }}
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-          FromPort: 9100
-          IpProtocol: tcp
-          ToPort: 9100
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 10248
           IpProtocol: tcp
           ToPort: 10248
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-          FromPort: 4194
-          IpProtocol: tcp
-          ToPort: 4194
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 9054
           IpProtocol: tcp
@@ -330,17 +325,6 @@ Resources:
           Value: owned
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromMasterTocAdvisor:
-    Properties:
-      FromPort: 4194
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 4194
-    Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToFlannel:
     Properties:
       FromPort: 8472
@@ -373,6 +357,17 @@ Resources:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
       ToPort: 9911
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerSecurityGroupIngressFromWorkerToNodeMonitor:
+    Properties:
+      FromPort: 9100
+      ToPort: 9101
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
     Type: 'AWS::EC2::SecurityGroupIngress'
   EFSSecurityGroupIngressFromWorkerSecurityGroup:
     Properties:
