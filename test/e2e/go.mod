@@ -76,6 +76,4 @@ replace k8s.io/component-base => ./e2e_modules/kubernetes/staging/src/k8s.io/com
 
 replace k8s.io/cri-api => ./e2e_modules/kubernetes/staging/src/k8s.io/cri-api
 
-replace github.com/szuecs/routegroup-client => github.com/mikkeloscar/routegroup-client v0.17.8-0.20200625082607-0f1ebad84234
-
 go 1.13

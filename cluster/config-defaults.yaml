@@ -9,12 +9,20 @@ autoscaling_utilization_threshold: "1.0"
 autoscaling_max_empty_bulk_delete: "25"
 autoscaling_scale_down_unneeded_time: "10m"
 
+# the cluster autoscaler release to use, options are 1_12 and 1_18.
+cluster_autoscaler_release: "1_12"
+
 # defines which expander the autoscaler should use
 cluster_autoscaler_expander: highest-priority
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
+{{if eq .Environment "e2e"}}
+kube_aws_ingress_controller_deregistration_delay_timeout: "1m"
+{{else}}
+kube_aws_ingress_controller_deregistration_delay_timeout: "5m"
+{{end}}
 # allow using NLBs for ingress
 # This opens port 9999 (skipper-ingress) on all worker nodes.
 kube_aws_ingress_controller_nlb_enabled: "false"
@@ -47,6 +55,10 @@ skipper_idle_timeout_server: "62s"
 skipper_read_timeout_server: "5m"
 skipper_write_timeout_server: "60s"
 
+# skipper redis settings
+skipper_redis_cpu: "100m"
+skipper_redis_memory: "100Mi"
+
 # skipper api GW features
 enable_apimonitoring: "true"
 skipper_clusterratelimit: "true"
@@ -74,8 +86,9 @@ skipper_ingress_lightstep_max_period: "2500ms"
 skipper_ingress_lightstep_log_events: ""
 lightstep_token: ""
 
-# skipper routegroup validation webhook
-routegroups_validation_enabled: "false"
+# disabled|provisioned|enabled routegroup validation ( skipper webhook )
+# can be one of disabled|provisioned|enabled
+routegroups_validation: "disabled"
 
 
 # tokeninfo
