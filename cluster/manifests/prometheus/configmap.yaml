@@ -206,6 +206,9 @@ data:
       relabel_configs:
       - source_labels: [__meta_kubernetes_endpoints_name]
         action: keep
+        regex: node-monitor
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        action: keep
         regex: cadvisor
       - action: replace
         source_labels: ['__meta_kubernetes_pod_node_name']
@@ -229,6 +232,40 @@ data:
       - source_labels: [__name__]
         action: keep
         regex: '(container_cpu_cfs_throttled_seconds_total|container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_memory_rss|container_memory_cache|container_network_receive_bytes_total|container_network_transmit_bytes_total|container_fs_usage_bytes|container_fs_limit_bytes|container_fs_reads_bytes_total|container_fs_writes_bytes_total|container_threads|container_threads_max)'
+    - job_name: 'node-exporter'
+      scheme: http
+      honor_labels: true
+      kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names:
+            - kube-system
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_endpoints_name]
+          action: keep
+          regex: node-monitor
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: node-exporter
+        - action: replace
+          source_labels: ['__meta_kubernetes_pod_node_name']
+          target_label: node_name
+      metric_relabel_configs:
+      - action: replace
+        source_labels: ['container_label_application']
+        target_label: application
+      - action: replace
+        source_labels: ['container_label_io_kubernetes_container_name']
+        target_label: container_name
+      - action: replace
+        source_labels: ['container_label_io_kubernetes_pod_name']
+        target_label: pod_name
+      - action: replace
+        source_labels: ['container_label_io_kubernetes_pod_namespace']
+        target_label: namespace
+      - action: replace
+        source_labels: ['container_label_io_kubernetes_pod_uid']
+        target_label: uid
     - job_name: 'kubelet-metrics'
       scheme: https
       tls_config:
