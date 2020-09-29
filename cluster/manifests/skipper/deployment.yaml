@@ -36,9 +36,7 @@ spec:
                   values:
                   - skipper-ingress
               topologyKey: kubernetes.io/hostname
-{{- if eq .Cluster.ConfigItems.system_pods_critical "true" }}
-      priorityClassName: system-cluster-critical
-{{- end }}
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
       dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true

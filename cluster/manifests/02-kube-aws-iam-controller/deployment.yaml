@@ -18,9 +18,7 @@ spec:
         version: v0.1.2
     spec:
       serviceAccountName: kube-aws-iam-controller
-{{- if eq .Cluster.ConfigItems.system_pods_critical "true" }}
-      priorityClassName: system-cluster-critical
-{{- end }}
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       # running with hostNetwork to bypass metadata service block from pod
       # network.
       hostNetwork: true

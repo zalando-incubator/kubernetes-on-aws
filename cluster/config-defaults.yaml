@@ -394,11 +394,11 @@ stackset_controller_mem_max: "1Gi"
 ebs_root_volume_size: "50"
 ebs_root_volume_delete_on_termination: "true"
 
-# Migration off priority classes
+# Priority class used for critical system pods
 {{if eq .Environment "production"}}
-system_pods_critical: "true"
+system_priority_class: "system-cluster-critical"
 {{else}}
-system_pods_critical: "false"
+system_priority_class: "cluster-critical-nonpreempting"
 {{end}}
 
 # spot.io Ocean configuration.
