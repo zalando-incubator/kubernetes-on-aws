@@ -119,6 +119,15 @@ cadvisor_memory: "150Mi"
 node_exporter_cpu: "20m"
 node_exporter_memory: "75Mi"
 
+# journald reader settings
+{{if eq .Environment "e2e"}}
+journald_reader_enabled: "true"
+{{else}}
+journald_reader_enabled: "false"
+{{end}}
+journald_reader_cpu: "1m"
+journald_reader_memory: "75Mi"
+
 # Logging settings
 logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
 scalyr_team_token: ""
