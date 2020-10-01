@@ -22,9 +22,7 @@ spec:
       annotations:
         config/hash: {{"02-secret.yaml" | manifestHash}}
     spec:
-{{- if eq .Cluster.ConfigItems.system_pods_critical "true" }}
-      priorityClassName: system-cluster-critical
-{{- end }}
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: vpa-admission-controller
       containers:
       - name: admission-controller
