@@ -6,9 +6,9 @@ metadata:
   labels:
     application: kube-cluster-autoscaler
     {{- if eq .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
-    version: v1.18.2-internal.11
+    version: v1.18.2-internal.12
     {{- else }}
-    version: v1.12.2-internal-2.16
+    version: v1.12.2-internal-2.17
     {{- end }}
 spec:
   selector:
@@ -21,9 +21,9 @@ spec:
       labels:
         application: kube-cluster-autoscaler
         {{- if eq .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
-        version: v1.18.2-internal.11
+        version: v1.18.2-internal.12
         {{- else }}
-        version: v1.12.2-internal-2.16
+        version: v1.12.2-internal-2.17
         {{- end }}
       annotations:
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
@@ -42,9 +42,9 @@ spec:
       containers:
       - name: cluster-autoscaler
         {{- if eq .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.11
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.12
         {{- else }}
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal-2.16
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal-2.17
         {{- end }}
         command:
           - ./cluster-autoscaler

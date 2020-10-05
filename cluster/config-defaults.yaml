@@ -88,7 +88,7 @@ lightstep_token: ""
 
 # disabled|provisioned|enabled routegroup validation ( skipper webhook )
 # can be one of disabled|provisioned|enabled
-routegroups_validation: "disabled"
+routegroups_validation: "enabled"
 
 
 # tokeninfo
@@ -220,12 +220,15 @@ teapot_admission_controller_daemonset_reserved_memory: "64Gi"
 {{if eq .Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
+teapot_admission_controller_preemption_enabled: "true"
 {{else if eq .Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "false"
+teapot_admission_controller_preemption_enabled: "true"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "true"
+teapot_admission_controller_preemption_enabled: "false"
 {{end}}
 
 {{if eq .Environment "e2e"}}
@@ -391,11 +394,11 @@ stackset_controller_mem_max: "1Gi"
 ebs_root_volume_size: "50"
 ebs_root_volume_delete_on_termination: "true"
 
-# Migration off priority classes
+# Priority class used for critical system pods
 {{if eq .Environment "production"}}
-system_pods_critical: "true"
+system_priority_class: "system-cluster-critical"
 {{else}}
-system_pods_critical: "false"
+system_priority_class: "cluster-critical-nonpreempting"
 {{end}}
 
 # spot.io Ocean configuration.
