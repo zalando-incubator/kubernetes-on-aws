@@ -31,6 +31,8 @@ spec:
   validation:
     openAPIV3Schema:
       type: object
+      required:
+      - spec
       properties:
         spec:
           required:
@@ -126,3 +128,26 @@ spec:
                     type: array
                     items:
                       type: string
+        status:
+          properties:
+            loadBalancer:
+              description: LoadBalancer is similar to ingress status, such that external-dns has the same style as in ingress
+              properties:
+                routegroup:
+                  description: RouteGroup is similar to Ingress in ingress status.LoadBalancer.
+                  items:
+                    properties:
+                      hostname:
+                        description: Hostname is the hostname of the load balancer and is empty if IP is set
+                        type: string
+                      ip:
+                        description: IP is the IP address of the load balancer and is empty if Hostname is set
+                        type: string
+                    type: object
+                  type: array
+              required:
+              - routegroup
+              type: object
+          required:
+          - loadBalancer
+          type: object
