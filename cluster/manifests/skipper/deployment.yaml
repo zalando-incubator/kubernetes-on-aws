@@ -53,7 +53,7 @@ spec:
             secretKeyRef:
               name: skipper-ingress
               key: lightstep-token
-{{ if eq .ConfigItems.local_tokeninfo "true" }}
+{{ if eq .ConfigItems.skipper_local_tokeninfo "true" }}
         - name: LOCAL_TOKENINFO
           value: "true"
         - name: ENABLE_OPENTRACING
@@ -66,7 +66,7 @@ spec:
               name: skipper-ingress
               key: lightstep-token
 {{ end }}
-{{ if eq .ConfigItems.local_sandbox_tokeninfo "true" }}
+{{ if eq .ConfigItems.skipper_local_sandbox_tokeninfo "true" }}
         - name: LOCAL_TOKENINFO_SANDBOX
           value: "true"
 {{ end }}
@@ -146,13 +146,13 @@ spec:
           - "-max-tcp-listener-queue={{ .ConfigItems.skipper_max_tcp_listener_queue }}"
 {{ end }}
           - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
-{{ if and (and (eq .ConfigItems.local_sandbox_tokeninfo "true") (eq .ConfigItems.local_tokeninfo "true")) (eq .ConfigItems.local_sandbox_bridge "true") }}
+{{ if and (and (eq .ConfigItems.skipper_local_sandbox_tokeninfo "true") (eq .ConfigItems.skipper_local_tokeninfo "true")) (eq .ConfigItems.skipper_local_sandbox_bridge "true") }}
           - "-status-checks=http://127.0.0.1:9021/health,http://127.0.0.1:9121/health,http://127.0.0.1:9000/healthz"
-{{ else if and (eq .ConfigItems.local_sandbox_tokeninfo "true") (eq .ConfigItems.local_tokeninfo "true") }}
+{{ else if and (eq .ConfigItems.skipper_local_sandbox_tokeninfo "true") (eq .ConfigItems.skipper_local_tokeninfo "true") }}
           - "-status-checks=http://127.0.0.1:9021/health,http://127.0.0.1:9121/health"
-{{ else if eq .ConfigItems.local_sandbox_tokeninfo "true" }}
+{{ else if eq .ConfigItems.skipper_local_sandbox_tokeninfo "true" }}
           - "-status-checks=http://127.0.0.1:9121/health"
-{{ else if eq .ConfigItems.local_tokeninfo "true" }}
+{{ else if eq .ConfigItems.skipper_local_tokeninfo "true" }}
           - "-status-checks=http://127.0.0.1:9021/health"
 {{ end }}
         resources:
@@ -168,7 +168,7 @@ spec:
             port: 9999
           initialDelaySeconds: 60
           timeoutSeconds: 5
-{{ if eq .ConfigItems.local_tokeninfo "true"}}
+{{ if eq .ConfigItems.skipper_local_tokeninfo "true"}}
         livenessProbe:
           httpGet:
             path: /health
@@ -185,13 +185,13 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
-{{ if and (eq .ConfigItems.local_sandbox_bridge "true") (eq .ConfigItems.enable_apimonitoring "true")}}
+{{ if and (eq .ConfigItems.skipper_local_sandbox_bridge "true") (eq .ConfigItems.enable_apimonitoring "true")}}
         volumeMounts:
           - name: routes
             mountPath: /etc/routes
           - name: filters
             mountPath: /etc/config/default-filters
-{{ else if eq .ConfigItems.local_sandbox_bridge "true"}}
+{{ else if eq .ConfigItems.skipper_local_sandbox_bridge "true"}}
         volumeMounts:
           - name: routes
             mountPath: /etc/routes
@@ -202,7 +202,7 @@ spec:
 {{ end }}
       securityContext:
         fsGroup: 1000
-{{ if and (eq .ConfigItems.local_sandbox_bridge "true") (eq .ConfigItems.enable_apimonitoring "true")}}
+{{ if and (eq .ConfigItems.skipper_local_sandbox_bridge "true") (eq .ConfigItems.enable_apimonitoring "true")}}
       volumes:
         - name: filters
           configMap:
