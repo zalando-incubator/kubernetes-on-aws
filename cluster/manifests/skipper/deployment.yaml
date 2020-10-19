@@ -148,11 +148,11 @@ spec:
           - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
 {{ if and (and (eq .ConfigItems.local_sandbox_tokeninfo "true") (eq .ConfigItems.local_tokeninfo "true")) (eq .ConfigItems.local_sandbox_bridge "true") }}
           - "-status-checks=http://127.0.0.1:9021/health,http://127.0.0.1:9121/health,http://127.0.0.1:9000/healthz"
-{{ elif and (eq .ConfigItems.local_sandbox_tokeninfo "true") (eq .ConfigItems.local_tokeninfo "true") }}
+{{ else if and (eq .ConfigItems.local_sandbox_tokeninfo "true") (eq .ConfigItems.local_tokeninfo "true") }}
           - "-status-checks=http://127.0.0.1:9021/health,http://127.0.0.1:9121/health"
-{{ elif eq .ConfigItems.local_sandbox_tokeninfo "true" }}
+{{ else if eq .ConfigItems.local_sandbox_tokeninfo "true" }}
           - "-status-checks=http://127.0.0.1:9121/health"
-{{ elif eq .ConfigItems.local_tokeninfo "true" }}
+{{ else if eq .ConfigItems.local_tokeninfo "true" }}
           - "-status-checks=http://127.0.0.1:9021/health"
 {{ end }}
         resources:
@@ -191,11 +191,11 @@ spec:
             mountPath: /etc/routes
           - name: filters
             mountPath: /etc/config/default-filters
-{{ elif eq .ConfigItems.local_sandbox_bridge "true"}}
+{{ else if eq .ConfigItems.local_sandbox_bridge "true"}}
         volumeMounts:
           - name: routes
             mountPath: /etc/routes
-{{ elif eq .ConfigItems.enable_apimonitoring "true"}}
+{{ else if eq .ConfigItems.enable_apimonitoring "true"}}
         volumeMounts:
           - name: filters
             mountPath: /etc/config/default-filters
@@ -211,7 +211,7 @@ spec:
         - name: routes
           configMap:
             name: sandbox-tokeninfo-bridge-conf
-{{ elif eq .ConfigItems.enable_apimonitoring "true"}}
+{{ else if eq .ConfigItems.enable_apimonitoring "true"}}
       volumes:
         - name: filters
           configMap:
