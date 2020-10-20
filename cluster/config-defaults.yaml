@@ -61,7 +61,7 @@ skipper_redis_cpu: "100m"
 skipper_redis_memory: "100Mi"
 
 # skipper api GW features
-enable_apimonitoring: "true"
+enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup candidate to reduce amount of branches in deployment
 {{if eq .Environment "production"}}
 enable_skipper_eastwest: "false"
 {{else}}
@@ -70,7 +70,7 @@ enable_skipper_eastwest: "true"
 
 # skipper tcp lifo
 # See: https://opensource.zalando.com/skipper/operation/operation/#tcp-lifo
-skipper_enable_tcp_queue: "true"
+skipper_enable_tcp_queue: "true"                    # TODO(sszuecs): cleanup candidate to reduce amount of branches in deployment
 skipper_expected_bytes_per_request: "51200"
 skipper_max_tcp_listener_concurrency: "-1"
 skipper_max_tcp_listener_queue: "-1"
@@ -90,18 +90,18 @@ lightstep_token: ""
 # can be one of disabled|provisioned|enabled
 routegroups_validation: "enabled"
 
+# migrate from multi container to single container multi process skipper-ingress
+skipper_single_container_enabled: "true"
 
 # tokeninfo
-skipper_ingress_tokeninfo_cpu: "1000m"
-skipper_ingress_tokeninfo_memory: "512Mi"
 {{if eq .Environment "production"}}
-tokeninfo_url: "https://info.services.auth.zalando.com/oauth2/tokeninfo"
-openid_provider_cfg_url: "https://identity.zalando.com/.well-known/openid-configuration"
-openid_issuer: "https://identity.zalando.com"
+tokeninfo_url: "http://127.0.0.1:9021/oauth2/tokeninfo"
+skipper_local_tokeninfo: "true"
 {{else}}
-tokeninfo_url: "https://sandbox-tokeninfo-bridge.stups.zalan.do/oauth2/tokeninfo"
-openid_provider_cfg_url: "https://sandbox.identity.zalando.com/.well-known/openid-configuration"
-openid_issuer: "https://sandbox.identity.zalando.com"
+tokeninfo_url: "http://127.0.0.1:9000/oauth2/tokeninfo"
+skipper_local_tokeninfo: "true"
+skipper_local_sandbox_tokeninfo: "true"
+skipper_local_sandbox_bridge: "true"
 {{end}}
 
 # Image Policy Webhook
