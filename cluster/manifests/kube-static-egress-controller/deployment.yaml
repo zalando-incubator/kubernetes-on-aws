@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-static-egress-controller
-    version: v0.2.5
+    version: v0.2.7
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: kube-static-egress-controller
-        version: v0.2.5
+        version: v0.2.7
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
       annotations:
@@ -30,7 +30,7 @@ spec:
       serviceAccountName: kube-static-egress-controller
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.2.5
+        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.2.7
         args:
         - "--provider=aws"
 {{- range $subnet := stupsNATSubnets .Values.vpc_ipv4_cidr }}
@@ -67,6 +67,8 @@ spec:
           requests:
             cpu: 5m
             memory: 50Mi
+        ports:
+          - containerPort: 8000
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
       volumes:
