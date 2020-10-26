@@ -25,8 +25,8 @@ data:
   pod.env-inject.variable._PLATFORM_CLUSTER_ID: "{{ .Cluster.ID }}"
   pod.env-inject.variable._PLATFORM_OPENTRACING_TAG_ACCOUNT: "{{ .Cluster.Alias }}"
   pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT: "8443"
-  pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST: "tracing.stups.zalan.do"
-  pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN: "{{ .ConfigItems.lightstep_token }}"
+  pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST: "{{ .Cluster.ConfigItems.tracing_collector_host }}"
+  pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN: "{{ .Cluster.ConfigItems.lightstep_token }}"
 {{- if eq .Cluster.Environment "e2e" }}
   pod.env-inject.variable._PLATFORM_E2E: "injected"
 {{- end }}
