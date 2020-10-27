@@ -18,15 +18,15 @@ data:
   pod.service-account-iam.enable: "true"
 {{- end }}
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
-  pod.aws-waiter.image: "pierone.stups.zalan.do/automata/aws-credentials-waiter:master-9"
+  pod.aws-waiter.image: "registry.opensource.zalan.do/automata/aws-credentials-waiter:master-10"
 {{- end }}
   pod.env-inject.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables }}"
   pod.env-inject.variable._PLATFORM_ACCOUNT: "{{ .Cluster.Alias }}"
   pod.env-inject.variable._PLATFORM_CLUSTER_ID: "{{ .Cluster.ID }}"
   pod.env-inject.variable._PLATFORM_OPENTRACING_TAG_ACCOUNT: "{{ .Cluster.Alias }}"
   pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT: "8443"
-  pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST: "tracing.stups.zalan.do"
-  pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN: "{{ .ConfigItems.lightstep_token }}"
+  pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST: "{{ .Cluster.ConfigItems.tracing_collector_host }}"
+  pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN: "{{ .Cluster.ConfigItems.lightstep_token }}"
 {{- if eq .Cluster.Environment "e2e" }}
   pod.env-inject.variable._PLATFORM_E2E: "injected"
 {{- end }}
