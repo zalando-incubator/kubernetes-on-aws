@@ -146,7 +146,13 @@ spec:
           - "-max-tcp-listener-concurrency={{ .ConfigItems.skipper_max_tcp_listener_concurrency }}"
           - "-max-tcp-listener-queue={{ .ConfigItems.skipper_max_tcp_listener_queue }}"
 {{ end }}
-          - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
+{{ if and (eq .Cluster.ConfigItems.skipper_local_tokeninfo "true") (eq .ConfigItems.skipper_local_sandbox_bridge "true") }}
+          - "-oauth2-tokeninfo-url=http://127.0.0.1:9000/oauth2/tokeninfo"
+{{ else if eq .Cluster.ConfigItems.skipper_local_tokeninfo "true" }}
+          - "-oauth2-tokeninfo-url=http://127.0.0.1:9021/oauth2/tokeninfo"
+{{ else }}
+          - "-oauth2-tokeninfo-url={{ .Cluster.ConfigItems.tokeninfo_url }}"
+{{ end }}
 {{ if and (and (eq .ConfigItems.skipper_local_sandbox_tokeninfo "true") (eq .ConfigItems.skipper_local_tokeninfo "true")) (eq .ConfigItems.skipper_local_sandbox_bridge "true") }}
           - "-status-checks=http://127.0.0.1:9021/health,http://127.0.0.1:9121/health,http://127.0.0.1:9000/healthz"
 {{ else if and (eq .ConfigItems.skipper_local_sandbox_tokeninfo "true") (eq .ConfigItems.skipper_local_tokeninfo "true") }}

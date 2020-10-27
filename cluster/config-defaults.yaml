@@ -98,12 +98,18 @@ skipper_single_container_enabled: "true"
 skipper_ingress_tokeninfo_cpu: "1000m"
 skipper_ingress_tokeninfo_memory: "512Mi"
 {{if eq .Environment "production"}}
-tokeninfo_url: "http://127.0.0.1:9021/oauth2/tokeninfo"
+# only used when `skipper_single_container_enabled=false` or `skipper_local_tokeninfo=false`
+tokeninfo_url: "https://info.services.auth.zalando.com/oauth2/tokeninfo"
+openid_provider_cfg_url: "https://identity.zalando.com/.well-known/openid-configuration"
+openid_issuer: "https://identity.zalando.com"
 skipper_local_tokeninfo: "true"
 skipper_local_sandbox_tokeninfo: "false"          # TODO(sszuecs): delete CR entries
 skipper_local_sandbox_bridge: "false"             # TODO(sszuecs): delete CR entries
 {{else}}
-tokeninfo_url: "http://127.0.0.1:9000/oauth2/tokeninfo"
+# only used when `skipper_single_container_enabled=false` or `skipper_local_tokeninfo=false`
+tokeninfo_url: "https://sandbox-tokeninfo-bridge.stups.zalan.do/oauth2/tokeninfo"
+openid_provider_cfg_url: "https://sandbox.identity.zalando.com/.well-known/openid-configuration"
+openid_issuer: "https://sandbox.identity.zalando.com"
 skipper_local_tokeninfo: "true"
 skipper_local_sandbox_tokeninfo: "true"
 skipper_local_sandbox_bridge: "true"
