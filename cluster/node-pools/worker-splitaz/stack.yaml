@@ -150,10 +150,6 @@ Resources:
 {{- if and $data.NodePool.IsSpot (eq (len $data.NodePool.InstanceTypes) 1) }}
         InstanceMarketOptions:
           MarketType: spot
-{{- if index $data.NodePool.ConfigItems "max_spot_price" }}
-          SpotOptions:
-            MaxPrice: "{{ $data.NodePool.ConfigItems.max_spot_price }}"
-{{- end }}
 {{ end }}
         UserData: "{{ .UserData }}"
     Type: 'AWS::EC2::LaunchTemplate'
