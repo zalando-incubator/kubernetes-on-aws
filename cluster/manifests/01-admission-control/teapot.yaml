@@ -199,16 +199,3 @@ webhooks:
         apiGroups: ["scheduling.k8s.io"]
         apiVersions: ["v1"]
         resources: ["priorityclasses"]
-  - name: postgresql-admitter.teapot.zalan.do
-    clientConfig:
-      url: "https://localhost:8085/postgresql"
-      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
-    admissionReviewVersions: ["v1beta1"]
-    failurePolicy: Fail
-    sideEffects: "NoneOnDryRun"
-    matchPolicy: Equivalent
-    rules:
-      - operations: [ "CREATE", "DELETE" ]
-        apiGroups: ["acid.zalan.do"]
-        apiVersions: ["v1"]
-        resources: ["postgresqls"]
