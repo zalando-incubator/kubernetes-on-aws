@@ -6,7 +6,7 @@ metadata:
   labels:
     application: kube-cluster-autoscaler
     {{- if eq .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
-    version: v1.18.2-internal.12
+    version: v1.18.2-internal.13
     {{- else }}
     version: v1.12.2-internal-2.17
     {{- end }}
@@ -21,7 +21,7 @@ spec:
       labels:
         application: kube-cluster-autoscaler
         {{- if eq .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
-        version: v1.18.2-internal.12
+        version: v1.18.2-internal.13
         {{- else }}
         version: v1.12.2-internal-2.17
         {{- end }}
@@ -42,7 +42,7 @@ spec:
       containers:
       - name: cluster-autoscaler
         {{- if eq .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.12
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.13
         {{- else }}
         image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal-2.17
         {{- end }}
@@ -65,6 +65,9 @@ spec:
           - --max-empty-bulk-delete={{ .Cluster.ConfigItems.autoscaling_max_empty_bulk_delete }}
           - --scale-down-unneeded-time={{ .Cluster.ConfigItems.autoscaling_scale_down_unneeded_time }}
           - --scale-down-delay-after-add=-1s
+          {{- if eq .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
+          - --backoff-no-full-scale-down={{ .Cluster.ConfigItems.cluster_autoscaler_keep_backed_off_pools_scaled_up }}
+          {{- end }}
         resources:
           requests:
             cpu: {{.Cluster.ConfigItems.cluster_autoscaler_cpu}}
