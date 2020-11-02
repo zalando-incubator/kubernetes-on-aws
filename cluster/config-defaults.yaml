@@ -67,11 +67,22 @@ skipper_redis_memory: "100Mi"
 
 # skipper api GW features
 enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup candidate to reduce amount of branches in deployment
+
+# skipper east-west feature
+# enable_skipper_eastwest is the legacy feature gate for the automatic
+# ingress.cluster.local addresses created by skipper.
+# enable_skipper_eastwest_dns only enables DNS and assumes users define the
+# ingress.cluster.local names explicitly on ingress/routegroup/stacksets
 {{if eq .Environment "production"}}
 enable_skipper_eastwest: "false"
+enable_skipper_eastwest_dns: "false"
 {{else}}
-enable_skipper_eastwest: "true"
+enable_skipper_eastwest: "false"
+enable_skipper_eastwest_dns: "true"
 {{end}}
+# enable temporay logging of ingress.cluster.local names
+# used to find services for which it's being used.
+skipper_eastwest_dns_log_enabled: "false"
 
 # skipper tcp lifo
 # See: https://opensource.zalando.com/skipper/operation/operation/#tcp-lifo
@@ -230,6 +241,7 @@ teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
 teapot_admission_controller_parent_resource_hash: "true"
+teapot_admission_controller_postgresql_delete_protection_enabled: "false"
 
 ## Defaults are set per-cluster
 teapot_admission_controller_check_daemonset_resources: "true"
