@@ -325,6 +325,17 @@ serialize_image_pulls: "false"
 # when set to true, routes external traffic to the apiserver through a skipper sidecar
 apiserver_proxy: "true"
 
+# defines the rollout status of the NLB for the API server. The options are:
+#
+#   disabled:    no NLB will be provisioned
+#   provisioned: NLB will be provisioned but not hooked up to the ASG
+#   hooked:      NLB will be provisioned and hooked up to the ASG but DNS still points to the ELB
+#   active:      NLB will be fully functional and DNS points to the NLB
+#   promoted:    NLB will be fully functional and ELB will be unhooked
+#   exclusive:   NLB will be fully functional and ELB will be removed
+#
+apiserver_nlb: "exclusive"
+
 # when set to true, service account tokens can be used from outside the cluster
 # requires apiserver_proxy to be set to "true"
 allow_external_service_accounts: "false"
