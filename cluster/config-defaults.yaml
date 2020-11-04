@@ -10,7 +10,11 @@ autoscaling_max_empty_bulk_delete: "10"
 autoscaling_scale_down_unneeded_time: "10m"
 
 # the cluster autoscaler release to use, options are 1_12 and 1_18.
+{{if eq .Environment "production"}}
 cluster_autoscaler_release: "1_12"
+{{else}}
+cluster_autoscaler_release: "1_18"
+{{end}}
 
 # When true, enables the legacy behaviour for 1.18 where pools that are backed off
 # don't get reset to their pre-scale-out values. This basically means the ASGs
