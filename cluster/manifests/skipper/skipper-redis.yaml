@@ -34,8 +34,11 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
           - topologyKey: kubernetes.io/hostname
             labelSelector:
-              matchLabels:
-                application: skipper-ingress-redis
+              matchExpressions:
+              - key: application
+                operator: In
+                values:
+                - skipper-ingress-redis
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       containers:
       - image: registry.opensource.zalan.do/zmon/redis:4.0.9-master-6
