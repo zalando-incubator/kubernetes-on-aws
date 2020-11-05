@@ -6,11 +6,15 @@ autoscaling_buffer_pods: "0"
 cluster_autoscaler_cpu: "100m"
 cluster_autoscaler_memory: "300Mi"
 autoscaling_utilization_threshold: "1.0"
-autoscaling_max_empty_bulk_delete: "25"
+autoscaling_max_empty_bulk_delete: "10"
 autoscaling_scale_down_unneeded_time: "10m"
 
 # the cluster autoscaler release to use, options are 1_12 and 1_18.
+{{if eq .Environment "production"}}
 cluster_autoscaler_release: "1_12"
+{{else}}
+cluster_autoscaler_release: "1_18"
+{{end}}
 
 # When true, enables the legacy behaviour for 1.18 where pools that are backed off
 # don't get reset to their pre-scale-out values. This basically means the ASGs
@@ -324,6 +328,17 @@ serialize_image_pulls: "false"
 
 # when set to true, routes external traffic to the apiserver through a skipper sidecar
 apiserver_proxy: "true"
+
+# defines the rollout status of the NLB for the API server. The options are:
+#
+#   disabled:    no NLB will be provisioned
+#   provisioned: NLB will be provisioned but not hooked up to the ASG
+#   hooked:      NLB will be provisioned and hooked up to the ASG but DNS still points to the ELB
+#   active:      NLB will be fully functional and DNS points to the NLB
+#   promoted:    NLB will be fully functional and ELB will be unhooked
+#   exclusive:   NLB will be fully functional and ELB will be removed
+#
+apiserver_nlb: "exclusive"
 
 # when set to true, service account tokens can be used from outside the cluster
 # requires apiserver_proxy to be set to "true"
