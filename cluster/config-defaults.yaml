@@ -408,7 +408,11 @@ enable_hpa_scale_to_zero: "true"
 
 # Enable FeatureGate EvenPodsSpread (PodTopologySpread)
 # Enabled by default since v1.18
+{{if eq .Environment "production"}}
 enable_even_pods_spread: "false"
+{{else}}
+enable_even_pods_spread: "true"
+{{end}}
 
 # Enable FeatureGate EphemeralContainers (Alpha)
 # https://kubernetes.io/docs/tasks/debug-application-cluster/debug-running-pod/
