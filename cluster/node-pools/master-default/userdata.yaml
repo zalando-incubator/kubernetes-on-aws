@@ -139,7 +139,7 @@ write_files:
           - --authorization-mode=Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true,EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true,EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},EvenPodsSpread={{ .Cluster.ConfigItems.enable_even_pods_spread }}
           - --anonymous-auth=false
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
@@ -211,7 +211,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-81
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-82
           name: admission-controller
           lifecycle:
             preStop:
