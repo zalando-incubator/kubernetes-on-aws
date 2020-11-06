@@ -40,12 +40,17 @@ kube_aws_ingress_controller_nlb_cross_zone: "true"
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "60"
 skipper_ingress_target_average_utilization_memory: "80"
-skipper_ingress_max_replicas: "30"
+skipper_ingress_max_replicas: "180"
 skipper_ingress_min_replicas: "3"
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1Gi"
 skipper_ingress_tracing_buffer: "8192"
 enable_dedicate_nodepool_skipper: "false"
+{{if eq .Environment "e2e"}}
+skipper_topology_spread_enabled: "true"
+{{else}}
+skipper_topology_spread_enabled: "false"
+{{end}}
 
 # skipper default filters
 skipper_default_filters: 'enableAccessLog(4,5) -> lifo(2000,20000,"3s")'
@@ -274,6 +279,12 @@ teapot_admission_controller_ignore_namespaces: "^kube-system$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "true"
 {{end}}
 
+# set topology spread injection based on usage of CA 1.18
+{{if eq .Environment "production"}}
+teapot_admission_controller_topology_spread: disable
+{{else}}
+teapot_admission_controller_topology_spread: optin
+{{end}}
 
 # etcd cluster
 {{if eq .Environment "production"}}
@@ -406,7 +417,11 @@ enable_hpa_scale_to_zero: "true"
 
 # Enable FeatureGate EvenPodsSpread (PodTopologySpread)
 # Enabled by default since v1.18
+{{if eq .Environment "production"}}
 enable_even_pods_spread: "false"
+{{else}}
+enable_even_pods_spread: "true"
+{{end}}
 
 # Enable FeatureGate EphemeralContainers (Alpha)
 # https://kubernetes.io/docs/tasks/debug-application-cluster/debug-running-pod/
