@@ -1,0 +1,21 @@
+{{ if and (index .Cluster.ConfigItems "spotio_account_id") (index .Cluster.ConfigItems "spotio_access_token") }}
+apiVersion: autoscaling.k8s.io/v1beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: spotinst-kubernetes-cluster-controller
+  namespace: kube-system
+  labels:
+    application: spotinst-kubernetes-cluster-controller
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: spotinst-kubernetes-cluster-controller
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: controller
+      maxAllowed:
+        memory: {{.ConfigItems.spotio_ocean_controller_memory_max}}
+{{ end }}
