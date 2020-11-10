@@ -6,11 +6,20 @@ autoscaling_buffer_pods: "0"
 cluster_autoscaler_cpu: "100m"
 cluster_autoscaler_memory: "300Mi"
 autoscaling_utilization_threshold: "1.0"
-autoscaling_max_empty_bulk_delete: "25"
+autoscaling_max_empty_bulk_delete: "10"
 autoscaling_scale_down_unneeded_time: "10m"
 
 # the cluster autoscaler release to use, options are 1_12 and 1_18.
+{{if eq .Environment "production"}}
 cluster_autoscaler_release: "1_12"
+{{else}}
+cluster_autoscaler_release: "1_18"
+{{end}}
+
+# When true, enables the legacy behaviour for 1.18 where pools that are backed off
+# don't get reset to their pre-scale-out values. This basically means the ASGs
+# keep trying to get a node while CA already moves on to the next ASG.
+cluster_autoscaler_keep_backed_off_pools_scaled_up: "true"
 
 # defines which expander the autoscaler should use
 cluster_autoscaler_expander: highest-priority
@@ -31,12 +40,17 @@ kube_aws_ingress_controller_nlb_cross_zone: "true"
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "60"
 skipper_ingress_target_average_utilization_memory: "80"
-skipper_ingress_max_replicas: "30"
+skipper_ingress_max_replicas: "180"
 skipper_ingress_min_replicas: "3"
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1Gi"
 skipper_ingress_tracing_buffer: "8192"
 enable_dedicate_nodepool_skipper: "false"
+{{if eq .Environment "e2e"}}
+skipper_topology_spread_enabled: "true"
+{{else}}
+skipper_topology_spread_enabled: "false"
+{{end}}
 
 # skipper default filters
 skipper_default_filters: 'enableAccessLog(4,5) -> lifo(2000,20000,"3s")'
@@ -62,11 +76,22 @@ skipper_redis_memory: "100Mi"
 
 # skipper api GW features
 enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup candidate to reduce amount of branches in deployment
+
+# skipper east-west feature
+# enable_skipper_eastwest is the legacy feature gate for the automatic
+# ingress.cluster.local addresses created by skipper.
+# enable_skipper_eastwest_dns only enables DNS and assumes users define the
+# ingress.cluster.local names explicitly on ingress/routegroup/stacksets
 {{if eq .Environment "production"}}
 enable_skipper_eastwest: "false"
+enable_skipper_eastwest_dns: "false"
 {{else}}
-enable_skipper_eastwest: "true"
+enable_skipper_eastwest: "false"
+enable_skipper_eastwest_dns: "true"
 {{end}}
+# enable temporay logging of ingress.cluster.local names
+# used to find services for which it's being used.
+skipper_eastwest_dns_log_enabled: "false"
 
 # skipper tcp lifo
 # See: https://opensource.zalando.com/skipper/operation/operation/#tcp-lifo
@@ -225,6 +250,7 @@ teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
 teapot_admission_controller_parent_resource_hash: "true"
+teapot_admission_controller_postgresql_delete_protection_enabled: "false"
 
 ## Defaults are set per-cluster
 teapot_admission_controller_check_daemonset_resources: "true"
@@ -253,6 +279,12 @@ teapot_admission_controller_ignore_namespaces: "^kube-system$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "true"
 {{end}}
 
+# set topology spread injection based on usage of CA 1.18
+{{if eq .Environment "production"}}
+teapot_admission_controller_topology_spread: disable
+{{else}}
+teapot_admission_controller_topology_spread: optin
+{{end}}
 
 # etcd cluster
 {{if eq .Environment "production"}}
@@ -385,7 +417,11 @@ enable_hpa_scale_to_zero: "true"
 
 # Enable FeatureGate EvenPodsSpread (PodTopologySpread)
 # Enabled by default since v1.18
+{{if eq .Environment "production"}}
 enable_even_pods_spread: "false"
+{{else}}
+enable_even_pods_spread: "true"
+{{end}}
 
 # Enable FeatureGate EphemeralContainers (Alpha)
 # https://kubernetes.io/docs/tasks/debug-application-cluster/debug-running-pod/

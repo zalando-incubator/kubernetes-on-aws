@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.11.156
+    version: v0.11.185
     component: ingress
 spec:
   strategy:
@@ -20,7 +20,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.11.156
+        version: v0.11.185
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -37,13 +37,22 @@ spec:
                   values:
                   - skipper-ingress
               topologyKey: kubernetes.io/hostname
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              application: skipper-ingress
+{{- end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
       dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.156
+        image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.185
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -102,7 +111,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/pathfinder/skipper:v0.11.156
+            tag=artifact=registry.opensource.zalan.do/pathfinder/skipper:v0.11.185
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
             min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }}
