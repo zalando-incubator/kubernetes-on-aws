@@ -6,7 +6,7 @@ RUN GO111MODULE=on go get github.com/onsi/ginkgo/ginkgo@v1.8.0
 # final image
 # TODO get rid of python dependencies
 # * wait-for-update.py
-FROM registry.opensource.zalan.do/stups/python:latest
+FROM registry.opensource.zalan.do/library/python-3.8-slim:latest
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
   git \
