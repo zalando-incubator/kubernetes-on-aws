@@ -45,3 +45,10 @@ data:
   postgresql.delete-protection.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_postgresql_delete_protection_enabled }}"
 
   pod.automatic-topology-spread.mode: "{{ .Cluster.ConfigItems.teapot_admission_controller_topology_spread }}"
+{{- range $group, $enabled := zoneDistributedNodePoolGroups .Cluster.NodePools }}
+{{- if eq $group "" }}
+  pod.automatic-topology-spread.pools.default: "{{ $enabled }}"
+{{- else }}
+  pod.automatic-topology-spread.pools.dedicated.{{$group}}: "{{ $enabled }}"
+{{- end }}
+{{- end}}
