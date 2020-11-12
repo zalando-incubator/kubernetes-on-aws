@@ -127,14 +127,12 @@ skipper_ingress_tokeninfo_cpu: "1000m"
 skipper_ingress_tokeninfo_memory: "512Mi"
 {{if eq .Environment "production"}}
 tokeninfo_url: "http://127.0.0.1:9021/oauth2/tokeninfo"
-skipper_local_tokeninfo: "true"
-skipper_local_sandbox_tokeninfo: "false"          # TODO(sszuecs): delete CR entries
-skipper_local_sandbox_bridge: "false"             # TODO(sszuecs): delete CR entries
+# production|bridge|disabled
+skipper_local_tokeninfo: "production"
 {{else}}
-tokeninfo_url: "http://127.0.0.1:9000/oauth2/tokeninfo"
-skipper_local_tokeninfo: "true"
-skipper_local_sandbox_tokeninfo: "true"
-skipper_local_sandbox_bridge: "true"
+tokeninfo_url: "" # can be set when local tokeninfo is disabled
+# production|bridge|disabled
+skipper_local_tokeninfo: "bridge"
 {{end}}
 
 # Image Policy Webhook
