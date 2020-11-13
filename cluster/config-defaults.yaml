@@ -17,6 +17,13 @@ cluster_autoscaler_release: "1_18"
 # keep trying to get a node while CA already moves on to the next ASG.
 cluster_autoscaler_keep_backed_off_pools_scaled_up: "true"
 
+# How long to wait for pod eviction when scaling down.
+{{if eq .Environment "production"}}
+cluster_autoscaler_max_pod_eviction_time: "2m"
+{{else}}
+cluster_autoscaler_max_pod_eviction_time: "3h"
+{{end}}
+
 # defines which expander the autoscaler should use
 cluster_autoscaler_expander: highest-priority
 
