@@ -63,7 +63,7 @@ spec:
             secretKeyRef:
               name: skipper-ingress
               key: lightstep-token
-{{ if eq .ConfigItems.skipper_local_tokeninfo "true" }}
+{{ if or (eq .ConfigItems.skipper_local_tokeninfo "production") (eq .ConfigItems.skipper_local_tokeninfo "bridge") }}
         - name: LOCAL_TOKENINFO
           value: "true"
         - name: ENABLE_OPENTRACING
@@ -76,7 +76,7 @@ spec:
               name: skipper-ingress
               key: lightstep-token
 {{ end }}
-{{ if eq .ConfigItems.skipper_local_sandbox_tokeninfo "true" }}
+{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
         - name: LOCAL_TOKENINFO_SANDBOX
           value: "true"
 {{ end }}
@@ -155,15 +155,14 @@ spec:
           - "-max-tcp-listener-concurrency={{ .ConfigItems.skipper_max_tcp_listener_concurrency }}"
           - "-max-tcp-listener-queue={{ .ConfigItems.skipper_max_tcp_listener_queue }}"
 {{ end }}
-          - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
-{{ if and (and (eq .ConfigItems.skipper_local_sandbox_tokeninfo "true") (eq .ConfigItems.skipper_local_tokeninfo "true")) (eq .ConfigItems.skipper_local_sandbox_bridge "true") }}
+{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
+          - "-oauth2-tokeninfo-url=http://127.0.0.1:9000/oauth2/tokeninfo"
           - "-status-checks=http://127.0.0.1:9021/health,http://127.0.0.1:9121/health,http://127.0.0.1:9000/healthz"
-{{ else if and (eq .ConfigItems.skipper_local_sandbox_tokeninfo "true") (eq .ConfigItems.skipper_local_tokeninfo "true") }}
-          - "-status-checks=http://127.0.0.1:9021/health,http://127.0.0.1:9121/health"
-{{ else if eq .ConfigItems.skipper_local_sandbox_tokeninfo "true" }}
-          - "-status-checks=http://127.0.0.1:9121/health"
-{{ else if eq .ConfigItems.skipper_local_tokeninfo "true" }}
+{{ else if eq .ConfigItems.skipper_local_tokeninfo "production" }}
+          - "-oauth2-tokeninfo-url=http://127.0.0.1:9021/oauth2/tokeninfo"
           - "-status-checks=http://127.0.0.1:9021/health"
+{{ else }}
+          - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
 {{ end }}
         resources:
           limits:
@@ -178,7 +177,7 @@ spec:
             port: 9999
           initialDelaySeconds: 60
           timeoutSeconds: 5
-{{ if eq .ConfigItems.skipper_local_tokeninfo "true"}}
+{{ if eq .ConfigItems.skipper_local_tokeninfo "production" }}
         livenessProbe:
           httpGet:
             path: /health
@@ -190,18 +189,33 @@ spec:
           timeoutSeconds: 5
           successThreshold: 1
           failureThreshold: 5
+{{ else if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -ce
+            # Check all sub processes in the container and fail if one of them fails.
+            # wget will exit with non-zero status code if the HTTP code is no 2xx.
+            # production tokeinfo, sandbox tokeninfo, bridge
+            - "wget -T 1 -q -O /dev/null http://127.0.0.1:9021/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9121/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9000/healthz"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
 {{ end }}
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
-{{ if and (eq .ConfigItems.skipper_local_sandbox_bridge "true") (eq .ConfigItems.enable_apimonitoring "true")}}
+{{ if and (eq .ConfigItems.skipper_local_tokeninfo "bridge") (eq .ConfigItems.enable_apimonitoring "true")}}
         volumeMounts:
           - name: routes
             mountPath: /etc/routes
           - name: filters
             mountPath: /etc/config/default-filters
-{{ else if eq .ConfigItems.skipper_local_sandbox_bridge "true"}}
+{{ else if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
         volumeMounts:
           - name: routes
             mountPath: /etc/routes
@@ -212,7 +226,7 @@ spec:
 {{ end }}
       securityContext:
         fsGroup: 1000
-{{ if and (eq .ConfigItems.skipper_local_sandbox_bridge "true") (eq .ConfigItems.enable_apimonitoring "true")}}
+{{ if and (eq .ConfigItems.skipper_local_tokeninfo "bridge") (eq .ConfigItems.enable_apimonitoring "true")}}
       volumes:
         - name: filters
           configMap:
