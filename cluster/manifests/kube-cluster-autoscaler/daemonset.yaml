@@ -6,7 +6,7 @@ metadata:
   labels:
     application: kube-cluster-autoscaler
     {{- if eq .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
-    version: v1.18.2-internal.19
+    version: v1.18.2-internal.20
     {{- else }}
     version: v1.12.2-internal-2.17
     {{- end }}
@@ -21,7 +21,7 @@ spec:
       labels:
         application: kube-cluster-autoscaler
         {{- if eq .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
-        version: v1.18.2-internal.19
+        version: v1.18.2-internal.20
         {{- else }}
         version: v1.12.2-internal-2.17
         {{- end }}
@@ -44,7 +44,7 @@ spec:
       containers:
       - name: cluster-autoscaler
         {{- if eq .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.19
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.20
         {{- else }}
         image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal-2.17
         {{- end }}
@@ -70,6 +70,7 @@ spec:
           {{- if eq .Cluster.ConfigItems.cluster_autoscaler_release "1_18" }}
           - --backoff-no-full-scale-down={{ .Cluster.ConfigItems.cluster_autoscaler_keep_backed_off_pools_scaled_up }}
           - --max-pod-eviction-time={{ .Cluster.ConfigItems.cluster_autoscaler_max_pod_eviction_time }}
+          - --topology-spread-constraint-scale-factor=3
           {{- end }}
         resources:
           requests:
