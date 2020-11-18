@@ -20,8 +20,10 @@ cluster_autoscaler_keep_backed_off_pools_scaled_up: "true"
 # How long to wait for pod eviction when scaling down.
 {{if eq .Environment "production"}}
 cluster_autoscaler_max_pod_eviction_time: "2m"
+cluster_autoscaler_disable_node_instances_cache: "false"
 {{else}}
 cluster_autoscaler_max_pod_eviction_time: "3h"
+cluster_autoscaler_disable_node_instances_cache: "true"
 {{end}}
 
 # defines which expander the autoscaler should use
@@ -119,6 +121,9 @@ tracing_collector_host: "tracing.stups.zalan.do"
 # can be one of disabled|provisioned|enabled
 routegroups_validation: "enabled"
 
+# enable hostnames with port in host definition
+skipper_routegroup_enable_hostport: "false"
+
 # migrate from multi container to single container multi process skipper-ingress
 skipper_single_container_enabled: "true"
 
@@ -127,14 +132,12 @@ skipper_ingress_tokeninfo_cpu: "1000m"
 skipper_ingress_tokeninfo_memory: "512Mi"
 {{if eq .Environment "production"}}
 tokeninfo_url: "http://127.0.0.1:9021/oauth2/tokeninfo"
-skipper_local_tokeninfo: "true"
-skipper_local_sandbox_tokeninfo: "false"          # TODO(sszuecs): delete CR entries
-skipper_local_sandbox_bridge: "false"             # TODO(sszuecs): delete CR entries
+# production|bridge|disabled
+skipper_local_tokeninfo: "production"
 {{else}}
-tokeninfo_url: "http://127.0.0.1:9000/oauth2/tokeninfo"
-skipper_local_tokeninfo: "true"
-skipper_local_sandbox_tokeninfo: "true"
-skipper_local_sandbox_bridge: "true"
+tokeninfo_url: "" # can be set when local tokeninfo is disabled
+# production|bridge|disabled
+skipper_local_tokeninfo: "bridge"
 {{end}}
 
 # Image Policy Webhook
@@ -191,7 +194,7 @@ prometheus_kube_state_metrics_drop_labels: ""
 
 metrics_service_cpu: "100m"
 metrics_service_mem: "200Mi"
-metrics_service_mem_max: "1Gi"
+metrics_service_mem_max: "4Gi"
 
 kube_aws_iam_controller_cpu: "5m"
 kube_aws_iam_controller_mem: "50Mi"
@@ -199,10 +202,10 @@ kube_aws_iam_controller_mem_max: "1Gi"
 
 kube_state_metrics_cpu: "100m"
 kube_state_metrics_mem: "200Mi"
-kube_state_metrics_mem_max: "1Gi"
+kube_state_metrics_mem_max: "4Gi"
 kube_state_metrics_mem_min: "120Mi"
 
-kubernetes_lifecycle_metrics_mem_max: "1Gi"
+kubernetes_lifecycle_metrics_mem_max: "4Gi"
 kubernetes_lifecycle_metrics_mem_min: "120Mi"
 
 # Kubernetes Downscaler (for non-production clusters)
@@ -441,7 +444,7 @@ spot_allocation_strategy: "capacity-optimized"
 # Stackset controller
 stackset_controller_sync_interval: "10s"
 stackset_controller_mem_min: "120Mi"
-stackset_controller_mem_max: "1Gi"
+stackset_controller_mem_max: "4Gi"
 
 # EBS settings for the root volume
 ebs_root_volume_size: "50"
