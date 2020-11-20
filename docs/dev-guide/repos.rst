@@ -12,8 +12,6 @@ Kubernetes on AWS (GH)
     https://github.com/zalando-incubator/kubernetes-on-aws
 STUPS etcd
     https://github.com/zalando/stups-etcd-cluster
-Zalando Kubectl Wrapper
-    https://github.com/zalando-incubator/zalando-kubectl
 External DNS
     https://github.com/kubernetes-incubator/external-dns
 Kubernetes AWS Cluster Autoscaler
