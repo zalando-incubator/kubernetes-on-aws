@@ -224,6 +224,14 @@ func changePathIngress(ing *v1beta1.Ingress, path string) *v1beta1.Ingress {
 	)
 }
 
+func createSkipperPodWithHostNetwork(nameprefix, namespace, serviceAccount, route string, labels map[string]string, port int) *v1.Pod {
+	pod := createSkipperPod(nameprefix, namespace, route, labels, port)
+	pod.Spec.HostNetwork = true
+	pod.Spec.ServiceAccountName = serviceAccount
+	pod.Spec.Containers[0].Ports[0].HostPort = int32(port)
+	return pod
+}
+
 func createSkipperPod(nameprefix, namespace, route string, labels map[string]string, port int) *v1.Pod {
 	return &v1.Pod{
 		TypeMeta: metav1.TypeMeta{
@@ -246,34 +254,6 @@ func createSkipperPod(nameprefix, namespace, route string, labels map[string]str
 						route,
 						fmt.Sprintf("-address=:%d", port),
 					},
-					Ports: []v1.ContainerPort{
-						{
-							Name:          "http",
-							ContainerPort: int32(port),
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func createNginxPod(nameprefix, namespace string, labels map[string]string, port int) *v1.Pod {
-	return &v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nameprefix + string(uuid.NewUUID()),
-			Namespace: namespace,
-			Labels:    labels,
-		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Name:  "nginx",
-					Image: "nginx:latest",
 					Ports: []v1.ContainerPort{
 						{
 							Name:          "http",
@@ -393,42 +373,10 @@ func createAWSIAMRole(name, namespace, role string) *zv1.AWSIAMRole {
 	}
 }
 
-func createNginxDeploymentWithHostNetwork(nameprefix, namespace, serviceAccount string, label map[string]string, port, replicas int32) *appsv1.Deployment {
-	zero := int64(0)
-	return &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nameprefix + string(uuid.NewUUID()),
-			Namespace: namespace,
-			Labels:    label,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicas,
-			Selector: &metav1.LabelSelector{MatchLabels: label},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: label,
-				},
-				Spec: v1.PodSpec{
-					HostNetwork:                   true,
-					ServiceAccountName:            serviceAccount,
-					TerminationGracePeriodSeconds: &zero,
-					Containers: []v1.Container{
-						{
-							Name:  "nginx",
-							Image: "nginx:latest",
-							Ports: []v1.ContainerPort{
-								{
-									Name:          "http",
-									ContainerPort: port,
-									HostPort:      port,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+func createSkipperBackendDeploymentWithHostNetwork(nameprefix, namespace, serviceAccount, route string, label map[string]string, port, replicas int32) *appsv1.Deployment {
+	depl := createSkipperBackendDeployment(nameprefix, namespace, route, label, port, replicas)
+	depl.Spec.Template.Spec.ServiceAccountName = serviceAccount
+	return depl
 }
 
 func createSkipperBackendDeployment(nameprefix, namespace, route string, label map[string]string, port, replicas int32) *appsv1.Deployment {
@@ -511,37 +459,6 @@ func createRBACRoleBindingSA(role, namespace, serviceAccount string) *rbacv1.Rol
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
 			Name:     role,
-		},
-	}
-}
-
-func createNginxPodWithHostNetwork(namespace, serviceAccount string, label map[string]string, port int32) *v1.Pod {
-	return &v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "psp-test-" + string(uuid.NewUUID()),
-			Namespace: namespace,
-			Labels:    label,
-		},
-		Spec: v1.PodSpec{
-			HostNetwork:        true,
-			ServiceAccountName: serviceAccount,
-			Containers: []v1.Container{
-				{
-					Name:  "nginx",
-					Image: "nginx:latest",
-					Ports: []v1.ContainerPort{
-						{
-							Name:          "http",
-							ContainerPort: port,
-							HostPort:      port,
-						},
-					},
-				},
-			},
 		},
 	}
 }
