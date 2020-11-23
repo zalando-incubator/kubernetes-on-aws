@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: external-dns
-    version: aws-fix-alias-records
+    version: aws-fix-alias-records-2
 spec:
   strategy:
     type: Recreate
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: external-dns
-        version: aws-fix-alias-records
+        version: aws-fix-alias-records-2
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
 {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
       annotations:
@@ -32,7 +32,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns-test:aws-fix-alias-records
+        image: registry.opensource.zalan.do/teapot/external-dns-test:aws-fix-alias-records-2
         args:
         - --source=service
         - --source=ingress
