@@ -18,10 +18,10 @@ require (
 	github.com/zalando-incubator/kube-aws-iam-controller v0.1.2
 	github.com/zalando-incubator/stackset-controller v1.3.7
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	k8s.io/api v0.18.9
-	k8s.io/apimachinery v0.18.9
+	k8s.io/api v0.18.12
+	k8s.io/apimachinery v0.18.12
 	k8s.io/apiserver v0.0.0
-	k8s.io/client-go v0.18.9
+	k8s.io/client-go v0.18.12
 	k8s.io/kubernetes v0.0.0
 )
 
