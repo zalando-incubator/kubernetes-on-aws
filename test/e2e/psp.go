@@ -58,7 +58,8 @@ var _ = framework.KubeDescribe("PSP use", func() {
 	// 	}
 	// 	msg := fmt.Sprintf("Creating a privileged POD as %s", defaultSA)
 	// 	By(msg)
-	// 	pod := createNginxPodWithHostNetwork(ns, defaultSA, label, 80)
+	//      route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
+	// 	pod := createSkipperPodWithHostNetwork("", ns, defaultSA, route, label, 80)
 	// 	defer func() {
 	// 		By(msg)
 	// 		defer GinkgoRecover()
@@ -75,12 +76,12 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		label := map[string]string{
 			"app": "psp",
 		}
-		var port int32 = 81
-
+		port := 81
 		msg := fmt.Sprintf("Creating a privileged POD as %s", privilegedSA)
 
 		By(msg)
-		pod := createNginxPodWithHostNetwork(ns, privilegedSA, label, port)
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
+		pod := createSkipperPodWithHostNetwork("", ns, privilegedSA, route, label, port)
 		defer func() {
 			By(msg)
 			defer GinkgoRecover()
@@ -105,7 +106,8 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		port := int32(82)
 
 		By(fmt.Sprintf("Creating a deployment that creates a privileged POD as %s", privilegedSA))
-		d := createNginxDeploymentWithHostNetwork("psp-test-", ns, privilegedSA, label, port, replicas)
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
+		d := createSkipperBackendDeploymentWithHostNetwork("psp-test-", ns, privilegedSA, route, label, port, replicas)
 		d.Annotations = map[string]string{"test": "should-copy-to-replica-set", v1.LastAppliedConfigAnnotation: "should-not-copy-to-replica-set"}
 
 		defer func() {
@@ -120,7 +122,7 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for it to be updated to revision 1
-		err = deploymentframework.WaitForDeploymentRevisionAndImage(cs, ns, deploy.Name, "1", "nginx:latest")
+		err = deploymentframework.WaitForDeploymentRevisionAndImage(cs, ns, deploy.Name, "1", d.Spec.Template.Spec.Containers[0].Image)
 		Expect(err).NotTo(HaveOccurred())
 		err = deploymentframework.WaitForDeploymentComplete(cs, deploy)
 		Expect(err).NotTo(HaveOccurred())
@@ -130,7 +132,6 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Got rs: %s, from deployment: %s", rs.Name, deploy.Name))
 
-		//pods, err := framework.PodsCreated(f.ClientSet, f.Namespace.Name, rs.Name, replicas)
 		pods, err := e2epod.PodsCreatedByLabel(f.ClientSet, f.Namespace.Name, rs.Name, replicas, labelSelector)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Ensuring each pod is running for rs: %s, pod: %s", rs.Name, pods.Items[0].Name))
