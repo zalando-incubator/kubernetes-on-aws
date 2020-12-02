@@ -183,15 +183,15 @@ prometheus_cpu_min: "0"
 prometheus_tsdb_retention_size: "disabled"
 prometheus_csi_ebs: "false"
 
-# The remote configs match the prometheus defaults:
+# Upstream defaults are too aggressive:
 # https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write
 prometheus_remote_write: "disabled"
 # Maximum time a sample will wait in buffer.
-prometheus_remote_batch_send_deadline: "5s"
+prometheus_remote_batch_send_deadline: "30s"
 # Initial retry delay. Gets doubled for every retry.
-prometheus_remote_min_backoff: "30ms"
+prometheus_remote_min_backoff: "3s"
 # Maximum retry delay.
-prometheus_remote_max_backoff: "100ms"
+prometheus_remote_max_backoff: "10s"
 
 # regex defining labels to be dropped when scraping from kube-state-metrics
 # Simple workaround for: https://github.com/kubernetes/kube-state-metrics/issues/1115
