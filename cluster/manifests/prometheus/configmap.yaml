@@ -63,8 +63,9 @@ data:
     global:
       scrape_interval: 15s
       external_labels:
-        prometheus_replica: @@POD_NAME@@
         cluster: {{ .Cluster.Alias }}
+        prom_ha_cluster: {{ .Cluster.Alias }}
+        prom_ha_instance: @@POD_NAME@@
     rule_files:
     - "prometheus.rules.yaml"
 {{ if ne .ConfigItems.prometheus_remote_write "disabled" }}
