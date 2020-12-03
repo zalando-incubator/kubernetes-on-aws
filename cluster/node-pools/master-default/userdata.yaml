@@ -69,9 +69,9 @@ write_files:
         cpu: "100m"
         memory: "282Mi"
       allowedUnsafeSysctls:
-        - net.ipv4.tcp_keepalive_time
-        - net.ipv4.tcp_keepalive_intvl
-        - net.ipv4.tcp_keepalive_probes
+{{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
+        - {{$sysctl}}
+{{- end }}
       authentication:
         anonymous:
           enabled: true
