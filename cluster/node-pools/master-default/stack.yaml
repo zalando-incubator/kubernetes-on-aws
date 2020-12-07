@@ -56,6 +56,12 @@ Resources:
         CreditSpecification:
           CpuCredits: unlimited
 {{ end }}
+        BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: {{.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
+            VolumeSize: {{.NodePool.ConfigItems.ebs_master_root_volume_size}}
+            VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
           AssociatePublicIpAddress: true
