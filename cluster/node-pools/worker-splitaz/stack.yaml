@@ -126,13 +126,12 @@ Resources:
     Properties:
       LaunchTemplateName: '{{ $data.Cluster.LocalID }}-{{ $data.NodePool.Name }}'
       LaunchTemplateData:
-{{ if ne $data.NodePool.ConfigItems.ebs_root_volume_size "50" }}
         BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
             DeleteOnTermination: {{$data.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
             VolumeSize: {{$data.NodePool.ConfigItems.ebs_root_volume_size}}
-{{ end }}
+            VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
           AssociatePublicIpAddress: true

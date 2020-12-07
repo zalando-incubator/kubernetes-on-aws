@@ -1,4 +1,3 @@
-{{ if eq .ConfigItems.skipper_single_container_enabled "true"}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.11.195
+    version: v0.11.204
     component: ingress
 spec:
   strategy:
@@ -20,7 +19,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.11.195
+        version: v0.11.204
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -52,7 +51,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper:v0.11.195-37
+        image: registry.opensource.zalan.do/teapot/skipper:v0.11.204-46
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -128,7 +127,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper:v0.11.195
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper:v0.11.204
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
             min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }}
@@ -148,7 +147,6 @@ spec:
           - "-read-timeout-server={{ .ConfigItems.skipper_read_timeout_server }}"
           - "-write-timeout-server={{ .ConfigItems.skipper_write_timeout_server }}"
           - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
-          - "-route-creation-metrics"
 {{ if eq .ConfigItems.skipper_enable_tcp_queue "true" }}
           - "-enable-tcp-queue"
           - "-expected-bytes-per-request={{ .ConfigItems.skipper_expected_bytes_per_request }}"
@@ -249,5 +247,4 @@ spec:
       - effect: NoSchedule
         key: dedicated
         value: skipper-ingress
-{{ end }}
 {{ end }}
