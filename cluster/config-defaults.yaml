@@ -77,7 +77,7 @@ skipper_write_timeout_server: "60s"
 # skipper redis settings
 skipper_redis_replicas: 2
 skipper_redis_cpu: "100m"
-skipper_redis_memory: "100Mi"
+skipper_redis_memory: "512Mi"
 
 # skipper api GW features
 enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup candidate to reduce amount of branches in deployment
@@ -123,9 +123,6 @@ routegroups_validation: "enabled"
 
 # enable hostnames with port in host definition
 skipper_routegroup_enable_hostport: "false"
-
-# migrate from multi container to single container multi process skipper-ingress
-skipper_single_container_enabled: "true"
 
 # tokeninfo
 skipper_ingress_tokeninfo_cpu: "1000m"
@@ -183,9 +180,18 @@ prometheus_cpu: "1000m"
 prometheus_mem: "4Gi"
 prometheus_mem_min: "2Gi"
 prometheus_cpu_min: "0"
-prometheus_remote_write: "disabled"
 prometheus_tsdb_retention_size: "disabled"
 prometheus_csi_ebs: "false"
+
+# Upstream defaults are too aggressive:
+# https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write
+prometheus_remote_write: "disabled"
+# Maximum time a sample will wait in buffer.
+prometheus_remote_batch_send_deadline: "30s"
+# Initial retry delay. Gets doubled for every retry.
+prometheus_remote_min_backoff: "3s"
+# Maximum retry delay.
+prometheus_remote_max_backoff: "10s"
 
 # regex defining labels to be dropped when scraping from kube-state-metrics
 # Simple workaround for: https://github.com/kubernetes/kube-state-metrics/issues/1115
@@ -258,7 +264,6 @@ teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
 teapot_admission_controller_parent_resource_hash: "true"
-teapot_admission_controller_postgresql_delete_protection_enabled: "false"
 
 ## Defaults are set per-cluster
 teapot_admission_controller_check_daemonset_resources: "true"
@@ -269,14 +274,20 @@ teapot_admission_controller_daemonset_reserved_memory: "64Gi"
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
+teapot_admission_controller_postgresql_delete_protection_enabled: "true"
+teapot_admission_controller_namespace_delete_protection_enabled: "true"
 {{else if eq .Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
+teapot_admission_controller_postgresql_delete_protection_enabled: "false"
+teapot_admission_controller_namespace_delete_protection_enabled: "false"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "false"
+teapot_admission_controller_postgresql_delete_protection_enabled: "false"
+teapot_admission_controller_namespace_delete_protection_enabled: "false"
 {{end}}
 
 {{if eq .Environment "e2e"}}
@@ -303,7 +314,7 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 coredns_max_upstream_concurrency: 0 #0 means there is not concurrency limits
 
-kuberuntu_image_v1_18: {{ amiID "zalando-ubuntu-kubernetes-production-v1.18.10-master-129" "861068367966" }}
+kuberuntu_image_v1_18: {{ amiID "zalando-ubuntu-kubernetes-production-v1.18.12-master-131" "861068367966" }}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -447,6 +458,7 @@ stackset_controller_mem_min: "120Mi"
 stackset_controller_mem_max: "4Gi"
 
 # EBS settings for the root volume
+ebs_master_root_volume_size: "50"
 ebs_root_volume_size: "50"
 ebs_root_volume_delete_on_termination: "true"
 
@@ -469,6 +481,10 @@ kubernetes_event_logger_enabled: "true"
 
 # enable/disable routegroup support for stackset
 stackset_routegroup_support_enabled: "true"
+# The ttl before an ingress source is deleted when replaced with another
+# one.
+# E.g. switching from RouteGroup to Ingress or vice versa.
+stackset_ingress_source_switch_ttl: "5m"
 
 # Enable/Disable profiling for Kubernetes components
 enable_control_plane_profiling: "false"

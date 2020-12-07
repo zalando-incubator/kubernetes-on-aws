@@ -55,6 +55,7 @@ clusters:
     autoscaling_scale_down_enabled: "${autoscaling_scale_down_enabled}"
     routegroups_validation: "enabled"
     stackset_routegroup_support_enabled: "true"
+    stackset_ingress_source_switch_ttl: "1m"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
