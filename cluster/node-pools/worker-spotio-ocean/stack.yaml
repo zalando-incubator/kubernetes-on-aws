@@ -29,7 +29,7 @@ Resources:
         rollConfig:
           roll:
             batchSizePercentage: "25"
-      # API Docs: https://help.spot.io/spotinst-api/ocean/ocean-cloud-api/ocean-for-aws/create-2/
+      # API Docs: https://docs.spot.io/api/#operation/OceanAWSLaunchSpecCreate
       ocean:
         name: "{{ .Cluster.Alias }}-{{ .NodePool.Name }}"
         controllerClusterId: "{{ .Cluster.LocalID }}-{{ .NodePool.Name }}"
@@ -71,6 +71,12 @@ Resources:
             {{ range $type := .NodePool.InstanceTypes }}
               - "{{ $type }}"
             {{ end }}
+          blockDeviceMappings:
+            - deviceName: /dev/sda1
+              ebs:
+                deleteOnTermination: {{$data.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
+                volumeSize: {{$data.NodePool.ConfigItems.ebs_root_volume_size}}
+                volumeType: gp3
           launchSpecification:
             tags:
             - tagKey: kubernetes.io/cluster/{{ .Cluster.ID }}
