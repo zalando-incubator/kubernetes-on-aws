@@ -62,7 +62,8 @@ var _ = framework.KubeDescribe("External DNS creation", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Submitting the pod to kubernetes")
-		pod := createNginxPod(nameprefix, ns, labels, port)
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
+		pod := createSkipperPod(nameprefix, ns, route, labels, port)
 		defer func() {
 			By("deleting the pod")
 			defer GinkgoRecover()
