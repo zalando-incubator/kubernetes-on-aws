@@ -163,6 +163,12 @@ spec:
           - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
           - "-suppress-route-update-logs={{ .ConfigItems.skipper_suppress_route_update_logs }}"
 {{ end }}
+{{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
+          - "-enable-oauth2-grant-flow"
+          - "-oauth2-auth-url={{ .ConfigItems.oauth2_auth_url }}"
+          - "-oauth2-token-url={{ .ConfigItems.oauth2_token_url }}"
+          - "-oauth2-secret-file={{ .ConfigItems.oauth2_secret_file }}"
+{{ end }}
         resources:
           limits:
             cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
