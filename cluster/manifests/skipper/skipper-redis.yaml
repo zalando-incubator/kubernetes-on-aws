@@ -63,3 +63,11 @@ spec:
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
+{{ if eq .ConfigItems.enable_dedicate_nodepool_skipper_redis "true"}}
+      nodeSelector:
+        dedicated: skipper-ingress-redis
+      tolerations:
+      - effect: NoSchedule
+        key: dedicated
+        value: skipper-ingress-redis
+{{ end }}
