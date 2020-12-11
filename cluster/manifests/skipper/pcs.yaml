@@ -1,4 +1,4 @@
-{{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
+{{ if eq .Cluster.ConfigItems.skipper_oauth2_ui_login "true" }}
 apiVersion: "zalando.org/v1"
 kind: PlatformCredentialsSet
 metadata:
@@ -13,5 +13,5 @@ spec:
     employee:
       grant: authorization-code
       realm: users
-      redirectUri: https://127.0.0.1:8080/login/zalando/authorized
+      redirectUri: "{{ .Cluster.ConfigItems.skipper_oauth2_redirect_url }}"
 {{ end }}
