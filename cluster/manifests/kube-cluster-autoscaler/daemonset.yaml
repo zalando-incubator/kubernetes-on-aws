@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-cluster-autoscaler
-    version: v1.18.2-internal.21
+    version: v1.18.2-internal.24
 spec:
   selector:
     matchLabels:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: kube-cluster-autoscaler
-        version: v1.18.2-internal.21
+        version: v1.18.2-internal.24
       annotations:
         {{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
@@ -34,7 +34,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.21
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.24
         command:
           - ./cluster-autoscaler
           - --v=1
@@ -58,6 +58,7 @@ spec:
           - --max-pod-eviction-time={{ .Cluster.ConfigItems.cluster_autoscaler_max_pod_eviction_time }}
           - --topology-spread-constraint-scale-factor=3
           - --disable-node-instances-cache={{ .Cluster.ConfigItems.cluster_autoscaler_disable_node_instances_cache }}
+          - --scale-down-ignore-schedulable-pods={{ .Cluster.ConfigItems.cluster_autoscaler_scale_down_ignore_schedulable_pods }}
         resources:
           requests:
             cpu: {{.Cluster.ConfigItems.cluster_autoscaler_cpu}}
