@@ -2,7 +2,6 @@ module github.com/zalando-incubator/kubernetes-on-aws/tests/e2e
 
 require (
 	github.com/NYTimes/gziphandler v1.0.1 // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/gregjones/httpcache v0.0.0-20181110185634-c63ab54fda8f // indirect
@@ -12,11 +11,10 @@ require (
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	github.com/pkg/errors v0.9.1
-	github.com/pquerna/ffjson v0.0.0-20181028064349-e517b90714f7 // indirect
 	github.com/spf13/viper v1.4.0
 	github.com/szuecs/routegroup-client v0.17.8-0.20200915193527-b33447c7d964
 	github.com/zalando-incubator/kube-aws-iam-controller v0.1.2
-	github.com/zalando-incubator/stackset-controller v1.3.12
+	github.com/zalando-incubator/stackset-controller v1.3.14
 	k8s.io/api v0.19.4
 	k8s.io/apimachinery v0.19.4
 	k8s.io/apiserver v0.0.0
