@@ -167,10 +167,10 @@ spec:
           - "-enable-oauth2-grant-flow"
           - "-oauth2-auth-url={{ .ConfigItems.skipper_oauth2_auth_url }}"
           - "-oauth2-token-url={{ .ConfigItems.skipper_oauth2_token_url }}"
-          - "-oauth2-secret-file={{ .ConfigItems.skipper_oauth2_secret_file }}"
-          - "-oauth2-client-id-file={{ .ConfigItems.skipper_oauth2_client_id_file }}"
-          - "-oauth2-client-secret-file={{ .ConfigItems.skipper_oauth2_client_secret_file }}"
-          - "-credentials-paths={{ .ConfigItems.skipper_oauth2_secrets_dir }}"
+          - "-oauth2-secret-file=/etc/skipper/secret/encryption-key"
+          - "-oauth2-client-id-file=/etc/skipper/oauth/employee-client-id"
+          - "-oauth2-client-secret-file=/etc/skipper/oauth/employee-client-secret"
+          - "-credentials-paths=/etc/skipper/secret,/etc/skipper/oauth"
           - "-credentials-update-interval=1m"
           - "-oauth2-token-cookie-name={{.ConfigItems.skipper_oauth2_cookie_name }}"
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
@@ -231,7 +231,7 @@ spec:
 {{ end }}
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
           - name: oauth2
-            mountPath: {{ .ConfigItems.skipper_oauth2_secrets_dir }}
+            mountPath: /etc/skipper/oauth
             readOnly: true
           - name: encryption-key
             mountPath: /etc/skipper/secret
