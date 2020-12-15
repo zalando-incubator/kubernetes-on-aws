@@ -9,26 +9,12 @@ autoscaling_utilization_threshold: "1.0"
 autoscaling_max_empty_bulk_delete: "10"
 autoscaling_scale_down_unneeded_time: "10m"
 
-# the cluster autoscaler release to use, options are 1_12 and 1_18.
-cluster_autoscaler_release: "1_18"
-
-# When true, enables the legacy behaviour for 1.18 where pools that are backed off
-# don't get reset to their pre-scale-out values. This basically means the ASGs
-# keep trying to get a node while CA already moves on to the next ASG.
-cluster_autoscaler_keep_backed_off_pools_scaled_up: "true"
-
 # How long to wait for pod eviction when scaling down.
 {{if eq .Environment "production"}}
 cluster_autoscaler_max_pod_eviction_time: "1h"
 {{else}}
 cluster_autoscaler_max_pod_eviction_time: "3h"
 {{end}}
-
-cluster_autoscaler_disable_node_instances_cache: "true"
-cluster_autoscaler_scale_down_ignore_schedulable_pods: "true"
-
-# defines which expander the autoscaler should use
-cluster_autoscaler_expander: highest-priority
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -255,6 +241,8 @@ drain_min_unhealthy_sibling_lifetime: "1h"
 drain_force_evict_interval: "5m"
 node_update_prepare_replacement_node: "false" # don't wait for a replacement instance for on-demand pools in test clusters
 {{end}}
+# add NoSchedule taints to nodes being replaced
+decommission_node_no_schedule_taint: "true"
 
 # Teapot admission controller
 teapot_admission_controller_default_cpu_request: "25m"
