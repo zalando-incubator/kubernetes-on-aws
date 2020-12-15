@@ -121,17 +121,17 @@ spec:
             -opentracing=lightstep
             component-name=skipper-ingress
             token=$(LIGHTSTEP_TOKEN)
-            collector={{ .ConfigItems.tracing_collector_host }}:8444
+            collector={{ .Cluster.ConfigItems.tracing_collector_host }}:8444
             cmd-line=skipper-ingress
             max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             tag=application=skipper-ingress
-            tag=account={{ .Alias }}
-            tag=cluster={{ .Alias }}
+            tag=account={{ .Cluster.Alias }}
+            tag=cluster={{ .Cluster.Alias }}
             tag=artifact=registry.opensource.zalan.do/teapot/skipper:v0.11.204
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
             min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }}
-            {{ .ConfigItems.skipper_ingress_lightstep_log_events }}
+            {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
           - "-opentracing-excluded-proxy-tags={{ .ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
 {{ if eq .ConfigItems.skipper_ingress_opentracing_backend_name_tag "true" }}
           - "-opentracing-backend-name-tag"
