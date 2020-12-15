@@ -559,6 +559,16 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringLike:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:cluster-autoscaler"
+{{ end }}
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
