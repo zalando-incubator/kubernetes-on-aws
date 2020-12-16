@@ -147,6 +147,7 @@ spec:
           - "-read-timeout-server={{ .ConfigItems.skipper_read_timeout_server }}"
           - "-write-timeout-server={{ .ConfigItems.skipper_write_timeout_server }}"
           - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
+          - "-suppress-route-update-logs={{ .ConfigItems.skipper_suppress_route_update_logs }}"
 {{ if eq .ConfigItems.skipper_enable_tcp_queue "true" }}
           - "-enable-tcp-queue"
           - "-expected-bytes-per-request={{ .ConfigItems.skipper_expected_bytes_per_request }}"
@@ -161,7 +162,18 @@ spec:
           - "-status-checks=http://127.0.0.1:9021/health"
 {{ else }}
           - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
-          - "-suppress-route-update-logs={{ .ConfigItems.skipper_suppress_route_update_logs }}"
+{{ end }}
+{{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
+          - "-enable-oauth2-grant-flow"
+          - "-oauth2-auth-url={{ .ConfigItems.skipper_oauth2_auth_url }}"
+          - "-oauth2-token-url={{ .ConfigItems.skipper_oauth2_token_url }}"
+          - "-oauth2-secret-file=/etc/skipper/secret/encryption-key"
+          - "-oauth2-client-id-file=/etc/skipper/oauth/employee-client-id"
+          - "-oauth2-client-secret-file=/etc/skipper/oauth/employee-client-secret"
+          - "-credentials-paths=/etc/skipper/secret,/etc/skipper/oauth"
+          - "-credentials-update-interval=1m"
+          - "-oauth2-token-cookie-name={{.ConfigItems.skipper_oauth2_cookie_name }}"
+          - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
 {{ end }}
         resources:
           limits:
@@ -208,38 +220,44 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
-{{ if and (eq .ConfigItems.skipper_local_tokeninfo "bridge") (eq .ConfigItems.enable_apimonitoring "true")}}
         volumeMounts:
+{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
           - name: routes
             mountPath: /etc/routes
-          - name: filters
-            mountPath: /etc/config/default-filters
-{{ else if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
-        volumeMounts:
-          - name: routes
-            mountPath: /etc/routes
-{{ else if eq .ConfigItems.enable_apimonitoring "true"}}
-        volumeMounts:
+{{ end }}
+{{ if eq .ConfigItems.enable_apimonitoring "true"}}
           - name: filters
             mountPath: /etc/config/default-filters
 {{ end }}
+{{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
+          - name: oauth2
+            mountPath: /etc/skipper/oauth
+            readOnly: true
+          - name: encryption-key
+            mountPath: /etc/skipper/secret
+            readOnly: true
+{{ end }}
       securityContext:
         fsGroup: 1000
-{{ if and (eq .ConfigItems.skipper_local_tokeninfo "bridge") (eq .ConfigItems.enable_apimonitoring "true")}}
       volumes:
-        - name: filters
-          configMap:
-            name: skipper-default-filters
-            optional: true
+{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
         - name: routes
           configMap:
             name: sandbox-tokeninfo-bridge-conf
-{{ else if eq .ConfigItems.enable_apimonitoring "true"}}
-      volumes:
+{{ end }}
+{{ if eq .ConfigItems.enable_apimonitoring "true"}}
         - name: filters
           configMap:
             name: skipper-default-filters
             optional: true
+{{ end }}
+{{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
+        - name: oauth2
+          secret:
+            secretName: skipper-ingress-platform-credentials
+        - name: encryption-key
+          secret:
+            secretName: skipper-ingress
 {{ end }}
 {{ if eq .ConfigItems.enable_dedicate_nodepool_skipper "true"}}
       nodeSelector:
