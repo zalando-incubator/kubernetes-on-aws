@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: stackset-controller
-    version: "v1.3.14"
+    version: "v1.3.17"
 spec:
   replicas: 1
   selector:
@@ -15,22 +15,21 @@ spec:
     metadata:
       labels:
         application: stackset-controller
-        version: "v1.3.14"
+        version: "v1.3.17"
     spec:
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: stackset-controller
       containers:
       - name: stackset-controller
-        image: "registry.opensource.zalan.do/teapot/stackset-controller:v1.3.14"
+        image: "registry.opensource.zalan.do/teapot/stackset-controller:v1.3.17"
         args:
         - "--interval={{ .Cluster.ConfigItems.stackset_controller_sync_interval }}"
 {{- if eq .Cluster.ConfigItems.stackset_routegroup_support_enabled "true" }}
         - "--enable-routegroup-support"
         - "--ingress-source-switch-ttl={{ .Cluster.ConfigItems.stackset_ingress_source_switch_ttl }}"
 {{- end }}
-        env:
-          - name: CLUSTER_DOMAIN
-            value: "{{ .Cluster.Alias }}.zalan.do"
+        - "--cluster-domain={{ .Cluster.Alias }}.zalan.do"
+        - "--cluster-domain=ingress.cluster.local"
         resources:
           limits:
             cpu: 10m
