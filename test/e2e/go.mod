@@ -14,11 +14,11 @@ require (
 	github.com/spf13/viper v1.4.0
 	github.com/szuecs/routegroup-client v0.17.8-0.20200915193527-b33447c7d964
 	github.com/zalando-incubator/kube-aws-iam-controller v0.1.2
-	github.com/zalando-incubator/stackset-controller v1.3.14
-	k8s.io/api v0.19.4
-	k8s.io/apimachinery v0.19.4
+	github.com/zalando-incubator/stackset-controller v1.3.17
+	k8s.io/api v0.19.6
+	k8s.io/apimachinery v0.19.6
 	k8s.io/apiserver v0.0.0
-	k8s.io/client-go v0.19.4
+	k8s.io/client-go v0.19.6
 	k8s.io/kubernetes v0.0.0
 )
 
