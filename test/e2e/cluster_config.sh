@@ -15,20 +15,6 @@ clusters:
     etcd_s3_backup_bucket: zalando-kubernetes-etcd-${AWS_ACCOUNT}-${REGION}
     etcd_endpoints: "${ETCD_ENDPOINTS}"
     image_policy: e2e
-    ca_key_decompressed: ${CA_KEY}
-    ca_cert_decompressed: ${CA_CERT}
-    apiserver_key_decompressed: ${APISERVER_KEY}
-    apiserver_cert_decompressed: ${APISERVER_CERT}
-    worker_key: ${WORKER_KEY}
-    worker_cert: ${WORKER_CERT}
-    proxy_client_key: ${PROXY_CLIENT_KEY}
-    proxy_client_cert: ${PROXY_CLIENT_CERT}
-    kubelet_client_key: ${KUBELET_CLIENT_KEY}
-    kubelet_client_cert: ${KUBELET_CLIENT_CERT}
-    admission_controller_cert: ${ADMISSION_CONTROLLER_CERT}
-    admission_controller_key: ${ADMISSION_CONTROLLER_KEY}
-    vpa_webhook_key: ${VPA_WEBHOOK_KEY}
-    vpa_webhook_cert: ${VPA_WEBHOOK_CERT}
     service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
     worker_shared_secret: ${WORKER_SHARED_SECRET}
