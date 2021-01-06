@@ -131,12 +131,7 @@ fi
 if [ "$e2e" = true ]; then
     echo "Running e2e against cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
     # disable cluster downscaling before running e2e
-    "./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" "false" > cluster.yaml
-    clm provision \
-        --token="${WORKER_SHARED_SECRET}" \
-        --directory="$(pwd)/../.." \
-        --debug \
-        --registry=cluster.yaml
+    ./toggle-scaledown.py disable
 
     export S3_AWS_IAM_BUCKET="zalando-e2e-test-${AWS_ACCOUNT}-${LOCAL_ID}"
     export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
@@ -197,16 +192,7 @@ if [ "$e2e" = true ]; then
     fi
 
     # enable cluster downscaling after running e2e
-    "./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" "true" > cluster_downscaling_enabled.yaml
-    clm provision \
-        --token="${WORKER_SHARED_SECRET}" \
-        --directory="$(pwd)/../.." \
-        --debug \
-        --registry=cluster_downscaling_enabled.yaml > clm.log
-    clm_exit="$?"
-    if [ "$clm_exit" -gt 0 ]; then
-        cat clm.log
-    fi
+    ./toggle-scaledown.py enable
 
     exit "$TEST_RESULT"
 fi
