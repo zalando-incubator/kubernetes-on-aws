@@ -23,6 +23,7 @@ COPY --from=builder /go/bin/ginkgo /usr/local/bin/ginkgo
 
 # copy CLM
 COPY --from=registry.opensource.zalan.do/teapot/cluster-lifecycle-manager:latest /clm /usr/bin/clm
+COPY --from=pierone.stups.zalan.do/teapot/aws-account-creator:latest /aws-account-creator /usr/bin/aws-account-creator
 
 ADD . /workdir
 
