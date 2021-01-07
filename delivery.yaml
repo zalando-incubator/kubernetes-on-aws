@@ -55,9 +55,152 @@ pipeline:
           args: ["300"]
         containers:
         - name: e2e
-          image: "registry.opensource.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - create-cluster
+          env: &e2e_env
+            - name: CLUSTER_DOMAIN
+              value: teapot-e2e.zalan.do
+            - name: CLUSTER_DOMAIN_INTERNAL
+              value: ingress.cluster.local
+            - name: RESULT_BUCKET
+              value: "teapot-kubernetes-e2e-results"
+            - name: HOSTED_ZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: teapot-kubernetes-e2e-config
+                  key: "HOSTED_ZONE"
+            - name: REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: teapot-kubernetes-e2e-config
+                  key: "REGION"
+            - name: AWS_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "AWS_ACCOUNT"
+            - name: ZMON_ROOT_ACCOUNT_ROLE
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "ZMON_ROOT_ACCOUNT_ROLE"
+            - name: AUDITTRAIL_ROOT_ACCOUNT_ROLE
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "AUDITTRAIL_ROOT_ACCOUNT_ROLE"
+            - name: APISERVER_BUSINESS_PARTNER_IDS
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "APISERVER_BUSINESS_PARTNER_IDS"
+            - name: LIGHTSTEP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "LIGHTSTEP_TOKEN"
+            - name: OWNER
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "OWNER"
+            - name: VPC_ID
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "VPC_ID"
+            - name: EFS_ID
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "EFS_ID"
+            - name: SPOTIO_ACCOUNT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "SPOTIO_ACCOUNT_ID"
+            - name: SPOTIO_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "SPOTIO_ACCESS_TOKEN"
+            - name: WORKER_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "WORKER_SHARED_SECRET"
+
+            - name: CA_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "CA_KEY"
+            - name: CA_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "CA_CERT"
+            - name: ADMISSION_CONTROLLER_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "ADMISSION_CONTROLLER_CERT"
+            - name: ADMISSION_CONTROLLER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "ADMISSION_CONTROLLER_KEY"
+            - name: APISERVER_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "APISERVER_CERT"
+            - name: APISERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "APISERVER_KEY"
+            - name: KUBELET_CLIENT_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "KUBELET_CLIENT_CERT"
+            - name: KUBELET_CLIENT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "KUBELET_CLIENT_KEY"
+            - name: PROXY_CLIENT_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "PROXY_CLIENT_CERT"
+            - name: PROXY_CLIENT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "PROXY_CLIENT_KEY"
+            - name: VPA_WEBHOOK_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "VPA_WEBHOOK_CERT"
+            - name: VPA_WEBHOOK_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "VPA_WEBHOOK_KEY"
+            - name: WORKER_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "WORKER_CERT"
+            - name: WORKER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "WORKER_KEY"
           resources:
             limits:
               cpu: 500m
@@ -97,12 +240,10 @@ pipeline:
           args: ["300"]
         containers:
         - name: e2e
-          image: "registry.opensource.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - e2e
-          env:
-          - name: RESULT_BUCKET
-            value: "teapot-kubernetes-e2e-results"
+          env: *e2e_env
           resources:
             limits:
               cpu: 500m
@@ -142,12 +283,10 @@ pipeline:
           args: ["300"]
         containers:
         - name: e2e
-          image: "registry.opensource.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - stackset-e2e
-          env:
-          - name: CLUSTER_DOMAIN
-            value: teapot-e2e.zalan.do
+          env: *e2e_env
           resources:
             limits:
               cpu: 500m
@@ -188,9 +327,10 @@ pipeline:
           args: ["300"]
         containers:
         - name: e2e
-          image: "registry.opensource.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - decommission-cluster
+          env: *e2e_env
           resources:
             limits:
               cpu: 500m
