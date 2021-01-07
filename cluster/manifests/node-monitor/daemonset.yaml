@@ -97,8 +97,11 @@ spec:
               mountPath: /host
               readOnly: true
 {{- if eq .Cluster.ConfigItems.journald_reader_enabled "true" }}
-        - image: registry.opensource.zalan.do/teapot/journald-reader:master-5
+        - image: registry.opensource.zalan.do/teapot/journald-reader:master-6
           name: journald-reader
+          env:
+            - name: JOURNALD_READER_CHECKPOINT_FILE
+              value: /journald-reader-state/cursor
           resources:
             requests:
               cpu: {{.Cluster.ConfigItems.journald_reader_cpu}}
@@ -111,7 +114,7 @@ spec:
             - mountPath: /var/log/journal
               name: journald-logs
               readOnly: true
-            - mountPath: /cursorfiles
+            - mountPath: /journald-reader-state
               name: journald-reader-state
 {{- end }}
       automountServiceAccountToken: false
