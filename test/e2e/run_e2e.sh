@@ -33,11 +33,6 @@ esac
 
 E2E_SKIP_CLUSTER_UPDATE="${E2E_SKIP_CLUSTER_UPDATE:-"false"}"
 
-# fetch internal configuration values
-kubectl --namespace default get configmap teapot-kubernetes-e2e-config -o jsonpath='{.data.internal_config\.sh}' > internal_config.sh
-# shellcheck disable=SC1091
-source internal_config.sh
-
 # variables set for making it possible to run script locally
 CDP_BUILD_VERSION="${CDP_BUILD_VERSION:-"local-1"}"
 CDP_TARGET_REPOSITORY="${CDP_TARGET_REPOSITORY:-"github.com/zalando-incubator/kubernetes-on-aws"}"
@@ -52,6 +47,10 @@ export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export ETCD_ENDPOINTS="${ETCD_ENDPOINTS:-"http://etcd-server.etcd.${HOSTED_ZONE}:2379"}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
 export WORKER_SHARED_SECRET="${WORKER_SHARED_SECRET:-"$(pwgen 30 -n1)"}"
+
+# Generate a new key for this E2E run
+SERVICE_ACCOUNT_PRIVATE_KEY="$(openssl genrsa | base64 | tr -d '\n')"
+export SERVICE_ACCOUNT_PRIVATE_KEY
 
 # create kubeconfig
 cat >kubeconfig <<EOF
@@ -99,12 +98,13 @@ if [ "$create_cluster" = true ]; then
         # generate cluster.yaml
         # call the cluster_config.sh from base git checkout if possible
         if [ -f "$BASE_CFG_PATH/test/e2e/cluster_config.sh" ]; then
-            "./$BASE_CFG_PATH/test/e2e/cluster_config.sh" \
-            "${CDP_TARGET_COMMIT_ID}" "requested" > base_cluster.yaml
+            "./$BASE_CFG_PATH/test/e2e/cluster_config.sh" "${CDP_TARGET_COMMIT_ID}" "requested" > base_cluster.yaml
         else
-            "./cluster_config.sh" "${CDP_TARGET_COMMIT_ID}" \
-            "requested" > base_cluster.yaml
+            "./cluster_config.sh" "${CDP_TARGET_COMMIT_ID}" "requested" > base_cluster.yaml
         fi
+
+        # generate the cluster certificates
+        aws-account-creator refresh-certificates --registry-file base_cluster.yaml --create-ca
 
         # Create cluster
         clm provision \
@@ -116,6 +116,14 @@ if [ "$create_cluster" = true ]; then
 
     # generate updated clusters.yaml
     "./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" > head_cluster.yaml
+
+    # either copy the certificates from the already created cluster or regenerate them from scratch
+    if [ -f base_cluster.yaml ]; then
+      ./copy-certificates.py base_cluster.yaml head_cluster.yaml
+    else
+      aws-account-creator refresh-certificates --registry-file head_cluster.yaml --create-ca
+    fi
+
     # Update cluster
     clm provision \
         --token="${WORKER_SHARED_SECRET}" \
@@ -131,12 +139,7 @@ fi
 if [ "$e2e" = true ]; then
     echo "Running e2e against cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
     # disable cluster downscaling before running e2e
-    "./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" "false" > cluster.yaml
-    clm provision \
-        --token="${WORKER_SHARED_SECRET}" \
-        --directory="$(pwd)/../.." \
-        --debug \
-        --registry=cluster.yaml
+    ./toggle-scaledown.py disable
 
     export S3_AWS_IAM_BUCKET="zalando-e2e-test-${AWS_ACCOUNT}-${LOCAL_ID}"
     export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
@@ -203,16 +206,7 @@ if [ "$e2e" = true ]; then
     fi
 
     # enable cluster downscaling after running e2e
-    "./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" "true" > cluster_downscaling_enabled.yaml
-    clm provision \
-        --token="${WORKER_SHARED_SECRET}" \
-        --directory="$(pwd)/../.." \
-        --debug \
-        --registry=cluster_downscaling_enabled.yaml > clm.log
-    clm_exit="$?"
-    if [ "$clm_exit" -gt 0 ]; then
-        cat clm.log
-    fi
+    ./toggle-scaledown.py enable
 
     exit "$TEST_RESULT"
 fi

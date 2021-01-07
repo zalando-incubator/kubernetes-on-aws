@@ -3,7 +3,7 @@
 BINARY       ?= kubernetes-on-aws-e2e
 VERSION      ?= $(shell git describe --tags --always --dirty)
 KUBE_VERSION ?= v1.19.6
-IMAGE        ?= registry-write.opensource.zalan.do/teapot/$(BINARY)
+IMAGE        ?= pierone.stups.zalan.do/teapot/$(BINARY)
 TAG          ?= $(VERSION)
 DOCKERFILE   ?= Dockerfile
 MOD_DIR      ?= e2e_modules
