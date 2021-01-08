@@ -39,6 +39,7 @@ clusters:
     routegroups_validation: "enabled"
     stackset_routegroup_support_enabled: "true"
     stackset_ingress_source_switch_ttl: "1m"
+    journald_reader_enabled: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
