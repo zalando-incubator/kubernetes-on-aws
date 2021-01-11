@@ -1,5 +1,7 @@
 module github.com/zalando-incubator/kubernetes-on-aws/tests/e2e
 
+go 1.15
+
 require (
 	github.com/NYTimes/gziphandler v1.0.1 // indirect
 	github.com/evanphx/json-patch v4.9.0+incompatible
@@ -22,52 +24,30 @@ require (
 	k8s.io/kubernetes v0.0.0
 )
 
-replace k8s.io/kubernetes => ./e2e_modules/kubernetes
-
-replace k8s.io/api => ./e2e_modules/kubernetes/staging/src/k8s.io/api
-
-replace k8s.io/apiextensions-apiserver => ./e2e_modules/kubernetes/staging/src/k8s.io/apiextensions-apiserver
-
-replace k8s.io/apimachinery => ./e2e_modules/kubernetes/staging/src/k8s.io/apimachinery
-
-replace k8s.io/apiserver => ./e2e_modules/kubernetes/staging/src/k8s.io/apiserver
-
-replace k8s.io/cli-runtime => ./e2e_modules/kubernetes/staging/src/k8s.io/cli-runtime
-
-replace k8s.io/client-go => ./e2e_modules/kubernetes/staging/src/k8s.io/client-go
-
-replace k8s.io/cloud-provider => ./e2e_modules/kubernetes/staging/src/k8s.io/cloud-provider
-
-replace k8s.io/code-generator => ./e2e_modules/kubernetes/staging/src/k8s.io/code-generator
-
-replace k8s.io/kube-aggregator => ./e2e_modules/kubernetes/staging/src/k8s.io/kube-aggregator
-
-replace k8s.io/kube-controller-manager => ./e2e_modules/kubernetes/staging/src/k8s.io/kube-controller-manager
-
-replace k8s.io/kube-proxy => ./e2e_modules/kubernetes/staging/src/k8s.io/kube-proxy
-
-replace k8s.io/kube-scheduler => ./e2e_modules/kubernetes/staging/src/k8s.io/kube-scheduler
-
-replace k8s.io/kubectl => ./e2e_modules/kubernetes/staging/src/k8s.io/kubectl
-
-replace k8s.io/kubelet => ./e2e_modules/kubernetes/staging/src/k8s.io/kubelet
-
-replace k8s.io/sample-apiserver => ./e2e_modules/kubernetes/staging/src/k8s.io/sample-apiserver
-
-replace k8s.io/sample-cli-plugin => ./e2e_modules/kubernetes/staging/src/k8s.io/sample-cli-plugin
-
-replace k8s.io/sample-controller => ./e2e_modules/kubernetes/staging/src/k8s.io/sample-controller
-
-replace k8s.io/metrics => ./e2e_modules/kubernetes/staging/src/k8s.io/metrics
-
-replace k8s.io/csi-translation-lib => ./e2e_modules/kubernetes/staging/src/k8s.io/csi-translation-lib
-
-replace k8s.io/legacy-cloud-providers => ./e2e_modules/kubernetes/staging/src/k8s.io/legacy-cloud-providers
-
-replace k8s.io/cluster-bootstrap => ./e2e_modules/kubernetes/staging/src/k8s.io/cluster-bootstrap
-
-replace k8s.io/component-base => ./e2e_modules/kubernetes/staging/src/k8s.io/component-base
-
-replace k8s.io/cri-api => ./e2e_modules/kubernetes/staging/src/k8s.io/cri-api
-
-go 1.13
+replace (
+	k8s.io/api => ./e2e_modules/kubernetes/staging/src/k8s.io/api
+	k8s.io/apiextensions-apiserver => ./e2e_modules/kubernetes/staging/src/k8s.io/apiextensions-apiserver
+	k8s.io/apimachinery => ./e2e_modules/kubernetes/staging/src/k8s.io/apimachinery
+	k8s.io/apiserver => ./e2e_modules/kubernetes/staging/src/k8s.io/apiserver
+	k8s.io/cli-runtime => ./e2e_modules/kubernetes/staging/src/k8s.io/cli-runtime
+	k8s.io/client-go => ./e2e_modules/kubernetes/staging/src/k8s.io/client-go
+	k8s.io/cloud-provider => ./e2e_modules/kubernetes/staging/src/k8s.io/cloud-provider
+	k8s.io/cluster-bootstrap => ./e2e_modules/kubernetes/staging/src/k8s.io/cluster-bootstrap
+	k8s.io/code-generator => ./e2e_modules/kubernetes/staging/src/k8s.io/code-generator
+	k8s.io/component-base => ./e2e_modules/kubernetes/staging/src/k8s.io/component-base
+	k8s.io/controller-manager => ./e2e_modules/kubernetes/staging/src/k8s.io/controller-manager
+	k8s.io/cri-api => ./e2e_modules/kubernetes/staging/src/k8s.io/cri-api
+	k8s.io/csi-translation-lib => ./e2e_modules/kubernetes/staging/src/k8s.io/csi-translation-lib
+	k8s.io/kube-aggregator => ./e2e_modules/kubernetes/staging/src/k8s.io/kube-aggregator
+	k8s.io/kube-controller-manager => ./e2e_modules/kubernetes/staging/src/k8s.io/kube-controller-manager
+	k8s.io/kube-proxy => ./e2e_modules/kubernetes/staging/src/k8s.io/kube-proxy
+	k8s.io/kube-scheduler => ./e2e_modules/kubernetes/staging/src/k8s.io/kube-scheduler
+	k8s.io/kubectl => ./e2e_modules/kubernetes/staging/src/k8s.io/kubectl
+	k8s.io/kubelet => ./e2e_modules/kubernetes/staging/src/k8s.io/kubelet
+	k8s.io/kubernetes => ./e2e_modules/kubernetes
+	k8s.io/legacy-cloud-providers => ./e2e_modules/kubernetes/staging/src/k8s.io/legacy-cloud-providers
+	k8s.io/metrics => ./e2e_modules/kubernetes/staging/src/k8s.io/metrics
+	k8s.io/sample-apiserver => ./e2e_modules/kubernetes/staging/src/k8s.io/sample-apiserver
+	k8s.io/sample-cli-plugin => ./e2e_modules/kubernetes/staging/src/k8s.io/sample-cli-plugin
+	k8s.io/sample-controller => ./e2e_modules/kubernetes/staging/src/k8s.io/sample-controller
+)

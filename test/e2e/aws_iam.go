@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
 var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", func() {
@@ -68,7 +69,7 @@ var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", 
 		_, err = zcs.ZalandoV1().AWSIAMRoles(ns).Create(context.TODO(), rs, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
 
 		// wait for pod to access s3 and POD exit code 0
 		for {
@@ -100,7 +101,7 @@ var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", 
 		pod := createAWSCLIPod("no-aws-iam-", ns, E2ES3AWSIAMBucket())
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
 
 		// wait for pod to access s3 and POD exit code 0
 		for {
