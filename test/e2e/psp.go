@@ -92,7 +92,7 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
 	})
 
 	It("Should create a POD that use privileged PSP via deployment [PSP] [Zalando]", func() {
@@ -141,7 +141,7 @@ var _ = framework.KubeDescribe("PSP use", func() {
 			if pod.DeletionTimestamp != nil {
 				continue
 			}
-			err = f.WaitForPodRunning(pod.Name)
+			err = e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace)
 			Expect(err).NotTo(HaveOccurred())
 		}
 	})
