@@ -214,7 +214,7 @@ fi
 if [ "$stackset_e2e" = true ]; then
     namespace="stackset-e2e-$(date +'%H%M%S')"
     kubectl create namespace "$namespace"
-    E2E_NAMESPACE="${namespace}" ./stackset-e2e -test.parallel 64
+    E2E_NAMESPACE="${namespace}" ./stackset-e2e -test.parallel 20
 fi
 
 if [ "$decommission_cluster" = true ]; then
