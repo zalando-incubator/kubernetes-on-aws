@@ -227,10 +227,8 @@ downscaler_enabled: "false"
 {{end}}
 
 # HPA settings (defaults from https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/)
-horizontal_pod_autoscaler_downscale_delay: "5m0s"
 horizontal_pod_autoscaler_sync_period: "30s"
 horizontal_pod_autoscaler_tolerance: "0.1"
-horizontal_pod_autoscaler_upscale_delay: "3m0s"
 horizontal_pod_downscale_stabilization: "5m0s"
 
 # Cluster update settings
@@ -313,7 +311,13 @@ cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 coredns_max_upstream_concurrency: 0 #0 means there is not concurrency limits
 
+# Kubernetes on Ubuntu AMI to use
+# note this configuration uses the [amiID][0] function. It returns the
+# AMI id given the image name and the Image AWS account owner.
+#
+# [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
 kuberuntu_image_v1_18: {{ amiID "zalando-ubuntu-kubernetes-production-v1.18.12-master-131" "861068367966" }}
+kuberuntu_image_v1_19: {{ amiID "zalando-ubuntu-kubernetes-production-v1.19.7-master-140" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -420,10 +424,8 @@ enable_cdp_sa: "false"
 vm_dirty_background_bytes: "67108864"
 vm_dirty_bytes: "134217728"
 
-# Enable FeatureGate EndpointSlice
-enable_endpointslice: "false"
 # enable kube-proxy to use endpoint slice
-enable_endpointsliceproxying: "false"
+enable_endpointsliceproxying: "true"
 
 # Enable FeatureGate HPAScaleToZero
 enable_hpa_scale_to_zero: "true"
@@ -436,6 +438,14 @@ enable_ephemeral_containers: "false"
 # this flag can be switched between true and false
 # to ensure all secrets are encrypted/decrypted all secrets need to be rewritten after masters have been rolled
 enable_encryption: "true"
+
+# Enable the feature gate GenericEphemeralVolume
+# https://kubernetes.io/docs/concepts/storage/ephemeral-volumes/#generic-ephemeral-volumes
+enable_generic_ephemeral_volume: "false"
+
+# Enable the feature gate SetHostnameAsFQDN
+# https://v1-19.docs.kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-sethostnameasfqdn-field
+enable_hostname_as_fqdn: "false"
 
 # default ttl for kube janitor for resources build from PRs in namespaces matching .*-pr-.*
 kube_janitor_default_pr_ttl: "1w"  # 1 week
