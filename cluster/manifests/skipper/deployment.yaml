@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.5
+    version: v0.13.14
     component: ingress
 spec:
   strategy:
@@ -19,7 +19,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.13.5
+        version: v0.13.14
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -51,7 +51,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.5-78
+        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.14-87
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -115,6 +115,7 @@ spec:
 {{ if ne .ConfigItems.skipper_redis_replicas "0" }}
           - "-enable-swarm"
           - "-swarm-redis-urls={{ indexedList "skipper-ingress-redis-$.skipper-ingress-redis.kube-system.svc.cluster.local:6379" (parseInt64 .ConfigItems.skipper_redis_replicas) }}"
+          - "-swarm-redis-dial-timeout={{ .ConfigItems.skipper_redis_dial_timeout }}"
           - "-swarm-redis-pool-timeout={{ .ConfigItems.skipper_redis_pool_timeout }}"
           - "-swarm-redis-read-timeout={{ .ConfigItems.skipper_redis_read_timeout }}"
           - "-swarm-redis-write-timeout={{ .ConfigItems.skipper_redis_write_timeout }}"
@@ -130,7 +131,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper:v0.13.5
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper:v0.13.14
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
             min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }}
