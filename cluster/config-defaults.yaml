@@ -207,6 +207,9 @@ kube_state_metrics_mem_min: "120Mi"
 kubernetes_lifecycle_metrics_mem_max: "4Gi"
 kubernetes_lifecycle_metrics_mem_min: "120Mi"
 
+kube_node_ready_controller_cpu: "50m"
+kube_node_ready_controller_memory: "200Mi"
+
 # Kubernetes Downscaler (for non-production clusters)
 {{if eq .Cluster.Environment "test"}}
 downscaler_default_uptime: "Mon-Fri 07:30-20:30 Europe/Berlin"
@@ -497,3 +500,16 @@ enable_control_plane_profiling: "false"
 # Enable use of Privileged PSP (running privileged pods) in non system namespaces.
 # TODO: remove once all clusters have been migrated away from privileged pods
 privileged_psp_enabled: "false"
+
+# Enable kube-node-ready-controller and node-not-ready taint
+#
+# Note: kube_node_ready_controller_enabled must be set to true AND rolled out
+# before kube_node_not_ready_taint_enabled is enabled, otherwise new nodes would
+# come up and never get ready during a rollout.
+{{if eq .Cluster.Environment "production"}}
+kube_node_ready_controller_enabled: "false"
+kube_node_not_ready_taint_enabled: "false"
+{{ else }}
+kube_node_ready_controller_enabled: "true"
+kube_node_not_ready_taint_enabled: "false"
+{{ end }}
