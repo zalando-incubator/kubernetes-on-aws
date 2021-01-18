@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-cluster-autoscaler
-    version: v1.18.2-internal.25
+    version: v1.18.2-internal.dev-279
 spec:
   selector:
     matchLabels:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: kube-cluster-autoscaler
-        version: v1.18.2-internal.25
+        version: v1.18.2-internal.dev-279
       annotations:
         {{- if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
         iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
@@ -34,7 +34,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.25
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.dev-279
         command:
           - ./cluster-autoscaler
           - --v=1
