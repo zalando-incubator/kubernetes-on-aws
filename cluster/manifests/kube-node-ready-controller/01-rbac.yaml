@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-node-ready-controller
+  namespace: kube-system
+  labels:
+    application: kube-node-ready-controller
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-node-ready-controller
+  labels:
+    application: kube-node-ready-controller
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["watch", "list", "get", "update"]
+- apiGroups: [""]
+  resources:
+  - "pods"
+  verbs: ["watch", "list", "get"]
+- apiGroups: ["apps"]
+  resources: ["daemonsets"]
+  verbs: ["watch", "list", "get"]
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-node-ready-controller
+  labels:
+    application: kube-node-ready-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-node-ready-controller
+subjects:
+- kind: ServiceAccount
+  name: kube-node-ready-controller
+  namespace: kube-system
