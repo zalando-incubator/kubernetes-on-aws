@@ -14,6 +14,8 @@ clusters:
     apiserver_business_partner_ids: ${APISERVER_BUSINESS_PARTNER_IDS}
     etcd_s3_backup_bucket: zalando-kubernetes-etcd-${AWS_ACCOUNT}-${REGION}
     etcd_endpoints: "${ETCD_ENDPOINTS}"
+    etcd_client_ca_cert: "${ETCD_CLIENT_CA_CERT}"
+    etcd_client_ca_key: "${ETCD_CLIENT_CA_KEY}"
     image_policy: e2e
     service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
