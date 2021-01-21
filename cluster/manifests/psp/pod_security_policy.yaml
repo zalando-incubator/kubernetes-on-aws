@@ -1,0 +1,87 @@
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: privileged
+spec:
+  fsGroup:
+    rule: RunAsAny
+  privileged: true
+  allowPrivilegeEscalation: true
+  hostPID: true
+  hostNetwork: true
+  hostIPC: true
+  hostPorts:
+  - max: 10000
+    min: 50
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  allowedUnsafeSysctls:
+    - net.ipv4.tcp_keepalive_time
+    - net.ipv4.tcp_keepalive_intvl
+    - net.ipv4.tcp_keepalive_probes
+  volumes:
+  - '*'
+  allowedCapabilities:
+  - AUDIT_WRITE
+  - CHOWN
+  - DAC_OVERRIDE
+  - FOWNER
+  - FSETID
+  - KILL
+  - MKNOD
+  - NET_BIND_SERVICE
+  - NET_RAW
+  - SETFCAP
+  - SETGID
+  - SETPCAP
+  - SETUID
+  - SYS_CHROOT
+  - SYS_NICE
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: restricted
+spec:
+  allowPrivilegeEscalation: false
+  fsGroup:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  allowedUnsafeSysctls:
+    - net.ipv4.tcp_keepalive_time
+    - net.ipv4.tcp_keepalive_intvl
+    - net.ipv4.tcp_keepalive_probes
+  volumes:
+  - awsElasticBlockStore
+  - configMap
+  - downwardAPI
+  - emptyDir
+  - nfs
+  - persistentVolumeClaim
+  - projected
+  - secret
+  allowedCapabilities:
+  - AUDIT_WRITE
+  - CHOWN
+  - DAC_OVERRIDE
+  - FOWNER
+  - FSETID
+  - KILL
+  - MKNOD
+  - NET_BIND_SERVICE
+  - NET_RAW
+  - SETFCAP
+  - SETGID
+  - SETPCAP
+  - SETUID
+  - SYS_CHROOT
+  - SYS_NICE
