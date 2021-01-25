@@ -65,6 +65,8 @@ pipeline:
               value: ingress.cluster.local
             - name: RESULT_BUCKET
               value: "teapot-kubernetes-e2e-results"
+            - name: ETCD_ENDPOINTS
+              value: "https://etcd-server.etcd.teapot-e2e.zalan.do:2479"
             - name: HOSTED_ZONE
               valueFrom:
                 configMapKeyRef:
@@ -130,6 +132,16 @@ pipeline:
                 secretKeyRef:
                   name: teapot-kubernetes-e2e-config-secret
                   key: "WORKER_SHARED_SECRET"
+            - name: ETCD_CLIENT_CA_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "ETCD_CLIENT_CA_CERT"
+            - name: ETCD_CLIENT_CA_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "ETCD_CLIENT_CA_KEY"
           resources:
             limits:
               cpu: 500m
