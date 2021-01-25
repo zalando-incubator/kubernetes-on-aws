@@ -36,7 +36,7 @@ skipper_ingress_max_replicas: "180"
 skipper_ingress_min_replicas: "3"
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1Gi"
-skipper_ingress_tracing_buffer: "8192"
+skipper_ingress_tracing_buffer: "32768"
 enable_dedicate_nodepool_skipper: "false"
 skipper_suppress_route_update_logs: "true"
 {{if eq .Cluster.Environment "e2e"}}
@@ -81,11 +81,13 @@ enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup cand
 # enable_skipper_eastwest_dns only enables DNS and assumes users define the
 # ingress.cluster.local names explicitly on ingress/routegroup/stacksets
 {{if eq .Cluster.Environment "production"}}
-enable_skipper_eastwest: "false"
 enable_skipper_eastwest_dns: "false"
-{{else}}
 enable_skipper_eastwest: "false"
+enable_skipper_eastwest_range: "false"
+{{else}}
 enable_skipper_eastwest_dns: "true"
+enable_skipper_eastwest: "false"
+enable_skipper_eastwest_range: "true"
 {{end}}
 # enable temporay logging of ingress.cluster.local names
 # used to find services for which it's being used.
