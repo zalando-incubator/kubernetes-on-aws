@@ -236,8 +236,10 @@ write_files:
             - --master=http://127.0.0.1:8080
             - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
             - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_validate_application_label "true" }}
-            - --application-registry-url=http://127.0.0.1:8285/
+{{- if index .Cluster.ConfigItems "application_registry_url" }}
+            - --application-registry-url={{.Cluster.ConfigItems.application_registry_url}}
+            - --application-registry-token-secret-name=admission-controller-credentials
+            - --application-registry-token-secret-key=kio-token-secret
 {{- end }}
           ports:
             - containerPort: 8085

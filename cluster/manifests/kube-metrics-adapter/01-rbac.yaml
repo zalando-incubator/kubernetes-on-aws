@@ -5,7 +5,6 @@ metadata:
   namespace: kube-system
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
   annotations:
-    eks.amazonaws.com/role-arn: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:role/{{ .Cluster.LocalID }}-kube-metrics-adapter"
     iam.amazonaws.com/role: "{{ .Cluster.LocalID }}-kube-metrics-adapter"
 {{ end }}
 ---
