@@ -16,12 +16,6 @@ spec:
       labels:
         application: kube-ingress-aws-controller
         version: v0.11.14
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
-      annotations:
-        iam.amazonaws.com/role: "{{ .LocalID }}-app-ingr-ctrl"
-{{ end }}
-{{ end }}
     spec:
       dnsConfig:
         options:
@@ -47,21 +41,6 @@ spec:
           value: "tag:kubernetes.io/cluster/{{ .Cluster.ID }}=owned tag:node.kubernetes.io/role=worker tag:zalando.org/ingress-enabled=true"
         - name: AWS_REGION
           value: {{ .Region }}
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        # must be set for the AWS SDK/AWS CLI to find the credentials file.
-        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-          value: /meta/aws-iam/credentials.process
-{{ end }}
-{{ end }}
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        volumeMounts:
-        - name: aws-iam-credentials
-          mountPath: /meta/aws-iam
-          readOnly: true
-{{ end }}
-{{ end }}
         resources:
           limits:
             cpu: 50m
@@ -69,11 +48,3 @@ spec:
           requests:
             cpu: 50m
             memory: 100Mi
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-      volumes:
-      - name: aws-iam-credentials
-        secret:
-          secretName: kube-ingress-aws-controller-aws-iam-credentials
-{{ end }}
-{{ end }}
