@@ -26,18 +26,26 @@ spec:
     spec:
       containers:
       - name: dnsmasq
-        image: registry.opensource.zalan.do/teapot/dnsmasq:master-1
+        image: registry.opensource.zalan.do/teapot/k8s-dns-dnsmasq-nanny-amd64:1.15.7-1
         securityContext:
           privileged: true
-        readinessProbe:
-          tcpSocket:
-            port: 53
-          initialDelaySeconds: 10
-          timeoutSeconds: 3
+        livenessProbe:
+          httpGet:
+            path: /healthcheck/dnsmasq
+            port: 9054
+            scheme: HTTP
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
           successThreshold: 1
-          failureThreshold: 3
+          failureThreshold: 5
         args:
+        - -v=2
+        - -logtostderr
+        - -configDir=/etc/k8s/dns/dnsmasq-nanny
+        - -restartDnsmasq=true
+        - --
         - --no-resolv
+        - --keep-in-foreground
         - --log-facility=-
         - --cache-size=50000
         - --dns-forward-max=500
