@@ -35,10 +35,6 @@ spec:
         env:
           - name: AWS_REGION
             value: {{.Cluster.Region}}
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-          - name: AWS_SHARED_CREDENTIALS_FILE
-            value: /meta/aws-iam/credentials.process
-{{ end }}
         args:
         - --cluster-id={{ .ID }}
         - --audittrail-url={{.Cluster.ConfigItems.audittrail_url}}
@@ -49,11 +45,6 @@ spec:
         - name: platform-iam-credentials
           mountPath: /meta/credentials
           readOnly: true
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-        - name: aws-iam-credentials
-          mountPath: /meta/aws-iam
-          readOnly: true
-{{ end }}
         resources:
           limits:
             cpu: 50m
@@ -71,9 +62,4 @@ spec:
       - name: platform-iam-credentials
         secret:
           secretName: audittrail-adapter
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-      - name: aws-iam-credentials
-        secret:
-          secretName: audittrail-adapter-aws-iam-credentials
-{{ end }}
 {{ end }}

@@ -72,7 +72,6 @@ files:
     permissions: 0400
     encrypted: true
 {{- end }}
-{{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
   - path: /var/www/openid-configuration/openid-configuration
     data: "{{ generateOIDCDiscoveryDocument .Cluster.APIServerURL | base64 }}"
     permissions: 0644
@@ -81,4 +80,3 @@ files:
     data: "{{ .Cluster.ConfigItems.service_account_private_key | base64Decode | publicKey | generateJWKSDocument | base64 }}"
     permissions: 0644
     encrypted: false
-{{- end }}
