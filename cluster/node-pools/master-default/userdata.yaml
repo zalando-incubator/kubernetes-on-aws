@@ -143,8 +143,7 @@ write_files:
           - --authorization-webhook-version=v1
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
           - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true,EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},ServiceAccountIssuerDiscovery=true
-          - --service-account-jwks-uri={{ .Cluster.APIServerURL }}/openid/v1/jwks
-          - --anonymous-auth=true
+          - --anonymous-auth=false
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
@@ -152,6 +151,7 @@ write_files:
           {{- end }}
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
+          - --service-account-jwks-uri={{ .Cluster.APIServerURL }}/openid/v1/jwks
           {{ if and (ne .Cluster.ConfigItems.audittrail_url "") (ne .Cluster.Environment "e2e") }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
@@ -452,6 +452,12 @@ write_files:
               -> {{ if eq .ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }};
             h: Path("/kube-system/healthz")
               -> setPath("/healthz")
+              -> disableAccessLog()
+              -> "http://127.0.0.1:8080";
+            o: Path("/.well-known/openid-configuration")
+              -> disableAccessLog()
+              -> "http://127.0.0.1:8080";
+            k: Path("/openid/v1/jwks")
               -> disableAccessLog()
               -> "http://127.0.0.1:8080";
             all: *
