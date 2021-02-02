@@ -142,7 +142,7 @@ write_files:
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --authorization-webhook-version=v1
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true,EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true,EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},ServiceAccountIssuerDiscovery=true
           - --anonymous-auth=false
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
@@ -151,6 +151,7 @@ write_files:
           {{- end }}
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
+          - --service-account-jwks-uri={{ .Cluster.APIServerURL }}/openid/v1/jwks
           {{ if and (ne .Cluster.ConfigItems.audittrail_url "") (ne .Cluster.Environment "e2e") }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
@@ -454,13 +455,11 @@ write_files:
               -> disableAccessLog()
               -> "http://127.0.0.1:8080";
             o: Path("/.well-known/openid-configuration")
-              -> setResponseHeader("Content-Type", "application/json")
-              -> static("/.well-known/", "/var/www/openid-configuration/")
-              -> <shunt>;
-            k: Path("/openid-configuration/*")
-              -> setResponseHeader("Content-Type", "application/json")
-              -> static("/openid-configuration/", "/var/www/openid-configuration/")
-              -> <shunt>;
+              -> disableAccessLog()
+              -> "http://127.0.0.1:8080";
+            k: Path("/openid/v1/jwks")
+              -> disableAccessLog()
+              -> "http://127.0.0.1:8080";
             all: *
               -> disableAccessLog()
               -> "https://127.0.0.1:443";
@@ -483,9 +482,6 @@ write_files:
           volumeMounts:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
-            readOnly: true
-          - mountPath: /var/www/openid-configuration
-            name: openid-configuration
             readOnly: true
         - name: aws-encryption-provider
           image: registry.opensource.zalan.do/teapot/aws-encryption-provider:master-1
@@ -520,9 +516,6 @@ write_files:
         - hostPath:
             path: /etc/kubernetes/config
           name: kubernetes-configs
-        - hostPath:
-            path: /var/www/openid-configuration
-          name: openid-configuration
         - name: var-run-kmsplugin
           hostPath:
             path: /var/run/kmsplugin
