@@ -464,6 +464,10 @@ write_files:
               -> setResponseHeader("Content-Type", "application/json")
               -> static("/openid-configuration/", "/var/www/openid-configuration/")
               -> <shunt>;
+            k2: Path("/openid/v1/jwks")
+              -> setResponseHeader("Content-Type", "application/json")
+              -> static("/openid-configuration/keys.json", "/var/www/openid-configuration/keys.json")
+              -> <shunt>;
           {{- end }}
             all: *
               -> disableAccessLog()
