@@ -3,10 +3,8 @@ kind: ServiceAccount
 metadata:
   name: kube-static-egress-controller
   namespace: kube-system
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
   annotations:
     iam.amazonaws.com/role: "{{ .LocalID }}-static-egress-controller"
-{{ end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
