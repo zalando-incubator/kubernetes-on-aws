@@ -45,44 +45,6 @@ post_apply:
 - name: leader-locking-efs-provisioner
   namespace: default
   kind: RoleBinding
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true"}}
-- name: audittrail-adapter-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: cluster-lifecycle-controller-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: emergency-access-service-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: etcd-backup-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: external-dns-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: kube-ingress-aws-controller-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: kube-metrics-adapter-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: kube-node-ready-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: kube-static-egress-controller-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-{{ end }}
 {{ if ne .ConfigItems.enable_csi_migration "true" }}
 - name: csi-node-driver
   namespace: kube-system

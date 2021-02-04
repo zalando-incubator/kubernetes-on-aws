@@ -17,12 +17,6 @@ spec:
       labels:
         application: external-dns
         version: v0.7.6
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
-      annotations:
-        iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
-{{ end }}
-{{ end }}
     spec:
       dnsConfig:
         options:
@@ -45,14 +39,6 @@ spec:
         - --txt-owner-id={{ .Region }}:{{ .LocalID }}
         - --txt-prefix={{ .ConfigItems.external_dns_ownership_prefix }}
         - --aws-batch-change-size=100
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        env:
-        # must be set for the AWS SDK/AWS CLI to find the credentials file.
-        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-          value: /meta/aws-iam/credentials.process
-{{ end }}
-{{ end }}
         resources:
           limits:
             cpu: 50m
@@ -61,14 +47,6 @@ spec:
           httpGet:
             path: /healthz
             port: 7979
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        volumeMounts:
-        - name: aws-iam-credentials
-          mountPath: /meta/aws-iam
-          readOnly: true
-{{ end }}
-{{ end }}
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
@@ -77,11 +55,3 @@ spec:
             drop: ["ALL"]
       securityContext:
         fsGroup: 65534
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-      volumes:
-      - name: aws-iam-credentials
-        secret:
-          secretName: external-dns-aws-iam-credentials
-{{ end }}
-{{ end }}
