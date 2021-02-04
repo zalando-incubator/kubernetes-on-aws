@@ -151,7 +151,7 @@ write_files:
           {{- end }}
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
-          - --service-account-jwks-uri={{ .Cluster.APIServerURL }}/openid/v1/jwks
+          - --service-account-jwks-uri={{ .Cluster.APIServerURL }}/openid-configuration/keys.json
           {{ if and (ne .Cluster.ConfigItems.audittrail_url "") (ne .Cluster.Environment "e2e") }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
