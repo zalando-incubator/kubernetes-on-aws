@@ -20,11 +20,6 @@ spec:
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "emergency-access-service", "parser": "json-structured-log"}]
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
-        iam.amazonaws.com/role: {{.LocalID}}-emergency-access-service
-{{ end }}
-{{ end }}
     spec:
       dnsConfig:
         options:
@@ -84,13 +79,6 @@ spec:
           value: "8444"
         - name: OPENTRACING_LIGHTSTEP_COMPONENT_NAME
           value: "emergency-access-service"
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        # must be set for the AWS SDK/AWS CLI to find the credentials file.
-        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-          value: /meta/aws-iam/credentials.process
-{{ end }}
-{{ end }}
         ports:
         - containerPort: 8080
         volumeMounts:
@@ -100,13 +88,6 @@ spec:
         - name: secrets
           mountPath: /meta/secrets
           readOnly: true
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        - name: aws-iam-credentials
-          mountPath: /meta/aws-iam
-          readOnly: true
-{{ end }}
-{{ end }}
         livenessProbe:
           httpGet:
             path: /healthz
@@ -136,11 +117,4 @@ spec:
       - name: secrets
         secret:
           secretName: "emergency-access-service-secrets"
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-      - name: aws-iam-credentials
-        secret:
-          secretName: emergency-access-service-aws-iam-credentials
-{{ end }}
-{{ end }}
 {{ end }}
