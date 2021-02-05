@@ -24,9 +24,6 @@ spec:
           env:
             - name: CSI_ENDPOINT
               value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
-          # must be set for the AWS SDK/AWS CLI to find the credentials file.
-            - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-              value: /meta/aws-iam/credentials.process
           image: registry.opensource.zalan.do/teapot/ebs-csi-driver:v0.5.0-master-2
           livenessProbe:
             failureThreshold: 5
@@ -51,9 +48,6 @@ spec:
           volumeMounts:
             - mountPath: /var/lib/csi/sockets/pluginproxy/
               name: socket-dir
-            - name: aws-iam-credentials
-              mountPath: /meta/aws-iam
-              readOnly: true
         - args:
             - --csi-address=$(ADDRESS)
             - --v=5
@@ -79,7 +73,6 @@ spec:
             - --csi-address=$(ADDRESS)
             - --v=5
             - --leader-election=true
-            - --leader-election-type=leases
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
@@ -137,7 +130,4 @@ spec:
       volumes:
         - emptyDir: {}
           name: socket-dir
-        - name: aws-iam-credentials
-          secret:
-            secretName: ebs-csi-controller-iam-credentials
 {{- end }}
