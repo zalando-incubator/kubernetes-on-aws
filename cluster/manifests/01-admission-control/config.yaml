@@ -38,6 +38,11 @@ data:
   deployment.default.rolling-update-max-unavailable: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}"
 
   crd.resource-delete-protection.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_crd_ensure_no_resources_on_delete }}"
+{{- range $group := split .Cluster.ConfigItems.teapot_admission_controller_crd_role_provisioning_allowed_api_groups "," }}
+  "crd.role-provisioning.api-groups.{{$group}}": allow
+{{- end }}
+  # These API groups are internal and shouldn't be controllable by the users.
+  crd.role-provisioning.api-groups.deployment.zalando.org: skip
 
   priorityclass.preemption.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_preemption_enabled }}"
 
