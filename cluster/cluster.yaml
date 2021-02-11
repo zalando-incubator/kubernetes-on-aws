@@ -1730,16 +1730,17 @@ Resources:
             Effect: "Allow"
             Principal:
               AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
-            Action: "kms:*"
+            Action:
+            - "kms:DescribeKey"
             Resource: "*"
-          - Sid: "Allow encryption with the key"
+          - Sid: "Allow administering the key"
             Effect: "Allow"
             Principal:
-              AWS: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+              AWS:
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/Shibboleth-Administrator"
             Action:
-            - "kms:Describe"
-            - "kms:Get*"
-            - "kms:Encrypt"
+            - "kms:*"
             Resource: "*"
           - Sid: "Enable master and worker nodes to decrypt the remote files"
             Effect: "Allow"
@@ -1799,16 +1800,17 @@ Resources:
             Effect: "Allow"
             Principal:
               AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
-            Action: "kms:*"
+            Action:
+            - "kms:DescribeKey"
             Resource: "*"
-          - Sid: "Allow encryption with the key for CLM"
+          - Sid: "Allow administering the key"
             Effect: "Allow"
             Principal:
-              AWS: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+              AWS:
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/Shibboleth-Administrator"
             Action:
-            - "kms:Describe"
-            - "kms:Get*"
-            - "kms:Encrypt"
+            - "kms:*"
             Resource: "*"
           - Sid: "Enable master nodes to decrypt the remote files"
             Effect: "Allow"
@@ -1833,16 +1835,17 @@ Resources:
             Effect: "Allow"
             Principal:
               AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
-            Action: "kms:*"
+            Action:
+            - "kms:DescribeKey"
             Resource: "*"
-          - Sid: "Allow encryption with the key for CLM"
+          - Sid: "Allow administering the key"
             Effect: "Allow"
             Principal:
-              AWS: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+              AWS:
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/Shibboleth-Administrator"
             Action:
-            - "kms:Describe"
-            - "kms:Get*"
-            - "kms:Encrypt"
+            - "kms:*"
             Resource: "*"
           - Sid: "Enable worker nodes to decrypt the remote files"
             Effect: "Allow"
