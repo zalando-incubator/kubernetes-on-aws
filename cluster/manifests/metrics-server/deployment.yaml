@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: metrics-server
-    version: v0.3.6
+    version: v0.4.2
 spec:
   replicas: 1
   selector:
@@ -16,7 +16,7 @@ spec:
       name: metrics-server
       labels:
         application: metrics-server
-        version: v0.3.6
+        version: v0.4.2
     spec:
       dnsConfig:
         options:
@@ -25,7 +25,11 @@ spec:
       serviceAccountName: metrics-server
       containers:
       - name: metrics-server
-        image: registry.opensource.zalan.do/teapot/metrics-server:v0.3.6
+        image: registry.opensource.zalan.do/teapot/metrics-server:v0.4.2
+        args:
+        - --cert-dir=/tmp
+        - --secure-port=4443
+        - --kubelet-use-node-status-port
         resources:
           limits:
             cpu: "{{.ConfigItems.metrics_service_cpu}}"
@@ -33,6 +37,21 @@ spec:
           requests:
             cpu: "{{.ConfigItems.metrics_service_cpu}}"
             memory: "{{.ConfigItems.metrics_service_mem}}"
+        ports:
+        - containerPort: 4443
+          name: https
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /readyz
+            port: https
+            scheme: HTTPS
+          periodSeconds: 10
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
         volumeMounts:
         - name: tmp-dir
           mountPath: /tmp
