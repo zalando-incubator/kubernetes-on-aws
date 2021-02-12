@@ -6,6 +6,43 @@ metadata:
   labels:
     application: coredns
 data:
+  unbound.conf: |
+    server:
+      directory: "/opt/unbound/etc/unbound/"
+      interface: 0.0.0.0
+      interface-automatic: yes
+      # Drop user privileges after binding the port.
+      username: "_unbound"
+      # Prevent the unbound server from forking into the background as a daemon
+      do-daemonize: no
+      # log to stderr
+      use-syslog: no
+      log-servfail: yes
+      # allow query localhost (coredns at 127.0.0.1:9254)
+      do-not-query-localhost: no
+      access-control: 0.0.0.0/0 allow
+      harden-dnssec-stripped: no
+      so-reuseport: yes
+      cache-min-ttl: 1
+      disable-dnssec-lame-check: yes
+      minimal-responses: yes
+      extended-statistics: yes
+      # support reverse lookup of kubernetes addresses
+      local-zone: "2.10.in-addr.arpa." transparent
+      local-zone: "3.10.in-addr.arpa." transparent
+      # make metrics available for the unbound-telemetry container (127.0.0.1:9054)
+      remote-control:
+        control-enable: yes
+        control-use-cert: no
+    forward-zone:
+      name: "."
+      forward-addr: 127.0.0.1@9254 # coredns
+    forward-zone:
+      name: "2.10.in-addr.arpa."
+      forward-addr: 127.0.0.1@9254 # coredns
+    forward-zone:
+      name: "3.10.in-addr.arpa."
+      forward-addr: 127.0.0.1@9254 # coredns
   Corefile: |
 {{ if and (ne .ConfigItems.custom_dns_zone "") (ne .ConfigItems.custom_dns_zone_nameservers "") }}
     {{ .ConfigItems.custom_dns_zone }}:9254 {
