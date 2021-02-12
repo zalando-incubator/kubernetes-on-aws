@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: coredns
-    version: v1.7.1
+    version: v1.8.1
     kubernetes.io/cluster-service: "true"
     kubernetes.io/name: "CoreDNS"
     component: cluster-dns
@@ -21,10 +21,48 @@ spec:
       labels:
         application: coredns
         instance: node-dns
-        version: v1.7.1
+        version: v1.8.1
         component: cluster-dns
     spec:
       containers:
+{{ if eq .Cluster.ConfigItems.dns_cache "unbound" }}
+      - name: unbound
+        image: registry.opensource.zalan.do/teapot/unbound:1.13.0
+        ports:
+        - containerPort: 53
+          name: dns-udp
+          protocol: UDP
+        - containerPort: 53
+          name: dns-tcp
+          protocol: TCP
+        resources:
+          requests:
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: {{.Cluster.ConfigItems.dns_unbound_cpu}}
+            memory: {{.Cluster.ConfigItems.dns_unbound_mem}}
+        volumeMounts:
+        - mountPath: /opt/unbound/etc/unbound/unbound.conf
+          name: config-volume
+          readOnly: true
+          subPath: unbound.conf
+      - name: unbound-telemetry
+        image: registry.opensource.zalan.do/teapot/unbound-telemetry:master-1
+        args:
+        - tcp
+        - --bind=0.0.0.0:9054
+        ports:
+        - name: metrics
+          containerPort: 9054
+          protocol: TCP
+        resources:
+          requests:
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: {{.Cluster.ConfigItems.dns_unbound_telemetry_cpu}}
+            memory: {{.Cluster.ConfigItems.dns_unbound_telemetry_mem}}
+{{ end }}
+{{ if eq .Cluster.ConfigItems.dns_cache "dnsmasq" }}
       - name: dnsmasq
         image: registry.opensource.zalan.do/teapot/k8s-dns-dnsmasq-nanny-amd64:1.15.7-1
         securityContext:
@@ -95,8 +133,9 @@ spec:
           limits:
             cpu: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_cpu}}
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_mem}}
+{{ end }}
       - name: coredns
-        image: registry.opensource.zalan.do/teapot/coredns:1.7.1
+        image: registry.opensource.zalan.do/teapot/coredns:1.8.1
         args: [ "-conf", "/etc/coredns/Corefile" ]
         volumeMounts:
         - name: config-volume
@@ -148,3 +187,5 @@ spec:
           items:
           - key: Corefile
             path: Corefile
+          - key: unbound.conf
+            path: unbound.conf
