@@ -301,6 +301,9 @@ teapot_admission_controller_ignore_namespaces: "^kube-system$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "true"
 {{end}}
 
+# Enable kube-node-ready-controller and node-not-ready taint
+teapot_admission_controller_node_not_ready_taint: "true"
+
 # Some third-party controllers use API groups that look like they belong to Kubernetes resources. Explicitly allow them anyway.
 teapot_admission_controller_crd_role_provisioning_allowed_api_groups: "flink.k8s.io"
 
@@ -519,13 +522,3 @@ enable_control_plane_profiling: "false"
 # Enable use of Privileged PSP (running privileged pods) in non system namespaces.
 # TODO: remove once all clusters have been migrated away from privileged pods
 privileged_psp_enabled: "false"
-
-# Enable kube-node-ready-controller and node-not-ready taint
-teapot_addmission_controller_node_not_ready_taint: "true"
-
-# TODO: legacy remove after rollout.
-{{if eq .Cluster.Environment "production"}}
-kube_node_not_ready_taint_enabled: "false"
-{{ else }}
-kube_node_not_ready_taint_enabled: "true"
-{{ end }}
