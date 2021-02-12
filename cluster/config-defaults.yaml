@@ -318,7 +318,13 @@ dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
-coredns_max_upstream_concurrency: 0 #0 means there is not concurrency limits
+# max concurrency for upstream (AWS VPC) DNS server
+#
+# AWS VPC DNS server has a limit of 1024 qps before packets are dropped.
+# This setting is tuned to allow a buffer compared to the normal DNS QPS in our
+# clusters and prevent CoreDNS from running out of memory in case of spikes.
+coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
+
 
 # Kubernetes on Ubuntu AMI to use
 # note this configuration uses the [amiID][0] function. It returns the
@@ -401,11 +407,22 @@ external_dns_ownership_prefix: ""
 # domains that should be ignored by ExternalDNS
 external_dns_excluded_domains: cluster.local
 
+# select which cache to use for Cluster DNS
+{{ if eq .Cluster.Environment "production" }}
+dns_cache: "dnsmasq"
+{{ else }}
+dns_cache: "unbound"
+{{ end }}
+
 # DNS container resources
 dns_dnsmasq_cpu: "100m"
 dns_dnsmasq_mem: "50Mi"
 dns_dnsmasq_sidecar_cpu: "10m"
 dns_dnsmasq_sidecar_mem: "45Mi"
+dns_unbound_cpu: "100m"
+dns_unbound_mem: "50Mi"
+dns_unbound_telemetry_cpu: "10m"
+dns_unbound_telemetry_mem: "45Mi"
 dns_coredns_cpu: "50m"
 dns_coredns_mem: "100Mi"
 
