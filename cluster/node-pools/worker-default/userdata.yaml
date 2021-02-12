@@ -7,7 +7,7 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
-      NODEPOOL_TAINTS={{ if eq .NodePool.ConfigItems.kube_node_not_ready_taint_enabled "true" }}zalando.org/node-not-ready=:NoSchedule{{end}}{{if index .NodePool.ConfigItems "taints"}}{{ if eq .NodePool.ConfigItems.kube_node_not_ready_taint_enabled "true" }},{{ end }}{{.NodePool.ConfigItems.taints}}{{end}}
+      NODEPOOL_TAINTS={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}}
       NODE_LABELS={{ .Values.node_labels }}{{if eq .NodePool.Profile "worker-spotio-ocean"}},spot.io=true{{end}},node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=worker
