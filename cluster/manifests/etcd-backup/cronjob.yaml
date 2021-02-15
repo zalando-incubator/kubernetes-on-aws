@@ -20,10 +20,6 @@ spec:
           labels:
             application: etcd-backup
             version: "master-12"
-{{ if and (eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false") }}
-          annotations:
-            iam.amazonaws.com/role: "{{ .LocalID }}-etcd-backup"
-{{ end }}
         spec:
           serviceAccountName: etcd-backup
           dnsConfig:
@@ -39,11 +35,6 @@ spec:
               value: "{{ .ConfigItems.etcd_s3_backup_bucket }}"
             - name: ETCD_ENDPOINTS
               value: "{{ .ConfigItems.etcd_endpoints }}"
-{{ if and (eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false") }}
-            # must be set for the AWS SDK/AWS CLI to find the credentials file.
-            - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-              value: /meta/aws-iam/credentials.process
-{{ end }}
 {{ if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
             - name: ETCD_CA_CERTIFICATE
               value: /mnt/etcd-ca.pem
@@ -79,11 +70,6 @@ spec:
               mountPath: /mnt/etcd-key.pem
               readOnly: true
 {{ end }}
-{{ if and (eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false") }}
-            - name: aws-iam-credentials
-              mountPath: /meta/aws-iam
-              readOnly: true
-{{ end }}
           tolerations:
           - key: node.kubernetes.io/role
             value: master
@@ -108,9 +94,4 @@ spec:
             hostPath:
               path: /etc/kubernetes/ssl/etcd-key.pem
               type: File
-{{ end }}
-{{ if and (eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false") }}
-          - name: aws-iam-credentials
-            secret:
-              secretName: etcd-backup-aws-iam-credentials
 {{ end }}

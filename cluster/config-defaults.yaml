@@ -301,6 +301,9 @@ teapot_admission_controller_ignore_namespaces: "^kube-system$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "true"
 {{end}}
 
+# Some third-party controllers use API groups that look like they belong to Kubernetes resources. Explicitly allow them anyway.
+teapot_admission_controller_crd_role_provisioning_allowed_api_groups: "flink.k8s.io"
+
 teapot_admission_controller_topology_spread: optin
 
 # etcd cluster
@@ -315,7 +318,13 @@ dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
-coredns_max_upstream_concurrency: 0 #0 means there is not concurrency limits
+# max concurrency for upstream (AWS VPC) DNS server
+#
+# AWS VPC DNS server has a limit of 1024 qps before packets are dropped.
+# This setting is tuned to allow a buffer compared to the normal DNS QPS in our
+# clusters and prevent CoreDNS from running out of memory in case of spikes.
+coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
+
 
 # Kubernetes on Ubuntu AMI to use
 # note this configuration uses the [amiID][0] function. It returns the
@@ -386,14 +395,6 @@ auditlog_read_access: "true"
 auditlog_read_access: "false"
 {{ end }}
 
-# enable automatic injection of OIDC-based AWS API access
-teapot_admission_controller_service_account_iam: "true"
-# only configure the userdata part of the OIDC-based AWS API access feature, useful for rolling back
-# has no effect when teapot_admission_controller_service_account_iam is true
-teapot_admission_controller_service_account_iam_userdata: "true"
-# use kube-aws-iam-controller for kube-system components
-kube_aws_iam_controller_kube_system_enable: "true"
-
 # allow ssh access for internal VPC IPs only
 ssh_vpc_only: "false"
 
@@ -406,11 +407,22 @@ external_dns_ownership_prefix: ""
 # domains that should be ignored by ExternalDNS
 external_dns_excluded_domains: cluster.local
 
+# select which cache to use for Cluster DNS
+{{ if eq .Cluster.Environment "production" }}
+dns_cache: "dnsmasq"
+{{ else }}
+dns_cache: "unbound"
+{{ end }}
+
 # DNS container resources
 dns_dnsmasq_cpu: "100m"
 dns_dnsmasq_mem: "50Mi"
 dns_dnsmasq_sidecar_cpu: "10m"
 dns_dnsmasq_sidecar_mem: "45Mi"
+dns_unbound_cpu: "100m"
+dns_unbound_mem: "50Mi"
+dns_unbound_telemetry_cpu: "10m"
+dns_unbound_telemetry_mem: "45Mi"
 dns_coredns_cpu: "50m"
 dns_coredns_mem: "100Mi"
 
@@ -517,4 +529,3 @@ kube_node_not_ready_taint_enabled: "false"
 {{ else }}
 kube_node_not_ready_taint_enabled: "true"
 {{ end }}
-

@@ -14,10 +14,8 @@ data:
   pod.ignore-namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_ignore_namespaces }}"
   pod.default.dns-ndots: "{{ .Cluster.ConfigItems.teapot_admission_controller_ndots }}"
   pod.parent-resource-hash.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_parent_resource_hash }}"
-{{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
   pod.service-account-iam.enable: "true"
   pod.service-account-iam.base-aws-account-id: "{{ accountID .Cluster.InfrastructureAccount }}"
-{{- end }}
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
   pod.aws-waiter.image: "registry.opensource.zalan.do/automata/aws-credentials-waiter:master-10"
 {{- end }}
@@ -40,6 +38,11 @@ data:
   deployment.default.rolling-update-max-unavailable: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}"
 
   crd.resource-delete-protection.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_crd_ensure_no_resources_on_delete }}"
+{{- range $group := split .Cluster.ConfigItems.teapot_admission_controller_crd_role_provisioning_allowed_api_groups "," }}
+  "crd.role-provisioning.api-groups.{{$group}}": allow
+{{- end }}
+  # These API groups are internal and shouldn't be controllable by the users.
+  crd.role-provisioning.api-groups.deployment.zalando.org: skip
 
   priorityclass.preemption.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_preemption_enabled }}"
 

@@ -559,30 +559,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
             Action:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
-              StringLike:
+              StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:cluster-autoscaler"
-{{ end }}
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref MasterIAMRole
         Version: 2012-10-17
       Path: /
       Policies:
@@ -837,30 +821,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
             Action:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
-              StringLike:
+              StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:external-dns"
-{{ end }}
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref WorkerIAMRole
         Version: 2012-10-17
       Path: /
       Policies:
@@ -877,30 +845,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{ .Values.hosted_zone }}"
             Action:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
-              StringLike:
+              StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-ingress-aws-controller"
-{{ end }}
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref WorkerIAMRole
         Version: 2012-10-17
       Path: /
       Policies:
@@ -1001,30 +953,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
         - Effect: Allow
           Principal:
             Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
           Action:
             - 'sts:AssumeRoleWithWebIdentity'
           Condition:
-            StringLike:
+            StringEquals:
               "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:cluster-lifecycle-controller"
-{{ end }}
-        - Action:
-          - 'sts:AssumeRole'
-          Effect: Allow
-          Principal:
-            Service:
-            - ec2.amazonaws.com
-        - Action:
-          - 'sts:AssumeRole'
-          Effect: Allow
-          Principal:
-            AWS: !Join
-              - ''
-              - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                - !Ref WorkerIAMRole
         Version: 2012-10-17
       Path: /
       Policies:
@@ -1071,30 +1007,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
             Action:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
-              StringLike:
+              StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-node-ready"
-{{ end }}
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref WorkerIAMRole
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -1178,30 +1098,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
             Action:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
-              StringLike:
+              StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:etcd-backup"
-{{ end }}
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref WorkerIAMRole
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -1237,30 +1141,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
             Action:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
-              StringLike:
+              StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-static-egress-controller"
-{{ end }}
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref WorkerIAMRole
         Version: 2012-10-17
       Path: /
       Policies:
@@ -1500,30 +1388,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
             Action:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
-              StringLike:
+              StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:custom-metrics-apiserver"
-{{ end }}
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref WorkerIAMRole
         Version: 2012-10-17
       Path: /
       Policies:
@@ -1550,6 +1422,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:ebs-csi-controller"
           - Action:
               - 'sts:AssumeRole'
             Effect: Allow
@@ -1744,7 +1624,7 @@ Resources:
             Action:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
-              StringLike:
+              StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:aws-node-decommissioner"
       Path: /
       Policies:
@@ -1761,30 +1641,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
             Action:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
-              StringLike:
+              StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:emergency-access-service"
-{{ end }}
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref WorkerIAMRole
         Version: 2012-10-17
       Path: /
       Policies:
@@ -1811,30 +1675,14 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
           - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
             Action:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
-              StringLike:
+              StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:audittrail-adapter"
-{{ end }}
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref WorkerIAMRole
         Version: 2012-10-17
       Path: /
       Policies:
@@ -1882,16 +1730,17 @@ Resources:
             Effect: "Allow"
             Principal:
               AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
-            Action: "kms:*"
+            Action:
+            - "kms:DescribeKey"
             Resource: "*"
-          - Sid: "Allow encryption with the key"
+          - Sid: "Allow administering the key"
             Effect: "Allow"
             Principal:
-              AWS: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+              AWS:
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/Shibboleth-Administrator"
             Action:
-            - "kms:Describe"
-            - "kms:Get*"
-            - "kms:Encrypt"
+            - "kms:*"
             Resource: "*"
           - Sid: "Enable master and worker nodes to decrypt the remote files"
             Effect: "Allow"
@@ -1951,16 +1800,17 @@ Resources:
             Effect: "Allow"
             Principal:
               AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
-            Action: "kms:*"
+            Action:
+            - "kms:DescribeKey"
             Resource: "*"
-          - Sid: "Allow encryption with the key for CLM"
+          - Sid: "Allow administering the key"
             Effect: "Allow"
             Principal:
-              AWS: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+              AWS:
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/Shibboleth-Administrator"
             Action:
-            - "kms:Describe"
-            - "kms:Get*"
-            - "kms:Encrypt"
+            - "kms:*"
             Resource: "*"
           - Sid: "Enable master nodes to decrypt the remote files"
             Effect: "Allow"
@@ -1985,16 +1835,17 @@ Resources:
             Effect: "Allow"
             Principal:
               AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:root"
-            Action: "kms:*"
+            Action:
+            - "kms:DescribeKey"
             Resource: "*"
-          - Sid: "Allow encryption with the key for CLM"
+          - Sid: "Allow administering the key"
             Effect: "Allow"
             Principal:
-              AWS: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+              AWS:
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/cluster-lifecycle-manager-entrypoint"
+                - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/Shibboleth-Administrator"
             Action:
-            - "kms:Describe"
-            - "kms:Get*"
-            - "kms:Encrypt"
+            - "kms:*"
             Resource: "*"
           - Sid: "Enable worker nodes to decrypt the remote files"
             Effect: "Allow"
