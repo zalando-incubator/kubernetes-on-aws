@@ -20,6 +20,17 @@ spec:
     spec:
       priorityClassName: system-node-critical
       serviceAccountName: flannel
+      initContainers:
+      - name: ensure-apiserver
+        image: registry.opensource.zalan.do/teapot/ensure-apiserver:master-2
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: 1m
+            memory: 50Mi
       containers:
       - name: delayed-install-cni
         image: registry.opensource.zalan.do/teapot/flannel-awaiter:master-4
