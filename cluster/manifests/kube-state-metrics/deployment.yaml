@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-state-metrics
-    version: v1.9.3
+    version: v1.9.7
 spec:
   replicas: 1
   selector:
@@ -15,24 +15,25 @@ spec:
     metadata:
       labels:
         application: kube-state-metrics
-        version: v1.9.3
+        version: v1.9.7
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: kube-state-metrics
       containers:
       - name: kube-state-metrics
-        image: registry.opensource.zalan.do/teapot/kube-state-metrics:v1.9.3
+        image: registry.opensource.zalan.do/teapot/kube-state-metrics:v1.9.7
         args:
         - --collectors=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments,verticalpodautoscalers
         ports:
         - containerPort: 8080
           name: http-metrics
+          protocol: TCP
         - containerPort: 8081
           name: telemetry
+          protocol: TCP
         readinessProbe:
           httpGet:
             path: /

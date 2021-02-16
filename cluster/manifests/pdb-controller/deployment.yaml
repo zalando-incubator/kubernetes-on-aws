@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: pdb-controller
-    version: v0.0.14
+    version: v0.0.15
 spec:
   replicas: 1
   selector:
@@ -15,22 +15,24 @@ spec:
     metadata:
       labels:
         application: pdb-controller
-        version: v0.0.14
+        version: v0.0.15
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: pdb-controller
       containers:
       - name: pdb-controller
-        image: registry.opensource.zalan.do/teapot/pdb-controller:v0.0.14
+        image: registry.opensource.zalan.do/teapot/pdb-controller:v0.0.15
         args:
         - --debug
         {{ if or (index .ConfigItems "pdb_non_ready_ttl") (eq .Environment "test") }}
         - --non-ready-ttl={{if index .ConfigItems "pdb_non_ready_ttl"}}{{.ConfigItems.pdb_non_ready_ttl}}{{else}}1h{{end}}
         {{end}}
+        {{ if eq .Cluster.ConfigItems.teapot_admission_controller_parent_resource_hash "true" }}
+        - --use-parent-resource-hash
+        {{ end }}
         resources:
           limits:
             cpu: 10m

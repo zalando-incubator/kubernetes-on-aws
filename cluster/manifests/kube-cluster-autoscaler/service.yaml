@@ -1,0 +1,20 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: kube-cluster-autoscaler
+  namespace: kube-system
+  labels:
+    application: kube-cluster-autoscaler
+  annotations:
+    prometheus.io/path: /metrics
+    prometheus.io/port: "8085"
+    prometheus.io/scrape: "true"
+spec:
+  type: ClusterIP
+  ports:
+    - name: monitor
+      port: 8085
+      targetPort: 8085
+      protocol: TCP
+  selector:
+    application: kube-cluster-autoscaler

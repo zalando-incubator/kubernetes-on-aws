@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-janitor
-    version: v20.4.0
+    version: v20.4.1
 spec:
   replicas: 1
   selector:
@@ -16,18 +16,17 @@ spec:
     metadata:
       labels:
         application: kube-janitor
-        version: v20.4.0
+        version: v20.4.1
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: kube-janitor
       containers:
       - name: janitor
         # see https://github.com/hjacobs/kube-janitor/releases
-        image: registry.opensource.zalan.do/teapot/kube-janitor:20.4.0
+        image: registry.opensource.zalan.do/teapot/kube-janitor:20.4.1
         args:
           # run every minute
           - --interval=60

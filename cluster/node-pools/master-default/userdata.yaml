@@ -43,11 +43,17 @@ write_files:
 {{- end }}
       featureGates:
         BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
-        CSIDriverRegistry: {{ .Cluster.ConfigItems.enable_csi_migration }}
-        CSIBlockVolume: {{ .Cluster.ConfigItems.enable_csi_migration }}
         CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
+{{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
+        EphemeralContainers: true
+{{- end }}
+        GenericEphemeralVolume: {{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }}
+        SetHostnameAsFQDN: {{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
+{{- if ne .Cluster.ConfigItems.serialize_image_pulls "true" }}
+      serializeImagePulls: false
+{{- end }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
@@ -108,11 +114,7 @@ write_files:
           - --apiserver-count={{ .Values.apiserver_count }}
           - --bind-address=0.0.0.0
           - --insecure-bind-address=0.0.0.0
-{{- if eq .Cluster.ConfigItems.etcd_use_proxy "true" }}
-          - --etcd-servers=http://127.0.0.1:2379
-{{- else }}
-          - --etcd-servers={{ .Cluster.ConfigItems.etcd_endpoints }}
-{{- end }}
+          - --etcd-servers={{ .NodePool.ConfigItems.etcd_endpoints }}
 {{- if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
           - --etcd-cafile=/etc/kubernetes/ssl/etcd-ca.pem
 {{- end }}
@@ -129,27 +131,27 @@ write_files:
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/16
           - --secure-port=443
-          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority,ExtendedResourceToleration
+          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true{{ if eq .Cluster.ConfigItems.enable_endpointslice "true" }},discovery.k8s.io/v1alpha1=true{{ end }}
+          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
           - --authorization-mode=Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
+          - --authorization-webhook-version=v1
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},EndpointSlice={{ .Cluster.ConfigItems.enable_endpointslice }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIDriverRegistry={{ .Cluster.ConfigItems.enable_csi_migration }},CSIBlockVolume={{ .Cluster.ConfigItems.enable_csi_migration }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true,EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},ServiceAccountIssuerDiscovery=true
           - --anonymous-auth=false
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer=kubernetes/serviceaccount
           {{- end }}
-          {{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
-          {{- end }}
+          - --service-account-jwks-uri={{ .Cluster.APIServerURL }}/openid/v1/jwks
           {{ if and (ne .Cluster.ConfigItems.audittrail_url "") (ne .Cluster.Environment "e2e") }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
@@ -183,6 +185,7 @@ write_files:
           - --kubelet-client-certificate=/etc/kubernetes/ssl/kubelet-client.pem
           - --kubelet-client-key=/etc/kubernetes/ssl/kubelet-client-key.pem
           - --shutdown-delay-duration=60s
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           livenessProbe:
             httpGet:
               host: 127.0.0.1
@@ -210,8 +213,12 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-71
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-99
           name: admission-controller
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           readinessProbe:
             httpGet:
               scheme: HTTPS
@@ -228,44 +235,10 @@ write_files:
             - --master=http://127.0.0.1:8080
             - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
             - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
-            - --pod-min-memory-request=25Mi
-            - --pod-default-cpu-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}
-            - --pod-default-memory-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_memory_request }}
-            - --pod-ignore-namespaces={{ .Cluster.ConfigItems.teapot_admission_controller_ignore_namespaces }}
-            - --pod-dns-ndots={{ .Cluster.ConfigItems.teapot_admission_controller_ndots }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
-            - --pod-process-resources
-{{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables "true" }}
-            - --pod-enable-env-inject
-            - --pod-inject-env=_PLATFORM_ACCOUNT={{ .Cluster.Alias }}
-            - --pod-inject-env=_PLATFORM_CLUSTER_ID={{ .Cluster.ID }}
-            - --pod-inject-env=_PLATFORM_OPENTRACING_TAG_ACCOUNT={{ .Cluster.Alias }}
-            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT=8443
-            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST=tracing.stups.zalan.do
-            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN={{ .ConfigItems.lightstep_token }}
-{{- if eq .Cluster.Environment "e2e" }}
-            - --pod-inject-env=_PLATFORM_E2E=injected
-{{- end }}
-{{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_validate_application_label "true" }}
-            - --validate-application-label
-            - --validate-application-label-min-creation-time={{ .Cluster.ConfigItems.teapot_admission_controller_application_min_creation_time }}
-            - --application-registry-url=http://127.0.0.1:8285/
-{{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_validate_pod_template_resources "true" }}
-            - --validate-pod-template-resources
-{{- end }}
-            - --deployment-rolling-update-default-max-surge={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}
-            - --deployment-rolling-update-default-max-unavailable={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_crd_ensure_no_resources_on_delete "true" }}
-            - --crd-ensure-no-resources-on-delete
-{{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
-            - --pod-aws-credentials-waiter-image=pierone.stups.zalan.do/automata/aws-credentials-waiter:master-7
-{{- end }}
-{{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
-            - --service-account-iam
+{{- if index .Cluster.ConfigItems "application_registry_url" }}
+            - --application-registry-url={{.Cluster.ConfigItems.application_registry_url}}
+            - --application-registry-token-secret-name=admission-controller-credentials
+            - --application-registry-token-secret-key=kio-token-secret
 {{- end }}
           ports:
             - containerPort: 8085
@@ -273,10 +246,44 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.9
+{{- if or (eq .Cluster.ConfigItems.routegroups_validation "provisioned") (eq .Cluster.ConfigItems.routegroups_validation "enabled") }}
+        - name: routegroups-admission-webhook
+          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.151
+          args:
+            - webhook
+            - --address=:9085
+            - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
+            - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /healthz
+              port: 9085
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+          ports:
+            - containerPort: 9085
+          volumeMounts:
+            - mountPath: /etc/kubernetes/ssl
+              name: ssl-certs-kubernetes
+              readOnly: true
+{{- end}}
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.8.0
           name: webhook
           ports:
           - containerPort: 8081
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /healthcheck
@@ -347,6 +354,10 @@ write_files:
           name: tokeninfo
           ports:
             - containerPort: 9021
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /health
@@ -373,6 +384,10 @@ write_files:
           image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:2fca26c
           ports:
           - containerPort: 9022
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /health
@@ -399,26 +414,20 @@ write_files:
           - name: BUSINESS_PARTNERS
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
-        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:0.5.3
+        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.5.5
           name: image-policy-webhook
           args:
           - --policy={{ .Cluster.ConfigItems.image_policy }}
           - --failure-policy=fail
+          - --trusted-ttl=30s
           ports:
           - containerPort: 8083
-        - name: nginx
-          image: registry.opensource.zalan.do/teapot/nginx:1.12.1
-          ports:
-          - containerPort: 8082
-          resources:
-            requests:
-              cpu: 5m
-              memory: 50Mi
-          volumeMounts:
-          - name: config-volume
-            mountPath: /etc/nginx
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
         - name: skipper-proxy
-          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.90
+          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.150
           args:
           - skipper
           - -access-log-strip-query
@@ -432,6 +441,10 @@ write_files:
           - -enable-connection-metrics
           - -enable-prometheus-metrics
           - -write-timeout-server=60m
+          # wait-for-healthcheck-interval delays termination, since it's
+          # integrated with the health endpoint, using that instead of a
+          # preStop hook.
+          - -wait-for-healthcheck-interval=60s
           - -inline-routes
           - |
             s: JWTPayloadAllKV("iss", "kubernetes/serviceaccount")
@@ -441,16 +454,16 @@ write_files:
               -> setPath("/healthz")
               -> disableAccessLog()
               -> "http://127.0.0.1:8080";
-          {{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
             o: Path("/.well-known/openid-configuration")
-              -> setResponseHeader("Content-Type", "application/json")
-              -> static("/.well-known/", "/var/www/openid-configuration/")
-              -> <shunt>;
-            k: Path("/openid-configuration/*")
-              -> setResponseHeader("Content-Type", "application/json")
-              -> static("/openid-configuration/", "/var/www/openid-configuration/")
-              -> <shunt>;
-          {{- end }}
+              -> disableAccessLog()
+              -> "http://127.0.0.1:8080";
+            k: Path("/openid/v1/jwks")
+              -> disableAccessLog()
+              -> "http://127.0.0.1:8080";
+            k2: Path("/openid-configuration/keys.json")
+              -> setPath("/openid/v1/jwks")
+              -> disableAccessLog()
+              -> "http://127.0.0.1:8080";
             all: *
               -> disableAccessLog()
               -> "https://127.0.0.1:443";
@@ -474,23 +487,6 @@ write_files:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
             readOnly: true
-{{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
-          - mountPath: /var/www/openid-configuration
-            name: openid-configuration
-            readOnly: true
-{{- end }}
-{{- if eq .Cluster.ConfigItems.etcd_use_proxy "true" }}
-        - name: etcd-proxy
-          image: registry.opensource.zalan.do/teapot/etcd-proxy:master-5
-          args:
-          - {{ .Cluster.ConfigItems.etcd_endpoints }}
-          ports:
-          - containerPort: 2379
-          resources:
-            requests:
-              cpu: 25m
-              memory: 25Mi
-{{- end }}
         - name: aws-encryption-provider
           image: registry.opensource.zalan.do/teapot/aws-encryption-provider:master-1
           command:
@@ -502,6 +498,10 @@ write_files:
           ports:
           - containerPort: 8086
             protocol: TCP
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           readinessProbe:
             httpGet:
               path: /healthz
@@ -520,14 +520,6 @@ write_files:
         - hostPath:
             path: /etc/kubernetes/config
           name: kubernetes-configs
-        - hostPath:
-            path: /etc/kubernetes/nginx
-          name: config-volume
-        {{- if or (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true") (eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam_userdata "true") }}
-        - hostPath:
-            path: /var/www/openid-configuration
-          name: openid-configuration
-        {{- end }}
         - name: var-run-kmsplugin
           hostPath:
             path: /var/run/kmsplugin
@@ -559,7 +551,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},CSIDriverRegistry={{ .Cluster.ConfigItems.enable_csi_migration }},CSIBlockVolume={{ .Cluster.ConfigItems.enable_csi_migration }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
@@ -569,13 +561,10 @@ write_files:
           - --kube-api-qps=50
           - --terminated-pod-gc-threshold=500
           - --horizontal-pod-autoscaler-use-rest-clients=true
-          - --horizontal-pod-autoscaler-downscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_downscale_delay }}
           - --horizontal-pod-autoscaler-sync-period={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_sync_period }}
           - --horizontal-pod-autoscaler-tolerance={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_tolerance }}
-          - --horizontal-pod-autoscaler-upscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_upscale_delay }}
-          {{ if eq .Cluster.ConfigItems.enable_endpointslice "true" }}
-          - --controllers=endpointslice
-          {{ end }}
+          - --horizontal-pod-autoscaler-downscale-stabilization={{ .Cluster.ConfigItems.horizontal_pod_downscale_stabilization }}
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           resources:
             requests:
               cpu: 100m
@@ -626,7 +615,8 @@ write_files:
           args:
           - --master=http://127.0.0.1:8080
           - --leader-elect=true
-          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
+          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},NonPreemptingPriority=true,GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           env:
           - name: KUBE_MAX_PD_VOLS
             value: "26"

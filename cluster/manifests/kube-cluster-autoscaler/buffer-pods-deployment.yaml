@@ -28,20 +28,18 @@ spec:
             value: "1"
       nodeSelector:
         topology.kubernetes.io/zone: "{{$zone}}"
-      priorityClassName: autoscaling-buffer
+      priorityClassName: autoscaling-buffer-nonpreempting
       terminationGracePeriodSeconds: 0
       containers:
       - name: pause
-        image: registry.opensource.zalan.do/teapot/pause-amd64:3.1
+        image: registry.opensource.zalan.do/teapot/pause-amd64:3.2
         resources:
-{{ with $resources := autoscalingBufferSettings $data.Cluster }}
           limits:
-            cpu: {{$resources.CPU}}
-            memory: {{$resources.Memory}}
+            cpu: {{$data.ConfigItems.autoscaling_buffer_cpu}}
+            memory: {{$data.ConfigItems.autoscaling_buffer_memory}}
           requests:
-            cpu: {{$resources.CPU}}
-            memory: {{$resources.Memory}}
-{{ end }}
+            cpu: {{$data.ConfigItems.autoscaling_buffer_cpu}}
+            memory: {{$data.ConfigItems.autoscaling_buffer_memory}}
 ---
 {{ end }}
 {{ end }}

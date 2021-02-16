@@ -1,10 +1,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Kubernetes default worker node pool
+Metadata:
+  Tags:
+    InfrastructureComponent: "true"
 
 Mappings:
   Images:
     eu-central-1:
-      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_17 }}'
+      MachineImage: '{{ .NodePool.ConfigItems.kuberuntu_image_v1_19 }}'
 
 Resources:
 {{ with $data := . }}
@@ -23,7 +26,7 @@ Resources:
       MixedInstancesPolicy:
         InstancesDistribution:
           OnDemandPercentageAboveBaseCapacity: {{if $data.NodePool.IsSpot }}0{{else}}100{{end}}
-          SpotAllocationStrategy: capacity-optimized
+          SpotAllocationStrategy: "{{ $data.NodePool.ConfigItems.spot_allocation_strategy }}"
         LaunchTemplate:
           LaunchTemplateSpecification:
             LaunchTemplateId: !Ref LaunchTemplate
@@ -75,8 +78,8 @@ Resources:
         Value: {{if $data.NodePool.IsSpot }}true{{else}}false{{end}}
       - Key: k8s.io/cluster-autoscaler/node-template/resources/ephemeral-storage
         PropagateAtLaunch: false
-        # 40Gi for EBS storage or 95% of instance storage
-        Value: "{{ $data.NodePool.AvailableStorage 42949672960 0.95 }}"
+        # 0.95 of instance storage / 0.8 * ebs_root_volume_size
+        Value: "{{ $data.Values.InstanceInfo.AvailableStorage 0.9 (parseInt64 $data.NodePool.ConfigItems.ebs_root_volume_size) 858993459 }}"
       - Key: k8s.io/cluster-autoscaler/node-template/label/zalando.org/scaling-priority
         PropagateAtLaunch: true
 {{- if index $data.NodePool.ConfigItems "scaling_priority" }}
@@ -123,6 +126,12 @@ Resources:
     Properties:
       LaunchTemplateName: '{{ $data.Cluster.LocalID }}-{{ $data.NodePool.Name }}'
       LaunchTemplateData:
+        BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: {{$data.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
+            VolumeSize: {{$data.NodePool.ConfigItems.ebs_root_volume_size}}
+            VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
           AssociatePublicIpAddress: true

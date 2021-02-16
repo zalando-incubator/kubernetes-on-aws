@@ -1,11 +1,14 @@
 #cloud-config
+mounts:
+  - [ephemeral0]
+  - [swap]
 
 write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
       NODEPOOL_TAINTS={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}}
-      NODE_LABELS={{ .Values.node_labels }},node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
+      NODE_LABELS={{ .Values.node_labels }}{{if eq .NodePool.Profile "worker-spotio-ocean"}},spot.io=true{{end}},node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=worker
       ON_DEMAND_WORKER_REPLACEMENT_STRATEGY={{ .Cluster.ConfigItems.on_demand_worker_replacement_strategy }}
@@ -53,12 +56,18 @@ write_files:
       cpuCFSQuota: false
       featureGates:
         BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
-        CSIDriverRegistry: {{ .Cluster.ConfigItems.enable_csi_migration }}
-        CSIBlockVolume: {{ .Cluster.ConfigItems.enable_csi_migration }}
         CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
+{{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
+        EphemeralContainers: true
+{{- end }}
+        GenericEphemeralVolume: {{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }}
+        SetHostnameAsFQDN: {{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 0 }}
+{{- if ne .Cluster.ConfigItems.serialize_image_pulls "true" }}
+      serializeImagePulls: false
+{{- end }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"

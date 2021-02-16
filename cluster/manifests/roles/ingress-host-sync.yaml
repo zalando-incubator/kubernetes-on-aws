@@ -4,9 +4,17 @@ metadata:
   name: ingress-host-sync
 rules:
 - apiGroups:
-  - extensions
+  - extensions # TODO: remove once only networking.k8s.io is in use
+  - networking.k8s.io
   resources:
   - ingresses
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - zalando.org
+  resources:
+  - routegroups
   verbs:
   - get
   - list

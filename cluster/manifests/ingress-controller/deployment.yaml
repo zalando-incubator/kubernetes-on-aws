@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-ingress-aws-controller
-    version: v0.10.13
+    version: v0.11.14
 spec:
   replicas: 1
   selector:
@@ -15,51 +15,32 @@ spec:
     metadata:
       labels:
         application: kube-ingress-aws-controller
-        version: v0.10.13
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
-      annotations:
-        iam.amazonaws.com/role: "{{ .LocalID }}-app-ingr-ctrl"
-{{ end }}
-{{ end }}
+        version: v0.11.14
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: kube-ingress-aws-controller
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-ingress-aws-controller:v0.10.13
+        image: registry.opensource.zalan.do/teapot/kube-ingress-aws-controller:v0.11.14
         args:
         - --stack-termination-protection
         - --ssl-policy={{ .ConfigItems.kube_aws_ingress_controller_ssl_policy }}
         - --idle-connection-timeout={{ .ConfigItems.kube_aws_ingress_controller_idle_timeout }}
+        - --deregistration-delay-timeout={{ .ConfigItems.kube_aws_ingress_controller_deregistration_delay_timeout }}
         {{ if eq .ConfigItems.kube_aws_ingress_controller_nlb_cross_zone "true" }}
         - --nlb-cross-zone
-        - --cluster-local-domain=cluster.local
         {{ end }}
+        - --cluster-local-domain=cluster.local
+        - "--additional-stack-tags=InfrastructureComponent=true"
         env:
         - name: CUSTOM_FILTERS
           value: "tag:kubernetes.io/cluster/{{ .Cluster.ID }}=owned tag:node.kubernetes.io/role=worker tag:zalando.org/ingress-enabled=true"
         - name: AWS_REGION
           value: {{ .Region }}
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        # must be set for the AWS SDK/AWS CLI to find the credentials file.
-        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-          value: /meta/aws-iam/credentials.process
-{{ end }}
-{{ end }}
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        volumeMounts:
-        - name: aws-iam-credentials
-          mountPath: /meta/aws-iam
-          readOnly: true
-{{ end }}
-{{ end }}
         resources:
           limits:
             cpu: 50m
@@ -67,11 +48,3 @@ spec:
           requests:
             cpu: 50m
             memory: 100Mi
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-      volumes:
-      - name: aws-iam-credentials
-        secret:
-          secretName: kube-ingress-aws-controller-aws-iam-credentials
-{{ end }}
-{{ end }}

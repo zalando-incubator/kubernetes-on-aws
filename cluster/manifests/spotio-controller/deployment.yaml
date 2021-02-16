@@ -1,0 +1,93 @@
+{{ if and (index .Cluster.ConfigItems "spotio_account_id") (index .Cluster.ConfigItems "spotio_access_token") }}
+{{ with $data := . }}
+{{ range $nodePool := .Cluster.NodePools }}
+{{ if eq $nodePool.Profile "worker-spotio-ocean" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spotinst-kubernetes-cluster-controller-{{ $nodePool.Name }}
+  namespace: kube-system
+  labels:
+    application: spotinst-kubernetes-cluster-controller
+    component: "{{ $nodePool.Name }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: spotinst-kubernetes-cluster-controller # TODO: this label name is REQUIRED by the controller
+      component: "{{ $nodePool.Name }}"
+  template:
+    metadata:
+      labels:
+        application: spotinst-kubernetes-cluster-controller
+        component: "{{ $nodePool.Name }}"
+      annotations:
+        config/hash: {{"secret.yaml" | manifestHash}}
+    spec:
+      # TODO: run on master?
+      # nodeSelector:
+      #   node.kubernetes.io/role: master
+      containers:
+      - name: controller
+        image: pierone.stups.zalan.do/teapot/spotinst-kubernetes-cluster-controller:1.0.70
+        env:
+        - name: MEM_TOTAL_KB
+          valueFrom:
+            resourceFieldRef:
+              divisor: 1Ki
+              resource: limits.memory
+        - name: JAVA_OPTS
+          value: "-XX:+ExitOnOutOfMemoryError"
+        - name: SPOTINST_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: spotinst.token
+              name: spotinst-kubernetes-cluster-controller
+        - name: SPOTINST_ACCOUNT
+          value: "{{ $data.ConfigItems.spotio_account_id }}"
+        - name: CLUSTER_IDENTIFIER
+          value: "{{ $data.LocalID }}-{{ $nodePool.Name }}"
+        - name: DISABLE_AUTO_UPDATE
+          value: "true"
+        - name: POD_ID
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.uid
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthcheck
+            port: 4401
+            scheme: HTTP
+          initialDelaySeconds: 300
+          periodSeconds: 20
+          successThreshold: 1
+          timeoutSeconds: 2
+        resources:
+          limits:
+            cpu: "{{ $data.ConfigItems.spotio_ocean_controller_cpu }}"
+            memory: "{{ $data.ConfigItems.spotio_ocean_controller_memory }}"
+          requests:
+            cpu: "{{ $data.ConfigItems.spotio_ocean_controller_cpu }}"
+            memory: "{{ $data.ConfigItems.spotio_ocean_controller_memory }}"
+      serviceAccountName: spotinst-kubernetes-cluster-controller
+      tolerations:
+      - key: node.kubernetes.io/role
+        value: master
+        effect: NoSchedule
+{{ end }}
+{{ end }}
+{{ end }}
+{{ end }}

@@ -1,3 +1,4 @@
+{{ if eq .Cluster.ConfigItems.downscaler_enabled "true" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -22,7 +23,6 @@ spec:
           - name: ndots
             value: "1"
       serviceAccountName: kube-downscaler
-      priorityClassName: system-cluster-critical
       containers:
       - name: downscaler
         # see https://github.com/hjacobs/kube-downscaler/releases
@@ -47,3 +47,4 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
+{{ end }}

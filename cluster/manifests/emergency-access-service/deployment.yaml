@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: emergency-access-service
-    version: master-73
+    version: master-74
 spec:
   replicas: 1
   selector:
@@ -16,25 +16,20 @@ spec:
     metadata:
       labels:
         application: emergency-access-service
-        version: master-73
+        version: master-74
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "emergency-access-service", "parser": "json-structured-log"}]
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
-        iam.amazonaws.com/role: {{.LocalID}}-emergency-access-service
-{{ end }}
-{{ end }}
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: emergency-access-service
       containers:
       - name: apiserver-proxy
-        image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
+        image: registry.opensource.zalan.do/teapot/etcd-proxy:master-6
         command:
         - /bin/sh
         args:
@@ -48,7 +43,7 @@ spec:
             cpu: 25m
             memory: 25Mi
       - name: emergency-access-service
-        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-73"
+        image: "pierone.stups.zalan.do/teapot/emergency-access-service:master-75"
         args:
         - --insecure-http
         - --community={{ .Owner }}
@@ -59,7 +54,7 @@ spec:
         - --token-url=https://info.services.auth.zalando.com/oauth2/tokeninfo
         # enable audittrail reporting
         - --audittrail-url=https://audittrail.cloud.zalando.com
-        - --jira-url=https://techjira.zalando.net
+        - --jira-url={{.Cluster.ConfigItems.emergency_access_service_jira_url}}
         - --environment={{ .Environment }}
         - --s3-bucket-name=zalando-audittrail-{{accountID .InfrastructureAccount}}-{{.LocalID}}
         env:
@@ -79,18 +74,11 @@ spec:
               name: "emergency-access-service-secrets"
               key: opentracing-lightstep-access-token
         - name: OPENTRACING_LIGHTSTEP_COLLECTOR_HOST
-          value: "tracing.stups.zalan.do"
+          value: "{{ .Cluster.ConfigItems.tracing_collector_host }}"
         - name: OPENTRACING_LIGHTSTEP_COLLECTOR_PORT
           value: "8444"
         - name: OPENTRACING_LIGHTSTEP_COMPONENT_NAME
           value: "emergency-access-service"
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        # must be set for the AWS SDK/AWS CLI to find the credentials file.
-        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-          value: /meta/aws-iam/credentials.process
-{{ end }}
-{{ end }}
         ports:
         - containerPort: 8080
         volumeMounts:
@@ -100,13 +88,6 @@ spec:
         - name: secrets
           mountPath: /meta/secrets
           readOnly: true
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        - name: aws-iam-credentials
-          mountPath: /meta/aws-iam
-          readOnly: true
-{{ end }}
-{{ end }}
         livenessProbe:
           httpGet:
             path: /healthz
@@ -136,11 +117,4 @@ spec:
       - name: secrets
         secret:
           secretName: "emergency-access-service-secrets"
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "false" }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-      - name: aws-iam-credentials
-        secret:
-          secretName: emergency-access-service-aws-iam-credentials
-{{ end }}
-{{ end }}
 {{ end }}

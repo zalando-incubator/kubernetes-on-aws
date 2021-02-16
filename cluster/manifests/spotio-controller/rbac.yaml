@@ -1,0 +1,91 @@
+{{ if and (index .Cluster.ConfigItems "spotio_account_id") (index .Cluster.ConfigItems "spotio_access_token") }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spotinst-kubernetes-cluster-controller
+  namespace: kube-system
+  labels:
+    application: spotinst-kubernetes-cluster-controller
+---
+# ------------------------------------------------------------------------------
+# Cluster Role
+# ------------------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: spotinst-kubernetes-cluster-controller
+  labels:
+    application: spotinst-kubernetes-cluster-controller
+rules:
+  # ----------------------------------------------------------------------------
+  # Required for functional operation (read-only).
+  # ----------------------------------------------------------------------------
+- apiGroups: [""]
+  resources: ["pods", "nodes", "services", "namespaces", "replicationcontrollers", "limitranges", "events", "persistentvolumes", "persistentvolumeclaims"]
+  verbs: ["get", "list"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets", "statefulsets", "replicasets"]
+  verbs: ["get","list"]
+- apiGroups: ["storage.k8s.io"]
+  resources: ["storageclasses"]
+  verbs: ["get", "list"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list"]
+- apiGroups: ["policy"]
+  resources: ["poddisruptionbudgets"]
+  verbs: ["get", "list"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list"]
+- nonResourceURLs: ["/version/", "/version"]
+  verbs: ["get"]
+  # ----------------------------------------------------------------------------
+  # Required by the draining feature and for functional operation.
+  # ----------------------------------------------------------------------------
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["patch", "update"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["delete"]
+- apiGroups: [""]
+  resources: ["pods/eviction"]
+  verbs: ["create"]
+  # ----------------------------------------------------------------------------
+  # Required by the Spotinst CleanUp feature.
+  # ----------------------------------------------------------------------------
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["delete"]
+  # ----------------------------------------------------------------------------
+  # Required by the Spotinst Apply feature.
+  # ----------------------------------------------------------------------------
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets"]
+  verbs: ["get", "list", "patch","update","create","delete"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "patch", "update", "create", "delete"]
+---
+# ------------------------------------------------------------------------------
+# Cluster Role Binding
+# ------------------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: spotinst-kubernetes-cluster-controller
+  labels:
+    application: spotinst-kubernetes-cluster-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: spotinst-kubernetes-cluster-controller
+subjects:
+- kind: ServiceAccount
+  name: spotinst-kubernetes-cluster-controller
+  namespace: kube-system
+{{ end }}

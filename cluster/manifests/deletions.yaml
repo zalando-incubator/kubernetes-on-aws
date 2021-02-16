@@ -1,8 +1,39 @@
 # everything defined under here will be deleted before applying the manifests
-pre_apply: []
+pre_apply:
+- name: stackset-controller
+  namespace: default
+  kind: Service
+- name: stackset-controller
+  namespace: default
+  kind: Deployment
+- name: stackset-controller
+  namespace: default
+  kind: ServiceAccount
+- name: kubernetes-dashboard-new
+  namespace: kube-system
+  kind: Deployment
+- name: dashboard-metrics-scraper-new
+  namespace: kube-system
+  kind: Deployment
+- name: cadvisor
+  namespace: kube-system
+  kind: DaemonSet
+- name: prometheus-node-exporter
+  namespace: kube-system
+  kind: DaemonSet
+{{ if ne .Cluster.ConfigItems.routegroups_validation "enabled" }}
+- name: "routegroup-admitter.teapot.zalan.do"
+  kind: ValidatingWebhookConfiguration
+{{ end }}
 
 # everything defined under here will be deleted after applying the manifests
-post_apply:{{ if and (ne .ConfigItems.teapot_admission_controller_process_resources "true") (eq .ConfigItems.enable_ingress_template_controller "true") }} []{{ end }}
+post_apply:
+- name: stackset-controller
+  namespace: default
+  kind: VerticalPodAutoscaler
+- name: spotinst-kubernetes-cluster-controller
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
@@ -11,61 +42,9 @@ post_apply:{{ if and (ne .ConfigItems.teapot_admission_controller_process_resour
   namespace: cron
   kind: LimitRange
 {{ end }}
-{{ if ne .ConfigItems.enable_ingress_template_controller "true" }}
-- name: ingresstemplates.zalando.org
-  kind: CustomResourceDefinition
-- name: ingress-template-controller
-  namespace: kube-system
-  kind: Deployment
-- name: ingress-template-controller
-  namespace: kube-system
-  kind: ServiceAccount
-- name: ingress-template-controller
-  kind: ClusterRole
-- name: ingress-template-controller
-  kind: ClusterRoleBinding
-{{ end }}
 - name: leader-locking-efs-provisioner
   namespace: default
   kind: RoleBinding
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true"}}
-- name: audittrail-adapter-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: cluster-lifecycle-controller-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: emergency-access-service-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: etcd-backup-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: external-dns-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: kube-ingress-aws-controller-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: kube-metrics-adapter-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: kube-node-ready-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: kube-static-egress-controller-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-{{ end }}
 {{ if ne .ConfigItems.enable_csi_migration "true" }}
 - name: csi-node-driver
   namespace: kube-system
@@ -98,3 +77,69 @@ post_apply:{{ if and (ne .ConfigItems.teapot_admission_controller_process_resour
   kind: PersistentVolumeClaim
   namespace: kube-system
 {{ end }}
+# TODO: drop once rolled out to all clusters
+- name: aws-node-decommissioner-aws-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1
+- name: kube-dns-metrics
+  namespace: kube-system
+  kind: Deployment
+{{ if ne .ConfigItems.downscaler_enabled "true" }}
+- name: kube-downscaler
+  namespace: kube-system
+  kind: Deployment
+- name: kube-downscaler
+  namespace: kube-system
+  kind: ServiceAccount
+- name: kube-downscaler
+  kind: ClusterRole
+- name: kube-downscaler
+  kind: ClusterRoleBinding
+- name: kube-downscaler
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
+{{ end }}
+- name: patch-nodes
+  namespace: kube-system
+  kind: RoleBinding
+- name: node-patcher
+  kind: ClusterRole
+- name: cadvisor
+  namespace: kube-system
+  kind: ServiceAccount
+- name: cadvisor
+  namespace: kube-system
+  kind: Service
+- name: cadvisor-privileged-psp
+  namespace: kube-system
+  kind: RoleBinding
+- name: prometheus-node-exporter
+  namespace: kube-system
+  kind: ServiceAccount
+- name: prometheus-node-exporter
+  namespace: kube-system
+  kind: Service
+- name: prometheus-node-exporter-privileged-psp
+  namespace: kube-system
+  kind: RoleBinding
+- name: visibility-logging
+  kind: PriorityClass
+- name: autoscaling-buffer
+  kind: PriorityClass
+- kind: ClusterRole
+  name: default-psp
+- kind: ClusterRoleBinding
+  name: default-psp
+- kind: PodSecurityPolicy
+  name: default
+- name: admission-controller-proxy
+  kind: PlatformCredentialsSet
+  namespace: kube-system
+- name: admission-controller-proxy
+  kind: DaemonSet
+  namespace: kube-system
+- name: ebs-csi-controller-iam-credentials
+  namespace: kube-system
+  kind: AWSIAMRole
+  apiVersion: zalando.org/v1

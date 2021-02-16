@@ -14,6 +14,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
@@ -38,10 +39,10 @@ var _ = framework.KubeDescribe("PSP use", func() {
 	BeforeEach(func() {
 		cs = f.ClientSet
 		saObj := createServiceAccount(f.Namespace.Name, privilegedSA)
-		_, err := cs.CoreV1().ServiceAccounts(f.Namespace.Name).Create(saObj)
+		_, err := cs.CoreV1().ServiceAccounts(f.Namespace.Name).Create(context.TODO(), saObj, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = cs.RbacV1().RoleBindings(f.Namespace.Name).Create(createRBACRoleBindingSA(privilegedRole, f.Namespace.Name, privilegedSA))
+		_, err = cs.RbacV1().RoleBindings(f.Namespace.Name).Create(context.TODO(), createRBACRoleBindingSA(privilegedRole, f.Namespace.Name, privilegedSA), metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -57,7 +58,8 @@ var _ = framework.KubeDescribe("PSP use", func() {
 	// 	}
 	// 	msg := fmt.Sprintf("Creating a privileged POD as %s", defaultSA)
 	// 	By(msg)
-	// 	pod := createNginxPodWithHostNetwork(ns, defaultSA, label, 80)
+	//      route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
+	// 	pod := createSkipperPodWithHostNetwork("", ns, defaultSA, route, label, 80)
 	// 	defer func() {
 	// 		By(msg)
 	// 		defer GinkgoRecover()
@@ -74,23 +76,23 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		label := map[string]string{
 			"app": "psp",
 		}
-		var port int32 = 81
-
+		port := 81
 		msg := fmt.Sprintf("Creating a privileged POD as %s", privilegedSA)
 
 		By(msg)
-		pod := createNginxPodWithHostNetwork(ns, privilegedSA, label, port)
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
+		pod := createSkipperPodWithHostNetwork("", ns, privilegedSA, route, label, port)
 		defer func() {
 			By(msg)
 			defer GinkgoRecover()
-			err := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
+			err := cs.CoreV1().Pods(ns).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err := cs.CoreV1().Pods(ns).Create(pod)
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
 	})
 
 	It("Should create a POD that use privileged PSP via deployment [PSP] [Zalando]", func() {
@@ -104,32 +106,32 @@ var _ = framework.KubeDescribe("PSP use", func() {
 		port := int32(82)
 
 		By(fmt.Sprintf("Creating a deployment that creates a privileged POD as %s", privilegedSA))
-		d := createNginxDeploymentWithHostNetwork("psp-test-", ns, privilegedSA, label, port, replicas)
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
+		d := createSkipperBackendDeploymentWithHostNetwork("psp-test-", ns, privilegedSA, route, label, port, replicas)
 		d.Annotations = map[string]string{"test": "should-copy-to-replica-set", v1.LastAppliedConfigAnnotation: "should-not-copy-to-replica-set"}
 
 		defer func() {
 			By(fmt.Sprintf("Delete a deployment that creates a privileged POD as %s", privilegedSA))
 			defer GinkgoRecover()
-			err := cs.AppsV1().Deployments(ns).Delete(d.Name, metav1.NewDeleteOptions(0))
+			err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), d.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		deploy, err := cs.AppsV1().Deployments(ns).Create(d)
+		deploy, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), d, metav1.CreateOptions{})
 
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for it to be updated to revision 1
-		err = deploymentframework.WaitForDeploymentRevisionAndImage(cs, ns, deploy.Name, "1", "nginx:latest")
+		err = deploymentframework.WaitForDeploymentRevisionAndImage(cs, ns, deploy.Name, "1", d.Spec.Template.Spec.Containers[0].Image)
 		Expect(err).NotTo(HaveOccurred())
 		err = deploymentframework.WaitForDeploymentComplete(cs, deploy)
 		Expect(err).NotTo(HaveOccurred())
-		deployment, err := cs.AppsV1().Deployments(ns).Get(deploy.Name, metav1.GetOptions{})
+		deployment, err := cs.AppsV1().Deployments(ns).Get(context.TODO(), deploy.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		rs, err := deploymentutil.GetNewReplicaSet(deployment, cs.AppsV1())
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Got rs: %s, from deployment: %s", rs.Name, deploy.Name))
 
-		//pods, err := framework.PodsCreated(f.ClientSet, f.Namespace.Name, rs.Name, replicas)
 		pods, err := e2epod.PodsCreatedByLabel(f.ClientSet, f.Namespace.Name, rs.Name, replicas, labelSelector)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Ensuring each pod is running for rs: %s, pod: %s", rs.Name, pods.Items[0].Name))
@@ -139,7 +141,7 @@ var _ = framework.KubeDescribe("PSP use", func() {
 			if pod.DeletionTimestamp != nil {
 				continue
 			}
-			err = f.WaitForPodRunning(pod.Name)
+			err = e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace)
 			Expect(err).NotTo(HaveOccurred())
 		}
 	})

@@ -1,10 +1,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Kubernetes default master node pool
+Metadata:
+  Tags:
+    InfrastructureComponent: "true"
 
 Mappings:
   Images:
     eu-central-1:
-      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_17 }}'
+      MachineImage: '{{ .NodePool.ConfigItems.kuberuntu_image_v1_19 }}'
 
 Resources:
   AutoScalingGroup:
@@ -18,8 +21,10 @@ Resources:
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplate
         Version: !GetAtt LaunchTemplate.LatestVersionNumber
+{{- if and (ne .Cluster.ConfigItems.apiserver_nlb "promoted") (ne .Cluster.ConfigItems.apiserver_nlb "exclusive") }}
       LoadBalancerNames:
       - !ImportValue '{{ .Cluster.ID }}:master-load-balancer'
+{{- end }}
       MinSize: '{{ .NodePool.MinSize }}'
       MaxSize: '{{ .NodePool.MaxSize }}'
       Tags:
@@ -38,6 +43,10 @@ Resources:
         - "{{ index $values.subnets $az }}"
 {{ end }}
 {{ end }}
+{{- if and (ne .Cluster.ConfigItems.apiserver_nlb "disabled") (ne .Cluster.ConfigItems.apiserver_nlb "provisioned") }}
+      TargetGroupARNs:
+      - !ImportValue '{{ .Cluster.ID }}:master-load-balancer-nlb-target-group'
+{{- end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
   LaunchTemplate:
     Properties:
@@ -47,6 +56,12 @@ Resources:
         CreditSpecification:
           CpuCredits: unlimited
 {{ end }}
+        BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: {{.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
+            VolumeSize: {{.NodePool.ConfigItems.ebs_master_root_volume_size}}
+            VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
           AssociatePublicIpAddress: true

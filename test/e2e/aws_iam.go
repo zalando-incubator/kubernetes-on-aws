@@ -14,6 +14,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
 var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", func() {
@@ -52,7 +54,7 @@ var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", 
 
 		By("Creating a awscli POD in namespace " + ns)
 		pod := createAWSIAMPod("aws-iam-", ns, E2ES3AWSIAMBucket())
-		_, err := cs.CoreV1().Pods(ns).Create(pod)
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		// AWSIAMRole
@@ -61,17 +63,17 @@ var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", 
 		defer func() {
 			By("deleting the AWSIAMRole")
 			defer GinkgoRecover()
-			err2 := zcs.ZalandoV1().AWSIAMRoles(ns).Delete(rs.Name, metav1.NewDeleteOptions(0))
+			err2 := zcs.ZalandoV1().AWSIAMRoles(ns).Delete(context.TODO(), rs.Name, metav1.DeleteOptions{})
 			Expect(err2).NotTo(HaveOccurred())
 		}()
-		_, err = zcs.ZalandoV1().AWSIAMRoles(ns).Create(rs)
+		_, err = zcs.ZalandoV1().AWSIAMRoles(ns).Create(context.TODO(), rs, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
 
 		// wait for pod to access s3 and POD exit code 0
 		for {
-			p, err := cs.CoreV1().Pods(ns).Get(pod.Name, metav1.GetOptions{})
+			p, err := cs.CoreV1().Pods(ns).Get(context.TODO(), pod.Name, metav1.GetOptions{})
 			if err != nil {
 				Expect(fmt.Errorf("Could not get POD %s", pod.Name)).NotTo(HaveOccurred())
 				return
@@ -97,13 +99,13 @@ var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", 
 
 		By("Creating a awscli POD in namespace " + ns)
 		pod := createAWSCLIPod("no-aws-iam-", ns, E2ES3AWSIAMBucket())
-		_, err := cs.CoreV1().Pods(ns).Create(pod)
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
 
 		// wait for pod to access s3 and POD exit code 0
 		for {
-			p, err := cs.CoreV1().Pods(ns).Get(pod.Name, metav1.GetOptions{})
+			p, err := cs.CoreV1().Pods(ns).Get(context.TODO(), pod.Name, metav1.GetOptions{})
 			if err != nil {
 				Expect(fmt.Errorf("Could not get POD %s", pod.Name)).NotTo(HaveOccurred())
 				return

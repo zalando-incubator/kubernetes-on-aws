@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-cluster-autoscaler
-    version: v1.12.2-internal-2.10
+    version: v1.18.2-internal.25
 spec:
   selector:
     matchLabels:
@@ -16,16 +16,12 @@ spec:
     metadata:
       labels:
         application: kube-cluster-autoscaler
-        version: v1.12.2-internal-2.10
-      annotations:
-        iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
-        config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
+        version: v1.18.2-internal.25
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: cluster-autoscaler
       dnsPolicy: Default
       tolerations:
@@ -34,24 +30,31 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal-2.10
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.27
         command:
           - ./cluster-autoscaler
-          - --v=4
+          - --v=1
           - --stderrthreshold=info
-          - --scale-down-utilization-threshold={{if index .ConfigItems "autoscaling_utilization_threshold"}}{{.ConfigItems.autoscaling_utilization_threshold}}{{else}}0.75{{end}}
+          - --scale-down-utilization-threshold={{.Cluster.ConfigItems.autoscaling_utilization_threshold}}
           - --cloud-provider=aws
           - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,zalando.de/cluster-local-id/{{ .LocalID }}
           - --expendable-pods-priority-cutoff=-1000000
           - --skip-nodes-with-system-pods=false
           - --skip-nodes-with-local-storage=false
           - --scale-up-cloud-provider-template=true
-          - --expander={{ .Cluster.ConfigItems.cluster_autoscaler_expander }}
+          - --expander=highest-priority
           - --balance-similar-node-groups
           - --max-node-provision-time=7m
           - --max-nodes-total={{ nodeCIDRMaxNodes (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}
-          - --scale-down-enabled={{ .ConfigItems.autoscaling_scale_down_enabled }}
+          - --scale-down-enabled={{ .Cluster.ConfigItems.autoscaling_scale_down_enabled }}
+          - --max-empty-bulk-delete={{ .Cluster.ConfigItems.autoscaling_max_empty_bulk_delete }}
+          - --scale-down-unneeded-time={{ .Cluster.ConfigItems.autoscaling_scale_down_unneeded_time }}
           - --scale-down-delay-after-add=-1s
+          - --backoff-no-full-scale-down=true
+          - --max-pod-eviction-time={{ .Cluster.ConfigItems.cluster_autoscaler_max_pod_eviction_time }}
+          - --topology-spread-constraint-scale-factor=3
+          - --disable-node-instances-cache=true
+          - --scale-down-ignore-schedulable-pods=true
         resources:
           requests:
             cpu: {{.Cluster.ConfigItems.cluster_autoscaler_cpu}}

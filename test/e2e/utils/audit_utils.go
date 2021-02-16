@@ -82,6 +82,9 @@ func CheckAuditLines(stream io.Reader, expected []AuditEvent, version schema.Gro
 
 	scanner := bufio.NewScanner(stream)
 
+	buf := make([]byte, 10487560)
+	scanner.Buffer(buf, cap(buf))
+
 	missingReport = &MissingEventsReport{
 		MissingEvents: expected,
 	}

@@ -6,7 +6,7 @@ metadata:
   labels:
     application: vertical-pod-autoscaler
     component: admission-controller
-    version: v0.6.1-internal.7
+    version: v0.6.1-internal.12
 spec:
   replicas: 1
   selector:
@@ -18,15 +18,20 @@ spec:
       labels:
         application: vertical-pod-autoscaler
         component: admission-controller
-        version: v0.6.1-internal.7
+        version: v0.6.1-internal.12
       annotations:
         config/hash: {{"02-secret.yaml" | manifestHash}}
     spec:
-      priorityClassName: system-cluster-critical
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: vpa-admission-controller
       containers:
       - name: admission-controller
-        image: registry.opensource.zalan.do/teapot/vpa-admission-controller:v0.6.1-internal.7
+        image: registry.opensource.zalan.do/teapot/vpa-admission-controller:v0.6.1-internal.12
+        command:
+          - /admission-controller
+        args:
+          - --v=1
+          - --logtostderr
         volumeMounts:
           - name: tls-certs
             mountPath: "/etc/tls-certs"
@@ -38,13 +43,14 @@ spec:
               fieldPath: metadata.namespace
         resources:
           limits:
-            cpu: 200m
-            memory: 500Mi
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
           requests:
-            cpu: 200m
-            memory: 500Mi
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
         ports:
         - containerPort: 8000
+          protocol: TCP
       volumes:
         - name: tls-certs
           secret:

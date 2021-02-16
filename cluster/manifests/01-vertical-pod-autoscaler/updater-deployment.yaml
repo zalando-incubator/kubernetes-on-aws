@@ -6,7 +6,7 @@ metadata:
   labels:
     application: vertical-pod-autoscaler
     component: updater
-    version: v0.6.1-internal.7
+    version: v0.6.1-internal.12
 spec:
   replicas: 1
   selector:
@@ -18,27 +18,27 @@ spec:
       labels:
         application: vertical-pod-autoscaler
         component: updater
-        version: v0.6.1-internal.7
+        version: v0.6.1-internal.12
     spec:
       serviceAccountName: vpa-updater
-      priorityClassName: system-cluster-critical
       containers:
       - name: updater
-        image: registry.opensource.zalan.do/teapot/vpa-updater:v0.6.1-internal.7
+        image: registry.opensource.zalan.do/teapot/vpa-updater:v0.6.1-internal.12
         command:
           - ./updater
         args:
-          - --v=4
-          - --stderrthreshold=info
+          - --v=1
+          - --logtostderr
           - --min-replicas=1
           - --pod-lifetime-update-threshold=12h
           - --evict-after-oom-threshold=12h
         resources:
           limits:
-            cpu: 200m
-            memory: 500Mi
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
           requests:
-            cpu: 200m
-            memory: 500Mi
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
         ports:
         - containerPort: 8080
+          protocol: TCP

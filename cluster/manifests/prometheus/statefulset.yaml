@@ -5,7 +5,7 @@ metadata:
     pdb-controller.zalando.org/non-ready-ttl: "5m"
   labels:
     application: prometheus
-    version: v2.15.2
+    version: v2.24.0
 {{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
   name: prometheus
 {{- else }}
@@ -23,7 +23,7 @@ spec:
     metadata:
       labels:
         application: prometheus
-        version: v2.15.2
+        version: v2.24.0
       annotations:
         config/hash: {{"configmap.yaml" | manifestHash}}
     spec:
@@ -32,15 +32,14 @@ spec:
         options:
         - name: ndots
           value: "1"
-      priorityClassName: system-cluster-critical
       initContainers:
       - name: generate-config
-        image: registry.opensource.zalan.do/stups/alpine:3.10.3-5
+        image: registry.opensource.zalan.do/stups/alpine:3.11.6-7
         command:
         - /bin/sh
         args:
         - -c
-        - sed s/'@@POD_NAME@@'/${POD_NAME}/g /etc/prometheus/prometheus.yml > /prometheus/prometheus.yaml
+        - sed s/'@@POD_NAME@@'/${POD_NAME}/g /etc/prometheus/prometheus.yml > /prometheus/prometheus.yaml ; cp /etc/prometheus/prometheus.rules.yml /prometheus/prometheus.rules.yaml
         env:
         - name: POD_NAME
           valueFrom:
@@ -57,7 +56,7 @@ spec:
           mountPath: /prometheus
       containers:
       - name: prometheus
-        image: registry.opensource.zalan.do/teapot/prometheus:v2.15.2
+        image: registry.opensource.zalan.do/teapot/prometheus:v2.24.0
         args:
         - "--config.file=/prometheus/prometheus.yaml"
         - "--storage.tsdb.path=/prometheus/"

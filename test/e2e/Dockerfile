@@ -6,12 +6,14 @@ RUN GO111MODULE=on go get github.com/onsi/ginkgo/ginkgo@v1.8.0
 # final image
 # TODO get rid of python dependencies
 # * wait-for-update.py
-FROM registry.opensource.zalan.do/stups/python:latest
+FROM registry.opensource.zalan.do/library/python-3.8-slim:latest
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
   git \
+  jq \
   pwgen \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && pip3 install awscli --no-cache-dir
 
 ARG KUBE_VERSION
 ADD https://storage.googleapis.com/kubernetes-release/release/$KUBE_VERSION/bin/linux/amd64/kubectl /usr/bin/kubectl
@@ -21,6 +23,7 @@ COPY --from=builder /go/bin/ginkgo /usr/local/bin/ginkgo
 
 # copy CLM
 COPY --from=registry.opensource.zalan.do/teapot/cluster-lifecycle-manager:latest /clm /usr/bin/clm
+COPY --from=pierone.stups.zalan.do/teapot/aws-account-creator:latest /aws-account-creator /usr/bin/aws-account-creator
 
 ADD . /workdir
 

@@ -14,12 +14,14 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -50,29 +52,30 @@ var _ = framework.KubeDescribe("External DNS creation", func() {
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		defer func() {
-			err := cs.CoreV1().Services(ns).Delete(serviceName, nil)
+			err := cs.CoreV1().Services(ns).Delete(context.TODO(), serviceName, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
 		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
 		service := createServiceTypeLoadbalancer(serviceName, hostName, labels, port)
 
-		_, err := cs.CoreV1().Services(ns).Create(service)
+		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Submitting the pod to kubernetes")
-		pod := createNginxPod(nameprefix, ns, labels, port)
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
+		pod := createSkipperPod(nameprefix, ns, route, labels, port)
 		defer func() {
 			By("deleting the pod")
 			defer GinkgoRecover()
-			err2 := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
+			err2 := cs.CoreV1().Pods(ns).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
 			Expect(err2).NotTo(HaveOccurred())
 		}()
 
-		_, err = cs.CoreV1().Pods(ns).Create(pod)
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
 
 		timeout := 10 * time.Minute
 		// wait for DNS and for pod to be reachable.

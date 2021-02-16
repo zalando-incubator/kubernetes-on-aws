@@ -3,7 +3,19 @@ kind: ServiceAccount
 metadata:
   name: etcd-backup
   namespace: kube-system
-{{ if eq .Cluster.ConfigItems.teapot_admission_controller_service_account_iam "true" }}
   annotations:
-    eks.amazonaws.com/role-arn: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:role/{{ .Cluster.LocalID }}-etcd-backup"
-{{ end }}
+    iam.amazonaws.com/role: "{{ .Cluster.LocalID }}-etcd-backup"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: etcd-backup-privileged-psp
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: privileged-psp
+subjects:
+- kind: ServiceAccount
+  name: etcd-backup
+  namespace: kube-system

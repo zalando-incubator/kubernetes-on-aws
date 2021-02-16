@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kubernetes-event-logger
+  namespace: kube-system
+  labels:
+    application: kubernetes-event-logger
+    version: master-3
+  annotations:
+    kubernetes-log-watcher/scalyr-parser: '[{"container": "logger", "parser": "json"}]'
+spec:
+  replicas: {{if eq .Cluster.ConfigItems.kubernetes_event_logger_enabled "true"}}1{{else}}0{{end}}
+  selector:
+    matchLabels:
+      application: kubernetes-event-logger
+  serviceName: kubernetes-event-logger
+  template:
+    metadata:
+      labels:
+        application: kubernetes-event-logger
+        version: master-3
+    spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      serviceAccountName: kubernetes-event-logger
+      containers:
+      - name: logger
+        image: registry.opensource.zalan.do/teapot/event-logger:master-4
+        args:
+            - --snapshot-namespace=kube-system
+            - --snapshot-name=kubernetes-event-logger
+        resources:
+          limits:
+            cpu: 10m
+            memory: 100Mi
+          requests:
+            cpu: 10m
+            memory: 100Mi

@@ -25,10 +25,10 @@ examples of how to write the tests or checkout the files already defined e.g.
 
   ```bash
   KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org CLUSTER_ALIAS=example \
-    ginkgo -nodes=25 -flakeAttempts=2 \
+    ginkgo -nodes=1 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
-    "e2e.test" -- -delete-namespace-on-failure=false
+    "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role
   ```
 
   Where `~/.kube/config` is pointing to the cluster you want to run the tests
@@ -215,7 +215,8 @@ Follow up code, that waits for creations to be happen:
   KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org CLUSTER_ALIAS=example \
   S3_AWS_IAM_BUCKET=zalando-e2e-aws-iam-test-12345678912-kube-1 \
   AWS_IAM_ROLE=kube-1-e2e-aws-iam-test \
-  ginkgo -nodes=25 -flakeAttempts=2 -focus="\[Zalando\]" e2e.test
+  ginkgo -nodes=25 -flakeAttempts=2 -focus="\[Zalando\]" \
+  e2e.test -- -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu
   ```
 
 * **Why is the go modules such a mess?**

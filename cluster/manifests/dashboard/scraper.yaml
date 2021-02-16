@@ -4,13 +4,16 @@ metadata:
   name: dashboard-metrics-scraper
   namespace: kube-system
   labels:
-    application: dashboard-metrics-scraper
+    application: kubernetes-dashboard
+    component: metrics-scraper
 spec:
   selector:
-    application: dashboard-metrics-scraper
+    application: kubernetes-dashboard
+    component: metrics-scraper
   ports:
   - port: 8000
     targetPort: 8000
+    protocol: TCP
 
 ---
 
@@ -20,24 +23,26 @@ metadata:
   name: dashboard-metrics-scraper
   namespace: kube-system
   labels:
-    application: dashboard-metrics-scraper
-    version: v1.0.2
+    application: kubernetes-dashboard
+    component: metrics-scraper
+    version: v1.0.4
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: dashboard-metrics-scraper
+      application: kubernetes-dashboard
+      component: metrics-scraper
   template:
     metadata:
       labels:
-        application: dashboard-metrics-scraper
-        version: v1.0.2
+        application: kubernetes-dashboard
+        component: metrics-scraper
+        version: v1.0.4
     spec:
-      priorityClassName: system-cluster-critical
       serviceAccountName: kubernetes-dashboard
       containers:
       - name: dashboard-metrics-scraper
-        image: registry.opensource.zalan.do/teapot/metrics-scraper:v1.0.2-2
+        image: registry.opensource.zalan.do/teapot/metrics-scraper:v1.0.4
         resources:
           limits:
             cpu: 50m
@@ -47,6 +52,7 @@ spec:
             memory: 200Mi
         ports:
         - containerPort: 8000
+          protocol: TCP
         livenessProbe:
           httpGet:
             scheme: HTTP

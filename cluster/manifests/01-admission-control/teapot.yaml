@@ -167,7 +167,7 @@ webhooks:
     sideEffects: "NoneOnDryRun"
     matchPolicy: Equivalent
     rules:
-      - operations: [ "DELETE" ]
+      - operations: [ "CREATE", "UPDATE", "DELETE" ]
         apiGroups: [""]
         apiVersions: ["v1"]
         resources: ["serviceaccounts"]
@@ -186,3 +186,55 @@ webhooks:
         apiVersions: ["v1"]
         resources: ["daemonsets"]
 {{- end }}
+  - name: priorityclass-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/priorityclass"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    matchPolicy: Equivalent
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: ["scheduling.k8s.io"]
+        apiVersions: ["v1"]
+        resources: ["priorityclasses"]
+  - name: postgresql-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/postgresql"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    matchPolicy: Equivalent
+    rules:
+      - operations: [ "CREATE", "DELETE" ]
+        apiGroups: ["acid.zalan.do"]
+        apiVersions: ["v1"]
+        resources: ["postgresqls"]
+  - name: namespace-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/namespace"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    matchPolicy: Equivalent
+    rules:
+      - operations: [ "DELETE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["namespaces"]
+  - name: service-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/service"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    matchPolicy: Equivalent
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["services"]

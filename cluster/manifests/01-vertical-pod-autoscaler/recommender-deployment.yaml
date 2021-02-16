@@ -6,7 +6,7 @@ metadata:
   labels:
     application: vertical-pod-autoscaler
     component: recommender
-    version: v0.6.1-internal.7
+    version: v0.6.1-internal.12
 spec:
   replicas: 1
   selector:
@@ -18,26 +18,26 @@ spec:
       labels:
         application: vertical-pod-autoscaler
         component: recommender
-        version: v0.6.1-internal.7
+        version: v0.6.1-internal.12
     spec:
       serviceAccountName: vpa-recommender
-      priorityClassName: system-cluster-critical
       containers:
       - name: recommender
-        image: registry.opensource.zalan.do/teapot/vpa-recommender:v0.6.1-internal.7
+        image: registry.opensource.zalan.do/teapot/vpa-recommender:v0.6.1-internal.12
         args:
-        - --stderrthreshold=info
-        - --v=5
+        - --logtostderr
+        - --v=1
         - --memory-saver
         - --pod-recommendation-min-memory-mb=50
         command:
         - "/recommender"
         resources:
           limits:
-            cpu: 200m
-            memory: 500Mi
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
           requests:
-            cpu: 200m
-            memory: 500Mi
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
         ports:
         - containerPort: 8080
+          protocol: TCP

@@ -2,7 +2,9 @@ package e2e
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -16,11 +18,15 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
+	testutil "k8s.io/kubernetes/test/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	rgclient "github.com/szuecs/routegroup-client"
+	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	zv1 "github.com/zalando-incubator/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -31,6 +37,83 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
+
+var (
+	errTimeout      = errors.New("Timeout")
+	poll            = 2 * time.Second
+	pollLongTimeout = 5 * time.Minute
+)
+
+// type ConditionFunc func() (done bool, err error)
+// Poll(interval, timeout time.Duration, condition ConditionFunc)
+func waitForRouteGroup(cs rgclient.ZalandoInterface, name, ns string, d time.Duration) (string, error) {
+	var addr string
+	err := wait.Poll(10*time.Second, d, func() (done bool, err error) {
+		rg, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), name, metav1.GetOptions{ResourceVersion: "0"})
+		if err != nil {
+			return true, err
+		}
+		if len(rg.Status.LoadBalancer.RouteGroup) > 0 {
+			addr = rg.Status.LoadBalancer.RouteGroup[0].Hostname
+			return true, nil
+		}
+		return false, nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("Failed to get active load balancer for Routegroup %s/%s: %w", name, ns, err)
+	}
+
+	return addr, err
+}
+
+func createRouteGroup(name, hostname, namespace string, labels, annotations map[string]string, port int, routes ...rgv1.RouteGroupRouteSpec) *rgv1.RouteGroup {
+	return &rgv1.RouteGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name + string(uuid.NewUUID()),
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: annotations,
+		},
+		Spec: rgv1.RouteGroupSpec{
+			Hosts: []string{hostname},
+			Backends: []rgv1.RouteGroupBackend{
+				{
+					Name:        name,
+					Type:        "service",
+					ServiceName: name,
+					ServicePort: port,
+				},
+				{
+					Name: "router",
+					Type: "shunt",
+				},
+			},
+			DefaultBackends: []rgv1.RouteGroupBackendReference{
+				{
+					BackendName: name,
+					Weight:      1,
+				},
+			},
+			Routes: routes,
+		},
+	}
+}
+
+func createRouteGroupWithBackends(name, hostname, namespace string, labels, annotations map[string]string, port int, backends []rgv1.RouteGroupBackend, routes ...rgv1.RouteGroupRouteSpec) *rgv1.RouteGroup {
+	return &rgv1.RouteGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name + string(uuid.NewUUID()),
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: annotations,
+		},
+		Spec: rgv1.RouteGroupSpec{
+			Hosts:    []string{hostname},
+			Backends: backends,
+			Routes:   routes,
+		},
+	}
+}
 
 func createIngress(name, hostname, namespace string, labels, annotations map[string]string, port int) *v1beta1.Ingress {
 	return &v1beta1.Ingress{
@@ -141,42 +224,15 @@ func changePathIngress(ing *v1beta1.Ingress, path string) *v1beta1.Ingress {
 	)
 }
 
-func createNginxDeployment(nameprefix, namespace string, label map[string]string, port, replicas int32) *appsv1.Deployment {
-	zero := int64(0)
-	return &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nameprefix + string(uuid.NewUUID()),
-			Namespace: namespace,
-			Labels:    label,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicas,
-			Selector: &metav1.LabelSelector{MatchLabels: label},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: label,
-				},
-				Spec: v1.PodSpec{
-					TerminationGracePeriodSeconds: &zero,
-					Containers: []v1.Container{
-						{
-							Name:  "nginx",
-							Image: "nginx:latest",
-							Ports: []v1.ContainerPort{
-								{
-									Name:          "http",
-									ContainerPort: port,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+func createSkipperPodWithHostNetwork(nameprefix, namespace, serviceAccount, route string, labels map[string]string, port int) *v1.Pod {
+	pod := createSkipperPod(nameprefix, namespace, route, labels, port)
+	pod.Spec.HostNetwork = true
+	pod.Spec.ServiceAccountName = serviceAccount
+	pod.Spec.Containers[0].Ports[0].HostPort = int32(port)
+	return pod
 }
 
-func createNginxPod(nameprefix, namespace string, labels map[string]string, port int) *v1.Pod {
+func createSkipperPod(nameprefix, namespace, route string, labels map[string]string, port int) *v1.Pod {
 	return &v1.Pod{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Pod",
@@ -190,8 +246,14 @@ func createNginxPod(nameprefix, namespace string, labels map[string]string, port
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
-					Name:  "nginx",
-					Image: "nginx:latest",
+					Name:  "skipper",
+					Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.11.107",
+					Args: []string{
+						"skipper",
+						"-inline-routes",
+						route,
+						fmt.Sprintf("-address=:%d", port),
+					},
 					Ports: []v1.ContainerPort{
 						{
 							Name:          "http",
@@ -311,42 +373,10 @@ func createAWSIAMRole(name, namespace, role string) *zv1.AWSIAMRole {
 	}
 }
 
-func createNginxDeploymentWithHostNetwork(nameprefix, namespace, serviceAccount string, label map[string]string, port, replicas int32) *appsv1.Deployment {
-	zero := int64(0)
-	return &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nameprefix + string(uuid.NewUUID()),
-			Namespace: namespace,
-			Labels:    label,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicas,
-			Selector: &metav1.LabelSelector{MatchLabels: label},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: label,
-				},
-				Spec: v1.PodSpec{
-					HostNetwork:                   true,
-					ServiceAccountName:            serviceAccount,
-					TerminationGracePeriodSeconds: &zero,
-					Containers: []v1.Container{
-						{
-							Name:  "nginx",
-							Image: "nginx:latest",
-							Ports: []v1.ContainerPort{
-								{
-									Name:          "http",
-									ContainerPort: port,
-									HostPort:      port,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+func createSkipperBackendDeploymentWithHostNetwork(nameprefix, namespace, serviceAccount, route string, label map[string]string, port, replicas int32) *appsv1.Deployment {
+	depl := createSkipperBackendDeployment(nameprefix, namespace, route, label, port, replicas)
+	depl.Spec.Template.Spec.ServiceAccountName = serviceAccount
+	return depl
 }
 
 func createSkipperBackendDeployment(nameprefix, namespace, route string, label map[string]string, port, replicas int32) *appsv1.Deployment {
@@ -429,37 +459,6 @@ func createRBACRoleBindingSA(role, namespace, serviceAccount string) *rbacv1.Rol
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
 			Name:     role,
-		},
-	}
-}
-
-func createNginxPodWithHostNetwork(namespace, serviceAccount string, label map[string]string, port int32) *v1.Pod {
-	return &v1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "psp-test-" + string(uuid.NewUUID()),
-			Namespace: namespace,
-			Labels:    label,
-		},
-		Spec: v1.PodSpec{
-			HostNetwork:        true,
-			ServiceAccountName: serviceAccount,
-			Containers: []v1.Container{
-				{
-					Name:  "nginx",
-					Image: "nginx:latest",
-					Ports: []v1.ContainerPort{
-						{
-							Name:          "http",
-							ContainerPort: port,
-							HostPort:      port,
-						},
-					},
-				},
-			},
 		},
 	}
 }
@@ -599,10 +598,48 @@ func waitForResponse(hostname, scheme string, timeout time.Duration, expectedCod
 	return fmt.Errorf("%s was not reachable after %s", host, timeout)
 }
 
+func waitForResponseReturnResponse(req *http.Request, timeout time.Duration, expectedCode func(int) bool, insecure bool) (*http.Response, error) {
+	localTimeout := 10 * time.Second
+	if timeout < localTimeout {
+		localTimeout = timeout
+	}
+	timeoutEnd := time.Now().UTC().Add(timeout)
+
+	for time.Now().UTC().Before(timeoutEnd) {
+		t := &http.Transport{}
+		if insecure {
+			t = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+		}
+		client := http.Client{
+			Transport: t,
+			Timeout:   localTimeout,
+			CheckRedirect: func(r *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			e2elog.Logf("%s localtimeout", req.URL.String())
+			time.Sleep(localTimeout)
+			continue
+		}
+		//e2elog.Logf("%s , header Foo: '%s', status code: %d", req.URL.String(), req.Header.Get("Foo"), resp.StatusCode)
+		if expectedCode(resp.StatusCode) {
+			return resp, nil
+		}
+		resp.Body.Close()
+		time.Sleep(time.Second)
+		client.CloseIdleConnections()
+	}
+
+	return nil, fmt.Errorf("%s was not reachable after %s", req.URL.String(), timeout)
+}
+
 func waitForReplicas(deploymentName, namespace string, kubeClient kubernetes.Interface, timeout time.Duration, desiredReplicas int) {
 	interval := 20 * time.Second
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		deployment, err := kubeClient.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{})
+		deployment, err := kubeClient.AppsV1().Deployments(namespace).Get(context.TODO(), deploymentName, metav1.GetOptions{})
 		if err != nil {
 			framework.Failf("Failed to get replication controller %s: %v", deployment, err)
 		}
@@ -729,7 +766,7 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 func deleteDeployment(cs kubernetes.Interface, ns string, deployment *appsv1.Deployment) {
 	By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 	defer GinkgoRecover()
-	err := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+	err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -808,7 +845,7 @@ func getPodLogs(c kubernetes.Interface, namespace, podName, containerName string
 		Name(podName).SubResource("log").
 		Param("container", containerName).
 		Param("previous", strconv.FormatBool(previous)).
-		Do().
+		Do(context.TODO()).
 		Raw()
 	if err != nil {
 		return "", err
@@ -817,4 +854,9 @@ func getPodLogs(c kubernetes.Interface, namespace, podName, containerName string
 		return "", fmt.Errorf("Fetched log contains \"Internal Error\": %q", string(logs))
 	}
 	return string(logs), err
+}
+
+// waitForDeploymentWithCondition waits for the specified deployment condition.
+func waitForDeploymentWithCondition(c clientset.Interface, ns, deploymentName, reason string, condType appsv1.DeploymentConditionType) error {
+	return testutil.WaitForDeploymentWithCondition(c, ns, deploymentName, reason, condType, framework.Logf, poll, pollLongTimeout)
 }

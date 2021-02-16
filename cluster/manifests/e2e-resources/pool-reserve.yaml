@@ -1,0 +1,38 @@
+{{ if eq .Environment "e2e" }}
+{{ range $pool := split "default-worker-splitaz,default-worker,worker-limit-az,worker-instance-storage" "," }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pool-reserve-{{$pool}}
+  labels:
+    application: pool-reserve
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: pool-reserve
+      pool: "{{$pool}}"
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        application: pool-reserve
+        pool: "{{$pool}}"
+    spec:
+      nodeSelector:
+        node.kubernetes.io/node-pool: "{{$pool}}"
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: pause
+        image: registry.opensource.zalan.do/teapot/pause-amd64:3.2
+        resources:
+          limits:
+            cpu: 1m
+            memory: 50Mi
+          requests:
+            cpu: 1m
+            memory: 50Mi
+---
+{{ end }}
+{{ end }}

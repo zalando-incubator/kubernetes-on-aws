@@ -15,13 +15,146 @@ pipeline:
   commands:
   - desc: build and push
     cmd: |
-      VERSION="$CDP_BUILD_VERSION" make -C test/e2e build.push
+      cd ./test/e2e/
+      make
+      go mod tidy
+      if ! git diff --quiet go.mod go.sum; then
+      echo "Running go mod tidy modified go.mod and/or go.sum"
+      exit 1
+      fi
+      VERSION="$CDP_BUILD_VERSION" make build.push
+
+- id: create-cluster
+  when:
+    event: pull_request
+  depends_on:
+  - build
+  type: process
+  desc: "Create cluster for Kubernetes e2e tests"
+  target: stups-test
+  process: microservice_standard_test
+  config:
+    apply_manifests:
+      env:
+      - name: DEPLOYMENT_PATH
+        value: test/e2e
+    end2end_tests:
+      metadata:
+        name: e2e
+        annotations:
+          iam.amazonaws.com/role: arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint
+        labels:
+          application: teapot-kubernetes-e2e
+      spec:
+        nodeSelector:
+          aws.amazon.com/spot: "false"
+        restartPolicy: Never
+        initContainers:
+        - name: aws-credentials-waiter
+          image: pierone.stups.zalan.do/automata/aws-credentials-waiter:master-2
+          args: ["300"]
+        containers:
+        - name: e2e
+          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          args:
+          - create-cluster
+          env: &e2e_env
+            - name: CLUSTER_DOMAIN
+              value: teapot-e2e.zalan.do
+            - name: CLUSTER_DOMAIN_INTERNAL
+              value: ingress.cluster.local
+            - name: RESULT_BUCKET
+              value: "teapot-kubernetes-e2e-results"
+            - name: ETCD_ENDPOINTS
+              value: "https://etcd-server.etcd.teapot-e2e.zalan.do:2479"
+            - name: HOSTED_ZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: teapot-kubernetes-e2e-config
+                  key: "HOSTED_ZONE"
+            - name: REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: teapot-kubernetes-e2e-config
+                  key: "REGION"
+            - name: AWS_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "AWS_ACCOUNT"
+            - name: ZMON_ROOT_ACCOUNT_ROLE
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "ZMON_ROOT_ACCOUNT_ROLE"
+            - name: AUDITTRAIL_ROOT_ACCOUNT_ROLE
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "AUDITTRAIL_ROOT_ACCOUNT_ROLE"
+            - name: APISERVER_BUSINESS_PARTNER_IDS
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "APISERVER_BUSINESS_PARTNER_IDS"
+            - name: LIGHTSTEP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "LIGHTSTEP_TOKEN"
+            - name: OWNER
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "OWNER"
+            - name: VPC_ID
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "VPC_ID"
+            - name: EFS_ID
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "EFS_ID"
+            - name: SPOTIO_ACCOUNT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "SPOTIO_ACCOUNT_ID"
+            - name: SPOTIO_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "SPOTIO_ACCESS_TOKEN"
+            - name: WORKER_SHARED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "WORKER_SHARED_SECRET"
+            - name: ETCD_CLIENT_CA_CERT
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "ETCD_CLIENT_CA_CERT"
+            - name: ETCD_CLIENT_CA_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: teapot-kubernetes-e2e-config-secret
+                  key: "ETCD_CLIENT_CA_KEY"
+          resources:
+            limits:
+              cpu: 500m
+              memory: 5Gi
+            requests:
+              cpu: 500m
+              memory: 5Gi
 
 - id: e2e-tests
   when:
     event: pull_request
   depends_on:
-  - build
+  - create-cluster
   type: process
   desc: "Kubernetes e2e tests"
   target: stups-test
@@ -35,7 +168,7 @@ pipeline:
       metadata:
         name: e2e
         annotations:
-          iam.amazonaws.com/role: arn:aws:iam::925511348110:role/cluster-e2e-test
+          iam.amazonaws.com/role: arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint
         labels:
           application: teapot-kubernetes-e2e
       spec:
@@ -48,12 +181,97 @@ pipeline:
           args: ["300"]
         containers:
         - name: e2e
-          image: "registry.opensource.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
-          env:
-          - name: E2E_NODE_OS
-            value: ubuntu
-          - name: E2E_SKIP_CLUSTER_UPDATE
-            value: "true"
+          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          args:
+          - e2e
+          env: *e2e_env
+          resources:
+            limits:
+              cpu: 500m
+              memory: 5Gi
+            requests:
+              cpu: 500m
+              memory: 5Gi
+
+- id: stackset-e2e-tests
+  when:
+    event: pull_request
+  depends_on:
+  - create-cluster
+  type: process
+  desc: "StackSet e2e tests"
+  target: stups-test
+  process: microservice_standard_test
+  config:
+    apply_manifests:
+      env:
+      - name: DEPLOYMENT_PATH
+        value: test/e2e
+    end2end_tests:
+      metadata:
+        name: e2e
+        annotations:
+          iam.amazonaws.com/role: arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint
+        labels:
+          application: teapot-kubernetes-e2e
+      spec:
+        nodeSelector:
+          aws.amazon.com/spot: "false"
+        restartPolicy: Never
+        initContainers:
+        - name: aws-credentials-waiter
+          image: pierone.stups.zalan.do/automata/aws-credentials-waiter:master-2
+          args: ["300"]
+        containers:
+        - name: e2e
+          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          args:
+          - stackset-e2e
+          env: *e2e_env
+          resources:
+            limits:
+              cpu: 500m
+              memory: 1Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+
+- id: decommission-cluster
+  when:
+    event: pull_request
+  depends_on:
+  - e2e-tests
+  - stackset-e2e-tests
+  type: process
+  desc: "Decommission cluster used for Kubernetes e2e tests"
+  target: stups-test
+  process: microservice_standard_test
+  config:
+    apply_manifests:
+      env:
+      - name: DEPLOYMENT_PATH
+        value: test/e2e
+    end2end_tests:
+      metadata:
+        name: e2e
+        annotations:
+          iam.amazonaws.com/role: arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint
+        labels:
+          application: teapot-kubernetes-e2e
+      spec:
+        nodeSelector:
+          aws.amazon.com/spot: "false"
+        restartPolicy: Never
+        initContainers:
+        - name: aws-credentials-waiter
+          image: pierone.stups.zalan.do/automata/aws-credentials-waiter:master-2
+          args: ["300"]
+        containers:
+        - name: e2e
+          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          args:
+          - decommission-cluster
+          env: *e2e_env
           resources:
             limits:
               cpu: 500m

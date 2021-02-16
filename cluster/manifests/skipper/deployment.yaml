@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.11.97
+    version: v0.13.21
     component: ingress
 spec:
   strategy:
@@ -19,7 +19,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.11.97
+        version: v0.13.21
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -36,24 +36,52 @@ spec:
                   values:
                   - skipper-ingress
               topologyKey: kubernetes.io/hostname
-      priorityClassName: system-cluster-critical
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              application: skipper-ingress
+{{- end }}
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
       dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.97
+        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.21-94
         ports:
         - name: ingress-port
           containerPort: 9999
           hostPort: 9999
+          protocol: TCP
         env:
         - name: LIGHTSTEP_TOKEN
           valueFrom:
             secretKeyRef:
               name: skipper-ingress
               key: lightstep-token
+{{ if or (eq .ConfigItems.skipper_local_tokeninfo "production") (eq .ConfigItems.skipper_local_tokeninfo "bridge") }}
+        - name: LOCAL_TOKENINFO
+          value: "true"
+        - name: ENABLE_OPENTRACING
+          value: "true"
+        - name: OPENTRACING_LIGHTSTEP_COMPONENT_NAME
+          value: "tokeninfo-skipper-ingress"
+        - name: OPENTRACING_LIGHTSTEP_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: skipper-ingress
+              key: lightstep-token
+{{ end }}
+{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
+        - name: LOCAL_TOKENINFO_SANDBOX
+          value: "true"
+{{ end }}
         args:
+          - "run.sh"
           - "skipper"
           - "-kubernetes"
           - "-kubernetes-in-cluster"
@@ -63,6 +91,10 @@ spec:
 {{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
           - "-enable-kubernetes-east-west"
           - "-kubernetes-east-west-domain=.ingress.cluster.local"
+{{ end }}
+{{ if eq .ConfigItems.enable_skipper_eastwest_range "true"}}
+          - "-kubernetes-east-west-range-domains=ingress.cluster.local"
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\") && SourceFromLast(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
 {{ end }}
           - "-proxy-preserve-host"
           - "-serve-host-metrics"
@@ -85,28 +117,35 @@ spec:
           - "-default-filters-dir=/etc/config/default-filters"
 {{ end }}
           - "-max-audit-body=0"
-{{ if eq .ConfigItems.skipper_clusterratelimit "true"}}
+{{ if ne .ConfigItems.skipper_redis_replicas "0" }}
           - "-enable-swarm"
-          - "-swarm-redis-urls=skipper-ingress-redis-0.skipper-ingress-redis.kube-system.svc.cluster.local:6379,skipper-ingress-redis-1.skipper-ingress-redis.kube-system.svc.cluster.local:6379"
+          - "-swarm-redis-urls={{ indexedList "skipper-ingress-redis-$.skipper-ingress-redis.kube-system.svc.cluster.local:6379" (parseInt64 .ConfigItems.skipper_redis_replicas) }}"
+          - "-swarm-redis-dial-timeout={{ .ConfigItems.skipper_redis_dial_timeout }}"
+          - "-swarm-redis-pool-timeout={{ .ConfigItems.skipper_redis_pool_timeout }}"
+          - "-swarm-redis-read-timeout={{ .ConfigItems.skipper_redis_read_timeout }}"
+          - "-swarm-redis-write-timeout={{ .ConfigItems.skipper_redis_write_timeout }}"
 {{ end }}
-          - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
           - >-
             -opentracing=lightstep
             component-name=skipper-ingress
             token=$(LIGHTSTEP_TOKEN)
-            collector=tracing.stups.zalan.do:8444
+            collector={{ .Cluster.ConfigItems.tracing_collector_host }}:8444
             cmd-line=skipper-ingress
             max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/pathfinder/skipper:v0.11.97
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper:v0.13.21
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
             min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }}
+            propagators={{ .ConfigItems.skipper_ingress_lightstep_propagators }}
             {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
           - "-opentracing-excluded-proxy-tags={{ .ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
+{{ if eq .ConfigItems.skipper_ingress_opentracing_backend_name_tag "true" }}
+          - "-opentracing-backend-name-tag"
+{{ end }}
           - "-expect-continue-timeout-backend={{ .ConfigItems.skipper_expect_continue_timeout_backend }}"
           - "-keepalive-backend={{ .ConfigItems.skipper_keepalive_backend }}"
           - "-max-idle-connection-backend={{ .ConfigItems.skipper_max_idle_connection_backend }}"
@@ -118,15 +157,33 @@ spec:
           - "-read-timeout-server={{ .ConfigItems.skipper_read_timeout_server }}"
           - "-write-timeout-server={{ .ConfigItems.skipper_write_timeout_server }}"
           - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
-          - "-route-creation-metrics"
+          - "-suppress-route-update-logs={{ .ConfigItems.skipper_suppress_route_update_logs }}"
 {{ if eq .ConfigItems.skipper_enable_tcp_queue "true" }}
           - "-enable-tcp-queue"
           - "-expected-bytes-per-request={{ .ConfigItems.skipper_expected_bytes_per_request }}"
           - "-max-tcp-listener-concurrency={{ .ConfigItems.skipper_max_tcp_listener_concurrency }}"
           - "-max-tcp-listener-queue={{ .ConfigItems.skipper_max_tcp_listener_queue }}"
 {{ end }}
-{{ if eq .ConfigItems.tokeninfo_url "http://127.0.0.1:9021/oauth2/tokeninfo" }}
+{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
+          - "-oauth2-tokeninfo-url=http://127.0.0.1:9000/oauth2/tokeninfo"
+          - "-status-checks=http://127.0.0.1:9021/health,http://127.0.0.1:9121/health,http://127.0.0.1:9000/healthz"
+{{ else if eq .ConfigItems.skipper_local_tokeninfo "production" }}
+          - "-oauth2-tokeninfo-url=http://127.0.0.1:9021/oauth2/tokeninfo"
           - "-status-checks=http://127.0.0.1:9021/health"
+{{ else }}
+          - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
+{{ end }}
+{{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
+          - "-enable-oauth2-grant-flow"
+          - "-oauth2-auth-url={{ .ConfigItems.skipper_oauth2_auth_url }}"
+          - "-oauth2-token-url={{ .ConfigItems.skipper_oauth2_token_url }}"
+          - "-oauth2-secret-file=/etc/skipper/secret/encryption-key"
+          - "-oauth2-client-id-file=/etc/skipper/oauth/employee-client-id"
+          - "-oauth2-client-secret-file=/etc/skipper/oauth/employee-client-secret"
+          - "-credentials-paths=/etc/skipper/secret,/etc/skipper/oauth"
+          - "-credentials-update-interval=1m"
+          - "-oauth2-token-cookie-name={{.ConfigItems.skipper_oauth2_cookie_name }}"
+          - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
 {{ end }}
         resources:
           limits:
@@ -141,66 +198,76 @@ spec:
             port: 9999
           initialDelaySeconds: 60
           timeoutSeconds: 5
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 1000
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
-        volumeMounts:
-          - name: filters
-            mountPath: /etc/config/default-filters
-{{ end }}
-{{ if eq .ConfigItems.tokeninfo_url "http://127.0.0.1:9021/oauth2/tokeninfo" }}
-      - name: tokeninfo
-        image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:master-1
-        ports:
-        - containerPort: 9021
-        readinessProbe:
+{{ if eq .ConfigItems.skipper_local_tokeninfo "production" }}
+        livenessProbe:
           httpGet:
             path: /health
             port: 9021
-          periodSeconds: 3
-          failureThreshold: 2
-        lifecycle:
-          preStop:
-            exec:
-              command: ["sleep","45"]
-        resources:
-          limits:
-            cpu: "{{ .ConfigItems.skipper_ingress_tokeninfo_cpu }}"
-            memory: "{{ .ConfigItems.skipper_ingress_tokeninfo_memory }}"
-          requests:
-            cpu: "{{ .ConfigItems.skipper_ingress_tokeninfo_cpu }}"
-            memory: "{{ .ConfigItems.skipper_ingress_tokeninfo_memory }}"
+            host: 127.0.0.1
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+{{ else if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -ce
+            # Check all sub processes in the container and fail if one of them fails.
+            # wget will exit with non-zero status code if the HTTP code is no 2xx.
+            # production tokeinfo, sandbox tokeninfo, bridge
+            - "wget -T 1 -q -O /dev/null http://127.0.0.1:9021/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9121/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9000/healthz"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+{{ end }}
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
-        env:
-        - name: BUSINESS_PARTNERS
-          value: 810d1d00-4312-43e5-bd31-d8373fdd24c7=com.zalando zalando-legacy=legacy
-        - name: OPENID_PROVIDER_CONFIGURATION_URL
-          value: "{{ .ConfigItems.opendid_provider_cfg_url }}"
-        - name: ISSUER
-          value: "{{ .ConfigItems.openid_issuer }}"
-        - name: ENABLE_OPENTRACING
-          value: "true"
-        - name: OPENTRACING_LIGHTSTEP_COMPONENT_NAME
-          value: "tokeninfo-skipper-ingress"
-        - name: OPENTRACING_LIGHTSTEP_ACCESS_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: skipper-ingress
-              key: lightstep-token
+        volumeMounts:
+{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
+          - name: routes
+            mountPath: /etc/routes
+{{ end }}
+{{ if eq .ConfigItems.enable_apimonitoring "true"}}
+          - name: filters
+            mountPath: /etc/config/default-filters
+{{ end }}
+{{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
+          - name: oauth2
+            mountPath: /etc/skipper/oauth
+            readOnly: true
+          - name: encryption-key
+            mountPath: /etc/skipper/secret
+            readOnly: true
 {{ end }}
       securityContext:
         fsGroup: 1000
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
       volumes:
+{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
+        - name: routes
+          configMap:
+            name: sandbox-tokeninfo-bridge-conf
+{{ end }}
+{{ if eq .ConfigItems.enable_apimonitoring "true"}}
         - name: filters
           configMap:
             name: skipper-default-filters
             optional: true
+{{ end }}
+{{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
+        - name: oauth2
+          secret:
+            secretName: skipper-ingress-platform-credentials
+        - name: encryption-key
+          secret:
+            secretName: skipper-ingress
 {{ end }}
 {{ if eq .ConfigItems.enable_dedicate_nodepool_skipper "true"}}
       nodeSelector:
@@ -209,7 +276,4 @@ spec:
       - effect: NoSchedule
         key: dedicated
         value: skipper-ingress
-{{ else }}
-      nodeSelector:
-        node.kubernetes.io/role: worker
 {{ end }}

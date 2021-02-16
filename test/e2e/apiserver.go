@@ -18,6 +18,7 @@ this component is purposed to tests webhooks in the apiserver
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -29,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
-	deploymentframework "k8s.io/kubernetes/test/e2e/framework/deployment"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
@@ -52,11 +52,11 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
 		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
-		_, err := cs.AppsV1().Deployments(ns).Create(deployment)
+		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		defer func() {
 			By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 			defer GinkgoRecover()
-			err := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+			err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}()
 		Expect(err).NotTo(HaveOccurred())
@@ -64,7 +64,7 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 			"app": podname,
 		}
 		labelSelector := labels.SelectorFromSet(labels.Set(label))
-		err = deploymentframework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
+		err = waitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
 		Expect(err).NotTo(HaveOccurred())
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, int(replicas), 1*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
@@ -81,15 +81,15 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
 		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
-		_, err := cs.AppsV1().Deployments(ns).Create(deployment)
+		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
 			By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 			defer GinkgoRecover()
-			err := cs.AppsV1().Deployments(ns).Delete(deployment.Name, metav1.NewDeleteOptions(0))
+			err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}()
-		err = deploymentframework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "FailedCreate", appsv1.DeploymentReplicaFailure)
+		err = waitForDeploymentWithCondition(cs, ns, deployment.Name, "FailedCreate", appsv1.DeploymentReplicaFailure)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

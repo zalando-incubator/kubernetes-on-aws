@@ -26,7 +26,6 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/framework/config"
 	"k8s.io/kubernetes/test/e2e/framework/testfiles"
-	"k8s.io/kubernetes/test/e2e/framework/viperconfig"
 	"k8s.io/kubernetes/test/e2e/generated"
 
 	// test sources
@@ -61,7 +60,7 @@ func TestMain(m *testing.M) {
 	// Register test flags, then parse flags.
 	handleFlags()
 
-	if err := viperconfig.ViperizeFlags(*viperConfig, "e2e", flag.CommandLine); err != nil {
+	if err := viperizeFlags(*viperConfig, "e2e", flag.CommandLine); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

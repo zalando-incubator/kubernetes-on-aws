@@ -7,7 +7,7 @@ metadata:
   name: skipper-ingress-redis
   namespace: kube-system
 spec:
-  replicas: {{if eq .ConfigItems.skipper_clusterratelimit "true"}}2{{else}}0{{end}}
+  replicas: {{ .ConfigItems.skipper_redis_replicas }}
   selector:
     matchLabels:
       application: skipper-ingress-redis
@@ -17,8 +17,29 @@ spec:
       labels:
         application: skipper-ingress-redis
         version: v4.0.9
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
     spec:
-      priorityClassName: system-cluster-critical
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              application: skipper-ingress-redis
+{{- end }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchExpressions:
+              - key: application
+                operator: In
+                values:
+                - skipper-ingress-redis
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       containers:
       - image: registry.opensource.zalan.do/zmon/redis:4.0.9-master-6
         name: skipper-ingress-redis
@@ -37,8 +58,16 @@ spec:
           timeoutSeconds: 1
         resources:
           limits:
-            cpu: 100m
-            memory: 100Mi
+            cpu: {{ .Cluster.ConfigItems.skipper_redis_cpu }}
+            memory: {{ .Cluster.ConfigItems.skipper_redis_memory }}
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
+{{ if eq .ConfigItems.enable_dedicate_nodepool_skipper_redis "true"}}
+      nodeSelector:
+        dedicated: skipper-ingress-redis
+      tolerations:
+      - effect: NoSchedule
+        key: dedicated
+        value: skipper-ingress-redis
+{{ end }}
