@@ -344,9 +344,9 @@ Resources:
           FromPort: 22
           IpProtocol: tcp
           ToPort: 22
-{{- if index .Cluster.ConfigItems "open_port_ranges" }}
-{{- range $index, $element := portRanges .Cluster.ConfigItems.open_port_ranges }}
-        - CidrIp: 0.0.0.0/0
+{{- if index .Cluster.ConfigItems "open_sg_ingress_ranges" }}
+{{- range $index, $element := sgIngressRanges .Cluster.ConfigItems.open_sg_ingress_ranges }}
+        - CidrIp: {{ $element.CIDR }}
           FromPort: {{ $element.FromPort }}
           IpProtocol: tcp
           ToPort: {{ $element.ToPort }}

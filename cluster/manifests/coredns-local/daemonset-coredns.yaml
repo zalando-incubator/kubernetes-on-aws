@@ -24,6 +24,17 @@ spec:
         version: v1.8.1
         component: cluster-dns
     spec:
+      initContainers:
+      - name: ensure-apiserver
+        image: registry.opensource.zalan.do/teapot/ensure-apiserver:master-2
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: 1m
+            memory: 50Mi
       containers:
 {{ if eq .Cluster.ConfigItems.dns_cache "unbound" }}
       - name: unbound
