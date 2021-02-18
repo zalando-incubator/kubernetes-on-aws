@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Kubernetes spot.io node pool stack
+Metadata:
+  Tags:
+    InfrastructureComponent: "true"
+
+Mappings:
+  Images:
+    eu-central-1:
+      MachineImage: "{{ .NodePool.ConfigItems.kuberuntu_image_v1_19 }}"
+
+Resources:
+  AutoScalingInstanceProfile:
+    Properties:
+      Path: /
+      Roles:
+      - !ImportValue "{{ .Cluster.ID }}:worker-iam-role"
+    Type: "AWS::IAM::InstanceProfile"
+  SpotinstOceanLaunchSpec:
+    Type: Custom::oceanLaunchSpec
+    Properties:
+      ServiceToken: !Sub "arn:aws:lambda:${AWS::Region}:178579023202:function:spotinst-cloudformation"
+      accessToken: "{{ .Cluster.ConfigItems.spotio_access_token }}"
+      accountId: "{{ .Cluster.ConfigItems.spotio_account_id }}"
+      # allow force deleting, when deleting spot.io node pool
+      parameters:
+        delete:
+          forceDelete: true
+      oceanLaunchSpec:
+        name: "{{ .NodePool.Name }}"
+        oceanId: !ImportValue "{{ .Cluster.ID }}:spotio-ocean-id"
+        imageId: !FindInMap
+        - Images
+        - !Ref "AWS::Region"
+        - MachineImage
+        userData: "{{ .UserData }}"
+        iamInstanceProfile:
+          arn: !GetAtt
+            - AutoScalingInstanceProfile
+            - Arn
+        strategy:
+          spotPercentage: {{ .NodePool.ConfigItems.spotio_spot_percentage }}
+        associatePublicIpAddress: true
+        instanceTypes:
+{{- range $type := .NodePool.InstanceTypes }}
+        - "{{ $type }}"
+{{- end }}
+        blockDeviceMappings:
+          - deviceName: /dev/sda1
+            ebs:
+              deleteOnTermination: {{.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
+              volumeSize: {{.NodePool.ConfigItems.ebs_root_volume_size}}
+              volumeType: gp3
+        securityGroupIds:
+        - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
+        subnetIds:
+        {{- with $values := .Values }}
+        {{- range $az := $values.availability_zones }}
+          - "{{ index $values.subnets $az }}"
+        {{- end }}
+        {{- end }}
+        labels:
+        - key: "spot.io"
+          value: "true"
+        - key: "lifecycle-status"
+          value: "ready"
+{{- if index .NodePool.ConfigItems "labels"}}
+  {{- range split .NodePool.ConfigItems.labels ","}}
+    {{- $label := split . "="}}
+        - key: {{index $label 0}}
+          value: {{index $label 1}}
+  {{- end}}
+{{end}}
+{{- if index .NodePool.ConfigItems "taints"}}
+        taints:
+  {{- range split .NodePool.ConfigItems.taints ","}}
+    {{- $taint := split . "="}}
+      {{- with $value := index $taint 1 }}
+        {{- $valueEffect := split $value ":" }}
+        - key: {{index $taint 0}}
+          value: {{index $valueEffect 0}}
+          effect: {{index $valueEffect 1}}
+      {{- end}}
+  {{- end}}
+{{end}}
+        tags:
+          - tagKey: kubernetes.io/cluster/{{ .Cluster.ID }}
+            tagValue: owned
+          - tagKey: Name
+            tagValue: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
+            # TODO: evaluate how much of this we need?
+          - tagKey: node.kubernetes.io/role # used by ingress controller to detect nodes for LB
+            tagValue: worker
+          - tagKey: node.kubernetes.io/node-pool
+            tagValue: {{ .NodePool.Name }}
+          - tagKey: node.kubernetes.io/node-pool-profile
+            tagValue: {{ .NodePool.Profile }}
+          - tagKey: kubernetes.io/role/node-pool
+            tagValue: "true"
+          # only node pools without taints should be attached to Ingress Load balancer
+{{- if or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
+          - tagKey: zalando.org/ingress-enabled
+            tagValue: "true"
+{{- end }}
+          - tagKey: spot.io/type
+            tagValue: launchSpec
+          - tagKey: spot.io/ocean-id # used by CLM to lookup information from instance
+            tagValue: !ImportValue "{{ .Cluster.ID }}:spotio-ocean-id"
+        autoScale:
+          # disable headroom/preprovisioned instances
+          headrooms: []
