@@ -363,6 +363,40 @@ spec:
                                   - Ingress
                                   - ZMON
                                   type: string
+                                zmon:
+                                  description: MetricsZMON specifies the ZMON check which should be used for scaling.
+                                  properties:
+                                    aggregators:
+                                      items:
+                                        description: ZMONMetricAggregatorType is the type of aggregator used in a ZMON based metric.
+                                        enum:
+                                        - avg
+                                        - dev
+                                        - count
+                                        - first
+                                        - last
+                                        - max
+                                        - min
+                                        - sum
+                                        - diff
+                                        type: string
+                                      type: array
+                                    checkID:
+                                      pattern: ^[0-9]+$
+                                      type: string
+                                    duration:
+                                      default: 5m
+                                      type: string
+                                    key:
+                                      type: string
+                                    tags:
+                                      additionalProperties:
+                                        type: string
+                                      type: object
+                                  required:
+                                  - checkID
+                                  - key
+                                  type: object
                               required:
                               - type
                               type: object

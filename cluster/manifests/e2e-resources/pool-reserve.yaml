@@ -1,5 +1,5 @@
 {{ if eq .Environment "e2e" }}
-{{ range $pool := split "default-worker-splitaz,default-worker,worker-limit-az,worker-instance-storage" "," }}
+{{ range $pool := split "default-worker-splitaz,default-worker,worker-limit-az,worker-instance-storage,default-worker-spotio" "," }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,7 +21,15 @@ spec:
         pool: "{{$pool}}"
     spec:
       nodeSelector:
+      {{ if eq $pool "default-worker-spotio" }}
+        dedicated: spotio
+      tolerations:
+        - effect: NoSchedule
+          key: dedicated
+          value: spotio
+      {{ else }}
         node.kubernetes.io/node-pool: "{{$pool}}"
+      {{ end }}
       terminationGracePeriodSeconds: 0
       containers:
       - name: pause
