@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.21
+    version: v0.13.28
     component: ingress
 spec:
   strategy:
@@ -19,12 +19,13 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.13.21
+        version: v0.13.28
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
         config/hash: {{"secret.yaml" | manifestHash}}
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_local}}"
     spec:
       affinity:
         podAntiAffinity:
@@ -51,7 +52,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.21-94
+        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.28-101
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -94,7 +95,7 @@ spec:
 {{ end }}
 {{ if eq .ConfigItems.enable_skipper_eastwest_range "true"}}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\") && SourceFromLast(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
 {{ end }}
           - "-proxy-preserve-host"
           - "-serve-host-metrics"
@@ -136,7 +137,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper:v0.13.21
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper:v0.13.28
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
             min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }}

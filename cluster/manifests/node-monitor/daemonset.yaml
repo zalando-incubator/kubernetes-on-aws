@@ -17,6 +17,7 @@ spec:
         application: node-monitor
       annotations:
         kubernetes-log-watcher/scalyr-parser: '[{"container": "journald-reader", "parser": "journald"}]'
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       hostNetwork: true
       hostPID: true
@@ -71,7 +72,7 @@ spec:
               containerPort: 9101
               hostPort: 9101
               protocol: TCP
-        - image: registry.opensource.zalan.do/teapot/prometheus-node-exporter:v1.1.0
+        - image: registry.opensource.zalan.do/teapot/prometheus-node-exporter:v1.1.1
           args:
             - --collector.processes
             - --path.procfs=/host/proc

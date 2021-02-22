@@ -5,7 +5,7 @@ metadata:
     pdb-controller.zalando.org/non-ready-ttl: "5m"
   labels:
     application: prometheus
-    version: v2.24.0
+    version: v2.25.0
 {{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
   name: prometheus
 {{- else }}
@@ -23,9 +23,10 @@ spec:
     metadata:
       labels:
         application: prometheus
-        version: v2.24.0
+        version: v2.25.0
       annotations:
         config/hash: {{"configmap.yaml" | manifestHash}}
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       serviceAccountName: prometheus
       dnsConfig:
@@ -34,7 +35,7 @@ spec:
           value: "1"
       initContainers:
       - name: generate-config
-        image: registry.opensource.zalan.do/stups/alpine:3.11.6-7
+        image: registry.opensource.zalan.do/library/alpine-3.13:3.13-20210216
         command:
         - /bin/sh
         args:
@@ -56,7 +57,7 @@ spec:
           mountPath: /prometheus
       containers:
       - name: prometheus
-        image: registry.opensource.zalan.do/teapot/prometheus:v2.24.0
+        image: registry.opensource.zalan.do/teapot/prometheus:v2.25.0
         args:
         - "--config.file=/prometheus/prometheus.yaml"
         - "--storage.tsdb.path=/prometheus/"

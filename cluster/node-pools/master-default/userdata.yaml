@@ -99,6 +99,7 @@ write_files:
         annotations:
           kubernetes-log-watcher/scalyr-parser: |
             [{"container": "webhook", "parser": "json-structured-log"}]
+          logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
       spec:
         priorityClassName: system-node-critical
         tolerations:
@@ -460,10 +461,6 @@ write_files:
             k: Path("/openid/v1/jwks")
               -> disableAccessLog()
               -> "http://127.0.0.1:8080";
-            k2: Path("/openid-configuration/keys.json")
-              -> setPath("/openid/v1/jwks")
-              -> disableAccessLog()
-              -> "http://127.0.0.1:8080";
             all: *
               -> disableAccessLog()
               -> "https://127.0.0.1:443";
@@ -535,6 +532,8 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
+        annotations:
+          logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
       spec:
         priorityClassName: system-node-critical
         tolerations:
@@ -602,6 +601,8 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
+        annotations:
+          logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
       spec:
         priorityClassName: system-node-critical
         tolerations:

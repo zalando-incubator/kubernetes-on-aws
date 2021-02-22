@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kubernetes-lifecycle-metrics
-    version: master-7
+    version: master-9
 spec:
   replicas: 1
   selector:
@@ -15,9 +15,10 @@ spec:
     metadata:
       labels:
         application: kubernetes-lifecycle-metrics
-        version: master-7
+        version: master-9
       annotations:
         kubernetes-log-watcher/scalyr-parser: '[{"container": "kubernetes-lifecycle-metrics", "parser": "system-json-escaped-json"}]'
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
         options:
@@ -26,7 +27,7 @@ spec:
       serviceAccountName: kubernetes-lifecycle-metrics
       containers:
         - name: kubernetes-lifecycle-metrics
-          image: "pierone.stups.zalan.do/teapot/kubernetes-lifecycle-metrics:master-7"
+          image: "pierone.stups.zalan.do/teapot/kubernetes-lifecycle-metrics:master-9"
           ports:
             - containerPort: 9090
               protocol: TCP
