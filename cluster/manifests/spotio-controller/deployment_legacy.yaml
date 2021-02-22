@@ -1,23 +1,27 @@
 {{ if and (index .Cluster.ConfigItems "spotio_account_id") (index .Cluster.ConfigItems "spotio_access_token") }}
+{{ with $data := . }}
+{{ range $nodePool := .Cluster.NodePools }}
+{{ if eq $nodePool.Profile "worker-spotio-ocean" }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: spotinst-kubernetes-cluster-controller
+  name: spotinst-kubernetes-cluster-controller-{{ $nodePool.Name }}
   namespace: kube-system
   labels:
     application: spotinst-kubernetes-cluster-controller
-    component: "ocean"
+    component: "{{ $nodePool.Name }}"
 spec:
   replicas: 1
   selector:
     matchLabels:
       application: spotinst-kubernetes-cluster-controller # TODO: this label name is REQUIRED by the controller
-      component: "ocean"
+      component: "{{ $nodePool.Name }}"
   template:
     metadata:
       labels:
         application: spotinst-kubernetes-cluster-controller
-        component: "ocean"
+        component: "{{ $nodePool.Name }}"
       annotations:
         config/hash: {{"secret.yaml" | manifestHash}}
     spec:
@@ -41,9 +45,9 @@ spec:
               key: spotinst.token
               name: spotinst-kubernetes-cluster-controller
         - name: SPOTINST_ACCOUNT
-          value: "{{ .Cluster.ConfigItems.spotio_account_id }}"
+          value: "{{ $data.ConfigItems.spotio_account_id }}"
         - name: CLUSTER_IDENTIFIER
-          value: "{{ .Cluster.LocalID }}"
+          value: "{{ $data.LocalID }}-{{ $nodePool.Name }}"
         - name: DISABLE_AUTO_UPDATE
           value: "true"
         - name: POD_ID
@@ -62,6 +66,7 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
         livenessProbe:
+          failureThreshold: 3
           httpGet:
             path: /healthcheck
             port: 4401
@@ -70,26 +75,19 @@ spec:
           periodSeconds: 20
           successThreshold: 1
           timeoutSeconds: 2
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /healthcheck
-            port: 4401
-          initialDelaySeconds: 20
-          periodSeconds: 20
-          timeoutSeconds: 2
-          successThreshold: 1
-          failureThreshold: 3
         resources:
           limits:
-            cpu: "{{ .Cluster.ConfigItems.spotio_ocean_controller_cpu }}"
-            memory: "{{ .Cluster.ConfigItems.spotio_ocean_controller_memory }}"
+            cpu: "{{ $data.ConfigItems.spotio_ocean_controller_cpu }}"
+            memory: "{{ $data.ConfigItems.spotio_ocean_controller_memory }}"
           requests:
-            cpu: "{{ .Cluster.ConfigItems.spotio_ocean_controller_cpu }}"
-            memory: "{{ .Cluster.ConfigItems.spotio_ocean_controller_memory }}"
+            cpu: "{{ $data.ConfigItems.spotio_ocean_controller_cpu }}"
+            memory: "{{ $data.ConfigItems.spotio_ocean_controller_memory }}"
       serviceAccountName: spotinst-kubernetes-cluster-controller
       tolerations:
       - key: node.kubernetes.io/role
         value: master
         effect: NoSchedule
+{{ end }}
+{{ end }}
+{{ end }}
 {{ end }}

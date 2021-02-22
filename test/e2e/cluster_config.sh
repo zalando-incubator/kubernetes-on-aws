@@ -41,6 +41,8 @@ clusters:
     routegroups_validation: "enabled"
     stackset_routegroup_support_enabled: "true"
     stackset_ingress_source_switch_ttl: "1m"
+    spotio_account_id: "${SPOTIO_ACCOUNT_ID}"
+    spotio_access_token: "${SPOTIO_ACCESS_TOKEN}"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
@@ -83,6 +85,72 @@ clusters:
     profile: worker-default
     min_size: 0
     max_size: 21
+  - name: default-worker-spotio
+    profile: worker-spotio
+    instance_types:
+    - m5a.large
+    - c4.large
+    - c4.xlarge
+    - c4.2xlarge
+    - c4.4xlarge
+    - c5.large
+    - c5.xlarge
+    - c5.2xlarge
+    - c5.4xlarge
+    - m4.large
+    - m4.xlarge
+    - m4.2xlarge
+    - m4.4xlarge
+    - m5.large
+    - m5.xlarge
+    - m5.2xlarge
+    - m5.4xlarge
+    - r4.large
+    - r4.xlarge
+    - r4.2xlarge
+    - r4.4xlarge
+    - r5.large
+    - r5.xlarge
+    - r5.2xlarge
+    - r5.4xlarge
+    - c5n.large
+    - c5n.xlarge
+    - c5n.2xlarge
+    - c5n.4xlarge
+    - m5n.large
+    - m5n.xlarge
+    - m5n.2xlarge
+    - m5n.4xlarge
+    - r5n.large
+    - r5n.xlarge
+    - r5n.2xlarge
+    - r5n.4xlarge
+    - c5d.large
+    - c5d.xlarge
+    - c5d.2xlarge
+    - c5d.4xlarge
+    - m5d.large
+    - m5d.xlarge
+    - m5d.2xlarge
+    - m5d.4xlarge
+    - r5d.large
+    - r5d.xlarge
+    - r5d.2xlarge
+    - r5d.4xlarge
+    - m5dn.large
+    - m5dn.xlarge
+    - m5dn.2xlarge
+    - m5dn.4xlarge
+    - r5dn.large
+    - r5dn.xlarge
+    - r5dn.2xlarge
+    - r5dn.4xlarge
+    discount_strategy: none
+    min_size: 0
+    max_size: 21
+    config_items:
+      labels: dedicated=spotio
+      taints: dedicated=spotio:NoSchedule
   - discount_strategy: spot
     instance_types: ["p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
     name: worker-gpu
