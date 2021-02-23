@@ -114,6 +114,22 @@ data:
       - action: replace
         source_labels: ['__meta_kubernetes_pod_label_application']
         target_label: application
+    - job_name: 'routegroups-admission-webhook'
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+              - kube-system
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_container_port_number]
+          action: keep
+          regex: kube-apiserver;9085
+        - action: replace
+          source_labels: ['__meta_kubernetes_pod_label_application']
+          target_label: application
     - job_name: 'kube-state-metrics'
       scheme: http
       honor_labels: true
