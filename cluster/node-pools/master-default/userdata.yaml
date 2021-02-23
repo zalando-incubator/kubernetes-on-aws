@@ -99,6 +99,7 @@ write_files:
         annotations:
           kubernetes-log-watcher/scalyr-parser: |
             [{"container": "webhook", "parser": "json-structured-log"}]
+          logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
       spec:
         priorityClassName: system-node-critical
         tolerations:
@@ -531,6 +532,8 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-controller-manager
+        annotations:
+          logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
       spec:
         priorityClassName: system-node-critical
         tolerations:
@@ -598,6 +601,8 @@ write_files:
         namespace: kube-system
         labels:
           application: kube-scheduler
+        annotations:
+          logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
       spec:
         priorityClassName: system-node-critical
         tolerations:
