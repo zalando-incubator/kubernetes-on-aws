@@ -198,7 +198,7 @@ if [ "$e2e" = true ]; then
            '{timestamp: now | todate, success: ($exitStatus == 0), targetBranch: $targetBranch, author: $author, prNumber: $prNumber, head: $head, version: $buildVersion }' \
            > junit_reports/metadata.json
 
-        TARGET_DIR="$(printf "junit-reports/%04d-%02d/%s" "$(date +%Y)" "$(date +%V)" "$LOCAL_ID")"
+        TARGET_DIR="$(printf "junit-reports/%04d-%02d/%s" "$(date +%Y)" "$(date +%-V)" "$LOCAL_ID")"
         echo "Uploading test results to S3 ($TARGET_DIR)"
         aws s3 cp \
           --acl bucket-owner-full-control \
