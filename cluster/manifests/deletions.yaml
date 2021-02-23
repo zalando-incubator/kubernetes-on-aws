@@ -143,3 +143,8 @@ post_apply:
   namespace: kube-system
   kind: AWSIAMRole
   apiVersion: zalando.org/v1
+{{ if not (spotIONodePools .Cluster.NodePools) }}
+- name: spotinst-kubernetes-cluster-controller
+  namespace: kube-system
+  kind: Deployment
+{{ end }}
