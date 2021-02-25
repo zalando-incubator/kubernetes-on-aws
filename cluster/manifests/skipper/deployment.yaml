@@ -26,6 +26,9 @@ spec:
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
         config/hash: {{"secret.yaml" | manifestHash}}
         logging/destination: "{{.Cluster.ConfigItems.log_destination_local}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9911"
+        prometheus.io/scrape: "true"
     spec:
       affinity:
         podAntiAffinity:
