@@ -145,6 +145,18 @@ webhooks:
         apiGroups: ["zalando.org"]
         apiVersions: ["v1"]
         resources: ["stacks"]
+  - name: stackset-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/stackset"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["zalando.org"]
+        apiVersions: ["v1"]
+        resources: ["stacksets"]
   - name: hpa-admitter.teapot.zalan.do
     clientConfig:
       url: "https://localhost:8085/hpa"
