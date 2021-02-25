@@ -16,7 +16,6 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -79,28 +78,13 @@ var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", 
 		pod := createAWSCLIPod("aws-iam-", ns, []string{"s3", "ls", fmt.Sprintf("s3://%s", E2ES3AWSIAMBucket())})
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
 
-		// wait for pod to access s3 and POD exit code 0
-		for {
-			p, err := cs.CoreV1().Pods(ns).Get(context.TODO(), pod.Name, metav1.GetOptions{})
-			if err != nil {
-				Expect(fmt.Errorf("Could not get POD %s", pod.Name)).NotTo(HaveOccurred())
-				return
-			}
+		framework.ExpectNoError(e2epod.WaitForPodTerminatedInNamespace(f.ClientSet, pod.Name, "", pod.Namespace))
 
-			if p.Status.ContainerStatuses[0].State.Terminated == nil {
-				time.Sleep(10 * time.Second)
-				continue
-			}
-
-			n := p.Status.ContainerStatuses[0].State.Terminated.ExitCode
-			if n < 1 {
-				// set error
-				Expect(fmt.Errorf("expected the s3 bucket access to fail")).NotTo(HaveOccurred())
-				return
-			}
-			return
-		}
+		p, err := cs.CoreV1().Pods(ns).Get(context.TODO(), pod.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(p.Status.ContainerStatuses).NotTo(BeEmpty(), "No container statuses found")
+		Expect(p.Status.ContainerStatuses[0].State.Terminated).NotTo(BeNil(), "Expected to find a terminated container")
+		Expect(p.Status.ContainerStatuses[0].State.Terminated.ExitCode).To(BeEquivalentTo(255), "Expected the container to exit with an error status code")
 	})
 })
