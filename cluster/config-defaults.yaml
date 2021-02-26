@@ -80,15 +80,10 @@ enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup cand
 # ingress.cluster.local addresses created by skipper.
 # enable_skipper_eastwest_dns only enables DNS and assumes users define the
 # ingress.cluster.local names explicitly on ingress/routegroup/stacksets
-{{if eq .Cluster.Environment "production"}}
-enable_skipper_eastwest_dns: "false"
-enable_skipper_eastwest: "false"
-enable_skipper_eastwest_range: "false"
-{{else}}
 enable_skipper_eastwest_dns: "true"
 enable_skipper_eastwest: "false"
 enable_skipper_eastwest_range: "true"
-{{end}}
+
 # enable temporay logging of ingress.cluster.local names
 # used to find services for which it's being used.
 skipper_eastwest_dns_log_enabled: "false"
@@ -311,6 +306,8 @@ teapot_admission_controller_node_not_ready_taint: "true"
 teapot_admission_controller_crd_role_provisioning_allowed_api_groups: "flink.k8s.io"
 
 teapot_admission_controller_topology_spread: optin
+
+teapot_admission_controller_validate_base_images: "false"
 
 # etcd cluster
 {{if eq .Cluster.Environment "production"}}
