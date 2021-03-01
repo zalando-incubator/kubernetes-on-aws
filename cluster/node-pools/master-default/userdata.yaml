@@ -214,7 +214,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-99
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-106
           name: admission-controller
           lifecycle:
             preStop:
@@ -238,8 +238,9 @@ write_files:
             - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
 {{- if index .Cluster.ConfigItems "application_registry_url" }}
             - --application-registry-url={{.Cluster.ConfigItems.application_registry_url}}
-            - --application-registry-token-secret-name=admission-controller-credentials
-            - --application-registry-token-secret-key=kio-token-secret
+{{- end }}
+{{- if index .Cluster.ConfigItems "docker_meta_url" }}
+            - --docker-meta-url={{.Cluster.ConfigItems.docker_meta_url}}
 {{- end }}
           ports:
             - containerPort: 8085
