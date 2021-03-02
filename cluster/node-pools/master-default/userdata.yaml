@@ -139,7 +139,7 @@ write_files:
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
-          - --authorization-mode=Webhook,RBAC
+          - --authorization-mode=Node,Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --authorization-webhook-version=v1
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
@@ -278,7 +278,7 @@ write_files:
               name: ssl-certs-kubernetes
               readOnly: true
 {{- end}}
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.8.0
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook-test:pr-136-15
           name: webhook
           ports:
           - containerPort: 8081
@@ -304,6 +304,9 @@ write_files:
               memory: 50Mi
           args:
             - --tokens-file=/etc/kubernetes/config/tokenfile.csv
+
+            - --node-auth-cluster-id={{.Cluster.ID}}
+            - "--node-auth-role-arn=arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-worker"
 
             # Collaborator roles
             - --role-mapping=Administrator=cn=Administrator,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
@@ -636,6 +639,7 @@ write_files:
 
   - owner: root:root
     path: /etc/kubernetes/config/tokenfile.csv
+    permissions: 0600
     content: |
       {{ .Cluster.ConfigItems.worker_shared_secret }},kubelet,kubelet
 
