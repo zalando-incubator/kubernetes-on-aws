@@ -66,6 +66,18 @@ data:
 
   node.node-not-ready-taint.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_node_not_ready_taint }}"
 
+{{- if or (eq .Cluster.ConfigItems.node_auth "enabled") (eq .Cluster.ConfigItems.node_auth "exclusive") }}
+  node.node-role-label-conversion.enable: "false"
+{{- else }}
+  node.node-role-label-conversion.enable: "true"
+{{- end }}
+
+{{- if eq .Cluster.ConfigItems.node_auth "exclusive" }}
+  node.extended-node-restriction.enable: "true"
+{{- else }}
+  node.extended-node-restriction.enable: "false"
+{{- end }}
+
   pod.node-lifecycle.provider: "{{ .Cluster.ConfigItems.teapot_admission_controller_node_lifecycle_provider }}"
 
   pod.runtime-policy.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_runtime_policy_enabled }}"

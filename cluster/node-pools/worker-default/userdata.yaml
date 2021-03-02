@@ -38,7 +38,18 @@ write_files:
       users:
       - name: kubelet
         user:
+{{- if or (eq .Cluster.ConfigItems.node_auth "enabled") (eq .Cluster.ConfigItems.node_auth "exclusive") }}
+          exec:
+             apiVersion: client.authentication.k8s.io/v1alpha1
+             command: aws
+             args:
+               - eks
+               - get-token
+               - --cluster-name
+               - "{{.Cluster.ID}}"
+{{- else }}
           token: {{ .Cluster.ConfigItems.worker_shared_secret }}
+{{- end }}
       contexts:
       - context:
           cluster: local
