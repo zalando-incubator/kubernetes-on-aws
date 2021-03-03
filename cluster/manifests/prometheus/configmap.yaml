@@ -206,11 +206,32 @@ data:
         regex: ([^:]+)(?::\d+)?;(\d+)
         replacement: $1:$2
         target_label: __address__
-      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_sidecar_port]
-        action: replace
-        regex: ([^:]+)(?::\d+)?;(\d+)
-        replacement: $1:$2
-        target_label: __address__
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_ip']
+        target_label: pod_ip
+      - action: replace
+        source_labels: ['__meta_kubernetes_namespace']
+        target_label: namespace
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_label_application']
+        target_label: application
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_name']
+        target_label: pod_name
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_node_name']
+        target_label: node_name
+    - job_name: 'coredns-cache-metrics'
+      scheme: http
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - kube-system
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_container_port_number]
+        action: keep
+        regex: coredns;9054
       - action: replace
         source_labels: ['__meta_kubernetes_pod_ip']
         target_label: pod_ip
