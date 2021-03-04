@@ -61,6 +61,15 @@ skipper_idle_timeout_server: "62s"
 skipper_read_timeout_server: "5m"
 skipper_write_timeout_server: "60s"
 
+# skipper startup settings
+{{if eq .Cluster.Environment "production"}}
+skipper_readiness_init_delay_seconds: 60
+skipper_liveness_init_delay_seconds: 30
+{{else}}
+skipper_readiness_init_delay_seconds: 1
+skipper_liveness_init_delay_seconds: 30
+{{end}}
+
 # skipper redis settings
 enable_dedicate_nodepool_skipper_redis: "false"
 skipper_redis_replicas: 2
