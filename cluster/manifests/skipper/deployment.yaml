@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.28
+    version: v0.13.36
     component: ingress
 spec:
   strategy:
@@ -19,7 +19,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.13.28
+        version: v0.13.36
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -55,7 +55,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.28-101
+        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.36-109
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -136,14 +136,17 @@ spec:
             token=$(LIGHTSTEP_TOKEN)
             collector={{ .Cluster.ConfigItems.tracing_collector_host }}:8444
             cmd-line=skipper-ingress
-            max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper:v0.13.28
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper:v0.13.36
+            max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
             min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }}
+            max-log-key-len={{ .ConfigItems.skipper_ingress_lightstep_max_log_key_len }}
+            max-log-value-len={{ .ConfigItems.skipper_ingress_lightstep_max_log_value_len }}
+            max-logs-per-span={{ .ConfigItems.skipper_ingress_lightstep_max_logs_per_span }}
             propagators={{ .ConfigItems.skipper_ingress_lightstep_propagators }}
             {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
           - "-opentracing-excluded-proxy-tags={{ .ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
