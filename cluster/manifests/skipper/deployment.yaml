@@ -203,7 +203,7 @@ spec:
           httpGet:
             path: /kube-system/healthz
             port: 9999
-          initialDelaySeconds: 60
+          initialDelaySeconds: {{ .ConfigItems.skipper_readiness_init_delay_seconds }}
           timeoutSeconds: 5
 {{ if eq .ConfigItems.skipper_local_tokeninfo "production" }}
         livenessProbe:
@@ -212,7 +212,7 @@ spec:
             port: 9021
             host: 127.0.0.1
             scheme: HTTP
-          initialDelaySeconds: 30
+          initialDelaySeconds: {{ .ConfigItems.skipper_liveness_init_delay_seconds }}
           periodSeconds: 10
           timeoutSeconds: 5
           successThreshold: 1
@@ -227,7 +227,7 @@ spec:
             # wget will exit with non-zero status code if the HTTP code is no 2xx.
             # production tokeinfo, sandbox tokeninfo, bridge
             - "wget -T 1 -q -O /dev/null http://127.0.0.1:9021/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9121/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9000/healthz"
-          initialDelaySeconds: 30
+          initialDelaySeconds: {{ .ConfigItems.skipper_liveness_init_delay_seconds }}
           periodSeconds: 10
           timeoutSeconds: 5
           successThreshold: 1
