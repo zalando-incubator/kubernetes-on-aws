@@ -61,6 +61,15 @@ skipper_idle_timeout_server: "62s"
 skipper_read_timeout_server: "5m"
 skipper_write_timeout_server: "60s"
 
+# skipper startup settings
+{{if eq .Cluster.Environment "production"}}
+skipper_readiness_init_delay_seconds: 60
+skipper_liveness_init_delay_seconds: 30
+{{else}}
+skipper_readiness_init_delay_seconds: 1
+skipper_liveness_init_delay_seconds: 30
+{{end}}
+
 # skipper redis settings
 enable_dedicate_nodepool_skipper_redis: "false"
 skipper_redis_replicas: 2
@@ -318,6 +327,32 @@ teapot_admission_controller_crd_role_provisioning_allowed_api_groups: "flink.k8s
 teapot_admission_controller_topology_spread: optin
 
 teapot_admission_controller_validate_base_images: "false"
+
+# Supported providers: 'zalando' or 'spotio'
+teapot_admission_controller_node_lifecycle_provider: "zalando"
+
+# Enable and configure runtime-policy annotation
+{{if eq .Cluster.Environment "production"}}
+teapot_admission_controller_runtime_policy_enabled: "false"
+teapot_admission_controller_runtime_policy_default: "require-on-demand"
+{{else}}
+teapot_admission_controller_runtime_policy_enabled: "true"
+teapot_admission_controller_runtime_policy_default: "allow-spot"
+{{end}}
+# Enforce a certain policy (<empty>|allow-spot|require-on-demand) for a cluster,
+# leave empty for falling back to the default.
+teapot_admission_controller_runtime_policy_enforced: ""
+# Enable hard spot assignment. Only relevant when node_lifecycle_provider=zalando
+teapot_admission_controller_runtime_policy_spot_hard_assignment: "false"
+
+# Enable and configure prevent scale down annotation
+{{if eq .Cluster.Environment "production"}}
+teapot_admission_controller_prevent_scale_down_enabled: "false"
+teapot_admission_controller_prevent_scale_down_allowed: "true"
+{{else}}
+teapot_admission_controller_prevent_scale_down_enabled: "true"
+teapot_admission_controller_prevent_scale_down_allowed: "false"
+{{end}}
 
 # etcd cluster
 {{if eq .Cluster.Environment "production"}}
