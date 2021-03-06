@@ -15,22 +15,6 @@ write_files:
       AWS_DEFAULT_REGION={{ .Cluster.Region }}
 
   - owner: root:root
-    path: /etc/kubernetes/kubeconfig
-    content: |
-      apiVersion: v1
-      kind: Config
-      clusters:
-      - name: local
-        cluster:
-          server: http://127.0.0.1:8080
-      users:
-      - name: kubelet
-      contexts:
-      - context:
-          cluster: local
-          user: kubelet
-
-  - owner: root:root
     path: /etc/kubernetes/config/kubelet.yaml
     content: |
       # https://github.com/kubernetes/kubernetes/blob/v1.13.6/staging/src/k8s.io/kubelet/config/v1beta1/types.go
@@ -114,7 +98,6 @@ write_files:
           args:
           - --apiserver-count={{ .Values.apiserver_count }}
           - --bind-address=0.0.0.0
-          - --insecure-bind-address=0.0.0.0
           - --etcd-servers={{ .NodePool.ConfigItems.etcd_endpoints }}
 {{- if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
           - --etcd-cafile=/etc/kubernetes/ssl/etcd-ca.pem
@@ -144,12 +127,7 @@ write_files:
           - --authorization-webhook-version=v1
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
           - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true,EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},ServiceAccountIssuerDiscovery=true
-          - --anonymous-auth=false
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
-          {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
-          - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
-          - --service-account-issuer=kubernetes/serviceaccount
-          {{- end }}
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
           - --service-account-jwks-uri={{ .Cluster.APIServerURL }}/openid/v1/jwks
@@ -189,8 +167,9 @@ write_files:
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           livenessProbe:
             httpGet:
+              scheme: HTTPS
               host: 127.0.0.1
-              port: 8080
+              port: 443
               path: /healthz
             initialDelaySeconds: 120
             timeoutSeconds: 15
@@ -198,9 +177,6 @@ write_files:
           - containerPort: 443
             hostPort: 443
             name: https
-          - containerPort: 8080
-            hostPort: 8080
-            name: local
           volumeMounts:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
@@ -231,9 +207,12 @@ write_files:
             requests:
               cpu: 50m
               memory: 100Mi
+          env:
+            - name: KUBECONFIG
+              value: /etc/kubernetes/admission-controller-kubeconfig
           args:
             - --address=:8085
-            - --master=http://127.0.0.1:8080
+            - --master=https://127.0.0.1:443
             - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
             - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
 {{- if index .Cluster.ConfigItems "application_registry_url" }}
@@ -247,6 +226,9 @@ write_files:
           volumeMounts:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
+              readOnly: true
+            - mountPath: /etc/kubernetes/admission-controller-kubeconfig
+              name: admission-controller-kubeconfig
               readOnly: true
 {{- if or (eq .Cluster.ConfigItems.routegroups_validation "provisioned") (eq .Cluster.ConfigItems.routegroups_validation "enabled") }}
         - name: routegroups-admission-webhook
@@ -349,7 +331,7 @@ write_files:
             - name: TOKENINFO_URLS
               value: https://identity.zalando.com=http://127.0.0.1:9021/oauth2/tokeninfo{{ if ne .Cluster.Environment "production" }},https://sandbox.identity.zalando.com=http://127.0.0.1:9022/oauth2/tokeninfo{{end}}
             - name: USER_GROUPS
-              value: kubelet=system:masters,stups_cluster-lifecycle-manager=system:masters{{if eq .Cluster.Environment "e2e"}},stups_kubernetes-on-aws-e2e=system:masters{{end}}
+              value: control-plane-kubelet=system:masters,teapot-admission-controller=system:masters,kubelet=system:masters,stups_cluster-lifecycle-manager=system:masters{{if eq .Cluster.Environment "e2e"}},stups_kubernetes-on-aws-e2e=system:masters{{end}}
           volumeMounts:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
@@ -457,13 +439,7 @@ write_files:
             h: Path("/kube-system/healthz")
               -> setPath("/healthz")
               -> disableAccessLog()
-              -> "http://127.0.0.1:8080";
-            o: Path("/.well-known/openid-configuration")
-              -> disableAccessLog()
-              -> "http://127.0.0.1:8080";
-            k: Path("/openid/v1/jwks")
-              -> disableAccessLog()
-              -> "http://127.0.0.1:8080";
+              -> "https://127.0.0.1:443";
             all: *
               -> disableAccessLog()
               -> "https://127.0.0.1:443";
@@ -524,6 +500,10 @@ write_files:
           hostPath:
             path: /var/run/kmsplugin
             type: DirectoryOrCreate
+        - hostPath:
+            path: /etc/kubernetes/admission-controller-kubeconfig
+            type: File
+          name: admission-controller-kubeconfig
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-controller-manager.yaml
@@ -547,7 +527,7 @@ write_files:
         - name: kube-controller-manager
           image: nonexistent.zalan.do/teapot/kube-controller-manager:fixed
           args:
-          - --kubeconfig=/etc/kubernetes/controller-kubeconfig
+          - --kubeconfig=/etc/kubernetes/controller-manager-kubeconfig
           - --leader-elect=true
           - --service-account-private-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
@@ -583,7 +563,7 @@ write_files:
             name: ssl-certs-kubernetes
             readOnly: true
           - mountPath: /etc/kubernetes
-            name: kubeconfig
+            name: config
             readOnly: true
         hostNetwork: true
         volumes:
@@ -592,7 +572,7 @@ write_files:
           name: ssl-certs-kubernetes
         - hostPath:
             path: /etc/kubernetes
-          name: kubeconfig
+          name: config
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-scheduler.yaml
@@ -617,7 +597,7 @@ write_files:
         - name: kube-scheduler
           image: nonexistent.zalan.do/teapot/kube-scheduler:fixed
           args:
-          - --master=http://127.0.0.1:8080
+          - --kubeconfig=/etc/kubernetes/scheduler-kubeconfig
           - --leader-elect=true
           - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},NonPreemptingPriority=true,GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
@@ -635,6 +615,21 @@ write_files:
               port: 10251
             initialDelaySeconds: 15
             timeoutSeconds: 15
+          volumeMounts:
+          - mountPath: /etc/kubernetes/scheduler-kubeconfig
+            name: kubeconfig
+            readOnly: true
+          - mountPath: /etc/kubernetes/ssl
+            name: ssl-certs-kubernetes
+            readOnly: true
+        volumes:
+        - hostPath:
+            path: /etc/kubernetes/ssl
+          name: ssl-certs-kubernetes
+        - hostPath:
+            path: /etc/kubernetes/scheduler-kubeconfig
+            type: File
+          name: kubeconfig
 
   - owner: root:root
     path: /etc/kubernetes/config/tokenfile.csv
