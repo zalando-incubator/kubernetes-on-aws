@@ -36,7 +36,6 @@ skipper_ingress_max_replicas: "180"
 skipper_ingress_min_replicas: "3"
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1Gi"
-skipper_ingress_tracing_buffer: "32768"
 enable_dedicate_nodepool_skipper: "false"
 skipper_suppress_route_update_logs: "true"
 {{if eq .Cluster.Environment "e2e"}}
@@ -61,6 +60,15 @@ skipper_close_idle_conns_period: "20s"
 skipper_idle_timeout_server: "62s"
 skipper_read_timeout_server: "5m"
 skipper_write_timeout_server: "60s"
+
+# skipper startup settings
+{{if eq .Cluster.Environment "production"}}
+skipper_readiness_init_delay_seconds: 60
+skipper_liveness_init_delay_seconds: 30
+{{else}}
+skipper_readiness_init_delay_seconds: 1
+skipper_liveness_init_delay_seconds: 30
+{{end}}
 
 # skipper redis settings
 enable_dedicate_nodepool_skipper_redis: "false"
@@ -99,9 +107,13 @@ skipper_max_tcp_listener_queue: "-1"
 skipper_ingress_opentracing_excluded_proxy_tags: "skipper.route"
 skipper_ingress_opentracing_backend_name_tag: "true"
 # lightstep
+skipper_ingress_tracing_buffer: "32768"
 skipper_ingress_lightstep_grpc_max_msg_size: 16384000
 skipper_ingress_lightstep_min_period: "500ms"
 skipper_ingress_lightstep_max_period: "2500ms"
+skipper_ingress_lightstep_max_log_key_len: 20
+skipper_ingress_lightstep_max_log_value_len: 128
+skipper_ingress_lightstep_max_logs_per_span: 20
 skipper_ingress_lightstep_propagators: "lightstep"
 # set to "log-events" to enable
 skipper_ingress_lightstep_log_events: ""
@@ -316,6 +328,32 @@ teapot_admission_controller_topology_spread: optin
 
 teapot_admission_controller_validate_base_images: "false"
 
+# Supported providers: 'zalando' or 'spotio'
+teapot_admission_controller_node_lifecycle_provider: "zalando"
+
+# Enable and configure runtime-policy annotation
+{{if eq .Cluster.Environment "production"}}
+teapot_admission_controller_runtime_policy_enabled: "false"
+teapot_admission_controller_runtime_policy_default: "require-on-demand"
+{{else}}
+teapot_admission_controller_runtime_policy_enabled: "true"
+teapot_admission_controller_runtime_policy_default: "allow-spot"
+{{end}}
+# Enforce a certain policy (<empty>|allow-spot|require-on-demand) for a cluster,
+# leave empty for falling back to the default.
+teapot_admission_controller_runtime_policy_enforced: ""
+# Enable hard spot assignment. Only relevant when node_lifecycle_provider=zalando
+teapot_admission_controller_runtime_policy_spot_hard_assignment: "false"
+
+# Enable and configure prevent scale down annotation
+{{if eq .Cluster.Environment "production"}}
+teapot_admission_controller_prevent_scale_down_enabled: "false"
+teapot_admission_controller_prevent_scale_down_allowed: "true"
+{{else}}
+teapot_admission_controller_prevent_scale_down_enabled: "true"
+teapot_admission_controller_prevent_scale_down_allowed: "false"
+{{end}}
+
 # etcd cluster
 {{if eq .Cluster.Environment "production"}}
 etcd_instance_count: "5"
@@ -341,8 +379,7 @@ coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_18: {{ amiID "zalando-ubuntu-kubernetes-production-v1.18.12-master-131" "861068367966" }}
-kuberuntu_image_v1_19: {{ amiID "zalando-ubuntu-kubernetes-production-v1.19.7-master-140" "861068367966"}}
+kuberuntu_image_v1_19: {{ amiID "zalando-ubuntu-kubernetes-production-v1.19.8-master-148" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -370,6 +407,9 @@ pod_max_pids: "4096"
 
 # the cpu management policy which should be used by the kubelet
 cpu_manager_policy: "none"
+
+# sysctl names allowed to be used in security policies, comma-separated
+allowed_unsafe_sysctls: "net.ipv4.tcp_keepalive_time,net.ipv4.tcp_keepalive_intvl,net.ipv4.tcp_keepalive_probes,net.ipv4.tcp_syn_retries,net.ipv4.tcp_retries2"
 
 # enable CSIMigration feature flag
 enable_csi_migration: "false"
@@ -530,3 +570,12 @@ enable_control_plane_profiling: "false"
 # Enable use of Privileged PSP (running privileged pods) in non system namespaces.
 # TODO: remove once all clusters have been migrated away from privileged pods
 privileged_psp_enabled: "false"
+
+# TODO: remove after CLM is updated
+clm_new_userdata_path: "true"
+
+{{if eq .Cluster.Environment "production"}}
+experimental_proxy_use_serviceaccount: "false"
+{{else}}
+experimental_proxy_use_serviceaccount: "true"
+{{end}}

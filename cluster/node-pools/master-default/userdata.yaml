@@ -69,9 +69,9 @@ write_files:
         cpu: "100m"
         memory: "282Mi"
       allowedUnsafeSysctls:
-        - net.ipv4.tcp_keepalive_time
-        - net.ipv4.tcp_keepalive_intvl
-        - net.ipv4.tcp_keepalive_probes
+{{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
+        - {{$sysctl}}
+{{- end }}
       authentication:
         anonymous:
           enabled: true
@@ -214,7 +214,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-106
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-111
           name: admission-controller
           lifecycle:
             preStop:
@@ -347,7 +347,7 @@ write_files:
             - name: TOKENINFO_URLS
               value: https://identity.zalando.com=http://127.0.0.1:9021/oauth2/tokeninfo{{ if ne .Cluster.Environment "production" }},https://sandbox.identity.zalando.com=http://127.0.0.1:9022/oauth2/tokeninfo{{end}}
             - name: USER_GROUPS
-              value: kubelet=system:masters,stups_cluster-lifecycle-manager=system:masters
+              value: kubelet=system:masters,stups_cluster-lifecycle-manager=system:masters{{if eq .Cluster.Environment "e2e"}},stups_kubernetes-on-aws-e2e=system:masters{{end}}
           volumeMounts:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs

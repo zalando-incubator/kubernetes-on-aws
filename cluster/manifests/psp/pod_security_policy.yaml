@@ -20,9 +20,9 @@ spec:
   supplementalGroups:
     rule: RunAsAny
   allowedUnsafeSysctls:
-    - net.ipv4.tcp_keepalive_time
-    - net.ipv4.tcp_keepalive_intvl
-    - net.ipv4.tcp_keepalive_probes
+{{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
+    - {{$sysctl}}
+{{- end }}
   volumes:
   - '*'
   allowedCapabilities:
@@ -58,9 +58,9 @@ spec:
   supplementalGroups:
     rule: RunAsAny
   allowedUnsafeSysctls:
-    - net.ipv4.tcp_keepalive_time
-    - net.ipv4.tcp_keepalive_intvl
-    - net.ipv4.tcp_keepalive_probes
+{{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
+    - {{$sysctl}}
+{{- end }}
   volumes:
   - awsElasticBlockStore
   - configMap
