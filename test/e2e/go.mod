@@ -16,7 +16,7 @@ require (
 	github.com/spf13/viper v1.4.0
 	github.com/szuecs/routegroup-client v0.17.8-0.20200915193527-b33447c7d964
 	github.com/zalando-incubator/kube-aws-iam-controller v0.1.2
-	github.com/zalando-incubator/stackset-controller v1.3.25
+	github.com/zalando-incubator/stackset-controller v1.3.26
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
 	k8s.io/apiserver v0.0.0
