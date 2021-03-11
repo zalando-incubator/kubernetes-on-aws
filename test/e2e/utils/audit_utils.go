@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strings"
 
+	authnv1 "k8s.io/api/authentication/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -40,7 +41,7 @@ type AuditEvent struct {
 	RequestURI         string
 	Verb               string
 	Code               int32
-	User               string
+	User               authnv1.UserInfo
 	ImpersonatedUser   string
 	ImpersonatedGroups string
 	Resource           string
@@ -166,7 +167,7 @@ func testEventFromInternal(e *auditinternal.Event) (AuditEvent, error) {
 		Stage:      e.Stage,
 		RequestURI: e.RequestURI,
 		Verb:       e.Verb,
-		User:       e.User.Username,
+		User:       e.User,
 	}
 	if e.ObjectRef != nil {
 		event.Namespace = e.ObjectRef.Namespace

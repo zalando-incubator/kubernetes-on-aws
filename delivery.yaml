@@ -35,16 +35,18 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env:
+      env: &apply_env
       - name: DEPLOYMENT_PATH
         value: test/e2e
       - name: IAM_ROLE_ARN
         value: "arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint"
+      - name: APPLICATION
+        value: kubernetes-on-aws-e2e
     end2end_tests:
       metadata:
         name: e2e
         labels:
-          application: teapot-kubernetes-e2e
+          application: kubernetes-on-aws-e2e
         annotations:
           zalando.org/runtime-policy: require-on-demand
       spec:
@@ -67,78 +69,83 @@ pipeline:
             - name: HOSTED_ZONE
               valueFrom:
                 configMapKeyRef:
-                  name: teapot-kubernetes-e2e-config
+                  name: kubernetes-on-aws-e2e-config
                   key: "HOSTED_ZONE"
             - name: REGION
               valueFrom:
                 configMapKeyRef:
-                  name: teapot-kubernetes-e2e-config
+                  name: kubernetes-on-aws-e2e-config
                   key: "REGION"
             - name: AWS_ACCOUNT
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "AWS_ACCOUNT"
             - name: ZMON_ROOT_ACCOUNT_ROLE
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "ZMON_ROOT_ACCOUNT_ROLE"
             - name: AUDITTRAIL_ROOT_ACCOUNT_ROLE
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "AUDITTRAIL_ROOT_ACCOUNT_ROLE"
             - name: APISERVER_BUSINESS_PARTNER_IDS
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "APISERVER_BUSINESS_PARTNER_IDS"
             - name: LIGHTSTEP_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "LIGHTSTEP_TOKEN"
             - name: OWNER
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "OWNER"
             - name: VPC_ID
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "VPC_ID"
             - name: EFS_ID
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "EFS_ID"
             - name: SPOTIO_ACCOUNT_ID
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "SPOTIO_ACCOUNT_ID"
             - name: SPOTIO_ACCESS_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "SPOTIO_ACCESS_TOKEN"
             - name: WORKER_SHARED_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "WORKER_SHARED_SECRET"
             - name: ETCD_CLIENT_CA_CERT
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "ETCD_CLIENT_CA_CERT"
             - name: ETCD_CLIENT_CA_KEY
               valueFrom:
                 secretKeyRef:
-                  name: teapot-kubernetes-e2e-config-secret
+                  name: kubernetes-on-aws-e2e-config-secret
                   key: "ETCD_CLIENT_CA_KEY"
+            - name: CLUSTER_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: kubernetes-on-aws-e2e-credentials
+                  key: "cluster-token-secret"
           resources:
             limits:
               cpu: 500m
@@ -158,16 +165,12 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env:
-      - name: DEPLOYMENT_PATH
-        value: test/e2e
-      - name: IAM_ROLE_ARN
-        value: "arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint"
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
         labels:
-          application: teapot-kubernetes-e2e
+          application: kubernetes-on-aws-e2e
         annotations:
           zalando.org/runtime-policy: require-on-demand
       spec:
@@ -198,16 +201,12 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env:
-      - name: DEPLOYMENT_PATH
-        value: test/e2e
-      - name: IAM_ROLE_ARN
-        value: "arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint"
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
         labels:
-          application: teapot-kubernetes-e2e
+          application: kubernetes-on-aws-e2e
         annotations:
           zalando.org/runtime-policy: require-on-demand
       spec:
@@ -239,16 +238,12 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env:
-      - name: DEPLOYMENT_PATH
-        value: test/e2e
-      - name: IAM_ROLE_ARN
-        value: "arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint"
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
         labels:
-          application: teapot-kubernetes-e2e
+          application: kubernetes-on-aws-e2e
         annotations:
           zalando.org/runtime-policy: require-on-demand
       spec:

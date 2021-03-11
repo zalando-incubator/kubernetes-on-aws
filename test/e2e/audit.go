@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zalando-incubator/kubernetes-on-aws/tests/e2e/utils"
+	authnv1 "k8s.io/api/authentication/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -21,8 +22,16 @@ import (
 )
 
 var (
-	auditTestUser = "kubelet"
-	patch, _      = json.Marshal(jsonpatch.Patch{})
+	auditTestUser = authnv1.UserInfo{
+		Username: "zalando-iam:zalando:service:stups_kubernetes-on-aws-e2e",
+		UID:      "zalando-iam:zalando:service:stups_kubernetes-on-aws-e2e",
+		Groups: []string{
+			"system:masters",
+			"zalando-iam:realm:services",
+			"system:authenticated",
+		},
+	}
+	patch, _ = json.Marshal(jsonpatch.Patch{})
 )
 
 var _ = framework.KubeDescribe("Audit", func() {
