@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1-0.20200911221209-6c9ddb17dfd0
+    controller-gen.kubebuilder.io/version: v0.5.0
   creationTimestamp: null
   name: stacksets.zalando.org
 spec:
@@ -432,6 +432,12 @@ spec:
                                 averageUtilization:
                                   format: int32
                                   type: integer
+                                container:
+                                  description: optional container name that can be
+                                    used to scale based on CPU or Memory metrics of
+                                    a specific container as opposed to an average
+                                    of all containers in a pod.
+                                  type: string
                                 endpoint:
                                   description: MetricsEndpoint specified the endpoint
                                     where the custom endpoint where the metrics can
@@ -677,6 +683,49 @@ spec:
                                 on a single metric (only `type` and one other matching
                                 field should be set at once).
                               properties:
+                                containerResource:
+                                  description: container resource refers to a resource
+                                    metric (such as those specified in requests and
+                                    limits) known to Kubernetes describing a single
+                                    container in each pod of the current scale target
+                                    (e.g. CPU or memory). Such metrics are built in
+                                    to Kubernetes, and have special scaling options
+                                    on top of those available to normal per-pod metrics
+                                    using the "pods" source. This is an alpha feature
+                                    and can be enabled by the HPAContainerMetrics
+                                    feature flag.
+                                  properties:
+                                    container:
+                                      description: container is the name of the container
+                                        in the pods of the scaling target
+                                      type: string
+                                    name:
+                                      description: name is the name of the resource
+                                        in question.
+                                      type: string
+                                    targetAverageUtilization:
+                                      description: targetAverageUtilization is the
+                                        target value of the average of the resource
+                                        metric across all relevant pods, represented
+                                        as a percentage of the requested value of
+                                        the resource for the pods.
+                                      format: int32
+                                      type: integer
+                                    targetAverageValue:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: targetAverageValue is the target
+                                        value of the average of the resource metric
+                                        across all relevant pods, as a raw value (instead
+                                        of as a percentage of the request), similar
+                                        to the "pods" metric source type.
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                  required:
+                                  - container
+                                  - name
+                                  type: object
                                 external:
                                   description: external refers to a global metric
                                     that is not associated with any Kubernetes object.
@@ -986,9 +1035,12 @@ spec:
                                   - name
                                   type: object
                                 type:
-                                  description: type is the type of metric source.  It
-                                    should be one of "Object", "Pods" or "Resource",
-                                    each mapping to a matching field in the object.
+                                  description: 'type is the type of metric source.  It
+                                    should be one of "ContainerResource", "External",
+                                    "Object", "Pods" or "Resource", each mapping to
+                                    a matching field in the object. Note: "ContainerResource"
+                                    type is available on when the feature-gate HPAContainerMetrics
+                                    is enabled'
                                   type: string
                               required:
                               - type
@@ -2779,8 +2831,7 @@ spec:
                                         lifecycle, when it might take a long time
                                         to load data or warm a cache, than during
                                         steady-state operation. This cannot be updated.
-                                        This is a beta feature enabled by the StartupProbe
-                                        feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes'
+                                        More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes'
                                       properties:
                                         exec:
                                           description: One and only one of the following
@@ -5437,8 +5488,7 @@ spec:
                                         lifecycle, when it might take a long time
                                         to load data or warm a cache, than during
                                         steady-state operation. This cannot be updated.
-                                        This is a beta feature enabled by the StartupProbe
-                                        feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes'
+                                        More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes'
                                       properties:
                                         exec:
                                           description: One and only one of the following
@@ -5831,7 +5881,7 @@ spec:
                                       It will have no effect on ephemeral volume types
                                       such as: secret, configmaps and emptydir. Valid
                                       values are "OnRootMismatch" and "Always". If
-                                      not specified defaults to "Always".'
+                                      not specified, "Always" is used.'
                                     type: string
                                   runAsGroup:
                                     description: The GID to run the entrypoint of
@@ -6737,26 +6787,19 @@ spec:
                                                 dataSource:
                                                   description: 'This field can be
                                                     used to specify either: * An existing
-                                                    VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot
-                                                    - Beta) * An existing PVC (PersistentVolumeClaim)
-                                                    * An existing custom resource/object
+                                                    VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)
+                                                    * An existing PVC (PersistentVolumeClaim)
+                                                    * An existing custom resource
                                                     that implements data population
-                                                    (Alpha) In order to use VolumeSnapshot
-                                                    object types, the appropriate
-                                                    feature gate must be enabled (VolumeSnapshotDataSource
-                                                    or AnyVolumeDataSource) If the
-                                                    provisioner or an external controller
-                                                    can support the specified data
-                                                    source, it will create a new volume
-                                                    based on the contents of the specified
-                                                    data source. If the specified
-                                                    data source is not supported,
-                                                    the volume will not be created
-                                                    and the failure will be reported
-                                                    as an event. In the future, we
-                                                    plan to support more data source
-                                                    types and the behavior of the
-                                                    provisioner may change.'
+                                                    (Alpha) In order to use custom
+                                                    resource types that implement
+                                                    data population, the AnyVolumeDataSource
+                                                    feature gate must be enabled.
+                                                    If the provisioner or an external
+                                                    controller can support the specified
+                                                    data source, it will create a
+                                                    new volume based on the contents
+                                                    of the specified data source.'
                                                   properties:
                                                     apiGroup:
                                                       description: APIGroup is the
@@ -7606,8 +7649,6 @@ spec:
                                                 type: object
                                             type: object
                                           type: array
-                                      required:
-                                      - sources
                                       type: object
                                     quobyte:
                                       description: Quobyte represents a Quobyte mount
@@ -7986,12 +8027,16 @@ spec:
                                   type: string
                                 nodePort:
                                   description: 'The port on each node on which this
-                                    service is exposed when type=NodePort or LoadBalancer.
-                                    Usually assigned by the system. If specified,
-                                    it will be allocated to the service if unused
-                                    or else creation of the service will fail. Default
-                                    is to auto-allocate a port if the ServiceType
-                                    of this Service requires one. More info: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport'
+                                    service is exposed when type is NodePort or LoadBalancer.  Usually
+                                    assigned by the system. If a value is specified,
+                                    in-range, and not in use it will be used, otherwise
+                                    the operation will fail.  If not specified, a
+                                    port will be allocated if this Service requires
+                                    one.  If this field is specified when creating
+                                    a Service which does not need it, creation will
+                                    fail. This field will be wiped when updating a
+                                    Service to no longer need it (e.g. changing type
+                                    from NodePort to ClusterIP). More info: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport'
                                   format: int32
                                   type: integer
                                 port:
