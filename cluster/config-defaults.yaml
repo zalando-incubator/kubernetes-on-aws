@@ -424,6 +424,16 @@ apiserver_proxy: "true"
 #
 apiserver_nlb: "exclusive"
 
+# defines temporary rollout of NLB with TCP healthcheck. This assumes
+# apiserver_nlb=exclusive. The options are:
+#
+#   hooked:    New NLB is hooked up to ASG but DNS still points to old NLB
+#   active:    New NLB will be fully functional and DNS points to the new NLB
+#   promoted:  New NLB will be fully functional and old NLB will be unhooked
+#   exclusive: New NLB will be fully functional and old NLB will be removed
+#
+apiserver_nlb_tcp: "hooked"
+
 # when set to true, service account tokens can be used from outside the cluster
 # requires apiserver_proxy to be set to "true"
 allow_external_service_accounts: "false"
