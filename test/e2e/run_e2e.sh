@@ -70,7 +70,7 @@ preferences: {}
 users:
 - name: e2e-bot
   user:
-    token: ${WORKER_SHARED_SECRET}
+    token: ${CLUSTER_ADMIN_TOKEN}
 EOF
 
 KUBECONFIG="$(pwd)/kubeconfig"
@@ -107,7 +107,7 @@ if [ "$create_cluster" = true ]; then
 
         # Create cluster
         clm provision \
-            --token="${WORKER_SHARED_SECRET}" \
+            --token="${CLUSTER_ADMIN_TOKEN}" \
             --directory="$(pwd)/$BASE_CFG_PATH" \
             --debug \
             --registry=base_cluster.yaml
@@ -125,7 +125,7 @@ if [ "$create_cluster" = true ]; then
 
     # Update cluster
     clm provision \
-        --token="${WORKER_SHARED_SECRET}" \
+        --token="${CLUSTER_ADMIN_TOKEN}" \
         --directory="$(pwd)/../.." \
         --debug \
         --registry=head_cluster.yaml
@@ -225,7 +225,7 @@ if [ "$decommission_cluster" = true ]; then
     # delete cluster
     clm decommission \
         --remove-volumes \
-        --token="${WORKER_SHARED_SECRET}" \
+        --token="${CLUSTER_ADMIN_TOKEN}" \
         --directory="$(pwd)/../.." \
         --assumed-role=cluster-lifecycle-manager-entrypoint \
         --debug \
