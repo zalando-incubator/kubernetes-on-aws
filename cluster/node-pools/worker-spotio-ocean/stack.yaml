@@ -143,6 +143,8 @@ Resources:
             tagValue: {{ .NodePool.Profile }}
           - tagKey: kubernetes.io/role/node-pool
             tagValue: "true"
+          - tagKey: InfrastructureComponent
+            tagValue: "true"
           # only node pools without taints should be attached to Ingress Load balancer
 {{- if or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
           - tagKey: zalando.org/ingress-enabled
