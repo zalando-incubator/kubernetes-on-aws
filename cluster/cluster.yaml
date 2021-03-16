@@ -52,6 +52,7 @@ Resources:
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
 {{- if ne .Cluster.ConfigItems.apiserver_nlb "disabled" }}
+{{- if ne .Cluster.ConfigItems.apiserver_nlb_tcp "exclusive" }}
   MasterLoadBalancerNLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -109,6 +110,62 @@ Resources:
       Port: 443
       Protocol: TLS
 {{- end }}
+  MasterLoadBalancerNLBTCP:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: "{{.Cluster.LocalID}}-nlb-tcp"
+      LoadBalancerAttributes:
+        - Key: load_balancing.cross_zone.enabled
+          Value: true
+      Scheme: internet-facing
+      Subnets:
+  {{ with $values := .Values }}
+  {{ range $az := $values.availability_zones }}
+        - "{{ index $values.subnets $az }}"
+  {{ end }}
+  {{ end }}
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+        - Key: "application"
+          Value: kube-apiserver
+        - Key: "component"
+          Value: "kube-apiserver"
+      Type: network
+  MasterLoadBalancerNLBTargetGroupTCP:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+      HealthCheckProtocol: TCP
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Name: "{{.Cluster.LocalID}}-nlb-tcp"
+      Port: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+      Protocol: TLS
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+        - Key: "application"
+          Value: kube-apiserver
+        - Key: "component"
+          Value: "kube-apiserver"
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 60
+  MasterLoadBalancerNLBListenerTCP:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Certificates:
+        - CertificateArn: "{{.Values.load_balancer_certificate}}"
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref MasterLoadBalancerNLBTargetGroupTCP
+      LoadBalancerArn: !Ref MasterLoadBalancerNLBTCP
+      Port: 443
+      Protocol: TLS
+{{- end }}
 {{- if ne .Cluster.ConfigItems.apiserver_nlb "exclusive" }}
   MasterLoadBalancer:
     Properties:
@@ -121,7 +178,7 @@ Resources:
       HealthCheck:
         HealthyThreshold: '2'
         Interval: '10'
-        Target: 'HTTP:8080/healthz'
+        Target: 'SSL:{{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}'
         Timeout: '5'
         UnhealthyThreshold: '2'
       Listeners:
@@ -170,6 +227,15 @@ Resources:
   MasterLoadBalancerVersionDomain:
     Properties:
     {{- if or (eq .Cluster.ConfigItems.apiserver_nlb "active") (eq .Cluster.ConfigItems.apiserver_nlb "promoted") (eq .Cluster.ConfigItems.apiserver_nlb "exclusive") }}
+    {{- if or (eq .Cluster.ConfigItems.apiserver_nlb_tcp "active") (eq .Cluster.ConfigItems.apiserver_nlb_tcp "promoted") (eq .Cluster.ConfigItems.apiserver_nlb_tcp "exclusive") }}
+      AliasTarget:
+        DNSName: !GetAtt
+          - MasterLoadBalancerNLBTCP
+          - DNSName
+        HostedZoneId: !GetAtt
+          - MasterLoadBalancerNLBTCP
+          - CanonicalHostedZoneID
+    {{- else }}
       AliasTarget:
         DNSName: !GetAtt
           - MasterLoadBalancerNLB
@@ -177,6 +243,7 @@ Resources:
         HostedZoneId: !GetAtt
           - MasterLoadBalancerNLB
           - CanonicalHostedZoneID
+    {{- end }}
     {{- else }}
       AliasTarget:
         DNSName: !GetAtt
@@ -1945,10 +2012,16 @@ Outputs:
     Value: !Ref MasterLoadBalancer
 {{- end }}
 {{- if ne .Cluster.ConfigItems.apiserver_nlb "disabled" }}
+{{- if ne .Cluster.ConfigItems.apiserver_nlb_tcp "exclusive" }}
   MasterLoadBalancerNLBTargetGroup:
     Export:
       Name: '{{.Cluster.ID}}:master-load-balancer-nlb-target-group'
     Value: !Ref MasterLoadBalancerNLBTargetGroup
+{{- end }}
+  MasterLoadBalancerNLBTargetGroupTCP:
+    Export:
+      Name: '{{.Cluster.ID}}:master-load-balancer-nlb-tcp-target-group'
+    Value: !Ref MasterLoadBalancerNLBTargetGroupTCP
 {{- end }}
   MasterSecurityGroup:
     Export:
