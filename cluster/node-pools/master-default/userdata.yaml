@@ -278,7 +278,7 @@ write_files:
               name: ssl-certs-kubernetes
               readOnly: true
 {{- end}}
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.8.0
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.8.1
           name: webhook
           ports:
           - containerPort: 8081
@@ -334,9 +334,6 @@ write_files:
 {{ end }}
 {{ if eq .Cluster.ConfigItems.enable_default_sa "true"}}
             - --enable-default-sa
-{{ end }}
-{{ if eq .Cluster.ConfigItems.enable_cdp_sa "true"}}
-            - --enable-cdp-sa
 {{ end }}
             - --system-users=zalando-iam:zalando:service:credentials-provider
             - --system-users=system:serviceaccount:api-infrastructure:api-monitoring-controller
