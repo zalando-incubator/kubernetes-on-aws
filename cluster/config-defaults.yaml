@@ -285,18 +285,21 @@ teapot_admission_controller_daemonset_reserved_memory: "64Gi"
 
 {{if eq .Cluster.Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
+teapot_admission_controller_validate_base_images: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
 teapot_admission_controller_namespace_delete_protection_enabled: "true"
 {{else if eq .Cluster.Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
+teapot_admission_controller_validate_base_images: "false"
 teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
 teapot_admission_controller_namespace_delete_protection_enabled: "false"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
+teapot_admission_controller_validate_base_images: "false"
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "false"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
@@ -318,8 +321,6 @@ teapot_admission_controller_node_not_ready_taint: "true"
 teapot_admission_controller_crd_role_provisioning_allowed_api_groups: "flink.k8s.io"
 
 teapot_admission_controller_topology_spread: optin
-
-teapot_admission_controller_validate_base_images: "false"
 
 # Supported providers: 'zalando' or 'spotio'
 teapot_admission_controller_node_lifecycle_provider: "zalando"
@@ -423,6 +424,16 @@ apiserver_proxy: "true"
 #   exclusive:   NLB will be fully functional and ELB will be removed
 #
 apiserver_nlb: "exclusive"
+
+# defines temporary rollout of NLB with TCP healthcheck. This assumes
+# apiserver_nlb=exclusive. The options are:
+#
+#   hooked:    New NLB is hooked up to ASG but DNS still points to old NLB
+#   active:    New NLB will be fully functional and DNS points to the new NLB
+#   promoted:  New NLB will be fully functional and old NLB will be unhooked
+#   exclusive: New NLB will be fully functional and old NLB will be removed
+#
+apiserver_nlb_tcp: "hooked"
 
 # when set to true, service account tokens can be used from outside the cluster
 # requires apiserver_proxy to be set to "true"
