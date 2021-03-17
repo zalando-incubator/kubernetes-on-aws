@@ -108,6 +108,9 @@ Resources:
       - Key: 'zalando.de/cluster-local-id/{{ $data.Cluster.LocalID }}'
         PropagateAtLaunch: true
         Value: owned
+      - Key: zalando.org/pod-max-pids
+        PropagateAtLaunch: true
+        Value: "{{ $data.NodePool.ConfigItems.pod_max_pids }}"
       VPCZoneIdentifier:
         - "{{ index $data.Values.subnets $az }}"
     Type: 'AWS::AutoScaling::AutoScalingGroup'
