@@ -112,6 +112,9 @@ if [ "$create_cluster" = true ]; then
             --directory="$(pwd)/$BASE_CFG_PATH" \
             --debug \
             --registry=base_cluster.yaml
+
+        # Wait for the resources to be ready
+        ./wait-for-update.py --timeout 1200
     fi
 
     # generate updated clusters.yaml
@@ -131,9 +134,9 @@ if [ "$create_cluster" = true ]; then
         --debug \
         --registry=head_cluster.yaml
 
-    # wait for resouces to be ready
+    # Wait for the resources to be ready after the update
     # TODO: make a feature of CLM --wait-for-kube-system
-    "./wait-for-update.py" --timeout 1200
+    ./wait-for-update.py --timeout 1200
 fi
 
 if [ "$e2e" = true ]; then
