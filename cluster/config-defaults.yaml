@@ -574,3 +574,14 @@ enable_control_plane_profiling: "false"
 clm_new_userdata_path: "true"
 
 experimental_proxy_use_serviceaccount: "true"
+
+# Defines the rollout status of the node auth feature. The possible values are:
+#
+#   disabled:   node auth is disabled on the API server side
+#   supported:  API servers support both node auth and the legacy shared secrets, NodeRestriction is disabled
+#   enabled:    same as supported, but the workers use node auth to authenticate instead of shared secrets. NodeRestriction is still disabled
+#   exclusive:  node auth is used exclusively, NodeRestriction is enabled, shared secrets are disabled
+#
+# Warning: enabling/disabling should only be done one step at a time (e.g. exclusive->enabled->supported->disabled),
+# otherwise you can end up with nodes that can't join the cluster.
+node_auth: "disabled"
