@@ -40,6 +40,7 @@ import (
 
 const (
 	awsCliImage = "registry.opensource.zalan.do/teapot/awscli:master-1"
+	pauseImage  = "registry.opensource.zalan.do/teapot/pause-amd64:3.2"
 )
 
 var (
@@ -420,6 +421,23 @@ func createSkipperBackendDeployment(nameprefix, namespace, route string, label m
 						},
 					},
 				},
+			},
+		},
+	}
+}
+
+func pauseContainer() v1.Container {
+	return v1.Container{
+		Name:  "pause",
+		Image: pauseImage,
+		Resources: v1.ResourceRequirements{
+			Limits: map[corev1.ResourceName]resource.Quantity{
+				corev1.ResourceCPU:    resource.MustParse("1m"),
+				corev1.ResourceMemory: resource.MustParse("50Mi"),
+			},
+			Requests: map[corev1.ResourceName]resource.Quantity{
+				corev1.ResourceCPU:    resource.MustParse("1m"),
+				corev1.ResourceMemory: resource.MustParse("50Mi"),
 			},
 		},
 	}
