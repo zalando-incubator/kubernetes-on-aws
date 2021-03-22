@@ -1,5 +1,5 @@
 {{ if eq .Environment "e2e" }}
-{{ range $pool := split "default-worker-splitaz,default-worker,worker-limit-az,worker-instance-storage,default-worker-spotio" "," }}
+{{ range $pool := split "default-worker-splitaz,default-worker,worker-limit-az,worker-instance-storage,default-worker-spotio,worker-spot-termination-handler" "," }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,12 +23,18 @@ spec:
       nodeSelector:
       {{ if eq $pool "default-worker-spotio" }}
         dedicated: spotio
+      {{ else }}
+        node.kubernetes.io/node-pool: "{{$pool}}"
+      {{ end }}
       tolerations:
+      {{ if eq $pool "default-worker-spotio" }}
         - effect: NoSchedule
           key: dedicated
           value: spotio
-      {{ else }}
-        node.kubernetes.io/node-pool: "{{$pool}}"
+      {{ else if eq $pool "worker-spot-termination-handler" }}
+        - effect: NoSchedule
+          key: dedicated
+          value: spot-termination-handler
       {{ end }}
       terminationGracePeriodSeconds: 0
       containers:
