@@ -132,14 +132,14 @@ write_files:
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/16
           - --secure-port=443
-          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority
+          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority{{if eq .Cluster.ConfigItems.node_auth "exclusive"}},NodeRestriction{{end}}
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
-          - --authorization-mode=Webhook,RBAC
+          - --authorization-mode={{if ne .Cluster.ConfigItems.node_auth "disabled" }}Node,{{end}}Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --authorization-webhook-version=v1
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
@@ -214,7 +214,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-115
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-116
           name: admission-controller
           lifecycle:
             preStop:
@@ -278,7 +278,7 @@ write_files:
               name: ssl-certs-kubernetes
               readOnly: true
 {{- end}}
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.8.0
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:master-111
           name: webhook
           ports:
           - containerPort: 8081
@@ -304,6 +304,11 @@ write_files:
               memory: 50Mi
           args:
             - --tokens-file=/etc/kubernetes/config/tokenfile.csv
+
+{{- if ne .Cluster.ConfigItems.node_auth "disabled" }}
+            - --node-auth-cluster-id={{.Cluster.ID}}
+            - "--node-auth-role-arn=arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-worker"
+{{- end }}
 
             # Collaborator roles
             - --role-mapping=Administrator=cn=Administrator,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
@@ -334,9 +339,6 @@ write_files:
 {{ end }}
 {{ if eq .Cluster.ConfigItems.enable_default_sa "true"}}
             - --enable-default-sa
-{{ end }}
-{{ if eq .Cluster.ConfigItems.enable_cdp_sa "true"}}
-            - --enable-cdp-sa
 {{ end }}
             - --system-users=zalando-iam:zalando:service:credentials-provider
             - --system-users=system:serviceaccount:api-infrastructure:api-monitoring-controller
@@ -416,7 +418,7 @@ write_files:
           - name: BUSINESS_PARTNERS
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
-        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.5.5
+        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.5.6
           name: image-policy-webhook
           args:
           - --policy={{ .Cluster.ConfigItems.image_policy }}
@@ -636,8 +638,11 @@ write_files:
 
   - owner: root:root
     path: /etc/kubernetes/config/tokenfile.csv
+    permissions: 0600
     content: |
+{{- if ne .Cluster.ConfigItems.node_auth "exclusive" }}
       {{ .Cluster.ConfigItems.worker_shared_secret }},kubelet,kubelet
+{{- end }}
 
   - owner: root:root
     path: /etc/kubernetes/config/image-policy-webhook.yaml
