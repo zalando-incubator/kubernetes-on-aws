@@ -85,6 +85,15 @@ clusters:
     profile: worker-default
     min_size: 0
     max_size: 21
+  - discount_strategy: spot
+    instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
+    min_size: 0
+    max_size: 3
+    profile: worker-default
+    name: worker-spot-termination-handler
+    config_items:
+      labels: dedicated=spot-termination-handler
+      taints: dedicated=spot-termination-handler:NoSchedule
   - name: default-worker-spotio
     profile: worker-spotio
     instance_types:
