@@ -37,6 +37,9 @@ Resources:
       - Key: node.kubernetes.io/role
         PropagateAtLaunch: true
         Value: master
+      - Key: zalando.org/pod-max-pids
+        PropagateAtLaunch: true
+        Value: "{{ .NodePool.ConfigItems.pod_max_pids }}"
       VPCZoneIdentifier:
 {{ with $values := .Values }}
 {{ range $az := $values.availability_zones }}

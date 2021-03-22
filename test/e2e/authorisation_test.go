@@ -926,22 +926,12 @@ var _ = framework.KubeDescribe("Authorization tests [Authorization] [RBAC] [Zala
 				expect: allowed,
 			}},
 		}, {
-
 			name: "CDP",
 			items: []testItem{{
-				name:    "cdp service account can create namespaces",
-				request: req().verb("create").res("namespaces").user("system:serviceaccount:default:cdp"),
-				expect:  allowed,
-			}, {
-				name: "cdp service account can't escalate permissions",
-				request: req().verb("escalate").apiGroup("rbac.authorization.k8s.io").res("clusterroles").
-					user("system:serviceaccount:default:cdp"),
-				expect: denied,
-			}, {
 				name: "non system user (cdp-controller) should NOT be allowed get secrets in kube-system.",
 				request: req().ns("kube-system").verb("get").res("secrets").
-					user("zalando-iam:zalando:service:credprov-cdp-controller-cluster-token"),
-				expect: deniedReason("unauthorized access to system namespace by zalando-iam:zalando:service:credprov-cdp-controller-cluster-token/[]"),
+					user("zalando-iam:zalando:service:stups_cdp-controller"),
+				expect: deniedReason("unauthorized access to system namespace by zalando-iam:zalando:service:stups_cdp-controller/[]"),
 			}},
 		},
 		} {
