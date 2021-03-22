@@ -52,10 +52,10 @@ Resources:
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
 {{- if ne .Cluster.ConfigItems.apiserver_nlb "disabled" }}
-  MasterLoadBalancerNLB:
+  MasterLoadBalancerNLBTCP:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: "{{.Cluster.LocalID}}-nlb"
+      Name: "{{.Cluster.LocalID}}-nlb-tcp"
       LoadBalancerAttributes:
         - Key: load_balancing.cross_zone.enabled
           Value: true
@@ -74,16 +74,15 @@ Resources:
         - Key: "component"
           Value: "kube-apiserver"
       Type: network
-  MasterLoadBalancerNLBTargetGroup:
+  MasterLoadBalancerNLBTargetGroupTCP:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
-      HealthCheckPath: /healthz
-      HealthCheckPort: 8080
-      HealthCheckProtocol: HTTP
+      HealthCheckPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+      HealthCheckProtocol: TCP
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 2
-      Name: "{{.Cluster.LocalID}}-nlb"
+      Name: "{{.Cluster.LocalID}}-nlb-tcp"
       Port: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
       Protocol: TLS
       Tags:
@@ -97,15 +96,15 @@ Resources:
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
           Value: 60
-  MasterLoadBalancerNLBListener:
+  MasterLoadBalancerNLBListenerTCP:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       Certificates:
         - CertificateArn: "{{.Values.load_balancer_certificate}}"
       DefaultActions:
       - Type: forward
-        TargetGroupArn: !Ref MasterLoadBalancerNLBTargetGroup
-      LoadBalancerArn: !Ref MasterLoadBalancerNLB
+        TargetGroupArn: !Ref MasterLoadBalancerNLBTargetGroupTCP
+      LoadBalancerArn: !Ref MasterLoadBalancerNLBTCP
       Port: 443
       Protocol: TLS
 {{- end }}
@@ -121,7 +120,7 @@ Resources:
       HealthCheck:
         HealthyThreshold: '2'
         Interval: '10'
-        Target: 'HTTP:8080/healthz'
+        Target: 'SSL:{{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}'
         Timeout: '5'
         UnhealthyThreshold: '2'
       Listeners:
@@ -172,10 +171,10 @@ Resources:
     {{- if or (eq .Cluster.ConfigItems.apiserver_nlb "active") (eq .Cluster.ConfigItems.apiserver_nlb "promoted") (eq .Cluster.ConfigItems.apiserver_nlb "exclusive") }}
       AliasTarget:
         DNSName: !GetAtt
-          - MasterLoadBalancerNLB
+          - MasterLoadBalancerNLBTCP
           - DNSName
         HostedZoneId: !GetAtt
-          - MasterLoadBalancerNLB
+          - MasterLoadBalancerNLBTCP
           - CanonicalHostedZoneID
     {{- else }}
       AliasTarget:
@@ -216,6 +215,10 @@ Resources:
           FromPort: 8085
           IpProtocol: tcp
           ToPort: 8085
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9085
+          IpProtocol: tcp
+          ToPort: 9085
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 7980
           IpProtocol: tcp
@@ -348,7 +351,7 @@ Resources:
 {{- range $index, $element := sgIngressRanges .Cluster.ConfigItems.open_sg_ingress_ranges }}
         - CidrIp: {{ $element.CIDR }}
           FromPort: {{ $element.FromPort }}
-          IpProtocol: tcp
+          IpProtocol: {{ $element.Protocol }}
           ToPort: {{ $element.ToPort }}
 {{- end }}
 {{- end }}
@@ -1941,10 +1944,10 @@ Outputs:
     Value: !Ref MasterLoadBalancer
 {{- end }}
 {{- if ne .Cluster.ConfigItems.apiserver_nlb "disabled" }}
-  MasterLoadBalancerNLBTargetGroup:
+  MasterLoadBalancerNLBTargetGroupTCP:
     Export:
-      Name: '{{.Cluster.ID}}:master-load-balancer-nlb-target-group'
-    Value: !Ref MasterLoadBalancerNLBTargetGroup
+      Name: '{{.Cluster.ID}}:master-load-balancer-nlb-tcp-target-group'
+    Value: !Ref MasterLoadBalancerNLBTargetGroupTCP
 {{- end }}
   MasterSecurityGroup:
     Export:

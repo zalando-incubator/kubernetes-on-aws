@@ -45,7 +45,8 @@ export LOCAL_ID="${LOCAL_ID:-"e2e-${CDP_BUILD_VERSION}"}"
 export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
-export WORKER_SHARED_SECRET="${WORKER_SHARED_SECRET:-"$(pwgen 30 -n1)"}"
+WORKER_SHARED_SECRET="$(pwgen 30 -n1)"
+export WORKER_SHARED_SECRET
 
 # Generate a new key for this E2E run
 SERVICE_ACCOUNT_PRIVATE_KEY="$(openssl genrsa | base64 | tr -d '\n')"
@@ -70,7 +71,7 @@ preferences: {}
 users:
 - name: e2e-bot
   user:
-    token: ${WORKER_SHARED_SECRET}
+    token: ${CLUSTER_ADMIN_TOKEN}
 EOF
 
 KUBECONFIG="$(pwd)/kubeconfig"
@@ -107,10 +108,13 @@ if [ "$create_cluster" = true ]; then
 
         # Create cluster
         clm provision \
-            --token="${WORKER_SHARED_SECRET}" \
+            --token="${CLUSTER_ADMIN_TOKEN}" \
             --directory="$(pwd)/$BASE_CFG_PATH" \
             --debug \
             --registry=base_cluster.yaml
+
+        # Wait for the resources to be ready
+        ./wait-for-update.py --timeout 1200
     fi
 
     # generate updated clusters.yaml
@@ -125,14 +129,14 @@ if [ "$create_cluster" = true ]; then
 
     # Update cluster
     clm provision \
-        --token="${WORKER_SHARED_SECRET}" \
+        --token="${CLUSTER_ADMIN_TOKEN}" \
         --directory="$(pwd)/../.." \
         --debug \
         --registry=head_cluster.yaml
 
-    # wait for resouces to be ready
+    # Wait for the resources to be ready after the update
     # TODO: make a feature of CLM --wait-for-kube-system
-    "./wait-for-update.py" --timeout 1200
+    ./wait-for-update.py --timeout 1200
 
     # sleep 90 minutes
     echo "sleep 90 minutes to expire Service Account tokens"
@@ -202,7 +206,7 @@ if [ "$e2e" = true ]; then
            '{timestamp: now | todate, success: ($exitStatus == 0), targetBranch: $targetBranch, author: $author, prNumber: $prNumber, head: $head, version: $buildVersion }' \
            > junit_reports/metadata.json
 
-        TARGET_DIR="$(printf "junit-reports/%04d-%02d/%s" "$(date +%Y)" "$(date +%V)" "$LOCAL_ID")"
+        TARGET_DIR="$(printf "junit-reports/%04d-%02d/%s" "$(date +%Y)" "$(date +%-V)" "$LOCAL_ID")"
         echo "Uploading test results to S3 ($TARGET_DIR)"
         aws s3 cp \
           --acl bucket-owner-full-control \
@@ -229,7 +233,7 @@ if [ "$decommission_cluster" = true ]; then
     # delete cluster
     clm decommission \
         --remove-volumes \
-        --token="${WORKER_SHARED_SECRET}" \
+        --token="${CLUSTER_ADMIN_TOKEN}" \
         --directory="$(pwd)/../.." \
         --assumed-role=cluster-lifecycle-manager-entrypoint \
         --debug \

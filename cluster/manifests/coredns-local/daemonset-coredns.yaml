@@ -25,6 +25,9 @@ spec:
         component: cluster-dns
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/path: /metrics
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9153"
     spec:
       initContainers:
       - name: ensure-apiserver
@@ -40,7 +43,7 @@ spec:
       containers:
 {{ if eq .Cluster.ConfigItems.dns_cache "unbound" }}
       - name: unbound
-        image: registry.opensource.zalan.do/teapot/unbound:1.13.0
+        image: registry.opensource.zalan.do/teapot/unbound:1.13.1
         ports:
         - containerPort: 53
           name: dns-udp

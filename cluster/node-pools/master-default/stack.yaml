@@ -37,6 +37,9 @@ Resources:
       - Key: node.kubernetes.io/role
         PropagateAtLaunch: true
         Value: master
+      - Key: zalando.org/pod-max-pids
+        PropagateAtLaunch: true
+        Value: "{{ .NodePool.ConfigItems.pod_max_pids }}"
       VPCZoneIdentifier:
 {{ with $values := .Values }}
 {{ range $az := $values.availability_zones }}
@@ -45,7 +48,7 @@ Resources:
 {{ end }}
 {{- if and (ne .Cluster.ConfigItems.apiserver_nlb "disabled") (ne .Cluster.ConfigItems.apiserver_nlb "provisioned") }}
       TargetGroupARNs:
-      - !ImportValue '{{ .Cluster.ID }}:master-load-balancer-nlb-target-group'
+      - !ImportValue '{{ .Cluster.ID }}:master-load-balancer-nlb-tcp-target-group'
 {{- end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
   LaunchTemplate:

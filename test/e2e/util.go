@@ -38,6 +38,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
+const (
+	awsCliImage = "registry.opensource.zalan.do/teapot/awscli:master-1"
+	pauseImage  = "registry.opensource.zalan.do/teapot/pause-amd64:3.2"
+)
+
 var (
 	errTimeout      = errors.New("Timeout")
 	poll            = 2 * time.Second
@@ -303,7 +308,7 @@ func createConfigMap(name, namespace string, labels, data map[string]string) *v1
 	}
 }
 
-func createAWSCLIPod(nameprefix, namespace, s3Bucket string) *v1.Pod {
+func createAWSCLIPod(nameprefix, namespace string, args []string) *v1.Pod {
 	return &v1.Pod{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Pod",
@@ -316,15 +321,9 @@ func createAWSCLIPod(nameprefix, namespace, s3Bucket string) *v1.Pod {
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
-					Name:    "aws-cli",
-					Image:   "alpine:3.9",
-					Command: []string{"/bin/sh", "-c"},
-					Args: []string{
-						fmt.Sprintf(`
-apk add -U py-pip;
-pip install awscli;
-aws s3 ls s3://%s`, s3Bucket),
-					},
+					Name:  "aws-cli",
+					Image: awsCliImage,
+					Args:  args,
 				},
 			},
 			RestartPolicy: v1.RestartPolicyNever,
@@ -333,7 +332,7 @@ aws s3 ls s3://%s`, s3Bucket),
 }
 
 func createAWSIAMPod(nameprefix, namespace, s3Bucket string) *v1.Pod {
-	pod := createAWSCLIPod(nameprefix, namespace, s3Bucket)
+	pod := createAWSCLIPod(nameprefix, namespace, []string{"s3", "ls", fmt.Sprintf("s3://%s", s3Bucket)})
 	pod.Spec.Containers[0].Env = []v1.EnvVar{
 		{
 			Name:  "AWS_SHARED_CREDENTIALS_FILE",
@@ -422,6 +421,23 @@ func createSkipperBackendDeployment(nameprefix, namespace, route string, label m
 						},
 					},
 				},
+			},
+		},
+	}
+}
+
+func pauseContainer() v1.Container {
+	return v1.Container{
+		Name:  "pause",
+		Image: pauseImage,
+		Resources: v1.ResourceRequirements{
+			Limits: map[corev1.ResourceName]resource.Quantity{
+				corev1.ResourceCPU:    resource.MustParse("1m"),
+				corev1.ResourceMemory: resource.MustParse("50Mi"),
+			},
+			Requests: map[corev1.ResourceName]resource.Quantity{
+				corev1.ResourceCPU:    resource.MustParse("1m"),
+				corev1.ResourceMemory: resource.MustParse("50Mi"),
 			},
 		},
 	}

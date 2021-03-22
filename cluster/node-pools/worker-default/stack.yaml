@@ -85,7 +85,6 @@ Resources:
 {{- else }}
         Value: "0"
 {{- end }}
-
 {{- if index .NodePool.ConfigItems "labels"}}
   {{- range split .NodePool.ConfigItems.labels ","}}
     {{- $label := split . "="}}
@@ -105,6 +104,9 @@ Resources:
       - Key: 'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}'
         PropagateAtLaunch: true
         Value: owned
+      - Key: zalando.org/pod-max-pids
+        PropagateAtLaunch: true
+        Value: "{{ .NodePool.ConfigItems.pod_max_pids }}"
       VPCZoneIdentifier:
 {{ with $values := .Values }}
 {{ range $az := $values.availability_zones }}

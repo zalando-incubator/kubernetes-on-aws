@@ -17,6 +17,9 @@ spec:
         application: kube-node-ready-controller
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
     spec:
       dnsConfig:
         options:
@@ -30,7 +33,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: controller
-        image: pierone.stups.zalan.do/teapot/kube-node-ready-controller:master-7
+        image: pierone.stups.zalan.do/teapot/kube-node-ready-controller:master-9
         resources:
           requests:
             cpu: {{.Cluster.ConfigItems.kube_node_ready_controller_cpu}}
