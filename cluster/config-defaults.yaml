@@ -373,7 +373,7 @@ coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_19: {{ amiID "zalando-ubuntu-kubernetes-production-v1.19.8-master-148" "861068367966"}}
+kuberuntu_image_v1_19: {{ amiID "zalando-ubuntu-kubernetes-production-v1.19.9-master-152" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -424,16 +424,6 @@ apiserver_proxy: "true"
 #   exclusive:   NLB will be fully functional and ELB will be removed
 #
 apiserver_nlb: "exclusive"
-
-# defines temporary rollout of NLB with TCP healthcheck. This assumes
-# apiserver_nlb=exclusive. The options are:
-#
-#   hooked:    New NLB is hooked up to ASG but DNS still points to old NLB
-#   active:    New NLB will be fully functional and DNS points to the new NLB
-#   promoted:  New NLB will be fully functional and old NLB will be unhooked
-#   exclusive: New NLB will be fully functional and old NLB will be removed
-#
-apiserver_nlb_tcp: "promoted"
 
 # when set to true, service account tokens can be used from outside the cluster
 # requires apiserver_proxy to be set to "true"
