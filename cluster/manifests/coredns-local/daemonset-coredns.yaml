@@ -43,7 +43,11 @@ spec:
       containers:
 {{ if eq .Cluster.ConfigItems.dns_cache "unbound" }}
       - name: unbound
-        image: registry.opensource.zalan.do/teapot/unbound:1.13.1
+        image: registry.opensource.zalan.do/teapot/unbound:1.13.1-1
+        args:
+        - -d
+        - -c
+        - /etc/unbound/unbound.conf
         ports:
         - containerPort: 53
           name: dns-udp
@@ -51,6 +55,18 @@ spec:
         - containerPort: 53
           name: dns-tcp
           protocol: TCP
+{{- if eq .Cluster.ConfigItems.expirimental_dns_unbound_liveness_probe "true" }}
+        livenessProbe:
+          exec:
+            command:
+            - dig
+            - "+short"
+            - "@127.0.0.1"
+            - "kubernetes.default.svc.cluster.local"
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+{{- end }}
         resources:
           requests:
             ephemeral-storage: 256Mi
@@ -58,7 +74,7 @@ spec:
             cpu: {{.Cluster.ConfigItems.dns_unbound_cpu}}
             memory: {{.Cluster.ConfigItems.dns_unbound_mem}}
         volumeMounts:
-        - mountPath: /opt/unbound/etc/unbound/unbound.conf
+        - mountPath: /etc/unbound/unbound.conf
           name: config-volume
           readOnly: true
           subPath: unbound.conf
