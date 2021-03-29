@@ -52,64 +52,6 @@ Resources:
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
 {{- if ne .Cluster.ConfigItems.apiserver_nlb "disabled" }}
-{{- if ne .Cluster.ConfigItems.apiserver_nlb_tcp "exclusive" }}
-  MasterLoadBalancerNLB:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: "{{.Cluster.LocalID}}-nlb"
-      LoadBalancerAttributes:
-        - Key: load_balancing.cross_zone.enabled
-          Value: true
-      Scheme: internet-facing
-      Subnets:
-  {{ with $values := .Values }}
-  {{ range $az := $values.availability_zones }}
-        - "{{ index $values.subnets $az }}"
-  {{ end }}
-  {{ end }}
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-        - Key: "application"
-          Value: kube-apiserver
-        - Key: "component"
-          Value: "kube-apiserver"
-      Type: network
-  MasterLoadBalancerNLBTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      HealthCheckIntervalSeconds: 10
-      HealthCheckPath: /healthz
-      HealthCheckPort: 8080
-      HealthCheckProtocol: HTTP
-      HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 2
-      Name: "{{.Cluster.LocalID}}-nlb"
-      Port: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
-      Protocol: TLS
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-        - Key: "application"
-          Value: kube-apiserver
-        - Key: "component"
-          Value: "kube-apiserver"
-      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
-      TargetGroupAttributes:
-        - Key: deregistration_delay.timeout_seconds
-          Value: 60
-  MasterLoadBalancerNLBListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      Certificates:
-        - CertificateArn: "{{.Values.load_balancer_certificate}}"
-      DefaultActions:
-      - Type: forward
-        TargetGroupArn: !Ref MasterLoadBalancerNLBTargetGroup
-      LoadBalancerArn: !Ref MasterLoadBalancerNLB
-      Port: 443
-      Protocol: TLS
-{{- end }}
   MasterLoadBalancerNLBTCP:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -227,7 +169,6 @@ Resources:
   MasterLoadBalancerVersionDomain:
     Properties:
     {{- if or (eq .Cluster.ConfigItems.apiserver_nlb "active") (eq .Cluster.ConfigItems.apiserver_nlb "promoted") (eq .Cluster.ConfigItems.apiserver_nlb "exclusive") }}
-    {{- if or (eq .Cluster.ConfigItems.apiserver_nlb_tcp "active") (eq .Cluster.ConfigItems.apiserver_nlb_tcp "promoted") (eq .Cluster.ConfigItems.apiserver_nlb_tcp "exclusive") }}
       AliasTarget:
         DNSName: !GetAtt
           - MasterLoadBalancerNLBTCP
@@ -235,15 +176,6 @@ Resources:
         HostedZoneId: !GetAtt
           - MasterLoadBalancerNLBTCP
           - CanonicalHostedZoneID
-    {{- else }}
-      AliasTarget:
-        DNSName: !GetAtt
-          - MasterLoadBalancerNLB
-          - DNSName
-        HostedZoneId: !GetAtt
-          - MasterLoadBalancerNLB
-          - CanonicalHostedZoneID
-    {{- end }}
     {{- else }}
       AliasTarget:
         DNSName: !GetAtt
@@ -456,6 +388,10 @@ Resources:
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 30000
           IpProtocol: tcp
+          ToPort: 32767
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 30000
+          IpProtocol: udp
           ToPort: 32767
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 53
@@ -2012,12 +1948,6 @@ Outputs:
     Value: !Ref MasterLoadBalancer
 {{- end }}
 {{- if ne .Cluster.ConfigItems.apiserver_nlb "disabled" }}
-{{- if ne .Cluster.ConfigItems.apiserver_nlb_tcp "exclusive" }}
-  MasterLoadBalancerNLBTargetGroup:
-    Export:
-      Name: '{{.Cluster.ID}}:master-load-balancer-nlb-target-group'
-    Value: !Ref MasterLoadBalancerNLBTargetGroup
-{{- end }}
   MasterLoadBalancerNLBTargetGroupTCP:
     Export:
       Name: '{{.Cluster.ID}}:master-load-balancer-nlb-tcp-target-group'
