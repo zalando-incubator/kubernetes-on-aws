@@ -84,7 +84,8 @@ data:
     - job_name: 'kubernetes-apiservers'
       scheme: https
       tls_config:
-        insecure_skip_verify: true
+        ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        server_name: "kubernetes.default.svc.cluster.local"
       bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
       kubernetes_sd_configs:
       - role: pod
@@ -98,10 +99,10 @@ data:
       - action: replace
         source_labels: ['__meta_kubernetes_pod_label_application']
         target_label: application
-    - job_name: 'teapot-admission-controller'
-      scheme: https
-      tls_config:
-        insecure_skip_verify: true
+    - &apiserver_container_metric
+      job_name: 'teapot-admission-controller'
+      scheme: http
+      metrics_path: "/admission-controller"
       kubernetes_sd_configs:
       - role: pod
         namespaces:
@@ -110,26 +111,22 @@ data:
       relabel_configs:
       - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_container_port_number]
         action: keep
-        regex: kube-apiserver;8085
+        regex: kube-apiserver;9005
       - action: replace
         source_labels: ['__meta_kubernetes_pod_label_application']
         target_label: application
-    - job_name: 'routegroups-admission-webhook'
-      scheme: https
-      tls_config:
-        insecure_skip_verify: true
-      kubernetes_sd_configs:
-        - role: pod
-          namespaces:
-            names:
-              - kube-system
-      relabel_configs:
-        - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_container_port_number]
-          action: keep
-          regex: kube-apiserver;9085
-        - action: replace
-          source_labels: ['__meta_kubernetes_pod_label_application']
-          target_label: application
+    - <<: *apiserver_container_metric
+      job_name: "auth-webhook"
+      metrics_path: "/auth-webhook"
+    - <<: *apiserver_container_metric
+      job_name: "routegroups-admission-webhook"
+      metrics_path: "/routegroups-admission-webhook"
+    - <<: *apiserver_container_metric
+      job_name: "image-policy-webhook"
+      metrics_path: "/image-policy-webhook"
+    - <<: *apiserver_container_metric
+      job_name: "aws-encryption-provider"
+      metrics_path: "/aws-encryption-provider"
     - job_name: 'kube-state-metrics'
       scheme: http
       honor_labels: true
