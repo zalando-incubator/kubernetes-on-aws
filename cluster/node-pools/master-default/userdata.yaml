@@ -233,7 +233,7 @@ write_files:
               readOnly: true
 {{- if or (eq .Cluster.ConfigItems.routegroups_validation "provisioned") (eq .Cluster.ConfigItems.routegroups_validation "enabled") }}
         - name: routegroups-admission-webhook
-          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.151
+          image: registry.opensource.zalan.do/teapot/skipper:v0.13.48
           args:
             - webhook
             - --address=:9085
@@ -412,7 +412,7 @@ write_files:
               exec:
                 command: ["/bin/sh", "-c",  " sleep 60"]
         - name: skipper-proxy
-          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.150
+          image: registry.opensource.zalan.do/teapot/skipper:v0.13.48
           args:
           - skipper
           - -access-log-strip-query
@@ -462,6 +462,68 @@ write_files:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
             readOnly: true
+        - name: skipper-metrics
+          image: registry.opensource.zalan.do/teapot/skipper:v0.13.48
+          args:
+          - skipper
+          - -access-log-strip-query
+          - -address=:9005
+          - -support-listener=:9905
+          - -insecure
+          - -runtime-metrics
+          - -enable-connection-metrics
+          - -enable-prometheus-metrics
+          - -write-timeout-server=60m
+          - -inline-routes
+          - |
+            admission_controller: Path("/admission-controller")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "https://127.0.0.1:8085";
+            auth_webhook: Path("/auth-webhook")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "http://127.0.0.1:8081";
+            routegroups_admission_webhook: Path("/routegroups-admission-webhook")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "https://127.0.0.1:9085";
+            image_policy_webhook: Path("/image-policy-webhook")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "http://127.0.0.1:8083";
+            aws_encryption_provider: Path("/aws-encryption-provider")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "http://localhost:8086";
+            skipper_proxy: Path("/skipper-proxy")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "http://127.0.0.1:9911";
+            skipper_metrics: Path("/skipper-metrics")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "http://127.0.0.1:9905";
+            healthz: Path("/healthz")
+              -> disableAccessLog()
+              -> status(200)
+              -> inlineContent("ok")
+              -> <shunt>;
+          ports:
+          - containerPort: 9005
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9005
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 250Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
         - name: aws-encryption-provider
           image: registry.opensource.zalan.do/teapot/aws-encryption-provider:master-1
           command:
