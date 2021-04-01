@@ -403,6 +403,17 @@ Resources:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
     Type: 'AWS::EC2::SecurityGroupIngress'
+  MasterSecurityGroupIngressFromWorkerToSkipperMetrics:
+    Properties:
+      FromPort: 9005
+      ToPort: 9005
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+    Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroup:
     Properties:
       GroupDescription: !Ref 'AWS::StackName'
@@ -456,10 +467,6 @@ Resources:
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 30000
           IpProtocol: tcp
-          ToPort: 32767
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-          FromPort: 30000
-          IpProtocol: udp
           ToPort: 32767
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 53
