@@ -166,14 +166,14 @@ write_files:
           - --kubelet-client-key=/etc/kubernetes/ssl/kubelet-client-key.pem
           - --shutdown-delay-duration=60s
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
-          livenessProbe:
+          readinessProbe:
             httpGet:
               scheme: HTTPS
               host: 127.0.0.1
               port: 443
-              path: /healthz
-            initialDelaySeconds: 120
-            timeoutSeconds: 15
+              path: /readyz
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
           ports:
           - containerPort: 443
             hostPort: 443
@@ -435,8 +435,8 @@ write_files:
             s: JWTPayloadAllKV("iss", "kubernetes/serviceaccount")
               -> enableAccessLog()
               -> {{ if eq .ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }};
-            h: Path("/kube-system/healthz")
-              -> setPath("/healthz")
+            h: Path("/kube-system/readyz")
+              -> setPath("/readyz")
               -> disableAccessLog()
               -> "https://127.0.0.1:443";
             all: *
@@ -447,7 +447,7 @@ write_files:
           readinessProbe:
             httpGet:
               scheme: HTTPS
-              path: /kube-system/healthz
+              path: /kube-system/readyz
               port: 8443
             timeoutSeconds: 5
           resources:
