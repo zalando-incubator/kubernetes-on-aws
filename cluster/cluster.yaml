@@ -79,12 +79,12 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
-      HealthCheckPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+      HealthCheckPort: 8443
       HealthCheckProtocol: TCP
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 2
       Name: "{{.Cluster.LocalID}}-nlb-tcp"
-      Port: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+      Port: 8443
       Protocol: TLS
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
@@ -135,13 +135,13 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 10
-      HealthCheckPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+      HealthCheckPort: 8443
       HealthCheckProtocol: HTTPS
       HealthCheckPath: "/readyz"
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 2
       Name: "{{.Cluster.LocalID}}-nlb"
-      Port: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+      Port: 8443
       Protocol: TLS
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
@@ -178,11 +178,11 @@ Resources:
       HealthCheck:
         HealthyThreshold: '2'
         Interval: '10'
-        Target: 'HTTPS:{{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}/healthz'
+        Target: 'HTTPS:8443/healthz'
         Timeout: '5'
         UnhealthyThreshold: '2'
       Listeners:
-        - InstancePort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+        - InstancePort: 8443
           InstanceProtocol: SSL
           LoadBalancerPort: 443
           PolicyNames: []
@@ -263,9 +263,9 @@ Resources:
       SecurityGroupIngress:
 {{- if and (ne .Cluster.ConfigItems.apiserver_nlb "disabled") (ne .Cluster.ConfigItems.apiserver_nlb "provisioned") }}
         - CidrIp: 0.0.0.0/0
-          FromPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+          FromPort: 8443
           IpProtocol: tcp
-          ToPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+          ToPort: 8443
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 8080
           IpProtocol: tcp
@@ -322,14 +322,14 @@ Resources:
 {{- if ne .Cluster.ConfigItems.apiserver_nlb "exclusive" }}
   MasterSecurityGroupIngressFromLoadBalancer:
     Properties:
-      FromPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+      FromPort: 8443
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterLoadBalancerSecurityGroup
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
-      ToPort: {{ if eq .ConfigItems.apiserver_proxy "true" }}8443{{ else }}443{{ end }}
+      ToPort: 8443
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
     Properties:
