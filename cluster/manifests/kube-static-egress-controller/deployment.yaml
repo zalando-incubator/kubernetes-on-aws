@@ -7,7 +7,7 @@ metadata:
     application: kube-static-egress-controller
     version: v0.2.7
 spec:
-  replicas: 1
+  replicas: {{if eq .Cluster.ConfigItems.static_egress_controller_enabled "true"}}1{{else}}0{{end}}
   selector:
     matchLabels:
       application: kube-static-egress-controller
