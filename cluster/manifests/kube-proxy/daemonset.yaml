@@ -36,12 +36,10 @@ spec:
         - --config=/config/kube-proxy.yaml
         - --v=2
         env:
-{{- if eq .Cluster.ConfigItems.experimental_proxy_use_serviceaccount "true" }}
         - name: KUBERNETES_SERVICE_HOST
           value: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
         - name: KUBERNETES_SERVICE_PORT
           value: "443"
-{{- end }}
         - name: HOSTNAME_OVERRIDE
           valueFrom:
             fieldRef:
@@ -57,22 +55,12 @@ spec:
             cpu: {{.Cluster.ConfigItems.kube_proxy_cpu}}
             memory: {{.Cluster.ConfigItems.kube_proxy_memory}}
         volumeMounts:
-{{- if eq .Cluster.ConfigItems.experimental_proxy_use_serviceaccount "true" }}
         - name: kube-api-token
           mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-{{- else }}
-        - name: kubeconfig
-          mountPath: /etc/kubernetes/kubeconfig
-          readOnly: true
-        - name: etc-kube-ssl
-          mountPath: /etc/kubernetes/ssl
-          readOnly: true
-{{- end }}
         - name: kube-proxy-config
           mountPath: /config
           readOnly: true
       volumes:
-{{- if eq .Cluster.ConfigItems.experimental_proxy_use_serviceaccount "true" }}
       - name: kube-api-token
         projected:
           defaultMode: 420
@@ -80,14 +68,6 @@ spec:
             - serviceAccountToken:
                 expirationSeconds: 3600
                 path: token
-{{- else }}
-      - name: kubeconfig
-        hostPath:
-          path: /etc/kubernetes/kubeconfig
-      - name: etc-kube-ssl
-        hostPath:
-          path: /etc/kubernetes/ssl
-{{- end }}
       - name: kube-proxy-config
         configMap:
           name: kube-proxy-config
