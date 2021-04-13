@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-state-metrics
-    version: v1.9.7
+    version: v2.0.0
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: kube-state-metrics
-        version: v1.9.7
+        version: v2.0.0
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
@@ -26,9 +26,10 @@ spec:
       serviceAccountName: kube-state-metrics
       containers:
       - name: kube-state-metrics
-        image: registry.opensource.zalan.do/teapot/kube-state-metrics:v1.9.7
+        image: registry.opensource.zalan.do/teapot/kube-state-metrics:v2.0.0
         args:
-        - --collectors=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments,verticalpodautoscalers
+        - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments,verticalpodautoscalers
+        - --metric-labels-allowlist=pods=[application,component],nodes=[topology.kubernetes.io/zone]
         ports:
         - containerPort: 8080
           name: http-metrics
