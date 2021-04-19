@@ -48,9 +48,6 @@ Resources:
 {{ end }}
 {{- if and (ne .Cluster.ConfigItems.apiserver_nlb "disabled") (ne .Cluster.ConfigItems.apiserver_nlb "provisioned") }}
       TargetGroupARNs:
-{{- if and (ne .Cluster.ConfigItems.apiserver_nlb_https "exclusive") (ne .Cluster.ConfigItems.apiserver_nlb_https "promoted") }}
-      - !ImportValue '{{ .Cluster.ID }}:master-load-balancer-nlb-tcp-target-group'
-{{- end }}
       - !ImportValue '{{ .Cluster.ID }}:master-load-balancer-nlb-target-group'
 {{- end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
