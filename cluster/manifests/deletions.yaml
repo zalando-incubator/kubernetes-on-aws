@@ -176,3 +176,7 @@ post_apply:
     application: external-dns
   namespace: kube-system
   kind: Pod
+{{- if ne .Cluster.ConfigItems.okta_auth_enabled "true" }}
+- name: cluster-admin-okta
+  kind: ClusterRoleBinding
+{{- end }}
