@@ -120,6 +120,14 @@ skipper_ingress_lightstep_log_events: ""
 lightstep_token: ""
 tracing_collector_host: "tracing.stups.zalan.do"
 
+# Skipper new metrics
+# https://github.com/zalando/skipper/pull/1755
+# skipper_host_counter sets the flag -serve-host-counter. It generates a
+# new metric called skipper_serve_host_count. It will be used as
+# replacement for the automatically generated counter of the
+# skipper_serve_host_duration_seconds_count metric.
+skipper_serve_host_counter: "true"
+
 # disabled|provisioned|enabled routegroup validation ( skipper webhook )
 # can be one of disabled|provisioned|enabled
 routegroups_validation: "enabled"
@@ -371,7 +379,7 @@ coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_19: {{ amiID "zalando-ubuntu-kubernetes-production-v1.19.9-master-153" "861068367966"}}
+kuberuntu_image_v1_19: {{ amiID "zalando-ubuntu-kubernetes-production-v1.19.10-master-161" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -428,7 +436,7 @@ apiserver_nlb: "exclusive"
 #   promoted:  New NLB will be fully functional and old NLB will be unhooked
 #   exclusive: New NLB will be fully functional and old NLB will be removed
 #
-apiserver_nlb_https: "hooked"
+apiserver_nlb_https: "promoted"
 
 # when set to true, service account tokens can be used from outside the cluster
 allow_external_service_accounts: "false"
@@ -576,3 +584,7 @@ enable_control_plane_profiling: "false"
 # Warning: enabling/disabling should only be done one step at a time (e.g. exclusive->enabled->supported->disabled),
 # otherwise you can end up with nodes that can't join the cluster.
 node_auth: "supported"
+
+okta_auth_enabled: "false"
+okta_auth_issuer_url: ""
+okta_auth_client_id: "kubernetes.cluster.{{.Cluster.Alias}}"

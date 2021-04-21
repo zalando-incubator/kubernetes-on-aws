@@ -127,6 +127,14 @@ write_files:
           - --authorization-webhook-version=v1
           - --token-auth-file=/etc/kubernetes/config/tokenfile.csv
           - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
+{{- if eq .Cluster.ConfigItems.okta_auth_enabled "true" }}
+          - --oidc-issuer-url={{.Cluster.ConfigItems.okta_auth_issuer_url}}
+          - --oidc-client-id={{.Cluster.ConfigItems.okta_auth_client_id}}
+          - --oidc-username-claim=email
+          - "--oidc-username-prefix=okta:"
+          - --oidc-groups-claim=groups
+          - "--oidc-groups-prefix=okta:"
+{{- end }}
           - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},VolumeSnapshotDataSource={{ .Cluster.ConfigItems.enable_csi_migration }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},NonPreemptingPriority=true,EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},ServiceAccountIssuerDiscovery=true
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
@@ -233,7 +241,7 @@ write_files:
               readOnly: true
 {{- if or (eq .Cluster.ConfigItems.routegroups_validation "provisioned") (eq .Cluster.ConfigItems.routegroups_validation "enabled") }}
         - name: routegroups-admission-webhook
-          image: registry.opensource.zalan.do/teapot/skipper:v0.13.48
+          image: registry.opensource.zalan.do/teapot/skipper:v0.13.53
           args:
             - webhook
             - --address=:9085
@@ -412,7 +420,7 @@ write_files:
               exec:
                 command: ["/bin/sh", "-c",  " sleep 60"]
         - name: skipper-proxy
-          image: registry.opensource.zalan.do/teapot/skipper:v0.13.48
+          image: registry.opensource.zalan.do/teapot/skipper:v0.13.53
           args:
           - skipper
           - -access-log-strip-query
@@ -463,7 +471,7 @@ write_files:
             name: ssl-certs-kubernetes
             readOnly: true
         - name: skipper-metrics
-          image: registry.opensource.zalan.do/teapot/skipper:v0.13.48
+          image: registry.opensource.zalan.do/teapot/skipper:v0.13.53
           args:
           - skipper
           - -access-log-strip-query

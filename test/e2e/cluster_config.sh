@@ -161,7 +161,7 @@ clusters:
       labels: dedicated=spotio
       taints: dedicated=spotio:NoSchedule
   - discount_strategy: spot
-    instance_types: ["p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
+    instance_types: ["g4dn.xlarge", "g4dn.2xlarge", "p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
     name: worker-gpu
     profile: worker-default
     min_size: 0
