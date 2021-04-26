@@ -428,16 +428,6 @@ serialize_image_pulls: "false"
 #
 apiserver_nlb: "exclusive"
 
-# defines temporary rollout of NLB with HTTPS healthcheck. This assumes
-# apiserver_nlb=exclusive. The options are:
-#
-#   hooked:    New NLB is hooked up to ASG but DNS still points to old NLB
-#   active:    New NLB will be fully functional and DNS points to the new NLB
-#   promoted:  New NLB will be fully functional and old NLB will be unhooked
-#   exclusive: New NLB will be fully functional and old NLB will be removed
-#
-apiserver_nlb_https: "promoted"
-
 # when set to true, service account tokens can be used from outside the cluster
 allow_external_service_accounts: "false"
 # issue service account tokens with expiration time.
@@ -560,6 +550,14 @@ spotio_ocean_utilize_reserved_instances: "false"
 # configuration for spot.io controller
 spotio_ocean_controller_cpu: "50m"
 spotio_ocean_controller_memory: "512Mi"
+
+# configuration for the PDB controller
+{{if eq .Cluster.Environment "test" }}
+pdb_controller_non_ready_ttl: "1h"
+{{else}}
+pdb_controller_non_ready_ttl: ""
+{{end}}
+pdb_controller_max_unavailable: "1%"
 
 # Log Kubernetes events to Scalyr
 kubernetes_event_logger_enabled: "true"
