@@ -18,7 +18,6 @@ Configuration in this repository initially was based on kube-aws_, but now depen
 * Authnz Webhook to validate OAuth tokens and authorize access
 
 Lean more about Zalando's cloud native journey by reading the `Zalando Case Study on kubernetes.io`_.
-Please watch our meetup talk `"Kubernetes on AWS at Europe's Leading Online Fashion Platform" on YouTube`_ to learn how we run Kubernetes on AWS in production.
 See our `Running Kubernetes in Production on AWS document`_ for details on the setup.
 
 
