@@ -80,7 +80,7 @@ Directory Structure
 * cluster/etcd-cluster.yaml: Senza Cloud Formation to deploy ETCD
 * cluster/manifests: Kubernetes manifests for system components (will be applied by `Cluster Lifecycle Manager`_)
 * cluster/node-pools: Cloud Formation template files and userdata (cloud-init) for ContainerLinux node-pools (will be applied by `Cluster Lifecycle Manager`_)
-* docs: extracts from internal Zalando documentation (https://kubernetes-on-aws.readthedocs.io/)
+* docs: extracts from internal `Zalando documentation`.
 
 
 .. _Kubernetes: http://kubernetes.io
@@ -109,3 +109,4 @@ Directory Structure
 .. _kube-downscaler: https://github.com/hjacobs/kube-downscaler
 .. _pdb-controller: https://github.com/mikkeloscar/pdb-controller
 .. _OpenTracing: https://opentracing.io
+.. _Zalando documentation: https://kubernetes-on-aws.readthedocs.io/
