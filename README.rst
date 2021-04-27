@@ -4,7 +4,7 @@ Kubernetes on AWS
 
 **WORK IN PROGRESS**
 
-This repo contains configuration templates to provision Kubernetes_ clusters on AWS using Cloud Formation and `Ubuntu Linux`_.
+This repo contains configuration templates to provision Kubernetes_ clusters on AWS using `Cloud Formation`_ and `Ubuntu Linux`_.
 
 Many values are parameterized and values are not always visible. We're focusing on solving our own, specific/Zalando use case.
 However, **we are open to ideas from the community at large about potentially turning this idea into a project that provides universal/general value to others**.
@@ -84,6 +84,7 @@ Directory Structure
 
 
 .. _Kubernetes: http://kubernetes.io
+.. _Cloud Formation: https://aws.amazon.com/cloudformation/
 .. _Ubuntu Linux: https://ubuntu.com/
 .. _CoreOS Container Linux: https://coreos.com/os/docs/latest
 .. _kube-aws: https://github.com/kubernetes-retired/kube-aws
