@@ -84,8 +84,9 @@ Directory Structure
 
 
 .. _Kubernetes: http://kubernetes.io
+.. _Ubuntu Linux: https://ubuntu.com/
 .. _CoreOS Container Linux: https://coreos.com/os/docs/latest
-.. _kube-aws: https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/aws
+.. _kube-aws: https://github.com/kubernetes-retired/kube-aws
 .. _Senza Cloud Formation tool: https://github.com/zalando-stups/senza
 .. _OAuth Token Info: http://planb.readthedocs.io/en/latest/intro.html#token-info
 .. _Cluster Lifecycle Manager: https://github.com/zalando-incubator/cluster-lifecycle-manager
