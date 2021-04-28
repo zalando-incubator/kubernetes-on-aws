@@ -4,7 +4,7 @@ Kubernetes on AWS
 
 **WORK IN PROGRESS**
 
-This repo contains configuration templates to provision Kubernetes_ clusters on AWS using Cloud Formation and `Ubuntu Linux`_.
+This repo contains configuration templates to provision Kubernetes_ clusters on AWS using `Cloud Formation`_ and `Ubuntu Linux`_.
 
 Many values are parameterized and values are not always visible. We're focusing on solving our own, specific/Zalando use case.
 However, **we are open to ideas from the community at large about potentially turning this idea into a project that provides universal/general value to others**.
@@ -18,7 +18,6 @@ Configuration in this repository initially was based on kube-aws_, but now depen
 * Authnz Webhook to validate OAuth tokens and authorize access
 
 Lean more about Zalando's cloud native journey by reading the `Zalando Case Study on kubernetes.io`_.
-Please watch our meetup talk `"Kubernetes on AWS at Europe's Leading Online Fashion Platform" on YouTube`_ to learn how we run Kubernetes on AWS in production.
 See our `Running Kubernetes in Production on AWS document`_ for details on the setup.
 
 
@@ -80,12 +79,14 @@ Directory Structure
 * cluster/etcd-cluster.yaml: Senza Cloud Formation to deploy ETCD
 * cluster/manifests: Kubernetes manifests for system components (will be applied by `Cluster Lifecycle Manager`_)
 * cluster/node-pools: Cloud Formation template files and userdata (cloud-init) for ContainerLinux node-pools (will be applied by `Cluster Lifecycle Manager`_)
-* docs: extracts from internal Zalando documentation (https://kubernetes-on-aws.readthedocs.io/)
+* docs: extracts from internal `Zalando documentation`.
 
 
 .. _Kubernetes: http://kubernetes.io
+.. _Cloud Formation: https://aws.amazon.com/cloudformation/
+.. _Ubuntu Linux: https://ubuntu.com/
 .. _CoreOS Container Linux: https://coreos.com/os/docs/latest
-.. _kube-aws: https://github.com/coreos/coreos-kubernetes/tree/master/multi-node/aws
+.. _kube-aws: https://github.com/kubernetes-retired/kube-aws
 .. _Senza Cloud Formation tool: https://github.com/zalando-stups/senza
 .. _OAuth Token Info: http://planb.readthedocs.io/en/latest/intro.html#token-info
 .. _Cluster Lifecycle Manager: https://github.com/zalando-incubator/cluster-lifecycle-manager
@@ -107,3 +108,4 @@ Directory Structure
 .. _kube-downscaler: https://github.com/hjacobs/kube-downscaler
 .. _pdb-controller: https://github.com/mikkeloscar/pdb-controller
 .. _OpenTracing: https://opentracing.io
+.. _Zalando documentation: https://kubernetes-on-aws.readthedocs.io/
