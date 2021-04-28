@@ -11,7 +11,7 @@ data:
     - name: skipper code by host
       rules:
       - record: job:skipper_code_by_host:sum
-        expr: sum(rate(skipper_serve_host_duration_seconds_count{application="skipper-ingress"}[1m])) by (code)
+        expr: sum(rate(skipper_serve_host_count{application="skipper-ingress"}[1m])) by (code)
 
     - name: skipper sum rate serve_host_duration by bucket
       rules:
@@ -56,7 +56,7 @@ data:
     - name: skipper sum rate serve_host_duration count by host,code
       rules:
       - record: job:skipper_count_by_host_code:sum
-        expr: sum(rate(skipper_serve_host_duration_seconds_count{}[1m])) by (host,code)
+        expr: sum(rate(skipper_serve_host_count{}[1m])) by (host,code)
 
 
   prometheus.yml: |-
