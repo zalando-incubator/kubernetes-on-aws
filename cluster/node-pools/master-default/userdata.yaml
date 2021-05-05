@@ -115,6 +115,8 @@ write_files:
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/16
           - --secure-port=443
+          - --insecure-port=0
+          - --port=0
           - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority{{if eq .Cluster.ConfigItems.node_auth "exclusive"}},NodeRestriction{{end}}
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
