@@ -271,7 +271,7 @@ write_files:
               name: ssl-certs-kubernetes
               readOnly: true
 {{- end}}
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:master-116
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:master-117
           name: webhook
           ports:
           - containerPort: 8081
@@ -300,6 +300,7 @@ write_files:
             - --node-auth-cluster-id={{.Cluster.ID}}
             - "--node-auth-role-arn=arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-worker"
 {{- end }}
+            - --cluster-alias={{.Cluster.Alias}}
 
             # Collaborator roles
             - --role-mapping=Administrator=cn=Administrator,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
@@ -332,6 +333,7 @@ write_files:
             - --enable-default-sa
 {{ end }}
             - --system-users=zalando-iam:zalando:service:credentials-provider
+            - --system-users=zalando-iam:zalando:service:k8sapi_credentials-provider
             - --system-users=system:serviceaccount:api-infrastructure:api-monitoring-controller
             - --collaborator-app-users=zalando-iam:zalando:service:stups_scalyr-key-rotation
           env:
