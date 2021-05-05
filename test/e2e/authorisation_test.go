@@ -785,6 +785,11 @@ var _ = framework.KubeDescribe("Authorization tests [Authorization] [RBAC] [Zala
 					user("zalando-iam:zalando:service:credentials-provider"),
 				expect: allowed,
 			}, {
+				name: "system user (credentials-provider) should be allowed get secrets in kube-system.",
+				request: req().ns("kube-system").verb("get").res("secrets").
+					user("zalando-iam:zalando:service:k8sapi_credentials-provider"),
+				expect: allowed,
+			}, {
 				name: "system user (api-monitoring-controller) can update configmap 'skipper-default-filters' in kube-system.",
 				request: req().ns("kube-system").verb("update").res("configmaps").name("skipper-default-filters").
 					user("system:serviceaccount:api-infrastructure:api-monitoring-controller"),
