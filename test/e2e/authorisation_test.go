@@ -782,11 +782,6 @@ var _ = framework.KubeDescribe("Authorization tests [Authorization] [RBAC] [Zala
 			}, {
 				name: "system user (credentials-provider) should be allowed get secrets in kube-system.",
 				request: req().ns("kube-system").verb("get").res("secrets").
-					user("zalando-iam:zalando:service:credentials-provider"),
-				expect: allowed,
-			}, {
-				name: "system user (credentials-provider) should be allowed get secrets in kube-system.",
-				request: req().ns("kube-system").verb("get").res("secrets").
 					user("zalando-iam:zalando:service:k8sapi_credentials-provider"),
 				expect: allowed,
 			}, {
