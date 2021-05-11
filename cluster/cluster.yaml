@@ -100,6 +100,8 @@ Resources:
   MasterLoadBalancerNLBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
+      AlpnPolicy:
+        - {{ if eq .Cluster.ConfigItems.experimental_nlb_alpn_h2_enabled "true" }}HTTP2Preferred{{else}}None{{end}}
       Certificates:
         - CertificateArn: "{{.Values.load_balancer_certificate}}"
       DefaultActions:
