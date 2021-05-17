@@ -1,0 +1,19 @@
+apiVersion: autoscaling.k8s.io/v1beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: cronjob-monitor
+  namespace: kube-system
+  labels:
+    application: cronjob-monitor
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cronjob-monitor
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: cronjob-monitor
+      maxAllowed:
+        memory: 4Gi
