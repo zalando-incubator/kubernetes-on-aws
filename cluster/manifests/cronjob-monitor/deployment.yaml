@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cronjob-monitor
+  namespace: kube-system
+  labels:
+    application: cronjob-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: cronjob-monitor
+  template:
+    metadata:
+      labels:
+        application: cronjob-monitor
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+    spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      serviceAccountName: cronjob-monitor
+      containers:
+        - name: cronjob-monitor
+          image: "registry.opensource.zalan.do/teapot/cronjob-monitor:master-1"
+          resources:
+            limits:
+              cpu: 5m
+              memory: 150Mi
+            requests:
+              cpu: 5m
+              memory: 150Mi
