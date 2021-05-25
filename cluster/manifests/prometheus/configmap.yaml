@@ -18,11 +18,6 @@ data:
       - record: job:skipper_serve_host_duration:sum
         expr: sum(rate(skipper_serve_host_duration_seconds_bucket{application="skipper-ingress"}[1m])) by (le)
 
-    - name: skipper 2xx sum rate serve_host_duration by bucket
-      rules:
-      - record: job:skipper_serve_host_duration_2xx:sum
-        expr: sum(rate(skipper_serve_host_duration_seconds_bucket{code =~ "2.*",application="skipper-ingress"}[1m])) by (le)
-
     - name: skipper sum rate filter_request_duration by filter
       rules:
       - record: job:skipper_req_filter_by_filter:sum
