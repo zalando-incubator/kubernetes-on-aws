@@ -116,7 +116,7 @@ var _ = framework.KubeDescribe("Node tests", func() {
 
 		pausePod := createTestPod(ns)
 
-		By("Restarting kubelet on the node")
+		By(fmt.Sprintf("Restarting kubelet on node %s", pausePod.Spec.NodeName))
 		boolTrue := true
 		kubeletRestartPodTemplate := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -133,7 +133,7 @@ var _ = framework.KubeDescribe("Node tests", func() {
 						Command: []string{
 							"/bin/sh",
 							"-c",
-							"pkill -9 kubelet && sleep 30",
+							`INITIAL="$(pgrep kubelet)" pkill -9 kubelet && sleep 60 && test "$INITIAL" != "$(pgrep kubelet)"`,
 						},
 						SecurityContext: &corev1.SecurityContext{
 							Privileged: &boolTrue,
@@ -150,7 +150,7 @@ var _ = framework.KubeDescribe("Node tests", func() {
 		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(f.ClientSet, kubeletRestartPod.Name, kubeletRestartPod.Namespace))
 
 		// Wait for a bit to give everything time to either fail completely or recover
-		time.Sleep(2 * time.Minute)
+		time.Sleep(1 * time.Minute)
 
 		// Check that the node is still fine by running another pod on it
 		testPodTemplate := &corev1.Pod{
