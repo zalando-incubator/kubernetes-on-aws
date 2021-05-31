@@ -17,48 +17,34 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = framework.KubeDescribe("Spot termination handler", func() {
-	f := framework.NewDefaultFramework("spot-termination-handler")
+var _ = framework.KubeDescribe("Node tests", func() {
+	f := framework.NewDefaultFramework("node-tests")
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
 		cs = f.ClientSet
 	})
 
-	It("Should react to spot termination notices [Slow] [Zalando] [Spot]", func() {
-		ns := f.Namespace.Name
-		poolName := "spot-termination-handler"
+	createTestPod := func(namespace string) *corev1.Pod {
+		pausePod := nodeTestPod(namespace, "pause")
+		pausePod.Spec.Containers = []corev1.Container{pauseContainer()}
+		pausePod.Spec.RestartPolicy = corev1.RestartPolicyNever
 
-		tolerations := []corev1.Toleration{
-			{
-				Key:      "dedicated",
-				Operator: corev1.TolerationOpEqual,
-				Value:    poolName,
-				Effect:   corev1.TaintEffectNoSchedule,
-			},
-		}
-
-		pausePodTemplate := &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "pause-",
-				Namespace:    ns,
-			},
-			Spec: corev1.PodSpec{
-				NodeSelector: map[string]string{
-					"dedicated": poolName,
-				},
-				Tolerations:   tolerations,
-				Containers:    []corev1.Container{pauseContainer()},
-				RestartPolicy: corev1.RestartPolicyNever,
-			},
-		}
 		By("Creating a test pod")
-		pausePod, err := cs.CoreV1().Pods(ns).Create(context.Background(), pausePodTemplate, metav1.CreateOptions{})
+		pausePod, err := cs.CoreV1().Pods(namespace).Create(context.Background(), pausePod, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create a test pod")
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pausePod.Name, pausePod.Namespace))
 
-		pausePod, err = cs.CoreV1().Pods(ns).Get(context.Background(), pausePod.Name, metav1.GetOptions{})
+		pausePod, err = cs.CoreV1().Pods(namespace).Get(context.Background(), pausePod.Name, metav1.GetOptions{})
 		framework.ExpectNoError(err, "Could not fetch the test pod")
+
+		return pausePod
+	}
+
+	It("Should react to spot termination notices [Slow] [Zalando] [Spot]", func() {
+		ns := f.Namespace.Name
+
+		pausePod := createTestPod(ns)
 
 		nodeName := pausePod.Spec.NodeName
 		By("Ensuring that the node is schedulable initially")
@@ -74,24 +60,8 @@ var _ = framework.KubeDescribe("Spot termination handler", func() {
 				Namespace:    ns,
 			},
 			Spec: corev1.PodSpec{
-				Affinity: &corev1.Affinity{
-					NodeAffinity: &corev1.NodeAffinity{
-						RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-							NodeSelectorTerms: []corev1.NodeSelectorTerm{
-								{
-									MatchFields: []corev1.NodeSelectorRequirement{
-										{
-											Key:      "metadata.name",
-											Operator: corev1.NodeSelectorOpIn,
-											Values:   []string{nodeName},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				Tolerations: tolerations,
+				Affinity:    nodeNameAffinity(nodeName),
+				Tolerations: pausePod.Spec.Tolerations,
 				Containers: []corev1.Container{
 					{
 						Name:  "mark-terminated",
@@ -139,5 +109,72 @@ var _ = framework.KubeDescribe("Spot termination handler", func() {
 		node, err = cs.CoreV1().Nodes().Get(context.Background(), nodeName, metav1.GetOptions{})
 		framework.ExpectNoError(err, "Could not fetch the node")
 		Expect(node.Spec.Unschedulable).To(BeTrue())
+	})
+
+	It("Should handle kubelet restarts successfully [Slow] [Zalando]", func() {
+		ns := f.Namespace.Name
+
+		pausePod := createTestPod(ns)
+
+		By("Restarting kubelet on the node")
+		boolTrue := true
+		kubeletRestartPodTemplate := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "restart-kubelet-",
+				Namespace:    ns,
+			},
+			Spec: corev1.PodSpec{
+				Affinity:    nodeNameAffinity(pausePod.Spec.NodeName),
+				Tolerations: pausePod.Spec.Tolerations,
+				Containers: []corev1.Container{
+					{
+						Name:  "restart-kubelet",
+						Image: framework.BusyBoxImage,
+						Command: []string{
+							"/bin/sh",
+							"-c",
+							"pkill -9 kubelet && sleep 30",
+						},
+						SecurityContext: &corev1.SecurityContext{
+							Privileged: &boolTrue,
+						},
+					},
+				},
+				HostPID:       true,
+				RestartPolicy: corev1.RestartPolicyNever,
+			},
+		}
+
+		kubeletRestartPod, err := cs.CoreV1().Pods(ns).Create(context.Background(), kubeletRestartPodTemplate, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "Could not create a kubelet restart pod")
+		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(f.ClientSet, kubeletRestartPod.Name, kubeletRestartPod.Namespace))
+
+		// Wait for a bit to give everything time to either fail completely or recover
+		time.Sleep(2 * time.Minute)
+
+		// Check that the node is still fine by running another pod on it
+		testPodTemplate := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "test-pod-",
+				Namespace:    ns,
+			},
+			Spec: corev1.PodSpec{
+				Affinity:    nodeNameAffinity(pausePod.Spec.NodeName),
+				Tolerations: pausePod.Spec.Tolerations,
+				Containers: []corev1.Container{
+					{
+						Name:  "test",
+						Image: framework.BusyBoxImage,
+						Command: []string{
+							"/bin/true",
+						},
+					},
+				},
+				RestartPolicy: corev1.RestartPolicyNever,
+			},
+		}
+		testPod, err := cs.CoreV1().Pods(ns).Create(context.Background(), testPodTemplate, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "Could not create a test pod")
+		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(f.ClientSet, testPod.Name, testPod.Namespace))
 	})
 })
