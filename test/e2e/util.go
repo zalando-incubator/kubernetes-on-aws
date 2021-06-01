@@ -443,6 +443,69 @@ func pauseContainer() v1.Container {
 	}
 }
 
+// nodeTestPod returns a v1.Pod with the selector, tolerations and anti-affinity predicates that would result in the pod
+// running on the node-tests node pool in a dedicated mode, with just one pod per node
+func nodeTestPod(namespace string, name string) *v1.Pod {
+	poolName := "node-tests"
+
+	return &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+			Labels: map[string]string{
+				"node-tests": "true",
+			},
+		},
+		Spec: v1.PodSpec{
+			Tolerations: []corev1.Toleration{
+				{
+					Key:      "dedicated",
+					Operator: corev1.TolerationOpEqual,
+					Value:    poolName,
+					Effect:   corev1.TaintEffectNoSchedule,
+				},
+			},
+			NodeSelector: map[string]string{
+				"dedicated": poolName,
+			},
+			Affinity: &corev1.Affinity{
+				PodAntiAffinity: &corev1.PodAntiAffinity{
+					RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+						{
+							LabelSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"dedicated": poolName,
+								},
+							},
+							TopologyKey: "kubernetes.io/hostname",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func nodeNameAffinity(nodeName string) *corev1.Affinity {
+	return &corev1.Affinity{
+		NodeAffinity: &corev1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+				NodeSelectorTerms: []corev1.NodeSelectorTerm{
+					{
+						MatchFields: []corev1.NodeSelectorRequirement{
+							{
+								Key:      "metadata.name",
+								Operator: corev1.NodeSelectorOpIn,
+								Values:   []string{nodeName},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func createServiceAccount(namespace, serviceAccount string) *v1.ServiceAccount {
 	trueValue := true
 	return &v1.ServiceAccount{

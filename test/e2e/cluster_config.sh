@@ -19,7 +19,6 @@ clusters:
     image_policy: e2e
     service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
-    worker_shared_secret: ${WORKER_SHARED_SECRET}
     lightstep_token: "${LIGHTSTEP_TOKEN}"
     zmon_agent_replicas: '0'
     zmon_aws_agent_replicas: '0'
@@ -90,10 +89,10 @@ clusters:
     min_size: 0
     max_size: 3
     profile: worker-default
-    name: worker-spot-termination-handler
+    name: worker-node-tests
     config_items:
-      labels: dedicated=spot-termination-handler
-      taints: dedicated=spot-termination-handler:NoSchedule
+      labels: dedicated=node-tests
+      taints: dedicated=node-tests:NoSchedule
   - name: default-worker-spotio
     profile: worker-spotio
     instance_types:
