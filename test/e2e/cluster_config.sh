@@ -90,10 +90,10 @@ clusters:
     min_size: 0
     max_size: 3
     profile: worker-default
-    name: worker-spot-termination-handler
+    name: worker-node-tests
     config_items:
-      labels: dedicated=spot-termination-handler
-      taints: dedicated=spot-termination-handler:NoSchedule
+      labels: dedicated=node-tests
+      taints: dedicated=node-tests:NoSchedule
   - name: default-worker-spotio
     profile: worker-spotio
     instance_types:
