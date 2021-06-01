@@ -117,14 +117,14 @@ write_files:
           - --secure-port=443
           - --insecure-port=0
           - --port=0
-          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority{{if eq .Cluster.ConfigItems.node_auth "exclusive"}},NodeRestriction{{end}}
+          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority,NodeRestriction
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
           - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
-          - --authorization-mode={{if ne .Cluster.ConfigItems.node_auth "disabled" }}Node,{{end}}Webhook,RBAC
+          - --authorization-mode=Node,Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --authorization-webhook-version=v1
           - --token-auth-file=/etc/kubernetes/config/tokenfile.csv
@@ -296,10 +296,8 @@ write_files:
               cpu: 50m
               memory: 50Mi
           args:
-{{- if ne .Cluster.ConfigItems.node_auth "disabled" }}
             - --node-auth-cluster-id={{.Cluster.ID}}
             - "--node-auth-role-arn=arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-worker"
-{{- end }}
             - --cluster-alias={{.Cluster.Alias}}
 
             # Collaborator roles
@@ -706,10 +704,7 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/config/tokenfile.csv
     permissions: 0600
-    content: |
-{{- if ne .Cluster.ConfigItems.node_auth "exclusive" }}
-      {{ .Cluster.ConfigItems.worker_shared_secret }},kubelet,kubelet,system:masters
-{{- end }}
+    content: ""
 
   - owner: root:root
     path: /etc/kubernetes/config/image-policy-webhook.yaml
