@@ -25,6 +25,11 @@ pre_apply:
 - name: "routegroup-admitter.teapot.zalan.do"
   kind: ValidatingWebhookConfiguration
 {{ end }}
+{{ if eq .Cluster.Environment "e2e" }}
+- name: pool-reserve-worker-spot-termination-handler
+  namespace: default
+  kind: Deployment
+{{ end }}
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
