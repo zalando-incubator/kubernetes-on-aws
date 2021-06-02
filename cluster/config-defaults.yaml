@@ -55,7 +55,7 @@ skipper_close_idle_conns_period: "20s"
 # skipper server timeout defaults
 skipper_idle_timeout_server: "62s"
 skipper_read_timeout_server: "5m"
-skipper_write_timeout_server: "60s"
+skipper_write_timeout_server: "0"
 
 # skipper startup settings
 {{if eq .Cluster.Environment "production"}}
@@ -78,6 +78,10 @@ skipper_redis_write_timeout: "25ms"
 
 # skipper api GW features
 enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup candidate to reduce amount of branches in deployment
+
+
+# Enable the kube-metrics-adapter time-based metrics.
+enable_scaling_schedule_metrics: "true"
 
 # skipper east-west feature
 # enable_skipper_eastwest is the legacy feature gate for the automatic
@@ -357,11 +361,10 @@ teapot_admission_controller_runtime_policy_enforced: ""
 teapot_admission_controller_runtime_policy_spot_hard_assignment: "false"
 
 # Enable and configure prevent scale down annotation
+teapot_admission_controller_prevent_scale_down_enabled: "true"
 {{if eq .Cluster.Environment "production"}}
-teapot_admission_controller_prevent_scale_down_enabled: "false"
 teapot_admission_controller_prevent_scale_down_allowed: "true"
 {{else}}
-teapot_admission_controller_prevent_scale_down_enabled: "true"
 teapot_admission_controller_prevent_scale_down_allowed: "false"
 {{end}}
 
@@ -582,17 +585,6 @@ stackset_ingress_source_switch_ttl: "5m"
 
 # Enable/Disable profiling for Kubernetes components
 enable_control_plane_profiling: "false"
-
-# Defines the rollout status of the node auth feature. The possible values are:
-#
-#   disabled:   node auth is disabled on the API server side
-#   supported:  API servers support both node auth and the legacy shared secrets, NodeRestriction is disabled
-#   enabled:    same as supported, but the workers use node auth to authenticate instead of shared secrets. NodeRestriction is still disabled
-#   exclusive:  node auth is used exclusively, NodeRestriction is enabled, shared secrets are disabled
-#
-# Warning: enabling/disabling should only be done one step at a time (e.g. exclusive->enabled->supported->disabled),
-# otherwise you can end up with nodes that can't join the cluster.
-node_auth: "exclusive"
 
 okta_auth_enabled: "false"
 okta_auth_issuer_url: ""
