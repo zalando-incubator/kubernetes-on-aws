@@ -16,7 +16,7 @@ require (
 	github.com/spf13/viper v1.7.0
 	github.com/szuecs/routegroup-client v0.17.8-0.20200915193527-b33447c7d964
 	github.com/zalando-incubator/kube-aws-iam-controller v0.1.2
-	github.com/zalando-incubator/stackset-controller v1.3.32
+	github.com/zalando-incubator/stackset-controller v1.3.34
 	go.opencensus.io v0.22.4 // indirect
 	google.golang.org/api v0.22.0 // indirect
 	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
