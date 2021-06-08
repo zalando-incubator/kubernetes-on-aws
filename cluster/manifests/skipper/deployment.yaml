@@ -51,6 +51,7 @@ spec:
 {{- end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
+      terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
       dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true
       containers:
@@ -92,6 +93,7 @@ spec:
           - "-kubernetes-path-mode=path-prefix"
           - "-address=:9999"
           - "-wait-first-route-load"
+          - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
 {{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
           - "-enable-kubernetes-east-west"
           - "-kubernetes-east-west-domain=.ingress.cluster.local"
