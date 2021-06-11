@@ -41,6 +41,7 @@ spec:
         - --deny-internal-domains
 {{ end }}
         - "--additional-stack-tags=InfrastructureComponent=true"
+        - --load-balancer-type={{ .Cluster.ConfigItems.kube_aws_ingress_default_lb_type }}
         env:
         - name: CUSTOM_FILTERS
           value: "tag:kubernetes.io/cluster/{{ .Cluster.ID }}=owned tag:node.kubernetes.io/role=worker tag:zalando.org/ingress-enabled=true"
