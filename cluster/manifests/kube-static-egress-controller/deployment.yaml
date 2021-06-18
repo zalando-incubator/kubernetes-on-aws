@@ -32,6 +32,7 @@ spec:
         image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.2.7
         args:
         - "--provider=aws"
+        - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
 {{- range $subnet := stupsNATSubnets .Values.vpc_ipv4_cidr }}
         - "--aws-nat-cidr-block={{ $subnet }}"
 {{- end }}
