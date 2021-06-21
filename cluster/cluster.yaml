@@ -891,6 +891,7 @@ Resources:
 {{- end }}
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
+{{- if eq .Cluster.ConfigItems.deployment_service_enabled "true" }}
   DeploymentControllerRole:
     Type: AWS::IAM::Role
     Properties:
@@ -983,6 +984,7 @@ Resources:
                   - 'cloudformation:DescribeStacks'
                 Effect: Allow
                 Resource: '*'
+{{- end }}
   ExternalDNSIAMRole:
     Properties:
       AssumeRolePolicyDocument:
