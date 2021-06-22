@@ -852,6 +852,7 @@ Resources:
       Bucket: !Ref DeploymentServiceBucket
       PolicyDocument:
         Statement:
+{{- if eq .Cluster.ConfigItems.deployment_service_enabled "true" }}
           - NotAction:
               - s3:GetObject
               - s3:DeleteObject
@@ -865,6 +866,7 @@ Resources:
               AWS:
                 - !GetAtt DeploymentControllerRole.Arn
                 - !GetAtt DeploymentStatusServiceRole.Arn
+{{- end }}
 {{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
           - Action:
               - s3:PutObject
@@ -884,8 +886,10 @@ Resources:
             Condition:
               ArnNotEquals:
                 aws:PrincipalArn:
+{{- if eq .Cluster.ConfigItems.deployment_service_enabled "true" }}
                   - !GetAtt DeploymentControllerRole.Arn
                   - !GetAtt DeploymentStatusServiceRole.Arn
+{{- end }}
 {{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
                   - "{{.Cluster.ConfigItems.deployment_service_api_role_arn}}"
 {{- end }}
