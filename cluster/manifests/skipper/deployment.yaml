@@ -30,16 +30,6 @@ spec:
         prometheus.io/port: "9911"
         prometheus.io/scrape: "true"
     spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                - key: application
-                  operator: In
-                  values:
-                  - skipper-ingress
-              topologyKey: kubernetes.io/hostname
 {{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:
         - maxSkew: 1
