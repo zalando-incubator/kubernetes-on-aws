@@ -601,6 +601,162 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-autoscaler"
     Type: 'AWS::IAM::Role'
+  DeploymentIAMPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - 'ec2:*'
+            Condition:
+              StringLike:
+                'ec2:Region':
+                  - us-*
+                  - ap-*
+                  - sa-*
+            Effect: Deny
+            Resource: '*'
+          - Action:
+              - 'iam:Update*'
+              - 'iam:Put*'
+              - 'iam:Create*'
+              - 'iam:Delete*'
+              - 'iam:Attach*'
+              - 'iam:Detach*'
+            Effect: Deny
+            Resource: 'arn:aws:iam::*:role/Shibboleth*'
+          - Action:
+              - 'ec2:DeleteRoute'
+              - 'ec2:DeleteRouteTable'
+              - 'ec2:DeleteSubnet'
+              - 'ec2:DeleteVpc'
+              - 'ec2:DeleteVpcPeeringConnection'
+              - 'ec2:DeleteVpnConnection'
+              - 'ec2:DeleteVpnConnectionRoute'
+              - 'ec2:DeleteVpnGateway'
+              - 'ec2:CreateRoute'
+              - 'ec2:CreateRouteTable'
+              - 'ec2:CreateSubnet'
+              - 'ec2:CreateVpc'
+              - 'ec2:CreateVpcPeeringConnection'
+              - 'ec2:CreateVpnConnection'
+              - 'ec2:CreateVpnConnectionRoute'
+              - 'ec2:CreateVpnGateway'
+              - 'iam:ChangePassword'
+              - 'iam:CreateAccountAlias'
+              - 'iam:CreateOpenIDConnectProvider'
+              - 'iam:CreateSAMLProvider'
+              - 'iam:DeleteAccountAlias'
+              - 'iam:DeleteOpenIDConnectProvider'
+              - 'iam:DeleteSAMLProvider'
+              - 'iam:UpdateOpenIDConnectProviderThumbprint'
+              - 'iam:UpdateSAMLProvider'
+            Effect: Deny
+            Resource: '*'
+          - Action:
+              - 'acm:*'
+              - 'apigateway:*'
+              - 'application-autoscaling:*'
+              - 'appsync:*'
+              - 'athena:*'
+              - 'automation:*'
+              - 'autoscaling-plans:*'
+              - 'autoscaling:*'
+              - 'aws-marketplace:View*'
+              - 'aws-portal:ViewAccount'
+              - 'aws-portal:ViewBilling'
+              - 'aws-portal:ViewUsage'
+              - 'backup-storage:*'
+              - 'backup:*'
+              - 'batch:*'
+              - 'budgets:ViewBudget'
+              - 'cassandra:*'
+              - 'ce:*'
+              - 'cloudformation:*'
+              - 'cloudfront:*'
+              - 'cloudsearch:*'
+              - 'cloudtrail:DescribeTrails'
+              - 'cloudtrail:GetEventSelectors'
+              - 'cloudtrail:GetTrailStatus'
+              - 'cloudtrail:LookupEvents'
+              - 'cloudtrail:StartLogging'
+              - 'cloudwatch:*'
+              - 'config:*'
+              - 'cur:DescribeReportDefinitions'
+              - 'datapipeline:*'
+              - 'dax:*'
+              - 'devicefarm:*'
+              - 'dlm:*'
+              - 'ds:*'
+              - 'dynamodb:*'
+              - 'ec2-reports:*'
+              - 'ec2:*'
+              - 'ecr:Get*'
+              - 'ecr:BatchGetImage'
+              - 'ecr:BatchCheckLayerAvailability'
+              - 'ecr:Describe*'
+              - 'ecr:List*'
+              - 'elasticache:*'
+              - 'elasticfilesystem:*'
+              - 'elasticloadbalancing:*'
+              - 'elasticmapreduce:*'
+              - 'elastictranscoder:*'
+              - 'es:*'
+              - 'events:*'
+              - 'firehose:*'
+              - 'glacier:*'
+              - 'glue:*'
+              - 'health:*'
+              - 'iam:*'
+              - 'kafka:*'
+              - 'kinesis:*'
+              - 'kinesisanalytics:*'
+              - 'kms:*'
+              {{ if eq .Cluster.ConfigItems.deploy_allow_lakeformation "true" }}
+              - 'lakeformation:*'
+              {{ end }}
+              - 'lambda:*'
+              - 'lex:*'
+              - 'logs:*'
+              - 'machinelearning:*'
+              - 'mq:*'
+              - 'pricing:Describe*'
+              - 'pricing:Get*'
+              - 'quicksight:*'
+              {{ if eq .Cluster.ConfigItems.deploy_allow_ram "true" }}
+              - 'ram:*'
+              {{ end }}
+              - 'rds:*'
+              - 'redshift:*'
+              - 'rekognition:*'
+              - 'resource-groups:*'
+              - 'route53:*'
+              - 'route53domains:Get*'
+              - 'route53domains:List*'
+              - 's3:*'
+              - 'sagemaker:*'
+              - 'sdb:*'
+              - 'secretsmanager:*'
+              - 'serviceQuotas:Get*'
+              - 'serviceQuotas:List*'
+              - 'ses:*'
+              - 'sns:*'
+              - 'sqs:*'
+              - 'ssm:*'
+              - 'states:*'
+              - 'storagegateway:*'
+              - 'sts:*'
+              - 'support:*'
+              - 'swf:*'
+              - 'tag:get*'
+              - 'transfer:*'
+              - 'trustedadvisor:*'
+              - 'waf-regional:*'
+              - 'waf:*'
+              - 'wafv2:*'
+            Effect: Allow
+            Resource: '*'
   DeploymentIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -621,161 +777,8 @@ Resources:
                   - !Ref WorkerIAMRole
         Version: 2012-10-17
       Path: /
-      Policies:
-        - PolicyDocument:
-            Statement:
-              - Action:
-                  - 'ec2:*'
-                Condition:
-                  StringLike:
-                    'ec2:Region':
-                      - us-*
-                      - ap-*
-                      - sa-*
-                Effect: Deny
-                Resource: '*'
-              - Action:
-                  - 'iam:Update*'
-                  - 'iam:Put*'
-                  - 'iam:Create*'
-                  - 'iam:Delete*'
-                  - 'iam:Attach*'
-                  - 'iam:Detach*'
-                Effect: Deny
-                Resource: 'arn:aws:iam::*:role/Shibboleth*'
-              - Action:
-                  - 'ec2:DeleteRoute'
-                  - 'ec2:DeleteRouteTable'
-                  - 'ec2:DeleteSubnet'
-                  - 'ec2:DeleteVpc'
-                  - 'ec2:DeleteVpcPeeringConnection'
-                  - 'ec2:DeleteVpnConnection'
-                  - 'ec2:DeleteVpnConnectionRoute'
-                  - 'ec2:DeleteVpnGateway'
-                  - 'ec2:CreateRoute'
-                  - 'ec2:CreateRouteTable'
-                  - 'ec2:CreateSubnet'
-                  - 'ec2:CreateVpc'
-                  - 'ec2:CreateVpcPeeringConnection'
-                  - 'ec2:CreateVpnConnection'
-                  - 'ec2:CreateVpnConnectionRoute'
-                  - 'ec2:CreateVpnGateway'
-                  - 'iam:ChangePassword'
-                  - 'iam:CreateAccountAlias'
-                  - 'iam:CreateOpenIDConnectProvider'
-                  - 'iam:CreateSAMLProvider'
-                  - 'iam:DeleteAccountAlias'
-                  - 'iam:DeleteOpenIDConnectProvider'
-                  - 'iam:DeleteSAMLProvider'
-                  - 'iam:UpdateOpenIDConnectProviderThumbprint'
-                  - 'iam:UpdateSAMLProvider'
-                Effect: Deny
-                Resource: '*'
-              - Action:
-                  - 'acm:*'
-                  - 'apigateway:*'
-                  - 'application-autoscaling:*'
-                  - 'appsync:*'
-                  - 'athena:*'
-                  - 'automation:*'
-                  - 'autoscaling-plans:*'
-                  - 'autoscaling:*'
-                  - 'aws-marketplace:View*'
-                  - 'aws-portal:ViewAccount'
-                  - 'aws-portal:ViewBilling'
-                  - 'aws-portal:ViewUsage'
-                  - 'backup-storage:*'
-                  - 'backup:*'
-                  - 'batch:*'
-                  - 'budgets:ViewBudget'
-                  - 'cassandra:*'
-                  - 'ce:*'
-                  - 'cloudformation:*'
-                  - 'cloudfront:*'
-                  - 'cloudsearch:*'
-                  - 'cloudtrail:DescribeTrails'
-                  - 'cloudtrail:GetEventSelectors'
-                  - 'cloudtrail:GetTrailStatus'
-                  - 'cloudtrail:LookupEvents'
-                  - 'cloudtrail:StartLogging'
-                  - 'cloudwatch:*'
-                  - 'config:*'
-                  - 'cur:DescribeReportDefinitions'
-                  - 'datapipeline:*'
-                  - 'dax:*'
-                  - 'devicefarm:*'
-                  - 'dlm:*'
-                  - 'ds:*'
-                  - 'dynamodb:*'
-                  - 'ec2-reports:*'
-                  - 'ec2:*'
-                  - 'ecr:Get*'
-                  - 'ecr:BatchGetImage'
-                  - 'ecr:BatchCheckLayerAvailability'
-                  - 'ecr:Describe*'
-                  - 'ecr:List*'
-                  - 'elasticache:*'
-                  - 'elasticfilesystem:*'
-                  - 'elasticloadbalancing:*'
-                  - 'elasticmapreduce:*'
-                  - 'elastictranscoder:*'
-                  - 'es:*'
-                  - 'events:*'
-                  - 'firehose:*'
-                  - 'glacier:*'
-                  - 'glue:*'
-                  - 'health:*'
-                  - 'iam:*'
-                  - 'kafka:*'
-                  - 'kinesis:*'
-                  - 'kinesisanalytics:*'
-                  - 'kms:*'
-                  {{ if eq .Cluster.ConfigItems.deploy_allow_lakeformation "true" }}
-                  - 'lakeformation:*'
-                  {{ end }}
-                  - 'lambda:*'
-                  - 'lex:*'
-                  - 'logs:*'
-                  - 'machinelearning:*'
-                  - 'mq:*'
-                  - 'pricing:Describe*'
-                  - 'pricing:Get*'
-                  - 'quicksight:*'
-                  {{ if eq .Cluster.ConfigItems.deploy_allow_ram "true" }}
-                  - 'ram:*'
-                  {{ end }}
-                  - 'rds:*'
-                  - 'redshift:*'
-                  - 'rekognition:*'
-                  - 'resource-groups:*'
-                  - 'route53:*'
-                  - 'route53domains:Get*'
-                  - 'route53domains:List*'
-                  - 's3:*'
-                  - 'sagemaker:*'
-                  - 'sdb:*'
-                  - 'secretsmanager:*'
-                  - 'serviceQuotas:Get*'
-                  - 'serviceQuotas:List*'
-                  - 'ses:*'
-                  - 'sns:*'
-                  - 'sqs:*'
-                  - 'ssm:*'
-                  - 'states:*'
-                  - 'storagegateway:*'
-                  - 'sts:*'
-                  - 'support:*'
-                  - 'swf:*'
-                  - 'tag:get*'
-                  - 'transfer:*'
-                  - 'trustedadvisor:*'
-                  - 'waf-regional:*'
-                  - 'waf:*'
-                  - 'wafv2:*'
-                Effect: Allow
-                Resource: '*'
-            Version: 2012-10-17
-          PolicyName: root
+      ManagedPolicyArns:
+        - !Ref DeploymentIAMPolicy
       RoleName: "{{.Cluster.LocalID}}-deployment"
     Type: 'AWS::IAM::Role'
   DeploymentSecretKey:
@@ -810,11 +813,13 @@ Resources:
           - Action:
               - 'kms:Decrypt'
             Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref DeploymentIAMRole
+            # Avoid circular dependencies because CF still can't do this properly
+            Principal: "*"
+            Condition:
+              ArnEquals:
+                aws:PrincipalArn:
+                  - !GetAtt DeploymentIAMRole.Arn
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
             Resource: '*'
             Sid: Allow access for deployment system to decrypt the keys
         Version: 2012-10-17
@@ -825,6 +830,165 @@ Resources:
       AliasName: "alias/{{.Cluster.LocalID}}-deployment-secret"
       TargetKeyId: !Ref DeploymentSecretKey
     Type: 'AWS::KMS::Alias'
+  DeploymentServiceBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: "zalando-deployment-service-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: application
+          Value: deployment-service
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+  DeploymentServiceBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DeploymentServiceBucket
+      PolicyDocument:
+        Statement:
+{{- if eq .Cluster.ConfigItems.deployment_service_enabled "true" }}
+          - NotAction:
+              - s3:GetObject
+              - s3:DeleteObject
+              - s3:ListBucket
+              - s3:PutObject
+            Effect: Deny
+            Resource:
+              - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/*"
+              - !Sub "arn:aws:s3:::${DeploymentServiceBucket}"
+            Principal:
+              AWS:
+                - !GetAtt DeploymentControllerRole.Arn
+                - !GetAtt DeploymentStatusServiceRole.Arn
+{{- end }}
+{{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
+          - Action:
+              - s3:PutObject
+              - s3:PutObjectAcl
+            Effect: Allow
+            Resource:
+              - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/manifests/*"
+            Principal:
+              AWS: "{{.Cluster.ConfigItems.deployment_service_api_role_arn}}"
+{{- end }}
+          - Action: "s3:*"
+            Effect: Deny
+            Resource:
+              - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/*"
+              - !Sub "arn:aws:s3:::${DeploymentServiceBucket}"
+            Principal: "*"
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn:
+{{- if eq .Cluster.ConfigItems.deployment_service_enabled "true" }}
+                  - !GetAtt DeploymentControllerRole.Arn
+                  - !GetAtt DeploymentStatusServiceRole.Arn
+{{- end }}
+{{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
+                  - "{{.Cluster.ConfigItems.deployment_service_api_role_arn}}"
+{{- end }}
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
+{{- if eq .Cluster.ConfigItems.deployment_service_enabled "true" }}
+  DeploymentControllerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-deployment-service-controller"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:deployment-service-controller"
+      Policies:
+        - PolicyName: ControllerPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - s3:GetObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/manifests/*"
+                Effect: Allow
+              - Action:
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/final-task-statuses/*"
+                Effect: Allow
+              - Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${DeploymentServiceBucket}"
+                Effect: Allow
+              - Action:
+                  - kms:Decrypt
+                Resource:
+                  - !GetAtt DeploymentSecretKey.Arn
+                Effect: Allow
+              - Action:
+                  - 'sts:AssumeRole'
+                Effect: Allow
+                Resource:
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
+  DeploymentControllerDeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-deployment-service-deployment"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt DeploymentControllerRole.Arn
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref DeploymentIAMPolicy
+  DeploymentStatusServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-deployment-service-status-service"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:deployment-service-status-service"
+      Policies:
+        - PolicyName: StatusServicePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/final-task-statuses/*"
+                Effect: Allow
+              - Action:
+                  - 'cloudformation:DescribeStackEvents'
+                  - 'cloudformation:DescribeStackResources'
+                  - 'cloudformation:DescribeStacks'
+                Effect: Allow
+                Resource: '*'
+{{- end }}
   ExternalDNSIAMRole:
     Properties:
       AssumeRolePolicyDocument:
