@@ -185,3 +185,15 @@ post_apply:
 - name: cluster-admin-okta
   kind: ClusterRoleBinding
 {{- end }}
+{{- if ne .Cluster.ConfigItems.deployment_service_enabled "true" }}
+- kind: ClusterRole
+  name: deployment-service-api-task-access
+- kind: ClusterRoleBinding
+  name: deployment-service-api-task-access
+- kind: Role
+  namespace: kube-system
+  name: deployment-service-api-read-config
+- kind: RoleBinding
+  namespace: kube-system
+  name: deployment-service-api-read-config
+{{- end }}
