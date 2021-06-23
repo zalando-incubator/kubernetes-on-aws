@@ -1,0 +1,73 @@
+{{- if eq .Cluster.ConfigItems.deployment_service_enabled "true" }}
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "deployment-service-api-task-access"
+  labels:
+    application: "deployment-service"
+    component: "api"
+rules:
+  - apiGroups:
+      - deployment.zalando.org
+    resources:
+      - cdpdeploymenttasks
+      - cdpdeploymenttasks/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "deployment-service-api-task-access"
+  labels:
+    application: "deployment-service"
+    component: "api"
+roleRef:
+  kind: ClusterRole
+  name: "deployment-service-api-task-access"
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: zalando-iam:zalando:service:stups_deployment-service
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "deployment-service-api-read-config"
+  namespace: "kube-system"
+  labels:
+    application: "deployment-service"
+    component: "api"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+    resourceNames:
+      - deployment-config
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "deployment-service-api-read-config"
+  namespace: "kube-system"
+  labels:
+    application: "deployment-service"
+    component: "api"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: "deployment-service-api-read-config"
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: zalando-iam:zalando:service:stups_deployment-service
+{{- end }}
