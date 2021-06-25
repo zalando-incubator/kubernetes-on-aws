@@ -112,9 +112,6 @@ var _ = framework.KubeDescribe("Node tests", func() {
 	})
 
 	It("Should handle kubelet restarts successfully [Slow] [Zalando]", func() {
-		// Temporarily skip the test for now
-		Skip("Doesn't work with the old AMI")
-
 		ns := f.Namespace.Name
 
 		pausePod := createTestPod(ns)
