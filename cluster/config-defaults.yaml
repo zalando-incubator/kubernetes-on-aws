@@ -400,6 +400,7 @@ coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
 kuberuntu_image_v1_19: {{ amiID "zalando-ubuntu-kubernetes-production-v1.19.10-master-161" "861068367966"}}
+kuberuntu_image_v1_20: {{ amiID "zalando-ubuntu-kubernetes-production-v1.20.8-master-167" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -510,6 +511,8 @@ enable_endpointsliceproxying: "true"
 
 # Enable FeatureGate HPAScaleToZero
 enable_hpa_scale_to_zero: "true"
+# Enable FeatureGate HPAContainerMetrics
+enable_hpa_container_metrics: "true"
 
 # Enable FeatureGate EphemeralContainers (Alpha)
 # https://kubernetes.io/docs/tasks/debug-application-cluster/debug-running-pod/
@@ -600,6 +603,10 @@ deploy_allow_lakeformation: "false"
 deploy_allow_ram: "false"
 
 experimental_nlb_alpn_h2_enabled: "true"
+
+# Enable/Disable ExecProbeTimeout (default in v1.20)
+# Can be disabled in case some workloads depends on the old behavior.
+exec_probe_timeout_enabled: "true"
 
 # Settings for the deployment service
 deployment_service_api_role_arn: ""
