@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-static-egress-controller
-    version: v0.2.7
+    version: v0.2.8
 spec:
   replicas: {{if eq .Cluster.ConfigItems.static_egress_controller_enabled "true"}}1{{else}}0{{end}}
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: kube-static-egress-controller
-        version: v0.2.7
+        version: v0.2.8
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
         prometheus.io/path: /metrics
@@ -29,9 +29,10 @@ spec:
       serviceAccountName: kube-static-egress-controller
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.2.7
+        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.2.8-r1
         args:
         - "--provider=aws"
+        - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
 {{- range $subnet := stupsNATSubnets .Values.vpc_ipv4_cidr }}
         - "--aws-nat-cidr-block={{ $subnet }}"
 {{- end }}
