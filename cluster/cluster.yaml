@@ -917,14 +917,17 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Action:
-                  - s3:GetObject
                   - s3:DeleteObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/*"
+                Effect: Allow
+              - Action:
+                  - s3:GetObject
                 Resource:
                   - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/manifests/*"
                 Effect: Allow
               - Action:
                   - s3:PutObject
-                  - s3:DeleteObject
                 Resource:
                   - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/final-task-statuses/*"
                 Effect: Allow
@@ -981,6 +984,17 @@ Resources:
                   - s3:GetObject
                 Resource:
                   - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/final-task-statuses/*"
+                Effect: Allow
+              - Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/cached-probe-results/*"
+                Effect: Allow
+              - Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${DeploymentServiceBucket}"
                 Effect: Allow
               - Action:
                   - 'cloudformation:DescribeStackEvents'
