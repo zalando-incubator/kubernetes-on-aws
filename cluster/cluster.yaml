@@ -917,14 +917,17 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Action:
-                  - s3:GetObject
                   - s3:DeleteObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/*"
+                Effect: Allow
+              - Action:
+                  - s3:GetObject
                 Resource:
                   - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/manifests/*"
                 Effect: Allow
               - Action:
                   - s3:PutObject
-                  - s3:DeleteObject
                 Resource:
                   - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/final-task-statuses/*"
                 Effect: Allow
@@ -981,6 +984,17 @@ Resources:
                   - s3:GetObject
                 Resource:
                   - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/final-task-statuses/*"
+                Effect: Allow
+              - Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/cached-probe-results/*"
+                Effect: Allow
+              - Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${DeploymentServiceBucket}"
                 Effect: Allow
               - Action:
                   - 'cloudformation:DescribeStackEvents'
@@ -2029,61 +2043,6 @@ Resources:
             Resource: "*"
             Action:
             - "kms:Decrypt"
-{{- if and (index .Cluster.ConfigItems "spotio_account_id") (index .Cluster.ConfigItems "spotio_access_token") }}
-  SpotIOOceanCluster:
-    Type: Custom::ocean
-    Properties:
-      ServiceToken: !Sub "arn:aws:lambda:${AWS::Region}:178579023202:function:spotinst-cloudformation"
-      accessToken: "{{ .Cluster.ConfigItems.spotio_access_token }}"
-      accountId: "{{ .Cluster.ConfigItems.spotio_account_id }}"
-      autoTag: true
-      updatePolicy:
-        shouldUpdateTargetCapacity: false
-        shouldRoll: "false" # disable rolling update, this is managed by CLM,CLC
-        rollConfig:
-          roll:
-            batchSizePercentage: "25"
-      # API Docs: https://help.spot.io/spotinst-api/ocean/ocean-cloud-api/ocean-for-aws/create-2/
-      ocean:
-        name: "{{ .Cluster.Alias }}-{{ .Cluster.ID }}"
-        controllerClusterId: "{{ .Cluster.LocalID }}"
-        region: !Ref AWS::Region
-        autoScaler:
-          isEnabled: true
-          cooldown: 180 # 3 min. This seems to be the minimum value
-          # maximum resources which can be allocated to the cluster
-          # Use very high values as we have the limit set via the
-          # capacity.maximum (NodePool.MaxSize)
-          resourceLimits:
-            maxMemoryGib: 1500000
-            maxVCpu: 75000
-          down:
-            # evaluationPeriods: 3
-            maxScaleDownPercentage: 100
-          headroom: # disable headroom/preprovisioned instances
-            cpuPerUnit: 0
-            memoryPerUnit: 0
-            numOfUnits: 0
-          isAutoConfig: false
-        capacity:
-          minimum: 0
-          maximum: {{ nodeCIDRMaxNodes (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}
-          target: 0 # default target (should just be zero)
-        strategy:
-          fallbackToOd: {{ .Cluster.ConfigItems.spotio_ocean_fallback_to_ondemand }}
-          utilizeReservedInstances: {{ .Cluster.ConfigItems.spotio_ocean_utilize_reserved_instances }}
-        compute:
-          subnetIds:
-          {{- with $values := .Values }}
-          {{- range $az := $values.availability_zones }}
-            - "{{ index $values.subnets $az }}"
-          {{- end }}
-          {{- end }}
-          launchSpecification:
-            useAsTemplateOnly: true
-            securityGroupIds:
-            - !Ref WorkerSecurityGroup
-{{- end }}
 Outputs:
   MasterIAMRole:
     Export:
@@ -2131,10 +2090,3 @@ Outputs:
     Export:
       Name: '{{ .Cluster.ID}}:etcd-encryption-key'
     Value: !Ref EtcdEncryptionKey
-{{- if and (index .Cluster.ConfigItems "spotio_account_id") (index .Cluster.ConfigItems "spotio_access_token") }}
-  OceanId:
-    Description: The spot.io Ocean ID
-    Value: !Ref SpotIOOceanCluster
-    Export:
-      Name: "{{ .Cluster.ID }}:spotio-ocean-id"
-{{- end }}
