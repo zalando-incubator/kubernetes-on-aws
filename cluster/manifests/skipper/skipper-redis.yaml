@@ -3,7 +3,7 @@ kind: StatefulSet
 metadata:
   labels:
     application: skipper-ingress-redis
-    version: v4.0.9
+    version: v6.2.3
   name: skipper-ingress-redis
   namespace: kube-system
 spec:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress-redis
-        version: v4.0.9
+        version: v6.2.3
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
@@ -42,7 +42,7 @@ spec:
                 - skipper-ingress-redis
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       containers:
-      - image: registry.opensource.zalan.do/zmon/redis:4.0.9-master-6
+      - image: registry.opensource.zalan.do/zmon/redis:6-master-12
         name: skipper-ingress-redis
         ports:
         - containerPort: 6379
