@@ -40,8 +40,6 @@ clusters:
     routegroups_validation: "enabled"
     stackset_routegroup_support_enabled: "true"
     stackset_ingress_source_switch_ttl: "1m"
-    spotio_account_id: "${SPOTIO_ACCOUNT_ID}"
-    spotio_access_token: "${SPOTIO_ACCESS_TOKEN}"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
