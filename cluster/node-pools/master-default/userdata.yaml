@@ -664,7 +664,11 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-scheduler
+{{- if index .Cluster.ConfigItems "experimental_kube_scheduler_image" }}
+          image: {{.Cluster.ConfigItems.experimental_kube_scheduler_image}}
+{{- else }}
           image: nonexistent.zalan.do/teapot/kube-scheduler:fixed
+{{- end }}
           args:
           - --kubeconfig=/etc/kubernetes/scheduler-kubeconfig
           - --leader-elect=true
