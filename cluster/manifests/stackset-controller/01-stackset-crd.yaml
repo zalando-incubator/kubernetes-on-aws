@@ -119,11 +119,17 @@ spec:
                           type: string
                         algorithm:
                           description: Algorithm is required for Type lb
+                          enum:
+                          - roundRobin
+                          - random
+                          - consistentHash
+                          - powerOfRandomNChoices
                           type: string
                         endpoints:
                           description: Endpoints is required for Type lb
                           items:
                             type: string
+                          minItems: 1
                           type: array
                         name:
                           description: Name is the BackendName that can be referenced
@@ -157,6 +163,15 @@ spec:
                     items:
                       type: string
                     type: array
+                  lbAlgorithm:
+                    description: The load balancing algorithm used for the generated
+                      per stack backends.
+                    enum:
+                    - roundRobin
+                    - random
+                    - consistentHash
+                    - powerOfRandomNChoices
+                    type: string
                   metadata:
                     description: EmbeddedObjectMetaWithAnnotations defines the metadata
                       which can be attached to a resource. It's a slimmed down version
@@ -190,6 +205,7 @@ spec:
                               weight:
                                 description: Weight defines the traffic weight, if
                                   there are 2 or more default backends
+                                minimum: 0
                                 type: integer
                             required:
                             - backendName
