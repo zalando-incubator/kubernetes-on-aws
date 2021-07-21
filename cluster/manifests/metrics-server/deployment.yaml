@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: metrics-server
-    version: v0.4.2
+    version: v0.5.0
 spec:
   replicas: 1
   selector:
@@ -16,7 +16,7 @@ spec:
       name: metrics-server
       labels:
         application: metrics-server
-        version: v0.4.2
+        version: v0.5.0
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
@@ -27,11 +27,12 @@ spec:
       serviceAccountName: metrics-server
       containers:
       - name: metrics-server
-        image: registry.opensource.zalan.do/teapot/metrics-server:v0.4.2
+        image: registry.opensource.zalan.do/teapot/metrics-server:v0.5.0
         args:
         - --cert-dir=/tmp
         - --secure-port=4443
         - --kubelet-use-node-status-port
+        - --metric-resolution={{.Cluster.ConfigItems.metrics_server_metric_resolution}}
         resources:
           limits:
             cpu: "{{.ConfigItems.metrics_service_cpu}}"
