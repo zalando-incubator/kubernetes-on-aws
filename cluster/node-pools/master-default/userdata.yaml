@@ -126,7 +126,6 @@ write_files:
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --authorization-webhook-version=v1
           - --token-auth-file=/etc/kubernetes/config/tokenfile.csv
-          - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
 {{- if eq .Cluster.ConfigItems.okta_auth_enabled "true" }}
           - --oidc-issuer-url={{.Cluster.ConfigItems.okta_auth_issuer_url}}
           - --oidc-client-id={{.Cluster.ConfigItems.okta_auth_client_id}}
@@ -199,7 +198,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-122
+        - image: registry.opensource.zalan.do/teapot/admission-controller:pr-134-4
           name: admission-controller
           lifecycle:
             preStop:
@@ -407,18 +406,6 @@ write_files:
           - name: BUSINESS_PARTNERS
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
-        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.5.6
-          name: image-policy-webhook
-          args:
-          - --policy={{ .Cluster.ConfigItems.image_policy }}
-          - --failure-policy=fail
-          - --trusted-ttl=30s
-          ports:
-          - containerPort: 8083
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c",  " sleep 60"]
         - name: skipper-proxy
           image: registry.opensource.zalan.do/teapot/skipper:v0.13.53
           args:
@@ -704,32 +691,6 @@ write_files:
     path: /etc/kubernetes/config/tokenfile.csv
     permissions: 0600
     content: ""
-
-  - owner: root:root
-    path: /etc/kubernetes/config/image-policy-webhook.yaml
-    content: |
-      imagePolicy:
-        kubeConfigFile: /etc/kubernetes/config/image-policy-webhook-kubeconfig.yaml
-        allowTTL: 2
-        denyTTL: 2
-        retryBackoff: 500
-        defaultAllow: false
-
-  - owner: root:root
-    path: /etc/kubernetes/config/image-policy-webhook-kubeconfig.yaml
-    content: |
-      clusters:
-        - name: image-policy-webhook
-          cluster:
-            server: http://127.0.0.1:8083/admit
-      users:
-        - name: image-policy-webhook
-      current-context: image-policy-webhook
-      contexts:
-      - context:
-          cluster: image-policy-webhook
-          user: image-policy-webhook
-        name: image-policy-webhook
 
   - owner: root:root
     path: /etc/kubernetes/config/audit.yaml
