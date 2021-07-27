@@ -320,6 +320,7 @@ teapot_admission_controller_daemonset_reserved_memory: "64Gi"
 {{if eq .Cluster.Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_base_images: "true"
+teapot_admission_controller_validate_pod_images: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
@@ -327,6 +328,7 @@ teapot_admission_controller_namespace_delete_protection_enabled: "true"
 {{else if eq .Cluster.Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
+teapot_admission_controller_validate_pod_images: "false"
 teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
@@ -334,6 +336,7 @@ teapot_admission_controller_namespace_delete_protection_enabled: "false"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
+teapot_admission_controller_validate_pod_images: "false"
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "false"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
@@ -406,7 +409,7 @@ coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_20: {{ amiID "zalando-ubuntu-kubernetes-production-v1.20.9-master-177" "861068367966"}}
+kuberuntu_image_v1_20: {{ amiID "zalando-ubuntu-kubernetes-production-v1.20.9-master-180" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -621,3 +624,8 @@ deployment_service_enabled: "true"
 {{ else }}
 deployment_service_enabled: "false"
 {{ end }}
+
+# Settings for the emergency access service
+# Service to use when checking incidents, valid values are 'jira' and 'opsgenie'. Temporary, will be dropped once
+# we fully migrate away from Jira.
+emergency_access_service_incident_backend: "jira"
