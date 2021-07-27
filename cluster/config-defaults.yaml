@@ -127,7 +127,7 @@ skipper_ingress_lightstep_propagators: "lightstep"
 # set to "log-events" to enable
 skipper_ingress_lightstep_log_events: ""
 lightstep_token: ""
-tracing_collector_host: "tracing.stups.zalan.do"
+tracing_collector_host: "tracing.platform-infrastructure.zalan.do"
 
 # Skipper new metrics
 # https://github.com/zalando/skipper/pull/1755
@@ -241,6 +241,7 @@ prometheus_remote_max_backoff: "10s"
 metrics_service_cpu: "100m"
 metrics_service_mem: "200Mi"
 metrics_service_mem_max: "4Gi"
+metrics_server_metric_resolution: "15s"
 
 kube_aws_iam_controller_cpu: "5m"
 kube_aws_iam_controller_mem: "50Mi"
@@ -402,8 +403,7 @@ coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_19: {{ amiID "zalando-ubuntu-kubernetes-production-v1.19.10-master-161" "861068367966"}}
-kuberuntu_image_v1_20: {{ amiID "zalando-ubuntu-kubernetes-production-v1.20.8-master-167" "861068367966"}}
+kuberuntu_image_v1_20: {{ amiID "zalando-ubuntu-kubernetes-production-v1.20.9-master-180" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -451,6 +451,16 @@ serialize_image_pulls: "false"
 #   exclusive:   NLB will be fully functional and ELB will be removed
 #
 apiserver_nlb: "exclusive"
+
+# Version of the scheduler used by the master nodes.
+# Supported values:
+#  - upstream: official Kubernetes version
+#  - zalando:  internal Zalando build with our custom patches
+{{ if eq .Cluster.Environment "production" }}
+kubernetes_scheduler_image: "upstream"
+{{ else }}
+kubernetes_scheduler_image: "zalando"
+{{ end }}
 
 # when set to true, service account tokens can be used from outside the cluster
 allow_external_service_accounts: "false"
