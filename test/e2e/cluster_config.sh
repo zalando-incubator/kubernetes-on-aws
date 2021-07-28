@@ -17,6 +17,7 @@ clusters:
     etcd_client_ca_cert: "${ETCD_CLIENT_CA_CERT}"
     etcd_client_ca_key: "${ETCD_CLIENT_CA_KEY}"
     image_policy: dev
+    docker_meta_url: https://docker-meta.stups-test.zalan.do
     service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
     lightstep_token: "${LIGHTSTEP_TOKEN}"
