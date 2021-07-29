@@ -70,26 +70,28 @@ var _ = framework.KubeDescribe("API Server webhook tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("Should not allow deployment using not trusted image [Image-Webhook] [Non-Compliant] [Zalando]", func() {
-		tag := "bc1a6fe-nottrusted2"
-
-		nameprefix := "image-policy-webhook-test-non-compliant"
-		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
-		var replicas int32 = 1
-		ns := f.Namespace.Name
-
-		By("Creating deployment " + nameprefix + " in namespace " + ns)
-
-		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
-		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-		defer func() {
-			By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
-			defer GinkgoRecover()
-			err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
-		}()
-		err = waitForDeploymentWithCondition(cs, ns, deployment.Name, "FailedCreate", appsv1.DeploymentReplicaFailure)
-		Expect(err).NotTo(HaveOccurred())
-	})
+	// TODO: Re-enable this test, see: https://github.com/zalando-incubator/kubernetes-on-aws/pull/4503
+	//
+	//It("Should not allow deployment using not trusted image [Image-Webhook] [Non-Compliant] [Zalando]", func() {
+	//	tag := "bc1a6fe-nottrusted2"
+	//
+	//	nameprefix := "image-policy-webhook-test-non-compliant"
+	//	podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
+	//	var replicas int32 = 1
+	//	ns := f.Namespace.Name
+	//
+	//	By("Creating deployment " + nameprefix + " in namespace " + ns)
+	//
+	//	deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
+	//	_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
+	//	Expect(err).NotTo(HaveOccurred())
+	//	defer func() {
+	//		By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
+	//		defer GinkgoRecover()
+	//		err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
+	//		Expect(err).NotTo(HaveOccurred())
+	//	}()
+	//	err = waitForDeploymentWithCondition(cs, ns, deployment.Name, "FailedCreate", appsv1.DeploymentReplicaFailure)
+	//	Expect(err).NotTo(HaveOccurred())
+	//})
 })
