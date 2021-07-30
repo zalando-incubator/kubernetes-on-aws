@@ -27,6 +27,7 @@ kube_aws_ingress_controller_nlb_enabled: "false"
 kube_aws_ingress_controller_nlb_cross_zone: "true"
 # sets the default LB type: "network" or "application" are valid choices
 kube_aws_ingress_default_lb_type: "application"
+kube_aws_ingress_controller_cert_polling_interval: "2m"
 
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "60"
@@ -90,7 +91,7 @@ enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup cand
 ## Enable the kube-metrics-adapter time-based metrics.
 enable_scaling_schedule_metrics: "true"
 ## ZMON KairosDB URL
-zmon_kairosdb_url: "https://zmon-kairosdb-read-old.platform-infrastructure.zalan.do"
+zmon_kairosdb_url: "https://data-service.zmon.zalan.do/kairosdb-proxy"
 
 # skipper east-west feature
 # enable_skipper_eastwest is the legacy feature gate for the automatic
@@ -180,12 +181,8 @@ skipper_oauth2_ui_login: "true"
 skipper_time_based_scaling_check_id: ""
 skipper_time_based_scaling_target: "1"
 
-# Image Policy Webhook
-{{if eq .Cluster.Environment "production"}}
-image_policy: "trusted"
-{{else}}
+# disables image-policy-webhook in all clusters
 image_policy: "dev"
-{{end}}
 
 # cadvisor settings
 cadvisor_cpu: "150m"
@@ -217,6 +214,9 @@ scalyr_team_token: ""
 log_destination_infra: "scalyr/stups"
 log_destination_both: "scalyr/main+stups"
 log_destination_local: "scalyr/main"
+
+# Central bucket to keep logging infrastructure logs
+logging_infrastructure_s3_bucket: ""
 
 vpa_cpu: "200m"
 vpa_mem: "500Mi"
@@ -317,7 +317,7 @@ teapot_admission_controller_daemonset_reserved_memory: "64Gi"
 {{if eq .Cluster.Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_base_images: "true"
-teapot_admission_controller_validate_images_for_pods: "true"
+teapot_admission_controller_validate_pod_images: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
@@ -325,7 +325,7 @@ teapot_admission_controller_namespace_delete_protection_enabled: "true"
 {{else if eq .Cluster.Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
-teapot_admission_controller_validate_images_for_pods: "false"
+teapot_admission_controller_validate_pod_images: "false"
 teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
@@ -333,7 +333,7 @@ teapot_admission_controller_namespace_delete_protection_enabled: "false"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
-teapot_admission_controller_validate_images_for_pods: "false"
+teapot_admission_controller_validate_pod_images: "false"
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "false"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
@@ -406,7 +406,7 @@ coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_20: {{ amiID "zalando-ubuntu-kubernetes-production-v1.20.9-master-177" "861068367966"}}
+kuberuntu_image_v1_20: {{ amiID "zalando-ubuntu-kubernetes-production-v1.20.9-master-180" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -459,11 +459,7 @@ apiserver_nlb: "exclusive"
 # Supported values:
 #  - upstream: official Kubernetes version
 #  - zalando:  internal Zalando build with our custom patches
-{{ if eq .Cluster.Environment "production" }}
-kubernetes_scheduler_image: "upstream"
-{{ else }}
 kubernetes_scheduler_image: "zalando"
-{{ end }}
 
 # when set to true, service account tokens can be used from outside the cluster
 allow_external_service_accounts: "false"
@@ -621,3 +617,8 @@ deployment_service_enabled: "true"
 {{ else }}
 deployment_service_enabled: "false"
 {{ end }}
+
+# Settings for the emergency access service
+# Service to use when checking incidents, valid values are 'jira' and 'opsgenie'. Temporary, will be dropped once
+# we fully migrate away from Jira.
+emergency_access_service_incident_backend: "jira"

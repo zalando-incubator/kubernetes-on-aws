@@ -46,6 +46,14 @@ data:
   pod.image-check.namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_images_for_pods_namespace_filter }}"
 {{- end }}
 
+  pod.image-check.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images }}"
+{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_namespaces" }}
+  pod.image-check.namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_namespaces }}"
+{{- end }}
+{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_ignore_namespaces" }}
+  pod.image-check.ignore-namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_ignore_namespaces }}"
+{{- end }}
+
   deployment.default.rolling-update-max-surge: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}"
   deployment.default.rolling-update-max-unavailable: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}"
 
