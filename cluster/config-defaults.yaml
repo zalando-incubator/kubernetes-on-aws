@@ -321,7 +321,7 @@ teapot_admission_controller_daemonset_reserved_memory: "64Gi"
 {{if eq .Cluster.Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_base_images: "true"
-teapot_admission_controller_validate_pod_images: "false"
+teapot_admission_controller_validate_pod_images: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
@@ -463,11 +463,7 @@ apiserver_nlb: "exclusive"
 # Supported values:
 #  - upstream: official Kubernetes version
 #  - zalando:  internal Zalando build with our custom patches
-{{ if eq .Cluster.Environment "production" }}
-kubernetes_scheduler_image: "upstream"
-{{ else }}
 kubernetes_scheduler_image: "zalando"
-{{ end }}
 
 # when set to true, service account tokens can be used from outside the cluster
 allow_external_service_accounts: "false"
