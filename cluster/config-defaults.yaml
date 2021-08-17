@@ -23,10 +23,27 @@ kube_aws_ingress_controller_idle_timeout: "1m"
 kube_aws_ingress_controller_deregistration_delay_timeout: "10s"
 # allow using NLBs for ingress
 # This opens port 9999 (skipper-ingress) on all worker nodes.
-kube_aws_ingress_controller_nlb_enabled: "false"
+kube_aws_ingress_controller_nlb_enabled: "true"
 kube_aws_ingress_controller_nlb_cross_zone: "true"
+kube_aws_ingress_controller_cert_polling_interval: "2m"
 # sets the default LB type: "network" or "application" are valid choices
 kube_aws_ingress_default_lb_type: "application"
+
+# ALB to NLB switch
+# "pre": skipper-ingress clone routes with SourceFromLast and adds an addtional route with ClientIP instead of SourceFromLast
+# "exec": same as "pre" and kube-ingress-aws-controller will default to NLB
+# "post": skipper-ingress edit routes with SourceFromLast and replaces SourceFromLast with ClientIP and kube-ingress-aws-controller will default to NLB
+# "final": skipper-ingress does not modify routes and kube-ingress-aws-controller defaults to NLB
+# after removing it you need to set kube_aws_ingress_default_lb_type: "network" above
+{{if eq .Cluster.Channel "dev"}}
+nlb_switch: "pre"
+{{else if eq .Cluster.Channel "alpha"}}
+nlb_switch: "false"
+{{else if eq .Cluster.Channel "beta"}}
+nlb_switch: "false"
+{{else}}
+nlb_switch: "false"
+{{end}}
 
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "60"
@@ -180,12 +197,8 @@ skipper_oauth2_ui_login: "true"
 skipper_time_based_scaling_check_id: ""
 skipper_time_based_scaling_target: "1"
 
-# Image Policy Webhook
-{{if eq .Cluster.Environment "production"}}
-image_policy: "trusted"
-{{else}}
+# disables image-policy-webhook in all clusters
 image_policy: "dev"
-{{end}}
 
 # cadvisor settings
 cadvisor_cpu: "150m"
@@ -320,7 +333,7 @@ teapot_admission_controller_daemonset_reserved_memory: "64Gi"
 {{if eq .Cluster.Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_base_images: "true"
-teapot_admission_controller_validate_pod_images: "false"
+teapot_admission_controller_validate_pod_images: "true"
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
@@ -410,7 +423,7 @@ coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_20: {{ amiID "zalando-ubuntu-kubernetes-production-v1.20.9-master-180" "861068367966"}}
+kuberuntu_image_v1_20: {{ amiID "zalando-ubuntu-kubernetes-production-v1.20.10-master-182" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -463,11 +476,7 @@ apiserver_nlb: "exclusive"
 # Supported values:
 #  - upstream: official Kubernetes version
 #  - zalando:  internal Zalando build with our custom patches
-{{ if eq .Cluster.Environment "production" }}
-kubernetes_scheduler_image: "upstream"
-{{ else }}
 kubernetes_scheduler_image: "zalando"
-{{ end }}
 
 # when set to true, service account tokens can be used from outside the cluster
 allow_external_service_accounts: "false"
