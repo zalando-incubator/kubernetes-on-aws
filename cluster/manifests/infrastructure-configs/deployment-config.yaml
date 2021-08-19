@@ -18,4 +18,7 @@ data:
   s3-bucket-name: "zalando-deployment-service-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
   status-service-url: "https://deployment-status-service.{{.Values.hosted_zone}}."
   deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
+{{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
+  ml-experiment-deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-deployment-service-ml-experiment-deployment"
+{{- end }}
 {{- end }}
