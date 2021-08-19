@@ -960,6 +960,22 @@ Resources:
               - sts:AssumeRole
       ManagedPolicyArns:
         - !Ref DeploymentIAMPolicy
+{{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
+  DeploymentControllerMLExperimentDeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-deployment-service-ml-experiment-deployment"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt DeploymentControllerRole.Arn
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/mlbuilder-permission-boundary"
+{{- end }}
   DeploymentStatusServiceRole:
     Type: AWS::IAM::Role
     Properties:
