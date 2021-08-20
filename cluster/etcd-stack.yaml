@@ -1,0 +1,218 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Kubernetes etcd cluster
+Metadata:
+  Tags:
+    InfrastructureComponent: "true"
+    "kubernetes:component": "etcd-cluster"
+Outputs:
+  EtcdSecurityGroupId:
+    Description: "Security Group ID of the etcd cluster"
+    Value: !GetAtt EtcdSecurityGroup.GroupId
+    Export:
+      Name: "etcd-cluster-etcd:security-group-id"
+  LaunchTemplateId:
+    Description: "Launch template ID of the etcd nodes"
+    Value: !Ref LaunchTemplate
+    Export:
+      Name: "etcd-cluster-etcd:launch-template-id"
+Resources:
+  AppServerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref EtcdRole
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            AssociatePublicIpAddress: true
+            Groups:
+              - !GetAtt EtcdSecurityGroup.GroupId
+        EbsOptimized: false
+        IamInstanceProfile:
+          Name: !Ref AppServerInstanceProfile
+        InstanceInitiatedShutdownBehavior: terminate
+        ImageId: {{.Cluster.ConfigItems.etcd_ami}}
+        InstanceType: {{.Cluster.ConfigItems.etcd_instance_type}}
+        UserData: !Base64 |
+          #taupage-ami-config
+          application_id: etcd-cluster
+          application_version: etcd
+          environment:
+            CLIENT_CERT: "{{.Values.etcd_client_server_cert}}"
+            CLIENT_KEY: "{{.Values.etcd_client_server_key}}"
+            CLIENT_TLS_ENABLED: 'true'
+            CLIENT_TRUSTED_CA: "{{.Values.etcd_client_ca_cert}}"
+            HOSTED_ZONE: "{{.Cluster.Alias}}.zalan.do"
+          mounts:
+            /home/etcd:
+              erase_on_boot: false
+              filesystem: tmpfs
+              options: size=2g
+              partition: none
+          notify_cfn:
+            resource: AppServer
+            stack: etcd-cluster-etcd
+          ports:
+            2379: 2379
+            2380: 2380
+            2381: 2381
+            2479: 2479
+          runtime: Docker
+          scalyr_account_key: "{{.Values.etcd_scalyr_key}}"
+          source: "{{.Cluster.ConfigItems.etcd_docker_image}}"
+  AppServer:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    CreationPolicy:
+      ResourceSignal:
+        Count: "1"
+        Timeout: PT15M
+    Properties:
+      DesiredCapacity: {{.Cluster.ConfigItems.etcd_instance_count}}
+      HealthCheckGracePeriod: 300
+      HealthCheckType: EC2
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: {{.Cluster.ConfigItems.etcd_instance_count}}
+      MaxSize: {{.Cluster.ConfigItems.etcd_instance_count}}
+      VPCZoneIdentifier:
+{{- with $values := .Values }}
+{{- range $az := $values.availability_zones }}
+        - "{{ index $values.subnets $az }}"
+{{- end }}
+{{- end }}
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: true
+          Value: etcd-cluster-etcd
+        - Key: StackName
+          PropagateAtLaunch: true
+          Value: etcd-cluster
+        - Key: StackVersion
+          PropagateAtLaunch: true
+          Value: etcd
+        - Key: kubernetes:component
+          PropagateAtLaunch: true
+          Value: etcd-cluster
+        - Key: certificate-expiry-ca
+          PropagateAtLaunch: true
+          Value: {{certificateExpiry (base64Decode .Cluster.ConfigItems.etcd_client_ca_cert)}}
+        - Key: certificate-expiry-node
+          PropagateAtLaunch: true
+          Value: {{certificateExpiry (base64Decode .Cluster.ConfigItems.etcd_client_server_cert)}}
+  AppServerScaleDown:
+    Type: "AWS::AutoScaling::ScalingPolicy"
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AppServer
+      Cooldown: "60"
+      ScalingAdjustment: "-1"
+  AppServerScaleUp:
+    Type: "AWS::AutoScaling::ScalingPolicy"
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AppServer
+      Cooldown: "60"
+      ScalingAdjustment: "1"
+  EtcdSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Etcd Appliance Security Group
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+      - IpProtocol: tcp
+        FromPort: 2381
+        ToPort: 2381
+        CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+      - IpProtocol: tcp
+        FromPort: 9100
+        ToPort: 9100
+        CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+{{- if eq .Cluster.ConfigItems.etcd_stack_specify_vpc_in_security_group "true"}}
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+{{- end }}
+      Tags:
+        - Key: InfrastructureComponent
+          Value: true
+  EtcdIngressMembers:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      GroupId: !GetAtt EtcdSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 2379
+      ToPort: 2479
+      SourceSecurityGroupId: !GetAtt EtcdSecurityGroup.GroupId
+  EtcdBackupBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: "{{.Cluster.ConfigItems.etcd_s3_backup_bucket}}"
+      LifecycleConfiguration:
+        Rules:
+          - AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+            ExpirationInDays: 2
+            NoncurrentVersionExpirationInDays: 1
+            Prefix: ""
+            Status: Enabled
+      VersioningConfiguration:
+        Status: Suspended
+  EtcdRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: AmazonEC2ReadOnlyAccess
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+              - ec2:Describe*
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:RevokeSecurityGroupIngress
+            Resource: "*"
+          - Effect: Allow
+            Action: autoscaling:Describe*
+            Resource: "*"
+      - PolicyName: AmazonRoute53Access
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - route53:ListHostedZonesByName
+            - route53:ChangeResourceRecordSets
+            - route53:GetHostedZone
+            - route53:ListResourceRecordSets
+            - route53:GetChange
+            Resource: "*"
+      - PolicyName: AmazonS3EtcdBackupWrite
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:PutObject
+            Resource: [ "arn:aws:s3:::{{.Cluster.ConfigItems.etcd_s3_backup_bucket}}/*" ]
+      - PolicyName: KMSDecrypt
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action: ["kms:Decrypt"]
+            Resource: ["{{.Values.etcd_kms_key_arn}}"]
