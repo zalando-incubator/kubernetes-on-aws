@@ -33,7 +33,7 @@ e2e.test: generate-code
 	GO111MODULE=on go test -v -c -o e2e.test
 
 stackset-e2e:
-	GO111MODULE=on CGO_ENABLED=0 go test -c -o stackset-e2e github.com/zalando-incubator/stackset-controller/cmd/e2e
+	GO111MODULE=on CGO_ENABLED=0 go test -modfile stackset/go.mod -c -o stackset-e2e github.com/zalando-incubator/stackset-controller/cmd/e2e
 
 build: e2e.test stackset-e2e
 
