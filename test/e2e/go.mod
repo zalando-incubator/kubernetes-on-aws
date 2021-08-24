@@ -5,7 +5,6 @@ go 1.16
 require (
 	github.com/NYTimes/gziphandler v1.0.1 // indirect
 	github.com/evanphx/json-patch v4.9.0+incompatible
-	github.com/golang/mock v1.4.4 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/gregjones/httpcache v0.0.0-20181110185634-c63ab54fda8f // indirect
 	github.com/jteeuwen/go-bindata v0.0.0-20151023091102-a0ff2567cfb7
@@ -17,22 +16,21 @@ require (
 	github.com/szuecs/routegroup-client v0.17.8-0.20210112151959-1b69df565b42
 	github.com/zalando-incubator/kube-aws-iam-controller v0.1.2
 	github.com/zalando-incubator/stackset-controller v1.3.40
-	go.opencensus.io v0.22.4 // indirect
-	go.uber.org/zap v1.13.0 // indirect
-	google.golang.org/api v0.22.0 // indirect
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
-	k8s.io/api v0.20.7
-	k8s.io/apimachinery v0.20.7
+	k8s.io/api v0.20.10
+	k8s.io/apimachinery v0.20.10
 	k8s.io/apiserver v0.0.0
-	k8s.io/client-go v0.20.7
+	k8s.io/client-go v0.20.10
 	k8s.io/kubernetes v0.0.0
 )
 
 replace (
 	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
+	github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.11.0
+	github.com/onsi/gomega => github.com/onsi/gomega v1.7.0
+	google.golang.org/grpc => google.golang.org/grpc v1.27.1
 	k8s.io/api => ./e2e_modules/kubernetes/staging/src/k8s.io/api
 	k8s.io/apiextensions-apiserver => ./e2e_modules/kubernetes/staging/src/k8s.io/apiextensions-apiserver
 	k8s.io/apimachinery => ./e2e_modules/kubernetes/staging/src/k8s.io/apimachinery
