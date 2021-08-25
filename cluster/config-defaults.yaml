@@ -401,11 +401,20 @@ teapot_admission_controller_prevent_scale_down_allowed: "false"
 # etcd cluster
 {{if eq .Cluster.Environment "production"}}
 etcd_instance_count: "5"
+etcd_instance_type: "m5.large"
 {{else}}
 etcd_instance_count: "3"
+etcd_instance_type: "t3.medium"
 {{end}}
 
+etcd_docker_image: "registry.opensource.zalan.do/teapot/etcd-cluster:3.4.16-master-9"
 etcd_scalyr_key: ""
+etcd_ami: {{ amiID "Taupage-AMI-20210504-093855" "861068367966"}}
+# Old etcd stacks have been created without an explicit VPC ID in the security group. This cannot be changed without
+# recreating the security group, which is impossible because of cross-stack references.
+# TODO investigate if it can be migrated.
+etcd_stack_specify_vpc_in_security_group: "true"
+
 dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
@@ -634,8 +643,4 @@ deployment_service_enabled: "true"
 {{ else }}
 deployment_service_enabled: "false"
 {{ end }}
-
-# Settings for the emergency access service
-# Service to use when checking incidents, valid values are 'jira' and 'opsgenie'. Temporary, will be dropped once
-# we fully migrate away from Jira.
-emergency_access_service_incident_backend: "jira"
+deployment_service_ml_experiments_enabled: "false"
