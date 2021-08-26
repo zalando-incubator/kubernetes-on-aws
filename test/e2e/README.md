@@ -63,7 +63,7 @@ scratch and test the Kubernetes type Foo.
   	"k8s.io/kubernetes/test/e2e/framework"
   )
 
-  var _ = framework.KubeDescribe("Thing under test, func() {
+  var _ = describe("Thing under test, func() {
   	f := framework.NewDefaultFramework("Describe thing under test")
   	var cs kubernetes.Interface
       // we need always a clean clientset.Interface for all our tests

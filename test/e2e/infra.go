@@ -15,7 +15,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework/deployment"
 )
 
-var _ = framework.KubeDescribe("Infrastructure tests", func() {
+var _ = describe("Infrastructure tests", func() {
 	f := framework.NewDefaultFramework("zalando-kube-infra")
 	var cs kubernetes.Interface
 

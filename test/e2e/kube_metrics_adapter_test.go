@@ -26,7 +26,7 @@ import (
 // 1. Create a deployment with an hpa and more pods than needed. Then "deploy" it
 // 2. Set the metrics "queue_count" of the app at startup
 // 3. Observe if the HPA downscales
-var _ = framework.KubeDescribe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metrics from kube-metrics-adapter)", func() {
+var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metrics from kube-metrics-adapter)", func() {
 	f := framework.NewDefaultFramework("zalando-kube-metrics-adapter")
 	var cs kubernetes.Interface
 	var rgcs rgclient.Interface

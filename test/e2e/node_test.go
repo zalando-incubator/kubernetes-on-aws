@@ -17,7 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = framework.KubeDescribe("Node tests", func() {
+var _ = describe("Node tests", func() {
 	f := framework.NewDefaultFramework("node-tests")
 	var cs kubernetes.Interface
 

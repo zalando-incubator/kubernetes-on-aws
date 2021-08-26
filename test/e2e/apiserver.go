@@ -33,7 +33,7 @@ import (
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
-var _ = framework.KubeDescribe("API Server webhook tests (enabled namespace)", func() {
+var _ = describe("API Server webhook tests (enabled namespace)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-enabled")
 	var cs kubernetes.Interface
 
@@ -94,7 +94,7 @@ var _ = framework.KubeDescribe("API Server webhook tests (enabled namespace)", f
 	})
 })
 
-var _ = framework.KubeDescribe("API Server webhook tests (ignored namespace)", func() {
+var _ = describe("API Server webhook tests (ignored namespace)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-ignored")
 	var cs kubernetes.Interface
 
