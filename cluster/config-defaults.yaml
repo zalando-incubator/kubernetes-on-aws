@@ -17,6 +17,12 @@ cluster_autoscaler_max_pod_eviction_time: "1h"
 cluster_autoscaler_max_pod_eviction_time: "3h"
 {{end}}
 
+{{if eq .Cluster.Environment "production"}}
+experimental_cluster_autoscaler_check_scaling_events: "false"
+{{else}}
+experimental_cluster_autoscaler_check_scaling_events: "true"
+{{end}}
+
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
