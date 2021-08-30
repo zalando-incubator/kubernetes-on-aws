@@ -17,6 +17,9 @@ cluster_autoscaler_max_pod_eviction_time: "1h"
 cluster_autoscaler_max_pod_eviction_time: "3h"
 {{end}}
 
+# Override terminationGracePeriodSeconds when evicting pods for scale down, if the pods' value is higher than this one
+cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
+
 {{if eq .Cluster.Environment "production"}}
 experimental_cluster_autoscaler_check_scaling_events: "false"
 {{else}}
