@@ -222,14 +222,14 @@ if [ "$stackset_e2e" = true ]; then
 fi
 
 if [ "$decommission_cluster" = true ]; then
-    # generate updated clusters.yaml
-    "./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" > head_cluster.yaml
-    # delete cluster
-    clm decommission \
-        --remove-volumes \
-        --token="${CLUSTER_ADMIN_TOKEN}" \
-        --directory="$(pwd)/../.." \
-        --assumed-role=cluster-lifecycle-manager-entrypoint \
-        --debug \
-        --registry=head_cluster.yaml
+    existing_tags="$(aws --region "$REGION" cloudformation describe-stacks --stack-name "${LOCAL_ID}" --query "Stacks[0].Tags" | jq --sort-keys -c '[.[] | {key: .Key, value: .Value}] | from_entries')"
+    updated_tags="$(printf "%s" "$existing_tags" | jq --sort-keys -c '.["decommission-requested"] = "true"')"
+    if [[ "$existing_tags" != "$updated_tags" ]]; then
+        aws --region "$REGION" cloudformation update-stack --stack-name "${LOCAL_ID}" \
+            --use-previous-template \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --tags "$(printf "%s" "$updated_tags" | jq -c 'to_entries | [.[] | {Key: .key, Value: .value}]')"
+    else
+        echo "Stack already marked for decommissioning"
+    fi
 fi
