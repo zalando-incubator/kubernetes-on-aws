@@ -41,6 +41,19 @@ spec:
             tag-application: "skipper-ingress"
             aggregators: last
 {{ end }}
+{{ if ne .ConfigItems.skipper_scaling_schedule_hyped_articles_target "" }}
+  - type: Object
+    object:
+      describedObject:
+        apiVersion: zalando.org/v1
+        kind: ClusterScalingSchedule
+        name: hyped-article-release
+      metric:
+        name: hyped-article-release
+      target:
+        averageValue: {{ .ConfigItems.skipper_scaling_schedule_hyped_articles_target }}
+        type: AverageValue
+{{ end }}
   behavior:
     scaleDown:
       stabilizationWindowSeconds: 600
