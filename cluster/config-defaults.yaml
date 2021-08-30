@@ -17,6 +17,11 @@ cluster_autoscaler_max_pod_eviction_time: "1h"
 cluster_autoscaler_max_pod_eviction_time: "3h"
 {{end}}
 
+# Override terminationGracePeriodSeconds when evicting pods for scale down, if the pods' value is higher than this one
+cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
+
+experimental_cluster_autoscaler_check_scaling_events: "true"
+
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
@@ -48,7 +53,7 @@ nlb_switch: "false"
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "60"
 skipper_ingress_target_average_utilization_memory: "80"
-skipper_ingress_max_replicas: "180"
+skipper_ingress_max_replicas: "50"
 skipper_ingress_min_replicas: "3"
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1Gi"
@@ -194,8 +199,12 @@ skipper_oauth2_ui_login: "true"
 #
 # This section contains the config items related to time based scaling
 # for skipper
+# kube-zmon-scaling
 skipper_time_based_scaling_check_id: ""
 skipper_time_based_scaling_target: "1"
+# ClusterScalingSchedules
+# hyped-article-releases
+skipper_scaling_schedule_hyped_articles_target: ""
 
 # cadvisor settings
 cadvisor_cpu: "150m"
@@ -331,6 +340,7 @@ teapot_admission_controller_daemonset_reserved_memory: "64Gi"
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_base_images: "true"
 teapot_admission_controller_validate_pod_images: "true"
+teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^pierone$"
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
@@ -338,7 +348,9 @@ teapot_admission_controller_namespace_delete_protection_enabled: "true"
 {{else if eq .Cluster.Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
-teapot_admission_controller_validate_pod_images: "false"
+teapot_admission_controller_validate_pod_images: "true"
+teapot_admission_controller_validate_pod_images_namespaces: "^(image-policy-test-enabled-.*|kube-system|visibility)$"
+teapot_admission_controller_validate_pod_images_ignored_images: "^k8s.gcr.io/pause:.+$"
 teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
@@ -397,11 +409,20 @@ teapot_admission_controller_prevent_scale_down_allowed: "false"
 # etcd cluster
 {{if eq .Cluster.Environment "production"}}
 etcd_instance_count: "5"
+etcd_instance_type: "m5.large"
 {{else}}
 etcd_instance_count: "3"
+etcd_instance_type: "t3.medium"
 {{end}}
 
+etcd_docker_image: "registry.opensource.zalan.do/teapot/etcd-cluster:3.4.16-master-9"
 etcd_scalyr_key: ""
+etcd_ami: {{ amiID "Taupage-AMI-20210504-093855" "861068367966"}}
+# Old etcd stacks have been created without an explicit VPC ID in the security group. This cannot be changed without
+# recreating the security group, which is impossible because of cross-stack references.
+# TODO investigate if it can be migrated.
+etcd_stack_specify_vpc_in_security_group: "true"
+
 dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
@@ -630,8 +651,4 @@ deployment_service_enabled: "true"
 {{ else }}
 deployment_service_enabled: "false"
 {{ end }}
-
-# Settings for the emergency access service
-# Service to use when checking incidents, valid values are 'jira' and 'opsgenie'. Temporary, will be dropped once
-# we fully migrate away from Jira.
-emergency_access_service_incident_backend: "jira"
+deployment_service_ml_experiments_enabled: "false"

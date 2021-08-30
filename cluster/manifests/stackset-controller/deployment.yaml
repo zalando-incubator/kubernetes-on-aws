@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: stackset-controller
-    version: "v1.3.42"
+    version: "v1.3.44"
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: stackset-controller
-        version: "v1.3.42"
+        version: "v1.3.44"
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics
@@ -26,14 +26,14 @@ spec:
       serviceAccountName: stackset-controller
       containers:
       - name: stackset-controller
-        image: "registry.opensource.zalan.do/teapot/stackset-controller:v1.3.42"
+        image: "registry.opensource.zalan.do/teapot/stackset-controller:v1.3.44"
         args:
         - "--interval={{ .Cluster.ConfigItems.stackset_controller_sync_interval }}"
 {{- if eq .Cluster.ConfigItems.stackset_routegroup_support_enabled "true" }}
         - "--enable-routegroup-support"
         - "--ingress-source-switch-ttl={{ .Cluster.ConfigItems.stackset_ingress_source_switch_ttl }}"
 {{- end }}
-        - "--cluster-domain={{ .Cluster.Alias }}.zalan.do"
+        - "--cluster-domain={{ .Values.hosted_zone }}"
         - "--cluster-domain=ingress.cluster.local"
         resources:
           limits:

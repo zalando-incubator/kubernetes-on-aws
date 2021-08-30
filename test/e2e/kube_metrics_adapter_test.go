@@ -9,6 +9,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	rgclient "github.com/szuecs/routegroup-client"
+	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,6 +29,7 @@ import (
 var _ = framework.KubeDescribe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metrics from kube-metrics-adapter)", func() {
 	f := framework.NewDefaultFramework("zalando-kube-metrics-adapter")
 	var cs kubernetes.Interface
+	var rgcs rgclient.Interface
 	var jig *ingress.TestJig
 
 	const (
@@ -36,6 +39,17 @@ var _ = framework.KubeDescribe("[HPA] Horizontal pod autoscaling (scale resource
 	BeforeEach(func() {
 		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
+
+		// setup RouteGroup clientset
+		config, err := framework.LoadConfig()
+		Expect(err).NotTo(HaveOccurred())
+		config.QPS = f.Options.ClientQPS
+		config.Burst = f.Options.ClientBurst
+		if f.Options.GroupVersion != nil {
+			config.GroupVersion = f.Options.GroupVersion
+		}
+		rgcs, err = rgclient.NewClientset(config)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should scale down with Custom Metric of type Pod from kube-metrics-adapter [CustomMetricsAutoscaling] [Zalando]", func() {
@@ -79,7 +93,7 @@ var _ = framework.KubeDescribe("[HPA] Horizontal pod autoscaling (scale resource
 			scaledReplicas:  scaledReplicas,
 			deployment:      simplePodDeployment(DeploymentName, int32(initialReplicas)),
 			ingress:         ingress,
-			hpa:             rpsBasedHPA(DeploymentName, ingress.Name, "extensions/v1beta1", metricTarget),
+			hpa:             rpsBasedHPA(DeploymentName, ingress.Name, "extensions/v1beta1", "Ingress", metricTarget),
 			service:         createServiceTypeClusterIP(DeploymentName, labels, 80, targetPort),
 			auxDeployments: []*appsv1.Deployment{
 				createVegetaDeployment(targetUrl, metricValue),
@@ -113,7 +127,39 @@ var _ = framework.KubeDescribe("[HPA] Horizontal pod autoscaling (scale resource
 			scaledReplicas:  scaledReplicas,
 			deployment:      simplePodDeployment(DeploymentName, int32(initialReplicas)),
 			ingress:         ingress,
-			hpa:             rpsBasedHPA(DeploymentName, ingress.Name, "networking.k8s.io/v1beta1", metricTarget),
+			hpa:             rpsBasedHPA(DeploymentName, ingress.Name, "networking.k8s.io/v1", "Ingress", metricTarget),
+			service:         createServiceTypeClusterIP(DeploymentName, labels, 80, targetPort),
+			auxDeployments: []*appsv1.Deployment{
+				createVegetaDeployment(targetUrl, metricValue),
+			},
+		}
+		tc.Run()
+	})
+
+	It("should scale down with Custom Metric of type Object from Skipper [RouteGroup] [CustomMetricsAutoscaling] [Zalando]", func() {
+		hostName := fmt.Sprintf("%s-%d.%s", DeploymentName, time.Now().UTC().Unix(), E2EHostedZone())
+
+		initialReplicas := 2
+		scaledReplicas := 1
+		metricValue := 10
+		metricTarget := int64(metricValue) * 2
+		labels := map[string]string{
+			"application": DeploymentName,
+		}
+		port := 80
+		targetPort := 8000
+		targetUrl := hostName + "/metrics"
+		routegroup := createRouteGroup(DeploymentName, hostName, f.Namespace.Name, labels, nil, port)
+		tc := CustomMetricTestCase{
+			framework:       f,
+			kubeClient:      cs,
+			rgClient:        rgcs,
+			jig:             jig,
+			initialReplicas: initialReplicas,
+			scaledReplicas:  scaledReplicas,
+			deployment:      simplePodDeployment(DeploymentName, int32(initialReplicas)),
+			routegroup:      routegroup,
+			hpa:             rpsBasedHPA(DeploymentName, routegroup.Name, "zalando.org/v1", "RouteGroup", metricTarget),
 			service:         createServiceTypeClusterIP(DeploymentName, labels, 80, targetPort),
 			auxDeployments: []*appsv1.Deployment{
 				createVegetaDeployment(targetUrl, metricValue),
@@ -127,12 +173,14 @@ type CustomMetricTestCase struct {
 	framework       *framework.Framework
 	hpa             *autoscaling.HorizontalPodAutoscaler
 	kubeClient      kubernetes.Interface
+	rgClient        rgclient.Interface
 	jig             *ingress.TestJig
 	deployment      *appsv1.Deployment
 	pod             *corev1.Pod
 	initialReplicas int
 	scaledReplicas  int
 	ingress         *v1beta1.Ingress
+	routegroup      *rgv1.RouteGroup
 	service         *corev1.Service
 	auxDeployments  []*appsv1.Deployment
 }
@@ -169,6 +217,21 @@ func (tc *CustomMetricTestCase) Run() {
 		Expect(err).NotTo(HaveOccurred())
 
 	}
+
+	// check if a RouteGroup needs to be created
+	if tc.routegroup != nil {
+		// Create a Service for the RouteGroup
+		_, err = tc.kubeClient.CoreV1().Services(ns).Create(context.TODO(), tc.service, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		// Create a RouteGroup since RPS based scaling relies on it
+		rgCreate, err := tc.rgClient.ZalandoV1().RouteGroups(ns).Create(context.TODO(), tc.routegroup, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = waitForRouteGroup(tc.rgClient, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
+		Expect(err).NotTo(HaveOccurred())
+	}
+
 	// Autoscale the deployment
 	_, err = tc.kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).Create(context.TODO(), tc.hpa, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
@@ -357,11 +420,11 @@ func podMetricHPA(deploymentName string, metricTargets map[string]int64) *autosc
 	}
 }
 
-func rpsBasedHPA(deploymentName string, ingressName, ingressAPIVersion string, metricTarget int64) *autoscaling.HorizontalPodAutoscaler {
-	return podHPA(deploymentName, ingressName, ingressAPIVersion, map[string]int64{"requests-per-second": metricTarget})
+func rpsBasedHPA(deploymentName, name, apiVersion, kind string, metricTarget int64) *autoscaling.HorizontalPodAutoscaler {
+	return podHPA(deploymentName, name, apiVersion, kind, map[string]int64{"requests-per-second": metricTarget})
 }
 
-func podHPA(deploymentName string, ingressName, ingressAPIVersion string, metricTargets map[string]int64) *autoscaling.HorizontalPodAutoscaler {
+func podHPA(deploymentName, name, apiVersion, kind string, metricTargets map[string]int64) *autoscaling.HorizontalPodAutoscaler {
 	var minReplicas int32 = 1
 	metrics := []autoscaling.MetricSpec{}
 	for metric, target := range metricTargets {
@@ -370,9 +433,9 @@ func podHPA(deploymentName string, ingressName, ingressAPIVersion string, metric
 			Object: &autoscaling.ObjectMetricSource{
 				MetricName: metric,
 				Target: autoscaling.CrossVersionObjectReference{
-					APIVersion: ingressAPIVersion,
-					Kind:       "Ingress",
-					Name:       ingressName,
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
 				},
 				TargetValue:  *resource.NewQuantity(target, resource.DecimalSI),
 				AverageValue: resource.NewQuantity(target, resource.DecimalSI),

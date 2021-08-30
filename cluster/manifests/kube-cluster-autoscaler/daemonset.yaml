@@ -5,7 +5,6 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-cluster-autoscaler
-    version: v1.18.2-internal.25
 spec:
   selector:
     matchLabels:
@@ -16,7 +15,6 @@ spec:
     metadata:
       labels:
         application: kube-cluster-autoscaler
-        version: v1.18.2-internal.25
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics
@@ -35,7 +33,11 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
+{{- if eq .Cluster.ConfigItems.experimental_cluster_autoscaler_check_scaling_events "true" }}
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.29
+{{- else }}
         image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.27
+{{- end }}
         command:
           - ./cluster-autoscaler
           - --v=1
@@ -57,6 +59,7 @@ spec:
           - --scale-down-delay-after-add=-1s
           - --backoff-no-full-scale-down=true
           - --max-pod-eviction-time={{ .Cluster.ConfigItems.cluster_autoscaler_max_pod_eviction_time }}
+          - --max-graceful-termination-sec={{ .Cluster.ConfigItems.cluster_autoscaler_max_graceful_termination_sec }}
           - --topology-spread-constraint-scale-factor=3
           - --disable-node-instances-cache=true
           - --scale-down-ignore-schedulable-pods=true
