@@ -17,11 +17,10 @@ cluster_autoscaler_max_pod_eviction_time: "1h"
 cluster_autoscaler_max_pod_eviction_time: "3h"
 {{end}}
 
-{{if eq .Cluster.Environment "production"}}
-experimental_cluster_autoscaler_check_scaling_events: "false"
-{{else}}
+# Override terminationGracePeriodSeconds when evicting pods for scale down, if the pods' value is higher than this one
+cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
+
 experimental_cluster_autoscaler_check_scaling_events: "true"
-{{end}}
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -54,7 +53,7 @@ nlb_switch: "false"
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "60"
 skipper_ingress_target_average_utilization_memory: "80"
-skipper_ingress_max_replicas: "180"
+skipper_ingress_max_replicas: "50"
 skipper_ingress_min_replicas: "3"
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1Gi"
@@ -200,8 +199,12 @@ skipper_oauth2_ui_login: "true"
 #
 # This section contains the config items related to time based scaling
 # for skipper
+# kube-zmon-scaling
 skipper_time_based_scaling_check_id: ""
 skipper_time_based_scaling_target: "1"
+# ClusterScalingSchedules
+# hyped-article-releases
+skipper_scaling_schedule_hyped_articles_target: ""
 
 # disables image-policy-webhook in all clusters
 image_policy: "dev"
