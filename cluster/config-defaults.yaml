@@ -339,8 +339,19 @@ teapot_admission_controller_daemonset_reserved_memory: "64Gi"
 {{if eq .Cluster.Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
 teapot_admission_controller_validate_base_images: "true"
+
+# Check container image compliance in production clusters. Be careful when thinking about changing this: Setting it to
+# false will allow any container image to run in production clusters.
+#
+# If you are seeing issues with "docker-meta" check the next config field to allow-list certain namespaces.
 teapot_admission_controller_validate_pod_images: "true"
-teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^pierone$"
+
+# If you are seeing issues with the container image compliance checker dependency "docker-meta" you can designate
+# a subset of namespaces to be allowed regardless with a regular expression on the namespace, e.g.:
+#
+# if docker-meta is down, do not reject container images running in `kube-system`
+# teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
+
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
@@ -348,9 +359,10 @@ teapot_admission_controller_namespace_delete_protection_enabled: "true"
 {{else if eq .Cluster.Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
+
+# Check container image compliance in e2e clusters. There are some exceptions to allow the e2e test suite to run.
 teapot_admission_controller_validate_pod_images: "true"
-teapot_admission_controller_validate_pod_images_namespaces: "^(image-policy-test-enabled-.*|kube-system|visibility)$"
-teapot_admission_controller_validate_pod_images_ignored_images: "^k8s.gcr.io/pause:.+$"
+
 teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
@@ -358,7 +370,10 @@ teapot_admission_controller_namespace_delete_protection_enabled: "false"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
+
+# Do not check container image compliance in test clusters.
 teapot_admission_controller_validate_pod_images: "false"
+
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "false"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
