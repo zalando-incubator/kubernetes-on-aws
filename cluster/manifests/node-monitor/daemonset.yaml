@@ -77,7 +77,9 @@ spec:
             - --path.procfs=/host/proc
             - --path.sysfs=/host/sys
             - --path.rootfs=/host
-            - --collector.filesystem.ignored-mount-points=^/(dev|proc|run|sys|host|var/lib/lxcfs|opt/podruntime/docker/.+|opt/podruntime/kubelet/.+)($|/)
+            - --collector.filesystem.mount-points-exclude=^/(dev|proc|run|sys|host|var/lib/lxcfs|opt/podruntime/docker/.+|opt/podruntime/kubelet/.+)($|/)
+            - --collector.netdev.device-exclude=^veth.*$
+            - --collector.netclass.ignored-devices=^veth.*$
           name: prometheus-node-exporter
           ports:
             - name: prom-node-exp
