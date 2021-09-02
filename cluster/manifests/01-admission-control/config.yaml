@@ -39,12 +39,24 @@ data:
   podfactory.base-image-check.namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_base_images_namespaces }}"
 {{- end }}
 
+  # This setting enables and disables the container image compliance checks
   pod.image-check.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images }}"
-{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_namespaces" }}
-  pod.image-check.namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_namespaces }}"
+
+{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_soft_fail_namespaces" }}
+  # In case docker-meta is down, all containers in these configured namespaces are allowed, defaults to none if not configured
+  pod.image-check.soft-fail-namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_soft_fail_namespaces }}"
 {{- end }}
-{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_ignore_namespaces" }}
-  pod.image-check.ignore-namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_ignore_namespaces }}"
+
+{{- if eq .Cluster.Environment "e2e" }}
+  # Special settings only configured for e2e clusters
+  #
+  # DO NOT USE THESE IN PRODUCTION CLUSTERS
+
+  # Limit the namespaces where container image checks are required, defaults to all if not configured
+  pod.image-check.namespaces: "^(image-policy-test-enabled-.*|kube-system|visibility)$"
+
+  # Always allow certain container images regardless of namespace, defaults to none if not configured
+  pod.image-check.ignored-images: "^k8s.gcr.io/pause:.+$"
 {{- end }}
 
   deployment.default.rolling-update-max-surge: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}"
