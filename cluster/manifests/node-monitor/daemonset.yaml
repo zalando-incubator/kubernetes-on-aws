@@ -73,8 +73,10 @@ spec:
               protocol: TCP
         - image: registry.opensource.zalan.do/teapot/prometheus-node-exporter:v1.2.2
           args:
+{{- if eq .Cluster.ConfigItems.node_exporter_experimental_metrics "true" }}
             - --collector.ethtool
             - --collector.qdisc
+{{- end }}
             - --collector.processes
             - --path.procfs=/host/proc
             - --path.sysfs=/host/sys
