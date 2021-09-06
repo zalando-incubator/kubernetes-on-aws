@@ -774,7 +774,9 @@ func createImagePolicyWebhookTestPod(nameprefix, namespace, tag, podname string)
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nameprefix + string(uuid.NewUUID()),
 			Namespace: namespace,
-			"app":     podname,
+			Labels: map[string]string{
+				"app": podname,
+			},
 		},
 		Spec: v1.PodSpec{
 			TerminationGracePeriodSeconds: &zero,
