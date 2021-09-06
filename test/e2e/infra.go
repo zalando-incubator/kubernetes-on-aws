@@ -44,10 +44,13 @@ var _ = framework.KubeDescribe("Infrastructure tests", func() {
 
 })
 
-func podsForApplication(cs kubernetes.Interface, application string) ([]v1.Pod, error) {
+func podsForApplication(cs kubernetes.Interface, component string) ([]v1.Pod, error) {
 	matchingPods, err := cs.CoreV1().Pods(kubeapi.NamespaceSystem).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(&metav1.LabelSelector{
-			MatchLabels: map[string]string{"application": application},
+			MatchLabels: map[string]string{
+				"application": "kubernetes",
+				"component":   component,
+			},
 		}),
 	})
 	if err != nil {
