@@ -53,13 +53,13 @@ var _ = framework.KubeDescribe("API Server webhook tests (enabled namespace)", f
 
 		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
 		defer func() {
 			By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 			defer GinkgoRecover()
 			err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}()
-		Expect(err).NotTo(HaveOccurred())
 		label := map[string]string{
 			"app": podname,
 		}
@@ -114,13 +114,13 @@ var _ = framework.KubeDescribe("API Server webhook tests (ignored namespace)", f
 
 		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
 		defer func() {
 			By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 			defer GinkgoRecover()
 			err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}()
-		Expect(err).NotTo(HaveOccurred())
 		label := map[string]string{
 			"app": podname,
 		}
@@ -128,6 +128,90 @@ var _ = framework.KubeDescribe("API Server webhook tests (ignored namespace)", f
 		err = waitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
 		Expect(err).NotTo(HaveOccurred())
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, int(replicas), 1*time.Minute)
+		Expect(err).NotTo(HaveOccurred())
+	})
+})
+
+var _ = framework.KubeDescribe("API Server webhook tests for pods (enabled namespace)", func() {
+	f := framework.NewDefaultFramework("image-policy-test-enabled")
+	var cs kubernetes.Interface
+
+	BeforeEach(func() {
+		cs = f.ClientSet
+	})
+
+	It("Should create pod with compliant image [Image-Webhook] [Compliant] [Zalando]", func() {
+		tag := "bc1a6fe" // this image tag is compliant
+
+		nameprefix := "image-policy-webhook-test-compliant"
+		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
+		ns := f.Namespace.Name
+
+		By("Creating pod " + nameprefix + " in namespace " + ns)
+
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, tag, podname)
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		defer func() {
+			By(fmt.Sprintf("Delete a compliant pod: %s", pod.Name))
+			defer GinkgoRecover()
+			err := cs.CoreV1().Pods(ns).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}()
+		label := map[string]string{
+			"app": podname,
+		}
+		labelSelector := labels.SelectorFromSet(labels.Set(label))
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, 1, 1*time.Minute)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("Should not create pod with un-compliant image [Image-Webhook] [Non-Compliant] [Zalando]", func() {
+		tag := "bc1a6fe-nottrusted2" // this image tag is not compliant
+
+		nameprefix := "image-policy-webhook-test-non-compliant"
+		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
+		ns := f.Namespace.Name
+
+		By("Creating pod " + nameprefix + " in namespace " + ns)
+
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, tag, podname)
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
+		Expect(err).To(HaveOccurred())
+	})
+})
+
+var _ = framework.KubeDescribe("API Server webhook tests for pods (ignored namespace)", func() {
+	f := framework.NewDefaultFramework("image-policy-test-ignored")
+	var cs kubernetes.Interface
+
+	BeforeEach(func() {
+		cs = f.ClientSet
+	})
+
+	It("Should create pod with un-compliant image in ignored namespace [Image-Webhook] [Non-Compliant] [Zalando]", func() {
+		tag := "bc1a6fe-nottrusted2" // this image tag is not compliant
+
+		nameprefix := "image-policy-webhook-test-non-compliant"
+		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
+		ns := f.Namespace.Name
+
+		By("Creating pod " + nameprefix + " in namespace " + ns)
+
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, tag, podname)
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		defer func() {
+			By(fmt.Sprintf("Delete a compliant pod: %s", pod.Name))
+			defer GinkgoRecover()
+			err := cs.CoreV1().Pods(ns).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}()
+		label := map[string]string{
+			"app": podname,
+		}
+		labelSelector := labels.SelectorFromSet(labels.Set(label))
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, 1, 1*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
