@@ -733,7 +733,7 @@ func waitForReplicas(deploymentName, namespace string, kubeClient kubernetes.Int
 
 /** needed for image webhook policy tests: */
 
-func createImagePolicyWebhookTestDeployment(nameprefix, namespace, tag, podname string, replicas int32) *appsv1.Deployment {
+func createImagePolicyWebhookTestDeployment(nameprefix, namespace, image, tag, podname string, replicas int32) *appsv1.Deployment {
 	zero := int64(0)
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -759,7 +759,7 @@ func createImagePolicyWebhookTestDeployment(nameprefix, namespace, tag, podname 
 					Containers: []v1.Container{
 						{
 							Name:  "image-policy-webhook-test",
-							Image: fmt.Sprintf("registry.opensource.zalan.do/teapot/image-policy-webhook-test:%s", tag),
+							Image: fmt.Sprintf("registry.opensource.zalan.do/teapot/%s:%s", image, tag),
 						},
 					},
 				},
@@ -768,7 +768,7 @@ func createImagePolicyWebhookTestDeployment(nameprefix, namespace, tag, podname 
 	}
 }
 
-func createImagePolicyWebhookTestPod(nameprefix, namespace, tag, podname string) *v1.Pod {
+func createImagePolicyWebhookTestPod(nameprefix, namespace, image, tag, podname string) *v1.Pod {
 	zero := int64(0)
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -783,29 +783,7 @@ func createImagePolicyWebhookTestPod(nameprefix, namespace, tag, podname string)
 			Containers: []v1.Container{
 				{
 					Name:  "image-policy-webhook-test",
-					Image: fmt.Sprintf("registry.opensource.zalan.do/teapot/image-policy-webhook-test:%s", tag),
-				},
-			},
-		},
-	}
-}
-
-func createSkipperTestPod(nameprefix, namespace, tag, podname string) *v1.Pod {
-	zero := int64(0)
-	return &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      nameprefix + string(uuid.NewUUID()),
-			Namespace: namespace,
-			Labels: map[string]string{
-				"app": podname,
-			},
-		},
-		Spec: v1.PodSpec{
-			TerminationGracePeriodSeconds: &zero,
-			Containers: []v1.Container{
-				{
-					Name:  "skipper",
-					Image: fmt.Sprintf("registry.opensource.zalan.do/teapot/skipper:%s", tag),
+					Image: fmt.Sprintf("registry.opensource.zalan.do/teapot/%s:%s", image, tag),
 				},
 			},
 		},

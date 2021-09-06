@@ -42,7 +42,8 @@ var _ = framework.KubeDescribe("API Server webhook tests (enabled namespace)", f
 	})
 
 	It("Should create deployment with compliant image [Image-Webhook] [Compliant] [Zalando]", func() {
-		tag := "bc1a6fe" // this image tag is compliant
+		image := "skipper"
+		tag := "v0.13.98" // this image tag is compliant
 
 		nameprefix := "image-policy-webhook-test-compliant"
 		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
@@ -51,7 +52,7 @@ var _ = framework.KubeDescribe("API Server webhook tests (enabled namespace)", f
 
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
-		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
+		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, image, tag, podname, replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -71,7 +72,8 @@ var _ = framework.KubeDescribe("API Server webhook tests (enabled namespace)", f
 	})
 
 	It("Should not allow deployment using not trusted image [Image-Webhook] [Non-Compliant] [Zalando]", func() {
-		tag := "bc1a6fe-nottrusted2" // this image tag is not compliant
+		image := "skipper-test"
+		tag := "pr-1845-1" // this image tag is not compliant
 
 		nameprefix := "image-policy-webhook-test-non-compliant"
 		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
@@ -80,7 +82,7 @@ var _ = framework.KubeDescribe("API Server webhook tests (enabled namespace)", f
 
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
-		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
+		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, image, tag, podname, replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -103,7 +105,8 @@ var _ = framework.KubeDescribe("API Server webhook tests (ignored namespace)", f
 	})
 
 	It("Should allow deployment using not trusted image if namespace is ignored [Image-Webhook] [Non-Compliant] [Zalando]", func() {
-		tag := "bc1a6fe-nottrusted2" // this image tag is not compliant
+		image := "skipper-test"
+		tag := "pr-1845-1" // this image tag is not compliant
 
 		nameprefix := "image-policy-webhook-test-non-compliant"
 		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
@@ -112,7 +115,7 @@ var _ = framework.KubeDescribe("API Server webhook tests (ignored namespace)", f
 
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
-		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, tag, podname, replicas)
+		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, image, tag, podname, replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -141,7 +144,8 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (enabled names
 	})
 
 	It("Should create pod with compliant image [Image-Webhook] [Compliant] [Zalando]", func() {
-		tag := "bc1a6fe" // this image tag is compliant
+		image := "skipper"
+		tag := "v0.13.98" // this image tag is compliant
 
 		nameprefix := "image-policy-webhook-test-compliant"
 		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
@@ -149,7 +153,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (enabled names
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -167,7 +171,8 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (enabled names
 	})
 
 	It("Should not create pod with un-compliant image [Image-Webhook] [Non-Compliant] [Zalando]", func() {
-		tag := "bc1a6fe-nottrusted2" // this image tag is not compliant
+		image := "skipper-test"
+		tag := "pr-1845-1" // this image tag is not compliant
 
 		nameprefix := "image-policy-webhook-test-non-compliant"
 		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
@@ -175,7 +180,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (enabled names
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
@@ -190,7 +195,8 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (ignored names
 	})
 
 	It("Should create pod with un-compliant image in ignored namespace [Image-Webhook] [Non-Compliant] [Zalando]", func() {
-		tag := "bc1a6fe-nottrusted2" // this image tag is not compliant
+		image := "skipper-test"
+		tag := "pr-1845-1" // this image tag is not compliant
 
 		nameprefix := "image-policy-webhook-test-non-compliant"
 		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
@@ -198,7 +204,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (ignored names
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -225,7 +231,8 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 	})
 
 	It("Should update pod with compliant image [Image-Webhook] [Compliant] [Zalando]", func() {
-		tag := "bc1a6fe" // this image tag is compliant
+		image := "skipper"
+		tag := "v0.13.98" // this image tag is compliant
 
 		nameprefix := "image-policy-webhook-test-compliant"
 		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
@@ -233,7 +240,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -251,8 +258,10 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 
 		By("Updating pod " + nameprefix + " in namespace " + ns)
 
-		// This is a compliant image
-		pod = createSkipperTestPod(nameprefix+"-", ns, "v0.13.98", podname)
+		image = "skipper"
+		tag = "v0.13.97" // this image tag is compliant as well
+
+		pod = createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
 		_, err = cs.CoreV1().Pods(ns).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, 1, 1*time.Minute)
@@ -260,7 +269,8 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 	})
 
 	It("Should not update pod with un-compliant image [Image-Webhook] [Non-Compliant] [Zalando]", func() {
-		tag := "bc1a6fe" // this image tag is compliant
+		image := "skipper"
+		tag := "v0.13.98" // this image tag is compliant
 
 		nameprefix := "image-policy-webhook-test-compliant"
 		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
@@ -268,7 +278,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -284,11 +294,12 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, 1, 1*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
 
-		tag = "bc1a6fe-nottrusted2" // this image tag is not compliant
+		image = "skipper-test"
+		tag = "pr-1845-1" // this image tag is not compliant
 
 		By("Updating pod " + nameprefix + " in namespace " + ns)
 
-		pod = createImagePolicyWebhookTestPod(nameprefix+"-", ns, tag, podname)
+		pod = createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
 		_, err = cs.CoreV1().Pods(ns).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
@@ -303,7 +314,8 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 	})
 
 	It("Should update pod with un-compliant image in ignored namespace [Image-Webhook] [Non-Compliant] [Zalando]", func() {
-		tag := "bc1a6fe" // this image tag is compliant
+		image := "skipper"
+		tag := "v0.13.98" // this image tag is compliant
 
 		nameprefix := "image-policy-webhook-test-compliant"
 		podname := fmt.Sprintf("image-webhook-policy-test-pod-%s", tag)
@@ -311,7 +323,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -327,11 +339,12 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, 1, 1*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
 
-		tag = "bc1a6fe-nottrusted2" // this image tag is not compliant
+		image = "skipper-test"
+		tag = "pr-1845-1" // this image tag is not compliant
 
 		By("Updating pod " + nameprefix + " in namespace " + ns)
 
-		pod = createImagePolicyWebhookTestPod(nameprefix+"-", ns, tag, podname)
+		pod = createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
 		_, err = cs.CoreV1().Pods(ns).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, 1, 1*time.Minute)
