@@ -28,6 +28,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
@@ -240,7 +241,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-"+string(uuid.NewUUID()), ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -261,7 +262,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 		image = "skipper"
 		tag = "v0.13.97" // this image tag is compliant as well
 
-		pod = createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
+		pod = createImagePolicyWebhookTestPod(pod.Name, ns, image, tag, podname)
 		_, err = cs.CoreV1().Pods(ns).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, 1, 1*time.Minute)
@@ -278,7 +279,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-"+string(uuid.NewUUID()), ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -299,7 +300,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 
 		By("Updating pod " + nameprefix + " in namespace " + ns)
 
-		pod = createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
+		pod = createImagePolicyWebhookTestPod(pod.Name, ns, image, tag, podname)
 		_, err = cs.CoreV1().Pods(ns).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
@@ -323,7 +324,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-"+string(uuid.NewUUID()), ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -344,7 +345,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 
 		By("Updating pod " + nameprefix + " in namespace " + ns)
 
-		pod = createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
+		pod = createImagePolicyWebhookTestPod(pod.Name, ns, image, tag, podname)
 		_, err = cs.CoreV1().Pods(ns).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, 1, 1*time.Minute)

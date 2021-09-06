@@ -768,11 +768,11 @@ func createImagePolicyWebhookTestDeployment(nameprefix, namespace, image, tag, p
 	}
 }
 
-func createImagePolicyWebhookTestPod(nameprefix, namespace, image, tag, podname string) *v1.Pod {
+func createImagePolicyWebhookTestPod(podName, namespace, image, tag, podname string) *v1.Pod {
 	zero := int64(0)
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      nameprefix + string(uuid.NewUUID()),
+			Name:      podName,
 			Namespace: namespace,
 			Labels: map[string]string{
 				"app": podname,
