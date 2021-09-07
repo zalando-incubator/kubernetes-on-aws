@@ -53,7 +53,7 @@ var _ = framework.KubeDescribe("API Server webhook tests (enabled namespace)", f
 
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
-		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, image, tag, podname, replicas)
+		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-"+string(uuid.NewUUID()), ns, image, tag, podname, replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -83,7 +83,7 @@ var _ = framework.KubeDescribe("API Server webhook tests (enabled namespace)", f
 
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
-		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, image, tag, podname, replicas)
+		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-"+string(uuid.NewUUID()), ns, image, tag, podname, replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -116,7 +116,7 @@ var _ = framework.KubeDescribe("API Server webhook tests (ignored namespace)", f
 
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
-		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-", ns, image, tag, podname, replicas)
+		deployment := createImagePolicyWebhookTestDeployment(nameprefix+"-"+string(uuid.NewUUID()), ns, image, tag, podname, replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -154,7 +154,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (enabled names
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-"+string(uuid.NewUUID()), ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -181,7 +181,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (enabled names
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-"+string(uuid.NewUUID()), ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
@@ -205,7 +205,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (ignored names
 
 		By("Creating pod " + nameprefix + " in namespace " + ns)
 
-		pod := createImagePolicyWebhookTestPod(nameprefix+"-", ns, image, tag, podname)
+		pod := createImagePolicyWebhookTestPod(nameprefix+"-"+string(uuid.NewUUID()), ns, image, tag, podname)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
