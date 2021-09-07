@@ -171,7 +171,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (enabled names
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("Should not create pod with un-compliant image [Image-Webhook] [Non-Compliant] [Zalando]", func() {
+	It("Should not create pod with non-compliant image [Image-Webhook] [Non-Compliant] [Zalando]", func() {
 		image := "skipper-test"
 		tag := "pr-1845-1" // this image tag is not compliant
 
@@ -195,7 +195,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (ignored names
 		cs = f.ClientSet
 	})
 
-	It("Should create pod with un-compliant image in ignored namespace [Image-Webhook] [Non-Compliant] [Zalando]", func() {
+	It("Should create pod with non-compliant image in ignored namespace [Image-Webhook] [Non-Compliant] [Zalando]", func() {
 		image := "skipper-test"
 		tag := "pr-1845-1" // this image tag is not compliant
 
@@ -273,7 +273,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("Should not update pod with un-compliant image [Image-Webhook] [Non-Compliant] [Zalando]", func() {
+	It("Should not update pod with non-compliant image [Image-Webhook] [Non-Compliant] [Zalando]", func() {
 		image := "skipper"
 		tag := "v0.13.98" // this image tag is compliant
 
@@ -322,7 +322,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 		cs = f.ClientSet
 	})
 
-	It("Should update pod with un-compliant image in ignored namespace [Image-Webhook] [Non-Compliant] [Zalando]", func() {
+	It("Should update pod with non-compliant image in ignored namespace [Image-Webhook] [Non-Compliant] [Zalando]", func() {
 		image := "skipper"
 		tag := "v0.13.98" // this image tag is compliant
 
