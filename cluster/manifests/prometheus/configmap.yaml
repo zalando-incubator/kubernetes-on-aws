@@ -88,12 +88,15 @@ data:
           names:
             - kube-system
       relabel_configs:
-      - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_container_port_number]
+      - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_label_component, __meta_kubernetes_pod_container_port_number]
         action: keep
-        regex: kube-apiserver;443
+        regex: kubernetes;kube-apiserver;443
       - action: replace
         source_labels: ['__meta_kubernetes_pod_label_application']
         target_label: application
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_label_component']
+        target_label: component
     - &apiserver_container_metric
       job_name: 'teapot-admission-controller'
       scheme: http
@@ -104,12 +107,15 @@ data:
           names:
             - kube-system
       relabel_configs:
-      - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_container_port_number]
+      - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_label_component, __meta_kubernetes_pod_container_port_number]
         action: keep
-        regex: kube-apiserver;9005
+        regex: kubernetes;kube-apiserver;9005
       - action: replace
         source_labels: ['__meta_kubernetes_pod_label_application']
         target_label: application
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_label_component']
+        target_label: component
     - <<: *apiserver_container_metric
       job_name: "auth-webhook"
       metrics_path: "/auth-webhook"
