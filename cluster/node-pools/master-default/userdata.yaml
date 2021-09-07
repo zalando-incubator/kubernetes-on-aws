@@ -79,7 +79,8 @@ write_files:
         name: kube-apiserver
         namespace: kube-system
         labels:
-          application: kube-apiserver
+          application: kubernetes
+          component: kube-apiserver
         annotations:
           kubernetes-log-watcher/scalyr-parser: |
             [{"container": "webhook", "parser": "json-structured-log"}]
@@ -583,7 +584,8 @@ write_files:
         name: kube-controller-manager
         namespace: kube-system
         labels:
-          application: kube-controller-manager
+          application: kubernetes
+          component: kube-controller-manager
         annotations:
           logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
       spec:
@@ -652,7 +654,8 @@ write_files:
         name: kube-scheduler
         namespace: kube-system
         labels:
-          application: kube-scheduler
+          application: kubernetes
+          component: kube-scheduler
         annotations:
           logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
       spec:
