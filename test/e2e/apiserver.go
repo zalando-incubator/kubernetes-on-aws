@@ -262,7 +262,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 		image = "skipper"
 		tag = "v0.13.97" // this image tag is compliant as well
 
-		pod = createImagePolicyWebhookTestPod(pod.Name, ns, image, tag, podname)
+		pod = updateImagePolicyWebhookTestPod(pod.Name, ns, image, tag, podname)
 		_, err = cs.CoreV1().Pods(ns).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, 1, 1*time.Minute)
@@ -300,7 +300,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 
 		By("Updating pod " + nameprefix + " in namespace " + ns)
 
-		pod = createImagePolicyWebhookTestPod(pod.Name, ns, image, tag, podname)
+		pod = updateImagePolicyWebhookTestPod(pod.Name, ns, image, tag, podname)
 		_, err = cs.CoreV1().Pods(ns).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
@@ -345,7 +345,7 @@ var _ = framework.KubeDescribe("API Server webhook tests for pods (update path) 
 
 		By("Updating pod " + nameprefix + " in namespace " + ns)
 
-		pod = createImagePolicyWebhookTestPod(pod.Name, ns, image, tag, podname)
+		pod = updateImagePolicyWebhookTestPod(pod.Name, ns, image, tag, podname)
 		_, err = cs.CoreV1().Pods(ns).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, 1, 1*time.Minute)

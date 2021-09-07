@@ -790,6 +790,23 @@ func createImagePolicyWebhookTestPod(podName, namespace, image, tag, podname str
 	}
 }
 
+func updateImagePolicyWebhookTestPod(podName, namespace, image, tag, podname string) *v1.Pod {
+	return &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      podName,
+			Namespace: namespace,
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:  "image-policy-webhook-test",
+					Image: fmt.Sprintf("registry.opensource.zalan.do/teapot/%s:%s", image, tag),
+				},
+			},
+		},
+	}
+}
+
 func createVegetaDeployment(hostPath string, rate int) *appsv1.Deployment {
 	replicas := int32(1)
 	cmd := fmt.Sprintf("echo 'GET https://%s' | vegeta attack -rate=%d", hostPath, rate)
