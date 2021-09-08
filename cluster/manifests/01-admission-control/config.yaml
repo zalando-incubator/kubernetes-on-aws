@@ -84,6 +84,15 @@ data:
 {{- end }}
 {{- end}}
 
+  pod.az-block.zone-name: "{{ .Cluster.ConfigItems.blocked_availability_zone }}"
+{{- range $group, $enabled := zoneDistributedNodePoolGroups .Cluster.NodePools }}
+{{- if eq $group "" }}
+  pod.az-block.pools.default: "{{ $enabled }}"
+{{- else }}
+  pod.az-block.pools.dedicated.{{$group}}: "{{ $enabled }}"
+{{- end }}
+{{- end}}
+
   node.node-not-ready-taint.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_node_not_ready_taint }}"
   node.extended-node-restriction.enable: "true"
 
