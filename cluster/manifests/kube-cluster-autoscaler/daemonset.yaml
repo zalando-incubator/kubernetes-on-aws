@@ -33,11 +33,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-{{- if eq .Cluster.ConfigItems.experimental_cluster_autoscaler_check_scaling_events "true" }}
         image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.31
-{{- else }}
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.27
-{{- end }}
         command:
           - ./cluster-autoscaler
           - --v=1
