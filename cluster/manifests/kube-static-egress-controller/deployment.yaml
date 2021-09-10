@@ -4,17 +4,19 @@ metadata:
   name: kube-static-egress-controller
   namespace: kube-system
   labels:
-    application: kube-static-egress-controller
+    application: kubernetes
+    component: kube-static-egress-controller
     version: v0.2.8
 spec:
   replicas: {{if eq .Cluster.ConfigItems.static_egress_controller_enabled "true"}}1{{else}}0{{end}}
   selector:
     matchLabels:
-      application: kube-static-egress-controller
+      deployment: kube-static-egress-controller
   template:
     metadata:
       labels:
-        application: kube-static-egress-controller
+        application: kubernetes
+        component: kube-static-egress-controller
         version: v0.2.8
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
