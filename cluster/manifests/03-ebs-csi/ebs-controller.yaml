@@ -4,16 +4,19 @@ kind: DaemonSet
 metadata:
   name: ebs-csi-controller
   namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ebs-csi-controller
 spec:
   selector:
     matchLabels:
-      application: container-storage-interface
-      component: ebs-controller
+      daemonset: ebs-csi-controller
   template:
     metadata:
       labels:
-        application: container-storage-interface
-        component: ebs-controller
+        application: kubernetes
+        component: ebs-csi-controller
+        daemonset: ebs-csi-controller
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
