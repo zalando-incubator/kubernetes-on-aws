@@ -5,18 +5,21 @@ metadata:
   name: efs-provisioner
   namespace: kube-system
   labels:
-    application: efs-provisioner
+    application: kubernetes
+    component: efs-provisioner
     version: v2.4.0
 spec:
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      application: efs-provisioner
+      deployment: efs-provisioner
   template:
     metadata:
       labels:
-        application: efs-provisioner
+        application: kubernetes
+        component: efs-provisioner
+        deployment: efs-provisioner
         version: v2.4.0
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
