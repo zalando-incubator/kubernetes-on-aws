@@ -4,17 +4,19 @@ metadata:
   name: pdb-controller
   namespace: kube-system
   labels:
-    application: pdb-controller
+    application: kubernetes
+    component: pdb-controller
     version: v0.0.17
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: pdb-controller
+      deployment: pdb-controller
   template:
     metadata:
       labels:
-        application: pdb-controller
+        application: kubernetes
+        component: pdb-controller
         version: v0.0.17
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
