@@ -4,16 +4,19 @@ metadata:
   name: cronjob-fixer
   namespace: kube-system
   labels:
-    application: cronjob-fixer
+    application: kubernetes
+    component: cronjob-fixer
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: cronjob-fixer
+      deployment: cronjob-fixer
   template:
     metadata:
       labels:
-        application: cronjob-fixer
+        deployment: cronjob-fixer
+        application: kubernetes
+        component: cronjob-fixer
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
