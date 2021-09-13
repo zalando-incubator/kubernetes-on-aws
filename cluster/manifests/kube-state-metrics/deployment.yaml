@@ -4,17 +4,20 @@ metadata:
   name: kube-state-metrics
   namespace: kube-system
   labels:
-    application: kube-state-metrics
+    application: kubernetes
+    component: kube-state-metrics
     version: v2.2.0
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kube-state-metrics
+      deployment: kube-state-metrics
   template:
     metadata:
       labels:
-        application: kube-state-metrics
+        deployment: kube-state-metrics
+        application: kubernetes
+        component: kube-state-metrics
         version: v2.2.0
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"

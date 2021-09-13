@@ -5,17 +5,20 @@ metadata:
   name: kube-janitor
   namespace: kube-system
   labels:
-    application: kube-janitor
+    application: kubernetes
+    componet: kube-janitor
     version: v20.4.1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kube-janitor
+      deployment: kube-janitor
   template:
     metadata:
       labels:
-        application: kube-janitor
+        deployment: kube-janitor
+        application: kubernetes
+        componet: kube-janitor
         version: v20.4.1
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"

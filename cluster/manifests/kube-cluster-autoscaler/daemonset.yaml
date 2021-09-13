@@ -4,17 +4,20 @@ metadata:
   name: kube-cluster-autoscaler
   namespace: kube-system
   labels:
-    application: kube-cluster-autoscaler
+    application: kubernetes
+    component: kube-cluster-autoscaler
 spec:
   selector:
     matchLabels:
-      application: kube-cluster-autoscaler
+      daemonset: kube-cluster-autoscaler
   updateStrategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
-        application: kube-cluster-autoscaler
+        application: kubernetes
+        component: kube-cluster-autoscaler
+        daemonset: kube-cluster-autoscaler
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics

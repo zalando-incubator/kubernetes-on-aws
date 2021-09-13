@@ -4,17 +4,20 @@ metadata:
   name: kube-aws-iam-controller
   namespace: kube-system
   labels:
-    application: kube-aws-iam-controller
+    application: kubernetes
+    component: aws-iam-controller
     version: v0.1.2
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kube-aws-iam-controller
+      deployment: kube-aws-iam-controller
   template:
     metadata:
       labels:
-        application: kube-aws-iam-controller
+        application: kubernetes
+        component: aws-iam-controller
+        deployment: kube-aws-iam-controller
         version: v0.1.2
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"

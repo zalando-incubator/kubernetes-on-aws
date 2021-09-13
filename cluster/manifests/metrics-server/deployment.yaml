@@ -4,18 +4,21 @@ metadata:
   name: metrics-server
   namespace: kube-system
   labels:
-    application: metrics-server
+    application: kubernetes
+    component: metrics-server
     version: v0.5.0
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: metrics-server
+      deployment: metrics-server
   template:
     metadata:
       name: metrics-server
       labels:
-        application: metrics-server
+        application: kubernetes
+        component: metrics-server
+        deployment: metrics-server
         version: v0.5.0
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
