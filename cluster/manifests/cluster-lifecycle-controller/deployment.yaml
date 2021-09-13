@@ -4,19 +4,22 @@ metadata:
   name: cluster-lifecycle-controller
   namespace: kube-system
   labels:
-    application: cluster-lifecycle-controller
+    application: kubernetes
+    component: cluster-lifecycle-controller
     version: master-23
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: cluster-lifecycle-controller
+      deployment: cluster-lifecycle-controller
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        application: cluster-lifecycle-controller
+        application: kubernetes
+        component: cluster-lifecycle-controller
+        deployment: cluster-lifecycle-controller
         version: master-23
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"

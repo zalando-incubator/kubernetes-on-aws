@@ -4,18 +4,21 @@ kind: DaemonSet
 metadata:
   name: csi-node-driver
   namespace: kube-system
+  labels:
+    application: kubernetes
+    component: csi-node-driver
 spec:
   selector:
     matchLabels:
-      application: container-storage-interface
-      component: driver
+      daemonset: csi-node-driver
   updateStrategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
-        application: container-storage-interface
-        component: driver
+        application: kubernetes
+        component: csi-node-driver
+        daemonset: csi-node-driver
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
