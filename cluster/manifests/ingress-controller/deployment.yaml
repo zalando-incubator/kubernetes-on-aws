@@ -41,7 +41,7 @@ spec:
         - --deny-internal-domains
 {{ end }}
         - "--additional-stack-tags=InfrastructureComponent=true"
-        {{ if or (eq .Cluster.ConfigItems.nlb_switch "exec") (eq .Cluster.ConfigItems.nlb_switch "post") (eq .Cluster.ConfigItems.nlb_switch "final") }}
+        {{ if eq .Cluster.ConfigItems.nlb_switch "exec" }}
         - --load-balancer-type="network"
 {{else}}
         - --load-balancer-type={{ .Cluster.ConfigItems.kube_aws_ingress_default_lb_type }}
