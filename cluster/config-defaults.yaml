@@ -33,11 +33,9 @@ kube_aws_ingress_controller_cert_polling_interval: "2m"
 kube_aws_ingress_default_lb_type: "application"
 
 # ALB to NLB switch
-# "pre": skipper-ingress clone routes with SourceFromLast and adds an addtional route with ClientIP instead of SourceFromLast
+# "pre": skipper-ingress will create XFF headers for requests passing NLB
 # "exec": same as "pre" and kube-ingress-aws-controller will default to NLB
-# "post": skipper-ingress edit routes with SourceFromLast and replaces SourceFromLast with ClientIP and kube-ingress-aws-controller will default to NLB
-# "final": skipper-ingress does not modify routes and kube-ingress-aws-controller defaults to NLB
-# after removing it you need to set kube_aws_ingress_default_lb_type: "network" above
+# after removing it you need to set kube_aws_ingress_default_lb_type: "network" above and cleanup skipper and ingress-ctl deployment.yaml
 {{if eq .Cluster.Channel "dev"}}
 nlb_switch: "pre"
 {{else if eq .Cluster.Channel "alpha"}}
