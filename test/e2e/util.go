@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	clientset "k8s.io/client-go/kubernetes"
@@ -39,8 +40,9 @@ import (
 )
 
 const (
-	awsCliImage = "registry.opensource.zalan.do/teapot/awscli:master-1"
-	pauseImage  = "registry.opensource.zalan.do/teapot/pause-amd64:3.2"
+	awsCliImage  = "registry.opensource.zalan.do/teapot/awscli:master-1"
+	pauseImage   = "registry.opensource.zalan.do/teapot/pause-amd64:3.2"
+	appLabelName = "application"
 )
 
 var (
@@ -733,11 +735,11 @@ func waitForReplicas(deploymentName, namespace string, kubeClient kubernetes.Int
 
 /** needed for image webhook policy tests: */
 
-func createImagePolicyWebhookTestDeployment(nameprefix, namespace, image, tag, podname string, replicas int32) *appsv1.Deployment {
+func createImagePolicyWebhookTestDeployment(namePrefix, namespace, image, appLabel string, replicas int32) *appsv1.Deployment {
 	zero := int64(0)
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      nameprefix + string(uuid.NewUUID()),
+			Name:      fmt.Sprintf("%s-%s", namePrefix, uuid.NewUUID()),
 			Namespace: namespace,
 			Labels:    map[string]string{},
 		},
@@ -745,21 +747,21 @@ func createImagePolicyWebhookTestDeployment(nameprefix, namespace, image, tag, p
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": podname,
+					appLabelName: appLabel,
 				},
 			},
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": podname,
+						appLabelName: appLabel,
 					},
 				},
 				Spec: v1.PodSpec{
 					TerminationGracePeriodSeconds: &zero,
 					Containers: []v1.Container{
 						{
-							Name:  "image-policy-webhook-test",
-							Image: fmt.Sprintf("registry.opensource.zalan.do/teapot/%s:%s", image, tag),
+							Name:  "image-policy-test",
+							Image: image,
 						},
 					},
 				},
@@ -768,22 +770,22 @@ func createImagePolicyWebhookTestDeployment(nameprefix, namespace, image, tag, p
 	}
 }
 
-func createImagePolicyWebhookTestPod(podName, namespace, image, tag, podname string) *v1.Pod {
+func createImagePolicyWebhookTestPod(namePrefix, namespace, image, appLabel string) *v1.Pod {
 	zero := int64(0)
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      podName,
+			Name:      fmt.Sprintf("%s-%s", namePrefix, string(uuid.NewUUID())),
 			Namespace: namespace,
 			Labels: map[string]string{
-				"app": podname,
+				appLabelName: appLabel,
 			},
 		},
 		Spec: v1.PodSpec{
 			TerminationGracePeriodSeconds: &zero,
 			Containers: []v1.Container{
 				{
-					Name:  "image-policy-webhook-test",
-					Image: fmt.Sprintf("registry.opensource.zalan.do/teapot/%s:%s", image, tag),
+					Name:  "image-policy-test",
+					Image: image,
 				},
 			},
 		},
@@ -960,4 +962,10 @@ func getPodLogs(c kubernetes.Interface, namespace, podName, containerName string
 // waitForDeploymentWithCondition waits for the specified deployment condition.
 func waitForDeploymentWithCondition(c clientset.Interface, ns, deploymentName, reason string, condType appsv1.DeploymentConditionType) error {
 	return testutil.WaitForDeploymentWithCondition(c, ns, deploymentName, reason, condType, framework.Logf, poll, pollLongTimeout)
+}
+
+func appLabelSelector(value string) labels.Selector {
+	return labels.SelectorFromSet(map[string]string{
+		appLabelName: value,
+	})
 }
