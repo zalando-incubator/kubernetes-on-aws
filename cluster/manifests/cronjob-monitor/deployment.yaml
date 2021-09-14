@@ -4,16 +4,19 @@ metadata:
   name: cronjob-monitor
   namespace: kube-system
   labels:
-    application: cronjob-monitor
+    application: kubernetes
+    component: cronjob-monitor
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: cronjob-monitor
+      deployment: cronjob-monitor
   template:
     metadata:
       labels:
-        application: cronjob-monitor
+        deployment: cronjob-monitor
+        application: kubernetes
+        component: cronjob-monitor
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
