@@ -5,17 +5,20 @@ metadata:
   name: kube-downscaler
   namespace: kube-system
   labels:
-    application: kube-downscaler
+    application: kubernetes
+    component: kube-downscaler
     version: v20.4.1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kube-downscaler
+      deployment: kube-downscaler
   template:
     metadata:
       labels:
-        application: kube-downscaler
+        deployment: kube-downscaler
+        application: kubernetes
+        component: kube-downscaler
         version: v20.4.1
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"

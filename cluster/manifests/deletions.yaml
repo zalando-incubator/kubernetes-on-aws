@@ -30,6 +30,75 @@ pre_apply:
   namespace: default
   kind: Deployment
 {{ end }}
+# Application consolidation, can be dropped later
+- labels:
+    application: kube-aws-iam-controller
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: kube-metrics-adapter
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: metrics-server
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: kube-static-egress-controller
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: kube-state-metrics
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: kubernetes-lifecycle-metrics
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: pdb-controller
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: kubernetes-event-logger
+  namespace: kube-system
+  kind: StatefulSet
+- labels:
+    application: cronjob-monitor
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: cronjob-fixer
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: kube-downscaler
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: kube-janitor
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: cluster-lifecycle-controller
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: efs-provisioner
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: kube-cluster-autoscaler
+  namespace: kube-system
+  kind: Daemonset
+- labels:
+    application: autoscaling-buffer
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: kube-node-ready-controller
+  namespace: kube-system
+  kind: Daemonset
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
