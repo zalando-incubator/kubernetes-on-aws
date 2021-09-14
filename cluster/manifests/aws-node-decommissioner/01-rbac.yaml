@@ -4,7 +4,8 @@ metadata:
   name: "aws-node-decommissioner"
   namespace: "kube-system"
   annotations:
-    application: aws-node-decommissioner
+    application: kubernetes
+    component: aws-node-decommissioner
     iam.amazonaws.com/role: "{{.LocalID}}-aws-node-decommissioner"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -12,7 +13,8 @@ kind: ClusterRole
 metadata:
   name: aws-node-decommissioner
   labels:
-    application: aws-node-decommissioner
+    application: kubernetes
+    component: aws-node-decommissioner
 rules:
 - apiGroups: [""]
   resources: ["nodes"]
@@ -25,7 +27,8 @@ kind: ClusterRoleBinding
 metadata:
   name: aws-node-decommissioner
   labels:
-    application: aws-node-decommissioner
+    application: kubernetes
+    component: aws-node-decommissioner
 roleRef:
   kind: ClusterRole
   name: aws-node-decommissioner

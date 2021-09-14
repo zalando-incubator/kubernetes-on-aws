@@ -5,17 +5,20 @@ metadata:
   name: kube-janitor
   namespace: kube-system
   labels:
-    application: kube-janitor
+    application: kubernetes
+    component: kube-janitor
     version: v20.4.1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kube-janitor
+      deployment: kube-janitor
   template:
     metadata:
       labels:
-        application: kube-janitor
+        deployment: kube-janitor
+        application: kubernetes
+        component: kube-janitor
         version: v20.4.1
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
@@ -39,11 +42,11 @@ spec:
         resources:
           limits:
             cpu: 5m
-            memory: 150Mi
+            memory: 4Gi
           requests:
             # this is a background app ==> low priority, low CPU requests
             cpu: 5m
-            memory: 150Mi
+            memory: 4Gi
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true

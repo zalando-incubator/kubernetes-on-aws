@@ -20,8 +20,6 @@ cluster_autoscaler_max_pod_eviction_time: "3h"
 # Override terminationGracePeriodSeconds when evicting pods for scale down, if the pods' value is higher than this one
 cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
 
-experimental_cluster_autoscaler_check_scaling_events: "true"
-
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
@@ -35,11 +33,9 @@ kube_aws_ingress_controller_cert_polling_interval: "2m"
 kube_aws_ingress_default_lb_type: "application"
 
 # ALB to NLB switch
-# "pre": skipper-ingress clone routes with SourceFromLast and adds an addtional route with ClientIP instead of SourceFromLast
+# "pre": skipper-ingress will create XFF headers for requests passing NLB
 # "exec": same as "pre" and kube-ingress-aws-controller will default to NLB
-# "post": skipper-ingress edit routes with SourceFromLast and replaces SourceFromLast with ClientIP and kube-ingress-aws-controller will default to NLB
-# "final": skipper-ingress does not modify routes and kube-ingress-aws-controller defaults to NLB
-# after removing it you need to set kube_aws_ingress_default_lb_type: "network" above
+# after removing it you need to set kube_aws_ingress_default_lb_type: "network" above and cleanup skipper and ingress-ctl deployment.yaml
 {{if eq .Cluster.Channel "dev"}}
 nlb_switch: "pre"
 {{else if eq .Cluster.Channel "alpha"}}
@@ -213,6 +209,7 @@ cadvisor_memory: "150Mi"
 # node exporter settings
 node_exporter_cpu: "20m"
 node_exporter_memory: "75Mi"
+node_exporter_experimental_metrics: "false"
 
 # kube-proxy settings
 kube_proxy_cpu: "50m"
@@ -261,16 +258,13 @@ prometheus_remote_min_backoff: "3s"
 prometheus_remote_max_backoff: "10s"
 
 metrics_service_cpu: "100m"
-metrics_service_mem: "200Mi"
 metrics_service_mem_max: "4Gi"
 metrics_server_metric_resolution: "15s"
 
 kube_aws_iam_controller_cpu: "5m"
-kube_aws_iam_controller_mem: "50Mi"
 kube_aws_iam_controller_mem_max: "1Gi"
 
 kube_state_metrics_cpu: "100m"
-kube_state_metrics_mem: "200Mi"
 kube_state_metrics_mem_max: "4Gi"
 kube_state_metrics_mem_min: "120Mi"
 
@@ -420,6 +414,9 @@ teapot_admission_controller_prevent_scale_down_allowed: "true"
 {{else}}
 teapot_admission_controller_prevent_scale_down_allowed: "false"
 {{end}}
+
+# Prevent the use of a particular AZ as much as possible
+blocked_availability_zone: ""
 
 # etcd cluster
 {{if eq .Cluster.Environment "production"}}

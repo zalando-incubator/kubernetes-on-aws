@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.86
+    version: v0.13.100
     component: ingress
 spec:
   strategy:
@@ -19,7 +19,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.13.86
+        version: v0.13.100
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -46,7 +46,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.86-158
+        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.100-172
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -136,7 +136,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.86-158
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.100-172
             max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
@@ -190,9 +190,8 @@ spec:
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
-          - "-clone-route='/SourceFromLast[(](.*)[)]/ClientIP($1)/'"
-{{ else if eq .ConfigItems.nlb_switch "post" }}
-          - "-edit-route='/SourceFromLast[(](.*)[)]/ClientIP($1)/'"
+          - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https"
+          - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
 {{ end }}
         resources:
           limits:

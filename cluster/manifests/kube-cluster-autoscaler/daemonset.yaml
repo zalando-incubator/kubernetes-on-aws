@@ -4,17 +4,20 @@ metadata:
   name: kube-cluster-autoscaler
   namespace: kube-system
   labels:
-    application: kube-cluster-autoscaler
+    application: kubernetes
+    component: kube-cluster-autoscaler
 spec:
   selector:
     matchLabels:
-      application: kube-cluster-autoscaler
+      daemonset: kube-cluster-autoscaler
   updateStrategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
-        application: kube-cluster-autoscaler
+        application: kubernetes
+        component: kube-cluster-autoscaler
+        daemonset: kube-cluster-autoscaler
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics
@@ -33,11 +36,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-{{- if eq .Cluster.ConfigItems.experimental_cluster_autoscaler_check_scaling_events "true" }}
         image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.31
-{{- else }}
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.27
-{{- end }}
         command:
           - ./cluster-autoscaler
           - --v=1
