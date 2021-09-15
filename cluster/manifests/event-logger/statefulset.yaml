@@ -4,7 +4,8 @@ metadata:
   name: kubernetes-event-logger
   namespace: kube-system
   labels:
-    application: kubernetes-event-logger
+    application: kubernetes
+    component: event-logger
     version: master-3
   annotations:
     kubernetes-log-watcher/scalyr-parser: '[{"container": "logger", "parser": "json"}]'
@@ -12,12 +13,14 @@ spec:
   replicas: {{if eq .Cluster.ConfigItems.kubernetes_event_logger_enabled "true"}}1{{else}}0{{end}}
   selector:
     matchLabels:
-      application: kubernetes-event-logger
+      statefulset: kubernetes-event-logger
   serviceName: kubernetes-event-logger
   template:
     metadata:
       labels:
-        application: kubernetes-event-logger
+        statefulset: kubernetes-event-logger
+        application: kubernetes
+        component: event-logger
         version: master-3
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"

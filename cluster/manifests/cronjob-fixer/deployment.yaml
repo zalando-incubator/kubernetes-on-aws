@@ -4,16 +4,19 @@ metadata:
   name: cronjob-fixer
   namespace: kube-system
   labels:
-    application: cronjob-fixer
+    application: kubernetes
+    component: cronjob-fixer
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: cronjob-fixer
+      deployment: cronjob-fixer
   template:
     metadata:
       labels:
-        application: cronjob-fixer
+        deployment: cronjob-fixer
+        application: kubernetes
+        component: cronjob-fixer
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
@@ -24,11 +27,11 @@ spec:
       serviceAccountName: cronjob-fixer
       containers:
         - name: cronjob-fixer
-          image: "registry.opensource.zalan.do/teapot/cronjob-fixer:master-3"
+          image: "registry.opensource.zalan.do/teapot/cronjob-fixer:master-5"
           resources:
             limits:
               cpu: 5m
-              memory: 150Mi
+              memory: 4Gi
             requests:
               cpu: 5m
-              memory: 150Mi
+              memory: 4Gi

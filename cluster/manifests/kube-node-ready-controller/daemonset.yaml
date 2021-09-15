@@ -4,17 +4,20 @@ metadata:
   name: kube-node-ready-controller
   namespace: kube-system
   labels:
-    application: kube-node-ready-controller
+    application: kubernetes
+    component: kube-node-ready-controller
 spec:
   selector:
     matchLabels:
-      application: kube-node-ready-controller
+      daemonset: kube-node-ready-controller
   updateStrategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
-        application: kube-node-ready-controller
+        application: kubernetes
+        component: kube-node-ready-controller
+        daemonset: kube-node-ready-controller
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics

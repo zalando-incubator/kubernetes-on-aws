@@ -3,7 +3,8 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: teapot-admission-controller
   labels:
-    application: teapot-admission-controller
+    application: kubernetes
+    component: teapot-admission-controller
 webhooks:
   - name: pod-admitter.teapot.zalan.do
     clientConfig:
@@ -14,7 +15,7 @@ webhooks:
     matchPolicy: Equivalent
     sideEffects: "NoneOnDryRun"
     rules:
-      - operations: [ "CREATE" ]
+      - operations: [ "CREATE", "UPDATE" ]
         apiGroups: [""]
         apiVersions: ["v1"]
         resources: ["pods"]
