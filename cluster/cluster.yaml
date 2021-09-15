@@ -102,6 +102,7 @@ Resources:
     Properties:
       AlpnPolicy:
         - {{ if eq .Cluster.ConfigItems.experimental_nlb_alpn_h2_enabled "true" }}HTTP2Preferred{{else}}None{{end}}
+      SslPolicy: "ELBSecurityPolicy-TLS-1-2-2017-01"
       Certificates:
         - CertificateArn: "{{.Values.load_balancer_certificate}}"
       DefaultActions:
@@ -135,6 +136,12 @@ Resources:
           SSLCertificateId: "{{.Values.load_balancer_certificate}}"
       LoadBalancerName: "{{.Cluster.LocalID}}"
       Scheme: internet-facing
+      Policies:
+      - PolicyName: "SSLNegotiation-Policy"
+        PolicyType: "SSLNegotiationPolicyType"
+        Attributes:
+        - Name: "Reference-Security-Policy"
+          Value: "ELBSecurityPolicy-TLS-1-2-2017-01"
       SecurityGroups:
         - !Ref MasterLoadBalancerSecurityGroup
       Subnets:
