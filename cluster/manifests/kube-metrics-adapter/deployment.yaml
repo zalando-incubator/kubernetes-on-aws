@@ -2,18 +2,21 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    application: kube-metrics-adapter
+    application: kubernetes
+    component: metrics-adapter
   name: kube-metrics-adapter
   namespace: kube-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kube-metrics-adapter
+      deployment: kube-metrics-adapter
   template:
     metadata:
       labels:
-        application: kube-metrics-adapter
+        application: kubernetes
+        component: metrics-adapter
+        deployment: kube-metrics-adapter
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
@@ -51,10 +54,10 @@ spec:
         resources:
           limits:
             cpu: 10m
-            memory: 100Mi
+            memory: 4Gi
           requests:
             cpu: 10m
-            memory: 100Mi
+            memory: 4Gi
       volumes:
       {{ if eq .Environment "production" }}
       - name: credentials

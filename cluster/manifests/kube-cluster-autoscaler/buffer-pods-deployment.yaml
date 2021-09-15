@@ -6,20 +6,23 @@ metadata:
   name: autoscaling-buffer-{{$zone}}
   namespace: kube-system
   labels:
-    application: autoscaling-buffer
+    application: kubernetes
+    component: autoscaling-buffer
     zone: {{$zone}}
 spec:
   replicas: {{$data.ConfigItems.autoscaling_buffer_pods}}
   selector:
     matchLabels:
-      application: autoscaling-buffer
+      deployment: autoscaling-buffer
       zone: {{$zone}}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        application: autoscaling-buffer
+        application: kubernetes
+        component: autoscaling-buffer
+        deployment: autoscaling-buffer
         zone: {{$zone}}
     spec:
       dnsConfig:
