@@ -16,7 +16,6 @@ clusters:
     etcd_endpoints: "${ETCD_ENDPOINTS}"
     etcd_client_ca_cert: "${ETCD_CLIENT_CA_CERT}"
     etcd_client_ca_key: "${ETCD_CLIENT_CA_KEY}"
-    image_policy: dev
     docker_meta_url: https://docker-meta.stups-test.zalan.do
     service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
@@ -55,7 +54,7 @@ clusters:
     min_size: 1
     max_size: 2
   - discount_strategy: spot
-    instance_types: ["m5.xlarge", "m4.xlarge", "m4.2xlarge", "m5.2xlarge"]
+    instance_types: ["m5.xlarge", "m5a.xlarge", "m5a.2xlarge", "m5.2xlarge"]
     name: default-worker-splitaz
     profile: worker-splitaz
     min_size: 0
@@ -63,13 +62,7 @@ clusters:
     config_items:
       cpu_manager_policy: static
   - discount_strategy: spot
-    instance_types: ["m5.xlarge", "m4.xlarge", "m4.2xlarge", "m5.2xlarge"]
-    name: default-worker
-    profile: worker-default
-    min_size: 0
-    max_size: 21
-  - discount_strategy: spot
-    instance_types: ["m5.xlarge", "m4.xlarge", "m4.2xlarge", "m5.2xlarge"]
+    instance_types: ["m5.xlarge", "m5a.xlarge", "m5a.2xlarge", "m5.2xlarge"]
     config_items:
       availability_zones: "eu-central-1a"
       scaling_priority: "-100"
@@ -78,16 +71,25 @@ clusters:
     min_size: 0
     max_size: 21
   - discount_strategy: spot
-    instance_types: ["m5d.xlarge", "m5d.2xlarge"]
+    instance_types: ["m5d.xlarge", "m5ad.xlarge", "m5d.2xlarge", "m5ad.2xlarge"]
     name: worker-instance-storage
-    profile: worker-default
+    profile: worker-splitaz
     min_size: 0
     max_size: 21
   - discount_strategy: spot
-    instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
+    instance_types: ["m5.xlarge", "m5a.xlarge", "m5a.2xlarge", "m5.2xlarge"]
+    name: worker-combined
+    profile: worker-combined
+    config_items:
+      labels: dedicated=worker-combined
+      taints: dedicated=worker-combined:NoSchedule
+    min_size: 0
+    max_size: 21
+  - discount_strategy: spot
+    instance_types: ["m5a.large", "m5.large", "m5.xlarge", "m5a.xlarge"]
     min_size: 0
     max_size: 3
-    profile: worker-default
+    profile: worker-splitaz
     name: worker-node-tests
     config_items:
       labels: dedicated=node-tests
@@ -95,11 +97,11 @@ clusters:
   - discount_strategy: spot
     instance_types: ["g4dn.xlarge", "g4dn.2xlarge", "p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
     name: worker-gpu
-    profile: worker-default
+    profile: worker-splitaz
     min_size: 0
-    max_size: 3
+    max_size: 6
     config_items:
-      availability_zones: "eu-central-1a"
+      availability_zones: "eu-central-1a,eu-central-1b"
       labels: zalando.org/nvidia-gpu=tesla
       taints: nvidia.com/gpu=present:NoSchedule
       scaling_priority: "-100"
