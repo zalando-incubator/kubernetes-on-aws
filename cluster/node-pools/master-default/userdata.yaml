@@ -116,10 +116,10 @@ write_files:
           - --allow-privileged=true
           - --service-cluster-ip-range=10.3.0.0/16
           - --secure-port=443
-          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority,NodeRestriction
+          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,Priority,NodeRestriction
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
+          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
@@ -127,7 +127,6 @@ write_files:
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --authorization-webhook-version=v1
           - --token-auth-file=/etc/kubernetes/config/tokenfile.csv
-          - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
 {{- if eq .Cluster.ConfigItems.okta_auth_enabled "true" }}
           - --oidc-issuer-url={{.Cluster.ConfigItems.okta_auth_issuer_url}}
           - --oidc-client-id={{.Cluster.ConfigItems.okta_auth_client_id}}
@@ -408,18 +407,6 @@ write_files:
           - name: BUSINESS_PARTNERS
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
-        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:v0.5.6
-          name: image-policy-webhook
-          args:
-          - --policy={{ .Cluster.ConfigItems.image_policy }}
-          - --failure-policy=fail
-          - --trusted-ttl=30s
-          ports:
-          - containerPort: 8083
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c",  " sleep 60"]
         - name: skipper-proxy
           image: registry.opensource.zalan.do/teapot/skipper:v0.13.53
           args:
@@ -497,10 +484,6 @@ write_files:
               -> disableAccessLog()
               -> setPath("/metrics")
               -> "https://127.0.0.1:9085";
-            image_policy_webhook: Path("/image-policy-webhook")
-              -> disableAccessLog()
-              -> setPath("/metrics")
-              -> "http://127.0.0.1:8083";
             aws_encryption_provider: Path("/aws-encryption-provider")
               -> disableAccessLog()
               -> setPath("/metrics")
@@ -707,32 +690,6 @@ write_files:
     path: /etc/kubernetes/config/tokenfile.csv
     permissions: 0600
     content: ""
-
-  - owner: root:root
-    path: /etc/kubernetes/config/image-policy-webhook.yaml
-    content: |
-      imagePolicy:
-        kubeConfigFile: /etc/kubernetes/config/image-policy-webhook-kubeconfig.yaml
-        allowTTL: 2
-        denyTTL: 2
-        retryBackoff: 500
-        defaultAllow: false
-
-  - owner: root:root
-    path: /etc/kubernetes/config/image-policy-webhook-kubeconfig.yaml
-    content: |
-      clusters:
-        - name: image-policy-webhook
-          cluster:
-            server: http://127.0.0.1:8083/admit
-      users:
-        - name: image-policy-webhook
-      current-context: image-policy-webhook
-      contexts:
-      - context:
-          cluster: image-policy-webhook
-          user: image-policy-webhook
-        name: image-policy-webhook
 
   - owner: root:root
     path: /etc/kubernetes/config/audit.yaml
