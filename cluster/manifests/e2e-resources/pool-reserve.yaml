@@ -1,5 +1,5 @@
 {{ if eq .Environment "e2e" }}
-{{ range $pool := split "default-worker-splitaz,default-worker,worker-limit-az,worker-instance-storage,worker-node-tests" "," }}
+{{ range $pool := split "default-worker-splitaz,worker-limit-az,worker-combined,worker-instance-storage,worker-node-tests" "," }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -27,6 +27,11 @@ spec:
         - effect: NoSchedule
           key: dedicated
           value: node-tests
+      {{ end }}
+      {{ if eq $pool "worker-combined" }}
+        - effect: NoSchedule
+          key: dedicated
+          value: worker-combined
       {{ end }}
       terminationGracePeriodSeconds: 0
       containers:
