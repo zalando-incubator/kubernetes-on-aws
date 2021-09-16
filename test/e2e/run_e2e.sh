@@ -179,7 +179,7 @@ if [ "$e2e" = true ]; then
     # clusters yet. Currently there's no need to support them and
     # portMapping is not enabled in the Flannel CNI configmap.
     # * "[Fail] [sig-network] HostPort [It] validates that there is no conflict between pods with same hostPort but different hostIP and protocol [LinuxOnly] [Conformance]"
-    #   https://github.com/kubernetes/kubernetes/blob/v1.21.4/test/e2e/network/hostport.go#L61
+    #   https://github.com/kubernetes/kubernetes/blob/v1.21.5/test/e2e/network/hostport.go#L61
     set +e
 
     mkdir -p junit_reports
