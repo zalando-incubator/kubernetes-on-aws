@@ -33,7 +33,7 @@ var _ = framework.KubeDescribe("Infrastructure tests", func() {
 
 	It("All node pools should be able to run pods [Zalando]", func() {
 		// When modifying this list, don't forget to modify cluster/manifests/e2e-resources/pool-reserve.yaml
-		for _, pool := range []string{"default-worker-splitaz", "default-worker", "worker-limit-az", "worker-instance-storage"} {
+		for _, pool := range []string{"default-worker-splitaz", "worker-combined", "worker-limit-az", "worker-instance-storage"} {
 			deploy, err := cs.AppsV1().Deployments("default").Get(context.Background(), fmt.Sprintf("pool-reserve-%s", pool), metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
