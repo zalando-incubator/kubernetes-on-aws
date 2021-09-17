@@ -1,26 +1,5 @@
 # everything defined under here will be deleted before applying the manifests
 pre_apply:
-- name: stackset-controller
-  namespace: default
-  kind: Service
-- name: stackset-controller
-  namespace: default
-  kind: Deployment
-- name: stackset-controller
-  namespace: default
-  kind: ServiceAccount
-- name: kubernetes-dashboard-new
-  namespace: kube-system
-  kind: Deployment
-- name: dashboard-metrics-scraper-new
-  namespace: kube-system
-  kind: Deployment
-- name: cadvisor
-  namespace: kube-system
-  kind: DaemonSet
-- name: prometheus-node-exporter
-  namespace: kube-system
-  kind: DaemonSet
 {{ if ne .Cluster.ConfigItems.routegroups_validation "enabled" }}
 - name: "routegroup-admitter.teapot.zalan.do"
   kind: ValidatingWebhookConfiguration
@@ -30,84 +9,9 @@ pre_apply:
   namespace: default
   kind: Deployment
 {{ end }}
-# Application consolidation, can be dropped later
-- labels:
-    application: kube-aws-iam-controller
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: kube-metrics-adapter
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: metrics-server
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: kube-static-egress-controller
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: kube-state-metrics
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: kubernetes-lifecycle-metrics
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: pdb-controller
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: kubernetes-event-logger
-  namespace: kube-system
-  kind: StatefulSet
-- labels:
-    application: cronjob-monitor
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: cronjob-fixer
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: kube-downscaler
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: kube-janitor
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: cluster-lifecycle-controller
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: efs-provisioner
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: kube-cluster-autoscaler
-  namespace: kube-system
-  kind: Daemonset
-- labels:
-    application: autoscaling-buffer
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: kube-node-ready-controller
-  namespace: kube-system
-  kind: Daemonset
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
-- name: stackset-controller
-  namespace: default
-  kind: VerticalPodAutoscaler
-- name: spotinst-kubernetes-cluster-controller
-  namespace: kube-system
-  kind: VerticalPodAutoscaler
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
@@ -116,9 +20,6 @@ post_apply:
   namespace: cron
   kind: LimitRange
 {{ end }}
-- name: leader-locking-efs-provisioner
-  namespace: default
-  kind: RoleBinding
 {{ if ne .ConfigItems.enable_csi_migration "true" }}
 - name: csi-node-driver
   namespace: kube-system
@@ -151,14 +52,6 @@ post_apply:
   kind: PersistentVolumeClaim
   namespace: kube-system
 {{ end }}
-# TODO: drop once rolled out to all clusters
-- name: aws-node-decommissioner-aws-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: kube-dns-metrics
-  namespace: kube-system
-  kind: Deployment
 {{ if ne .ConfigItems.downscaler_enabled "true" }}
 - name: kube-downscaler
   namespace: kube-system
@@ -174,73 +67,6 @@ post_apply:
   namespace: kube-system
   kind: VerticalPodAutoscaler
 {{ end }}
-- name: patch-nodes
-  namespace: kube-system
-  kind: RoleBinding
-- name: node-patcher
-  kind: ClusterRole
-- name: cadvisor
-  namespace: kube-system
-  kind: ServiceAccount
-- name: cadvisor
-  namespace: kube-system
-  kind: Service
-- name: cadvisor-privileged-psp
-  namespace: kube-system
-  kind: RoleBinding
-- name: prometheus-node-exporter
-  namespace: kube-system
-  kind: ServiceAccount
-- name: prometheus-node-exporter
-  namespace: kube-system
-  kind: Service
-- name: prometheus-node-exporter-privileged-psp
-  namespace: kube-system
-  kind: RoleBinding
-- name: visibility-logging
-  kind: PriorityClass
-- name: autoscaling-buffer
-  kind: PriorityClass
-- kind: ClusterRole
-  name: default-psp
-- kind: ClusterRoleBinding
-  name: default-psp
-- kind: PodSecurityPolicy
-  name: default
-- name: admission-controller-proxy
-  kind: PlatformCredentialsSet
-  namespace: kube-system
-- name: admission-controller-proxy
-  kind: DaemonSet
-  namespace: kube-system
-- name: ebs-csi-controller-iam-credentials
-  namespace: kube-system
-  kind: AWSIAMRole
-  apiVersion: zalando.org/v1
-- name: stackset-controller
-  namespace: kube-system
-  kind: Service
-- name: kubernetes-lifecycle-metrics
-  namespace: kube-system
-  kind: Service
-- name: kube-static-egress-controller
-  namespace: kube-system
-  kind: Service
-- name: kube-node-ready-controller
-  namespace: kube-system
-  kind: Service
-- name: kube-cluster-autoscaler
-  namespace: kube-system
-  kind: Service
-- name: external-dns
-  namespace: kube-system
-  kind: Service
-- name: audittrail-adapter
-  namespace: kube-system
-  kind: Service
-- name: coredns-local-dnsmasq
-  namespace: kube-system
-  kind: Service
 - labels:
     application: external-dns
   namespace: kube-system
