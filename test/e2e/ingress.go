@@ -159,7 +159,7 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
-		//  skipper http -> https redirect
+		// skipper http -> https redirect
 		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
 		Expect(err).NotTo(HaveOccurred())
@@ -370,7 +370,7 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
-		//  skipper http -> https redirect
+		// skipper http -> https redirect
 		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
 		Expect(err).NotTo(HaveOccurred())
@@ -521,7 +521,7 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
-		//  skipper http -> https redirect
+		// skipper http -> https redirect
 		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
 		Expect(err).NotTo(HaveOccurred())
@@ -644,10 +644,10 @@ var _____ = framework.KubeDescribe("Ingress tests simple NLB", func() {
 		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
-		// //  skipper http -> https redirect
-		// By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
-		// err = waitForResponse(addr, "http", waitTime, isRedirect, true)
-		// Expect(err).NotTo(HaveOccurred())
+		// skipper http -> https redirect
+		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
+		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
+		Expect(err).NotTo(HaveOccurred())
 
 		// NLB ready
 		By("Waiting for NLB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
