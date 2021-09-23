@@ -44,7 +44,7 @@ const (
 	dockerImage  = "k8s.gcr.io/busybox"
 )
 
-var _ = framework.KubeDescribe("Admission controller tests", func() {
+var _ = describe("Admission controller tests", func() {
 	f := framework.NewDefaultFramework("zalando-kube-admission-controller")
 	var cs kubernetes.Interface
 

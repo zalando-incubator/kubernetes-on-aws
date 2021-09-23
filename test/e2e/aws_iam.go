@@ -27,7 +27,7 @@ import (
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
-var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", func() {
+var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
 	f := framework.NewDefaultFramework("aws-iam")
 	var cs kubernetes.Interface
 	var zcs awsiamrole.Interface
