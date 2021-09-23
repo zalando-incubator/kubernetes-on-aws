@@ -31,7 +31,7 @@ const (
 	externalDNSAnnotation = "external-dns.alpha.kubernetes.io/hostname"
 )
 
-var _ = framework.KubeDescribe("External DNS creation", func() {
+var _ = describe("External DNS creation", func() {
 	f := framework.NewDefaultFramework("external-dns")
 	var cs kubernetes.Interface
 

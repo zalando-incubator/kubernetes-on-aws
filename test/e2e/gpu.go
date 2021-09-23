@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/ginkgo"
 )
 
-var _ = framework.KubeDescribe("GPU job processing", func() {
+var _ = describe("GPU job processing", func() {
 	f := framework.NewDefaultFramework("gpu")
 	var cs kubernetes.Interface
 
