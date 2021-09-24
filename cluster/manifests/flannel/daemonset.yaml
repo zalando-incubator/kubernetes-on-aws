@@ -57,23 +57,8 @@ spec:
           limits:
             cpu: 25m
             memory: 50Mi
-      - name: apiserver-proxy
-        image: registry.opensource.zalan.do/teapot/etcd-proxy:master-6
-        command:
-        - /bin/sh
-        args:
-        - -c
-        - "exec /etcd-proxy --listen-address 127.0.0.1:333 $KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT"
-        resources:
-          requests:
-            cpu: 25m
-            memory: 25Mi
-            ephemeral-storage: 256Mi
-          limits:
-            cpu: 25m
-            memory: 25Mi
       - name: kube-flannel
-        image: registry.opensource.zalan.do/teapot/flannel:v0.11.0-10
+        image: registry.opensource.zalan.do/teapot/flannel:v0.14.0-12
         command:
         - /opt/bin/flanneld
         args:
@@ -83,10 +68,6 @@ spec:
         - --healthz-port=10267
         - --v=2
         env:
-        - name: KUBERNETES_SERVICE_HOST
-          value: "127.0.0.1"
-        - name: KUBERNETES_SERVICE_PORT
-          value: "333"
         - name: POD_NAME
           valueFrom:
             fieldRef:
