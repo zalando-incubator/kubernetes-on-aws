@@ -32,6 +32,7 @@ clusters:
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
     kube_aws_ingress_controller_nlb_enabled: "true"
+    nlb_switch: "pre"
     vm_dirty_bytes: 134217728
     vm_dirty_background_bytes: 67108864
     prometheus_tsdb_retention_size: enabled
