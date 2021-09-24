@@ -4,7 +4,7 @@ write_files:
     path: /etc/kubernetes/secrets.env
     content: |
       NODEPOOL_TAINTS=node.kubernetes.io/role=master:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
-      NODE_LABELS=master=true,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,{{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
+      NODE_LABELS=master=true,node.kubernetes.io/exclude-from-external-load-balancers,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,{{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=master
 
