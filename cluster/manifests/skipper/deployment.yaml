@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.100
+    version: v0.13.108
     component: ingress
 spec:
   strategy:
@@ -19,7 +19,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.13.100
+        version: v0.13.108
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -46,12 +46,18 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.100-172
+        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.108-177
         ports:
         - name: ingress-port
           containerPort: 9999
           hostPort: 9999
           protocol: TCP
+{{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
+        - name: http-redirect
+          containerPort: 9998
+          hostPort: 9998
+          protocol: TCP
+{{ end }}
         env:
         - name: LIGHTSTEP_TOKEN
           valueFrom:
@@ -73,6 +79,10 @@ spec:
 {{ end }}
 {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
         - name: LOCAL_TOKENINFO_SANDBOX
+          value: "true"
+{{ end }}
+{{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
+        - name: HTTP_REDIRECT
           value: "true"
 {{ end }}
         args:
@@ -136,7 +146,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.100-172
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.108-177
             max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
@@ -226,7 +236,7 @@ spec:
             - -ce
             # Check all sub processes in the container and fail if one of them fails.
             # wget will exit with non-zero status code if the HTTP code is no 2xx.
-            # production tokeinfo, sandbox tokeninfo, bridge
+            # production tokeninfo, sandbox tokeninfo, bridge
             - "wget -T 1 -q -O /dev/null http://127.0.0.1:9021/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9121/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9000/healthz"
           initialDelaySeconds: {{ .ConfigItems.skipper_liveness_init_delay_seconds }}
           periodSeconds: 10
