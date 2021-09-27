@@ -37,6 +37,11 @@ spec:
           spec:
             description: ScalingScheduleSpec is the spec part of the ScalingSchedule.
             properties:
+              scalingWindowDurationMinutes:
+                description: Fade the scheduled values in and out over this many minutes.
+                  If unset, the default per-cluster value will be used.
+                format: int64
+                type: integer
               schedules:
                 description: Schedules is the list of schedules for this ScalingSchedule
                   resource. All the schedules defined here will result on the value
@@ -96,6 +101,7 @@ spec:
                     value:
                       description: The metric value that will be returned for the
                         defined schedule.
+                      format: int64
                       type: integer
                   required:
                   - durationMinutes
