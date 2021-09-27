@@ -51,7 +51,6 @@ Resources:
           Value: owned
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
-{{- if ne .Cluster.ConfigItems.apiserver_nlb "disabled" }}
   MasterLoadBalancerNLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -111,74 +110,8 @@ Resources:
       LoadBalancerArn: !Ref MasterLoadBalancerNLB
       Port: 443
       Protocol: TLS
-{{- end }}
-{{- if ne .Cluster.ConfigItems.apiserver_nlb "exclusive" }}
-  MasterLoadBalancer:
-    Properties:
-      ConnectionDrainingPolicy:
-        Enabled: true
-        Timeout: 60
-      ConnectionSettings:
-        IdleTimeout: 3600
-      CrossZone: 'true'
-      HealthCheck:
-        HealthyThreshold: '2'
-        Interval: '10'
-        Target: 'HTTPS:8443/healthz'
-        Timeout: '5'
-        UnhealthyThreshold: '2'
-      Listeners:
-        - InstancePort: 8443
-          InstanceProtocol: SSL
-          LoadBalancerPort: 443
-          PolicyNames: []
-          Protocol: SSL
-          SSLCertificateId: "{{.Values.load_balancer_certificate}}"
-      LoadBalancerName: "{{.Cluster.LocalID}}"
-      Scheme: internet-facing
-      Policies:
-      - PolicyName: "SSLNegotiation-Policy"
-        PolicyType: "SSLNegotiationPolicyType"
-        Attributes:
-        - Name: "Reference-Security-Policy"
-          Value: "ELBSecurityPolicy-TLS-1-2-2017-01"
-      SecurityGroups:
-        - !Ref MasterLoadBalancerSecurityGroup
-      Subnets:
-{{ with $values := .Values }}
-{{ range $az := $values.availability_zones }}
-        - "{{ index $values.subnets $az }}"
-{{ end }}
-{{ end }}
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-        - Key: "application"
-          Value: kube-apiserver
-        - Key: "component"
-          Value: "kube-apiserver"
-    Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
-  MasterLoadBalancerSecurityGroup:
-    Properties:
-      GroupDescription: !Ref 'AWS::StackName'
-      SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          FromPort: -1
-          IpProtocol: icmp
-          ToPort: -1
-        - CidrIp: 0.0.0.0/0
-          FromPort: 443
-          IpProtocol: tcp
-          ToPort: 443
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
-    Type: 'AWS::EC2::SecurityGroup'
-{{- end }}
   MasterLoadBalancerVersionDomain:
     Properties:
-    {{- if or (eq .Cluster.ConfigItems.apiserver_nlb "active") (eq .Cluster.ConfigItems.apiserver_nlb "promoted") (eq .Cluster.ConfigItems.apiserver_nlb "exclusive") }}
       AliasTarget:
         DNSName: !GetAtt
           - MasterLoadBalancerNLB
@@ -186,15 +119,6 @@ Resources:
         HostedZoneId: !GetAtt
           - MasterLoadBalancerNLB
           - CanonicalHostedZoneID
-    {{- else }}
-      AliasTarget:
-        DNSName: !GetAtt
-          - MasterLoadBalancer
-          - DNSName
-        HostedZoneId: !GetAtt
-          - MasterLoadBalancer
-          - CanonicalHostedZoneNameID
-    {{- end }}
       HostedZoneName: "{{.Values.hosted_zone}}."
       Name: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}."
       Type: A
@@ -203,7 +127,6 @@ Resources:
     Properties:
       GroupDescription: !Ref 'AWS::StackName'
       SecurityGroupIngress:
-{{- if and (ne .Cluster.ConfigItems.apiserver_nlb "disabled") (ne .Cluster.ConfigItems.apiserver_nlb "provisioned") }}
         - CidrIp: 0.0.0.0/0
           FromPort: 8443
           IpProtocol: tcp
@@ -212,7 +135,6 @@ Resources:
           FromPort: 8080
           IpProtocol: tcp
           ToPort: 8080
-{{- end }}
         - CidrIp: 0.0.0.0/0
           FromPort: -1
           IpProtocol: icmp
@@ -261,30 +183,6 @@ Resources:
           Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
-{{- if ne .Cluster.ConfigItems.apiserver_nlb "exclusive" }}
-  MasterSecurityGroupIngressFromLoadBalancer:
-    Properties:
-      FromPort: 8443
-      GroupId: !Ref MasterSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref MasterLoadBalancerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 8443
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  MasterSecurityGroupIngressFromLoadBalancerHealthCheck:
-    Properties:
-      FromPort: 8080
-      GroupId: !Ref MasterSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref MasterLoadBalancerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 8080
-    Type: 'AWS::EC2::SecurityGroupIngress'
-{{- end }}
   MasterSecurityGroupIngressFromMaster:
     Properties:
       FromPort: 443
@@ -2103,18 +2001,10 @@ Outputs:
       Name: '{{ .Cluster.ID}}:master-files-encryption-key'
     Value: !Ref MasterFilesEncryptionKey
 {{- if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
-{{- if ne .Cluster.ConfigItems.apiserver_nlb "exclusive" }}
-  MasterLoadBalancer:
-    Export:
-      Name: '{{.Cluster.ID}}:master-load-balancer'
-    Value: !Ref MasterLoadBalancer
-{{- end }}
-{{- if ne .Cluster.ConfigItems.apiserver_nlb "disabled" }}
   MasterLoadBalancerNLBTargetGroup:
     Export:
       Name: '{{.Cluster.ID}}:master-load-balancer-nlb-target-group'
     Value: !Ref MasterLoadBalancerNLBTargetGroup
-{{- end }}
   MasterSecurityGroup:
     Export:
       Name: '{{.Cluster.ID}}:master-security-group'
