@@ -35,9 +35,8 @@ spec:
         - --prometheus-server=http://prometheus.kube-system.svc.cluster.local
         - --skipper-ingress-metrics
         - --skipper-routegroup-metrics
-        {{ if eq .ConfigItems.enable_scaling_schedule_metrics "true"}}
         - --scaling-schedule
-        {{ end }}
+        - --scaling-schedule-default-scaling-window={{.Cluster.ConfigItems.kube_metrics_adapter_default_scaling_window}}
         - --aws-external-metrics
         - --aws-region=eu-central-1
         - --aws-region=eu-west-1
