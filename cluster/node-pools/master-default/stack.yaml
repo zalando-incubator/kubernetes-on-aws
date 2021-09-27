@@ -21,10 +21,6 @@ Resources:
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplate
         Version: !GetAtt LaunchTemplate.LatestVersionNumber
-{{- if and (ne .Cluster.ConfigItems.apiserver_nlb "promoted") (ne .Cluster.ConfigItems.apiserver_nlb "exclusive") }}
-      LoadBalancerNames:
-      - !ImportValue '{{ .Cluster.ID }}:master-load-balancer'
-{{- end }}
       MinSize: '{{ .NodePool.MinSize }}'
       MaxSize: '{{ .NodePool.MaxSize }}'
       Tags:
@@ -46,10 +42,8 @@ Resources:
         - "{{ index $values.subnets $az }}"
 {{ end }}
 {{ end }}
-{{- if and (ne .Cluster.ConfigItems.apiserver_nlb "disabled") (ne .Cluster.ConfigItems.apiserver_nlb "provisioned") }}
       TargetGroupARNs:
       - !ImportValue '{{ .Cluster.ID }}:master-load-balancer-nlb-target-group'
-{{- end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
   LaunchTemplate:
     Properties:
