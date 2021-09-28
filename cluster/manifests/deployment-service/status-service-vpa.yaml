@@ -1,0 +1,21 @@
+apiVersion: autoscaling.k8s.io/v1beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: "deployment-service-status-service"
+  namespace: "kube-system"
+  labels:
+    application: "deployment-service"
+    component: "status-service"
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: "deployment-service-status-service"
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: "deployment-service-status-service"
+      minAllowed:
+        cpu: {{.Cluster.ConfigItems.deployment_service_status_service_cpu}}
+        memory: {{.Cluster.ConfigItems.deployment_service_status_service_memory}}

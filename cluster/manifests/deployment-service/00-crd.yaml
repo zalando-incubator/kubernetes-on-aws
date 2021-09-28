@@ -1,0 +1,184 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  name: cdpdeploymenttasks.deployment.zalando.org
+spec:
+  group: deployment.zalando.org
+  names:
+    kind: CDPDeploymentTask
+    listKind: CDPDeploymentTaskList
+    plural: cdpdeploymenttasks
+    singular: cdpdeploymenttask
+  scope: Cluster
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: CDPDeploymentTask represents a task that deploys Kubernetes or
+          CloudFormation resources to the cluster.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CDPDeploymentTaskSpec is the spec part of the CDPDeploymentTask.
+            properties:
+              aborted:
+                description: If set to true, the controller should stop processing
+                  the deployment task and change its phase to Aborted.
+                type: boolean
+              changeCause:
+                description: A human-readable description of the current deployment,
+                  to be used as the change cause in deployments and other resources
+                  that support it.
+                type: string
+              deploymentID:
+                description: CDP deployment ID
+                type: string
+              manifestSet:
+                description: The ID of the manifest set in the cluster's S3 bucket.
+                type: string
+              pipelineID:
+                description: CDP pipeline ID
+                type: string
+              taskKind:
+                description: The kind of this deployment task. Currently only 'Standard'
+                  and 'MLExperiment' tasks are supported. If unset, the task is considered
+                  to use the 'Standard' kind.
+                enum:
+                - Standard
+                - MLExperiment
+                type: string
+              timeoutSeconds:
+                description: The duration for how long to wait for Kubernetes resources
+                  to become ready. If the task is not yet finished, the controller
+                  would stop processing it and moved it to the Expired state.
+                format: int64
+                type: integer
+            required:
+            - deploymentID
+            - manifestSet
+            - pipelineID
+            - timeoutSeconds
+            type: object
+          status:
+            description: CDPDeploymentTaskStatus is the status part of the CDPDeploymentTask.
+            properties:
+              finishedAt:
+                description: The timestamp when this deployment task has finished.
+                format: date-time
+                type: string
+              message:
+                description: A human-readable description of the current status of
+                  the deployment task.
+                type: string
+              observedGeneration:
+                description: ObservedGeneration reflects the generation of the most
+                  recently observed CDPDeploymentTask.
+                format: int64
+                type: integer
+              phase:
+                default: Created
+                description: 'Phase reflects the current lifecycle phase of the deployment
+                  task. The following values are currently available:  Created: deployment
+                  task was submitted to the cluster, the controller will deploy the
+                  resources described in it.  WaitingForResources: resources described
+                  in the task have been deployed to the cluster, the controller is
+                  waiting for the update to be finished.  Aborted: deployment task
+                  has been aborted by setting spec.aborted to true.  Succeeded: deployment
+                  task has finished successfully.  Failed: deployment task has finished
+                  with an error.  Expired: deployment task hasn''t finished before
+                  the timeout.'
+                enum:
+                - Created
+                - Deploying
+                - WaitingForResources
+                - Aborted
+                - Succeeded
+                - Failed
+                - Expired
+                type: string
+              resources:
+                description: List of resources in this task.
+                items:
+                  properties:
+                    cloudFormation:
+                      properties:
+                        region:
+                          type: string
+                        stackID:
+                          type: string
+                        stackResources:
+                          items:
+                            properties:
+                              logicalID:
+                                type: string
+                              type:
+                                type: string
+                            required:
+                            - logicalID
+                            - type
+                            type: object
+                          type: array
+                      required:
+                      - region
+                      - stackID
+                      type: object
+                    kubernetes:
+                      properties:
+                        apiVersion:
+                          type: string
+                        kind:
+                          type: string
+                        namespace:
+                          type: string
+                      required:
+                      - apiVersion
+                      - kind
+                      type: object
+                    name:
+                      type: string
+                    phase:
+                      enum:
+                      - WaitingForDeployment
+                      - ExecutingDeployment
+                      - DeploymentExecuted
+                      type: string
+                  required:
+                  - name
+                  - phase
+                  type: object
+                type: array
+              resourcesDeployedAt:
+                description: The timestamp when the resources have been deployed.
+                  For Kubernetes resources this means that they've been applied to
+                  the cluster, for CloudFormation this means that the stack updates
+                  have finished as well.
+                format: date-time
+                type: string
+              updatedAt:
+                description: The timestamp when this deployment task was last updated
+                  by the controller.
+                format: date-time
+                type: string
+            required:
+            - phase
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
