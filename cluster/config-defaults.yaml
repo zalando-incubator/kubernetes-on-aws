@@ -652,11 +652,15 @@ experimental_nlb_alpn_h2_enabled: "true"
 exec_probe_timeout_enabled: "true"
 
 # Settings for the deployment service
+deployment_service_controller_cpu: "100m"
+deployment_service_controller_memory: "1Gi"
+deployment_service_status_service_cpu: "100m"
+deployment_service_status_service_memory: "250Mi"
 deployment_service_api_role_arn: ""
-{{ if eq .Cluster.Environment "e2e" }}
-deployment_service_enabled: "true"
-{{ else }}
-deployment_service_enabled: "false"
-{{ end }}
+deployment_service_tokeninfo_url: ""
+deployment_service_lightstep_token: ""
 deployment_service_ml_experiments_enabled: "false"
 deployment_service_cf_auto_expand_enabled: "false"
+
+# Will be dropped after the migration
+deployment_service_enabled: "true"
