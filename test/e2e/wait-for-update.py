@@ -29,7 +29,7 @@ def daemonset_updated(spec, status):
     if desired == ready:
         return None
     else:
-        return "{}/{}".format(ready, desired)
+        return "{}/{} [{}]".format(ready, desired, condition_messages(status))
 
 
 def deployment_updated(spec, status):
@@ -37,9 +37,9 @@ def deployment_updated(spec, status):
     ready = status.get("readyReplicas", 0)
     updated = status.get("updatedReplicas", 0)
     if updated != replicas:
-        return "{}/{} updated".format(updated, replicas)
+        return "{}/{} updated [{}]".format(updated, replicas, condition_messages(status))
     if ready != replicas:
-        return "{}/{} ready".format(ready, replicas)
+        return "{}/{} ready [{}]".format(ready, replicas, condition_messages(status))
 
 
 def statefulset_updated(spec, status):
@@ -47,9 +47,13 @@ def statefulset_updated(spec, status):
     ready = status.get("readyReplicas", 0)
     current = status.get("currentReplicas", 0)
     if current != replicas:
-        return "{}/{} current".format(current, replicas)
+        return "{}/{} current [{}]".format(current, replicas, condition_messages(status))
     if ready != replicas:
-        return "{}/{} ready".format(ready, replicas)
+        return "{}/{} ready [{}]".format(ready, replicas, condition_messages(status))
+
+
+def condition_messages(status):
+    return ' '.join([c.get('message', '') for c in status.get('conditions', [])])
 
 
 def main():

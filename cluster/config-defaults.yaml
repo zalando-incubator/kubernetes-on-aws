@@ -25,7 +25,7 @@ kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
 kube_aws_ingress_controller_deregistration_delay_timeout: "10s"
 # allow using NLBs for ingress
-# This opens port 9999 (skipper-ingress) on all worker nodes.
+# This opens skipper-ingress ports 9998 and 9999 on all worker nodes
 kube_aws_ingress_controller_nlb_enabled: "true"
 kube_aws_ingress_controller_nlb_cross_zone: "true"
 kube_aws_ingress_controller_cert_polling_interval: "2m"
@@ -33,7 +33,12 @@ kube_aws_ingress_controller_cert_polling_interval: "2m"
 kube_aws_ingress_default_lb_type: "application"
 
 # ALB to NLB switch
-# "pre": skipper-ingress will create XFF headers for requests passing NLB
+# "pre":
+# - kube-ingress-aws-controller will configure NLB to forward HTTPS requests
+#   to skipper-ingress on port 9999 and HTTP requests to port 9998
+# - skipper-ingress on port 9999 will add X-Forwarded-For=<client IP> and X-Forwarded-Proto=https headers to requests from NLB
+# - skipper-ingress on port 9998 will reply with 308 Permanent Redirect to https
+#
 # "exec": same as "pre" and kube-ingress-aws-controller will default to NLB
 # after removing it you need to set kube_aws_ingress_default_lb_type: "network" above and cleanup skipper and ingress-ctl deployment.yaml
 {{if eq .Cluster.Channel "dev"}}
@@ -105,8 +110,8 @@ enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup cand
 
 
 # Kube-Metrics-Adapter
-## Enable the kube-metrics-adapter time-based metrics.
-enable_scaling_schedule_metrics: "true"
+## Scheduled scaling metrics: fade in/out over this period of time
+kube_metrics_adapter_default_scaling_window: "10m"
 ## ZMON KairosDB URL
 zmon_kairosdb_url: "https://data-service.zmon.zalan.do/kairosdb-proxy"
 
@@ -490,17 +495,6 @@ enable_csi_migration: "false"
 # pull images in parallel
 serialize_image_pulls: "false"
 
-# defines the rollout status of the NLB for the API server. The options are:
-#
-#   disabled:    no NLB will be provisioned
-#   provisioned: NLB will be provisioned but not hooked up to the ASG
-#   hooked:      NLB will be provisioned and hooked up to the ASG but DNS still points to the ELB
-#   active:      NLB will be fully functional and DNS points to the NLB
-#   promoted:    NLB will be fully functional and ELB will be unhooked
-#   exclusive:   NLB will be fully functional and ELB will be removed
-#
-apiserver_nlb: "exclusive"
-
 # Version of the scheduler used by the master nodes.
 # Supported values:
 #  - upstream: official Kubernetes version
@@ -665,3 +659,4 @@ deployment_service_enabled: "true"
 deployment_service_enabled: "false"
 {{ end }}
 deployment_service_ml_experiments_enabled: "false"
+deployment_service_cf_auto_expand_enabled: "false"
