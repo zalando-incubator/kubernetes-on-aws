@@ -410,7 +410,7 @@ func verifyResponse(status int, body []byte, test testItem) {
 	}
 }
 
-var _ = framework.KubeDescribe("Authorization tests [Authorization] [RBAC] [Zalando]", func() {
+var _ = describe("Authorization tests [Authorization] [RBAC] [Zalando]", func() {
 	should := fmt.Sprintf(
 		"should validate permissions for [Authorization] [RBAC] [Zalando]",
 	)

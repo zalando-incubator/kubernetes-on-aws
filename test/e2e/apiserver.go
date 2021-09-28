@@ -39,7 +39,7 @@ const (
 	nonCompliantImage = "registry.opensource.zalan.do/teapot/skipper-test:pr-1845-1" // this image tag is not compliant
 )
 
-var _ = framework.KubeDescribe("Image Policy Tests (Deployment)", func() {
+var _ = describe("Image Policy Tests (Deployment)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-enabled")
 	var cs kubernetes.Interface
 
@@ -97,7 +97,7 @@ var _ = framework.KubeDescribe("Image Policy Tests (Deployment)", func() {
 	})
 })
 
-var _ = framework.KubeDescribe("Image Policy Tests (Deployment) (when disabled)", func() {
+var _ = describe("Image Policy Tests (Deployment) (when disabled)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-disabled")
 	var cs kubernetes.Interface
 
@@ -132,7 +132,7 @@ var _ = framework.KubeDescribe("Image Policy Tests (Deployment) (when disabled)"
 	})
 })
 
-var _ = framework.KubeDescribe("Image Policy Tests (Pods)", func() {
+var _ = describe("Image Policy Tests (Pods)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-enabled")
 	var cs kubernetes.Interface
 
@@ -175,7 +175,7 @@ var _ = framework.KubeDescribe("Image Policy Tests (Pods)", func() {
 	})
 })
 
-var _ = framework.KubeDescribe("Image Policy Tests (Pods) (when disabled)", func() {
+var _ = describe("Image Policy Tests (Pods) (when disabled)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-disabled")
 	var cs kubernetes.Interface
 
@@ -206,7 +206,7 @@ var _ = framework.KubeDescribe("Image Policy Tests (Pods) (when disabled)", func
 	})
 })
 
-var _ = framework.KubeDescribe("Image Policy Tests (Pods Update Path)", func() {
+var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-enabled")
 	var cs kubernetes.Interface
 
@@ -282,7 +282,7 @@ var _ = framework.KubeDescribe("Image Policy Tests (Pods Update Path)", func() {
 	})
 })
 
-var _ = framework.KubeDescribe("Image Policy Tests (Pods Update Path) (when disabled)", func() {
+var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-disabled")
 	var cs kubernetes.Interface
 

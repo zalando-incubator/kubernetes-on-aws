@@ -174,12 +174,18 @@ if [ "$e2e" = true ]; then
     #   https://github.com/kubernetes/kubernetes/blob/v1.19.2/test/e2e/network/service.go#L2522
     # * "[Fail] [sig-network] Services [It] should be able to switch session affinity for NodePort service [LinuxOnly] [Conformance]"
     #   https://github.com/kubernetes/kubernetes/blob/v1.19.2/test/e2e/network/service.go#L2538
+    #
+    # These are disabled because the hostPort are not supported in our
+    # clusters yet. Currently there's no need to support them and
+    # portMapping is not enabled in the Flannel CNI configmap.
+    # * "[Fail] [sig-network] HostPort [It] validates that there is no conflict between pods with same hostPort but different hostIP and protocol [LinuxOnly] [Conformance]"
+    #   https://github.com/kubernetes/kubernetes/blob/v1.21.5/test/e2e/network/hostport.go#L61
     set +e
 
     mkdir -p junit_reports
     ginkgo -nodes=25 -flakeAttempts=2 \
         -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
-        -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.resolve.DNS.of.partial.qualified.names.for.services|should.be.able.to.change.the.type.from.ExternalName.to.NodePort|should.be.able.to.create.a.functioning.NodePort.service|should.have.session.affinity.work.for.NodePort.service|should.have.session.affinity.timeout.work.for.NodePort.service|should.be.able.to.switch.session.affinity.for.NodePort.service|\[Serial\]|Should.create.gradual.traffic.routes|Should.create.blue-green.routes)" \
+        -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.resolve.DNS.of.partial.qualified.names.for.services|should.be.able.to.change.the.type.from.ExternalName.to.NodePort|should.be.able.to.create.a.functioning.NodePort.service|should.have.session.affinity.work.for.NodePort.service|should.have.session.affinity.timeout.work.for.NodePort.service|should.be.able.to.switch.session.affinity.for.NodePort.service|validates.that.there.is.no.conflict.between.pods.with.same.hostPort.but.different.hostIP.and.protocol|\[Serial\]|Should.create.gradual.traffic.routes|Should.create.blue-green.routes)" \
         "e2e.test" -- \
         -delete-namespace-on-failure=false \
         -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated \
