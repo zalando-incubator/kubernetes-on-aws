@@ -34,7 +34,7 @@ var (
 	patch, _ = json.Marshal(jsonpatch.Patch{})
 )
 
-var _ = framework.KubeDescribe("Audit", func() {
+var _ = describe("Audit", func() {
 	f := framework.NewDefaultFramework("audit")
 	var namespace string
 	BeforeEach(func() {
