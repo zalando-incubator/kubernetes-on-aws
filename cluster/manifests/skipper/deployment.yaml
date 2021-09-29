@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.108
+    version: v0.13.114
     component: ingress
 spec:
   strategy:
@@ -19,7 +19,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.13.108
+        version: v0.13.114
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -46,7 +46,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.108-177
+        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.114-178
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -200,7 +200,7 @@ spec:
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
-          - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https"
+          - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
 {{ end }}
         resources:
@@ -265,8 +265,6 @@ spec:
             mountPath: /etc/skipper/secret
             readOnly: true
 {{ end }}
-      securityContext:
-        fsGroup: 1000
       volumes:
 {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
         - name: routes
