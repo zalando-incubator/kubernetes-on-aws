@@ -78,28 +78,14 @@ data:
     }
 {{ end }}
 
-{{ if eq .ConfigItems.coredns_route_traces_to_local_zone "true"}}
-    {{ .ConfigItems.coredns_global_traces_endpoint }}:9254 {
-        errors
-
-        rewrite name exact {{ .ConfigItems.coredns_global_traces_endpoint }} {{ .ConfigItems.coredns_local_zone_traces_endpoint }}
-
-        kubernetes cluster.local {
-            pods insecure
-        }
-        cache 30
-{{ if eq .ConfigItems.coredns_log_svc_names "true"}}
-        log svc.svc.cluster.local.
-{{ end }}
-        prometheus :9153
-        ready :9155
-    }
-{{ end }}
 
     # 10.2.0.0/16, 10.3.0.0/16 defines that this server is authority for revese
     # lookups for these ranges.
-    cluster.local:9254 10.2.0.0/16:9254 10.3.0.0/16:9254 {
+    cluster.local:9254 10.2.0.0/16:9254 10.3.0.0/16:9254 {{ if eq .ConfigItems.coredns_route_traces_to_local_zone "true"}}{{ .ConfigItems.coredns_global_traces_endpoint }}:9254{{ end }} {
         errors
+        {{ if eq .ConfigItems.coredns_route_traces_to_local_zone "true"}}
+        rewrite name exact {{ .ConfigItems.coredns_global_traces_endpoint }} {{ .ConfigItems.coredns_local_zone_traces_endpoint }}
+        {{ end }}
         kubernetes {
             pods insecure
         }
