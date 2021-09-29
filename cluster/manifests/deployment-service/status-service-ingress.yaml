@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "deployment-service-status-service"
+  namespace: "kube-system"
+  labels:
+    application: "deployment-service"
+    component: "status-service"
+spec:
+  rules:
+    - host: "deployment-status-service.{{.Values.hosted_zone}}"
+      http:
+        paths:
+          - backend:
+              service:
+                name: "deployment-service-status-service"
+                port:
+                  name: http
+            pathType: ImplementationSpecific
