@@ -1,0 +1,82 @@
+{{ $image   := "pierone.stups.zalan.do/teapot/deployment-status-service" }}
+{{ $version := "master-83" }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "deployment-service-status-service"
+  namespace: "kube-system"
+  labels:
+    application: "deployment-service"
+    component: "status-service"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      application: "deployment-service"
+      component: "status-service"
+  template:
+    metadata:
+      labels:
+        application: "deployment-service"
+        component: "status-service"
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
+    spec:
+      serviceAccountName: "deployment-service-status-service"
+      containers:
+        - name: "deployment-service-status-service"
+          image: "{{$image}}:{{$version}}"
+          args:
+            - --readonly-principal=realm=/services,uid=stups_deployment-service
+            - --readonly-principal=realm=/services,uid=k8sapi-local_deployment-service
+            - --config-namespace=kube-system
+            - --host=0.0.0.0
+            - --port=8080
+            - --scheme=http
+          env:
+            - name: TOKENINFO_URL
+              value: "{{.Cluster.ConfigItems.deployment_service_tokeninfo_url}}"
+            - name: AWS_REGION
+              value: "{{.Cluster.Region}}"
+            - name: _PLATFORM_APPLICATION
+              value: deployment-service
+            - name: _PLATFORM_COMPONENT
+              value: status-service
+            - name: _PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: deployment-service-status-service
+                  key: lightstep-token
+            - name: _PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST
+              value: tracing.platform-infrastructure.zalan.do
+            - name: _PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT
+              value: "8443"
+            - name: _PLATFORM_OPENTRACING_TAG_ACCOUNT
+              value: "{{.Cluster.Alias}}"
+            - name: _PLATFORM_OPENTRACING_TAG_APPLICATION
+              value: deployment-service
+            - name: _PLATFORM_OPENTRACING_TAG_ARTIFACT
+              value: "{{$image}}:{{$version}}"
+            - name: _PLATFORM_OPENTRACING_TAG_ZONE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.annotations['topology.kubernetes.io/zone']
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: "{{.Cluster.ConfigItems.deployment_service_status_service_cpu}}"
+              memory: "{{.Cluster.ConfigItems.deployment_service_status_service_memory}}"
+            limits:
+              cpu: "{{.Cluster.ConfigItems.deployment_service_status_service_cpu}}"
+              memory: "{{.Cluster.ConfigItems.deployment_service_status_service_memory}}"
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /healthz

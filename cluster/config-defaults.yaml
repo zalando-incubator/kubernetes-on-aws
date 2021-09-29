@@ -67,7 +67,7 @@ skipper_topology_spread_enabled: "false"
 {{end}}
 
 # skipper default filters
-skipper_default_filters: 'enableAccessLog(4,5) -> lifo(2000,20000,"3s")'
+skipper_default_filters: 'enableAccessLog(4,5) -> lifo(2000,20000,"3s") -> rfcHost()'
 
 # skipper backend timeout defaults
 skipper_expect_continue_timeout_backend: "30s"
@@ -653,11 +653,15 @@ experimental_nlb_alpn_h2_enabled: "true"
 exec_probe_timeout_enabled: "true"
 
 # Settings for the deployment service
+deployment_service_controller_cpu: "100m"
+deployment_service_controller_memory: "1Gi"
+deployment_service_status_service_cpu: "100m"
+deployment_service_status_service_memory: "250Mi"
 deployment_service_api_role_arn: ""
-{{ if eq .Cluster.Environment "e2e" }}
-deployment_service_enabled: "true"
-{{ else }}
-deployment_service_enabled: "false"
-{{ end }}
+deployment_service_tokeninfo_url: ""
+deployment_service_lightstep_token: ""
 deployment_service_ml_experiments_enabled: "false"
 deployment_service_cf_auto_expand_enabled: "false"
+
+# Will be dropped after the migration
+deployment_service_enabled: "true"
