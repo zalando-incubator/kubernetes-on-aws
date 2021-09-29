@@ -619,7 +619,15 @@ var _____ = describe("Ingress tests simple NLB", func() {
 		replicas := int32(3)
 		targetPort := 9090
 		backendContent := "mytest"
-		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, backendContent)
+		route := fmt.Sprintf(`*
+			-> setResponseHeader("Request-Host", "${request.host}")
+			-> setResponseHeader("Request-X-Forwarded-For", "${request.header.X-Forwarded-For}")
+			-> setResponseHeader("Request-X-Forwarded-Proto", "${request.header.X-Forwarded-Proto}")
+			-> setResponseHeader("Request-X-Forwarded-Port", "${request.header.X-Forwarded-Port}")
+			-> inlineContent("%s")
+			-> <shunt>`,
+			backendContent)
+
 		waitTime := 10 * time.Minute
 
 		// CREATE setup
@@ -673,5 +681,21 @@ var _____ = describe("Ingress tests simple NLB", func() {
 		s, err := getBody(resp)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(s).To(Equal(backendContent))
+
+		By("Checking request X-Forwarded-* headers")
+		req, err = http.NewRequest("GET", "https://"+hostName+"/", nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err = waitForResponseReturnResponse(req, 10*time.Second, isSuccess, false)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.Header.Get("Request-X-Forwarded-For")).NotTo(Equal(""))
+		Expect(resp.Header.Get("Request-X-Forwarded-Port")).To(Equal("443"))
+		Expect(resp.Header.Get("Request-X-Forwarded-Proto")).To(Equal("https"))
+
+		By("Checking request with trailing dot in the hostname is normalized")
+		req, err = http.NewRequest("GET", "https://"+hostName+"./", nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err = waitForResponseReturnResponse(req, 10*time.Second, isSuccess, false)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.Header.Get("Request-Host")).To(Equal(hostName))
 	})
 })
