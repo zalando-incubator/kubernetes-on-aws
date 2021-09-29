@@ -253,22 +253,37 @@ func createSkipperPod(nameprefix, namespace, route string, labels map[string]str
 			Namespace: namespace,
 			Labels:    labels,
 		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Name:  "skipper",
-					Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.11.107",
-					Args: []string{
-						"skipper",
-						"-inline-routes",
-						route,
-						fmt.Sprintf("-address=:%d", port),
+		Spec: createSkipperPodSpec(route, int32(port)),
+	}
+}
+
+func createSkipperPodSpec(route string, port int32) corev1.PodSpec {
+	return corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name:  "skipper",
+				Image: "registry.opensource.zalan.do/teapot/skipper:latest",
+				Args: []string{
+					"skipper",
+					"-inline-routes",
+					route,
+					"-address",
+					fmt.Sprintf(":%d", port),
+				},
+				Ports: []corev1.ContainerPort{
+					{
+						Name:          "http",
+						ContainerPort: port,
 					},
-					Ports: []v1.ContainerPort{
-						{
-							Name:          "http",
-							ContainerPort: int32(port),
-						},
+				},
+				Resources: corev1.ResourceRequirements{
+					Limits: map[corev1.ResourceName]resource.Quantity{
+						corev1.ResourceCPU:    resource.MustParse("100m"),
+						corev1.ResourceMemory: resource.MustParse("250Mi"),
+					},
+					Requests: map[corev1.ResourceName]resource.Quantity{
+						corev1.ResourceCPU:    resource.MustParse("100m"),
+						corev1.ResourceMemory: resource.MustParse("250Mi"),
 					},
 				},
 			},
@@ -397,35 +412,7 @@ func createSkipperBackendDeployment(nameprefix, namespace, route string, label m
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: label,
 				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  "skipper",
-							Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.11.35",
-							Args: []string{
-								"skipper",
-								"-inline-routes",
-								route,
-							},
-							Ports: []corev1.ContainerPort{
-								{
-									Name:          "http",
-									ContainerPort: port,
-								},
-							},
-							Resources: corev1.ResourceRequirements{
-								Limits: map[corev1.ResourceName]resource.Quantity{
-									corev1.ResourceCPU:    resource.MustParse("100m"),
-									corev1.ResourceMemory: resource.MustParse("250Mi"),
-								},
-								Requests: map[corev1.ResourceName]resource.Quantity{
-									corev1.ResourceCPU:    resource.MustParse("100m"),
-									corev1.ResourceMemory: resource.MustParse("250Mi"),
-								},
-							},
-						},
-					},
-				},
+				Spec: createSkipperPodSpec(route, port),
 			},
 		},
 	}
