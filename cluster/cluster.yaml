@@ -760,7 +760,6 @@ Resources:
       Bucket: !Ref DeploymentServiceBucket
       PolicyDocument:
         Statement:
-{{- if eq .Cluster.ConfigItems.deployment_service_enabled "true" }}
           - NotAction:
               - s3:GetObject
               - s3:DeleteObject
@@ -774,7 +773,6 @@ Resources:
               AWS:
                 - !GetAtt DeploymentControllerRole.Arn
                 - !GetAtt DeploymentStatusServiceRole.Arn
-{{- end }}
 {{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
           - Action:
               - s3:PutObject
@@ -794,16 +792,13 @@ Resources:
             Condition:
               ArnNotEquals:
                 aws:PrincipalArn:
-{{- if eq .Cluster.ConfigItems.deployment_service_enabled "true" }}
                   - !GetAtt DeploymentControllerRole.Arn
                   - !GetAtt DeploymentStatusServiceRole.Arn
-{{- end }}
 {{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
                   - "{{.Cluster.ConfigItems.deployment_service_api_role_arn}}"
 {{- end }}
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
-{{- if eq .Cluster.ConfigItems.deployment_service_enabled "true" }}
   DeploymentControllerRole:
     Type: AWS::IAM::Role
     Properties:
@@ -926,7 +921,6 @@ Resources:
                   - 'cloudformation:DescribeStacks'
                 Effect: Allow
                 Resource: '*'
-{{- end }}
   ExternalDNSIAMRole:
     Properties:
       AssumeRolePolicyDocument:
