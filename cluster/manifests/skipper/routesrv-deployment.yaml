@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.120
+    version: v0.13.121
     component: routesrv
 spec:
   replicas: "{{ .ConfigItems.skipper_routesrv_replicas }}"
@@ -21,7 +21,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.13.120
+        version: v0.13.121
         component: routesrv
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -46,7 +46,7 @@ spec:
       terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
       containers:
       - name: routesrv
-        image: registry.opensource.zalan.do/teapot/skipper:v0.13.120
+        image: registry.opensource.zalan.do/teapot/skipper:v0.13.121
         ports:
         - name: ingress-port
           containerPort: 9990
@@ -92,9 +92,9 @@ spec:
             memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
         readinessProbe:
           httpGet:
-            path: /kube-system/healthz
+            path: /health
             port: 9990
-          initialDelaySeconds: {{ .ConfigItems.skipper_readiness_init_delay_seconds }}
+            #initialDelaySeconds: {{ .ConfigItems.skipper_readiness_init_delay_seconds }} # TODO: hope we don't need this anymore
           timeoutSeconds: 5
         securityContext:
           readOnlyRootFilesystem: true
