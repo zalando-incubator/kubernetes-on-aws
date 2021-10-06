@@ -88,20 +88,10 @@ spec:
         args:
           - "run.sh"
           - "skipper"
-          - "-kubernetes"
-          - "-kubernetes-in-cluster"
-          - "-kubernetes-path-mode=path-prefix"
           - "-address=:9999"
+          - "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes"
           - "-wait-first-route-load"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
-{{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
-          - "-enable-kubernetes-east-west"
-          - "-kubernetes-east-west-domain=.ingress.cluster.local"
-{{ end }}
-{{ if eq .ConfigItems.enable_skipper_eastwest_range "true"}}
-          - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
-{{ end }}
           - "-proxy-preserve-host"
           - "-serve-host-metrics"
           - "-serve-method-metric={{ .ConfigItems.skipper_serve_method_metric }}"
@@ -120,13 +110,6 @@ spec:
           - "-metrics-flavour=prometheus"
           - "-enable-connection-metrics"
           - "-enable-route-lifo-metrics"
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
-          - "-enable-api-usage-monitoring"
-          - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
-          - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
-          - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
-          - "-default-filters-dir=/etc/config/default-filters"
-{{ end }}
           - "-max-audit-body=0"
 {{ if ne .ConfigItems.skipper_redis_replicas "0" }}
           - "-enable-swarm"
@@ -249,13 +232,11 @@ spec:
           runAsNonRoot: true
           runAsUser: 1000
         volumeMounts:
+          - name: routes-cache
+            mountPath: /tmp
 {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
           - name: routes
             mountPath: /etc/routes
-{{ end }}
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
-          - name: filters
-            mountPath: /etc/config/default-filters
 {{ end }}
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
           - name: oauth2
@@ -266,16 +247,12 @@ spec:
             readOnly: true
 {{ end }}
       volumes:
+        - name: routes-cache
+          emptyDir: {}
 {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
         - name: routes
           configMap:
             name: sandbox-tokeninfo-bridge-conf
-{{ end }}
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
-        - name: filters
-          configMap:
-            name: skipper-default-filters
-            optional: true
 {{ end }}
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
         - name: oauth2
