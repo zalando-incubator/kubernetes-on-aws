@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -747,6 +748,77 @@ func createImagePolicyWebhookTestDeployment(namePrefix, namespace, image, appLab
 					},
 				},
 				Spec: v1.PodSpec{
+					TerminationGracePeriodSeconds: &zero,
+					Containers: []v1.Container{
+						{
+							Name:  "image-policy-test",
+							Image: image,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, image, appLabel string, replicas int32) *appsv1.StatefulSet {
+	zero := int64(0)
+	return &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", namePrefix, uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    map[string]string{},
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					appLabelName: appLabel,
+				},
+			},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						appLabelName: appLabel,
+					},
+				},
+				Spec: v1.PodSpec{
+					TerminationGracePeriodSeconds: &zero,
+					Containers: []v1.Container{
+						{
+							Name:  "image-policy-test",
+							Image: image,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createImagePolicyWebhookTestJob(namePrefix, namespace, image, appLabel string) *batchv1.Job {
+	zero := int64(0)
+	zero2 := int32(0)
+	ten := int64(10)
+	suspend := false
+	return &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", namePrefix, uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    map[string]string{},
+		},
+		Spec: batchv1.JobSpec{
+			Suspend:               &suspend,
+			ActiveDeadlineSeconds: &ten,
+			BackoffLimit:          &zero2,
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						appLabelName: appLabel,
+					},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy:                 v1.RestartPolicyOnFailure,
 					TerminationGracePeriodSeconds: &zero,
 					Containers: []v1.Container{
 						{
