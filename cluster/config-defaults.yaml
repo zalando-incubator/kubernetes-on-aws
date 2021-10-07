@@ -105,6 +105,11 @@ skipper_redis_pool_timeout: "250ms"
 skipper_redis_read_timeout: "25ms"
 skipper_redis_write_timeout: "25ms"
 
+# skipper routesrv settings
+skipper_routesrv_replicas: 3
+skipper_routesrv_cpu: "100m"
+skipper_routesrv_memory: "1Gi"
+
 # skipper api GW features
 enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup candidate to reduce amount of branches in deployment
 
@@ -451,6 +456,9 @@ coredns_log_svc_names: "true"
 # clusters and prevent CoreDNS from running out of memory in case of spikes.
 coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 
+tracing_coredns_route_traces_to_local_zone: "false"
+tracing_coredns_global_traces_endpoint: ""
+tracing_coredns_local_zone_traces_endpoint: ""
 
 # Kubernetes on Ubuntu AMI to use
 # note this configuration uses the [amiID][0] function. It returns the
@@ -653,8 +661,6 @@ exec_probe_timeout_enabled: "true"
 # Settings for the deployment service
 deployment_service_controller_cpu: "100m"
 deployment_service_controller_memory: "1Gi"
-deployment_service_status_service_cpu: "100m"
-deployment_service_status_service_memory: "250Mi"
 deployment_service_api_role_arn: ""
 deployment_service_tokeninfo_url: ""
 deployment_service_lightstep_token: ""
