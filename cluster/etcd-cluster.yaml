@@ -30,13 +30,14 @@ SenzaComponents:
         CLIENT_CERT: '{{Arguments.ClientCertificate}}'
         CLIENT_KEY: '{{Arguments.ClientKey}}'
         CLIENT_TLS_ENABLED: '{{Arguments.ClientTLSEnabled}}'
+        QUOTA_BACKEND_BYTES: "{{Arguments.QuotaBackendBytes}}"
       scalyr_account_key: '{{Arguments.ScalyrAccountKey}}'
       mounts:
         /home/etcd:
           partition: none
           filesystem: tmpfs
           erase_on_boot: false
-          options: size=2g
+          options: size={{Arguments.RamDiskSize}}
     Type: Senza::TaupageAutoScalingGroup
     AutoScaling:
       Minimum: "{{Arguments.InstanceCount}}"
@@ -93,6 +94,12 @@ SenzaInfo:
   - CertificateExpiryNode:
       Description: "Timestamp when the node certificate expires"
       Default: ""
+  - QuotaBackendBytes:
+      Description: "Quota for etcd storage size"
+      Default: "0" # default (2Gi)
+  - RamDiskSize:
+      Description: "Size of the ramdisk used for etcd storage"
+      Default: "2g" # default (2Gi)
   StackName: etcd-cluster
 
 Outputs:
