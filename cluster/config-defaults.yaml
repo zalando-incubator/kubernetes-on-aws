@@ -66,6 +66,8 @@ skipper_topology_spread_enabled: "true"
 skipper_topology_spread_enabled: "false"
 {{end}}
 
+
+
 # skipper default filters
 skipper_default_filters: 'enableAccessLog(4,5) -> lifo(2000,20000,"3s") -> rfcHost()'
 
@@ -106,9 +108,17 @@ skipper_redis_read_timeout: "25ms"
 skipper_redis_write_timeout: "25ms"
 
 # skipper routesrv settings
+{{if eq .Cluster.Environment "production"}}
+skipper_routesrv_enabled: "false"
+skipper_routesrv_replicas: 3
+skipper_routesrv_cpu: "1000m"
+skipper_routesrv_memory: "1Gi"
+{{else}}
+skipper_routesrv_enabled: "true"
 skipper_routesrv_replicas: 3
 skipper_routesrv_cpu: "100m"
 skipper_routesrv_memory: "1Gi"
+{{end}}
 
 # skipper api GW features
 enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup candidate to reduce amount of branches in deployment
