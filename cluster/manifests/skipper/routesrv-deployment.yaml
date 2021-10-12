@@ -29,7 +29,7 @@ spec:
         config/hash: {{"secret.yaml" | manifestHash}}
         logging/destination: "{{.Cluster.ConfigItems.log_destination_local}}"
         prometheus.io/path: /metrics
-        prometheus.io/port: "9910"
+        prometheus.io/port: "9990"
         prometheus.io/scrape: "true"
     spec:
 {{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
@@ -68,18 +68,14 @@ spec:
 {{ end }}
           - "-reverse-source-predicate"
 {{ if eq .ConfigItems.enable_apimonitoring "true"}}
-          - "-enable-api-usage-monitoring" ## TODO: required in routesrv no?
+          - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
           - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
           - "-default-filters-dir=/etc/config/default-filters"
 {{ end }}
-#{{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
-#          - "-enable-oauth2-grant-flow" ## TODO: required in routesrv no?
-#          - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
-#{{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
-          - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443" ## TODO: required in routesrv no?
+          - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
 {{ end }}
         resources:
@@ -93,7 +89,6 @@ spec:
           httpGet:
             path: /health
             port: 9990
-            #initialDelaySeconds: {{ .ConfigItems.skipper_readiness_init_delay_seconds }} # TODO: hope we don't need this anymore
           timeoutSeconds: 5
         securityContext:
           readOnlyRootFilesystem: true
