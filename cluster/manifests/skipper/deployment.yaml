@@ -88,17 +88,21 @@ spec:
         args:
           - "run.sh"
           - "skipper"
+{{ if eq .ConfigItems.skipper_routesrv_enabled "true" }}
+          - "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes"
+{{ else }}
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
+{{ end }}
           - "-address=:9999"
           - "-wait-first-route-load"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
-{{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
+{{ if and (ne .ConfigItems.skipper_routesrv_enabled "true") (eq .ConfigItems.enable_skipper_eastwest "true")}}
           - "-enable-kubernetes-east-west"
           - "-kubernetes-east-west-domain=.ingress.cluster.local"
 {{ end }}
-{{ if eq .ConfigItems.enable_skipper_eastwest_range "true"}}
+{{ if and (ne .ConfigItems.skipper_routesrv_enabled "true") (eq .ConfigItems.enable_skipper_eastwest_range "true")}}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
 {{ end }}
@@ -120,7 +124,7 @@ spec:
           - "-metrics-flavour=prometheus"
           - "-enable-connection-metrics"
           - "-enable-route-lifo-metrics"
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
+{{ if and (ne .ConfigItems.skipper_routesrv_enabled "true") (eq .ConfigItems.enable_apimonitoring "true")}}
           - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
@@ -249,11 +253,13 @@ spec:
           runAsNonRoot: true
           runAsUser: 1000
         volumeMounts:
+          - name: routes-cache
+            mountPath: /tmp
 {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
           - name: routes
             mountPath: /etc/routes
 {{ end }}
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
+{{ if and (ne .ConfigItems.skipper_routesrv_enabled "true") (eq .ConfigItems.enable_apimonitoring "true")}}
           - name: filters
             mountPath: /etc/config/default-filters
 {{ end }}
@@ -266,12 +272,14 @@ spec:
             readOnly: true
 {{ end }}
       volumes:
+        - name: routes-cache
+          emptyDir: {}
 {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
         - name: routes
           configMap:
             name: sandbox-tokeninfo-bridge-conf
 {{ end }}
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
+{{ if and (ne .ConfigItems.skipper_routesrv_enabled "true") (eq .ConfigItems.enable_apimonitoring "true") }}
         - name: filters
           configMap:
             name: skipper-default-filters
