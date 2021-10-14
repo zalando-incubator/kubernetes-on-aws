@@ -29,7 +29,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 )
 
-var _ = framework.KubeDescribe("RouteGroup ALB creation", func() {
+var _ = describe("RouteGroup ALB creation", func() {
 	f := framework.NewDefaultFramework("routegroup")
 	var (
 		cs rgclient.Interface
