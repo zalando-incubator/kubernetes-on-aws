@@ -106,9 +106,17 @@ skipper_redis_read_timeout: "25ms"
 skipper_redis_write_timeout: "25ms"
 
 # skipper routesrv settings
+{{if eq .Cluster.Environment "production"}}
+skipper_routesrv_enabled: "false"
+skipper_routesrv_replicas: 3
+skipper_routesrv_cpu: "1000m"
+skipper_routesrv_memory: "1Gi"
+{{else}}
+skipper_routesrv_enabled: "true"
 skipper_routesrv_replicas: 3
 skipper_routesrv_cpu: "100m"
 skipper_routesrv_memory: "1Gi"
+{{end}}
 
 # skipper api GW features
 enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup candidate to reduce amount of branches in deployment
@@ -488,6 +496,11 @@ node_cidr_mask_size: "24"
 # How many nodes to keep reserved (e.g. to allow for increasing the node_cidr_mask_size).
 # Note that this only affects CA settings, someone can still scale up the ASGs manually.
 reserved_nodes: "5"
+
+# How much extra capacity to add when calculating the maximum number of pods per node. This can be increased if some
+# pods don't consume the IP space on the node, but it's fairly dangerous since it has to be absolutely correct. Use
+# in emergencies only, and pay extra attention when adding, removing or updating daemonsets.
+node_max_pods_extra_capacity: "0"
 
 # maximum number of PIDs allowed to be allocated per pod
 pod_max_pids: "4096"
