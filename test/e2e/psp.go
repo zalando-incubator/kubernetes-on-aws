@@ -30,7 +30,7 @@ import (
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
-var _ = framework.KubeDescribe("PSP use", func() {
+var _ = describe("PSP use", func() {
 	privilegedRole := "privileged-psp"
 	privilegedSA := "privileged-sa"
 	f := framework.NewDefaultFramework("psp")

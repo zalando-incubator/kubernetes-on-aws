@@ -31,7 +31,7 @@ import (
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
-var _ = framework.KubeDescribe("Ingress ALB creation", func() {
+var _ = describe("Ingress ALB creation", func() {
 	f := framework.NewDefaultFramework("ingress")
 	var (
 		cs  kubernetes.Interface
@@ -42,7 +42,7 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 		cs = f.ClientSet
 	})
 
-	It("Should create valid https and http ALB endpoint [Ingress] [Zalando]", func() {
+	It("Should create valid https and http ALB endpoint [Ingress]", func() {
 		serviceName := "ingress-test"
 		nameprefix := serviceName + "-"
 		ns := f.Namespace.Name
@@ -114,14 +114,14 @@ var _ = framework.KubeDescribe("Ingress ALB creation", func() {
 	})
 })
 
-var __ = framework.KubeDescribe("Ingress tests simple", func() {
+var __ = describe("Ingress tests simple", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-simple")
 	var (
 		cs  kubernetes.Interface
 		jig *ingress.TestJig
 	)
 
-	It("Should create simple ingress [Ingress] [Zalando]", func() {
+	It("Should create simple ingress [Ingress]", func() {
 		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test"
@@ -309,14 +309,14 @@ var __ = framework.KubeDescribe("Ingress tests simple", func() {
 	})
 })
 
-var ___ = framework.KubeDescribe("Ingress tests paths", func() {
+var ___ = describe("Ingress tests paths", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-paths")
 	var (
 		cs  kubernetes.Interface
 		jig *ingress.TestJig
 	)
 
-	It("Should create path routes ingress [Ingress] [Zalando]", func() {
+	It("Should create path routes ingress [Ingress]", func() {
 		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test-pr"
@@ -475,14 +475,14 @@ var ___ = framework.KubeDescribe("Ingress tests paths", func() {
 	})
 })
 
-var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
+var ____ = describe("Ingress tests custom routes", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-custom")
 	var (
 		cs  kubernetes.Interface
 		jig *ingress.TestJig
 	)
 
-	It("Should create custom routes ingress [Ingress] [Zalando]", func() {
+	It("Should create custom routes ingress [Ingress]", func() {
 		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test-custom"
@@ -596,14 +596,14 @@ var ____ = framework.KubeDescribe("Ingress tests custom routes", func() {
 	})
 })
 
-var _____ = framework.KubeDescribe("Ingress tests simple NLB", func() {
+var _____ = describe("Ingress tests simple NLB", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-simple-nlb")
 	var (
 		cs  kubernetes.Interface
 		jig *ingress.TestJig
 	)
 
-	It("Should create simple NLB ingress [Ingress] [Zalando]", func() {
+	It("Should create simple NLB ingress [Ingress]", func() {
 		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test"
