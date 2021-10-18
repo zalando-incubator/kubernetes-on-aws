@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.114
+    version: v0.13.130
     component: ingress
 spec:
   strategy:
@@ -19,7 +19,7 @@ spec:
     metadata:
       labels:
         application: skipper-ingress
-        version: v0.13.114
+        version: v0.13.130
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -46,7 +46,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.114-178
+        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.130-181
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -88,17 +88,21 @@ spec:
         args:
           - "run.sh"
           - "skipper"
+{{ if eq .ConfigItems.skipper_routesrv_enabled "true" }}
+          - "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes"
+{{ else }}
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
+{{ end }}
           - "-address=:9999"
           - "-wait-first-route-load"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
-{{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
+{{ if and (ne .ConfigItems.skipper_routesrv_enabled "true") (eq .ConfigItems.enable_skipper_eastwest "true")}}
           - "-enable-kubernetes-east-west"
           - "-kubernetes-east-west-domain=.ingress.cluster.local"
 {{ end }}
-{{ if eq .ConfigItems.enable_skipper_eastwest_range "true"}}
+{{ if and (ne .ConfigItems.skipper_routesrv_enabled "true") (eq .ConfigItems.enable_skipper_eastwest_range "true")}}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
 {{ end }}
@@ -120,7 +124,7 @@ spec:
           - "-metrics-flavour=prometheus"
           - "-enable-connection-metrics"
           - "-enable-route-lifo-metrics"
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
+{{ if and (ne .ConfigItems.skipper_routesrv_enabled "true") (eq .ConfigItems.enable_apimonitoring "true")}}
           - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
@@ -146,7 +150,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.108-177
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.130-181
             max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
@@ -249,11 +253,13 @@ spec:
           runAsNonRoot: true
           runAsUser: 1000
         volumeMounts:
+          - name: routes-cache
+            mountPath: /tmp
 {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
           - name: routes
             mountPath: /etc/routes
 {{ end }}
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
+{{ if and (ne .ConfigItems.skipper_routesrv_enabled "true") (eq .ConfigItems.enable_apimonitoring "true")}}
           - name: filters
             mountPath: /etc/config/default-filters
 {{ end }}
@@ -266,12 +272,14 @@ spec:
             readOnly: true
 {{ end }}
       volumes:
+        - name: routes-cache
+          emptyDir: {}
 {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
         - name: routes
           configMap:
             name: sandbox-tokeninfo-bridge-conf
 {{ end }}
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
+{{ if and (ne .ConfigItems.skipper_routesrv_enabled "true") (eq .ConfigItems.enable_apimonitoring "true") }}
         - name: filters
           configMap:
             name: skipper-default-filters

@@ -5,22 +5,26 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	"k8s.io/kubernetes/test/e2e/framework/config"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 	testutil "k8s.io/kubernetes/test/utils"
 
@@ -757,6 +761,77 @@ func createImagePolicyWebhookTestDeployment(namePrefix, namespace, image, appLab
 	}
 }
 
+func createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, image, appLabel string, replicas int32) *appsv1.StatefulSet {
+	zero := int64(0)
+	return &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", namePrefix, uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    map[string]string{},
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					appLabelName: appLabel,
+				},
+			},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						appLabelName: appLabel,
+					},
+				},
+				Spec: v1.PodSpec{
+					TerminationGracePeriodSeconds: &zero,
+					Containers: []v1.Container{
+						{
+							Name:  "image-policy-test",
+							Image: image,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createImagePolicyWebhookTestJob(namePrefix, namespace, image, appLabel string) *batchv1.Job {
+	zero := int64(0)
+	zero2 := int32(0)
+	ten := int64(10)
+	suspend := false
+	return &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", namePrefix, uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    map[string]string{},
+		},
+		Spec: batchv1.JobSpec{
+			Suspend:               &suspend,
+			ActiveDeadlineSeconds: &ten,
+			BackoffLimit:          &zero2,
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						appLabelName: appLabel,
+					},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy:                 v1.RestartPolicyOnFailure,
+					TerminationGracePeriodSeconds: &zero,
+					Containers: []v1.Container{
+						{
+							Name:  "image-policy-test",
+							Image: image,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func createImagePolicyWebhookTestPod(namePrefix, namespace, image, appLabel string) *v1.Pod {
 	zero := int64(0)
 	return &v1.Pod{
@@ -955,4 +1030,57 @@ func appLabelSelector(value string) labels.Selector {
 	return labels.SelectorFromSet(map[string]string{
 		appLabelName: value,
 	})
+}
+
+func describe(text string, body func()) bool {
+	return Describe("[zalando] "+text, body)
+}
+
+// handleFlags sets up all flags and parses the command line.
+func handleFlags() {
+	config.CopyFlags(config.Flags, flag.CommandLine)
+	framework.RegisterCommonFlags(flag.CommandLine)
+	framework.RegisterClusterFlags(flag.CommandLine)
+	flag.Parse()
+}
+
+func getenv(envar, def string) string {
+	v := os.Getenv(envar)
+	if v == "" {
+		return def
+	}
+	return v
+}
+
+// E2EHostedZone returns the hosted zone defined for e2e test.
+func E2EHostedZone() string {
+	return getenv("HOSTED_ZONE", "example.org")
+}
+
+// E2EClusterAlias returns the alias of the cluster used for e2e tests.
+func E2EClusterAlias() string {
+	result, ok := os.LookupEnv("CLUSTER_ALIAS")
+	if !ok {
+		panic("CLUSTER_ALIAS not defined")
+	}
+	return result
+}
+
+// E2EClusterID returns the ID of the cluster used for e2e tests.
+func E2EClusterID() string {
+	result, ok := os.LookupEnv("CLUSTER_ID")
+	if !ok {
+		panic("CLUSTER_ID not defined")
+	}
+	return result
+}
+
+// E2ES3AWSIAMBucket returns the s3 bucket name used for AWS IAM e2e tests.
+func E2ES3AWSIAMBucket() string {
+	return getenv("S3_AWS_IAM_BUCKET", "")
+}
+
+// E2EAWSIAMRole returns the AWS IAM role used for AWS IAM e2e tests.
+func E2EAWSIAMRole() string {
+	return getenv("AWS_IAM_ROLE", "")
 }
