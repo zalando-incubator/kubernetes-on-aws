@@ -36,7 +36,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.31
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.35
         command:
           - ./cluster-autoscaler
           - --v=1
@@ -59,10 +59,10 @@ spec:
           - --backoff-no-full-scale-down=true
           - --max-pod-eviction-time={{ .Cluster.ConfigItems.cluster_autoscaler_max_pod_eviction_time }}
           - --max-graceful-termination-sec={{ .Cluster.ConfigItems.cluster_autoscaler_max_graceful_termination_sec }}
-          - --topology-spread-constraint-scale-factor=3
           - --disable-node-instances-cache=true
           - --scale-down-ignore-schedulable-pods=true
           - --unremovable-node-recheck-timeout={{.Cluster.ConfigItems.autoscaling_unremovable_node_recheck_timeout}}
+          - --max-unschedulable-pods-considered={{.Cluster.ConfigItems.cluster_autoscaler_max_usnchedulable_pods_considered}}
         resources:
           requests:
             cpu: {{.Cluster.ConfigItems.cluster_autoscaler_cpu}}
