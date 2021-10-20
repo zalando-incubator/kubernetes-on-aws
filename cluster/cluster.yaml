@@ -680,7 +680,10 @@ Resources:
         Version: 2012-10-17
       Path: /
       ManagedPolicyArns:
-        - !Ref DeploymentIAMPolicy
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/DenyEc2UsApSa"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/DenyModifyShibboleth"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/DenyDefault"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/AllowPowerUser"
       RoleName: "{{.Cluster.LocalID}}-deployment"
     Type: 'AWS::IAM::Role'
   DeploymentSecretKey:
@@ -856,7 +859,10 @@ Resources:
             Action:
               - sts:AssumeRole
       ManagedPolicyArns:
-        - !Ref DeploymentIAMPolicy
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/DenyEc2UsApSa"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/DenyModifyShibboleth"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/DenyDefault"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/AllowPowerUser"
 {{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
   DeploymentControllerMLExperimentDeploymentRole:
     Type: AWS::IAM::Role
