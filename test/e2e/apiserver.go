@@ -30,7 +30,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	"k8s.io/kubernetes/test/e2e/framework/job"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	"k8s.io/kubernetes/test/e2e/framework/statefulset"
 )
 
 const (
@@ -323,5 +325,186 @@ var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func()
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
+	})
+})
+
+var _ = describe("Image Policy Tests (StatefulSet)", func() {
+	f := framework.NewDefaultFramework("image-policy-test-enabled")
+	var cs kubernetes.Interface
+
+	BeforeEach(func() {
+		cs = f.ClientSet
+	})
+
+	It("Should create StatefulSet with compliant image [Image-Policy] [Compliant] [Zalando]", func() {
+		namePrefix := "ip-compliant"
+		appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
+		namespace := f.Namespace.Name
+		replicas := 2
+
+		By("Creating StatefulSet " + namePrefix + " in namespace " + namespace)
+
+		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, compliantImage, appLabel, int32(replicas))
+		_, err := cs.AppsV1().StatefulSets(namespace).Create(context.TODO(), statefulSet, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		defer func() {
+			By(fmt.Sprintf("Delete a StatefulSet: %s", statefulSet.Name))
+			defer GinkgoRecover()
+			err := cs.AppsV1().StatefulSets(namespace).Delete(context.TODO(), statefulSet.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}()
+
+		statefulset.WaitForRunningAndReady(cs, int32(replicas), statefulSet)
+
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, 1*time.Minute)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("Should not create StatefulSet using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
+		namePrefix := "ip-noncompliant"
+		appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
+		namespace := f.Namespace.Name
+		replicas := 1
+
+		By("Creating StatefulSet " + namePrefix + " in namespace " + namespace)
+
+		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, nonCompliantImage, appLabel, int32(replicas))
+		_, err := cs.AppsV1().StatefulSets(namespace).Create(context.TODO(), statefulSet, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		defer func() {
+			By(fmt.Sprintf("Delete a StatefulSet: %s", statefulSet.Name))
+			defer GinkgoRecover()
+			err := cs.AppsV1().StatefulSets(namespace).Delete(context.TODO(), statefulSet.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}()
+
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(MatchRegexp("Timeout while waiting for pods with label application=%s", appLabel))
+	})
+})
+
+var _ = describe("Image Policy Tests (StatefulSet) (when disabled)", func() {
+	f := framework.NewDefaultFramework("image-policy-test-disabled")
+	var cs kubernetes.Interface
+
+	BeforeEach(func() {
+		cs = f.ClientSet
+	})
+
+	It("Should create StatefulSet using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
+		namePrefix := "ip-noncompliant"
+		appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
+		replicas := 2
+		namespace := f.Namespace.Name
+
+		By("Creating StatefulSet " + namePrefix + " in namespace " + namespace)
+
+		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, nonCompliantImage, appLabel, int32(replicas))
+		_, err := cs.AppsV1().StatefulSets(namespace).Create(context.TODO(), statefulSet, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		defer func() {
+			By(fmt.Sprintf("Delete a StatefulSet: %s", statefulSet.Name))
+			defer GinkgoRecover()
+			err := cs.AppsV1().StatefulSets(namespace).Delete(context.TODO(), statefulSet.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}()
+
+		statefulset.WaitForRunningAndReady(cs, int32(replicas), statefulSet)
+
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, 1*time.Minute)
+		Expect(err).NotTo(HaveOccurred())
+	})
+})
+
+var _ = describe("Image Policy Tests (Job)", func() {
+	f := framework.NewDefaultFramework("image-policy-test-enabled")
+	var cs kubernetes.Interface
+
+	BeforeEach(func() {
+		cs = f.ClientSet
+	})
+
+	It("Should create Job with compliant image [Image-Policy] [Compliant] [Zalando]", func() {
+		namePrefix := "ipt-compliant"
+		appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
+		namespace := f.Namespace.Name
+
+		By("Creating Job " + namePrefix + " in namespace " + namespace)
+
+		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, compliantImage, appLabel)
+		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		defer func() {
+			By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
+			defer GinkgoRecover()
+			err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}()
+
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		Expect(err).NotTo(HaveOccurred())
+
+		job.WaitForJobFinish(cs, namespace, jobObj.Name)
+	})
+
+	It("Should not create Job using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
+		namePrefix := "ipt-non-compliant"
+		appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
+		namespace := f.Namespace.Name
+
+		By("Creating Job " + namePrefix + " in namespace " + namespace)
+
+		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, nonCompliantImage, appLabel)
+		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		defer func() {
+			By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
+			defer GinkgoRecover()
+			err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}()
+
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(MatchRegexp("Timeout while waiting for pods with label application=%s", appLabel))
+	})
+})
+
+var _ = describe("Image Policy Tests (Job) (when disabled)", func() {
+	f := framework.NewDefaultFramework("image-policy-test-disabled")
+	var cs kubernetes.Interface
+
+	BeforeEach(func() {
+		cs = f.ClientSet
+	})
+
+	It("Should create Job using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
+		namePrefix := "ip-noncompliant"
+		appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
+		namespace := f.Namespace.Name
+
+		By("Creating Job " + namePrefix + " in namespace " + namespace)
+
+		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, nonCompliantImage, appLabel)
+		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		defer func() {
+			By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
+			defer GinkgoRecover()
+			err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}()
+
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		Expect(err).NotTo(HaveOccurred())
+
+		job.WaitForJobFinish(cs, namespace, jobObj.Name)
 	})
 })

@@ -131,10 +131,6 @@ Resources:
           FromPort: 8443
           IpProtocol: tcp
           ToPort: 8443
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-          FromPort: 8080
-          IpProtocol: tcp
-          ToPort: 8080
         - CidrIp: 0.0.0.0/0
           FromPort: -1
           IpProtocol: icmp
@@ -610,9 +606,7 @@ Resources:
               - 'es:*'
               - 'events:*'
               - 'firehose:*'
-              {{ if eq .Cluster.ConfigItems.deploy_allow_fsx "true" }}
               - 'fsx:*'
-              {{ end }}
               - 'glacier:*'
               - 'glue:*'
               - 'health:*'
@@ -686,7 +680,10 @@ Resources:
         Version: 2012-10-17
       Path: /
       ManagedPolicyArns:
-        - !Ref DeploymentIAMPolicy
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyEc2UsApSa"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyModifyShibboleth"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
       RoleName: "{{.Cluster.LocalID}}-deployment"
     Type: 'AWS::IAM::Role'
   DeploymentSecretKey:
@@ -862,7 +859,10 @@ Resources:
             Action:
               - sts:AssumeRole
       ManagedPolicyArns:
-        - !Ref DeploymentIAMPolicy
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyEc2UsApSa"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyModifyShibboleth"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
 {{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
   DeploymentControllerMLExperimentDeploymentRole:
     Type: AWS::IAM::Role

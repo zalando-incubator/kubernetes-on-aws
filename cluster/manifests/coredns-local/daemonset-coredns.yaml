@@ -169,6 +169,11 @@ spec:
       - name: coredns
         image: registry.opensource.zalan.do/teapot/coredns:1.8.4
         args: [ "-conf", "/etc/coredns/Corefile" ]
+        env:
+        - name: ZONE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['topology.kubernetes.io/zone']
         volumeMounts:
         - name: config-volume
           mountPath: /etc/coredns

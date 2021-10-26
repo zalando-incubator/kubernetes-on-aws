@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skipper-ingress-routesrv
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    version: v0.13.132
+    component: routesrv
+spec:
+  replicas: {{ .ConfigItems.skipper_routesrv_replicas }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      application: skipper-ingress
+      component: routesrv
+  template:
+    metadata:
+      labels:
+        application: skipper-ingress
+        version: v0.13.132
+        component: routesrv
+      annotations:
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
+        config/hash: {{"secret.yaml" | manifestHash}}
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_local}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9990"
+        prometheus.io/scrape: "true"
+    spec:
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              application: skipper-ingress
+{{- end }}
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
+      serviceAccountName: skipper-ingress
+      terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
+      containers:
+      - name: routesrv
+        image: registry.opensource.zalan.do/teapot/skipper:v0.13.132
+        ports:
+        - name: ingress-port
+          containerPort: 9990
+          protocol: TCP
+        args:
+          - "routesrv"
+          - "-kubernetes"
+          - "-kubernetes-in-cluster"
+          - "-kubernetes-path-mode=path-prefix"
+          - "-address=:9990"
+          - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
+{{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
+          - "-enable-kubernetes-east-west"
+          - "-kubernetes-east-west-domain=.ingress.cluster.local"
+{{ end }}
+{{ if eq .ConfigItems.enable_skipper_eastwest_range "true"}}
+          - "-kubernetes-east-west-range-domains=ingress.cluster.local"
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+{{ end }}
+          - "-reverse-source-predicate"
+{{ if eq .ConfigItems.enable_apimonitoring "true"}}
+          - "-enable-api-usage-monitoring"
+          - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
+          - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
+          - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
+          - "-default-filters-dir=/etc/config/default-filters"
+{{ end }}
+{{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
+          - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
+          - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
+{{ end }}
+        resources:
+          limits:
+            cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
+            memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
+          requests:
+            cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
+            memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9990
+          timeoutSeconds: 5
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+{{ if eq .ConfigItems.enable_apimonitoring "true"}}
+        volumeMounts:
+          - name: filters
+            mountPath: /etc/config/default-filters
+      volumes:
+        - name: filters
+          configMap:
+            name: skipper-default-filters
+            optional: true
+{{ end }}

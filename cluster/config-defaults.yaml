@@ -20,6 +20,9 @@ cluster_autoscaler_max_pod_eviction_time: "3h"
 # Override terminationGracePeriodSeconds when evicting pods for scale down, if the pods' value is higher than this one
 cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
 
+# Prevent CA lock-ups caused by large amounts of pending pods. Can be disabled completely by setting to 0.
+cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
+
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
@@ -67,7 +70,7 @@ skipper_topology_spread_enabled: "false"
 {{end}}
 
 # skipper default filters
-skipper_default_filters: 'enableAccessLog(4,5) -> lifo(2000,20000,"3s")'
+skipper_default_filters: 'enableAccessLog(4,5) -> lifo(2000,20000,"3s") -> rfcHost()'
 
 # skipper backend timeout defaults
 skipper_expect_continue_timeout_backend: "30s"
@@ -104,6 +107,19 @@ skipper_redis_dial_timeout: "25ms"
 skipper_redis_pool_timeout: "250ms"
 skipper_redis_read_timeout: "25ms"
 skipper_redis_write_timeout: "25ms"
+
+# skipper routesrv settings
+{{if eq .Cluster.Environment "production"}}
+skipper_routesrv_enabled: "false"
+skipper_routesrv_replicas: 3
+skipper_routesrv_cpu: "1000m"
+skipper_routesrv_memory: "1Gi"
+{{else}}
+skipper_routesrv_enabled: "true"
+skipper_routesrv_replicas: 3
+skipper_routesrv_cpu: "100m"
+skipper_routesrv_memory: "1Gi"
+{{end}}
 
 # skipper api GW features
 enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup candidate to reduce amount of branches in deployment
@@ -432,7 +448,7 @@ etcd_instance_count: "3"
 etcd_instance_type: "t3.medium"
 {{end}}
 
-etcd_docker_image: "registry.opensource.zalan.do/teapot/etcd-cluster:3.4.16-master-9"
+etcd_docker_image: "registry.opensource.zalan.do/teapot/etcd-cluster:3.4.16-master-10"
 etcd_scalyr_key: ""
 etcd_ami: {{ amiID "Taupage-AMI-20210504-093855" "861068367966"}}
 # Old etcd stacks have been created without an explicit VPC ID in the security group. This cannot be changed without
@@ -451,6 +467,9 @@ coredns_log_svc_names: "true"
 # clusters and prevent CoreDNS from running out of memory in case of spikes.
 coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 
+tracing_coredns_route_traces_to_local_zone: "false"
+tracing_coredns_global_traces_endpoint: ""
+tracing_coredns_local_zone_traces_endpoint: ""
 
 # Kubernetes on Ubuntu AMI to use
 # note this configuration uses the [amiID][0] function. It returns the
@@ -458,7 +477,7 @@ coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
 kuberuntu_image_v1_20: {{ amiID "zalando-ubuntu-kubernetes-production-v1.20.11-master-188" "861068367966"}}
-kuberuntu_image_v1_21: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.5-master-188" "861068367966"}}
+kuberuntu_image_v1_21: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.5-master-194" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -480,6 +499,11 @@ node_cidr_mask_size: "24"
 # How many nodes to keep reserved (e.g. to allow for increasing the node_cidr_mask_size).
 # Note that this only affects CA settings, someone can still scale up the ASGs manually.
 reserved_nodes: "5"
+
+# How much extra capacity to add when calculating the maximum number of pods per node. This can be increased if some
+# pods don't consume the IP space on the node, but it's fairly dangerous since it has to be absolutely correct. Use
+# in emergencies only, and pay extra attention when adding, removing or updating daemonsets.
+node_max_pods_extra_capacity: "0"
 
 # maximum number of PIDs allowed to be allocated per pod
 pod_max_pids: "4096"
@@ -641,10 +665,9 @@ okta_auth_issuer_url: ""
 okta_auth_client_id: "kubernetes.cluster.{{.Cluster.Alias}}"
 
 # Deploy
-# This session contains config items to enable and disable the the
+# This section contains config items to enable and disable the the
 # permission for the Role {{.Cluster.LocalID}}-deployment. It allows
 # CDP to deploy resources of the specified types.
-deploy_allow_fsx: "false"
 deploy_allow_lakeformation: "false"
 deploy_allow_ram: "false"
 
@@ -657,8 +680,6 @@ exec_probe_timeout_enabled: "true"
 # Settings for the deployment service
 deployment_service_controller_cpu: "100m"
 deployment_service_controller_memory: "1Gi"
-deployment_service_status_service_cpu: "100m"
-deployment_service_status_service_memory: "250Mi"
 deployment_service_api_role_arn: ""
 deployment_service_tokeninfo_url: ""
 deployment_service_lightstep_token: ""

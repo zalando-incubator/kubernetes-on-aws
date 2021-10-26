@@ -1,18 +1,18 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: skipper-internal
+  name: skipper-ingress-routesrv
   namespace: kube-system
   labels:
     application: skipper-ingress
-    component: ingress
+    component: routesrv
 spec:
   type: ClusterIP
-  clusterIP: 10.3.99.99
   ports:
-    - port: 80
-      targetPort: 9999
-      protocol: TCP
+  - name: http
+    port: 80
+    targetPort: 9990
+    protocol: TCP
   selector:
     application: skipper-ingress
-    component: ingress
+    component: routesrv

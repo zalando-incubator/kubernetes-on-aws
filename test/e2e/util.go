@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -253,22 +254,37 @@ func createSkipperPod(nameprefix, namespace, route string, labels map[string]str
 			Namespace: namespace,
 			Labels:    labels,
 		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Name:  "skipper",
-					Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.11.107",
-					Args: []string{
-						"skipper",
-						"-inline-routes",
-						route,
-						fmt.Sprintf("-address=:%d", port),
+		Spec: createSkipperPodSpec(route, int32(port)),
+	}
+}
+
+func createSkipperPodSpec(route string, port int32) corev1.PodSpec {
+	return corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name:  "skipper",
+				Image: "registry.opensource.zalan.do/teapot/skipper:latest",
+				Args: []string{
+					"skipper",
+					"-inline-routes",
+					route,
+					"-address",
+					fmt.Sprintf(":%d", port),
+				},
+				Ports: []corev1.ContainerPort{
+					{
+						Name:          "http",
+						ContainerPort: port,
 					},
-					Ports: []v1.ContainerPort{
-						{
-							Name:          "http",
-							ContainerPort: int32(port),
-						},
+				},
+				Resources: corev1.ResourceRequirements{
+					Limits: map[corev1.ResourceName]resource.Quantity{
+						corev1.ResourceCPU:    resource.MustParse("100m"),
+						corev1.ResourceMemory: resource.MustParse("250Mi"),
+					},
+					Requests: map[corev1.ResourceName]resource.Quantity{
+						corev1.ResourceCPU:    resource.MustParse("100m"),
+						corev1.ResourceMemory: resource.MustParse("250Mi"),
 					},
 				},
 			},
@@ -397,35 +413,7 @@ func createSkipperBackendDeployment(nameprefix, namespace, route string, label m
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: label,
 				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  "skipper",
-							Image: "registry.opensource.zalan.do/pathfinder/skipper:v0.11.35",
-							Args: []string{
-								"skipper",
-								"-inline-routes",
-								route,
-							},
-							Ports: []corev1.ContainerPort{
-								{
-									Name:          "http",
-									ContainerPort: port,
-								},
-							},
-							Resources: corev1.ResourceRequirements{
-								Limits: map[corev1.ResourceName]resource.Quantity{
-									corev1.ResourceCPU:    resource.MustParse("100m"),
-									corev1.ResourceMemory: resource.MustParse("250Mi"),
-								},
-								Requests: map[corev1.ResourceName]resource.Quantity{
-									corev1.ResourceCPU:    resource.MustParse("100m"),
-									corev1.ResourceMemory: resource.MustParse("250Mi"),
-								},
-							},
-						},
-					},
-				},
+				Spec: createSkipperPodSpec(route, port),
 			},
 		},
 	}
@@ -760,6 +748,77 @@ func createImagePolicyWebhookTestDeployment(namePrefix, namespace, image, appLab
 					},
 				},
 				Spec: v1.PodSpec{
+					TerminationGracePeriodSeconds: &zero,
+					Containers: []v1.Container{
+						{
+							Name:  "image-policy-test",
+							Image: image,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, image, appLabel string, replicas int32) *appsv1.StatefulSet {
+	zero := int64(0)
+	return &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", namePrefix, uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    map[string]string{},
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					appLabelName: appLabel,
+				},
+			},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						appLabelName: appLabel,
+					},
+				},
+				Spec: v1.PodSpec{
+					TerminationGracePeriodSeconds: &zero,
+					Containers: []v1.Container{
+						{
+							Name:  "image-policy-test",
+							Image: image,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createImagePolicyWebhookTestJob(namePrefix, namespace, image, appLabel string) *batchv1.Job {
+	zero := int64(0)
+	zero2 := int32(0)
+	ten := int64(10)
+	suspend := false
+	return &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", namePrefix, uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    map[string]string{},
+		},
+		Spec: batchv1.JobSpec{
+			Suspend:               &suspend,
+			ActiveDeadlineSeconds: &ten,
+			BackoffLimit:          &zero2,
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						appLabelName: appLabel,
+					},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy:                 v1.RestartPolicyOnFailure,
 					TerminationGracePeriodSeconds: &zero,
 					Containers: []v1.Container{
 						{
