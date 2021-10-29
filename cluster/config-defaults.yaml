@@ -126,8 +126,12 @@ enable_apimonitoring: "true"                       # TODO(sszuecs): cleanup cand
 
 
 # Kube-Metrics-Adapter
-## Scheduled scaling metrics: fade in/out over this period of time
+## Scheduled scaling metrics: ramp up/down over this period of time
 kube_metrics_adapter_default_scaling_window: "10m"
+## Scheduled scaling metrics: number of steps to scale. 5 allows at
+## least 20% of change between each schedule and enough change to
+## trigger the HPA.
+kube_metrics_adapter_scaling_schedule_ramp_steps: "5"
 ## ZMON KairosDB URL
 zmon_kairosdb_url: "https://data-service.zmon.zalan.do/kairosdb-proxy"
 
@@ -530,6 +534,8 @@ kubernetes_scheduler_image: "zalando"
 allow_external_service_accounts: "false"
 # issue service account tokens with expiration time.
 rotate_service_account_tokens: "false"
+# issue tokens with a long expiration time in order to detect applications that don't refresh tokens.
+rotate_service_account_tokens_extended_expiration: "true"
 
 # enable auditlogging for read access such that we can identified clients using
 # the default service account to read from the API server.
