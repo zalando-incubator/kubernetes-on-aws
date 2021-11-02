@@ -37,7 +37,9 @@ spec:
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              application: skipper-ingress
+              # This is kind of stupid, but would work for now. Ideally we should just stop filtering out the pods in
+              # kube-system in our admitters, since we've never really had any issues with them.
+              parent-resource-hash: 71556441059f2d033fb06b1e73df03598c7ecaa6
 {{- end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
