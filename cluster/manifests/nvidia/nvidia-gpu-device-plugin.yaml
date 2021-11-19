@@ -16,12 +16,11 @@ spec:
   selector:
     matchLabels:
       application: nvidia-gpu-device-plugin
-      name: nvidia-device-plugin-ds
+      version: v0.10.0
   template:
     metadata:
       labels:
         application: nvidia-gpu-device-plugin
-        name: nvidia-device-plugin-ds
         version: v0.10.0
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
@@ -45,7 +44,7 @@ spec:
         hostPath:
           path: /var/lib/kubelet/device-plugins
       containers:
-      - name: nvidia-device-plugin-ctr
+      - name: nvidia-gpu-device-plugin
         image: registry.opensource.zalan.do/teapot/nvidia-gpu-device-plugin:v0.10.0
         args: ["--fail-on-init-error=false"]
         securityContext:
