@@ -67,7 +67,7 @@ spec:
 {{- if ne .ConfigItems.prometheus_tsdb_retention_size "disabled" }}
         - "--storage.tsdb.retention.size={{ kubernetesSizeToKiloBytes .ConfigItems.prometheus_mem_min 0.6 }}"
 {{- else }}
-        - "--storage.tsdb.retention.time=1d"
+        - "--storage.tsdb.retention.time={{ .ConfigItems.prometheus_retention_time }}"
 {{- end }}
         - "--storage.tsdb.wal-compression"
         - "--storage.tsdb.min-block-duration=30m"
