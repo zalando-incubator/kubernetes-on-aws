@@ -27,6 +27,12 @@ Resources:
     Properties:
       LaunchTemplateName: 'etcd-cluster-etcd'
       LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvdb
+            Ebs:
+              VolumeSize: "32"
+              DeleteOnTermination: true
+              VolumeType: "gp3"
         NetworkInterfaces:
           - DeviceIndex: 0
             AssociatePublicIpAddress: true
@@ -50,10 +56,9 @@ Resources:
             HOSTED_ZONE: "{{.Cluster.Alias}}.zalan.do"
           mounts:
             /home/etcd:
-              erase_on_boot: false
-              filesystem: tmpfs
-              options: size=2g
-              partition: none
+              partition: /dev/xvdb
+              filesystem: ext4
+              erase_on_boot: true
           notify_cfn:
             resource: AppServer
             stack: etcd-cluster-etcd
