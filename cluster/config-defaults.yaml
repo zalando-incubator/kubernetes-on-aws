@@ -61,6 +61,11 @@ skipper_ingress_max_replicas: "50"
 skipper_ingress_min_replicas: "3"
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1Gi"
+{{if eq .Cluster.Environment "test"}}
+skipper_ingress_kubernetes_ingress_v1: "true"
+{{else}}
+skipper_ingress_kubernetes_ingress_v1: "false"
+{{end}}
 enable_dedicate_nodepool_skipper: "false"
 skipper_suppress_route_update_logs: "true"
 {{if eq .Cluster.Environment "e2e"}}
