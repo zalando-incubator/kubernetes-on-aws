@@ -44,17 +44,15 @@ kube_aws_ingress_default_lb_type: "application"
 #
 # "exec": same as "pre" and kube-ingress-aws-controller will default to NLB
 # after removing it you need to set kube_aws_ingress_default_lb_type: "network" above and cleanup skipper and ingress-ctl deployment.yaml
+#
+# new clusters should use NLB as default, everything else has already
+# set config items via cluster registry
+nlb_switch: "exec"
 # TODO(sszuecs): grace period need also to be set for NLB and in skipper deployment we should clean i up
+# skipper termination settings
+skipper_wait_for_healthcheck_interval: "65s"
 # skipper_termination_grace_period: 302
-{{if eq .Cluster.Channel "dev"}}
-nlb_switch: "pre"
-{{else if eq .Cluster.Channel "alpha"}}
-nlb_switch: "false"
-{{else if eq .Cluster.Channel "beta"}}
-nlb_switch: "false"
-{{else}}
-nlb_switch: "false"
-{{end}}
+skipper_termination_grace_period: "70"
 
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "60"
@@ -96,9 +94,6 @@ skipper_liveness_init_delay_seconds: 30
 skipper_readiness_init_delay_seconds: 1
 skipper_liveness_init_delay_seconds: 30
 {{end}}
-# skipper termination settings
-skipper_termination_grace_period: "70"
-skipper_wait_for_healthcheck_interval: "65s"
 
 # skipper redis settings
 enable_dedicate_nodepool_skipper_redis: "false"
