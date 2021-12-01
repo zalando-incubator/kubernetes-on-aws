@@ -51,6 +51,7 @@ spec:
         - --load-balancer-type={{ .Cluster.ConfigItems.kube_aws_ingress_default_lb_type }}
 {{end}}
         - --cert-polling-interval={{ .Cluster.ConfigItems.kube_aws_ingress_controller_cert_polling_interval }}
+        - --ingress-api-version=networking.k8s.io/{{ .Cluster.ConfigItems.kube_aws_ingress_controller_ingress_version }}
         env:
         - name: CUSTOM_FILTERS
           value: "tag:kubernetes.io/cluster/{{ .Cluster.ID }}=owned tag:node.kubernetes.io/role=worker tag:zalando.org/ingress-enabled=true"
