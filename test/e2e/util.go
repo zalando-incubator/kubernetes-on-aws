@@ -36,6 +36,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
 	"k8s.io/api/networking/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -188,6 +189,78 @@ func updateIngress(name, namespace, hostname, svcName, path string, labels, anno
 	}
 }
 
+func createIngressV1(name, hostname, namespace, path string, pathType netv1.PathType, labels, annotations map[string]string, port int) *netv1.Ingress {
+	return &netv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name + string(uuid.NewUUID()),
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: annotations,
+		},
+		Spec: netv1.IngressSpec{
+			Rules: []netv1.IngressRule{
+				{
+					Host: hostname,
+					IngressRuleValue: netv1.IngressRuleValue{
+						HTTP: &netv1.HTTPIngressRuleValue{
+							Paths: []netv1.HTTPIngressPath{
+								{
+									PathType: &pathType,
+									Path:     path,
+									Backend: netv1.IngressBackend{
+										Service: &netv1.IngressServiceBackend{
+											Name: name,
+											Port: netv1.ServiceBackendPort{
+												Number: int32(port),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func updateIngressV1(name, namespace, hostname, svcName, path string, pathType netv1.PathType, labels, annotations map[string]string, port int) *netv1.Ingress {
+	return &netv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: annotations,
+		},
+		Spec: netv1.IngressSpec{
+			Rules: []netv1.IngressRule{
+				{
+					Host: hostname,
+					IngressRuleValue: netv1.IngressRuleValue{
+						HTTP: &netv1.HTTPIngressRuleValue{
+							Paths: []netv1.HTTPIngressPath{
+								{
+									PathType: &pathType,
+									Path:     path,
+									Backend: netv1.IngressBackend{
+										Service: &netv1.IngressServiceBackend{
+											Name: svcName,
+											Port: netv1.ServiceBackendPort{
+												Number: int32(port),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func addHostIngress(ing *v1beta1.Ingress, hostnames ...string) *v1beta1.Ingress {
 	addRules := []v1beta1.IngressRule{}
 	origRules := ing.Spec.Rules
@@ -214,6 +287,26 @@ func addPathIngress(ing *v1beta1.Ingress, path string, backend v1beta1.IngressBa
 		origPaths = append(origPaths, v1beta1.HTTPIngressPath{
 			Path:    path,
 			Backend: backend,
+		})
+		r.IngressRuleValue.HTTP.Paths = origPaths
+		addRules = append(addRules, r)
+	}
+	ing.Spec.Rules = addRules
+	return ing
+}
+
+func addPathIngressV1(ing *netv1.Ingress, path string, pathType netv1.PathType, backend netv1.IngressBackend) *netv1.Ingress {
+	addRules := []netv1.IngressRule{}
+	origRules := ing.Spec.Rules
+
+	for _, rule := range origRules {
+		r := rule
+		r.Host = rule.Host
+		origPaths := r.IngressRuleValue.HTTP.Paths
+		origPaths = append(origPaths, netv1.HTTPIngressPath{
+			Path:     path,
+			PathType: &pathType,
+			Backend:  backend,
 		})
 		r.IngressRuleValue.HTTP.Paths = origPaths
 		addRules = append(addRules, r)
