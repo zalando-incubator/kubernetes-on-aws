@@ -1473,6 +1473,14 @@ Resources:
                 - ''
                 - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
                   - !Ref MasterIAMRole
+          - Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Condition:
+              StringLike:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:visibility:logging-agent"
       Policies:
         - PolicyName: AllowS3BucketAccess
           PolicyDocument:
