@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	netv1 "k8s.io/api/networking/v1"
 	"k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -596,7 +597,316 @@ var ____ = describe("Ingress tests custom routes", func() {
 	})
 })
 
-var _____ = describe("Ingress tests simple NLB", func() {
+var _____ = describe("Ingress tests paths", func() {
+	f := framework.NewDefaultFramework("skipper-ingress-paths")
+	var (
+		cs  kubernetes.Interface
+		jig *ingress.TestJig
+	)
+
+	It("Should create path routes ingress v1 [Ingress]", func() {
+		jig = ingress.NewIngressTestJig(f.ClientSet)
+		cs = f.ClientSet
+		serviceName := "skipper-ingress-test-pr"
+		serviceName2 := "skipper-ingress-test-pr2"
+		ns := f.Namespace.Name
+		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
+		labels := map[string]string{
+			"app": serviceName,
+		}
+		labels2 := map[string]string{
+			"app": serviceName2,
+		}
+		port := 8080
+		replicas := int32(3)
+		targetPort := 9090
+		backendContent := "be-foo"
+		backendContent2 := "be-bar"
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, backendContent)
+		route2 := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, backendContent2)
+		waitTime := 10 * time.Minute
+
+		// CREATE setup
+		// backend deployment
+		By("Creating a deployment with " + serviceName + " in namespace " + ns)
+		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
+		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), depl, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		By("Creating a 2nd deployment with " + serviceName2 + " in namespace " + ns)
+		depl2 := createSkipperBackendDeployment(serviceName2, ns, route2, labels2, int32(targetPort), replicas)
+		_, err = cs.AppsV1().Deployments(ns).Create(context.TODO(), depl2, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating service " + serviceName + " in namespace " + ns)
+		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
+		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating service " + serviceName2 + " in namespace " + ns)
+		service2 := createServiceTypeClusterIP(serviceName2, labels2, port, targetPort)
+		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service2, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
+		ing := createIngressV1(serviceName, hostName, ns, "/", netv1.PathTypePrefix, labels, nil, port)
+		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		Expect(err).NotTo(HaveOccurred())
+
+		// skipper http -> https redirect
+		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
+		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
+		Expect(err).NotTo(HaveOccurred())
+
+		// ALB ready
+		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
+		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
+		Expect(err).NotTo(HaveOccurred())
+
+		// DNS ready
+		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
+		err = waitForResponse(hostName, "https", waitTime, isSuccess, false)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Test that we get content from the default ingress
+		By("By checking the content of the reply we see that the ingress stack works")
+		rt, quit := createHTTPRoundTripper()
+		defer func() {
+			quit <- struct{}{}
+		}()
+		url := "https://" + hostName + "/"
+		req, err := http.NewRequest("GET", url, nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err := rt.RoundTrip(req)
+		Expect(err).NotTo(HaveOccurred())
+		s, err := getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(s).To(Equal(backendContent))
+
+		// Start actual ingress tests
+		// Test ingress with 1 path and pathType: Exact
+		bepath := "/foo"
+		updatedIng := updateIngressV1(ingressCreate.ObjectMeta.Name,
+			ingressCreate.ObjectMeta.Namespace,
+			hostName,
+			serviceName,
+			bepath,
+			netv1.PathTypeExact,
+			ingressCreate.ObjectMeta.Labels,
+			ingressCreate.ObjectMeta.Annotations,
+			port,
+		)
+		ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		// wait 20 seconds to ensure the ingress change is applied by
+		// all skippers
+		time.Sleep(20 * time.Second)
+
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path /", ingressUpdate.Namespace, ingressUpdate.Name))
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for pathType: Exact and path %s/bar", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
+		req.URL.Path = req.URL.Path + "/bar"
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for pathType: Exact and matching path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
+		beurl := "https://" + hostName + bepath
+		bereq, err := http.NewRequest("GET", beurl, nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(s).To(Equal(backendContent))
+
+		// Test ingress with 2 paths
+		bepath2 := "/bar"
+		beurl2 := "https://" + hostName + bepath2
+		bereq2, err := http.NewRequest("GET", beurl2, nil)
+		Expect(err).NotTo(HaveOccurred())
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
+		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusNotFound)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
+		updatedIng = addPathIngressV1(updatedIng,
+			bepath2,
+			netv1.PathTypePrefix,
+			netv1.IngressBackend{
+				Service: &netv1.IngressServiceBackend{
+					Name: serviceName2,
+					Port: netv1.ServiceBackendPort{
+						Number: int32(port),
+					},
+				},
+			},
+		)
+		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		// wait 20 seconds to ensure the ingress change is applied by
+		// all skippers
+		time.Sleep(20 * time.Second)
+		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusOK)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(s).To(Equal(backendContent2))
+
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s without change from the other path", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
+		beurl = "https://" + hostName + bepath
+		bereq, err = http.NewRequest("GET", beurl, nil)
+		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(s).To(Equal(backendContent))
+
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s/path/prefix/match and pathType Prefix", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
+		beurl = "https://" + hostName + bepath2 + "/path/prefix/match"
+		bereq, err = http.NewRequest("GET", beurl, nil)
+		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(s).To(Equal(backendContent2))
+	})
+})
+
+var ______ = describe("Ingress tests custom routes", func() {
+	f := framework.NewDefaultFramework("skipper-ingress-custom")
+	var (
+		cs  kubernetes.Interface
+		jig *ingress.TestJig
+	)
+
+	It("Should create custom routes ingress [Ingress]", func() {
+		jig = ingress.NewIngressTestJig(f.ClientSet)
+		cs = f.ClientSet
+		serviceName := "skipper-ingress-test-custom"
+		ns := f.Namespace.Name
+		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
+		labels := map[string]string{
+			"app": serviceName,
+		}
+		port := 8080
+		replicas := int32(3)
+		targetPort := 9090
+		backendContent := "custom-foo"
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, backendContent)
+		waitTime := 10 * time.Minute
+
+		// CREATE setup
+		// backend deployment
+		By("Creating a deployment with " + serviceName + " in namespace " + ns)
+		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
+		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), depl, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating service " + serviceName + " in namespace " + ns)
+		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
+		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
+		ing := createIngress(serviceName, hostName, ns, labels, nil, port)
+		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		Expect(err).NotTo(HaveOccurred())
+
+		// skipper http -> https redirect
+		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
+		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
+		Expect(err).NotTo(HaveOccurred())
+
+		// ALB ready
+		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
+		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
+		Expect(err).NotTo(HaveOccurred())
+
+		// DNS ready
+		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
+		err = waitForResponse(hostName, "https", waitTime, isSuccess, false)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Test that we get content from the default ingress
+		By("By checking the content of the reply we see that the ingress stack works")
+		rt, quit := createHTTPRoundTripper()
+		defer func() {
+			quit <- struct{}{}
+		}()
+		url := "https://" + hostName + "/"
+		req, err := http.NewRequest("GET", url, nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err := rt.RoundTrip(req)
+		Expect(err).NotTo(HaveOccurred())
+		s, err := getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(s).To(Equal(backendContent))
+
+		// Start actual ingress tests
+		// Test ingress with 1 custom route
+		path := "/"
+		baseURL := "https://" + hostName
+		redirectDestinationURL := baseURL + path
+		redirectPath := "/redirect"
+		redirectURL := baseURL + redirectPath
+		redirectRoute := fmt.Sprintf(`redirecttoself: PathRegexp("%s") -> modPath("%s", "%s") -> redirectTo(307, "%s") -> <shunt>;`, redirectPath, redirectPath, path, redirectDestinationURL)
+		updatedIng := updateIngress(ingressCreate.ObjectMeta.Name,
+			ingressCreate.ObjectMeta.Namespace,
+			hostName,
+			serviceName,
+			path,
+			ingressCreate.ObjectMeta.Labels,
+			map[string]string{
+				"zalando.org/skipper-routes": redirectRoute,
+			},
+			port,
+		)
+		ingressUpdate, err := cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		// wait 20 seconds to ensure the ingress change is applied by
+		// all skippers
+		time.Sleep(20 * time.Second)
+
+		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 307 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, redirectPath))
+		req, err = http.NewRequest("GET", redirectURL, nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusTemporaryRedirect)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusTemporaryRedirect))
+
+		reqRedirectURL := resp.Header.Get("Location")
+		By(fmt.Sprintf("Testing for ingress %s/%s rediretc Location we want to get a 200 for URL %s", ingressUpdate.Namespace, ingressUpdate.Name, reqRedirectURL))
+		Expect(redirectDestinationURL).To(Equal(reqRedirectURL))
+		redirectreq, err := http.NewRequest("GET", reqRedirectURL, nil)
+		resp, err = getAndWaitResponse(rt, redirectreq, 10*time.Second, http.StatusOK)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		s, err = getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(s).To(Equal(backendContent))
+	})
+})
+
+var _______ = describe("Ingress tests simple NLB", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-simple-nlb")
 	var (
 		cs  kubernetes.Interface
