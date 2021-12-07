@@ -33,10 +33,15 @@ SenzaComponents:
       scalyr_account_key: '{{Arguments.ScalyrAccountKey}}'
       mounts:
         /home/etcd:
-          partition: none
-          filesystem: tmpfs
-          erase_on_boot: false
-          options: size=2g
+          partition: /dev/xvdb
+          filesystem: ext4
+          erase_on_boot: true
+    BlockDeviceMappings:
+      - DeviceName: /dev/xvdb
+        Ebs:
+          VolumeSize: "32"
+          DeleteOnTermination: true
+          VolumeType: "gp3"
     Type: Senza::TaupageAutoScalingGroup
     AutoScaling:
       Minimum: "{{Arguments.InstanceCount}}"
