@@ -35,7 +35,7 @@ clusters:
     nlb_switch: "pre"
     vm_dirty_bytes: 134217728
     vm_dirty_background_bytes: 67108864
-    prometheus_tsdb_retention_size: enabled
+    prometheus_retention_size: 1280MB
     coredns_max_upsteam_concurrency: 30
     ebs_root_volume_size: "550" # required by the limitRanger e2e tests (needs 500Gi ephemoral storage) https://github.com/kubernetes/kubernetes/blob/v1.18.3/test/e2e/scheduling/limit_range.go#L59
     routegroups_validation: "enabled"
