@@ -9,6 +9,17 @@ pre_apply:
   namespace: default
   kind: Deployment
 {{ end }}
+#
+# skipper-ingress-redis podManagementPolicy update
+# - matches version before update
+# - version is updated with `-parallel` suffix
+# - deletion can be dropped after completion along with version suffix removal
+#
+- labels:
+    application: skipper-ingress-redis
+    version: v6.2.4
+  namespace: kube-system
+  kind: StatefulSet
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
