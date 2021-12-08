@@ -2,7 +2,8 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   labels:
-    application: skipper-ingress-redis
+    application: skipper-ingress
+    component: redis
     version: v6.2.4
   name: skipper-ingress-redis
   namespace: kube-system
@@ -11,12 +12,14 @@ spec:
   podManagementPolicy: Parallel
   selector:
     matchLabels:
-      application: skipper-ingress-redis
+      statefulset: skipper-ingress-redis
   serviceName: skipper-ingress-redis
   template:
     metadata:
       labels:
-        application: skipper-ingress-redis
+        statefulset: skipper-ingress-redis
+        application: skipper-ingress
+        component: redis
         version: v6.2.4
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
@@ -42,7 +45,11 @@ spec:
               - key: application
                 operator: In
                 values:
-                - skipper-ingress-redis
+                - skipper-ingress
+              - key: component
+                operator: In
+                values:
+                - redis
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       containers:
       - image: registry.opensource.zalan.do/library/redis-6-alpine:6-alpine-20210712

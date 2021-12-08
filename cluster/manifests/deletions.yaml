@@ -10,6 +10,12 @@ pre_apply:
   kind: Deployment
 {{ end }}
 
+# skipper-ingress application consolidation, can be dropped after completion
+- labels:
+    application: skipper-ingress-redis
+  namespace: kube-system
+  kind: StatefulSet
+
 # everything defined under here will be deleted after applying the manifests
 post_apply:
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
