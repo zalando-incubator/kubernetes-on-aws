@@ -5,29 +5,33 @@ metadata:
   name: efs-provisioner
   namespace: kube-system
   labels:
-    application: efs-provisioner
-    version: v0.1.2
+    application: kubernetes
+    component: efs-provisioner
+    version: v2.4.0
 spec:
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      application: efs-provisioner
+      deployment: efs-provisioner
   template:
     metadata:
       labels:
-        application: efs-provisioner
-        version: v0.1.2
+        application: kubernetes
+        component: efs-provisioner
+        deployment: efs-provisioner
+        version: v2.4.0
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
       serviceAccountName: efs-provisioner
-      priorityClassName: system-cluster-critical
       containers:
       - name: efs-provisioner
-        image: registry.opensource.zalan.do/teapot/efs-provisioner:v0.1.2
+        image: registry.opensource.zalan.do/teapot/efs-provisioner:v2.4.0
         env:
         - name: FILE_SYSTEM_ID
           valueFrom:

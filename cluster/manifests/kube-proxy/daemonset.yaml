@@ -18,6 +18,7 @@ spec:
         application: kube-proxy
       annotations:
         config/hash: {{"configmap.yaml" | manifestHash}}
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       priorityClassName: system-node-critical
       serviceAccountName: kube-proxy
@@ -36,37 +37,43 @@ spec:
         - --cluster-cidr={{ .Cluster.ConfigItems.pod_cidr }}
         - --v=2
         env:
+        - name: KUBERNETES_SERVICE_HOST
+          value: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "443"
         - name: HOSTNAME_OVERRIDE
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
         securityContext:
           privileged: true
+        readinessProbe:
+          httpGet:
+            host: 127.0.0.1
+            port: 10256
+            path: /healthz
         resources:
           requests:
-            cpu: 50m
-            memory: 200Mi
+            cpu: {{.Cluster.ConfigItems.kube_proxy_cpu}}
+            memory: {{.Cluster.ConfigItems.kube_proxy_memory}}
             ephemeral-storage: 256Mi
           limits:
-            cpu: 50m
-            memory: 200Mi
+            cpu: {{.Cluster.ConfigItems.kube_proxy_cpu}}
+            memory: {{.Cluster.ConfigItems.kube_proxy_memory}}
         volumeMounts:
-        - name: kubeconfig
-          mountPath: /etc/kubernetes/kubeconfig
-          readOnly: true
-        - name: etc-kube-ssl
-          mountPath: /etc/kubernetes/ssl
-          readOnly: true
+        - name: kube-api-token
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
         - name: kube-proxy-config
           mountPath: /config
           readOnly: true
       volumes:
-      - name: kubeconfig
-        hostPath:
-          path: /etc/kubernetes/kubeconfig
-      - name: etc-kube-ssl
-        hostPath:
-          path: /etc/kubernetes/ssl
+      - name: kube-api-token
+        projected:
+          defaultMode: 420
+          sources:
+            - serviceAccountToken:
+                expirationSeconds: 3600
+                path: token
       - name: kube-proxy-config
         configMap:
           name: kube-proxy-config

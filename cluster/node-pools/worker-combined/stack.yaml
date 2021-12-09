@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Kubernetes default worker node pool
+Metadata:
+  Tags:
+    InfrastructureComponent: "true"
+
+Mappings:
+  Images:
+    eu-central-1:
+      MachineImage: '{{ .NodePool.ConfigItems.kuberuntu_image_v1_21 }}'
+
+Resources:
+  AutoScalingGroup:
+    CreationPolicy:
+      ResourceSignal:
+        Count: '0'
+        Timeout: PT15M
+    Properties:
+      HealthCheckGracePeriod: 300
+      HealthCheckType: EC2
+{{ if gt (len .NodePool.InstanceTypes) 1 }}
+      MixedInstancesPolicy:
+        InstancesDistribution:
+          OnDemandPercentageAboveBaseCapacity: {{if .NodePool.IsSpot }}0{{else}}100{{end}}
+          SpotAllocationStrategy: "{{ .NodePool.ConfigItems.spot_allocation_strategy }}"
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref LaunchTemplate
+            Version: !GetAtt LaunchTemplate.LatestVersionNumber
+          Overrides:
+{{ range $type := .NodePool.InstanceTypes }}
+            - InstanceType: "{{ $type }}"
+{{ end }}
+{{ else }}
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+{{ end }}
+      MinSize: '{{ .NodePool.MinSize }}'
+      MaxSize: '{{ .NodePool.MaxSize }}'
+      Tags:
+      - Key: InfrastructureComponent
+        Value: true
+        PropagateAtLaunch: true
+      - Key: Name
+        PropagateAtLaunch: true
+        Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
+      - Key: k8s.io/role/node
+        PropagateAtLaunch: true
+        Value: worker
+      - Key: node.kubernetes.io/role
+        PropagateAtLaunch: true
+        Value: worker
+# only node pools without taints should be attached to Ingress Load balancer
+{{- if or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
+      - Key: zalando.org/ingress-enabled
+        Value: "true"
+        PropagateAtLaunch: true
+{{- end }}
+      - Key: k8s.io/cluster-autoscaler/enabled
+        PropagateAtLaunch: true
+        Value: ''
+      - Key: k8s.io/cluster-autoscaler/node-template/label/node.kubernetes.io/role
+        PropagateAtLaunch: true
+        Value: worker
+      - Key: k8s.io/cluster-autoscaler/node-template/label/node.kubernetes.io/node-pool
+        PropagateAtLaunch: true
+        Value: {{ .NodePool.Name }}
+      - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
+        PropagateAtLaunch: true
+        Value: ready
+      - Key: k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot
+        PropagateAtLaunch: true
+        Value: {{if .NodePool.IsSpot }}true{{else}}false{{end}}
+      - Key: k8s.io/cluster-autoscaler/node-template/resources/ephemeral-storage
+        PropagateAtLaunch: false
+        # 0.95 of instance storage / 0.8 * ebs_root_volume_size
+        Value: "{{ .Values.InstanceInfo.AvailableStorage 0.9 (parseInt64 .NodePool.ConfigItems.ebs_root_volume_size) 858993459 }}"
+      - Key: k8s.io/cluster-autoscaler/node-template/label/zalando.org/scaling-priority
+        PropagateAtLaunch: true
+{{- if index .NodePool.ConfigItems "scaling_priority" }}
+        Value: "{{ .NodePool.ConfigItems.scaling_priority }}"
+{{- else if .NodePool.IsSpot  }}
+        Value: "1000"
+{{- else }}
+        Value: "0"
+{{- end }}
+{{- if index .NodePool.ConfigItems "labels"}}
+  {{- range split .NodePool.ConfigItems.labels ","}}
+    {{- $label := split . "="}}
+      - Key: k8s.io/cluster-autoscaler/node-template/label/{{index $label 0}}
+        PropagateAtLaunch: true
+        Value: {{index $label 1}}
+  {{- end}}
+{{end}}
+{{- if index .NodePool.ConfigItems "taints"}}
+  {{- range split .NodePool.ConfigItems.taints ","}}
+    {{- $taint := split . "="}}
+      - Key: k8s.io/cluster-autoscaler/node-template/taint/{{index $taint 0}}
+        PropagateAtLaunch: true
+        Value: {{index $taint 1}}
+  {{- end}}
+{{end}}
+      - Key: 'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}'
+        PropagateAtLaunch: true
+        Value: owned
+      - Key: zalando.org/pod-max-pids
+        PropagateAtLaunch: true
+        Value: "{{ .NodePool.ConfigItems.pod_max_pids }}"
+      VPCZoneIdentifier:
+{{ with $values := .Values }}
+{{ range $az := $values.availability_zones }}
+        - "{{ index $values.subnets $az }}"
+{{ end }}
+{{ end }}
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+  LaunchTemplate:
+    Properties:
+      LaunchTemplateName: '{{.Cluster.LocalID}}-{{ .NodePool.Name }}'
+      LaunchTemplateData:
+        BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: {{.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
+            VolumeSize: {{.NodePool.ConfigItems.ebs_root_volume_size}}
+            VolumeType: gp3
+        NetworkInterfaces:
+        - DeviceIndex: 0
+          AssociatePublicIpAddress: true
+          Groups:
+          - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
+        EbsOptimized: false
+        IamInstanceProfile:
+          Name: !Ref AutoScalingInstanceProfile
+        InstanceInitiatedShutdownBehavior: terminate
+        ImageId: !FindInMap
+        - Images
+        - !Ref 'AWS::Region'
+        - MachineImage
+        InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
+{{- if and .NodePool.IsSpot (eq (len .NodePool.InstanceTypes) 1) }}
+        InstanceMarketOptions:
+          MarketType: spot
+{{ end }}
+        UserData: "{{ .UserData }}"
+    Type: 'AWS::EC2::LaunchTemplate'
+  AutoScalingInstanceProfile:
+    Properties:
+      Path: /
+      Roles:
+      - !ImportValue '{{ .Cluster.ID }}:worker-iam-role'
+    Type: 'AWS::IAM::InstanceProfile'
+  AutoscalingLifecycleHook:
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      LifecycleHookName: "kube-node-ready-lifecycle-hook"
+      DefaultResult: CONTINUE
+      HeartbeatTimeout: '600'
+      LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
+    Type: 'AWS::AutoScaling::LifecycleHook'

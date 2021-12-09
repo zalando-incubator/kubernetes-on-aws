@@ -4,7 +4,7 @@ metadata:
   name: coredns
   namespace: kube-system
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: coredns
@@ -12,8 +12,11 @@ rules:
 - apiGroups: [""]
   resources: ["endpoints", "services", "pods", "namespaces"]
   verbs: ["list", "watch"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
+  verbs: ["list", "watch"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: coredns
@@ -26,7 +29,7 @@ subjects:
   name: coredns
   namespace: kube-system
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: coredns-privileged-psp

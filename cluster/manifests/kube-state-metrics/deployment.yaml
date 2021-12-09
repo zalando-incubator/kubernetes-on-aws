@@ -4,33 +4,42 @@ metadata:
   name: kube-state-metrics
   namespace: kube-system
   labels:
-    application: kube-state-metrics
-    version: v1.9.3
+    application: kubernetes
+    component: kube-state-metrics
+    version: v2.2.1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kube-state-metrics
+      deployment: kube-state-metrics
   template:
     metadata:
       labels:
-        application: kube-state-metrics
-        version: v1.9.3
+        deployment: kube-state-metrics
+        application: kubernetes
+        component: kube-state-metrics
+        version: v2.2.1
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: kube-state-metrics
       containers:
       - name: kube-state-metrics
-        image: registry.opensource.zalan.do/teapot/kube-state-metrics:v1.9.3
+        image: registry.opensource.zalan.do/teapot/kube-state-metrics:v2.2.1
+        args:
+        - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments,verticalpodautoscalers
+        - --metric-labels-allowlist=pods=[application,component],nodes=[topology.kubernetes.io/zone,node.kubernetes.io/instance-type,node.kubernetes.io/node-pool,node.kubernetes.io/role,dedicated]
         ports:
         - containerPort: 8080
           name: http-metrics
+          protocol: TCP
         - containerPort: 8081
           name: telemetry
+          protocol: TCP
         readinessProbe:
           httpGet:
             path: /
@@ -40,12 +49,13 @@ spec:
         resources:
           limits:
             cpu: "{{.ConfigItems.kube_state_metrics_cpu}}"
-            memory: "{{.ConfigItems.kube_state_metrics_mem}}"
+            memory: "{{.ConfigItems.kube_state_metrics_mem_max}}"
+          requests:
+            cpu: "{{.ConfigItems.kube_state_metrics_cpu}}"
+            memory: "{{.ConfigItems.kube_state_metrics_mem_max}}"
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 65534
           capabilities:
             drop: ["ALL"]
-      securityContext:
-        fsGroup: 65534

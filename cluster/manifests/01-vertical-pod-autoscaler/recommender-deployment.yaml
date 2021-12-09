@@ -4,39 +4,42 @@ metadata:
   name: vpa-recommender
   namespace: kube-system
   labels:
-    application: vpa-recommender
-    version: v0.6.1-internal.5
-    component: vpa
+    application: vertical-pod-autoscaler
+    component: recommender
+    version: v0.6.1-internal.12
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: vpa-recommender
+      application: vertical-pod-autoscaler
+      component: recommender
   template:
     metadata:
       labels:
-        application: vpa-recommender
-        version: v0.6.1-internal.5
-        component: vpa
+        application: vertical-pod-autoscaler
+        component: recommender
+        version: v0.6.1-internal.12
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       serviceAccountName: vpa-recommender
-      priorityClassName: system-cluster-critical
       containers:
       - name: recommender
-        image: registry.opensource.zalan.do/teapot/vpa-recommender:v0.6.1-internal.5
+        image: registry.opensource.zalan.do/teapot/vpa-recommender:v0.6.1-internal.12
         args:
-        - --stderrthreshold=info
-        - --v=5
+        - --logtostderr
+        - --v=1
         - --memory-saver
         - --pod-recommendation-min-memory-mb=50
         command:
         - "/recommender"
         resources:
           limits:
-            cpu: 200m
-            memory: 500Mi
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
           requests:
-            cpu: 200m
-            memory: 500Mi
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
         ports:
         - containerPort: 8080
+          protocol: TCP

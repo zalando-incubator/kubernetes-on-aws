@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "deployment-service-controller"
+  namespace: "kube-system"
+  labels:
+    application: "deployment-service"
+    component: "controller"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: "deployment-service"
+      component: "controller"
+  serviceName: "deployment-service-controller"
+  template:
+    metadata:
+      labels:
+        application: "deployment-service"
+        component: "controller"
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+        config/hash: {{"01-config.yaml" | manifestHash}}
+    spec:
+      serviceAccountName: "deployment-service-controller"
+      terminationGracePeriodSeconds: 300
+      containers:
+        - name: "deployment-service-controller"
+          image: "pierone.stups.zalan.do/teapot/deployment-controller:master-87"
+          args:
+            - "--config-namespace=kube-system"
+          env:
+            - name: AWS_REGION
+              value: "{{.Cluster.Region}}"
+          volumeMounts:
+            - mountPath: /meta/credentials
+              name: credentials
+            - mountPath: /meta/deployment-credentials
+              name: deployment-credentials
+          resources:
+            requests:
+              cpu: "{{.Cluster.ConfigItems.deployment_service_controller_cpu}}"
+              memory: "{{.Cluster.ConfigItems.deployment_service_controller_memory}}"
+            limits:
+              cpu: "{{.Cluster.ConfigItems.deployment_service_controller_cpu}}"
+              memory: "{{.Cluster.ConfigItems.deployment_service_controller_memory}}"
+          ports:
+            - containerPort: 8080
+              name: http
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /healthz
+      volumes:
+        - name: credentials
+          secret:
+            secretName: "deployment-service-controller-credentials"
+        - name: deployment-credentials
+          secret:
+            secretName: "deployment-service-controller-deployment-credentials"

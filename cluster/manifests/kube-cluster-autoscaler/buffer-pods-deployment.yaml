@@ -6,20 +6,23 @@ metadata:
   name: autoscaling-buffer-{{$zone}}
   namespace: kube-system
   labels:
-    application: autoscaling-buffer
+    application: kubernetes
+    component: autoscaling-buffer
     zone: {{$zone}}
 spec:
   replicas: {{$data.ConfigItems.autoscaling_buffer_pods}}
   selector:
     matchLabels:
-      application: autoscaling-buffer
+      deployment: autoscaling-buffer
       zone: {{$zone}}
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        application: autoscaling-buffer
+        application: kubernetes
+        component: autoscaling-buffer
+        deployment: autoscaling-buffer
         zone: {{$zone}}
     spec:
       dnsConfig:
@@ -27,21 +30,19 @@ spec:
           - name: ndots
             value: "1"
       nodeSelector:
-        failure-domain.beta.kubernetes.io/zone: "{{$zone}}"
-      priorityClassName: autoscaling-buffer
+        topology.kubernetes.io/zone: "{{$zone}}"
+      priorityClassName: autoscaling-buffer-nonpreempting
       terminationGracePeriodSeconds: 0
       containers:
       - name: pause
-        image: registry.opensource.zalan.do/teapot/pause-amd64:3.1
+        image: registry.opensource.zalan.do/teapot/pause-amd64:3.2
         resources:
-{{ with $resources := autoscalingBufferSettings $data.Cluster }}
           limits:
-            cpu: {{$resources.CPU}}
-            memory: {{$resources.Memory}}
+            cpu: {{$data.ConfigItems.autoscaling_buffer_cpu}}
+            memory: {{$data.ConfigItems.autoscaling_buffer_memory}}
           requests:
-            cpu: {{$resources.CPU}}
-            memory: {{$resources.Memory}}
-{{ end }}
+            cpu: {{$data.ConfigItems.autoscaling_buffer_cpu}}
+            memory: {{$data.ConfigItems.autoscaling_buffer_memory}}
 ---
 {{ end }}
 {{ end }}

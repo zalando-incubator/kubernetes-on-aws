@@ -1,10 +1,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Kubernetes default worker node pool
+Metadata:
+  Tags:
+    InfrastructureComponent: "true"
 
 Mappings:
   Images:
     eu-central-1:
-      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_15 }}'
+      MachineImage: '{{ .NodePool.ConfigItems.kuberuntu_image_v1_21 }}'
 
 Resources:
 {{ with $data := . }}
@@ -23,7 +26,7 @@ Resources:
       MixedInstancesPolicy:
         InstancesDistribution:
           OnDemandPercentageAboveBaseCapacity: {{if $data.NodePool.IsSpot }}0{{else}}100{{end}}
-          SpotAllocationStrategy: capacity-optimized
+          SpotAllocationStrategy: "{{ $data.NodePool.ConfigItems.spot_allocation_strategy }}"
         LaunchTemplate:
           LaunchTemplateSpecification:
             LaunchTemplateId: !Ref LaunchTemplate
@@ -40,20 +43,20 @@ Resources:
       MinSize: '{{ asgSize $data.NodePool.MinSize $azCount }}'
       MaxSize: '{{ asgSize $data.NodePool.MaxSize $azCount }}'
       Tags:
+      - Key: InfrastructureComponent
+        Value: true
+        PropagateAtLaunch: true
       - Key: Name
         PropagateAtLaunch: true
         Value: "{{ $data.NodePool.Name }} ({{ $data.Cluster.ID }})"
       - Key: k8s.io/role/node
         PropagateAtLaunch: true
         Value: worker
-      - Key: kubernetes.io/role
-        PropagateAtLaunch: true
-        Value: worker
       - Key: node.kubernetes.io/role
         PropagateAtLaunch: true
         Value: worker
 # only node pools without taints should be attached to Ingress Load balancer
-{{- if not (index $data.NodePool.ConfigItems "taints") }}
+{{- if or (not (index $data.NodePool.ConfigItems "taints")) (eq (index $data.NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
       - Key: zalando.org/ingress-enabled
         Value: "true"
         PropagateAtLaunch: true
@@ -61,17 +64,9 @@ Resources:
       - Key: k8s.io/cluster-autoscaler/enabled
         PropagateAtLaunch: true
         Value: ''
-      - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/role
-        PropagateAtLaunch: true
-        Value: worker
       - Key: k8s.io/cluster-autoscaler/node-template/label/node.kubernetes.io/role
         PropagateAtLaunch: true
         Value: worker
-{{- if eq $data.Cluster.ConfigItems.legacy_node_pool_label_enabled "true" }}
-      - Key: k8s.io/cluster-autoscaler/node-template/label/kubernetes.io/node-pool
-        PropagateAtLaunch: true
-        Value: {{ $data.NodePool.Name }}
-{{- end }}
       - Key: k8s.io/cluster-autoscaler/node-template/label/node.kubernetes.io/node-pool
         PropagateAtLaunch: true
         Value: {{ $data.NodePool.Name }}
@@ -83,8 +78,8 @@ Resources:
         Value: {{if $data.NodePool.IsSpot }}true{{else}}false{{end}}
       - Key: k8s.io/cluster-autoscaler/node-template/resources/ephemeral-storage
         PropagateAtLaunch: false
-        # 40Gi for EBS storage or 95% of instance storage
-        Value: "{{ $data.NodePool.AvailableStorage 42949672960 0.95 }}"
+        # 0.95 of instance storage / 0.8 * ebs_root_volume_size
+        Value: "{{ $data.Values.InstanceInfo.AvailableStorage 0.9 (parseInt64 $data.NodePool.ConfigItems.ebs_root_volume_size) 858993459 }}"
       - Key: k8s.io/cluster-autoscaler/node-template/label/zalando.org/scaling-priority
         PropagateAtLaunch: true
 {{- if index $data.NodePool.ConfigItems "scaling_priority" }}
@@ -113,6 +108,9 @@ Resources:
       - Key: 'zalando.de/cluster-local-id/{{ $data.Cluster.LocalID }}'
         PropagateAtLaunch: true
         Value: owned
+      - Key: zalando.org/pod-max-pids
+        PropagateAtLaunch: true
+        Value: "{{ $data.NodePool.ConfigItems.pod_max_pids }}"
       VPCZoneIdentifier:
         - "{{ index $data.Values.subnets $az }}"
     Type: 'AWS::AutoScaling::AutoScalingGroup'
@@ -131,6 +129,12 @@ Resources:
     Properties:
       LaunchTemplateName: '{{ $data.Cluster.LocalID }}-{{ $data.NodePool.Name }}'
       LaunchTemplateData:
+        BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: {{$data.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
+            VolumeSize: {{$data.NodePool.ConfigItems.ebs_root_volume_size}}
+            VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
           AssociatePublicIpAddress: true

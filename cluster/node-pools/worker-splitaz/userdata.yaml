@@ -1,1 +1,119 @@
-../worker-default/userdata.yaml
+#cloud-config
+mounts:
+  - [ephemeral0]
+  - [swap]
+
+write_files:
+  - owner: root:root
+    path: /etc/kubernetes/secrets.env
+    content: |
+      NODEPOOL_TAINTS={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}}
+      NODE_LABELS={{ .Values.node_labels }},node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
+      NODEPOOL_NAME={{ .NodePool.Name }}
+      KUBELET_ROLE=worker
+      ON_DEMAND_WORKER_REPLACEMENT_STRATEGY={{ .Cluster.ConfigItems.on_demand_worker_replacement_strategy }}
+
+{{if index .NodePool.ConfigItems "instance_storage_mount_path"}}
+  - owner: root:root
+    path: /etc/kuberuntu/instance-storage.env
+    content: |
+      MOUNT_DIRECTORY={{.NodePool.ConfigItems.instance_storage_mount_path}}
+{{end}}
+
+  - owner: root:root
+    path: /etc/kuberuntu/s3-certs.env
+    content: |
+      S3_CERTS_BUCKET={{ .S3GeneratedFilesPath }}
+      AWS_DEFAULT_REGION={{ .Cluster.Region }}
+
+  - owner: root:root
+    path: /etc/kubernetes/kubeconfig
+    content: |
+      apiVersion: v1
+      kind: Config
+      clusters:
+      - name: local
+        cluster:
+          server: {{ .Cluster.APIServerURL }}
+      users:
+      - name: kubelet
+        user:
+          exec:
+             apiVersion: client.authentication.k8s.io/v1alpha1
+             command: aws
+             args:
+               - eks
+               - get-token
+               - --cluster-name
+               - "{{.Cluster.ID}}"
+      contexts:
+      - context:
+          cluster: local
+          user: kubelet
+        name: kubelet-context
+      current-context: kubelet-context
+
+  - owner: root:root
+    path: /etc/kubernetes/config/kubelet.yaml
+    content: |
+      # https://github.com/kubernetes/kubernetes/blob/v1.13.6/staging/src/k8s.io/kubelet/config/v1beta1/types.go
+      apiVersion: kubelet.config.k8s.io/v1beta1
+      kind: KubeletConfiguration
+      clusterDomain: cluster.local
+      cpuCFSQuota: false
+      featureGates:
+        BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
+        CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
+{{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
+        EphemeralContainers: true
+{{- end }}
+{{- if eq .NodePool.ConfigItems.exec_probe_timeout_enabled "false" }}
+        ExecProbeTimeout: false
+{{- end }}
+        GenericEphemeralVolume: {{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }}
+        SetHostnameAsFQDN: {{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
+      podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
+      cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}
+      maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
+{{- if ne .Cluster.ConfigItems.serialize_image_pulls "true" }}
+      serializeImagePulls: false
+{{- end }}
+      healthzPort: 10248
+      healthzBindAddress: "0.0.0.0"
+      tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
+      tlsPrivateKeyFile: "/etc/kubernetes/ssl/worker-key.pem"
+      eventRecordQPS: 50
+      eventBurst: 50
+      kubeAPIQPS: 50
+      kubeAPIBurst: 50
+      systemReserved:
+        cpu: "100m"
+        memory: "164Mi"
+      kubeReserved:
+        cpu: "100m"
+        memory: "282Mi"
+      allowedUnsafeSysctls:
+{{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
+        - {{$sysctl}}
+{{- end }}
+      authentication:
+        anonymous:
+          enabled: false
+        webhook:
+          enabled: true
+          cacheTTL: "2m"
+        x509:
+          clientCAFile: "/etc/kubernetes/ssl/ca.pem"
+      authorization:
+        mode: Webhook
+        webhook:
+          cacheAuthorizedTTL: "5m"
+          cacheUnauthorizedTTL: "30s"
+
+{{- if ( and ( ne .Cluster.ConfigItems.vm_dirty_background_bytes "" ) ( ne .Cluster.ConfigItems.vm_dirty_bytes "" ) )}}
+  - owner: root:root
+    path: /etc/sysctl.d/03-vm-dirty-ratios.conf
+    content: |
+      vm.dirty_background_bytes = {{ .Cluster.ConfigItems.vm_dirty_background_bytes }}
+      vm.dirty_bytes = {{ .Cluster.ConfigItems.vm_dirty_bytes }}
+{{- end}}

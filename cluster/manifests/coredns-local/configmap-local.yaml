@@ -6,23 +6,72 @@ metadata:
   labels:
     application: coredns
 data:
+  unbound.conf: |
+    server:
+      directory: "/etc/unbound/"
+      interface: 0.0.0.0
+      interface-automatic: yes
+      # Drop user privileges after binding the port.
+      username: "_unbound"
+      # Prevent the unbound server from forking into the background as a daemon
+      do-daemonize: no
+      # log to stderr
+      use-syslog: no
+      log-servfail: yes
+      # allow query localhost (coredns at 127.0.0.1:9254)
+      do-not-query-localhost: no
+      access-control: 0.0.0.0/0 allow
+      harden-dnssec-stripped: no
+      so-reuseport: yes
+      cache-min-ttl: 1
+      disable-dnssec-lame-check: yes
+      minimal-responses: yes
+      extended-statistics: yes
+      # support reverse lookup of kubernetes addresses
+      local-zone: "2.10.in-addr.arpa." transparent
+      local-zone: "3.10.in-addr.arpa." transparent
+      # make metrics available for the unbound-telemetry container (127.0.0.1:9054)
+      remote-control:
+        control-enable: yes
+        control-use-cert: no
+    forward-zone:
+      name: "."
+      forward-addr: 127.0.0.1@9254 # coredns
+    forward-zone:
+      name: "2.10.in-addr.arpa."
+      forward-addr: 127.0.0.1@9254 # coredns
+    forward-zone:
+      name: "3.10.in-addr.arpa."
+      forward-addr: 127.0.0.1@9254 # coredns
   Corefile: |
 {{ if and (ne .ConfigItems.custom_dns_zone "") (ne .ConfigItems.custom_dns_zone_nameservers "") }}
     {{ .ConfigItems.custom_dns_zone }}:9254 {
         errors
+{{ if ne .ConfigItems.coredns_max_upstream_concurrency "0" }}
+        forward . {{ .ConfigItems.custom_dns_zone_nameservers }} {
+          max_concurrent {{ .ConfigItems.coredns_max_upstream_concurrency }}
+        }
+{{ else }}
         forward . {{ .ConfigItems.custom_dns_zone_nameservers }}
+{{ end }}
         prometheus :9153
         ready :9155
         cache 30
     }
 {{ end }}
 
-{{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
+{{ if eq .ConfigItems.enable_skipper_eastwest_dns "true"}}
     ingress.cluster.local:9254 {
+{{ if eq .ConfigItems.skipper_eastwest_dns_log_enabled "true"}}
+        log
+{{ end }}
         template IN A {
             match "^.*[.]ingress[.]cluster[.]local"
             answer "{{"{{"}} .Name {{"}}"}} 60 IN A 10.3.99.99"
             fallthrough
+        }
+        template IN AAAA {
+            rcode NOERROR
         }
         prometheus :9153
         ready :9155
@@ -31,11 +80,13 @@ data:
 
     # `pod_cidr`, `service_cidr` defines that this server is authority for revese
     # lookups for these ranges.
-    cluster.local:9254 {{ .Cluster.ConfigItems.pod_cidr }}:9254 {{ .Cluster.ConfigItems.service_cidr }}:9254 {
+    cluster.local:9254 {{ .Cluster.ConfigItems.pod_cidr }}:9254 {{ .Cluster.ConfigItems.service_cidr }}:9254 {{ if eq .ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ .ConfigItems.tracing_coredns_global_traces_endpoint }}:9254{{ end }} {
         errors
+        {{ if eq .ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}
+        rewrite name exact {{ .ConfigItems.tracing_coredns_global_traces_endpoint }} {{ .ConfigItems.tracing_coredns_local_zone_traces_endpoint }}
+        {{ end }}
         kubernetes {
             pods insecure
-            upstream
         }
         cache 30
 {{ if eq .ConfigItems.coredns_log_svc_names "true"}}
@@ -50,7 +101,13 @@ data:
         health :9154 # this is global for all servers
         ready :9155
         prometheus :9153
+{{ if ne .ConfigItems.coredns_max_upstream_concurrency "0" }}
+        forward . /etc/resolv.conf {
+          max_concurrent {{ .ConfigItems.coredns_max_upstream_concurrency }}
+        }
+{{ else }}
         forward . /etc/resolv.conf
+{{ end }}
         pprof 127.0.0.1:9156
         cache 30
         reload

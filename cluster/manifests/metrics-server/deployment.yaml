@@ -4,36 +4,60 @@ metadata:
   name: metrics-server
   namespace: kube-system
   labels:
-    application: metrics-server
-    version: v0.3.6
+    application: kubernetes
+    component: metrics-server
+    version: v0.5.0
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: metrics-server
+      deployment: metrics-server
   template:
     metadata:
       name: metrics-server
       labels:
-        application: metrics-server
-        version: v0.3.6
+        application: kubernetes
+        component: metrics-server
+        deployment: metrics-server
+        version: v0.5.0
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: metrics-server
       containers:
       - name: metrics-server
-        image: registry.opensource.zalan.do/teapot/metrics-server:v0.3.6
+        image: registry.opensource.zalan.do/teapot/metrics-server:v0.5.0
+        args:
+        - --cert-dir=/tmp
+        - --secure-port=4443
+        - --kubelet-use-node-status-port
+        - --metric-resolution={{.Cluster.ConfigItems.metrics_server_metric_resolution}}
         resources:
           limits:
             cpu: "{{.ConfigItems.metrics_service_cpu}}"
-            memory: "{{.ConfigItems.metrics_service_mem}}"
+            memory: "{{.ConfigItems.metrics_service_mem_max}}"
           requests:
             cpu: "{{.ConfigItems.metrics_service_cpu}}"
-            memory: "{{.ConfigItems.metrics_service_mem}}"
+            memory: "{{.ConfigItems.metrics_service_mem_max}}"
+        ports:
+        - containerPort: 4443
+          name: https
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /readyz
+            port: https
+            scheme: HTTPS
+          periodSeconds: 10
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
         volumeMounts:
         - name: tmp-dir
           mountPath: /tmp

@@ -2,54 +2,50 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    application: kube-metrics-adapter
+    application: kubernetes
+    component: metrics-adapter
   name: kube-metrics-adapter
   namespace: kube-system
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kube-metrics-adapter
+      deployment: kube-metrics-adapter
   template:
     metadata:
-      {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
-      annotations:
-        iam.amazonaws.com/role: {{ .LocalID}}-kube-metrics-adapter
-      {{ end }}
       labels:
-        application: kube-metrics-adapter
+        application: kubernetes
+        component: metrics-adapter
+        deployment: kube-metrics-adapter
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: custom-metrics-apiserver
       containers:
       - name: kube-metrics-adapter
-        image: registry.opensource.zalan.do/teapot/kube-metrics-adapter:v0.1.1
-        {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
+        image: registry.opensource.zalan.do/teapot/kube-metrics-adapter:v0.1.17
         env:
-        # must be set for the AWS SDK/AWS CLI to find the credentials file.
-        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-          value: /meta/aws-iam/credentials.process
-        {{ end }}
+        - name: AWS_REGION
+          value: {{ .Region }}
         args:
         - --prometheus-server=http://prometheus.kube-system.svc.cluster.local
         - --skipper-ingress-metrics
+        - --skipper-routegroup-metrics
+        - --scaling-schedule
+        - --scaling-schedule-default-scaling-window={{.Cluster.ConfigItems.kube_metrics_adapter_default_scaling_window}}
+        - --scaling-schedule-ramp-steps={{.Cluster.ConfigItems.kube_metrics_adapter_scaling_schedule_ramp_steps}}
         - --aws-external-metrics
         - --aws-region=eu-central-1
         - --aws-region=eu-west-1
         - --skipper-backends-annotation=zalando.org/backend-weights
         {{ if eq .Environment "production" }}
-        - --zmon-kariosdb-endpoint=https://data-service.zmon.zalan.do/kairosdb-proxy
+        - --zmon-kariosdb-endpoint={{.Cluster.ConfigItems.zmon_kairosdb_url}}
         {{ end }}
         volumeMounts:
-        {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        - name: aws-iam-credentials
-          mountPath: /meta/aws-iam
-          readOnly: true
-        {{ end }}
         {{ if eq .Environment "production" }}
         - name: credentials
           mountPath: /meta/credentials
@@ -58,16 +54,11 @@ spec:
         resources:
           limits:
             cpu: 10m
-            memory: 100Mi
+            memory: 4Gi
           requests:
             cpu: 10m
-            memory: 100Mi
+            memory: 4Gi
       volumes:
-      {{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-      - name: aws-iam-credentials
-        secret:
-          secretName: kube-metrics-adapter-aws-iam-credentials
-      {{ end }}
       {{ if eq .Environment "production" }}
       - name: credentials
         secret:

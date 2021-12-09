@@ -1,4 +1,4 @@
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: prometheus
@@ -10,9 +10,12 @@ metadata:
     application: prometheus
 spec:
   rules:
-  - host: system-prometheus.{{ .Alias }}.zalan.do
+  - host: system-prometheus.{{ .Values.hosted_zone }}
     http:
       paths:
       - backend:
-          serviceName: prometheus
-          servicePort: 80
+          service:
+            name: prometheus
+            port:
+              number: 80
+        pathType: ImplementationSpecific

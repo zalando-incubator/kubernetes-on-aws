@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "aws-node-decommissioner"
+  namespace: "kube-system"
+  annotations:
+    application: kubernetes
+    component: aws-node-decommissioner
+    iam.amazonaws.com/role: "{{.LocalID}}-aws-node-decommissioner"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aws-node-decommissioner
+  labels:
+    application: kubernetes
+    component: aws-node-decommissioner
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["list", "patch"]
+---
+# This role binding allows service-account "aws-node-decommissioner" to
+# list and patch nodes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aws-node-decommissioner
+  labels:
+    application: kubernetes
+    component: aws-node-decommissioner
+roleRef:
+  kind: ClusterRole
+  name: aws-node-decommissioner
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: "aws-node-decommissioner"
+  namespace: "kube-system"

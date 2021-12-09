@@ -19,15 +19,36 @@ spec:
     rule: RunAsAny
   supplementalGroups:
     rule: RunAsAny
+  allowedUnsafeSysctls:
+{{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
+    - {{$sysctl}}
+{{- end }}
   volumes:
   - '*'
+  allowedCapabilities:
+  - AUDIT_WRITE
+  - CHOWN
+  - DAC_OVERRIDE
+  - FOWNER
+  - FSETID
+  - KILL
+  - MKNOD
+  - NET_BIND_SERVICE
+  - NET_RAW
+  - SETFCAP
+  - SETGID
+  - SETPCAP
+  - SETUID
+  - SYS_CHROOT
+  - SYS_NICE
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
   name: restricted
 spec:
-  allowPrivilegeEscalation: false
+  allowPrivilegeEscalation: true
+  defaultAllowPrivilegeEscalation: false
   fsGroup:
     rule: RunAsAny
   runAsUser:
@@ -36,11 +57,32 @@ spec:
     rule: RunAsAny
   supplementalGroups:
     rule: RunAsAny
+  allowedUnsafeSysctls:
+{{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
+    - {{$sysctl}}
+{{- end }}
   volumes:
-  - emptyDir
   - awsElasticBlockStore
-  - secret
-  - persistentVolumeClaim
-  - downwardAPI
   - configMap
+  - downwardAPI
+  - emptyDir
+  - nfs
+  - persistentVolumeClaim
   - projected
+  - secret
+  allowedCapabilities:
+  - AUDIT_WRITE
+  - CHOWN
+  - DAC_OVERRIDE
+  - FOWNER
+  - FSETID
+  - KILL
+  - MKNOD
+  - NET_BIND_SERVICE
+  - NET_RAW
+  - SETFCAP
+  - SETGID
+  - SETPCAP
+  - SETUID
+  - SYS_CHROOT
+  - SYS_NICE

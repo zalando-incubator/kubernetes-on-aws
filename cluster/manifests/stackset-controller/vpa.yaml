@@ -1,0 +1,19 @@
+apiVersion: autoscaling.k8s.io/v1beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: stackset-controller
+  namespace: kube-system
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: stackset-controller
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: stackset-controller
+      maxAllowed:
+        memory: {{.ConfigItems.stackset_controller_mem_max}}
+      minAllowed:
+        memory: {{.ConfigItems.stackset_controller_mem_min}}

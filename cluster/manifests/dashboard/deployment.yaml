@@ -5,29 +5,33 @@ metadata:
   namespace: kube-system
   labels:
     application: kubernetes-dashboard
-    version: v2.0.0-rc2
+    component: dashboard
+    version: v2.0.4
     kubernetes.io/cluster-service: "true"
 spec:
   replicas: 1
   selector:
     matchLabels:
       application: kubernetes-dashboard
+      component: dashboard
   template:
     metadata:
       labels:
         application: kubernetes-dashboard
-        version: v2.0.0-rc2
+        component: dashboard
+        version: v2.0.4
         kubernetes.io/cluster-service: "true"
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: kubernetes-dashboard
       containers:
       - name: kubernetes-dashboard
-        image: registry.opensource.zalan.do/teapot/kubernetes-dashboard:v2.0.0-rc2-2
+        image: registry.opensource.zalan.do/teapot/kubernetes-dashboard:v2.0.4
         args:
         - --insecure-bind-address=0.0.0.0
         resources:
@@ -39,6 +43,7 @@ spec:
             memory: 400Mi
         ports:
         - containerPort: 9090
+          protocol: TCP
         livenessProbe:
           httpGet:
             path: /
@@ -57,8 +62,6 @@ spec:
           runAsNonRoot: true
           runAsUser: 1001
           runAsGroup: 2001
-      securityContext:
-        fsGroup: 2001
       volumes:
       - name: kubernetes-dashboard-certs
         secret:
@@ -75,6 +78,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kubernetes-dashboard
+    component: dashboard
 type: Opaque
 
 ---
@@ -86,6 +90,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kubernetes-dashboard
+    component: dashboard
 type: Opaque
 data:
   csrf: ""
@@ -99,6 +104,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kubernetes-dashboard
+    component: dashboard
 type: Opaque
 
 ---
@@ -110,3 +116,4 @@ metadata:
   namespace: kube-system
   labels:
     application: kubernetes-dashboard
+    component: dashboard

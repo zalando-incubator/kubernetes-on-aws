@@ -1,4 +1,7 @@
 files:
+  - path: /etc/kubernetes/.local-id
+    data: "{{ .Cluster.LocalID | base64 }}"
+    permissions: 0400
   - path: /etc/kubernetes/ssl/worker.pem
     data: "{{ .Cluster.ConfigItems.worker_cert }}"
     permissions: 0400
@@ -51,3 +54,21 @@ files:
     data: "{{ .Cluster.ConfigItems.service_account_private_key | base64Decode | publicKey | base64 }}"
     permissions: 0400
     encrypted: false
+{{- if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
+  - path: /etc/kubernetes/ssl/etcd-ca.pem
+    data: "{{ .Cluster.ConfigItems.etcd_client_ca_cert }}"
+    permissions: 0400
+    encrypted: false
+{{- end }}
+{{- if index .Cluster.ConfigItems "etcd_client_apiserver_cert" }}
+  - path: /etc/kubernetes/ssl/etcd-cert.pem
+    data: "{{ .Cluster.ConfigItems.etcd_client_apiserver_cert }}"
+    permissions: 0400
+    encrypted: false
+{{- end }}
+{{- if index .Cluster.ConfigItems "etcd_client_apiserver_key" }}
+  - path: /etc/kubernetes/ssl/etcd-key.pem
+    data: "{{ .Cluster.ConfigItems.etcd_client_apiserver_key }}"
+    permissions: 0400
+    encrypted: true
+{{- end }}

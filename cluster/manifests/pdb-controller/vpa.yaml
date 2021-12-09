@@ -1,0 +1,20 @@
+apiVersion: autoscaling.k8s.io/v1beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: pdb-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: pdb-controller
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: pdb-controller
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: pdb-controller
+      maxAllowed:
+        memory: 4Gi

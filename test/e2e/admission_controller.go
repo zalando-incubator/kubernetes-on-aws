@@ -18,6 +18,7 @@ this component is purposed to tests webhooks in the admission controller
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -31,7 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
-	deploymentframework "k8s.io/kubernetes/test/e2e/framework/deployment"
+	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
 const (
@@ -43,7 +44,7 @@ const (
 	dockerImage  = "k8s.gcr.io/busybox"
 )
 
-var _ = framework.KubeDescribe("Admission controller tests", func() {
+var _ = describe("Admission controller tests", func() {
 	f := framework.NewDefaultFramework("zalando-kube-admission-controller")
 	var cs kubernetes.Interface
 
@@ -60,18 +61,18 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
 		deployment := createDeploymentWithDeploymentInfo(nameprefix+"-", ns, podname, replicas)
-		_, err := cs.AppsV1().Deployments(ns).Create(deployment)
+		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		labelSelector, err := metav1.LabelSelectorAsSelector(deployment.Spec.Selector)
 		Expect(err).NotTo(HaveOccurred())
-		err = deploymentframework.WaitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
+		err = waitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
 		Expect(err).NotTo(HaveOccurred())
 
 		//pods are not returned here
-		_, err = framework.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, int(replicas), 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, int(replicas), 1*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
 
-		pods, err := cs.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: labelSelector.String()})
+		pods, err := cs.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector.String()})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(pods.Items)).To(Equal(1))
 
@@ -80,10 +81,10 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 		Expect(pod.Annotations).To(HaveKeyWithValue("zalando.org/cdp-pipeline-id", pipelineId))
 
 		// Check the injected node zone
-		node, err := cs.CoreV1().Nodes().Get(pod.Spec.NodeName, metav1.GetOptions{})
+		node, err := cs.CoreV1().Nodes().Get(context.TODO(), pod.Spec.NodeName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		nodeZone := node.Labels["failure-domain.beta.kubernetes.io/zone"]
-		Expect(pod.Annotations).To(HaveKeyWithValue("failure-domain.beta.kubernetes.io/zone", nodeZone))
+		nodeZone := node.Labels["topology.kubernetes.io/zone"]
+		Expect(pod.Annotations).To(HaveKeyWithValue("topology.kubernetes.io/zone", nodeZone))
 
 		envarValues, err := fetchEnvarValues(cs, ns, pod.Name)
 		Expect(err).NotTo(HaveOccurred())
@@ -121,10 +122,10 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 
 		By("Creating pod " + podName + " in namespace " + ns)
 		pod := createInvalidOwnerPod(ns, podName)
-		_, err := cs.CoreV1().Pods(ns).Create(pod)
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = framework.WaitForPodSuccessInNamespaceSlow(cs, podName, ns)
+		err = e2epod.WaitForPodSuccessInNamespaceSlow(cs, podName, ns)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
@@ -132,7 +133,7 @@ var _ = framework.KubeDescribe("Admission controller tests", func() {
 func fetchEnvarValues(client kubernetes.Interface, ns, pod string) (map[string]string, error) {
 	result := make(map[string]string)
 
-	bytes, err := client.CoreV1().Pods(ns).GetLogs(pod, &v1.PodLogOptions{}).DoRaw()
+	bytes, err := client.CoreV1().Pods(ns).GetLogs(pod, &v1.PodLogOptions{}).DoRaw(context.TODO())
 	if err != nil {
 		return nil, err
 	}

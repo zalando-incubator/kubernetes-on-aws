@@ -5,15 +5,18 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-  annotations:
-    prometheus.io/path: /metrics
-    prometheus.io/port: "9911"
-    prometheus.io/scrape: "true"
+    component: ingress
 spec:
   type: ClusterIP
   ports:
-    - port: 80
-      targetPort: 9999
-      protocol: TCP
+  - name: http
+    port: 80
+    targetPort: 9999
+    protocol: TCP
+  - name: support
+    port: 9911
+    targetPort: 9911
+    protocol: TCP
   selector:
     application: skipper-ingress
+    component: ingress

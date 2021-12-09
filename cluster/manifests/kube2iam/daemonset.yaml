@@ -5,10 +5,8 @@ metadata:
   namespace: kube-system
   labels:
     application: kube2iam
-    version: 0.10.7
+    version: 0.10.11
 spec:
-  updateStrategy:
-    type: OnDelete
   selector:
     matchLabels:
       application: kube2iam
@@ -18,7 +16,9 @@ spec:
     metadata:
       labels:
         application: kube2iam
-        version: 0.10.7
+        version: 0.10.11
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
         options:
@@ -33,7 +33,7 @@ spec:
         effect: NoExecute
       hostNetwork: true
       containers:
-      - image: registry.opensource.zalan.do/teapot/kube2iam:0.10.7
+      - image: registry.opensource.zalan.do/teapot/kube2iam:0.10.11
         name: kube2iam
         args:
         - --auto-discover-base-arn
@@ -48,6 +48,7 @@ spec:
         - containerPort: 8181
           hostPort: 8181
           name: http
+          protocol: TCP
         securityContext:
           privileged: true
         readinessProbe:

@@ -4,37 +4,45 @@ metadata:
   name: pdb-controller
   namespace: kube-system
   labels:
-    application: pdb-controller
-    version: v0.0.11
+    application: kubernetes
+    component: pdb-controller
+    version: v0.0.17
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: pdb-controller
+      deployment: pdb-controller
   template:
     metadata:
       labels:
-        application: pdb-controller
-        version: v0.0.11
+        deployment: pdb-controller
+        application: kubernetes
+        component: pdb-controller
+        version: v0.0.17
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: pdb-controller
       containers:
       - name: pdb-controller
-        image: registry.opensource.zalan.do/teapot/pdb-controller:v0.0.11
+        image: registry.opensource.zalan.do/teapot/pdb-controller:v0.0.17
         args:
-        - --debug
-        {{ if or (index .ConfigItems "pdb_non_ready_ttl") (eq .Environment "test") }}
-        - --non-ready-ttl={{if index .ConfigItems "pdb_non_ready_ttl"}}{{.ConfigItems.pdb_non_ready_ttl}}{{else}}1h{{end}}
-        {{end}}
+          - --debug
+{{- if ne .Cluster.ConfigItems.pdb_controller_non_ready_ttl "" }}
+          - --non-ready-ttl={{.Cluster.ConfigItems.pdb_controller_non_ready_ttl}}
+{{- end }}
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_parent_resource_hash "true" }}
+          - --use-parent-resource-hash
+{{- end }}
+          - "--max-unavailable={{.Cluster.ConfigItems.pdb_controller_max_unavailable}}"
         resources:
           limits:
             cpu: 10m
-            memory: 50Mi
+            memory: 4Gi
           requests:
             cpu: 10m
-            memory: 50Mi
+            memory: 4Gi

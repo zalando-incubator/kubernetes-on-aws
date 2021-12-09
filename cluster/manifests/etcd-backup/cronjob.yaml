@@ -1,11 +1,11 @@
-apiVersion: batch/v2alpha1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: etcd-backup
   namespace: kube-system
   labels:
-    application: etcd-backup
-    version: "master-9"
+    application: kubernetes
+    component: etcd-backup
 spec:
   schedule: "*/1 * * * *"
   concurrencyPolicy: Forbid
@@ -14,59 +14,86 @@ spec:
   jobTemplate:
     spec:
       activeDeadlineSeconds: 600
+      backoffLimit: 1
       template:
         metadata:
           labels:
-            application: etcd-backup
-            version: "master-9"
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
+            application: kubernetes
+            component: etcd-backup
           annotations:
-            iam.amazonaws.com/role: "{{ .LocalID }}-etcd-backup"
-{{ end }}
+            logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         spec:
+          serviceAccountName: etcd-backup
           dnsConfig:
             options:
               - name: ndots
                 value: "1"
-          priorityClassName: system-cluster-critical
           restartPolicy: Never
           containers:
           - name: etcd-backup
-            image: pierone.stups.zalan.do/teapot/etcd-backup:master-9
+            image: pierone.stups.zalan.do/teapot/etcd-backup:master-13
             env:
             - name: ETCD_S3_BACKUP_BUCKET
               value: "{{ .ConfigItems.etcd_s3_backup_bucket }}"
             - name: ETCD_ENDPOINTS
               value: "{{ .ConfigItems.etcd_endpoints }}"
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-            # must be set for the AWS SDK/AWS CLI to find the credentials file.
-            - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-              value: /meta/aws-iam/credentials.process
+{{ if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
+            - name: ETCD_CA_CERTIFICATE
+              value: /mnt/etcd-ca.pem
+{{ end }}
+{{ if index .Cluster.ConfigItems "etcd_client_apiserver_cert" }}
+            - name: ETCD_CLIENT_CERTIFICATE
+              value: /mnt/etcd-cert.pem
+{{ end }}
+{{ if index .Cluster.ConfigItems "etcd_client_apiserver_key" }}
+            - name: ETCD_CLIENT_KEY
+              value: /mnt/etcd-key.pem
 {{ end }}
             resources:
               limits:
-                cpu: 100m
+                cpu: 50m
                 memory: 384Mi
               requests:
-                cpu: 100m
+                cpu: 50m
                 memory: 384Mi
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
             volumeMounts:
-            - name: aws-iam-credentials
-              mountPath: /meta/aws-iam
+{{ if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
+            - name: etcd-ca
+              mountPath: /mnt/etcd-ca.pem
+              readOnly: true
+{{ end }}
+{{ if index .Cluster.ConfigItems "etcd_client_apiserver_cert" }}
+            - name: etcd-cert
+              mountPath: /mnt/etcd-cert.pem
+              readOnly: true
+{{ end }}
+{{ if index .Cluster.ConfigItems "etcd_client_apiserver_key" }}
+            - name: etcd-key
+              mountPath: /mnt/etcd-key.pem
               readOnly: true
 {{ end }}
           tolerations:
-          - key: node-role.kubernetes.io/master
-            effect: NoSchedule
           - key: node.kubernetes.io/role
             value: master
             effect: NoSchedule
           nodeSelector:
             node.kubernetes.io/role: master
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
           volumes:
-          - name: aws-iam-credentials
-            secret:
-              secretName: etcd-backup-aws-iam-credentials
+{{ if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
+          - name: etcd-ca
+            hostPath:
+              path: /etc/kubernetes/ssl/etcd-ca.pem
+              type: File
+{{ end }}
+{{ if index .Cluster.ConfigItems "etcd_client_apiserver_cert" }}
+          - name: etcd-cert
+            hostPath:
+              path: /etc/kubernetes/ssl/etcd-cert.pem
+              type: File
+{{ end }}
+{{ if index .Cluster.ConfigItems "etcd_client_apiserver_key" }}
+          - name: etcd-key
+            hostPath:
+              path: /etc/kubernetes/ssl/etcd-key.pem
+              type: File
 {{ end }}

@@ -1,4 +1,4 @@
-apiVersion: autoscaling/v2beta1
+apiVersion: autoscaling/v2beta2
 kind: HorizontalPodAutoscaler
 metadata:
   name: skipper-ingress
@@ -16,8 +16,52 @@ spec:
   - type: Resource
     resource:
       name: cpu
-      targetAverageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_cpu }}
+      target:
+        type: Utilization
+        averageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_cpu }}
   - type: Resource
     resource:
       name: memory
-      targetAverageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_memory }}
+      target:
+        type: Utilization
+        averageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_memory }}
+{{ if ne .ConfigItems.skipper_time_based_scaling_check_id "" }}
+  - type: External
+    external:
+      target:
+        averageValue: {{ .ConfigItems.skipper_time_based_scaling_target }}
+        type: AverageValue
+      metric:
+        name: zmon-check
+        selector:
+          matchLabels:
+            type: "zmon"
+            check-id: "{{ .ConfigItems.skipper_time_based_scaling_check_id }}"
+            key: ""
+            tag-application: "skipper-ingress"
+            aggregators: last
+{{ end }}
+{{ if ne .ConfigItems.skipper_scaling_schedule_hyped_articles_target "" }}
+  - type: Object
+    object:
+      describedObject:
+        apiVersion: zalando.org/v1
+        kind: ClusterScalingSchedule
+        name: hyped-article-release
+      metric:
+        name: hyped-article-release
+      target:
+        averageValue: {{ .ConfigItems.skipper_scaling_schedule_hyped_articles_target }}
+        type: AverageValue
+{{ end }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+      - type: Pods
+        value: 10
+        periodSeconds: 60
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      selectPolicy: Min

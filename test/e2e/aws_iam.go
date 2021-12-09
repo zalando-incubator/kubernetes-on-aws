@@ -14,19 +14,20 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	awsiamrole "github.com/mikkeloscar/kube-aws-iam-controller/pkg/client/clientset/versioned"
+	awsiamrole "github.com/zalando-incubator/kube-aws-iam-controller/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
-var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", func() {
+var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
 	f := framework.NewDefaultFramework("aws-iam")
 	var cs kubernetes.Interface
 	var zcs awsiamrole.Interface
@@ -52,7 +53,7 @@ var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", 
 
 		By("Creating a awscli POD in namespace " + ns)
 		pod := createAWSIAMPod("aws-iam-", ns, E2ES3AWSIAMBucket())
-		_, err := cs.CoreV1().Pods(ns).Create(pod)
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		// AWSIAMRole
@@ -61,66 +62,29 @@ var _ = framework.KubeDescribe("AWS IAM Integration (kube-aws-iam-controller)", 
 		defer func() {
 			By("deleting the AWSIAMRole")
 			defer GinkgoRecover()
-			err2 := zcs.ZalandoV1().AWSIAMRoles(ns).Delete(rs.Name, metav1.NewDeleteOptions(0))
+			err2 := zcs.ZalandoV1().AWSIAMRoles(ns).Delete(context.TODO(), rs.Name, metav1.DeleteOptions{})
 			Expect(err2).NotTo(HaveOccurred())
 		}()
-		_, err = zcs.ZalandoV1().AWSIAMRoles(ns).Create(rs)
+		_, err = zcs.ZalandoV1().AWSIAMRoles(ns).Create(context.TODO(), rs, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
-
-		// wait for pod to access s3 and POD exit code 0
-		for {
-			p, err := cs.CoreV1().Pods(ns).Get(pod.Name, metav1.GetOptions{})
-			if err != nil {
-				Expect(fmt.Errorf("Could not get POD %s", pod.Name)).NotTo(HaveOccurred())
-				return
-			}
-
-			if p.Status.ContainerStatuses[0].State.Terminated == nil {
-				time.Sleep(10 * time.Second)
-				continue
-			}
-
-			n := p.Status.ContainerStatuses[0].State.Terminated.ExitCode
-			if n > 0 {
-				// set error
-				Expect(fmt.Errorf("failed to access s3 bucket")).NotTo(HaveOccurred())
-				return
-			}
-			return
-		}
+		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(f.ClientSet, pod.Name, pod.Namespace))
 	})
 
 	It("Should NOT get AWS IAM credentials [AWS-IAM] [Zalando]", func() {
 		ns := f.Namespace.Name
 
 		By("Creating a awscli POD in namespace " + ns)
-		pod := createAWSCLIPod("no-aws-iam-", ns, E2ES3AWSIAMBucket())
-		_, err := cs.CoreV1().Pods(ns).Create(pod)
+		pod := createAWSCLIPod("aws-iam-", ns, []string{"s3", "ls", fmt.Sprintf("s3://%s", E2ES3AWSIAMBucket())})
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 
-		// wait for pod to access s3 and POD exit code 0
-		for {
-			p, err := cs.CoreV1().Pods(ns).Get(pod.Name, metav1.GetOptions{})
-			if err != nil {
-				Expect(fmt.Errorf("Could not get POD %s", pod.Name)).NotTo(HaveOccurred())
-				return
-			}
+		framework.ExpectNoError(e2epod.WaitForPodTerminatedInNamespace(f.ClientSet, pod.Name, "", pod.Namespace))
 
-			if p.Status.ContainerStatuses[0].State.Terminated == nil {
-				time.Sleep(10 * time.Second)
-				continue
-			}
-
-			n := p.Status.ContainerStatuses[0].State.Terminated.ExitCode
-			if n < 1 {
-				// set error
-				Expect(fmt.Errorf("expected the s3 bucket access to fail")).NotTo(HaveOccurred())
-				return
-			}
-			return
-		}
+		p, err := cs.CoreV1().Pods(ns).Get(context.TODO(), pod.Name, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(p.Status.ContainerStatuses).NotTo(BeEmpty(), "No container statuses found")
+		Expect(p.Status.ContainerStatuses[0].State.Terminated).NotTo(BeNil(), "Expected to find a terminated container")
+		Expect(p.Status.ContainerStatuses[0].State.Terminated.ExitCode).To(BeEquivalentTo(255), "Expected the container to exit with an error status code")
 	})
 })

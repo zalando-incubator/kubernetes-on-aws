@@ -1,5 +1,5 @@
 {{ if eq .Environment "production" }}
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: emergency-access-service
@@ -11,10 +11,13 @@ metadata:
     application: emergency-access-service
 spec:
   rules:
-  - host: emergency-access-service.{{ .Alias }}.zalan.do
+  - host: emergency-access-service.{{ .Values.hosted_zone }}
     http:
       paths:
       - backend:
-          serviceName: emergency-access-service
-          servicePort: http
+          service:
+            name: emergency-access-service
+            port:
+              name: http
+        pathType: ImplementationSpecific
 {{ end }}

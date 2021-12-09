@@ -1,0 +1,37 @@
+{{ if eq .Environment "production" }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: emergency-access-service
+  namespace: kube-system
+  annotations:
+    iam.amazonaws.com/role: "{{ .LocalID }}-emergency-access-service"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: emergency-access-service
+  namespace: kube-system
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  resourceNames: ["emergency-access-service"]
+  verbs: ["get", "update", "patch"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["list", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: emergency-access-service
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: emergency-access-service
+subjects:
+- kind: ServiceAccount
+  name: emergency-access-service
+  namespace: kube-system
+{{ end }}

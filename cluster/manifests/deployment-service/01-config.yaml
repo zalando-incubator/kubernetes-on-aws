@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: deployment-config
+  namespace: kube-system
+data:
+  aws-account-id: "{{accountID .Cluster.InfrastructureAccount}}"
+  cluster-alias: "{{.Cluster.Alias}}"
+  cluster-vpc-id: "{{.Cluster.ConfigItems.vpc_id}}"
+  scalyr-team-token: "{{.Cluster.ConfigItems.scalyr_team_token}}"
+  create-namespaces: "true"
+  aws-available: "true"
+  worker-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-worker"
+  oidc-provider-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:oidc-provider/{{.Cluster.LocalID}}.{{.Cluster.Alias}}.zalan.do"
+  oidc-subject-key: "{{.Cluster.LocalID}}.{{.Cluster.Alias}}.zalan.do:sub"
+  oidc-subject-prefix: "{{.Cluster.LocalID}}.{{.Cluster.Alias}}.zalan.do:sub: system:serviceaccount"
+  s3-bucket-name: "zalando-deployment-service-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
+  status-service-url: "https://deployment-status-service.{{.Values.hosted_zone}}"
+  deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
+{{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
+  ml-experiment-deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-deployment-service-ml-experiment-deployment"
+{{- end }}
+  cloudformation-enable-auto-expand: "{{.Cluster.ConfigItems.deployment_service_cf_auto_expand_enabled}}"

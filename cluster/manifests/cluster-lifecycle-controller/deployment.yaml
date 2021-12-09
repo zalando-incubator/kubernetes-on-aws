@@ -4,30 +4,32 @@ metadata:
   name: cluster-lifecycle-controller
   namespace: kube-system
   labels:
-    application: cluster-lifecycle-controller
-    version: master-14
+    application: kubernetes
+    component: cluster-lifecycle-controller
+    version: master-23
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: cluster-lifecycle-controller
+      deployment: cluster-lifecycle-controller
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        application: cluster-lifecycle-controller
-        version: master-14
+        application: kubernetes
+        component: cluster-lifecycle-controller
+        deployment: cluster-lifecycle-controller
+        version: master-23
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: cluster-lifecycle-controller
       tolerations:
-      - key: node-role.kubernetes.io/master
-        effect: NoSchedule
       - key: node.kubernetes.io/role
         value: master
         effect: NoSchedule
@@ -35,33 +37,22 @@ spec:
         operator: Exists
       containers:
       - name: cluster-lifecycle-controller
-        image: registry.opensource.zalan.do/teapot/cluster-lifecycle-controller:master-14
+        image: registry.opensource.zalan.do/teapot/cluster-lifecycle-controller:master-23
         args:
             - --drain-grace-period={{.ConfigItems.drain_grace_period}}
             - --drain-min-pod-lifetime={{.ConfigItems.drain_min_pod_lifetime}}
             - --drain-min-healthy-sibling-lifetime={{.ConfigItems.drain_min_healthy_sibling_lifetime}}
             - --drain-min-unhealthy-sibling-lifetime={{.ConfigItems.drain_min_unhealthy_sibling_lifetime}}
             - --drain-force-evict-interval={{.ConfigItems.drain_force_evict_interval}}
-        volumeMounts:
-        - name: aws-iam-credentials
-          mountPath: /meta/aws-iam
-          readOnly: true
         resources:
           limits:
-            cpu: 100m
+            cpu: 15m
             memory: 250Mi
           requests:
-            cpu: 100m
+            cpu: 15m
             memory: 250Mi
         env:
         - name: AWS_REGION
           value: {{ .Region }}
-        # must be set for the AWS SDK/AWS CLI to find the credentials file.
-        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-          value: /meta/aws-iam/credentials.process
-      volumes:
-      - name: aws-iam-credentials
-        secret:
-          secretName: cluster-lifecycle-controller-aws-iam-credentials
       nodeSelector:
         node.kubernetes.io/role: master

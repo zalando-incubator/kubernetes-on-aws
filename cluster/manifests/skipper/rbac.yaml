@@ -4,11 +4,18 @@ metadata:
   name: skipper-ingress
   namespace: kube-system
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: skipper-ingress
 rules:
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
 - apiGroups: ["extensions"]
   resources: ["ingresses", ]
   verbs: ["get", "list"]
@@ -23,7 +30,7 @@ rules:
   - get
   - list
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: skipper-ingress
@@ -36,7 +43,7 @@ subjects:
   name: skipper-ingress
   namespace: kube-system
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: skipper-ingress-privileged-psp

@@ -1,24 +1,17 @@
 # everything defined under here will be deleted before applying the manifests
-pre_apply: []
+pre_apply:
+{{ if ne .Cluster.ConfigItems.routegroups_validation "enabled" }}
+- name: "routegroup-admitter.teapot.zalan.do"
+  kind: ValidatingWebhookConfiguration
+{{ end }}
+{{ if eq .Cluster.Environment "e2e" }}
+- name: pool-reserve-default-worker
+  namespace: default
+  kind: Deployment
+{{ end }}
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
-- name: kubernetes-dashboard
-  kind: ClusterRoleBinding
-- name: heapster
-  namespace: kube-system
-  kind: Deployment
-- name: heapster
-  namespace: kube-system
-  kind: ServiceAccount
-- name: heapster
-  kind: ClusterRoleBinding
-- name: heapster
-  namespace: kube-system
-  kind: Service
-- name: heapster
-  namespace: kube-system
-  kind: VerticalPodAutoscaler
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
@@ -27,26 +20,58 @@ post_apply:
   namespace: cron
   kind: LimitRange
 {{ end }}
-{{ if ne .ConfigItems.enable_ingress_template_controller "true" }}
-- name: ingresstemplates.zalando.org
-  kind: CustomResourceDefinition
-- name: ingress-template-controller
+{{ if ne .ConfigItems.enable_csi_migration "true" }}
+- name: csi-node-driver
+  namespace: kube-system
+  kind: DaemonSet
+- name: ebs-csi-controller
+  namespace: kube-system
+  kind: DaemonSet
+- name: ebs
+  kind: StorageClass
+  namespace: kube-system
+{{ end }}
+{{ if ne .ConfigItems.prometheus_csi_ebs "true" }}
+- name: prometheus-csi
+  namespace: kube-system
+  kind: StatefulSet
+- name: prometheus-storage-volume-prometheus-csi-0
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+- name: prometheus-storage-volume-prometheus-csi-1
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+{{ else }}
+- name: prometheus
+  namespace: kube-system
+  kind: StatefulSet
+- name: prometheus-storage-volume-prometheus-0
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+- name: prometheus-storage-volume-prometheus-1
+  kind: PersistentVolumeClaim
+  namespace: kube-system
+{{ end }}
+{{ if ne .ConfigItems.downscaler_enabled "true" }}
+- name: kube-downscaler
   namespace: kube-system
   kind: Deployment
-- name: ingress-template-controller
+- name: kube-downscaler
   namespace: kube-system
   kind: ServiceAccount
-- name: ingress-template-controller
+- name: kube-downscaler
   kind: ClusterRole
-- name: ingress-template-controller
+- name: kube-downscaler
   kind: ClusterRoleBinding
+- name: kube-downscaler
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
 {{ end }}
-- name: poweruser-new
+- labels:
+    application: external-dns
+  namespace: kube-system
+  kind: Pod
+{{- if ne .Cluster.ConfigItems.okta_auth_enabled "true" }}
+- name: cluster-admin-okta
   kind: ClusterRoleBinding
-- name: readonly-new
-  kind: ClusterRoleBinding
-- name: zmon-external-new
-  kind: ClusterRoleBinding
-- name: collaborator
-  namespace: visibility
-  kind: RoleBinding
+{{- end }}

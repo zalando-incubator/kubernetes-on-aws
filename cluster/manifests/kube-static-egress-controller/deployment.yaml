@@ -4,34 +4,38 @@ metadata:
   name: kube-static-egress-controller
   namespace: kube-system
   labels:
-    application: kube-static-egress-controller
-    version: v0.2.1
+    application: kubernetes
+    component: kube-static-egress-controller
+    version: v0.2.8
 spec:
-  replicas: 1
+  replicas: {{if eq .Cluster.ConfigItems.static_egress_controller_enabled "true"}}1{{else}}0{{end}}
   selector:
     matchLabels:
-      application: kube-static-egress-controller
+      deployment: kube-static-egress-controller
   template:
     metadata:
       labels:
-        application: kube-static-egress-controller
-        version: v0.2.1
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
+        deployment: kube-static-egress-controller
+        application: kubernetes
+        component: kube-static-egress-controller
+        version: v0.2.8
       annotations:
-        iam.amazonaws.com/role: "{{ .LocalID }}-static-egress-controller"
-{{ end }}
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: kube-static-egress-controller
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.2.1
+        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.2.8-r1
         args:
         - "--provider=aws"
+        - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
 {{- range $subnet := stupsNATSubnets .Values.vpc_ipv4_cidr }}
         - "--aws-nat-cidr-block={{ $subnet }}"
 {{- end }}
@@ -40,20 +44,10 @@ spec:
 {{ end }}
         - "--stack-termination-protection"
         - "--cluster-id={{ .ID }}"
+        - "--additional-stack-tags=InfrastructureComponent=true"
         env:
         - name: AWS_REGION
-          value: eu-central-1
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        # must be set for the AWS SDK/AWS CLI to find the credentials file.
-        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-          value: /meta/aws-iam/credentials.process
-{{ end }}
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        volumeMounts:
-        - name: aws-iam-credentials
-          mountPath: /meta/aws-iam
-          readOnly: true
-{{ end }}
+          value: {{ .Cluster.Region }}
         resources:
           limits:
             cpu: 5m
@@ -61,9 +55,6 @@ spec:
           requests:
             cpu: 5m
             memory: 50Mi
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-      volumes:
-      - name: aws-iam-credentials
-        secret:
-          secretName: kube-static-egress-controller-aws-iam-credentials
-{{ end }}
+        ports:
+          - containerPort: 8000
+            protocol: TCP

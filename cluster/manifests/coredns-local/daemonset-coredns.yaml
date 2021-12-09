@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: coredns
-    version: v1.6.4
+    version: v1.8.4
     kubernetes.io/cluster-service: "true"
     kubernetes.io/name: "CoreDNS"
     component: cluster-dns
@@ -21,12 +21,82 @@ spec:
       labels:
         application: coredns
         instance: node-dns
-        version: v1.6.4
+        version: v1.8.4
         component: cluster-dns
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/path: /metrics
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9153"
     spec:
+      initContainers:
+      - name: ensure-apiserver
+        image: registry.opensource.zalan.do/teapot/ensure-apiserver:master-2
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: 1m
+            memory: 50Mi
       containers:
+{{ if eq .Cluster.ConfigItems.dns_cache "unbound" }}
+      - name: unbound
+        image: registry.opensource.zalan.do/teapot/unbound:1.13.1-1
+        args:
+        - -d
+        - -c
+        - /etc/unbound/unbound.conf
+        ports:
+        - containerPort: 53
+          name: dns-udp
+          protocol: UDP
+        - containerPort: 53
+          name: dns-tcp
+          protocol: TCP
+{{- if eq .Cluster.ConfigItems.expirimental_dns_unbound_liveness_probe "true" }}
+        livenessProbe:
+          exec:
+            command:
+            - dig
+            - "+short"
+            - "@127.0.0.1"
+            - "kubernetes.default.svc.cluster.local"
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+{{- end }}
+        resources:
+          requests:
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: {{.Cluster.ConfigItems.dns_unbound_cpu}}
+            memory: {{.Cluster.ConfigItems.dns_unbound_mem}}
+        volumeMounts:
+        - mountPath: /etc/unbound/unbound.conf
+          name: config-volume
+          readOnly: true
+          subPath: unbound.conf
+      - name: unbound-telemetry
+        image: registry.opensource.zalan.do/teapot/unbound-telemetry:master-1
+        args:
+        - tcp
+        - --bind=0.0.0.0:9054
+        ports:
+        - name: metrics
+          containerPort: 9054
+          protocol: TCP
+        resources:
+          requests:
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: {{.Cluster.ConfigItems.dns_unbound_telemetry_cpu}}
+            memory: {{.Cluster.ConfigItems.dns_unbound_telemetry_mem}}
+{{ end }}
+{{ if eq .Cluster.ConfigItems.dns_cache "dnsmasq" }}
       - name: dnsmasq
-        image: registry.opensource.zalan.do/teapot/k8s-dns-dnsmasq-nanny-amd64:1.15.7-1
+        image: registry.opensource.zalan.do/teapot/k8s-dns-dnsmasq-nanny-amd64:1.17.1
         securityContext:
           privileged: true
         livenessProbe:
@@ -68,7 +138,7 @@ spec:
             cpu: {{.Cluster.ConfigItems.dns_dnsmasq_cpu}}
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_mem}}
       - name: sidecar
-        image: registry.opensource.zalan.do/teapot/k8s-dns-sidecar-amd64:1.15.7-1
+        image: registry.opensource.zalan.do/teapot/k8s-dns-sidecar-amd64:1.17.1
         securityContext:
           privileged: true
         livenessProbe:
@@ -95,9 +165,15 @@ spec:
           limits:
             cpu: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_cpu}}
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_mem}}
+{{ end }}
       - name: coredns
-        image: registry.opensource.zalan.do/teapot/coredns:1.6.4
+        image: registry.opensource.zalan.do/teapot/coredns:1.8.4
         args: [ "-conf", "/etc/coredns/Corefile" ]
+        env:
+        - name: ZONE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['topology.kubernetes.io/zone']
         volumeMounts:
         - name: config-volume
           mountPath: /etc/coredns
@@ -148,3 +224,5 @@ spec:
           items:
           - key: Corefile
             path: Corefile
+          - key: unbound.conf
+            path: unbound.conf

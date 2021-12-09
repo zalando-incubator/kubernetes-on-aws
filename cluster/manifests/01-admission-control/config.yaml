@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: teapot-admission-controller
+  namespace: kube-system
+data:
+  daemonset.reserved.cpu: "{{ .Cluster.ConfigItems.teapot_admission_controller_daemonset_reserved_cpu }}"
+  daemonset.reserved.memory: "{{ .Cluster.ConfigItems.teapot_admission_controller_daemonset_reserved_memory }}"
+
+  pod.container-resource-control.min-memory-request: "25Mi"
+  pod.container-resource-control.default-cpu-request: "{{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}"
+  pod.container-resource-control.default-memory-request: "{{ .Cluster.ConfigItems.teapot_admission_controller_default_memory_request }}"
+  pod.container-resource-control.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_process_resources }}"
+  pod.ignore-namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_ignore_namespaces }}"
+  pod.default.dns-ndots: "{{ .Cluster.ConfigItems.teapot_admission_controller_ndots }}"
+  pod.parent-resource-hash.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_parent_resource_hash }}"
+  pod.service-account-iam.enable: "true"
+  pod.service-account-iam.base-aws-account-id: "{{ accountID .Cluster.InfrastructureAccount }}"
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
+  pod.aws-waiter.image: "registry.opensource.zalan.do/automata/aws-credentials-waiter:master-10"
+{{- end }}
+  pod.env-inject.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables }}"
+  pod.env-inject.variable._PLATFORM_ACCOUNT: "{{ .Cluster.Alias }}"
+  pod.env-inject.variable._PLATFORM_CLUSTER_ID: "{{ .Cluster.ID }}"
+  pod.env-inject.variable._PLATFORM_OPENTRACING_TAG_ACCOUNT: "{{ .Cluster.Alias }}"
+  pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT: "8443"
+  pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST: "{{ .Cluster.ConfigItems.tracing_collector_host }}"
+  pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN: "{{ .Cluster.ConfigItems.lightstep_token }}"
+{{- if eq .Cluster.Environment "e2e" }}
+  pod.env-inject.variable._PLATFORM_E2E: "injected"
+{{- end }}
+
+  podfactory.container-resource-check.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_template_resources }}"
+  podfactory.application-label-check.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_application_label }}"
+  podfactory.application-label-check.minimum-creation-time: "{{ .Cluster.ConfigItems.teapot_admission_controller_application_min_creation_time }}"
+
+  podfactory.base-image-check.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_base_images }}"
+{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_base_images_namespaces" }}
+  podfactory.base-image-check.namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_base_images_namespaces }}"
+{{- end }}
+
+  # This setting enables and disables the container image compliance checks
+  pod.image-check.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images }}"
+
+{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_soft_fail_namespaces" }}
+  # In case docker-meta is down, all containers in these configured namespaces are allowed, defaults to none if not configured
+  pod.image-check.soft-fail-namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_soft_fail_namespaces }}"
+{{- end }}
+
+{{- if eq .Cluster.Environment "e2e" }}
+  # Special settings only configured for e2e clusters
+  #
+  # DO NOT USE THESE IN PRODUCTION CLUSTERS
+
+  # Limit the namespaces where container image checks are required, defaults to all if not configured
+  pod.image-check.namespaces: "^(image-policy-test-enabled-.*|kube-system|visibility)$"
+
+  # Always allow certain container images regardless of namespace, defaults to none if not configured
+  pod.image-check.ignored-images: "^k8s.gcr.io/pause:.+$"
+{{- end }}
+
+  deployment.default.rolling-update-max-surge: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}"
+  deployment.default.rolling-update-max-unavailable: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}"
+
+  crd.resource-delete-protection.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_crd_ensure_no_resources_on_delete }}"
+{{- range $group := split .Cluster.ConfigItems.teapot_admission_controller_crd_role_provisioning_allowed_api_groups "," }}
+  "crd.role-provisioning.api-groups.{{$group}}": allow
+{{- end }}
+  # These API groups are internal and shouldn't be controllable by the users.
+  crd.role-provisioning.api-groups.deployment.zalando.org: skip
+
+  priorityclass.preemption.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_preemption_enabled }}"
+
+  postgresql.delete-protection.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_postgresql_delete_protection_enabled }}"
+
+  namespace.delete-protection.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_namespace_delete_protection_enabled }}"
+
+  pod.automatic-topology-spread.mode: "{{ .Cluster.ConfigItems.teapot_admission_controller_topology_spread }}"
+  pod.automatic-topology-spread.timeout: "{{ .Cluster.ConfigItems.teapot_admission_controller_topology_spread_timeout }}"
+{{- range $group, $enabled := zoneDistributedNodePoolGroups .Cluster.NodePools }}
+{{- if eq $group "" }}
+  pod.automatic-topology-spread.pools.default: "{{ $enabled }}"
+{{- else }}
+  pod.automatic-topology-spread.pools.dedicated.{{$group}}: "{{ $enabled }}"
+{{- end }}
+{{- end}}
+
+  pod.az-block.zone-name: "{{ .Cluster.ConfigItems.blocked_availability_zone }}"
+{{- range $group, $enabled := zoneDistributedNodePoolGroups .Cluster.NodePools }}
+{{- if eq $group "" }}
+  pod.az-block.pools.default: "{{ $enabled }}"
+{{- else }}
+  pod.az-block.pools.dedicated.{{$group}}: "{{ $enabled }}"
+{{- end }}
+{{- end}}
+
+  node.node-not-ready-taint.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_node_not_ready_taint }}"
+  node.extended-node-restriction.enable: "true"
+
+  pod.node-lifecycle.provider: "{{ .Cluster.ConfigItems.teapot_admission_controller_node_lifecycle_provider }}"
+
+  pod.runtime-policy.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_runtime_policy_enabled }}"
+  pod.runtime-policy.default: "{{ .Cluster.ConfigItems.teapot_admission_controller_runtime_policy_default }}"
+  pod.runtime-policy.enforced: "{{ .Cluster.ConfigItems.teapot_admission_controller_runtime_policy_enforced }}"
+  pod.runtime-policy.spot-hard-assignment: "{{ .Cluster.ConfigItems.teapot_admission_controller_runtime_policy_spot_hard_assignment }}"
+
+  pod.prevent-scale-down.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_prevent_scale_down_enabled }}"
+  pod.prevent-scale-down.allowed: "{{ .Cluster.ConfigItems.teapot_admission_controller_prevent_scale_down_allowed }}"

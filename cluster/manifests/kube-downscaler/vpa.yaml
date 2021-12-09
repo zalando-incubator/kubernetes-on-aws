@@ -1,10 +1,12 @@
+{{ if eq .Cluster.ConfigItems.downscaler_enabled "true" }}
 apiVersion: autoscaling.k8s.io/v1beta2
 kind: VerticalPodAutoscaler
 metadata:
   name: kube-downscaler
   namespace: kube-system
   labels:
-    application: kube-downscaler
+    application: kubernetes
+    component: kube-downscaler
 spec:
   targetRef:
     apiVersion: apps/v1
@@ -16,5 +18,5 @@ spec:
     containerPolicies:
     - containerName: downscaler
       maxAllowed:
-        cpu: 500m
-        memory: 2Gi
+        memory: 4Gi
+{{ end }}

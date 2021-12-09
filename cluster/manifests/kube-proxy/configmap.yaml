@@ -12,7 +12,6 @@ data:
       acceptContentTypes: ""
       burst: 10
       contentType: application/vnd.kubernetes.protobuf
-      kubeconfig: /etc/kubernetes/kubeconfig
       qps: 5
     clusterCIDR: ""
     configSyncPeriod: 15m0s
@@ -23,9 +22,9 @@ data:
       tcpEstablishedTimeout: 24h0m0s
     enableProfiling: false
     featureGates:
-      TaintBasedEvictions: true
       BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
-    healthzBindAddress: 0.0.0.0:10256
+      EndpointSliceProxying: {{ .Cluster.ConfigItems.enable_endpointsliceproxying }}
+    healthzBindAddress: 127.0.0.1:10256
     hostnameOverride: ""
     iptables:
       masqueradeAll: false

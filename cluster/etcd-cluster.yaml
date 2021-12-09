@@ -6,6 +6,12 @@ SenzaComponents:
     IamRoles:
     - Ref: EtcdRole
     InstanceType: '{{Arguments.InstanceType}}'
+    AssociatePublicIpAddress: true
+    VPCZoneIdentifier:
+      Fn::FindInMap:
+        - LoadBalancerSubnets
+        - Ref: AWS::Region
+        - Subnets
     SecurityGroups:
     - Fn::GetAtt:
       - EtcdSecurityGroup
@@ -13,19 +19,29 @@ SenzaComponents:
     TaupageConfig:
       ports:
         2379: 2379
+        2479: 2479
         2380: 2380
         2381: 2381
       runtime: Docker
-      source: registry.opensource.zalan.do/acid/etcd-cluster:3.4.2-p23
+      source: '{{Arguments.EtcdImage}}'
       environment:
         HOSTED_ZONE: '{{Arguments.HostedZone}}'
+        CLIENT_TRUSTED_CA: '{{Arguments.ClientCACertificate}}'
+        CLIENT_CERT: '{{Arguments.ClientCertificate}}'
+        CLIENT_KEY: '{{Arguments.ClientKey}}'
+        CLIENT_TLS_ENABLED: '{{Arguments.ClientTLSEnabled}}'
       scalyr_account_key: '{{Arguments.ScalyrAccountKey}}'
       mounts:
         /home/etcd:
-          partition: none
-          filesystem: tmpfs
-          erase_on_boot: false
-          options: size=2g
+          partition: /dev/xvdb
+          filesystem: ext4
+          erase_on_boot: true
+    BlockDeviceMappings:
+      - DeviceName: /dev/xvdb
+        Ebs:
+          VolumeSize: "32"
+          DeleteOnTermination: true
+          VolumeType: "gp3"
     Type: Senza::TaupageAutoScalingGroup
     AutoScaling:
       Minimum: "{{Arguments.InstanceCount}}"
@@ -33,6 +49,12 @@ SenzaComponents:
     Tags:
     - Key: "kubernetes:component"
       Value: "etcd-cluster"
+    - Key: InfrastructureComponent
+      Value: true
+    - Key: certificate-expiry-ca
+      Value: "{{Arguments.CertificateExpiryCA}}"
+    - Key: certificate-expiry-node
+      Value: "{{Arguments.CertificateExpiryNode}}"
 
 SenzaInfo:
   Parameters:
@@ -55,6 +77,27 @@ SenzaInfo:
       Description: Scalyr account key
   - VpcID:
       Description: VpcID to use for the security groups being setup.
+  - EtcdImage:
+      Description: Docker image for the etcd instances.
+      Default: "registry.opensource.zalan.do/teapot/etcd-cluster:3.4.16-master-10"
+  - ClientCACertificate:
+      Description: "CA certificate for client-side TLS (empty for no TLS support)"
+      Default: ""
+  - ClientKey:
+      Description: "Key for client-side TLS (empty for no TLS support)"
+      Default: ""
+  - ClientCertificate:
+      Description: "Certificate for client-side TLS (empty for no TLS support)"
+      Default: ""
+  - ClientTLSEnabled:
+      Description: "Whether to enable client-side TLS"
+      Default: "false"
+  - CertificateExpiryCA:
+      Description: "Timestamp when the CA certificate expires"
+      Default: ""
+  - CertificateExpiryNode:
+      Description: "Timestamp when the node certificate expires"
+      Default: ""
   StackName: etcd-cluster
 
 Outputs:
@@ -86,6 +129,9 @@ Resources:
         ToPort: 9100
         CidrIp: "{{Arguments.NetworkCIDR}}"
       VpcId: "{{Arguments.VpcID}}"
+      Tags:
+        - Key: InfrastructureComponent
+          Value: true
   EtcdIngressMembers:
     Type: "AWS::EC2::SecurityGroupIngress"
     Properties:

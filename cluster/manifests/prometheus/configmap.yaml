@@ -6,15 +6,72 @@ metadata:
   name: prometheus-conf
   namespace: kube-system
 data:
+  prometheus.rules.yml: |-
+    groups:
+    - name: skipper code by host
+      rules:
+      - record: job:skipper_code_by_host:sum
+        expr: sum(rate(skipper_serve_host_count{application="skipper-ingress"}[1m])) by (code)
+
+    - name: skipper sum rate serve_host_duration by bucket
+      rules:
+      - record: job:skipper_serve_host_duration:sum
+        expr: sum(rate(skipper_serve_host_duration_seconds_bucket{application="skipper-ingress"}[1m])) by (le)
+
+    - name: skipper sum rate filter_request_duration by filter
+      rules:
+      - record: job:skipper_req_filter_by_filter:sum
+        expr: sum(rate(skipper_filter_request_duration_seconds_bucket{application="skipper-ingress"}[1m])) by (le,filter)
+
+    - name: skipper sum rate filter_response_duration by filter
+      rules:
+      - record: job:skipper_resp_filter_by_filter:sum
+        expr: sum(rate(skipper_filter_response_duration_seconds_bucket{application="skipper-ingress"}[1m])) by (le,filter)
+
+    - name: skipper sum rate filter_request_duration by bucket
+      rules:
+      - record: job:skipper_req_filter_by_bucket:sum
+        expr: sum(rate(skipper_filter_request_duration_seconds_bucket{application="skipper-ingress"}[1m])) by (le)
+
+    - name: skipper sum rate filter_response_duration by bucket
+      rules:
+      - record: job:skipper_resp_filter_by_bucket:sum
+        expr: sum(rate(skipper_filter_response_duration_seconds_bucket{application="skipper-ingress"}[1m])) by (le)
+
+    - name: skipper sum rate custom totals by key
+      rules:
+      - record: job:skipper_custom_totals_by_key:sum
+        expr: sum(rate(skipper_custom_total{key !~ "^apiUsage.*", application="skipper-ingress"}[1m])) by (key)
+
+    - name: skipper sum rate serve_host_duration by host,bucket
+      rules:
+      - record: job:skipper_serve_host_duration_host_bucket:sum
+        expr: sum(rate(skipper_serve_host_duration_seconds_bucket{}[1m])) by (le,host)
+
+    - name: skipper sum rate serve_host_duration count by host,code
+      rules:
+      - record: job:skipper_count_by_host_code:sum
+        expr: sum(rate(skipper_serve_host_count{}[1m])) by (host,code)
+
+
   prometheus.yml: |-
     global:
       scrape_interval: 15s
       external_labels:
         prometheus_replica: @@POD_NAME@@
         cluster: {{ .Cluster.Alias }}
+    rule_files:
+    - "prometheus.rules.yaml"
 {{ if ne .ConfigItems.prometheus_remote_write "disabled" }}
     remote_write:
     - url: {{ .ConfigItems.prometheus_remote_write }}
+      queue_config:
+        # Maximum time a sample will wait in buffer.
+        batch_send_deadline: {{ .ConfigItems.prometheus_remote_batch_send_deadline }}
+        # Initial retry delay. Gets doubled for every retry.
+        min_backoff: {{ .ConfigItems.prometheus_remote_min_backoff }}
+        # Maximum retry delay.
+        max_backoff: {{ .ConfigItems.prometheus_remote_max_backoff }}
       bearer_token_file: /meta/credentials/remote-write-token-secret
 {{ end }}
     scrape_configs:
@@ -22,7 +79,8 @@ data:
     - job_name: 'kubernetes-apiservers'
       scheme: https
       tls_config:
-        insecure_skip_verify: true
+        ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        server_name: "kubernetes.default.svc.cluster.local"
       bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
       kubernetes_sd_configs:
       - role: pod
@@ -30,28 +88,43 @@ data:
           names:
             - kube-system
       relabel_configs:
-      - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_container_port_number]
+      - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_label_component, __meta_kubernetes_pod_container_port_number]
         action: keep
-        regex: kube-apiserver;443
+        regex: kubernetes;kube-apiserver;443
       - action: replace
         source_labels: ['__meta_kubernetes_pod_label_application']
         target_label: application
-    - job_name: 'teapot-admission-controller'
-      scheme: https
-      tls_config:
-        insecure_skip_verify: true
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_label_component']
+        target_label: component
+    - &apiserver_container_metric
+      job_name: 'teapot-admission-controller'
+      scheme: http
+      metrics_path: "/admission-controller"
       kubernetes_sd_configs:
       - role: pod
         namespaces:
           names:
             - kube-system
       relabel_configs:
-      - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_container_port_number]
+      - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_label_component, __meta_kubernetes_pod_container_port_number]
         action: keep
-        regex: kube-apiserver;8085
+        regex: kubernetes;kube-apiserver;9005
       - action: replace
         source_labels: ['__meta_kubernetes_pod_label_application']
         target_label: application
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_label_component']
+        target_label: component
+    - <<: *apiserver_container_metric
+      job_name: "auth-webhook"
+      metrics_path: "/auth-webhook"
+    - <<: *apiserver_container_metric
+      job_name: "routegroups-admission-webhook"
+      metrics_path: "/routegroups-admission-webhook"
+    - <<: *apiserver_container_metric
+      job_name: "aws-encryption-provider"
+      metrics_path: "/aws-encryption-provider"
     - job_name: 'kube-state-metrics'
       scheme: http
       honor_labels: true
@@ -80,43 +153,75 @@ data:
       scheme: http
       dns_sd_configs:
       - names:
-        - "{{ with $hostPort := splitHostPort .ConfigItems.etcd_endpoints }}{{ .Host }}{{ end }}"
+{{ range $host := extractEndpointHosts .Cluster.ConfigItems.etcd_endpoints }}
+        - "{{ $host }}"
+{{ end }}
         type: "A"
         port: 2381
     - job_name: 'etcd-servers-node-metrics'
       scheme: http
       dns_sd_configs:
       - names:
-        - "{{ with $hostPort := splitHostPort .ConfigItems.etcd_endpoints }}{{ .Host }}{{ end }}"
+{{ range $host := extractEndpointHosts .Cluster.ConfigItems.etcd_endpoints }}
+        - "{{ $host }}"
+{{ end }}
         type: "A"
         port: 9100
       metric_relabel_configs:
        - source_labels: [ __name__ ]
          regex: 'node_textfile.*'
          action: drop
-    - job_name: 'kubernetes-service-endpoints'
+    - job_name: "kubernetes-pods"
       scheme: http
       kubernetes_sd_configs:
-      - role: endpoints
+      - role: pod
+        namespaces:
+          names:
+            - kube-system
       relabel_configs:
       # Look for the Prometheus annotations and scrape based on those
-      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_endpoints_name, __meta_kubernetes_service_annotation_prometheus_io_scrape]
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
         action: keep
-        regex: ^(kube-system;.*?|default;stackset-controller);true$
-      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+        regex: ^true$
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scheme]
         action: replace
         target_label: __scheme__
         regex: (https?)
-      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
         action: replace
         target_label: __metrics_path__
         regex: (.+)
-      - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
         action: replace
-        target_label: __address__
-        regex: (.+)(?::\d+);(\d+)
+        regex: ([^:]+)(?::\d+)?;(\d+)
         replacement: $1:$2
-      # Add pod information
+        target_label: __address__
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_ip']
+        target_label: pod_ip
+      - action: replace
+        source_labels: ['__meta_kubernetes_namespace']
+        target_label: namespace
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_label_application']
+        target_label: application
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_name']
+        target_label: pod_name
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_node_name']
+        target_label: node_name
+    - job_name: 'coredns-cache-metrics'
+      scheme: http
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - kube-system
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_container_port_number]
+        action: keep
+        regex: coredns;9054
       - action: replace
         source_labels: ['__meta_kubernetes_pod_ip']
         target_label: pod_ip
@@ -143,6 +248,9 @@ data:
       relabel_configs:
       - source_labels: [__meta_kubernetes_endpoints_name]
         action: keep
+        regex: node-monitor
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        action: keep
         regex: cadvisor
       - action: replace
         source_labels: ['__meta_kubernetes_pod_node_name']
@@ -166,6 +274,40 @@ data:
       - source_labels: [__name__]
         action: keep
         regex: '(container_cpu_cfs_throttled_seconds_total|container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_memory_rss|container_memory_cache|container_network_receive_bytes_total|container_network_transmit_bytes_total|container_fs_usage_bytes|container_fs_limit_bytes|container_fs_reads_bytes_total|container_fs_writes_bytes_total|container_threads|container_threads_max)'
+    - job_name: 'node-exporter'
+      scheme: http
+      honor_labels: true
+      kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names:
+            - kube-system
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_endpoints_name]
+          action: keep
+          regex: node-monitor
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: node-exporter
+        - action: replace
+          source_labels: ['__meta_kubernetes_pod_node_name']
+          target_label: node_name
+      metric_relabel_configs:
+      - action: replace
+        source_labels: ['container_label_application']
+        target_label: application
+      - action: replace
+        source_labels: ['container_label_io_kubernetes_container_name']
+        target_label: container_name
+      - action: replace
+        source_labels: ['container_label_io_kubernetes_pod_name']
+        target_label: pod_name
+      - action: replace
+        source_labels: ['container_label_io_kubernetes_pod_namespace']
+        target_label: namespace
+      - action: replace
+        source_labels: ['container_label_io_kubernetes_pod_uid']
+        target_label: uid
     - job_name: 'kubelet-metrics'
       scheme: https
       tls_config:

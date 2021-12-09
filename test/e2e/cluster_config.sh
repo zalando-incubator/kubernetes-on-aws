@@ -10,39 +10,19 @@ clusters:
   config_items:
     pod_cidr: "10.32.0.0/14"
     service_cidr: "10.3.0.0/16"
-    scalyr_access_key: no-key-defined
-    scalyr_read_key: no-key-defined
-    scalyr_server: no-key-defined
-    gerry_mint_bucket: zalando-stups-mint-${AWS_ACCOUNT}-${REGION}
-    zmon_worker_plugin_sql_user:
-    zmon_worker_plugin_sql_pass:
     zmon_root_account_role: ${ZMON_ROOT_ACCOUNT_ROLE}
     audittrail_root_account_role: ${AUDITTRAIL_ROOT_ACCOUNT_ROLE}
     apiserver_etcd_prefix: /registry-${LOCAL_ID}
     apiserver_business_partner_ids: ${APISERVER_BUSINESS_PARTNER_IDS}
     etcd_s3_backup_bucket: zalando-kubernetes-etcd-${AWS_ACCOUNT}-${REGION}
     etcd_endpoints: "${ETCD_ENDPOINTS}"
-    image_policy: e2e
-    instana_key: ''
-    jira_secrets: '{\"username\": \"user\", \"password\": \"pass\", \"magic_token\": \"token\"}'
-    ca_key_decompressed: ${CA_KEY}
-    ca_cert_decompressed: ${CA_CERT}
-    apiserver_key_decompressed: ${APISERVER_KEY}
-    apiserver_cert_decompressed: ${APISERVER_CERT}
-    worker_key: ${WORKER_KEY}
-    worker_cert: ${WORKER_CERT}
-    proxy_client_key: ${PROXY_CLIENT_KEY}
-    proxy_client_cert: ${PROXY_CLIENT_CERT}
-    kubelet_client_key: ${KUBELET_CLIENT_KEY}
-    kubelet_client_cert: ${KUBELET_CLIENT_CERT}
-    admission_controller_cert: ${ADMISSION_CONTROLLER_CERT}
-    admission_controller_key: ${ADMISSION_CONTROLLER_KEY}
-    vpa_webhook_key: ${VPA_WEBHOOK_KEY}
-    vpa_webhook_cert: ${VPA_WEBHOOK_CERT}
+    etcd_client_ca_cert: "${ETCD_CLIENT_CA_CERT}"
+    etcd_client_ca_key: "${ETCD_CLIENT_CA_KEY}"
+    docker_meta_url: https://docker-meta.stups-test.zalan.do
     service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
-    worker_shared_secret: ${WORKER_SHARED_SECRET}
     lightstep_token: "${LIGHTSTEP_TOKEN}"
+    okta_auth_issuer_url: "${OKTA_AUTH_ISSUER_URL}"
     zmon_agent_replicas: '0'
     zmon_aws_agent_replicas: '0'
     zmon_redis_replicas: '0'
@@ -55,8 +35,15 @@ clusters:
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
     kube_aws_ingress_controller_nlb_enabled: "true"
+    nlb_switch: "pre"
     vm_dirty_bytes: 134217728
     vm_dirty_background_bytes: 67108864
+    prometheus_tsdb_retention_size: enabled
+    coredns_max_upsteam_concurrency: 30
+    ebs_root_volume_size: "550" # required by the limitRanger e2e tests (needs 500Gi ephemoral storage) https://github.com/kubernetes/kubernetes/blob/v1.18.3/test/e2e/scheduling/limit_range.go#L59
+    routegroups_validation: "enabled"
+    stackset_routegroup_support_enabled: "true"
+    stackset_ingress_source_switch_ttl: "1m"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
@@ -65,49 +52,62 @@ clusters:
   local_id: ${LOCAL_ID}
   node_pools:
   - discount_strategy: none
-    instance_types: ["t2.medium"]
+    instance_types: ["m5a.large"]
     name: default-master
     profile: master-default
     min_size: 1
     max_size: 2
-  - discount_strategy: spot
-    instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
+  - discount_strategy: none
+    instance_types: ["m5.xlarge"]
     name: default-worker-splitaz
     profile: worker-splitaz
-    min_size: 3
+    min_size: 0
     max_size: 21
     config_items:
       cpu_manager_policy: static
-  - discount_strategy: spot
-    instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
-    name: default-worker
-    profile: worker-default
-    min_size: 1
-    max_size: 21
-  - discount_strategy: spot
-    instance_types: ["m4.large", "m5.large", "m5.xlarge", "m4.xlarge"]
+  - discount_strategy: none
+    instance_types: ["m5.xlarge"]
     config_items:
       availability_zones: "eu-central-1a"
       scaling_priority: "-100"
     name: worker-limit-az
     profile: worker-splitaz
-    min_size: 1
+    min_size: 0
     max_size: 21
-  - discount_strategy: spot
-    instance_types: ["m5d.large", "m5d.xlarge", "m5d.2xlarge"]
+  - discount_strategy: none
+    instance_types: ["m5d.xlarge"]
     name: worker-instance-storage
-    profile: worker-default
-    min_size: 1
+    profile: worker-splitaz
+    min_size: 0
+    max_size: 21
+  - discount_strategy: none
+    instance_types: ["m5.xlarge"]
+    name: worker-combined
+    profile: worker-combined
+    config_items:
+      labels: dedicated=worker-combined
+      taints: dedicated=worker-combined:NoSchedule
+    min_size: 0
     max_size: 21
   - discount_strategy: spot
-    instance_types: ["p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
-    name: worker-gpu
-    profile: worker-default
+    instance_types: ["m5a.large", "m5.large", "m5.xlarge", "m5a.xlarge", "t3.large", "t3.xlarge", "c5a.large", "c5a.xlarge"]
     min_size: 0
     max_size: 3
+    profile: worker-splitaz
+    name: worker-node-tests
     config_items:
-      availability_zones: "eu-central-1a"
+      labels: dedicated=node-tests
+      taints: dedicated=node-tests:NoSchedule
+  - discount_strategy: spot
+    instance_types: ["g4dn.xlarge", "g4dn.2xlarge", "p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
+    name: worker-gpu
+    profile: worker-splitaz
+    min_size: 0
+    max_size: 6
+    config_items:
+      availability_zones: "eu-central-1a,eu-central-1b"
       labels: zalando.org/nvidia-gpu=tesla
+      taints: nvidia.com/gpu=present:NoSchedule
       scaling_priority: "-100"
   provider: zalando-aws
   region: ${REGION}

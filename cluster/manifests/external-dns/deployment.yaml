@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: external-dns
-    version: v0.5.18
+    version: v0.8.0
 spec:
   strategy:
     type: Recreate
@@ -16,60 +16,48 @@ spec:
     metadata:
       labels:
         application: external-dns
-        version: v0.5.18
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "false"}}
+        version: v0.8.0
       annotations:
-        iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
-{{ end }}
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7979"
+        prometheus.io/scrape: "true"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.opensource.zalan.do/teapot/external-dns:v0.5.18
+        image: registry.opensource.zalan.do/teapot/external-dns:v0.8.0
         args:
         - --source=service
         - --source=ingress
+        - --source=skipper-routegroup
+{{- range split .ConfigItems.external_dns_excluded_domains "," }}
+        - --exclude-domains={{ . }}
+{{- end }}
         - --provider=aws
         - --registry=txt
         - --txt-owner-id={{ .Region }}:{{ .LocalID }}
         - --txt-prefix={{ .ConfigItems.external_dns_ownership_prefix }}
         - --aws-batch-change-size=100
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        env:
-        # must be set for the AWS SDK/AWS CLI to find the credentials file.
-        - name: AWS_SHARED_CREDENTIALS_FILE # used by golang SDK
-          value: /meta/aws-iam/credentials.process
-{{ end }}
         resources:
+          requests:
+            cpu: 50m
+            memory: 4Gi
           limits:
             cpu: 50m
-            memory: 100Mi
+            memory: 4Gi
         livenessProbe:
           httpGet:
             path: /healthz
             port: 7979
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-        volumeMounts:
-        - name: aws-iam-credentials
-          mountPath: /meta/aws-iam
-          readOnly: true
-{{ end }}
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 65534
           capabilities:
             drop: ["ALL"]
-      securityContext:
-        fsGroup: 65534
-{{ if eq .ConfigItems.kube_aws_iam_controller_kube_system_enable "true"}}
-      volumes:
-      - name: aws-iam-credentials
-        secret:
-          secretName: external-dns-aws-iam-credentials
-{{ end }}

@@ -3,8 +3,8 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
-      NODEPOOL_TAINTS=node-role.kubernetes.io/master=:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
-      NODE_LABELS=node-role.kubernetes.io/master,kubernetes.io/role=master,master=true,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,{{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
+      NODEPOOL_TAINTS=node.kubernetes.io/role=master:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
+      NODE_LABELS=master=true,node.kubernetes.io/exclude-from-external-load-balancers,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,{{ .Values.node_labels }}{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=master
 
@@ -13,22 +13,6 @@ write_files:
     content: |
       S3_CERTS_BUCKET={{ .S3GeneratedFilesPath }}
       AWS_DEFAULT_REGION={{ .Cluster.Region }}
-
-  - owner: root:root
-    path: /etc/kubernetes/kubeconfig
-    content: |
-      apiVersion: v1
-      kind: Config
-      clusters:
-      - name: local
-        cluster:
-          server: http://127.0.0.1:8080
-      users:
-      - name: kubelet
-      contexts:
-      - context:
-          cluster: local
-          user: kubelet
 
   - owner: root:root
     path: /etc/kubernetes/config/kubelet.yaml
@@ -43,8 +27,17 @@ write_files:
 {{- end }}
       featureGates:
         BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
+        CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
+{{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
+        EphemeralContainers: true
+{{- end }}
+        GenericEphemeralVolume: {{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }}
+        SetHostnameAsFQDN: {{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
+{{- if ne .Cluster.ConfigItems.serialize_image_pulls "true" }}
+      serializeImagePulls: false
+{{- end }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
@@ -59,6 +52,10 @@ write_files:
       kubeReserved:
         cpu: "100m"
         memory: "282Mi"
+      allowedUnsafeSysctls:
+{{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
+        - {{$sysctl}}
+{{- end }}
       authentication:
         anonymous:
           enabled: true
@@ -82,54 +79,72 @@ write_files:
         name: kube-apiserver
         namespace: kube-system
         labels:
-          application: kube-apiserver
+          application: kubernetes
+          component: kube-apiserver
         annotations:
           kubernetes-log-watcher/scalyr-parser: |
             [{"container": "webhook", "parser": "json-structured-log"}]
+          logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
       spec:
         priorityClassName: system-node-critical
         tolerations:
-        - key: node-role.kubernetes.io/master
+        - key: node.kubernetes.io/role
+          value: master
           effect: NoSchedule
         hostNetwork: true
+        terminationGracePeriodSeconds: 80
         containers:
         - name: kube-apiserver
           image: nonexistent.zalan.do/teapot/kube-apiserver:fixed
           args:
           - --apiserver-count={{ .Values.apiserver_count }}
           - --bind-address=0.0.0.0
-          - --insecure-bind-address=0.0.0.0
-          - --etcd-servers=http://127.0.0.1:2379
+          - --etcd-servers={{ .NodePool.ConfigItems.etcd_endpoints }}
+{{- if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
+          - --etcd-cafile=/etc/kubernetes/ssl/etcd-ca.pem
+{{- end }}
+{{- if index .Cluster.ConfigItems "etcd_client_apiserver_cert" }}
+          - --etcd-certfile=/etc/kubernetes/ssl/etcd-cert.pem
+{{- end }}
+{{- if index .Cluster.ConfigItems "etcd_client_apiserver_key" }}
+          - --etcd-keyfile=/etc/kubernetes/ssl/etcd-key.pem
+{{- end }}
           - --etcd-prefix={{ .Cluster.ConfigItems.apiserver_etcd_prefix }}
           - --storage-backend=etcd3
           - --storage-media-type=application/vnd.kubernetes.protobuf
-          {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
           - --encryption-provider-config=/etc/kubernetes/config/encryption-config.yaml
-          {{- end }}
           - --allow-privileged=true
           - --service-cluster-ip-range={{ .Cluster.ConfigItems.service_cidr }}
           - --secure-port=443
-          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,ImagePolicyWebhook,Priority,ExtendedResourceToleration
+          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,Priority,NodeRestriction
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
-          - --runtime-config=extensions/v1beta1/networkpolicies=true,batch/v2alpha1=true,policy/v1beta1/podsecuritypolicy=true,imagepolicy.k8s.io/v1alpha1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true{{ if eq .Cluster.ConfigItems.disable_legacy_api_versions "true" }},extensions/v1beta1/deployments=false,apps/v1beta1=false,apps/v1beta2=false{{ end }}
+          - --runtime-config=extensions/v1beta1/networkpolicies=true,policy/v1beta1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
-          - --authorization-mode=Webhook,RBAC
+          - --authorization-mode=Node,Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
-          - --admission-control-config-file=/etc/kubernetes/config/image-policy-webhook.yaml
-          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,CustomResourceWebhookConversion={{.Cluster.ConfigItems.custom_resource_webhook_conversion}},CustomResourcePublishOpenAPI={{.Cluster.ConfigItems.custom_resource_publish_openapi}},BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
-          - --anonymous-auth=false
-          {{- if eq .Cluster.ConfigItems.rotate_service_account_tokens "true" }}
+          - --authorization-webhook-version=v1
+          - --token-auth-file=/etc/kubernetes/config/tokenfile.csv
+{{- if eq .Cluster.ConfigItems.okta_auth_enabled "true" }}
+          - --oidc-issuer-url={{.Cluster.ConfigItems.okta_auth_issuer_url}}
+          - --oidc-client-id={{.Cluster.ConfigItems.okta_auth_client_id}}
+          - --oidc-username-claim=email
+          - "--oidc-username-prefix=okta:"
+          - --oidc-groups-claim=groups
+          - "--oidc-groups-prefix=okta:"
+{{- end }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }}
+          - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
-          - --service-account-issuer=kubernetes/serviceaccount
-          {{- end }}
-          {{ if ne .Cluster.ConfigItems.audittrail_url "" }}
+          - --service-account-issuer={{ .Cluster.APIServerURL }}
+          - --service-account-jwks-uri={{ .Cluster.APIServerURL }}/openid/v1/jwks
+          - --service-account-extend-token-expiration={{ .Cluster.ConfigItems.rotate_service_account_tokens_extended_expiration }}
+          {{ if and (ne .Cluster.ConfigItems.audittrail_url "") (ne .Cluster.Environment "e2e") }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
-          - --audit-webhook-version=audit.k8s.io/v1beta1
+          - --audit-webhook-version=audit.k8s.io/v1
           - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
           {{ end }}
           {{ if eq .Cluster.Environment "e2e" }}
@@ -137,6 +152,13 @@ write_files:
           - --audit-log-maxage=0
           - --audit-log-maxbackup=0
           - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
+          {{ else if and (eq .Cluster.ConfigItems.enable_default_sa "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
+          - --audit-log-path=/dev/stdout
+          - --audit-log-maxage=0
+          - --audit-log-maxbackup=0
+          {{ if eq .Cluster.ConfigItems.audittrail_url "" }}
+          - --audit-policy-file=/etc/kubernetes/config/audit-policy-ro.yaml
+          {{ end }}
           {{ end }}
           # enable aggregated apiservers
           - --client-ca-file=/etc/kubernetes/ssl/ca.pem
@@ -151,20 +173,20 @@ write_files:
           - --kubelet-certificate-authority=/etc/kubernetes/ssl/ca.pem
           - --kubelet-client-certificate=/etc/kubernetes/ssl/kubelet-client.pem
           - --kubelet-client-key=/etc/kubernetes/ssl/kubelet-client-key.pem
-          livenessProbe:
+          - --shutdown-delay-duration=60s
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
+          readinessProbe:
             httpGet:
+              scheme: HTTPS
               host: 127.0.0.1
-              port: 8080
-              path: /healthz
-            initialDelaySeconds: 120
-            timeoutSeconds: 15
+              port: 443
+              path: /readyz
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
           ports:
           - containerPort: 443
             hostPort: 443
             name: https
-          - containerPort: 8080
-            hostPort: 8080
-            name: local
           volumeMounts:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
@@ -172,16 +194,18 @@ write_files:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
             readOnly: true
-          {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
           - mountPath: /var/run/kmsplugin
             name: var-run-kmsplugin
-          {{- end }}
           resources:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-60
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-132
           name: admission-controller
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           readinessProbe:
             httpGet:
               scheme: HTTPS
@@ -193,51 +217,67 @@ write_files:
             requests:
               cpu: 50m
               memory: 100Mi
+          env:
+            - name: KUBECONFIG
+              value: /etc/kubernetes/admission-controller-kubeconfig
           args:
             - --address=:8085
-            - --master=http://127.0.0.1:8080
+            - --master=https://127.0.0.1:443
             - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
             - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
-            - --pod-min-memory-request=25Mi
-            - --pod-default-cpu-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}
-            - --pod-default-memory-request={{ .Cluster.ConfigItems.teapot_admission_controller_default_memory_request }}
-            - --pod-ignore-namespaces={{ .Cluster.ConfigItems.teapot_admission_controller_ignore_namespaces }}
-            - --pod-dns-ndots={{ .Cluster.ConfigItems.teapot_admission_controller_ndots }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
-            - --pod-process-resources
+{{- if index .Cluster.ConfigItems "application_registry_url" }}
+            - --application-registry-url={{.Cluster.ConfigItems.application_registry_url}}
 {{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables "true" }}
-            - --pod-enable-env-inject
-            - --pod-inject-env=_PLATFORM_ACCOUNT={{ .Cluster.Alias }}
-            - --pod-inject-env=_PLATFORM_CLUSTER_ID={{ .Cluster.ID }}
-            - --pod-inject-env=_PLATFORM_OPENTRACING_TAG_ACCOUNT={{ .Cluster.Alias }}
-            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT=8443
-            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST=tracing.stups.zalan.do
-            - --pod-inject-env=_PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN={{ .ConfigItems.lightstep_token }}
-{{- if eq .Cluster.Environment "e2e" }}
-            - --pod-inject-env=_PLATFORM_E2E=injected
+{{- if index .Cluster.ConfigItems "docker_meta_url" }}
+            - --docker-meta-url={{.Cluster.ConfigItems.docker_meta_url}}
 {{- end }}
-{{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_validate_application_label "true" }}
-            - --validate-application-label
-            - --validate-application-label-min-creation-time={{ .Cluster.ConfigItems.teapot_admission_controller_application_min_creation_time }}
-            - --application-registry-url=http://127.0.0.1:8285/
-{{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_validate_pod_template_resources "true" }}
-            - --validate-pod-template-resources
-{{- end }}
-            - --deployment-rolling-update-default-max-surge={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}
-            - --deployment-rolling-update-default-max-unavailable={{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}
           ports:
             - containerPort: 8085
           volumeMounts:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:v0.7.5
+            - mountPath: /etc/kubernetes/admission-controller-kubeconfig
+              name: admission-controller-kubeconfig
+              readOnly: true
+{{- if or (eq .Cluster.ConfigItems.routegroups_validation "provisioned") (eq .Cluster.ConfigItems.routegroups_validation "enabled") }}
+        - name: routegroups-admission-webhook
+          image: registry.opensource.zalan.do/teapot/skipper:v0.13.150
+          args:
+            - webhook
+            - --address=:9085
+            - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
+            - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /healthz
+              port: 9085
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+          ports:
+            - containerPort: 9085
+          volumeMounts:
+            - mountPath: /etc/kubernetes/ssl
+              name: ssl-certs-kubernetes
+              readOnly: true
+{{- end}}
+        - image: registry.opensource.zalan.do/teapot/k8s-authnz-webhook:master-118
           name: webhook
           ports:
           - containerPort: 8081
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /healthcheck
@@ -255,7 +295,10 @@ write_files:
               cpu: 50m
               memory: 50Mi
           args:
-            - --tokens-file=/etc/kubernetes/config/tokenfile.csv
+            - --node-auth-cluster-id={{.Cluster.ID}}
+            - "--node-auth-role-arn=arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-worker"
+            - "--node-auth-rate-limit={{.Cluster.ConfigItems.node_auth_rate_limit}}"
+            - --cluster-alias={{.Cluster.Alias}}
 
             # Collaborator roles
             - --role-mapping=Administrator=cn=Administrator,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
@@ -287,26 +330,28 @@ write_files:
 {{ if eq .Cluster.ConfigItems.enable_default_sa "true"}}
             - --enable-default-sa
 {{ end }}
-{{ if eq .Cluster.ConfigItems.enable_cdp_sa "true"}}
-            - --enable-cdp-sa
-{{ end }}
-            - --system-users=zalando-iam:zalando:service:credentials-provider
+            - --system-users=zalando-iam:zalando:service:k8sapi_credentials-provider
             - --system-users=system:serviceaccount:api-infrastructure:api-monitoring-controller
+            - --collaborator-app-users=zalando-iam:zalando:service:stups_scalyr-key-rotation
           env:
             - name: TEAMS_API_URL
               value: https://teams.auth.zalando.com
             - name: TOKENINFO_URLS
               value: https://identity.zalando.com=http://127.0.0.1:9021/oauth2/tokeninfo{{ if ne .Cluster.Environment "production" }},https://sandbox.identity.zalando.com=http://127.0.0.1:9022/oauth2/tokeninfo{{end}}
             - name: USER_GROUPS
-              value: kubelet=system:masters,stups_cluster-lifecycle-manager=system:masters
+              value: stups_cluster-lifecycle-manager=system:masters{{if eq .Cluster.Environment "e2e"}},stups_kubernetes-on-aws-e2e=system:masters{{end}}
           volumeMounts:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
             readOnly: true
-        - image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:2fca26c
+        - image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:master-13
           name: tokeninfo
           ports:
             - containerPort: 9021
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /health
@@ -330,9 +375,13 @@ write_files:
               value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ if ne .Cluster.Environment "production" }}
         - name: tokeninfo-sandbox
-          image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:2fca26c
+          image: registry.opensource.zalan.do/foundation/platform-iam-tokeninfo:master-13
           ports:
           - containerPort: 9022
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           livenessProbe:
             httpGet:
               path: /health
@@ -359,26 +408,8 @@ write_files:
           - name: BUSINESS_PARTNERS
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
-        - image: registry.opensource.zalan.do/teapot/image-policy-webhook:0.5.3
-          name: image-policy-webhook
-          args:
-          - --policy={{ .Cluster.ConfigItems.image_policy }}
-          - --failure-policy=fail
-          ports:
-          - containerPort: 8083
-        - name: nginx
-          image: registry.opensource.zalan.do/teapot/nginx:1.12.1
-          ports:
-          - containerPort: 8082
-          resources:
-            requests:
-              cpu: 5m
-              memory: 50Mi
-          volumeMounts:
-          - name: config-volume
-            mountPath: /etc/nginx
         - name: skipper-proxy
-          image: registry.opensource.zalan.do/pathfinder/skipper:v0.11.35
+          image: registry.opensource.zalan.do/teapot/skipper:v0.13.150
           args:
           - skipper
           - -access-log-strip-query
@@ -392,15 +423,19 @@ write_files:
           - -enable-connection-metrics
           - -enable-prometheus-metrics
           - -write-timeout-server=60m
+          # wait-for-healthcheck-interval delays termination, since it's
+          # integrated with the health endpoint, using that instead of a
+          # preStop hook.
+          - -wait-for-healthcheck-interval=60s
           - -inline-routes
           - |
             s: JWTPayloadAllKV("iss", "kubernetes/serviceaccount")
               -> enableAccessLog()
               -> {{ if eq .ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }};
-            h: Path("/kube-system/healthz")
-              -> setPath("/healthz")
+            h: Path("/kube-system/readyz")
+              -> setPath("/readyz")
               -> disableAccessLog()
-              -> "http://127.0.0.1:8080";
+              -> "https://127.0.0.1:443";
             all: *
               -> disableAccessLog()
               -> "https://127.0.0.1:443";
@@ -409,7 +444,7 @@ write_files:
           readinessProbe:
             httpGet:
               scheme: HTTPS
-              path: /kube-system/healthz
+              path: /kube-system/readyz
               port: 8443
             timeoutSeconds: 5
           resources:
@@ -424,17 +459,64 @@ write_files:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
             readOnly: true
-        - name: etcd-proxy
-          image: registry.opensource.zalan.do/teapot/etcd-proxy:master-3
+        - name: skipper-metrics
+          image: registry.opensource.zalan.do/teapot/skipper:v0.13.150
           args:
-          - {{ .Cluster.ConfigItems.etcd_endpoints }}
+          - skipper
+          - -access-log-strip-query
+          - -address=:9005
+          - -support-listener=:9905
+          - -insecure
+          - -runtime-metrics
+          - -enable-connection-metrics
+          - -enable-prometheus-metrics
+          - -write-timeout-server=60m
+          - -inline-routes
+          - |
+            admission_controller: Path("/admission-controller")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "https://127.0.0.1:8085";
+            auth_webhook: Path("/auth-webhook")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "http://127.0.0.1:8081";
+            routegroups_admission_webhook: Path("/routegroups-admission-webhook")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "https://127.0.0.1:9085";
+            aws_encryption_provider: Path("/aws-encryption-provider")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "http://localhost:8086";
+            skipper_proxy: Path("/skipper-proxy")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "http://127.0.0.1:9911";
+            skipper_metrics: Path("/skipper-metrics")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "http://127.0.0.1:9905";
+            healthz: Path("/healthz")
+              -> disableAccessLog()
+              -> status(200)
+              -> inlineContent("ok")
+              -> <shunt>;
           ports:
-          - containerPort: 2379
+          - containerPort: 9005
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9005
+            timeoutSeconds: 5
           resources:
             requests:
-              cpu: 25m
-              memory: 25Mi
-        {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
+              cpu: 100m
+              memory: 250Mi
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
         - name: aws-encryption-provider
           image: registry.opensource.zalan.do/teapot/aws-encryption-provider:master-1
           command:
@@ -446,6 +528,10 @@ write_files:
           ports:
           - containerPort: 8086
             protocol: TCP
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
           readinessProbe:
             httpGet:
               path: /healthz
@@ -457,7 +543,6 @@ write_files:
           volumeMounts:
           - mountPath: /var/run/kmsplugin
             name: var-run-kmsplugin
-        {{- end }}
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
@@ -465,15 +550,14 @@ write_files:
         - hostPath:
             path: /etc/kubernetes/config
           name: kubernetes-configs
-        - hostPath:
-            path: /etc/kubernetes/nginx
-          name: config-volume
-        {{- if eq .Cluster.ConfigItems.support_encryption "true" }}
         - name: var-run-kmsplugin
           hostPath:
             path: /var/run/kmsplugin
             type: DirectoryOrCreate
-        {{- end }}
+        - hostPath:
+            path: /etc/kubernetes/admission-controller-kubeconfig
+            type: File
+          name: admission-controller-kubeconfig
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-controller-manager.yaml
@@ -484,23 +568,27 @@ write_files:
         name: kube-controller-manager
         namespace: kube-system
         labels:
-          application: kube-controller-manager
+          application: kubernetes
+          component: kube-controller-manager
+        annotations:
+          logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
       spec:
         priorityClassName: system-node-critical
         tolerations:
-        - key: node-role.kubernetes.io/master
+        - key: node.kubernetes.io/role
+          value: master
           effect: NoSchedule
         containers:
         - name: kube-controller-manager
           image: nonexistent.zalan.do/teapot/kube-controller-manager:fixed
           args:
-          - --kubeconfig=/etc/kubernetes/controller-kubeconfig
+          - --kubeconfig=/etc/kubernetes/controller-manager-kubeconfig
           - --leader-elect=true
           - --service-account-private-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
@@ -511,10 +599,10 @@ write_files:
           - --kube-api-qps=50
           - --terminated-pod-gc-threshold=500
           - --horizontal-pod-autoscaler-use-rest-clients=true
-          - --horizontal-pod-autoscaler-downscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_downscale_delay }}
           - --horizontal-pod-autoscaler-sync-period={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_sync_period }}
           - --horizontal-pod-autoscaler-tolerance={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_tolerance }}
-          - --horizontal-pod-autoscaler-upscale-delay={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_upscale_delay }}
+          - --horizontal-pod-autoscaler-downscale-stabilization={{ .Cluster.ConfigItems.horizontal_pod_downscale_stabilization }}
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           resources:
             requests:
               cpu: 100m
@@ -531,7 +619,7 @@ write_files:
             name: ssl-certs-kubernetes
             readOnly: true
           - mountPath: /etc/kubernetes
-            name: kubeconfig
+            name: config
             readOnly: true
         hostNetwork: true
         volumes:
@@ -540,7 +628,7 @@ write_files:
           name: ssl-certs-kubernetes
         - hostPath:
             path: /etc/kubernetes
-          name: kubeconfig
+          name: config
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-scheduler.yaml
@@ -551,20 +639,25 @@ write_files:
         name: kube-scheduler
         namespace: kube-system
         labels:
-          application: kube-scheduler
+          application: kubernetes
+          component: kube-scheduler
+        annotations:
+          logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
       spec:
         priorityClassName: system-node-critical
         tolerations:
-        - key: node-role.kubernetes.io/master
+        - key: node.kubernetes.io/role
+          value: master
           effect: NoSchedule
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: nonexistent.zalan.do/teapot/kube-scheduler:fixed
+          image: nonexistent.zalan.do/teapot/{{if eq .Cluster.ConfigItems.kubernetes_scheduler_image "zalando" }}kube-scheduler-internal{{else}}kube-scheduler{{end}}:fixed
           args:
-          - --master=http://127.0.0.1:8080
+          - --kubeconfig=/etc/kubernetes/scheduler-kubeconfig
           - --leader-elect=true
-          - --feature-gates=TaintBasedEvictions=true,TaintNodesByCondition={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},ScheduleDaemonSetPods={{.Cluster.ConfigItems.experimental_schedule_daemonset_pods}},BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }}
+          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},NonPreemptingPriority=true,GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
+          - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           env:
           - name: KUBE_MAX_PD_VOLS
             value: "26"
@@ -579,37 +672,26 @@ write_files:
               port: 10251
             initialDelaySeconds: 15
             timeoutSeconds: 15
+          volumeMounts:
+          - mountPath: /etc/kubernetes/scheduler-kubeconfig
+            name: kubeconfig
+            readOnly: true
+          - mountPath: /etc/kubernetes/ssl
+            name: ssl-certs-kubernetes
+            readOnly: true
+        volumes:
+        - hostPath:
+            path: /etc/kubernetes/ssl
+          name: ssl-certs-kubernetes
+        - hostPath:
+            path: /etc/kubernetes/scheduler-kubeconfig
+            type: File
+          name: kubeconfig
 
   - owner: root:root
     path: /etc/kubernetes/config/tokenfile.csv
-    content: |
-      {{ .Cluster.ConfigItems.worker_shared_secret }},kubelet,kubelet
-
-  - owner: root:root
-    path: /etc/kubernetes/config/image-policy-webhook.yaml
-    content: |
-      imagePolicy:
-        kubeConfigFile: /etc/kubernetes/config/image-policy-webhook-kubeconfig.yaml
-        allowTTL: 2
-        denyTTL: 2
-        retryBackoff: 500
-        defaultAllow: false
-
-  - owner: root:root
-    path: /etc/kubernetes/config/image-policy-webhook-kubeconfig.yaml
-    content: |
-      clusters:
-        - name: image-policy-webhook
-          cluster:
-            server: http://127.0.0.1:8083/admit
-      users:
-        - name: image-policy-webhook
-      current-context: image-policy-webhook
-      contexts:
-      - context:
-          cluster: image-policy-webhook
-          user: image-policy-webhook
-        name: image-policy-webhook
+    permissions: 0600
+    content: ""
 
   - owner: root:root
     path: /etc/kubernetes/config/audit.yaml
@@ -719,11 +801,21 @@ write_files:
         - level: Metadata
           resources:
             - group: "" # core
-              resources: ["secrets", "configmaps"]
+              resources: ["secrets", "configmaps", "serviceaccounts/token"]
             - group: authentication.k8s.io
               resources: ["tokenreviews"]
           omitStages:
             - "RequestReceived"
+{{ if and (eq .Cluster.ConfigItems.enable_default_sa "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
+        - level: None
+          verbs: ["watch", "list", "get"]
+          userGroups: ["system:serviceaccounts:kube-system"]
+        - level: Request
+          verbs: ["watch", "list", "get"]
+          userGroups: ["system:serviceaccounts"]
+          omitStages:
+          - "RequestReceived"
+{{ end }}
         # Don't audit read-only events.
         - level: None
           verbs: ["watch", "list", "get"]
@@ -732,7 +824,22 @@ write_files:
           omitStages:
             - "RequestReceived"
 
-{{- if eq .Cluster.ConfigItems.support_encryption "true" }}
+{{ if and (eq .Cluster.ConfigItems.enable_default_sa "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
+  - owner: root:root
+    path: /etc/kubernetes/config/audit-policy-ro.yaml
+    content: |
+      apiVersion: audit.k8s.io/v1beta1
+      kind: Policy
+      rules:
+      - level: None
+        userGroups: ["system:serviceaccounts:kube-system"]
+      - level: Request
+        verbs: ["watch", "list", "get"]
+        userGroups: ["system:serviceaccounts"]
+        omitStages:
+        - "RequestReceived"
+{{ end }}
+
   - owner: root:root
     path: /etc/kubernetes/config/encryption-config.yaml
     permissions: '0400'
@@ -749,9 +856,8 @@ write_files:
           - kms:
               name: aws-encryption-provider
               endpoint: unix:///var/run/kmsplugin/socket.sock
-              cachesize: 1000
+              cachesize: 50000
               timeout: 3s
       {{- if eq .Cluster.ConfigItems.enable_encryption "true" }}
           - identity: {}
       {{- end }}
-{{ end }}

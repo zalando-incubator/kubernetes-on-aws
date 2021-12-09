@@ -4,55 +4,65 @@ metadata:
   name: kube-cluster-autoscaler
   namespace: kube-system
   labels:
-    application: kube-cluster-autoscaler
-    version: v1.12.2-internal-2.7
+    application: kubernetes
+    component: kube-cluster-autoscaler
 spec:
   selector:
     matchLabels:
-      application: kube-cluster-autoscaler
+      daemonset: kube-cluster-autoscaler
   updateStrategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
-        application: kube-cluster-autoscaler
-        version: v1.12.2-internal-2.7
+        application: kubernetes
+        component: kube-cluster-autoscaler
+        daemonset: kube-cluster-autoscaler
       annotations:
-        iam.amazonaws.com/role: "{{ .LocalID }}-app-autoscaler"
-        config/pool-sizes: "{{range .NodePools}}{{.Name}}-{{.MinSize}}-{{.MaxSize}} {{end}}"
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8085"
+        prometheus.io/scrape: "true"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: cluster-autoscaler
       dnsPolicy: Default
       tolerations:
-      - key: node-role.kubernetes.io/master
-        effect: NoSchedule
       - key: node.kubernetes.io/role
         value: master
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
-        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.12.2-internal-2.7
+        image: registry.opensource.zalan.do/teapot/kube-cluster-autoscaler:v1.18.2-internal.36
         command:
           - ./cluster-autoscaler
-          - --v=4
+          - --v=1
           - --stderrthreshold=info
-          - --scale-down-utilization-threshold={{if index .ConfigItems "autoscaling_utilization_threshold"}}{{.ConfigItems.autoscaling_utilization_threshold}}{{else}}0.75{{end}}
+          - --scale-down-utilization-threshold={{.Cluster.ConfigItems.autoscaling_utilization_threshold}}
           - --cloud-provider=aws
           - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,zalando.de/cluster-local-id/{{ .LocalID }}
           - --expendable-pods-priority-cutoff=-1000000
           - --skip-nodes-with-system-pods=false
           - --skip-nodes-with-local-storage=false
           - --scale-up-cloud-provider-template=true
-          - --expander={{ .Cluster.ConfigItems.cluster_autoscaler_expander }}
+          - --expander=highest-priority
           - --balance-similar-node-groups
           - --max-node-provision-time=7m
           - --max-nodes-total={{ nodeCIDRMaxNodes (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}
-          - --scale-down-enabled={{ .ConfigItems.autoscaling_scale_down_enabled }}
+          - --scale-down-enabled={{ .Cluster.ConfigItems.autoscaling_scale_down_enabled }}
+          - --max-empty-bulk-delete={{ .Cluster.ConfigItems.autoscaling_max_empty_bulk_delete }}
+          - --scale-down-unneeded-time={{ .Cluster.ConfigItems.autoscaling_scale_down_unneeded_time }}
+          - --scale-down-delay-after-add=-1s
+          - --backoff-no-full-scale-down=true
+          - --max-pod-eviction-time={{ .Cluster.ConfigItems.cluster_autoscaler_max_pod_eviction_time }}
+          - --max-graceful-termination-sec={{ .Cluster.ConfigItems.cluster_autoscaler_max_graceful_termination_sec }}
+          - --disable-node-instances-cache=true
+          - --scale-down-ignore-schedulable-pods=true
+          - --unremovable-node-recheck-timeout={{.Cluster.ConfigItems.autoscaling_unremovable_node_recheck_timeout}}
+          - --max-unschedulable-pods-considered={{.Cluster.ConfigItems.cluster_autoscaler_max_usnchedulable_pods_considered}}
         resources:
           requests:
             cpu: {{.Cluster.ConfigItems.cluster_autoscaler_cpu}}

@@ -26,6 +26,24 @@ rules:
   - list
   - watch
 - apiGroups:
+  - "batch"
+  resources:
+  - jobs
+  verbs:
+  - get
+  - list
+  - create
+  - delete
+  - deletecollection
+- apiGroups:
+  - "apps"
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - "extensions"
   resources:
   - ingresses
@@ -81,8 +99,20 @@ rules:
   - list
   - watch
   - create
+- apiGroups:
+  - "flagger.app"
+  resources:
+  - canaries
+  - metrictemplates
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: cdp-controller
@@ -93,7 +123,7 @@ roleRef:
 subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User
-  name: zalando-iam:zalando:service:credprov-cdp-controller-cluster-token
+  name: zalando-iam:zalando:service:stups_cdp-controller
 - apiGroup: rbac.authorization.k8s.io
   kind: User
-  name: zalando-iam:zalando:service:stups_cdp-controller
+  name: zalando-iam:zalando:service:stups_cdp

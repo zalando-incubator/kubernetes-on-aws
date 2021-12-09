@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,25 +15,45 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 )
 
-type expect struct {
-	status int
-	body   string
+const (
+	powerUserGroup  = "PowerUser"
+	emergencyGroup  = "Emergency"
+	manualGroup     = "Manual"
+	readOnlyGroup   = "ReadOnly"
+	accessReviewURL = "/apis/authorization.k8s.io/v1/subjectaccessreviews"
+)
+
+type apiHeader struct {
+	APIVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
 }
 
-const (
-	authzAPIVersion          = "authorization.k8s.io/v1beta1"
-	authorizeMessageKind     = "SubjectAccessReview"
-	systemMastersGroup       = "system:masters"
-	operatorGroup            = "Operator"
-	powerUserGroup           = "PowerUser"
-	emergencyGroup           = "Emergency"
-	manualGroup              = "Manual"
-	controllerGroup          = "ControllerUser"
-	readOnlyGroup            = "ReadOnly"
-	portForwardPodNamePrefix = "port-forward-"
-	systemNamespace          = "kube-system"
-	accessReviewURL          = "/apis/authorization.k8s.io/v1beta1/subjectaccessreviews"
-)
+type resourceAttributes struct {
+	Namespace   string `json:"namespace,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Verb        string `json:"verb,omitempty"`
+	Group       string `json:"group,omitempty"`
+	Resource    string `json:"resource,omitempty"`
+	Subresource string `json:"subresource,omitempty"`
+	Path        string `json:"path,omitempty"`
+}
+
+type nonResourceAttributes struct {
+	Verb string `json:"verb,omitempty"`
+	Path string `json:"path,omitempty"`
+}
+
+type subjectReviewSpec struct {
+	ResourceAttributes    *resourceAttributes    `json:"resourceAttributes,omitempty"`
+	NonResourceAttributes *nonResourceAttributes `json:"nonResourceAttributes,omitempty"`
+	User                  string                 `json:"user,omitempty"`
+	Groups                []string               `json:"groups,omitempty"`
+}
+
+type subjectReview struct {
+	apiHeader
+	Spec subjectReviewSpec `json:"spec"`
+}
 
 type authorizationResponseStatus struct {
 	Allowed bool   `json:"allowed,omitempty"`
@@ -45,2801 +66,293 @@ type authorizationResp struct {
 	Status authorizationResponseStatus `json:"status"`
 }
 
-type apiHeader struct {
-	APIVersion string `json:"apiVersion"`
-	Kind       string `json:"kind"`
+type response struct {
+	status          int
+	allowed, denied bool
+	reason          []string
 }
 
-var _ = framework.KubeDescribe("Authorization tests", func() {
+type requestData struct {
+	namespaces       []string
+	names            []string
+	verbs            []string
+	apiGroups        []string
+	resources        []string
+	subresources     []string
+	paths            []string
+	nonResourceVerbs []string
+	nonResourcePaths []string
+	users            []string
+	groups           [][]string
+}
 
-	It("Should validate permissions in the cluster [Authorization] [RBAC] [Zalando]", func() {
-		conf, _ := framework.LoadConfig()
-		host := conf.Host
-		client := http.DefaultClient
-		makeReq := newReqBuilder(host+accessReviewURL, conf.BearerToken)
+type testItem struct {
+	name    string
+	request requestData
+	items   []testItem
+	expect  response
+}
 
-		for _, ti := range []struct {
-			msg     string
-			reqBody string
-			expect  expect
-		}{
-			{
-				msg: "kubelet authorized",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "get",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "kubelet",
-					"group": [
-						"system:masters"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			}, {
-				msg: "kube-system daemonset-controller service account can update daemonset status",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "update",
-						"group": "extensions",
-						"resource": "daemonsets",
-						"subresource": "status"
-					},
-					"user": "system:serviceaccount:kube-system:daemon-set-controller",
-					"group": ["system:serviceaccounts:kube-system"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			}, {
-				msg: "kube-system default account can update daemonset finalizers",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "update",
-						"group": "extensions",
-						"resource": "daemonsets",
-						"subresource": "finalizers"
-					},
-					"user": "system:serviceaccount:kube-system:daemon-set-controller",
-					"group": ["system:serviceaccounts:kube-system"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			}, {
-				msg: "default account in default namespace can not list statefulsets",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "default",
-						"verb": "list",
-						"resource": "statefulsets"
-					},
-					"user": "system:serviceaccount:default:default",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			}, {
-				msg: "default account in non-default namespace can not list statefulsets",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "non-default",
-						"verb": "list",
-						"resource": "statefulsets"
-					},
-					"user": "system:serviceaccount:non-default:default",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			}, {
-				msg: "User in admin group can patch daemonsets",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"name": "prometheus-node-exporter",
-						"verb": "patch",
-						"group": "extensions",
-						"resource": "daemonsets"
-					},
-					"user": "sszuecs",
-					"group": [
-						"ReadOnly",
-						"system:masters",
-						"system:authenticated"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			}, {
-				msg: "non-authorized group",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "get",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "rdifazio",
-					"group": [
-						"FooBar"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"reason": "unauthorized access rdifazio/[FooBar]"
-					}
-				}}`,
-				},
-			}, {
-				msg: "resource list authorized with ReadOnly group",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "list",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "rdifazio",
-					"group": [
-						"ReadOnly"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			}, {
-				msg: "access to non-resource path with ReadOnly group",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"nonResourceAttributes": {
-						"path": "/apis",
-						"verb": "get"
-					},
-					"user": "mlarsen",
-					"group": [
-						"ReadOnly"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			}, {
-				msg: "access to use PodSecurityPolicy for ReadOnly should not be allowed",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"name": "privileged",
-						"namespace": "",
-						"verb": "use",
-						"group": "extensions",
-						"resource": "podsecuritypolicies"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, readOnlyGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"reason":"unauthorized access sszuecs/[%s]"
-					}
-				}}`, readOnlyGroup),
-				},
-			}, {
-				msg: "ReadOnly role should not give port-forward access to the 'port-forward-' pod in default namespace",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-						"resourceAttributes": {
-							"name": "port-forward-abc",
-							"namespace": "default",
-							"verb": "create",
-							"group": "",
-							"resource": "pods",
-							"subresource": "portforward"
-						},
-						"user": "read-only-user",
-						"group": [
-							"%s"
-						]
-					}
-				}`, readOnlyGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			}, {
-				msg: "ReadOnly role should give read access to nodes",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-						"resourceAttributes": {
-							"namespace": "",
-							"verb": "get",
-							"group": "",
-							"resource": "nodes"
-						},
-						"user": "read-only-user",
-						"group": [
-							"%s"
-						]
-					}
-				}`, readOnlyGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-					}`,
-				},
-			},
+func (item testItem) expandOn(subitems []testItem, field func(*testItem) *[]string) []testItem {
+	values := field(&item)
+	if len(*values) == 0 {
+		return subitems
+	}
 
-			//- poweruser can use restricted psp
-			{
-				msg: "access to use restricted PodSecurityPolicy for PowerUser should be allowed",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-						"resourceAttributes": {
-							"name": "restricted",
-							"namespace": "",
-							"verb": "use",
-							"group": "extensions",
-							"resource": "podsecuritypolicies"
-						},
-						"user": "sszuecs",
-						"group": [
-							"%s"
-						]
-					}
-				}`, powerUserGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-				}}`,
-				},
-			},
+	var expanded []testItem
+	for _, subitem := range subitems {
+		// == 1:
+		// - if it's coming from a lower level, then it's either zero or one, and is considered
+		// as overriding the current level.
+		// - if it's the item from the current level, then no need to expand when there's only one
+		// value.
+		if len(*field(&subitem)) == 1 {
+			expanded = append(expanded, subitem)
+			continue
+		}
 
-			//- emergency can use restricted psp
-			{
-				msg: "access to use restricted PodSecurityPolicy for Emergency should be allowed",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"name": "restricted",
-						"namespace": "",
-						"verb": "use",
-						"group": "extensions",
-						"resource": "podsecuritypolicies"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, emergencyGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-				}}`,
-				},
-			},
+		for _, value := range *values {
+			copy := subitem
+			copyField := field(&copy)
+			*copyField = []string{value}
+			expanded = append(expanded, copy)
+		}
+	}
 
-			//- Manual role can use restricted psp
-			{
-				msg: "access to use restricted PodSecurityPolicy for Manual role should be allowed",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"name": "restricted",
-						"namespace": "",
-						"verb": "use",
-						"group": "extensions",
-						"resource": "podsecuritypolicies"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, manualGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-				}}`,
-				},
-			},
+	return expanded
+}
 
-			////- poweruser can not use privileged PSP
-			//// TODO: disable privileged PSP access for PowerUsers.
-			//{
-			//	msg: "access to use privileged PodSecurityPolicy for PowerUser should not be allowed",
-			//	reqBody: fmt.Sprintf(`{
-			//		"apiVersion": "authorization.k8s.io/v1beta1",
-			//		"kind": "SubjectAccessReview",
-			//		"spec": {
-			//		"resourceAttributes": {
-			//			"name": "privileged",
-			//			"namespace": "",
-			//			"verb": "use",
-			//			"group": "extensions",
-			//			"resource": "podsecuritypolicies"
-			//		},
-			//		"user": "sszuecs",
-			//		"group": [
-			//			"%s"
-			//		]
-			//		}
-			//	}`, powerUserGroup),
-			//	expect: expect{
-			//		status: http.StatusCreated,
-			//		body: fmt.Sprintf(`{
-			//		"apiVersion": "authorization.k8s.io/v1beta1",
-			//		"kind": "SubjectAccessReview",
-			//		"status": {
-			//			"allowed": false,
-			//			"reason":"unauthorized access sszuecs/[%s]"
-			//		}
-			//	}}`, powerUserGroup),
-			//	},
-			//},
+func (item testItem) expandOnGroups(subitems []testItem) []testItem {
+	if len(item.request.groups) == 0 {
+		return subitems
+	}
 
-			//- poweruser has read access to kube system
-			{
-				msg: "PowerUser has read access (pods) to kube-system",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "get",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "rdifazio",
-					"group": [
-						"PowerUser"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
+	var expanded []testItem
+	for _, subitem := range subitems {
+		if len(subitem.request.groups) == 1 {
+			expanded = append(expanded, subitem)
+			continue
+		}
 
-			//- poweruser has no access to kube-system secrets
-			{
-				msg: "PowerUser has no read access to kube-system secrets",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "get",
-						"group": "",
-						"resource": "secrets"
-					},
-					"user": "sszuecs",
-					"group": [
-						"PowerUser"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"denied": true,
-						"reason":"unauthorized access sszuecs/[PowerUser]"
-					}
-				}}`,
-				},
-			},
+		for _, groupSet := range item.request.groups {
+			copy := subitem
+			copy.request.groups = [][]string{groupSet}
+			expanded = append(expanded, copy)
+		}
+	}
 
-			//- poweruser can read secrets from non kube-system namespaces
-			{
-				msg: "PowerUser has read access to non kube-system secrets",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "get",
-						"group": "",
-						"resource": "secrets"
-					},
-					"user": "sszuecs",
-					"group": [
-						"PowerUser"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
+	return expanded
+}
 
-			//- poweruser has write access to non kube-system namespaces
-			{
-				msg: "PowerUser has write access to non kube-system secrets",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "create",
-						"group": "",
-						"resource": "secrets"
-					},
-					"user": "sszuecs",
-					"group": [
-						"PowerUser"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
+func (item testItem) expand() []testItem {
+	var all []testItem
+	if len(item.items) == 0 {
+		all = append(all, item)
+	} else {
+		for _, subitem := range item.items {
+			all = append(all, subitem.expand()...)
+		}
 
-			//- TODO poweruser has exec right
-			//- CHECK poweruser has proxy right
-			{
-				msg: "PowerUser has proxy right",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "create",
-						"group": "",
-						"resource": "pods/proxy"
-					},
-					"user": "sszuecs",
-					"group": [
-						"PowerUser"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
-			//- CHECK poweruser can not create daemonsets
-			{
-				msg: "PowerUser has no create access to daemonsets",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "create",
-						"group": "",
-						"resource": "daemonsets"
-					},
-					"user": "sszuecs",
-					"group": [
-						"PowerUser"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
-			//- CHECK poweruser can not update daemonsets
-			{
-				msg: "PowerUser has no update access to daemonsets",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "update",
-						"group": "apps",
-						"resource": "daemonsets"
-					},
-					"user": "sszuecs",
-					"group": [
-						"PowerUser"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
-			//- CHECK poweruser can not delete daemonsets
-			{
-				msg: "PowerUser has no delete access to daemonsets",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "delete",
-						"group": "apps",
-						"resource": "daemonsets"
-					},
-					"user": "sszuecs",
-					"group": [
-						"PowerUser"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
-			//- CHECK poweruser can not patch daemonsets
-			{
-				msg: "PowerUser has no patch access to daemonsets",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "patch",
-						"group": "apps",
-						"resource": "daemonsets"
-					},
-					"user": "sszuecs",
-					"group": [
-						"PowerUser"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
+		for i := range all {
+			all[i].name = fmt.Sprintf("%s/%s", item.name, all[i].name)
+		}
+	}
 
-			// poweruser can't delete metrics (non-resource endpoint)
-			{
-				msg: "PowerUser can't delete metrics (non-resource endpoint access)",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-						"resourceAttributes": {
-							"verb": "delete",
-							"path": "/metrics"
-						},
-						"user": "sszuecs",
-						"group": [
-							"%s"
-						]
-					}
-				}`, powerUserGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
+	all = item.expandOn(all, func(item *testItem) *[]string { return &item.request.namespaces })
+	all = item.expandOn(all, func(item *testItem) *[]string { return &item.request.names })
+	all = item.expandOn(all, func(item *testItem) *[]string { return &item.request.verbs })
+	all = item.expandOn(all, func(item *testItem) *[]string { return &item.request.apiGroups })
+	all = item.expandOn(all, func(item *testItem) *[]string { return &item.request.resources })
+	all = item.expandOn(all, func(item *testItem) *[]string { return &item.request.subresources })
+	all = item.expandOn(all, func(item *testItem) *[]string { return &item.request.paths })
+	all = item.expandOn(all, func(item *testItem) *[]string { return &item.request.nonResourceVerbs })
+	all = item.expandOn(all, func(item *testItem) *[]string { return &item.request.nonResourcePaths })
+	all = item.expandOn(all, func(item *testItem) *[]string { return &item.request.users })
+	all = item.expandOnGroups(all)
 
-			//- operator is not allowed to use privileged PSP
-			// Namespace is currently always empty string, because in Kubernetes PSPs are not namespaced, yet.
-			// Check Kubernetes >= 1.7 if they namespaced it https://github.com/kubernetes/kubernetes/pull/42360
-			{
-				msg: "operator is not allowed to use privileged PodSecurityPolicy (for own namespace)",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"name": "privileged",
-						"namespace": "",
-						"verb": "use",
-						"group": "extensions",
-						"resource": "podsecuritypolicies"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
+	for i := range all {
+		if all[i].expect.status == 0 {
+			all[i].expect = item.expect
+		}
+	}
 
-			//- operator has no read access to own namespace
-			{
-				msg: "operator has no read access to own namespace",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "get",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
+	return all
+}
 
-			//- operator has no write access to own namespace
-			{
-				msg: "operator has no write access to own namespace",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "create",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
-			//- operator has no read access to other namespaces
-			{
-				msg: "operator has no read access to other namespace",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "coffeepot",
-						"verb": "get",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
+func req() requestData { return requestData{} }
 
-			//- operator has no write access to other namespaces (not own)
-			{
-				msg: "operator has no write access to other namespace",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "coffeepot",
-						"verb": "create",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"reason": "unauthorized access system:serviceaccount:teapot:operator/[]"
-					}
-				}}`,
-				},
-			},
+func (r requestData) ns(ns ...string) requestData {
+	r.namespaces = ns
+	return r
+}
 
-			//- operator has no read access to secrets in own namespace
-			{
-				msg: "operator has read access to secrets in own namespace",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "get",
-						"group": "",
-						"resource": "secrets"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
+func (r requestData) name(n ...string) requestData {
+	r.names = n
+	return r
+}
 
-			//- operator is not allowed to read secrets in other namespaces
-			{
-				msg: "operator is not allowed to read secrets in other namespaces",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "coffeepot",
-						"verb": "get",
-						"group": "",
-						"resource": "secrets"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"reason": "unauthorized access system:serviceaccount:teapot:operator/[]"
-					}
-				}}`,
-				},
-			},
+func (r requestData) verb(v ...string) requestData {
+	r.verbs = v
+	return r
+}
 
-			//- operator has no read access to custom resource definitions (CRD) in all namespaces
-			{
-				msg: "operator has read access to custom resource definitions (CRD) in all namespacese",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "get",
-						"group": "apiextensions.k8s.io",
-						"resource": "customresourcedefinitions"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
-			//- operator has no write access to custom resource definitions (CRD) in all namespaces
-			{
-				msg: "operator has read access to custom resource definitions (CRD) in all namespacese",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "create",
-						"group": "apiextensions.k8s.io",
-						"resource": "customresourcedefinitions"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
-			//- operator has no write access to storageclasses in all namespaces
-			{
-				msg: "operator has write access to storageclasses in all namespaces",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"verb": "create",
-						"group": "storage.k8s.io",
-						"resource": "storageclasses"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
-			//- operator has no read access to storageclasses in all namespaces
-			{
-				msg: "operator has read access to storageclasses in all namespaces",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"verb": "get",
-						"group": "storage.k8s.io",
-						"resource": "storageclasses"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
-			//- operator has no read access to nodes in global namespace
-			{
-				msg: "operator has read access to nodes in global namespace",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"verb": "get",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
-			//- operator has no write access to nodes in global namespace
-			{
-				msg: "operator has write access to nodes in global namespace",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"verb": "create",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "system:serviceaccount:teapot:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
-			//- readonly is not allowed to read secrets all namespaces
-			{
-				msg: "readonly is not allowed to read secrets all namespaces",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "coffeepot",
-						"verb": "get",
-						"group": "",
-						"resource": "secrets"},
-					"user": "mkerk",
-					"group": ["ReadOnly"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"reason": "unauthorized access mkerk/[ReadOnly]"
-					}
-				}}`,
-				},
-			},
+func (r requestData) apiGroup(g ...string) requestData {
+	r.apiGroups = g
+	return r
+}
 
-			//- readonly is not allowed to use proxy
-			{
-				msg: "readonly is not allowed to use proxy",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "coffeepot",
-						"verb": "proxy",
-						"group": "",
-						"resource": "services"
-					},
-					"user": "mkerk",
-					"group": ["ReadOnly"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"reason": "unauthorized access mkerk/[ReadOnly]"
-					}
-				}}`,
-				},
-			},
+func (r requestData) res(res ...string) requestData {
+	r.resources = res
+	return r
+}
 
-			//- TODO: readonly is not allowed to use exec
-			//- readonly has no write access to any resource
-			{
-				msg: "readonly has no write access to any resource",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "coffeepot",
-						"verb": "create",
-						"group": "",
-						"resource": "secrets"
-					},
-					"user": "mkerk",
-					"group": ["ReadOnly"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"reason": "unauthorized access mkerk/[ReadOnly]"
-					}
-				}}`,
-				},
-			},
+func (r requestData) subres(subres ...string) requestData {
+	r.subresources = subres
+	return r
+}
 
-			//- ReadOnly role cannot delete resources
-			{
-				msg: "ReadOnly role cannot delete resources",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "default",
-						"verb": "delete",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "rdifazio",
-					"group": [
-						"ReadOnly"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"reason":"unauthorized access rdifazio/[ReadOnly]"
-					}
-				}}`,
-				},
-			},
+func (r requestData) path(p ...string) requestData {
+	r.paths = p
+	return r
+}
 
-			//- Manual role can delete resources in all namespaces but kube-system
-			{
-				msg: "Manual role can delete resources in all namespaces except kube-system",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "default",
-						"verb": "delete",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "rdifazio",
-					"group": [
-						"ReadOnly",
-						"Manual"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
+func (r requestData) nonResVerb(v ...string) requestData {
+	r.nonResourceVerbs = v
+	return r
+}
 
-			//- Manual role cannot delete resources in kube-sytem namespace
-			{
-				msg: "Manual role cannot delete resources in kube-sytem namespace",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "delete",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "rdifazio",
-					"group": [
-						"ReadOnly",
-						"Manual"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"denied": true,
-						"reason":"unauthorized access rdifazio/[ReadOnly Manual]"
-					}
-				}}`,
-				},
-			},
+func (r requestData) nonResPath(p ...string) requestData {
+	r.nonResourcePaths = p
+	return r
+}
 
-			//- Manual role can delete namespaces
-			{
-				msg: "Manual role can delete namespaces",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "delete",
-						"group": "",
-						"resource": "namespaces"
-					},
-					"user": "rdifazio",
-					"group": [
-						"ReadOnly",
-						"Manual"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
+func (r requestData) user(u ...string) requestData {
+	r.users = u
+	return r
+}
 
-			//- Manual role can't delete kube-system namespace
-			{
-				msg: "Manual role can't delete kube-system namespace",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"verb": "delete",
-						"group": "",
-						"resource": "namespaces",
-						"name": "kube-system"
-					},
-					"user": "rdifazio",
-					"group": [
-						"ReadOnly",
-						"Manual"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"denied": true,
-						"reason":"unauthorized access rdifazio/[ReadOnly Manual]"
-					}
-				}}`,
-				},
-			},
+func (r requestData) setGroups(g ...[]string) requestData {
+	r.groups = g
+	return r
+}
 
-			//- Manual role can create resources
-			{
-				msg: "Manual role can create resources",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "default",
-						"verb": "create",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "rdifazio",
-					"group": [
-						"ReadOnly",
-						"Manual"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
+func (item testItem) subjectReview() subjectReview {
+	req := subjectReview{
+		apiHeader: apiHeader{
+			APIVersion: "authorization.k8s.io/v1",
+			Kind:       "SubjectAccessReview",
+		},
+	}
 
-			//- Manual role doesn't affect funtionality of other roles.
-			{
-				msg: "Manual role doesn't affect funtionality of other roles.",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "default",
-						"verb": "get",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "rdifazio",
-					"group": [
-						"ReadOnly",
-						"Manual"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
+	// taking the first value if exists, because at this point the test item should be
+	// already expanded
+	setIfExists := func(field *string, values []string) {
+		if len(values) > 0 {
+			*field = values[0]
+		}
+	}
 
-			//- administrator can use restricted PSP
-			{
-				msg: "access to use PodSecurityPolicy for Administrator (system:masters) should be allowed",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"name": "restricted",
-						"namespace": "",
-						"verb": "use",
-						"group": "extensions",
-						"resource": "podsecuritypolicies"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, systemMastersGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
+	if len(item.request.nonResourceVerbs) > 0 || len(item.request.nonResourcePaths) > 0 {
+		req.Spec.NonResourceAttributes = &nonResourceAttributes{}
+		setIfExists(&req.Spec.NonResourceAttributes.Verb, item.request.nonResourceVerbs)
+		setIfExists(&req.Spec.NonResourceAttributes.Path, item.request.nonResourcePaths)
+	} else {
+		req.Spec.ResourceAttributes = &resourceAttributes{}
+		setIfExists(&req.Spec.ResourceAttributes.Namespace, item.request.namespaces)
+		setIfExists(&req.Spec.ResourceAttributes.Name, item.request.names)
+		setIfExists(&req.Spec.ResourceAttributes.Verb, item.request.verbs)
+		setIfExists(&req.Spec.ResourceAttributes.Group, item.request.apiGroups)
+		setIfExists(&req.Spec.ResourceAttributes.Resource, item.request.resources)
+		setIfExists(&req.Spec.ResourceAttributes.Subresource, item.request.subresources)
+		setIfExists(&req.Spec.ResourceAttributes.Path, item.request.paths)
 
-			//- administrator can use privileged PSP
-			{
-				msg: "access to use PodSecurityPolicy for Administrator (system:masters) should be allowed",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"name": "privileged",
-						"namespace": "",
-						"verb": "use",
-						"group": "extensions",
-						"resource": "podsecuritypolicies"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, systemMastersGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
+		parts := strings.Split(req.Spec.ResourceAttributes.Resource, "/")
+		switch {
+		case len(parts) == 2:
+			req.Spec.ResourceAttributes.Group = parts[0]
+			req.Spec.ResourceAttributes.Resource = parts[1]
+		case len(parts) == 3:
+			req.Spec.ResourceAttributes.Group = parts[0]
+			req.Spec.ResourceAttributes.Resource = parts[1]
+			req.Spec.ResourceAttributes.Subresource = parts[2]
+		}
+	}
 
-			//- system:masters can use privileged PSP
-			{
-				msg: "access to use PodSecurityPolicy for system:masters should be allowed",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"name": "privileged",
-						"namespace": "",
-						"verb": "use",
-						"group": "extensions",
-						"resource": "podsecuritypolicies"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, systemMastersGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
+	setIfExists(&req.Spec.User, item.request.users)
+	if len(item.request.groups) > 0 {
+		req.Spec.Groups = item.request.groups[0]
+	}
 
-			//- Controller manager can list podsecurity policies
-			{
-				msg: "controller manager can list podsecurity policies",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "list",
-						"group": "extensions",
-						"resource": "podsecuritypolicies"
-					},
-					"user": "system:kube-controller-manager"
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
+	return req
+}
 
-			//- administrator has read access to kube system
-			{
-				msg: "Administrator (system:masters) has read access (pods) to kube-system",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "get",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "rdifazio",
-					"group": [
-						"system:masters"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
-			//- administrator has write access to kube system
-			{
-				msg: "Administrator (system:masters) has write access (pods) to kube-system",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "create",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "rdifazio",
-					"group": [
-						"system:masters"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
-			//- administrator can read secrets from kube-system namespaces
-			{
-				msg: "Administrator (system:masters) can read secrets from kube-system namespaces",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "get",
-						"group": "",
-						"resource": "secrets"
-					},
-					"user": "rdifazio",
-					"group": [
-						"system:masters"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
-			//- administrator can read secrets from non kube-system namespaces
-			{
-				msg: "Administrator (system:masters) can read secrets from non kube-system namespaces",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "get",
-						"group": "",
-						"resource": "secrets"
-					},
-					"user": "rdifazio",
-					"group": [
-						"system:masters"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
-			//- administrator has write access to non kube-system namespaces
-			{
-				msg: "Administrator (system:masters) has write access to non kube-system namespaces",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "create",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "rdifazio",
-					"group": [
-						"system:masters"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
-			//- TODO administrator has exec right
-
-			//- administrator has proxy right
-			{
-				msg: "Administrator (system:masters) has proxy right",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "proxy",
-						"group": ""
-					},
-					"user": "sszuecs",
-					"group": [
-						"system:masters"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
-			//- administrator can write daemonsets
-			{
-				msg: "Administrator (system:masters) can write daemonsets",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "teapot",
-						"verb": "create",
-						"group": "apps",
-						"resource": "daemonsets"
-					},
-					"user": "sszuecs",
-					"group": [
-						"system:masters"
-					]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
-			{
-				msg: "cdp service account can create namespaces",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "create",
-						"group": "",
-						"resource": "namespaces"
-					},
-					"user": "system:serviceaccount:default:cdp",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
-			{
-				msg: "cdp service account can't escalate permissions",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "escalate",
-						"group": "rbac.authorization.k8s.io",
-						"resource": "clusterroles"
-					},
-					"user": "system:serviceaccount:default:cdp",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"denied": true
-					}
-				}}`,
-				},
-			},
-			{
-				msg: "PowerUsers can't escalate permissions",
-				reqBody: `{
-				"apiVersion": "authorization.k8s.io/v1beta1",
-				"kind": "SubjectAccessReview",
-				"spec": {
-				"resourceAttributes": {
-					"namespace": "",
-					"verb": "escalate",
-					"group": "rbac.authorization.k8s.io",
-					"resource": "clusterroles"
-				},
-				"user": "mlarsen",
-				"group": ["PowerUser"]
-				}
-			}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-				"apiVersion": "authorization.k8s.io/v1beta1",
-				"kind": "SubjectAccessReview",
-				"status": {
-					"allow": false,
-					"denied": true
-				}
-			}}`,
-				},
-			},
-			{
-				msg: "operator service account cannot create namespaces",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "create",
-						"group": "",
-						"resource": "namespaces"
-					},
-					"user": "system:serviceaccount:default:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false,
-						"reason": "unauthorized access system:serviceaccount:default:operator/[]"
-					}
-				}}`,
-				},
-			},
-			{
-				msg: "controller manager service account can create pods",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "create",
-						"group": "",
-						"resource": "pods"
-					},
-					"user": "system:serviceaccount:kube-system:daemon-set-controller",
-					"group": ["system:serviceaccounts:kube-system"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true
-					}
-				}}`,
-				},
-			},
-			{
-				msg: "operator service account can not access persistent volumes in other namespaces",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "get",
-						"group": "",
-						"resource": "persistentvolumes"
-					},
-					"user": "system:serviceaccount:default:operator",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": false
-					}
-				}}`,
-				},
-			},
-			{
-				msg: "persistent volume binder service account can update kube system persistentVolumeClaims",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "update",
-						"group": "",
-						"resource": "persistentvolumeclaims"
-					},
-					"user": "system:serviceaccount:kube-system:persistent-volume-binder",
-					"group": ["system:serviceaccounts:kube-system"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true,
-						"reason": ""
-					}
-				}}`,
-				},
-			},
-			{
-				msg: "persistent volume binder service account can create kube system persistentVolumes",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "create",
-						"group": "",
-						"resource": "persistentvolumes"
-					},
-					"user": "system:serviceaccount:kube-system:persistent-volume-binder",
-					"group": ["system:serviceaccounts:kube-system"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true,
-						"reason": ""
-					}
-				}}`,
-				},
-			},
-			{
-				msg: "horizontal pod autoscaler service account can update kube system autoscalers",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "update",
-						"group": "*",
-						"resource": "*/scale"
-					},
-					"user": "system:serviceaccount:kube-system:horizontal-pod-autoscaler",
-					"group": ["system:serviceaccounts:kube-system"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true,
-						"reason": ""
-					}
-				}}`,
-				},
-			},
-			{
-				msg: "horizontal pod autoscaler service account can update any autoscaler",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "*",
-						"verb": "update",
-						"group": "*",
-						"resource": "*/scale"
-					},
-					"user": "system:serviceaccount:kube-system:horizontal-pod-autoscaler",
-					"group": ["system:serviceaccounts:kube-system"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true,
-						"reason": ""
-					}
-				}}`,
-				},
-			},
-			{
-				msg: "aws-cloud-provider service account can access patch nodes",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"verb": "patch",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "system:serviceaccount:kube-system:aws-cloud-provider",
-					"group": ["system:serviceaccounts:kube-system"]
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"status": {
-						"allowed": true,
-						"reason": ""
-					}
-				}}`,
-				},
-			},
-			{
-				msg: "emergency user should not have update access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "update",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, emergencyGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "manual user should not have non update to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "update",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, manualGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "power user should not have update access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "update",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, powerUserGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "emergency user should not have create access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "create",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, emergencyGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "manual user should not have create access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "create",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, manualGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "power user should not have create access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "create",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, powerUserGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "emergency user should not have patch access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "patch",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, emergencyGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "manual user should not have patch access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "patch",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, manualGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "power user should not have patch access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "patch",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, powerUserGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "emergency user should not have delete access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "delete",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, emergencyGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "manual user should not have delete access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "delete",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, manualGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "power user should not have delete access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "delete",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, powerUserGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "power user should be allowed list access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "list",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, powerUserGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "emergency user should be allowed list access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "list",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, emergencyGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "manual user should be allowed list access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "list",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, manualGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "power user should be allowed read access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "get",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, powerUserGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "emergency user should be allowed read access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "get",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, emergencyGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "manual user should be allowed read access to node resources.",
-				reqBody: fmt.Sprintf(`{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "",
-						"verb": "get",
-						"group": "",
-						"resource": "nodes"
-					},
-					"user": "sszuecs",
-					"group": [
-						"%s"
-					]
-					}
-				}`, manualGroup),
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "system user (credentials-provider) should be allowed get secrets in kube-system.",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "get",
-						"group": "",
-						"resource": "secrets"
-					},
-					"user": "zalando-iam:zalando:service:credentials-provider",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "non system user (cdp-controller) should NOT be allowed get secrets in kube-system.",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "get",
-						"group": "",
-						"resource": "secrets"
-					},
-					"user": "zalando-iam:zalando:service:credprov-cdp-controller-cluster-token",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false,
-							"denied": true,
-							"reason":"unauthorized access to system namespace by zalando-iam:zalando:service:credprov-cdp-controller-cluster-token/[]"
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "system user (api-monitoring-controller) can update configmap 'skipper-default-filters' in kube-system.",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "update",
-						"group": "",
-						"resource": "configmaps",
-						"name": "skipper-default-filters"
-					},
-					"user": "system:serviceaccount:api-infrastructure:api-monitoring-controller",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": true
-						}
-				}}`,
-				},
-			},
-			{
-				msg: "system user (api-monitoring-controller) can NOT update any configmap in kube-system.",
-				reqBody: `{
-					"apiVersion": "authorization.k8s.io/v1beta1",
-					"kind": "SubjectAccessReview",
-					"spec": {
-					"resourceAttributes": {
-						"namespace": "kube-system",
-						"verb": "update",
-						"group": "",
-						"resource": "configmaps"
-					},
-					"user": "system:serviceaccount:api-infrastructure:api-monitoring-controller",
-					"group": []
-					}
-				}`,
-				expect: expect{
-					status: http.StatusCreated,
-					body: `{
-						"apiVersion": "authorization.k8s.io/v1beta1",
-						"kind": "SubjectAccessReview",
-						"status": {
-							"allowed": false,
-							"denied": false,
-							"access": "undecided system:serviceaccount:api-infrastructure:api-monitoring-controller/[]"
-						}
-				}}`,
-				},
-			},
-		} {
-
-			By(ti.msg)
-
-			req, err := makeReq(ti.reqBody)
-			Expect(err).NotTo(HaveOccurred())
-
-			resp, err := client.Do(req)
-			Expect(err).NotTo(HaveOccurred())
-
-			body, err := ioutil.ReadAll(resp.Body)
-			Expect(err).NotTo(HaveOccurred())
-
-			if resp.StatusCode != ti.expect.status {
-				framework.Failf("%s: invalid status code received. expected %d, got %d\n%s", ti.msg, ti.expect.status, resp.StatusCode, string(body))
-				return
-			}
-
-			var authzResp authorizationResp
-			if err := json.Unmarshal(body, &authzResp); err != nil && err != io.EOF {
-				framework.Failf(ti.msg, err)
-				return
-			}
-
-			var expectedRspDoc authorizationResp
-			dec := json.NewDecoder(bytes.NewBufferString(ti.expect.body))
-			if err := dec.Decode(&expectedRspDoc); err != nil && err != io.EOF {
-				framework.Failf(ti.msg, err)
-				return
-			}
-
-			if authzResp.Status.Allowed != expectedRspDoc.Status.Allowed || authzResp.Status.Denied != expectedRspDoc.Status.Denied {
-				framework.Failf("unexpected response. expected %v, got %v", expectedRspDoc, authzResp)
+func (item testItem) String() string {
+	var attr []string
+	addIfExists := func(fields [][]string) {
+		for _, f := range fields {
+			if len(f) > 0 && f[0] != "" {
+				attr = append(attr, f[0])
 			}
 		}
-	})
-})
+	}
 
-func newReqBuilder(url, token string) func(string) (*http.Request, error) {
-	return func(body string) (*http.Request, error) {
-		req, err := http.NewRequest("POST", url, bytes.NewBufferString(body))
+	if len(item.request.nonResourceVerbs) > 0 || len(item.request.nonResourcePaths) > 0 {
+		addIfExists([][]string{
+			item.request.nonResourceVerbs,
+			item.request.nonResourcePaths,
+			item.request.users,
+		})
+	} else {
+		addIfExists([][]string{
+			item.request.namespaces,
+			item.request.names,
+			item.request.verbs,
+			item.request.apiGroups,
+			item.request.resources,
+			item.request.subresources,
+			item.request.paths,
+			item.request.users,
+		})
+	}
+
+	if len(item.request.groups) > 0 {
+		attr = append(attr, fmt.Sprint(item.request.groups[0]))
+	}
+
+	return fmt.Sprintf("%s - %v", item.name, attr)
+}
+
+func bindReason(rsp response) func(...string) response {
+	return func(reason ...string) response {
+		rsp.reason = reason
+		return rsp
+	}
+}
+
+func expect(status int, allowed, denied bool) response {
+	return response{
+		status:  status,
+		allowed: allowed,
+		denied:  denied,
+	}
+}
+
+var (
+	undecided       = expect(http.StatusCreated, false, false)
+	allowed         = expect(http.StatusCreated, true, false)
+	denied          = expect(http.StatusCreated, false, true)
+	undecidedReason = bindReason(undecided)
+	deniedReason    = bindReason(denied)
+)
+
+func newReqBuilder(url, token string) func(subjectReview) (*http.Request, error) {
+	return func(body subjectReview) (*http.Request, error) {
+		j, err := json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
+
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(j))
 		if err != nil {
 			return nil, err
 		}
@@ -2851,3 +364,590 @@ func newReqBuilder(url, token string) func(string) (*http.Request, error) {
 		return req, err
 	}
 }
+
+func verifyResponse(status int, body []byte, test testItem) {
+	if status != test.expect.status {
+		framework.Failf(
+			"%s: invalid status code received. expected %d, got %d\n%s",
+			test.name,
+			test.expect.status,
+			status,
+			string(body),
+		)
+
+		return
+	}
+
+	var authzResp authorizationResp
+	if err := json.Unmarshal(body, &authzResp); err != nil && err != io.EOF {
+		framework.Failf(test.name, err)
+		return
+	}
+
+	// undecided is considered as denied
+	if authzResp.Status.Allowed != test.expect.allowed ||
+		test.expect.denied && authzResp.Status.Allowed {
+		framework.Failf(
+			"unexpected response. expected %v, got %v",
+			test.expect,
+			response{
+				status:  status,
+				allowed: authzResp.Status.Allowed,
+				denied:  authzResp.Status.Denied,
+				reason:  []string{authzResp.Status.Reason},
+			},
+		)
+	}
+
+	for _, r := range test.expect.reason {
+		if !strings.Contains(authzResp.Status.Reason, r) {
+			framework.Failf(
+				"expected reason not found: %s, got instead: %s",
+				r,
+				authzResp.Status.Reason,
+			)
+		}
+	}
+}
+
+var _ = describe("Authorization tests [Authorization] [RBAC] [Zalando]", func() {
+	should := fmt.Sprintf(
+		"should validate permissions for [Authorization] [RBAC] [Zalando]",
+	)
+	It(should, func() {
+		conf, err := framework.LoadConfig()
+		Expect(err).NotTo(HaveOccurred()) // BDD = Because :DDD
+
+		host := conf.Host
+		client := http.DefaultClient
+		makeReq := newReqBuilder(host+accessReviewURL, conf.BearerToken)
+
+		for _, test := range []testItem{{
+			name: "everyone",
+			request: req().user("test-user").
+				setGroups(
+					[]string{"FooBar"},
+					[]string{"ReadOnly"},
+					[]string{"PowerUser"},
+					[]string{"Emergency"},
+					[]string{"Manual"},
+					[]string{"system:serviceaccounts:kube-system"},
+					[]string{"CollaboratorEmergency"},
+					[]string{"CollaboratorManual"},
+					[]string{"Collaborator24x7"},
+					[]string{"CollaboratorPowerUser"},
+					[]string{"Administrator"},
+				),
+			items: []testItem{{
+				name:    "impersonate denied",
+				request: req().verb("impersonate"),
+				expect:  denied,
+				items: []testItem{{
+					name:    "users and groups",
+					request: req().res("users", "groups"),
+				}, {
+					name: "service accounts, namespaced",
+					request: req().
+						res("serviceaccounts").
+						ns("", "teapot", "kube-system"),
+				}},
+			}, {
+				name:    "escalate denided",
+				request: req().verb("escalate"),
+				expect:  denied,
+				items: []testItem{{
+					name:    "cluster role",
+					request: req().res("rbac.authorization.k8s.io/clusterrole"),
+				}, {
+					name: "role",
+					request: req().res("rbac.authorization.k8s.io/role").
+						ns("", "teapot", "kube-system"),
+				}},
+			}},
+		}, {
+
+			name:    "read-only users",
+			request: req().user("test-user").setGroups([]string{"ReadOnly"}),
+			items: []testItem{{
+				name:   "no access to secrets",
+				expect: denied,
+				request: req().res("secrets").ns("", "teapot", "kube-system").verb(
+					"get",
+					"list",
+					"watch",
+					"create",
+					"patch",
+					"update",
+					"delete",
+				),
+			}, {
+				name: "other resources",
+				items: []testItem{{
+					name: "namespaced",
+					request: req().ns("default", "teapot", "kube-system").res(
+						"pods",
+						"apps/deployments",
+						"apps/daemonsets",
+						"apps/statefulsets",
+						"apps/deployments/scale",
+						"apps/statefulsets/scale",
+						"services",
+						"persistentvolumes",
+						"persistentvolumeclaims",
+						"configmaps",
+					),
+					items: []testItem{{
+						name:    "no write access",
+						request: req().verb("create", "patch", "update", "delete"),
+						expect:  denied,
+					}, {
+						name:    "read access",
+						request: req().verb("get", "list", "watch"),
+						expect:  allowed,
+					}},
+				}, {
+					name: "not namespaced",
+					request: req().res(
+						"namespaces",
+						"nodes",
+						"rbac.authorization.k8s.io/clusterroles",
+						"storage.k8s.io/storageclasses",
+						"policy/podsecuritypolicies",
+						"apiextensions.k8s.io/customresourcedefinitions",
+					),
+					items: []testItem{{
+						name:    "no write access",
+						request: req().verb("create", "patch", "update", "delete"),
+						expect:  denied,
+					}, {
+						name:    "read access",
+						request: req().verb("get", "list", "watch"),
+						expect:  allowed,
+					}},
+				}},
+			}},
+		}, {
+
+			name: "power-user, manual, emergency",
+			request: req().
+				user("test-user").
+				setGroups([]string{"PowerUser"}, []string{"Manual"}, []string{"Emergency"}),
+			items: []testItem{{
+				name: "no access to secrets in kube-system or visibility",
+				request: req().
+					verb("get", "list", "watch").
+					ns("kube-system", "visibility").
+					res("secrets"),
+				expect: denied,
+			}, {
+				name: "no write access to nodes",
+				request: req().
+					verb("create", "patch", "update", "delete").
+					res("nodes"),
+				expect: denied,
+			}, {
+				name: "no write to daemonsets",
+				request: req().
+					verb("create", "patch", "update", "delete").
+					ns("", "teapot", "kube-system").
+					res("apps/daemonsets"),
+				expect: denied,
+			}, {
+
+				name: "delete of CRDs",
+				request: req().
+					verb("delete").
+					res("apiextensions.k8s.io/customresourcedefinitions"),
+				expect: allowed,
+			}, {
+
+				name: "no delete of kube-system or visibility namespaces",
+				request: req().
+					verb("delete").
+					name("kube-system", "visibility"),
+				expect: denied,
+			}, {
+
+				name: "write access to everything, except kube-system and visibility",
+				request: req().
+					verb("create", "patch", "update", "delete"),
+				items: []testItem{{
+					name: "namespaced",
+					request: req().res(
+						"pods",
+						"apps/deployments",
+						"apps/statefulsets",
+						"apps/deployments/scale",
+						"apps/statefulsets/scale",
+						"services",
+						"persistentvolumes",
+						"persistentvolumeclaims",
+						"configmaps",
+					),
+					items: []testItem{{
+						name:    "kube-system and visibility",
+						request: req().ns("kube-system", "visibility"),
+						expect:  denied,
+					}, {
+						name:    "others",
+						request: req().ns("", "teapot"),
+						expect:  allowed,
+					}},
+				}, {
+					name: "not namespaced",
+					items: []testItem{{
+						name: "allowed",
+						request: req().res(
+							"namespaces",
+							"storage.k8s.io/storageclasses",
+							"apiextensions.k8s.io/customresourcedefinitions",
+						),
+						expect: allowed,
+					}, {
+						name: "not allowed",
+						request: req().res(
+							"nodes",
+							"policy/podsecuritypolicies",
+						),
+						expect: denied,
+					}},
+				}},
+			}},
+		}, {
+
+			name: "collaborator power-user, manual and emergency",
+			request: req().
+				user("test-user").
+				setGroups(
+					[]string{"CollaboratorPowerUser", "PowerUser"},
+					[]string{"CollaboratorManual", "Manual"},
+					[]string{"CollaboratorEmergency", "Emergency"},
+				),
+			items: []testItem{{
+
+				name: "access to secrets in kube-system or visibility",
+				request: req().
+					verb("get", "list", "watch").
+					ns("kube-system", "visibility").
+					res("secrets"),
+				items: []testItem{{
+					name:    "in visibility",
+					request: req().ns("visibility"),
+					expect:  allowed,
+				}, {
+					name:    "in kube-system",
+					request: req().ns("kube-system"),
+					expect:  denied,
+				}},
+			}, {
+				name: "no write access to nodes",
+				request: req().
+					verb("create", "patch", "update", "delete").
+					res("nodes"),
+				expect: denied,
+			}, {
+				name: "can update to daemonsets",
+				request: req().
+					verb("create", "patch", "update", "delete").
+					ns("visibility").
+					res("apps/daemonsets"),
+				expect: allowed,
+			}, {
+
+				name: "delete of CRDs",
+				request: req().
+					verb("delete").
+					res("apiextensions.k8s.io/customresourcedefinitions"),
+				expect: allowed,
+			}, {
+
+				name: "no delete of kube-system or visibility namespaces",
+				request: req().
+					verb("delete").
+					res("namespaces").
+					name("kube-system", "visibility"),
+				expect: denied,
+			}, {
+
+				name: "write access to everything, except kube-system",
+				request: req().
+					verb("create", "patch", "update", "delete"),
+				items: []testItem{{
+					name: "namespaced",
+					request: req().res(
+						"pods",
+						"apps/deployments",
+						"apps/statefulsets",
+						"services",
+						"persistentvolumes",
+						"persistentvolumeclaims",
+						"configmaps",
+					),
+					items: []testItem{{
+						name:    "kube-system and visibility",
+						request: req().ns("kube-system"),
+						expect:  denied,
+					}, {
+						name:    "others",
+						request: req().ns("", "teapot", "visibility"),
+						expect:  allowed,
+					}},
+				}, {
+					name: "not namespaced",
+					items: []testItem{{
+						name: "allowed",
+						request: req().res(
+							"namespaces",
+							"storage.k8s.io/storageclasses",
+							"apiextensions.k8s.io/customresourcedefinitions",
+						),
+						expect: allowed,
+					}, {
+						name: "not allowed",
+						request: req().res(
+							"nodes",
+							"policy/podsecuritypolicies",
+
+							// "rbac.authorization.k8s.io/clusterroles",
+						),
+						expect: denied,
+					}},
+				}},
+			}},
+		}, {
+
+			name: "system",
+			items: []testItem{{
+				name: "kubelet authorized",
+				request: req().ns("teapot").verb("get").res("pods").
+					user("kubelet").setGroups([]string{"system:masters"}),
+				expect: allowed,
+			}, {
+				name: "kube-system daemonset-controller service account can update daemonset status",
+				request: req().ns("kube-system").verb("update").apiGroup("extensions").res("daemonsets").subres("status").
+					user("system:serviceaccount:kube-system:daemon-set-controller").
+					setGroups([]string{"system:serviceaccounts:kube-system"}),
+				expect: allowed,
+			}, {
+				name: "kube-system default account can update daemonset finalizers",
+				request: req().ns("kube-system").verb("update").apiGroup("extensions").res("daemonsets").subres("finalizers").
+					user("system:serviceaccount:kube-system:daemon-set-controller").
+					setGroups([]string{"system:serviceaccounts:kube-system"}),
+				expect: allowed,
+			}, {
+				name:    "default account in default namespace can not list statefulsets",
+				request: req().verb("list").res("statefulsets").user("system:serviceaccount:default:default"),
+				expect:  denied,
+			}, {
+				name: "default account in non-default namespace can not list statefulsets",
+				request: req().ns("non-default").verb("list").res("statefulsets").
+					user("system:serviceaccount:non-default:default"),
+				expect: denied,
+			}, {
+				name: "User in admin group can patch daemonsets",
+				request: req().ns("kube-system").name("prometheus-node-exporter").
+					verb("patch").apiGroup("extensions").res("daemonsets").
+					user("sszuecs").
+					setGroups([]string{"ReadOnly", "system:masters", "system:authenticated"}),
+				expect: allowed,
+			}, {
+				name: "controller manager can list podsecurity policies",
+				request: req().verb("list").apiGroup("extensions").res("podsecuritypolicies").
+					user("system:kube-controller-manager"),
+				expect: allowed,
+			}, {
+				name: "controller manager service account can create pods",
+				request: req().ns("kube-system").verb("create").res("pods").
+					user("system:serviceaccount:kube-system:daemon-set-controller").
+					setGroups([]string{"system:serviceaccounts:kube-system"}),
+				expect: allowed,
+			}, {
+				name: "persistent volume binder service account can update kube system persistentVolumeClaims",
+				request: req().ns("kube-system").verb("update").res("persistentvolumeclaims").
+					user("system:serviceaccount:kube-system:persistent-volume-binder").
+					setGroups([]string{"system:serviceaccounts:kube-system"}),
+				expect: allowed,
+			}, {
+				name: "persistent volume binder service account can create kube system persistentVolumes",
+				request: req().ns("kube-system").verb("create").res("persistentvolumes").
+					user("system:serviceaccount:kube-system:persistent-volume-binder").
+					setGroups([]string{"system:serviceaccounts:kube-system"}),
+				expect: allowed,
+			}, {
+				name: "aws-cloud-provider service account can access patch nodes",
+				request: req().verb("patch").res("nodes").
+					user("system:serviceaccount:kube-system:aws-cloud-provider").
+					setGroups([]string{"system:serviceaccounts:kube-system"}),
+				expect: allowed,
+			}, {
+				name: "system user (credentials-provider) should be allowed get secrets in kube-system.",
+				request: req().ns("kube-system").verb("get").res("secrets").
+					user("zalando-iam:zalando:service:k8sapi_credentials-provider"),
+				expect: allowed,
+			}, {
+				name: "system user (api-monitoring-controller) can update configmap 'skipper-default-filters' in kube-system.",
+				request: req().ns("kube-system").verb("update").res("configmaps").name("skipper-default-filters").
+					user("system:serviceaccount:api-infrastructure:api-monitoring-controller"),
+				expect: allowed,
+			}, {
+				name: "system user (api-monitoring-controller) can NOT update any configmap in kube-system.",
+				request: req().ns("kube-system").verb("update").res("configmaps").
+					user("system:serviceaccount:api-infrastructure:api-monitoring-controller"),
+				expect: undecidedReason("undecided system:serviceaccount:api-infrastructure:api-monitoring-controller/[]"),
+			}},
+		}, {
+
+			name: "operators",
+			items: []testItem{{
+				name: "operator is not allowed to use privileged PodSecurityPolicy (for own namespace)",
+				request: req().name("privileged").verb("use").apiGroup("extensions").res("podsecuritypolicies").
+					user("system:serviceaccount:teapot:operator"),
+				expect: undecided,
+			}, {
+				name: "operator has no read access to own namespace",
+				request: req().ns("teapot").verb("get").res("pods").
+					user("system:serviceaccount:teapot:operator"),
+				expect: undecided,
+			}, {
+				name: "operator has no write access to own namespace",
+				request: req().ns("teapot").verb("create").res("pods").
+					user("system:serviceaccount:teapot:operator"),
+				expect: undecided,
+			}, {
+				name: "operator has no read access to other namespace",
+				request: req().ns("coffeepot").verb("get").res("pods").
+					user("system:serviceaccount:teapot:operator"),
+				expect: undecided,
+			}, {
+				name: "operator has no write access to other namespace",
+				request: req().ns("coffeepot").verb("create").res("pods").
+					user("system:serviceaccount:teapot:operator"),
+				expect: undecidedReason("access undecided system:serviceaccount:teapot:operator/[]"),
+			}, {
+				name: "operator has read access to secrets in own namespace",
+				request: req().ns("teapot").verb("get").res("secrets").
+					user("system:serviceaccount:teapot:operator"),
+				expect: undecided,
+			}, {
+				name: "operator is not allowed to read secrets in other namespaces",
+				request: req().ns("coffeepot").verb("get").res("secrets").
+					user("system:serviceaccount:teapot:operator"),
+				expect: undecidedReason("access undecided system:serviceaccount:teapot:operator/[]"),
+			}, {
+				name: "operator has read access to custom resource definitions (CRD) in all namespacese",
+				request: req().verb("get").apiGroup("apiextensions.k8s.io").res("customresourcedefinitions").
+					user("system:serviceaccount:teapot:operator"),
+				expect: undecided,
+			}, {
+				name: "operator has read access to custom resource definitions (CRD) in all namespacese",
+				request: req().verb("create").apiGroup("apiextensions.k8s.io").res("customresourcedefinitions").
+					user("system:serviceaccount:teapot:operator"),
+				expect: undecided,
+			}, {
+				name: "operator has write access to storageclasses in all namespaces",
+				request: req().verb("create").apiGroup("storage.k8s.io").res("storageclasses").
+					user("system:serviceaccount:teapot:operator"),
+				expect: undecided,
+			}, {
+				name: "operator has read access to storageclasses in all namespaces",
+				request: req().verb("get").apiGroup("storage.k8s.io").res("storageclasses").
+					user("system:serviceaccount:teapot:operator"),
+				expect: undecided,
+			}, {
+				name:    "operator has read access to nodes in global namespace",
+				request: req().verb("get").res("nodes").user("system:serviceaccount:teapot:operator"),
+				expect:  undecided,
+			}, {
+				name:    "operator has write access to nodes in global namespace",
+				request: req().verb("create").res("nodes").user("system:serviceaccount:teapot:operator"),
+				expect:  undecided,
+			}, {
+				name:    "operator service account cannot create namespaces",
+				request: req().verb("create").res("namespaces").user("system:serviceaccount:default:operator"),
+				expect:  undecidedReason("access undecided system:serviceaccount:default:operator/[]"),
+			}, {
+				name: "operator service account can not access persistent volumes in other namespaces",
+				request: req().verb("get").res("persistentvolumes").
+					user("system:serviceaccount:default:operator"),
+				expect: undecided,
+			}},
+		}, {
+
+			name: "administrator",
+			items: []testItem{{
+				name: "access to use PodSecurityPolicy for Administrator (system:masters) should be allowed",
+				request: req().name("restricted").verb("use").apiGroup("extensions").res("podsecuritypolicies").
+					user("sszuecs").setGroups([]string{"system:masters"}),
+				expect: allowed,
+			}, {
+				name: "access to use PodSecurityPolicy for Administrator (system:masters) should be allowed",
+				request: req().name("privileged").verb("use").apiGroup("extensions").res("podsecuritypolicies").
+					user("sszuecs").setGroups([]string{"system:masters"}),
+				expect: allowed,
+			}, {
+				name: "access to use PodSecurityPolicy for system:masters should be allowed",
+				request: req().name("privileged").verb("use").apiGroup("extensions").res("podsecuritypolicies").
+					user("sszuecs").setGroups([]string{"system:masters"}),
+				expect: allowed,
+			}, {
+				name: "Administrator (system:masters) has read access (pods) to kube-system",
+				request: req().ns("kube-system").verb("get").res("pods").
+					user("rdifazio").setGroups([]string{"system:masters"}),
+				expect: allowed,
+			}, {
+				name: "Administrator (system:masters) has write access (pods) to kube-system",
+				request: req().ns("kube-system").verb("create").res("pods").
+					user("rdifazio").setGroups([]string{"system:masters"}),
+				expect: allowed,
+			}, {
+				name: "Administrator (system:masters) can read secrets from kube-system namespaces",
+				request: req().ns("kube-system").verb("get").res("secrets").
+					user("rdifazio").setGroups([]string{"system:masters"}),
+				expect: allowed,
+			}, {
+				name: "Administrator (system:masters) can read secrets from non kube-system namespaces",
+				request: req().ns("teapot").verb("get").res("secrets").
+					user("rdifazio").setGroups([]string{"system:masters"}),
+				expect: allowed,
+			}, {
+				name: "Administrator (system:masters) has write access to non kube-system namespaces",
+				request: req().ns("teapot").verb("create").res("pods").
+					user("rdifazio").setGroups([]string{"system:masters"}),
+				expect: allowed,
+			}, {
+				name: "Administrator (system:masters) has proxy right",
+				request: req().ns("teapot").verb("proxy").
+					user("sszuecs").setGroups([]string{"system:masters"}),
+				expect: allowed,
+			}, {
+				name: "Administrator (system:masters) can write daemonsets",
+				request: req().ns("teapot").verb("create").apiGroup("apps").res("daemonsets").
+					user("sszuecs").setGroups([]string{"system:masters"}),
+				expect: allowed,
+			}},
+		}, {
+			name: "CDP",
+			items: []testItem{{
+				name: "non system user (cdp-controller) should NOT be allowed get secrets in kube-system.",
+				request: req().ns("kube-system").verb("get").res("secrets").
+					user("zalando-iam:zalando:service:stups_cdp-controller"),
+				expect: deniedReason("unauthorized access to system namespace by zalando-iam:zalando:service:stups_cdp-controller/[]"),
+			}},
+		},
+		} {
+			for _, subtest := range test.expand() {
+				By(subtest.String())
+
+				req, err := makeReq(subtest.subjectReview())
+				Expect(err).NotTo(HaveOccurred())
+				rsp, err := client.Do(req)
+				Expect(err).NotTo(HaveOccurred())
+
+				body, err := ioutil.ReadAll(rsp.Body)
+				Expect(err).NotTo(HaveOccurred())
+
+				verifyResponse(rsp.StatusCode, body, subtest)
+			}
+		}
+	})
+})

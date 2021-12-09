@@ -5,8 +5,12 @@ metadata:
     pdb-controller.zalando.org/non-ready-ttl: "5m"
   labels:
     application: prometheus
-    version: v2.15.2
+    version: v2.30.2
+{{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
   name: prometheus
+{{- else }}
+  name: prometheus-csi
+{{- end }}
   namespace: kube-system
 spec:
   replicas: 2
@@ -19,24 +23,27 @@ spec:
     metadata:
       labels:
         application: prometheus
-        version: v2.15.2
+        version: v2.30.2
       annotations:
         config/hash: {{"configmap.yaml" | manifestHash}}
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
     spec:
       serviceAccountName: prometheus
       dnsConfig:
         options:
         - name: ndots
           value: "1"
-      priorityClassName: system-cluster-critical
       initContainers:
       - name: generate-config
-        image: registry.opensource.zalan.do/stups/alpine:3.10.3-5
+        image: registry.opensource.zalan.do/library/alpine-3.13:3.13-20210830
         command:
         - /bin/sh
         args:
         - -c
-        - sed s/'@@POD_NAME@@'/${POD_NAME}/g /etc/prometheus/prometheus.yml > /prometheus/prometheus.yaml
+        - sed s/'@@POD_NAME@@'/${POD_NAME}/g /etc/prometheus/prometheus.yml > /prometheus/prometheus.yaml ; cp /etc/prometheus/prometheus.rules.yml /prometheus/prometheus.rules.yaml
         env:
         - name: POD_NAME
           valueFrom:
@@ -53,11 +60,15 @@ spec:
           mountPath: /prometheus
       containers:
       - name: prometheus
-        image: registry.opensource.zalan.do/teapot/prometheus:v2.15.2
+        image: registry.opensource.zalan.do/teapot/prometheus:v2.30.2
         args:
         - "--config.file=/prometheus/prometheus.yaml"
         - "--storage.tsdb.path=/prometheus/"
+{{- if ne .ConfigItems.prometheus_tsdb_retention_size "disabled" }}
+        - "--storage.tsdb.retention.size={{ kubernetesSizeToKiloBytes .ConfigItems.prometheus_mem_min 0.6 }}"
+{{- else }}
         - "--storage.tsdb.retention.time=1d"
+{{- end }}
         - "--storage.tsdb.wal-compression"
         - "--storage.tsdb.min-block-duration=30m"
         ports:
@@ -107,7 +118,11 @@ spec:
   - metadata:
       name: prometheus-storage-volume
     spec:
+{{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
       storageClassName: standard
+{{- else }}
+      storageClassName: ebs
+{{- end }}
       accessModes:
       - "ReadWriteOnce"
       resources:

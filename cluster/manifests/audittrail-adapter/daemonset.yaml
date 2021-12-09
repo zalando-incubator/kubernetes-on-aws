@@ -18,6 +18,11 @@ spec:
       labels:
         application: audittrail-adapter
         version: master-24
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7980"
+        prometheus.io/scrape: "true"
     spec:
       serviceAccountName: audittrail-adapter
       priorityClassName: system-node-critical
@@ -31,12 +36,10 @@ spec:
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-24
+        image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-25
         env:
           - name: AWS_REGION
             value: {{.Cluster.Region}}
-          - name: AWS_SHARED_CREDENTIALS_FILE
-            value: /meta/aws-iam/credentials.process
         args:
         - --cluster-id={{ .ID }}
         - --audittrail-url={{.Cluster.ConfigItems.audittrail_url}}
@@ -46,9 +49,6 @@ spec:
         volumeMounts:
         - name: platform-iam-credentials
           mountPath: /meta/credentials
-          readOnly: true
-        - name: aws-iam-credentials
-          mountPath: /meta/aws-iam
           readOnly: true
         resources:
           limits:
@@ -65,7 +65,4 @@ spec:
       - name: platform-iam-credentials
         secret:
           secretName: audittrail-adapter
-      - name: aws-iam-credentials
-        secret:
-          secretName: audittrail-adapter-aws-iam-credentials
 {{ end }}

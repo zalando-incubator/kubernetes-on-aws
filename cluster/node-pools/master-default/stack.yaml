@@ -1,10 +1,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Kubernetes default master node pool
+Metadata:
+  Tags:
+    InfrastructureComponent: "true"
 
 Mappings:
   Images:
     eu-central-1:
-      MachineImage: '{{ .Cluster.ConfigItems.kuberuntu_image_v1_15 }}'
+      MachineImage: '{{ .NodePool.ConfigItems.kuberuntu_image_v1_21 }}'
 
 Resources:
   AutoScalingGroup:
@@ -18,26 +21,29 @@ Resources:
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplate
         Version: !GetAtt LaunchTemplate.LatestVersionNumber
-      LoadBalancerNames:
-      - !ImportValue '{{ .Cluster.ID }}:master-load-balancer'
       MinSize: '{{ .NodePool.MinSize }}'
       MaxSize: '{{ .NodePool.MaxSize }}'
       Tags:
+      - Key: InfrastructureComponent
+        Value: true
+        PropagateAtLaunch: true
       - Key: Name
         PropagateAtLaunch: true
         Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
-      - Key: kubernetes.io/role
-        PropagateAtLaunch: true
-        Value: master
       - Key: node.kubernetes.io/role
         PropagateAtLaunch: true
         Value: master
+      - Key: zalando.org/pod-max-pids
+        PropagateAtLaunch: true
+        Value: "{{ .NodePool.ConfigItems.pod_max_pids }}"
       VPCZoneIdentifier:
 {{ with $values := .Values }}
 {{ range $az := $values.availability_zones }}
         - "{{ index $values.subnets $az }}"
 {{ end }}
 {{ end }}
+      TargetGroupARNs:
+      - !ImportValue '{{ .Cluster.ID }}:master-load-balancer-nlb-target-group'
     Type: 'AWS::AutoScaling::AutoScalingGroup'
   LaunchTemplate:
     Properties:
@@ -47,6 +53,12 @@ Resources:
         CreditSpecification:
           CpuCredits: unlimited
 {{ end }}
+        BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            DeleteOnTermination: {{.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
+            VolumeSize: {{.NodePool.ConfigItems.ebs_master_root_volume_size}}
+            VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
           AssociatePublicIpAddress: true

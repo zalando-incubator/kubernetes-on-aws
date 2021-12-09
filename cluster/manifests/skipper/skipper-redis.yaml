@@ -3,11 +3,11 @@ kind: StatefulSet
 metadata:
   labels:
     application: skipper-ingress-redis
-    version: v4.0.9
+    version: v6.2.4
   name: skipper-ingress-redis
   namespace: kube-system
 spec:
-  replicas: {{if eq .ConfigItems.skipper_clusterratelimit "true"}}2{{else}}0{{end}}
+  replicas: {{ .ConfigItems.skipper_redis_replicas }}
   selector:
     matchLabels:
       application: skipper-ingress-redis
@@ -16,12 +16,40 @@ spec:
     metadata:
       labels:
         application: skipper-ingress-redis
-        version: v4.0.9
+        version: v6.2.4
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
-      priorityClassName: system-cluster-critical
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              # This is kind of stupid, but would work for now. Ideally we should just stop filtering out the pods in
+              # kube-system in our admitters, since we've never really had any issues with them.
+              parent-resource-hash: 97bcb33ef5bafb09bdbf83fc09c11e5f5fc84dad
+{{- end }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: kubernetes.io/hostname
+            labelSelector:
+              matchExpressions:
+              - key: application
+                operator: In
+                values:
+                - skipper-ingress-redis
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       containers:
-      - image: registry.opensource.zalan.do/zmon/redis:4.0.9-master-6
+      - image: registry.opensource.zalan.do/library/redis-6-alpine:6-alpine-20210712
         name: skipper-ingress-redis
+        args:
+        - /usr/local/bin/docker-entrypoint.sh
+        - --save
+        - ""
         ports:
         - containerPort: 6379
           protocol: TCP
@@ -32,13 +60,21 @@ spec:
             - ping
           failureThreshold: 3
           initialDelaySeconds: 10
-          periodSeconds: 60
+          periodSeconds: 15
           successThreshold: 1
           timeoutSeconds: 1
         resources:
           limits:
-            cpu: 100m
-            memory: 100Mi
+            cpu: {{ .Cluster.ConfigItems.skipper_redis_cpu }}
+            memory: {{ .Cluster.ConfigItems.skipper_redis_memory }}
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
+{{ if eq .ConfigItems.enable_dedicate_nodepool_skipper_redis "true"}}
+      nodeSelector:
+        dedicated: skipper-ingress-redis
+      tolerations:
+      - effect: NoSchedule
+        key: dedicated
+        value: skipper-ingress-redis
+{{ end }}

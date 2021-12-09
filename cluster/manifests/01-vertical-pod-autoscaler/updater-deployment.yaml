@@ -4,40 +4,43 @@ metadata:
   name: vpa-updater
   namespace: kube-system
   labels:
-    application: vpa-updater
-    version: v0.6.1-internal.4
-    component: vpa
+    application: vertical-pod-autoscaler
+    component: updater
+    version: v0.6.1-internal.12
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: vpa-updater
+      application: vertical-pod-autoscaler
+      component: updater
   template:
     metadata:
       labels:
-        application: vpa-updater
-        version: v0.6.1-internal.4
-        component: vpa
+        application: vertical-pod-autoscaler
+        component: updater
+        version: v0.6.1-internal.12
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       serviceAccountName: vpa-updater
-      priorityClassName: system-cluster-critical
       containers:
       - name: updater
-        image: registry.opensource.zalan.do/teapot/vpa-updater:v0.6.1-internal.4
+        image: registry.opensource.zalan.do/teapot/vpa-updater:v0.6.1-internal.12
         command:
           - ./updater
         args:
-          - --v=4
-          - --stderrthreshold=info
+          - --v=1
+          - --logtostderr
           - --min-replicas=1
           - --pod-lifetime-update-threshold=12h
           - --evict-after-oom-threshold=12h
         resources:
           limits:
-            cpu: 200m
-            memory: 500Mi
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
           requests:
-            cpu: 200m
-            memory: 500Mi
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
         ports:
         - containerPort: 8080
+          protocol: TCP

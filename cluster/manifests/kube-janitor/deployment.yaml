@@ -5,29 +5,33 @@ metadata:
   name: kube-janitor
   namespace: kube-system
   labels:
-    application: kube-janitor
-    version: v20.2.0
+    application: kubernetes
+    component: kube-janitor
+    version: v20.4.1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kube-janitor
+      deployment: kube-janitor
   template:
     metadata:
       labels:
-        application: kube-janitor
-        version: v20.2.0
+        deployment: kube-janitor
+        application: kubernetes
+        component: kube-janitor
+        version: v20.4.1
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: kube-janitor
       containers:
       - name: janitor
         # see https://github.com/hjacobs/kube-janitor/releases
-        image: registry.opensource.zalan.do/teapot/kube-janitor:20.2.0
+        image: registry.opensource.zalan.do/teapot/kube-janitor:20.4.1
         args:
           # run every minute
           - --interval=60
@@ -38,11 +42,11 @@ spec:
         resources:
           limits:
             cpu: 5m
-            memory: 150Mi
+            memory: 4Gi
           requests:
             # this is a background app ==> low priority, low CPU requests
             cpu: 5m
-            memory: 150Mi
+            memory: 4Gi
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true

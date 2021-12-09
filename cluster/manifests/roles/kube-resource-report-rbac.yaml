@@ -1,5 +1,5 @@
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-resource-report
 rules:
@@ -8,8 +8,12 @@ rules:
   verbs:
   - get
   - list
-- apiGroups: ["extensions"]
+- apiGroups: ["extensions", "networking.k8s.io"]
   resources: ["ingresses"]
+  verbs:
+  - list
+- apiGroups: ["zalando.org/v1"]
+  resources: ["routegroups"]
   verbs:
   - list
 - apiGroups: ["metrics.k8s.io"]
@@ -17,9 +21,21 @@ rules:
   verbs:
   - get
   - list
+# allow reading VPAs to get resource recommendations
+- apiGroups: ["autoscaling.k8s.io"]
+  resources: ["verticalpodautoscalers"]
+  verbs:
+  - get
+  - list
+# allow reading Deployments and StatefulSets to get matching Pods for VPAs
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets"]
+  verbs:
+  - get
+  - list
 ---
 kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-resource-report
 roleRef:

@@ -1,46 +1,55 @@
+{{ if eq .Cluster.ConfigItems.downscaler_enabled "true" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kube-downscaler
   namespace: kube-system
   labels:
-    application: kube-downscaler
-    version: v0.18
+    application: kubernetes
+    component: kube-downscaler
+    version: v20.4.1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kube-downscaler
+      deployment: kube-downscaler
   template:
     metadata:
       labels:
-        application: kube-downscaler
-        version: v0.18
+        deployment: kube-downscaler
+        application: kubernetes
+        component: kube-downscaler
+        version: v20.4.1
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
       serviceAccountName: kube-downscaler
-      priorityClassName: system-cluster-critical
       containers:
       - name: downscaler
         # see https://github.com/hjacobs/kube-downscaler/releases
-        image: registry.opensource.zalan.do/teapot/kube-downscaler:0.18
+        image: registry.opensource.zalan.do/teapot/kube-downscaler:20.4.1
         args:
           - --interval=30
-          - --exclude-namespaces=kube-system,visibility
-          - --exclude-deployments=kube-downscaler,downscaler,postgres-operator
+          - --exclude-namespaces=kube-system,visibility,tracing
+          # do not downscale ourselves, also keep Postgres Operator so excluded DBs can be managed
+          - --exclude-deployments=kube-downscaler,postgres-operator
           - "--default-uptime={{ .ConfigItems.downscaler_default_uptime }}"
-          - --include-resources=stacks,deployments
+          - "--default-downtime={{ .ConfigItems.downscaler_default_downtime }}"
+          - --include-resources=deployments,stacks
+          - --deployment-time-annotation=deployment-time
         resources:
           limits:
             cpu: 5m
-            memory: 150Mi
+            memory: 4Gi
           requests:
             cpu: 5m
-            memory: 150Mi
+            memory: 4Gi
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
+{{ end }}

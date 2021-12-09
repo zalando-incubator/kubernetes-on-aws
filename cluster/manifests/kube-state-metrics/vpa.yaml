@@ -4,7 +4,8 @@ metadata:
   name: kube-state-metrics
   namespace: kube-system
   labels:
-    application: kube-state-metrics
+    application: kubernetes
+    component: kube-state-metrics
 spec:
   targetRef:
     apiVersion: apps/v1
@@ -17,3 +18,5 @@ spec:
     - containerName: kube-state-metrics
       maxAllowed:
         memory: {{.ConfigItems.kube_state_metrics_mem_max}}
+      minAllowed:
+        memory: {{.ConfigItems.kube_state_metrics_mem_min}}

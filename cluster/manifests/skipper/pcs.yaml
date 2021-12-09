@@ -1,0 +1,17 @@
+{{ if eq .Cluster.ConfigItems.skipper_oauth2_ui_login "true" }}
+apiVersion: "zalando.org/v1"
+kind: PlatformCredentialsSet
+metadata:
+  name: skipper-ingress-platform-credentials
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+spec:
+  application: skipper-ingress
+  token_version: v2
+  clients:
+    employee:
+      grant: authorization-code
+      realm: users
+      redirectUri: "{{ .Cluster.ConfigItems.skipper_oauth2_redirect_url }}"
+{{ end }}

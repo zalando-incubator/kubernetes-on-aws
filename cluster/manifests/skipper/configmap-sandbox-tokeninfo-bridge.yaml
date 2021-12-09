@@ -1,0 +1,32 @@
+{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
+apiVersion: v1
+data:
+  tokeninfo-bridge.eskip: |
+    health: Path("/healthz") -> inlineContent("ok") -> <shunt>;
+
+    q2h: Path("/oauth2/tokeninfo") && QueryParam("access_token") ->
+         queryToHeader("access_token", "Authorization", "Bearer %s") ->
+         dropQuery("access_token") ->
+         <loopback>;
+
+    production: Path("/oauth2/tokeninfo") && JWTPayloadAllKV("iss", "https://identity.zalando.com") && JWTPayloadAnyKVRegexp("https://identity.zalando.com/realm", "^users$", "azp", "^stups_", "azp", "test|staging|integration|release") ->
+                "http://localhost:9021/oauth2/tokeninfo";
+
+    production_invalid: Path("/oauth2/tokeninfo") && JWTPayloadAllKV("iss", "https://identity.zalando.com") ->
+                enableAccessLog() -> unverifiedAuditLog("azp") -> "https://info.services.auth.zalando.com/oauth2/tokeninfo";
+
+    sandbox: Path("/oauth2/tokeninfo") && JWTPayloadAllKV("iss", "https://sandbox.identity.zalando.com") ->
+             "http://localhost:9121/oauth2/tokeninfo";
+
+    fallback: Path("/oauth2/tokeninfo") ->
+              status(401) ->
+              setResponseHeader("Content-Type", "application/json;charset=UTF-8") ->
+              inlineContent("{\"error\":\"invalid_token\",\"error_description\":\"Access Token not valid\"}") ->
+              <shunt>;
+kind: ConfigMap
+metadata:
+  labels:
+    application: sandbox-tokeninfo-bridge
+  name: sandbox-tokeninfo-bridge-conf
+  namespace: kube-system
+{{ end }}

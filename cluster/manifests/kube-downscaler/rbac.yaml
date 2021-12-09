@@ -1,3 +1,4 @@
+{{ if eq .Cluster.ConfigItems.downscaler_enabled "true" }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -19,11 +20,20 @@ rules:
   - watch
   - list
 - apiGroups:
-  - extensions
   - apps
   resources:
   - deployments
   - statefulsets
+  verbs:
+  - get
+  - watch
+  - list
+  - update
+  - patch
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs
   verbs:
   - get
   - watch
@@ -36,18 +46,10 @@ rules:
   - stacks
   verbs:
   - get
-  - list
   - watch
+  - list
   - update
   - patch
-- apiGroups:
-  - zalando.org
-  resources:
-  - stacksets
-  verbs:
-  - get
-  - list
-  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -61,3 +63,4 @@ subjects:
 - kind: ServiceAccount
   name: kube-downscaler
   namespace: kube-system
+{{ end }}

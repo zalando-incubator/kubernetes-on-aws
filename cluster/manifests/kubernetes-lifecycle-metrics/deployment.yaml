@@ -4,39 +4,46 @@ metadata:
   name: kubernetes-lifecycle-metrics
   namespace: kube-system
   labels:
-    application: kubernetes-lifecycle-metrics
-    version: master-7
+    application: kubernetes
+    component: lifecycle-metrics
+    version: master-9
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kubernetes-lifecycle-metrics
+      deployment: kubernetes-lifecycle-metrics
   template:
     metadata:
       labels:
-        application: kubernetes-lifecycle-metrics
-        version: master-7
+        deployment: kubernetes-lifecycle-metrics
+        application: kubernetes
+        component: lifecycle-metrics
+        version: master-9
       annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
         kubernetes-log-watcher/scalyr-parser: '[{"container": "kubernetes-lifecycle-metrics", "parser": "system-json-escaped-json"}]'
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
         options:
           - name: ndots
             value: "1"
-      priorityClassName: system-cluster-critical
       serviceAccountName: kubernetes-lifecycle-metrics
       containers:
         - name: kubernetes-lifecycle-metrics
-          image: "pierone.stups.zalan.do/teapot/kubernetes-lifecycle-metrics:master-7"
+          image: "pierone.stups.zalan.do/teapot/kubernetes-lifecycle-metrics:master-9"
           ports:
             - containerPort: 9090
+              protocol: TCP
           resources:
             limits:
               cpu: 5m
-              memory: 150Mi
+              memory: {{.ConfigItems.kubernetes_lifecycle_metrics_mem_max}}
             requests:
               cpu: 5m
-              memory: 150Mi
+              memory: {{.ConfigItems.kubernetes_lifecycle_metrics_mem_max}}
           readinessProbe:
             httpGet:
               path: /healthz

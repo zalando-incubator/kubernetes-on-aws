@@ -3,11 +3,17 @@ kind: VerticalPodAutoscaler
 metadata:
   name: prometheus-vpa
   namespace: kube-system
+  labels:
+    application: prometheus
 spec:
   targetRef:
     apiVersion: apps/v1
     kind: StatefulSet
+{{ if ne .ConfigItems.prometheus_csi_ebs "true" }}
     name: prometheus
+{{ else }}
+    name: prometheus-csi
+{{ end }}
   updatePolicy:
     updateMode: Auto
   resourcePolicy:
@@ -16,9 +22,3 @@ spec:
       minAllowed:
         memory: {{.ConfigItems.prometheus_mem_min}}
         cpu: {{.ConfigItems.prometheus_cpu_min}}
-      maxAllowed:
-  {{ with $resources := autoscalingBufferSettings .Cluster }}
-        # Set the max CPU and memory to max available on the Node
-        memory: {{$resources.Memory}}
-        cpu: {{$resources.CPU}}
-  {{ end }}
