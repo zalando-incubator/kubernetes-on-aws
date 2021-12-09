@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-ingress-aws-controller
-    version: v0.12.11
+    version: v0.12.14
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         application: kube-ingress-aws-controller
-        version: v0.12.11
+        version: v0.12.14
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
     spec:
@@ -27,7 +27,7 @@ spec:
       serviceAccountName: kube-ingress-aws-controller
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-ingress-aws-controller:v0.12.11
+        image: registry.opensource.zalan.do/teapot/kube-ingress-aws-controller:v0.12.14
         args:
         - --stack-termination-protection
         - --ssl-policy={{ .ConfigItems.kube_aws_ingress_controller_ssl_policy }}
@@ -51,6 +51,7 @@ spec:
         - --load-balancer-type={{ .Cluster.ConfigItems.kube_aws_ingress_default_lb_type }}
 {{end}}
         - --cert-polling-interval={{ .Cluster.ConfigItems.kube_aws_ingress_controller_cert_polling_interval }}
+        - --ingress-api-version=networking.k8s.io/{{ .Cluster.ConfigItems.kube_aws_ingress_controller_ingress_version }}
         env:
         - name: CUSTOM_FILTERS
           value: "tag:kubernetes.io/cluster/{{ .Cluster.ID }}=owned tag:node.kubernetes.io/role=worker tag:zalando.org/ingress-enabled=true"
