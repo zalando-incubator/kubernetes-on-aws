@@ -214,6 +214,9 @@ spec:
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
 {{ end }}
+{{ if ne .ConfigItems.skipper_ingress_inline_route "" }}
+          - "-inline-route={{ .ConfigItems.skipper_ingress_inline_route }}"
+{{ end }}
         resources:
           limits:
             cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
