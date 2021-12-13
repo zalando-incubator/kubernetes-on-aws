@@ -218,7 +218,9 @@ spec:
           - "-inline-routes={{ .ConfigItems.skipper_ingress_inline_routes }}"
 {{ end }}
 {{ if ne .ConfigItems.skipper_ingress_refuse_payload "" }}
-          - "-refuse-payload={{ .ConfigItems.skipper_ingress_refuse_payload }}"
+          {{ range $pattern := split .ConfigItems.skipper_ingress_refuse_payload "[cf724afc]" }}
+          - "-refuse-payload={{ $pattern }}"
+          {{ end }}
 {{ end }}
         resources:
           limits:
