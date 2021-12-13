@@ -30,6 +30,7 @@ clusters:
     enable_rbac: "true"
     dynamodb_service_link_enabled: "false"
     skipper_ingress_cpu: 100m
+    skipper_ingress_refuse_payload: "refused-pattern-1[cf724afc]refused-pattern-2"
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
     kube_aws_ingress_controller_nlb_enabled: "true"
