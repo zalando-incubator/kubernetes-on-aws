@@ -807,7 +807,7 @@ Resources:
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
             Action:
-              - sts:AssumeRoleWithWebIdentity
+              - 'sts:AssumeRoleWithWebIdentity'
             Condition:
               StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:deployment-service-controller"
@@ -890,7 +890,7 @@ Resources:
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
             Action:
-              - sts:AssumeRoleWithWebIdentity
+              - 'sts:AssumeRoleWithWebIdentity'
             Condition:
               StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:deployment-service-status-service"
@@ -1473,13 +1473,13 @@ Resources:
                 - ''
                 - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
                   - !Ref MasterIAMRole
-          - Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Effect: Allow
+          - Effect: Allow
             Principal:
               Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
             Condition:
-              StringLike:
+              StringEquals:
                 "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:visibility:logging-agent"
       Policies:
         - PolicyName: AllowS3BucketAccess
