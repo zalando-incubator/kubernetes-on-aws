@@ -81,6 +81,9 @@ skipper_topology_spread_enabled: "false"
 
 # skipper default filters
 skipper_default_filters: 'enableAccessLog(4,5) -> lifo(2000,20000,"3s")'
+# inline routes
+skipper_ingress_inline_routes: ""
+skipper_ingress_refuse_payload: ""
 
 # skipper backend timeout defaults
 skipper_expect_continue_timeout_backend: "30s"
@@ -281,7 +284,8 @@ prometheus_cpu: "1000m"
 prometheus_mem: "4Gi"
 prometheus_mem_min: "2Gi"
 prometheus_cpu_min: "0"
-prometheus_tsdb_retention_size: "disabled"
+prometheus_retention_size: "49GB" # one GB less than prometheus' PVC
+prometheus_retention_time: "1d"
 prometheus_csi_ebs: "false"
 
 # Upstream defaults are too aggressive:
@@ -452,6 +456,8 @@ teapot_admission_controller_prevent_scale_down_allowed: "true"
 {{else}}
 teapot_admission_controller_prevent_scale_down_allowed: "false"
 {{end}}
+
+teapot_admission_controller_log4j_format_msg_no_lookups: "true"
 
 # Prevent the use of a particular AZ as much as possible
 blocked_availability_zone: ""
