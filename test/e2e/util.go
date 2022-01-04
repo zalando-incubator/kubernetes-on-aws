@@ -37,7 +37,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
-	"k8s.io/api/networking/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -127,69 +126,7 @@ func createRouteGroupWithBackends(name, hostname, namespace string, labels, anno
 	}
 }
 
-func createIngress(name, hostname, namespace string, labels, annotations map[string]string, port int) *v1beta1.Ingress {
-	return &v1beta1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name + string(uuid.NewUUID()),
-			Namespace:   namespace,
-			Labels:      labels,
-			Annotations: annotations,
-		},
-		Spec: v1beta1.IngressSpec{
-			Rules: []v1beta1.IngressRule{
-				{
-					Host: hostname,
-					IngressRuleValue: v1beta1.IngressRuleValue{
-						HTTP: &v1beta1.HTTPIngressRuleValue{
-							Paths: []v1beta1.HTTPIngressPath{
-								{
-									Path: "/",
-									Backend: v1beta1.IngressBackend{
-										ServiceName: name,
-										ServicePort: intstr.FromInt(port),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func updateIngress(name, namespace, hostname, svcName, path string, labels, annotations map[string]string, port int) *v1beta1.Ingress {
-	return &v1beta1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   namespace,
-			Labels:      labels,
-			Annotations: annotations,
-		},
-		Spec: v1beta1.IngressSpec{
-			Rules: []v1beta1.IngressRule{
-				{
-					Host: hostname,
-					IngressRuleValue: v1beta1.IngressRuleValue{
-						HTTP: &v1beta1.HTTPIngressRuleValue{
-							Paths: []v1beta1.HTTPIngressPath{
-								{
-									Path: path,
-									Backend: v1beta1.IngressBackend{
-										ServiceName: svcName,
-										ServicePort: intstr.FromInt(port),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func createIngressV1(name, hostname, namespace, path string, pathType netv1.PathType, labels, annotations map[string]string, port int) *netv1.Ingress {
+func createIngress(name, hostname, namespace, path string, pathType netv1.PathType, labels, annotations map[string]string, port int) *netv1.Ingress {
 	return &netv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name + string(uuid.NewUUID()),
@@ -225,7 +162,7 @@ func createIngressV1(name, hostname, namespace, path string, pathType netv1.Path
 	}
 }
 
-func updateIngressV1(name, namespace, hostname, svcName, path string, pathType netv1.PathType, labels, annotations map[string]string, port int) *netv1.Ingress {
+func updateIngress(name, namespace, hostname, svcName, path string, pathType netv1.PathType, labels, annotations map[string]string, port int) *netv1.Ingress {
 	return &netv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
@@ -261,8 +198,8 @@ func updateIngressV1(name, namespace, hostname, svcName, path string, pathType n
 	}
 }
 
-func addHostIngress(ing *v1beta1.Ingress, hostnames ...string) *v1beta1.Ingress {
-	addRules := []v1beta1.IngressRule{}
+func addHostIngress(ing *netv1.Ingress, hostnames ...string) *netv1.Ingress {
+	addRules := []netv1.IngressRule{}
 	origRules := ing.Spec.Rules
 
 	for _, hostname := range hostnames {
@@ -273,25 +210,6 @@ func addHostIngress(ing *v1beta1.Ingress, hostnames ...string) *v1beta1.Ingress 
 		}
 	}
 	ing.Spec.Rules = append(origRules, addRules...)
-	return ing
-}
-
-func addPathIngress(ing *v1beta1.Ingress, path string, backend v1beta1.IngressBackend) *v1beta1.Ingress {
-	addRules := []v1beta1.IngressRule{}
-	origRules := ing.Spec.Rules
-
-	for _, rule := range origRules {
-		r := rule
-		r.Host = rule.Host
-		origPaths := r.IngressRuleValue.HTTP.Paths
-		origPaths = append(origPaths, v1beta1.HTTPIngressPath{
-			Path:    path,
-			Backend: backend,
-		})
-		r.IngressRuleValue.HTTP.Paths = origPaths
-		addRules = append(addRules, r)
-	}
-	ing.Spec.Rules = addRules
 	return ing
 }
 
@@ -315,16 +233,17 @@ func addPathIngressV1(ing *netv1.Ingress, path string, pathType netv1.PathType, 
 	return ing
 }
 
-func changePathIngress(ing *v1beta1.Ingress, path string) *v1beta1.Ingress {
+func changePathIngress(ing *netv1.Ingress, path string) *netv1.Ingress {
 	return updateIngress(
 		ing.ObjectMeta.Name,
 		ing.ObjectMeta.Namespace,
 		ing.Spec.Rules[0].Host,
-		ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServiceName,
+		ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.Service.Name,
 		path,
+		netv1.PathTypePrefix,
 		ing.ObjectMeta.Labels,
 		ing.ObjectMeta.Annotations,
-		ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntValue(),
+		int(ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.Service.Port.Number),
 	)
 }
 
