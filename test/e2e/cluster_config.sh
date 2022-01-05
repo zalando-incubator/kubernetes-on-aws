@@ -8,12 +8,6 @@ clusters:
   api_server_url: ${API_SERVER_URL}
   channel: ${1}
   config_items:
-    scalyr_access_key: no-key-defined
-    scalyr_read_key: no-key-defined
-    scalyr_server: no-key-defined
-    gerry_mint_bucket: zalando-stups-mint-${AWS_ACCOUNT}-${REGION}
-    zmon_worker_plugin_sql_user:
-    zmon_worker_plugin_sql_pass:
     zmon_root_account_role: ${ZMON_ROOT_ACCOUNT_ROLE}
     audittrail_root_account_role: ${AUDITTRAIL_ROOT_ACCOUNT_ROLE}
     apiserver_etcd_prefix: /registry-${LOCAL_ID}
