@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
   labels:
     application: audittrail-adapter
-    version: master-24
+    version: master-26
 spec:
   selector:
     matchLabels:
@@ -17,7 +17,7 @@ spec:
     metadata:
       labels:
         application: audittrail-adapter
-        version: master-24
+        version: master-26
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics
@@ -36,7 +36,7 @@ spec:
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-25
+        image: pierone.stups.zalan.do/teapot/audittrail-adapter:master-26
         env:
           - name: AWS_REGION
             value: {{.Cluster.Region}}
@@ -53,10 +53,10 @@ spec:
         resources:
           limits:
             cpu: 50m
-            memory: 100Mi
+            memory: 200Mi
           requests:
             cpu: 50m
-            memory: 100Mi
+            memory: 200Mi
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
