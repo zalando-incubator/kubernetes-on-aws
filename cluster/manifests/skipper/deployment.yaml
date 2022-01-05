@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.160
+    version: v0.13.170
     component: ingress
 spec:
   strategy:
@@ -18,8 +18,9 @@ spec:
   template:
     metadata:
       labels:
+        deployment: skipper-ingress
         application: skipper-ingress
-        version: v0.13.160
+        version: v0.13.170
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -48,7 +49,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.160-212
+        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.170-222
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -157,7 +158,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.160-212
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.170-222
             max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
