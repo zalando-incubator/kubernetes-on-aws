@@ -33,7 +33,7 @@ kube_aws_ingress_controller_ingress_version: "v1"
 kube_aws_ingress_controller_nlb_enabled: "true"
 kube_aws_ingress_controller_nlb_cross_zone: "true"
 kube_aws_ingress_controller_cert_polling_interval: "2m"
-# sets the default LB type: "network" or "application" are valid choices
+# sets the default LB type: "network" or "application" are valid choices (overwritten by nlb_switch)
 kube_aws_ingress_default_lb_type: "application"
 
 # ALB to NLB switch
@@ -45,15 +45,7 @@ kube_aws_ingress_default_lb_type: "application"
 #
 # "exec": same as "pre" and kube-ingress-aws-controller will default to NLB
 # after removing it you need to set kube_aws_ingress_default_lb_type: "network" above and cleanup skipper and ingress-ctl deployment.yaml
-{{if eq .Cluster.Channel "dev"}}
-nlb_switch: "pre"
-{{else if eq .Cluster.Channel "alpha"}}
-nlb_switch: "false"
-{{else if eq .Cluster.Channel "beta"}}
-nlb_switch: "false"
-{{else}}
-nlb_switch: "false"
-{{end}}
+nlb_switch: "exec"
 
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "60"
@@ -475,6 +467,7 @@ dynamodb_service_link_enabled: "false"
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
+coredns_log_forward: "false"
 # max concurrency for upstream (AWS VPC) DNS server
 #
 # AWS VPC DNS server has a limit of 1024 qps before packets are dropped.
