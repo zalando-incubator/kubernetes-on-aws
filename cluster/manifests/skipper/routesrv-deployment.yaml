@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.137
+    version: v0.13.170
     component: routesrv
 spec:
   replicas: {{ .ConfigItems.skipper_routesrv_replicas }}
@@ -20,8 +20,9 @@ spec:
   template:
     metadata:
       labels:
+        deployment: skipper-ingress-routesrv
         application: skipper-ingress
-        version: v0.13.137
+        version: v0.13.170
         component: routesrv
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -48,7 +49,7 @@ spec:
       terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
       containers:
       - name: routesrv
-        image: registry.opensource.zalan.do/teapot/skipper:v0.13.137
+        image: registry.opensource.zalan.do/teapot/skipper:v0.13.170
         ports:
         - name: ingress-port
           containerPort: 9990
@@ -58,6 +59,7 @@ spec:
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
+          - "-kubernetes-ingress-v1={{ .Cluster.ConfigItems.skipper_ingress_kubernetes_ingress_v1 }}"
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
 {{ if eq .ConfigItems.enable_skipper_eastwest "true"}}

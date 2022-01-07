@@ -20,6 +20,7 @@ clusters:
     service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
     lightstep_token: "${LIGHTSTEP_TOKEN}"
+    okta_auth_issuer_url: "${OKTA_AUTH_ISSUER_URL}"
     zmon_agent_replicas: '0'
     zmon_aws_agent_replicas: '0'
     zmon_redis_replicas: '0'
@@ -29,13 +30,13 @@ clusters:
     enable_rbac: "true"
     dynamodb_service_link_enabled: "false"
     skipper_ingress_cpu: 100m
+    skipper_ingress_refuse_payload: "refused-pattern-1[cf724afc]refused-pattern-2"
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
     kube_aws_ingress_controller_nlb_enabled: "true"
     nlb_switch: "pre"
     vm_dirty_bytes: 134217728
     vm_dirty_background_bytes: 67108864
-    prometheus_tsdb_retention_size: enabled
     coredns_max_upsteam_concurrency: 30
     ebs_root_volume_size: "550" # required by the limitRanger e2e tests (needs 500Gi ephemoral storage) https://github.com/kubernetes/kubernetes/blob/v1.18.3/test/e2e/scheduling/limit_range.go#L59
     routegroups_validation: "enabled"

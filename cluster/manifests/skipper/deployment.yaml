@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.137
+    version: v0.13.170
     component: ingress
 spec:
   strategy:
@@ -18,8 +18,9 @@ spec:
   template:
     metadata:
       labels:
+        deployment: skipper-ingress
         application: skipper-ingress
-        version: v0.13.137
+        version: v0.13.170
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -48,7 +49,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.137-189
+        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.170-222
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -92,10 +93,12 @@ spec:
           - "skipper"
 {{ if eq .ConfigItems.skipper_routesrv_enabled "true" }}
           - "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes"
+          - "-normalize-host"
 {{ else }}
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
+          - "-kubernetes-ingress-v1={{ .Cluster.ConfigItems.skipper_ingress_kubernetes_ingress_v1 }}"
 {{ end }}
           - "-address=:9999"
           - "-wait-first-route-load"
@@ -155,7 +158,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.137-189
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.170-222
             max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
@@ -211,6 +214,14 @@ spec:
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
+{{ end }}
+{{ if ne .ConfigItems.skipper_ingress_inline_routes "" }}
+          - "-inline-routes={{ .ConfigItems.skipper_ingress_inline_routes }}"
+{{ end }}
+{{ if ne .ConfigItems.skipper_ingress_refuse_payload "" }}
+          {{ range $pattern := split .ConfigItems.skipper_ingress_refuse_payload "[cf724afc]" }}
+          - "-refuse-payload={{ $pattern }}"
+          {{ end }}
 {{ end }}
         resources:
           limits:

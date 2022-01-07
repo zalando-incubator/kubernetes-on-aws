@@ -30,6 +30,10 @@ data:
   pod.env-inject.variable._PLATFORM_E2E: "injected"
 {{- end }}
 
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_log4j_format_msg_no_lookups "true"}}
+  pod.env-inject.variable.LOG4J_FORMAT_MSG_NO_LOOKUPS: "true"
+{{- end}}
+
   podfactory.container-resource-check.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_template_resources }}"
   podfactory.application-label-check.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_application_label }}"
   podfactory.application-label-check.minimum-creation-time: "{{ .Cluster.ConfigItems.teapot_admission_controller_application_min_creation_time }}"
@@ -106,3 +110,5 @@ data:
 
   pod.prevent-scale-down.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_prevent_scale_down_enabled }}"
   pod.prevent-scale-down.allowed: "{{ .Cluster.ConfigItems.teapot_admission_controller_prevent_scale_down_allowed }}"
+
+  pod.graceful-termination.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_graceful_termination }}"
