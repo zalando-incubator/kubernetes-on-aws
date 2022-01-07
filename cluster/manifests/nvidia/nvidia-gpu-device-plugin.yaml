@@ -5,7 +5,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: nvidia-device-plugin-daemonset
+  name: nvidia-gpu-device-plugin
   namespace: kube-system
   labels:
     application: nvidia-gpu-device-plugin
@@ -16,7 +16,6 @@ spec:
   selector:
     matchLabels:
       application: nvidia-gpu-device-plugin
-      version: v0.10.0
   template:
     metadata:
       labels:
@@ -46,11 +45,8 @@ spec:
       containers:
       - name: nvidia-gpu-device-plugin
         image: registry.opensource.zalan.do/teapot/nvidia-gpu-device-plugin:v0.10.0
-        args: ["--fail-on-init-error=false"]
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop: ["ALL"]
+        args:
+        - --fail-on-init-error=false
         resources:
           requests:
             cpu: 50m
@@ -58,6 +54,10 @@ spec:
           limits:
             cpu: 50m
             memory: 10Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
         volumeMounts:
         - name: device-plugin
           mountPath: /var/lib/kubelet/device-plugins
