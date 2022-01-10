@@ -65,11 +65,13 @@ def main():
 
     deadline = datetime.now() + timedelta(seconds=args.timeout)
 
+    logging.info("Waiting for updates...")
     while datetime.now() < deadline:
         try:
             if all([update_complete("daemonset", daemonset_updated),
                     update_complete("deployment", deployment_updated),
                     update_complete("statefulset", statefulset_updated)]):
+                logging.info("All updates are complete, exiting.")
                 sys.exit(0)
         except subprocess.CalledProcessError:
             logging.info("kubectl failed, will retry...")
