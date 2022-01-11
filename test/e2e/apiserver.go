@@ -508,3 +508,39 @@ var _ = describe("Image Policy Tests (Job) (when disabled)", func() {
 		job.WaitForJobFinish(cs, namespace, jobObj.Name)
 	})
 })
+
+var _ = describe("ECR Registry Pull", func() {
+	f := framework.NewDefaultFramework("ecr-registry")
+	var cs kubernetes.Interface
+
+	BeforeEach(func() {
+		cs = f.ClientSet
+	})
+
+	It("Should run a Job using an image from Staging ECR [ECR] [Zalando]", func() {
+		namePrefix := "ecr-registry-test"
+		appLabel := fmt.Sprintf("ecr-image-pull-staging-%s", uuid.NewUUID())
+		namespace := f.Namespace.Name
+
+		ecrStagingImage := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/automata/busybox:uno"
+		args := []string{"sleep", "10"}
+
+		By("Creating Job " + namePrefix + " in namespace " + namespace)
+
+		jobObj := createTestJob(namePrefix, "ecr-image-pull-test", namespace, ecrStagingImage, appLabel, args)
+		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		defer func() {
+			By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
+			defer GinkgoRecover()
+			err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}()
+
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		Expect(err).NotTo(HaveOccurred())
+
+		job.WaitForJobFinish(cs, namespace, jobObj.Name)
+	})
+})
