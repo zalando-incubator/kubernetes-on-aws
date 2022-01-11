@@ -389,6 +389,19 @@ Resources:
 
 # end of vpc dependent resources
 {{ end }}
+{{ if eq .Cluster.ConfigItems.oidc_provider_cf "true" }}
+  OIDCProvider:
+    DeletionPolicy: Delete
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      ClientIdList:
+      - "sts.amazonaws.com"
+      Url: "https://{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+      ThumbprintList:
+      # SHA-1 sum of the root certificate in the trust chain for the certificate
+      # use to serve the open id discovery document.
+      - "9e99a48a9960b14926bb7f3b02e22da2b0ab7280"
+{{ end }}
   WorkerIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -877,7 +890,7 @@ Resources:
             Action:
               - sts:AssumeRole
       ManagedPolicyArns:
-        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/mlbuilder-permission-boundary"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-mlbuilder-permission-boundary"
 {{- end }}
   DeploymentStatusServiceRole:
     Type: AWS::IAM::Role

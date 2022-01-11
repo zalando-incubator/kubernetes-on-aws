@@ -126,6 +126,8 @@ if [ "$create_cluster" = true ]; then
     fi
 
     # Update cluster
+    echo "Updating cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
+
     clm provision \
         --token="${CLUSTER_ADMIN_TOKEN}" \
         --directory="$(pwd)/../.." \
