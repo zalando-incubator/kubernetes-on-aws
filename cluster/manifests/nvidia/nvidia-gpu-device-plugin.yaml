@@ -1,6 +1,6 @@
 # based on:
 #
-#   https://github.com/kubernetes/kubernetes/blob/master/cluster/addons/device-plugins/nvidia-gpu/daemonset.yaml
+#   https://github.com/NVIDIA/k8s-device-plugin/blob/master/nvidia-device-plugin.yml
 #
 apiVersion: apps/v1
 kind: DaemonSet
@@ -9,7 +9,7 @@ metadata:
   namespace: kube-system
   labels:
     application: nvidia-gpu-device-plugin
-    version: 4baa941d8df91e5dc1736adea74ce54e564dd782
+    version: v0.10.0
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -20,7 +20,7 @@ spec:
     metadata:
       labels:
         application: nvidia-gpu-device-plugin
-        version: 4baa941d8df91e5dc1736adea74ce54e564dd782
+        version: v0.10.0
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
@@ -42,27 +42,23 @@ spec:
       - name: device-plugin
         hostPath:
           path: /var/lib/kubelet/device-plugins
-      - name: dev
-        hostPath:
-          path: /dev
       containers:
       - name: nvidia-gpu-device-plugin
-        image: registry.opensource.zalan.do/teapot/nvidia-gpu-device-plugin:4baa941d8df91e5dc1736adea74ce54e564dd782
-        command:
-        - /usr/bin/nvidia-gpu-device-plugin
-        - -host-path=/opt/nvidia
-        - -logtostderr
+        image: registry.opensource.zalan.do/teapot/nvidia-gpu-device-plugin:v0.10.0
+        args:
+        - --fail-on-init-error=false
+        - --pass-device-specs
         resources:
           requests:
             cpu: 50m
-            memory: 10Mi
+            memory: 25Mi
           limits:
             cpu: 50m
-            memory: 10Mi
+            memory: 25Mi
         securityContext:
-          privileged: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
         volumeMounts:
         - name: device-plugin
-          mountPath: /device-plugin
-        - name: dev
-          mountPath: /dev
+          mountPath: /var/lib/kubelet/device-plugins
