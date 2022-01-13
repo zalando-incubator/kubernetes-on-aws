@@ -23,16 +23,15 @@ pre_apply:
   kind: StatefulSet
   propagation_policy: Orphan
 #
-# skipper-ingress selector.matchLabels update
-# - matches version before update
-# - version is updated with `-selector-update` suffix to run deletion only once
+# skipper-ingress selector.matchLabels update rollback
+# - matches version after update
+# - version is reverted to `v0.13.170` run deletion only once
 # - uses `propagation_policy: Orphan` to keep exiting pods running
-# - deletion can be dropped after rollout along with version suffix removal
 #
 - labels:
     application: skipper-ingress
     component: ingress
-    version: v0.13.170
+    version: v0.13.170-selector-update
   namespace: kube-system
   kind: Deployment
   propagation_policy: Orphan

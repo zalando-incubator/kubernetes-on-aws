@@ -5,14 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    #
-    # skipper-ingress selector.matchLabels update
-    # - version is updated with `-selector-update` suffix to not match the version configured in deletions.yaml
-    #   so that deletion runs only once
-    # - `-selector-update` suffix can be dropped after rollout along with deletions.yaml cleanup
-    # - DO NOT UPDATE pod template until selector.matchLabels update rollout is complete because
-    #   ownership transfer using `propagation_policy: Orphan` only works if pod template was not changed
-    version: v0.13.170-selector-update
+    version: v0.13.170
     component: ingress
 spec:
   strategy:
@@ -21,7 +14,7 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      deployment: skipper-ingress
+      application: skipper-ingress
   template:
     metadata:
       labels:
