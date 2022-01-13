@@ -15,8 +15,20 @@ pipeline:
   commands:
   - desc: build and push
     cmd: |
+      ls /tmp
+      ls /tmp/cache
+      ls /go/pkg/mod
+      ls ~/.cache/go-build
+
       cd ./test/e2e/
       make
+
+      ls /go/pkg/mod
+      ls ~/.cache/go-build
+
+      echo Exiting early
+      exit 1
+
       go mod tidy
       if ! git diff --quiet go.mod go.sum; then
       echo "Running go mod tidy modified go.mod and/or go.sum"
