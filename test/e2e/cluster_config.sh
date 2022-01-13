@@ -97,7 +97,7 @@ clusters:
       labels: dedicated=node-tests
       taints: dedicated=node-tests:NoSchedule
   - discount_strategy: spot
-    instance_types: ["g4dn.xlarge", "g4dn.2xlarge", "p3.2xlarge", "g2.2xlarge", "g3s.xlarge", "g3.4xlarge"]
+    instance_types: ["p2.xlarge", "p3.2xlarge", "g3s.xlarge", "g4dn.xlarge"]
     name: worker-gpu
     profile: worker-splitaz
     min_size: 0
