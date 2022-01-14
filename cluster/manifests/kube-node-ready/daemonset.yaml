@@ -7,6 +7,8 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-node-ready
+    # application: kubernetes # step 2
+    component: kube-node-ready
     version: {{$version}}
 spec:
   updateStrategy:
@@ -14,10 +16,14 @@ spec:
   selector:
     matchLabels:
       application: kube-node-ready
+      # daemonset: kube-node-ready # step 2
   template:
     metadata:
       labels:
+        daemonset: kube-node-ready
         application: kube-node-ready
+        # application: kubernetes # step 3
+        component: kube-node-ready
         version: {{$version}}
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"

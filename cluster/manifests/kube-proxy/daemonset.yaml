@@ -5,9 +5,12 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-proxy
+    # application: kubernetes # step 2
+    component: kube-proxy
 spec:
   selector:
     matchLabels:
+      # daemonset: kube-proxy # step 2
       application: kube-proxy
   updateStrategy:
     type: RollingUpdate
@@ -15,7 +18,10 @@ spec:
     metadata:
       name: kube-proxy
       labels:
+        daemonset: kube-proxy
         application: kube-proxy
+        # application: kubernetes # step 3
+        component: kube-proxy
       annotations:
         config/hash: {{"configmap.yaml" | manifestHash}}
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
