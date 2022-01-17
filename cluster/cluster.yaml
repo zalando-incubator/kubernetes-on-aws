@@ -443,13 +443,6 @@ Resources:
               - Action: 's3:GetObject'
                 Effect: Allow
                 Resource: 'arn:aws:s3:::*'
-              - Action:
-                  - 'ecr:BatchCheckLayerAvailability'
-                  - 'ecr:BatchGetImage'
-                  - 'ecr:GetDownloadUrlForLayer'
-                  - 'ecr:GetAuthorizationToken'
-                Effect: Allow
-                Resource: '*'
 {{ if eq .Cluster.Environment "e2e" }}
 # Add extra permissions to worker IAM role to test that if a pod manages to get
 # the WorkerIAMRole assigned it can list a specific s3 bucket.
@@ -1212,13 +1205,6 @@ Resources:
               - Action: 's3:GetObject'
                 Effect: Allow
                 Resource: 'arn:aws:s3:::*'
-              - Action:
-                  - 'ecr:BatchCheckLayerAvailability'
-                  - 'ecr:BatchGetImage'
-                  - 'ecr:GetDownloadUrlForLayer'
-                  - 'ecr:GetAuthorizationToken'
-                Effect: Allow
-                Resource: '*'
             Version: 2012-10-17
           PolicyName: root
     Type: 'AWS::IAM::Role'
