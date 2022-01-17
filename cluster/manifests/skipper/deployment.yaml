@@ -532,6 +532,10 @@ spec:
           - "-enable-kubernetes-endpointslices={{ .Cluster.ConfigItems.skipper_endpointslices_enabled }}"
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
+{{- if and (eq .Cluster.ConfigItems.eks "true") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}
+          # TODO: dynamically get the subnet range (or figure out if these are known internal addresses?)
+          - "-whitelisted-healthcheck-cidr=2a05:d014:09c0:bf00:0:0:0:0/64,2a05:d014:09c0:bf01:0:0:0:0/64,2a05:d014:09c0:bf02:0:0:0:0/64"
+{{- end }}
 {{ if eq .Cluster.ConfigItems.enable_skipper_eastwest "true"}}
           - "-enable-kubernetes-east-west"
           - "-kubernetes-east-west-domain=.ingress.cluster.local"

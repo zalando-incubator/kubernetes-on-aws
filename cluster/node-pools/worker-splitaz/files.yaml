@@ -2,6 +2,12 @@ files:
   - path: /etc/kubernetes/.local-id
     data: "{{ .Cluster.LocalID | base64 }}"
     permissions: 0400
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+  - path: /etc/kubernetes/ssl/ca.pem
+    data: {{.Cluster.ConfigItems.eks_certficate_authority_data}}
+    permissions: 0400
+    encrypted: false
+{{- else }}
   - path: /etc/kubernetes/ssl/worker.pem
     data: {{ .Cluster.ConfigItems.worker_cert }}
     permissions: 0400
@@ -14,3 +20,4 @@ files:
     data: {{ .Cluster.ConfigItems.ca_cert_decompressed }}
     permissions: 0400
     encrypted: false
+{{- end }}

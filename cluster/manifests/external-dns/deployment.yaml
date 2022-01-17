@@ -33,10 +33,12 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: container-registry.zalando.net/teapot/external-dns:v0.13.6-master-38
+        # image: container-registry.zalando.net/teapot/external-dns:v0.13.6-master-38
+        image: mikkeloscar/external-dns:1
         args:
         - --source=service
         - --source=ingress
+        # TODO: support routegroup with eks ipv6
         - --source=skipper-routegroup
 {{- range split .Cluster.ConfigItems.external_dns_domain_filter "," }}
         - --domain-filter={{ . }}
@@ -52,6 +54,7 @@ spec:
         - --aws-zones-cache-duration={{ .Cluster.ConfigItems.external_dns_zones_cache_duration }}
         - --annotation-filter=external-dns.alpha.kubernetes.io/exclude notin (true)
         - --policy={{ .Cluster.ConfigItems.external_dns_policy }}
+        - --log-level=debug
         resources:
           requests:
             cpu: 50m

@@ -7,7 +7,11 @@ metadata:
     application: kubernetes
     component: kube-cluster-autoscaler
   annotations:
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/{{ .Cluster.LocalID }}-app-autoscaler"
+{{- else}}
     iam.amazonaws.com/role: "{{ .Cluster.LocalID }}-app-autoscaler"
+{{- end}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

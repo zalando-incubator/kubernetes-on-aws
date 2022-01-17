@@ -1,0 +1,13 @@
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aws-node
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: aws-node
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/{{.Cluster.LocalID}}-aws-node"
+{{- end}}

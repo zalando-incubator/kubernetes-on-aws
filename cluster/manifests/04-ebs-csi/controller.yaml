@@ -22,8 +22,10 @@ spec:
     spec:
       serviceAccountName: ebs-csi-controller-sa
       priorityClassName: system-cluster-critical
+{{- if ne .Cluster.ConfigItems.eks "true" }}
       nodeSelector:
         node.kubernetes.io/role: master
+{{- end }}
       tolerations:
         - key: node.kubernetes.io/role
           value: master

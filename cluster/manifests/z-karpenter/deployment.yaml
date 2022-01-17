@@ -164,4 +164,9 @@ spec:
         - key: node.kubernetes.io/role
           value: master
           effect: NoSchedule
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+        - key: dedicated
+          value: cluster-seed
+          effect: NoSchedule
+{{- end}}
 {{ end }}

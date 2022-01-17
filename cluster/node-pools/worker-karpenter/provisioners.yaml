@@ -22,6 +22,7 @@ spec:
     - tags:
         karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
   associatePublicIPAddress: true
+  # TODO: eks: ipv6
   instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
   blockDeviceMappings:
     - deviceName: /dev/sda1
@@ -112,6 +113,12 @@ spec:
       # Operators { In, NotIn, Exists, DoesNotExist, Gt, and Lt } are supported.
       # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#operators
       requirements:
+#{{ if and (eq .Cluster.ConfigItems.eks "true") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+        - key: karpenter.k8s.aws/instance-hypervisor
+          operator: In
+          values:
+            - nitro
+#{{ end }}
 #{{ if and (eq (len .NodePool.InstanceTypes) 1) (eq (index .NodePool.InstanceTypes 0) "default-for-karpenter") }}
         - key: "karpenter.k8s.aws/instance-family"
           operator: In
@@ -183,11 +190,17 @@ spec:
       kubelet:
         clusterDNS: [ "10.0.1.100" ]
         cpuCFSQuota: false
+#{{ if eq .Cluster.ConfigItems.eks "true" }}
+        # TODO: Uses lower limit for simplicity need to support dynamic value based
+        # on instance type.
+        maxPods: 10
+#{{ else }}
 # {{ if ne .Cluster.ConfigItems.karpenter_max_pods_per_node "" }}
         maxPods: {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
 # {{ else }}
         maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
 # {{ end }}
+#{{ end }}
         systemReserved:
           cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
           memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
