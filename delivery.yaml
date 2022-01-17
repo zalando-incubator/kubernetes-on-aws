@@ -4,7 +4,8 @@ pipeline:
 - id: build
   depends_on: []
   when:
-    event: pull_request
+  - branch: dev
+  - event: pull_request
   vm: large # speed up building kubernetes/kubernetes
   overlay: ci/golang-1-17
   cache:
@@ -19,10 +20,13 @@ pipeline:
       make
       go mod tidy
       if ! git diff --quiet go.mod go.sum; then
-      echo "Running go mod tidy modified go.mod and/or go.sum"
-      exit 1
+        echo "Running go mod tidy modified go.mod and/or go.sum"
+        exit 1
       fi
-      VERSION="$CDP_BUILD_VERSION" make build.push
+
+      if [ "$CDP_TRIGGER_EVENT" == "pull_request" ]; then
+        VERSION="$CDP_BUILD_VERSION" make build.push
+      fi
 
 - id: create-cluster
   when:
