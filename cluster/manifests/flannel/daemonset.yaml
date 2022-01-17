@@ -5,6 +5,8 @@ metadata:
   namespace: kube-system
   labels:
     application: flannel
+    # application: kubernetes # step 2
+    component: flannel
     version: v0.15.1-14
 spec:
   updateStrategy:
@@ -12,10 +14,14 @@ spec:
   selector:
     matchLabels:
       application: flannel
+      # daemonset: kube-flannel # step 2
   template:
     metadata:
       labels:
+        daemonset: kube-flannel
         application: flannel
+        # application: kubernetes # step 3
+        component: flannel
         version: v0.15.1-14
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
