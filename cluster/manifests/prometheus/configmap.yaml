@@ -183,6 +183,7 @@ data:
         target_label: node_name
       - action: labeldrop
         regex: "^(pod|node|container)$"
+{{- if ne .Cluster.ConfigItems.eks "true" }}
     - job_name: 'etcd-servers'
       scheme: http
       dns_sd_configs:
@@ -205,6 +206,7 @@ data:
        - source_labels: [ __name__ ]
          regex: 'node_textfile.*'
          action: drop
+{{- end }}
 {{ if eq .Cluster.ConfigItems.network_monitoring_enabled "true" }}
 {{if eq .Cluster.ConfigItems.network_monitoring_separate_prometheus "false"}}
     - job_name: "kubenurse"

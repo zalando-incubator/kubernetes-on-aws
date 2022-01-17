@@ -1,0 +1,17 @@
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: admission-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: admission-controller
+spec:
+  selector:
+    deployment: teapot-admission-controller
+  ports:
+  - port: 443
+    targetPort: 8085
+    protocol: TCP
+{{- end }}

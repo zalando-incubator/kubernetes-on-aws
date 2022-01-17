@@ -1,0 +1,73 @@
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: teapot-admission-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: admission-controller
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      deployment: teapot-admission-controller
+  template:
+    metadata:
+      labels:
+        deployment: teapot-admission-controller
+        application: kubernetes
+        component: admission-controller
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+    spec:
+      tolerations:
+      - key: dedicated
+        value: cluster-seed
+        effect: NoSchedule
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      serviceAccountName: admission-controller
+      priorityClassName: system-cluster-critical
+      containers:
+      - name: admission-controller
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-206
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c",  "sleep 60"]
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 8085
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100Mi
+          # TODO: limits
+        args:
+          - --address=:8085
+          - --tls-cert-file=/etc/tls-certs/admission-controller.pem
+          - --tls-key-file=/etc/tls-certs/admission-controller-key.pem
+{{- if index .Cluster.ConfigItems "application_registry_url" }}
+          - --application-registry-url={{.Cluster.ConfigItems.application_registry_url}}
+{{- end }}
+{{- if index .Cluster.ConfigItems "docker_meta_url" }}
+          - --docker-meta-url={{.Cluster.ConfigItems.docker_meta_url}}
+{{- end }}
+        ports:
+          - containerPort: 8085
+        volumeMounts:
+          - mountPath: /etc/tls-certs
+            name: tls-certs
+            readOnly: true
+      volumes:
+      - name: tls-certs
+        secret:
+          secretName: admission-controller-tls-certs
+{{- end }}

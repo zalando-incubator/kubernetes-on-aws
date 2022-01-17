@@ -151,6 +151,9 @@ Resources:
         NetworkInterfaces:
         - DeviceIndex: 0
           AssociatePublicIpAddress: true
+          {{- if and (eq .Cluster.ConfigItems.eks "true") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+          Ipv6AddressCount: 1
+          {{- end}}
           Groups:
           - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
         EbsOptimized: false

@@ -14,7 +14,12 @@ metadata:
     component: ingress
 spec:
   type: ClusterIP
+{{- if ne .Cluster.ConfigItems.eks "true"}}
+# TODO: how to do internal-ingress?
+# function to derive IP from range?
+# Can be hardcoded for ipv4, must be dynamic for ipv6
   clusterIP: 10.5.99.99
+{{- end}}
   ports:
     - port: 80
       targetPort: 9999

@@ -27,7 +27,11 @@ spec:
     spec:
       initContainers:
       - name: ensure-apiserver
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/ensure-apiserver:master-6
+{{- else }}
         image: container-registry.zalando.net/teapot/ensure-apiserver:master-6
+{{- end }}
         resources:
           requests:
             cpu: 1m
@@ -57,7 +61,11 @@ spec:
             command:
             - dig
             - "+short"
+{{- if and (eq .Cluster.ConfigItems.eks "true") (eq .Cluster.ConfigItems.eks_ip_family "ipv4") }}
             - "@127.0.0.1"
+{{- else }}
+            - "::1"
+{{- end }}
             - "kubernetes.default.svc.cluster.local"
           initialDelaySeconds: 60
           periodSeconds: 10
@@ -78,7 +86,8 @@ spec:
         image: container-registry.zalando.net/teapot/unbound-telemetry:master-5
         args:
         - tcp
-        - --bind=0.0.0.0:9054
+        # TODO: ipv6
+        - --bind=:9054
         ports:
         - name: metrics
           containerPort: 9054
@@ -92,7 +101,11 @@ spec:
 {{ end }}
 {{ if eq .Cluster.ConfigItems.dns_cache "dnsmasq" }}
       - name: dnsmasq
+        {{- if eq .Cluster.ConfigItems.eks "true" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-dns-dnsmasq-nanny:1.17.4-master-15
+        {{- else }}
         image: container-registry.zalando.net/teapot/k8s-dns-dnsmasq-nanny:1.17.4-master-15
+        {{- end }}
         securityContext:
           privileged: true
         livenessProbe:
@@ -118,8 +131,8 @@ spec:
         - --neg-ttl=60
         # send requests to the last server first, only fallback to the previous ones if it's unreachable
         - --strict-order
-        - --server=10.5.0.11#53
-        - --server=127.0.0.1#9254
+        - --server=10.5.0.11#53 # TODO: fix this for ipv6
+        - --server={{ if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}127.0.0.1{{else}}::1{{end}}#9254
         ports:
         - containerPort: 53
           name: dns
@@ -134,7 +147,11 @@ spec:
             cpu: {{.Cluster.ConfigItems.dns_dnsmasq_cpu}}
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_mem}}
       - name: sidecar
+        {{- if eq .Cluster.ConfigItems.eks "true" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-dns-sidecar:1.17.4-master-15
+        {{- else }}
         image: container-registry.zalando.net/teapot/k8s-dns-sidecar:1.17.4-master-15
+        {{- end }}
         securityContext:
           privileged: true
         livenessProbe:
@@ -149,6 +166,7 @@ spec:
         args:
         - --v=2
         - --logtostderr
+        # TODO: ipv6
         - --probe=dnsmasq,127.0.0.1:9254,ec2.amazonaws.com,5,A
         - --prometheus-port=9054
         ports:
@@ -163,7 +181,11 @@ spec:
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_mem}}
 {{ end }}
       - name: coredns
+        {{- if eq .Cluster.ConfigItems.eks "true" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/coredns:1.11.3-master-24
+        {{- else }}
         image: container-registry.zalando.net/teapot/coredns:1.11.3-master-24
+        {{- end }}
         args: [ "-conf", "/etc/coredns/Corefile" ]
         env:
         - name: ZONE

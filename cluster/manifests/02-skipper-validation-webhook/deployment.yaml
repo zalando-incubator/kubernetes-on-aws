@@ -1,0 +1,66 @@
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skipper-validation-webhook
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    component: webhook
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      deployment: skipper-validation-webhook
+  template:
+    metadata:
+      labels:
+        deployment: skipper-validation-webhook
+        application: skipper-ingress
+        component: webhook
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+    spec:
+      tolerations:
+      - key: dedicated
+        value: cluster-seed
+        effect: NoSchedule
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      priorityClassName: system-cluster-critical
+      containers:
+      - name: skipper-admission-webhook
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.17.1
+        args:
+          - webhook
+          - --address=:9085
+          - --tls-cert-file=/etc/tls-certs/skipper-validation-webhook.pem
+          - --tls-key-file=/etc/tls-certs/skipper-validation-webhook-key.pem
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c",  " sleep 60"]
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 9085
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 30m
+            memory: 100Mi
+        ports:
+          - containerPort: 9085
+        volumeMounts:
+          - mountPath: /etc/tls-certs
+            name: tls-certs
+            readOnly: true
+      volumes:
+      - name: tls-certs
+        secret:
+          secretName: skipper-validation-webhook-tls-certs
+{{- end }}

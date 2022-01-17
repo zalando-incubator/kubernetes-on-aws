@@ -3,6 +3,14 @@ pre_apply: []
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+- name: coredns
+  kind: Deployment
+  namespace: kube-system
+- name: coredns
+  kind: ConfigMap
+  namespace: kube-system
+{{- end }}
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default

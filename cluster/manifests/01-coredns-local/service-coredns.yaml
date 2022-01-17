@@ -9,7 +9,10 @@ metadata:
 spec:
   selector:
     component: coredns
+{{- if ne .Cluster.ConfigItems.eks "true"}}
+# TODO: what to do with eks service range?
   clusterIP: 10.5.0.11
+{{- end}}
   ports:
   - name: dns
     port: 53

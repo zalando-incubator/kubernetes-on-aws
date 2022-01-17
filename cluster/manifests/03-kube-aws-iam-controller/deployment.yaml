@@ -45,5 +45,7 @@ spec:
       - key: node.kubernetes.io/role
         value: master
         effect: NoSchedule
+{{- if ne .Cluster.ConfigItems.eks "true" }}
       nodeSelector:
         node.kubernetes.io/role: master
+{{- end }}

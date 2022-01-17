@@ -1,5 +1,9 @@
 apiVersion: apps/v1
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+kind: Deployment
+{{- else}}
 kind: DaemonSet
+{{- end}}
 metadata:
   name: kube-cluster-autoscaler
   namespace: kube-system
@@ -10,8 +14,10 @@ spec:
   selector:
     matchLabels:
       daemonset: kube-cluster-autoscaler
+{{- if ne .Cluster.ConfigItems.eks "true"}}
   updateStrategy:
     type: RollingUpdate
+{{- end}}
   template:
     metadata:
       labels:
@@ -31,8 +37,13 @@ spec:
       serviceAccountName: cluster-autoscaler
       dnsPolicy: Default
       tolerations:
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+      - key: dedicated
+        value: cluster-seed
+{{- else}}
       - key: node.kubernetes.io/role
         value: master
+{{- end}}
         effect: NoSchedule
       containers:
       - name: cluster-autoscaler
@@ -72,5 +83,7 @@ spec:
         env:
           - name: AWS_REGION
             value: "{{ .Cluster.Region }}"
+{{- if ne .Cluster.ConfigItems.eks "true"}}
       nodeSelector:
         node.kubernetes.io/role: master
+{{- end}}

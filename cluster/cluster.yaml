@@ -5,6 +5,198 @@ Metadata:
     InfrastructureComponent: "true"
     application: "kubernetes"
 Resources:
+{{ if eq .Cluster.ConfigItems.eks "true" }}
+  EKSClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-eks-cluster-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - eks.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSVPCResourceController
+
+  EKSControlPlaneSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      # GroupDescription: "{{ .Cluster.Alias }}-eks-control-plane"
+      GroupDescription: "{{ .Cluster.Alias }}-control-plane"
+      # TODO:
+      # SecurityGroupIngress:
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+  EKSSelfWorkerSecurityIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: "-1"
+      GroupId: !Ref WorkerSecurityGroup
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+  # allow access from Worker Security Group to the Control Plane SG
+  EKSGroupControlPlaneWorkerSecurityIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      FromPort: 443
+      GroupId: !GetAtt EKSCluster.ClusterSecurityGroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      ToPort: 443
+  EKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: "{{.Cluster.ID | eksID}}"
+      Version: "1.30"
+      RoleArn: !GetAtt EKSClusterRole.Arn
+      KubernetesNetworkConfig:
+        IpFamily: "{{.Cluster.ConfigItems.eks_ip_family}}"
+      AccessConfig:
+        AuthenticationMode: API
+        #BootstrapClusterCreatorAdminPermissions: false
+      EncryptionConfig:
+        - Provider:
+            KeyArn: !GetAtt EtcdEncryptionKey.Arn # TODO: maybe use another key for EKS?
+          Resources:
+          - secrets
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+          - !Ref EKSControlPlaneSecurityGroup
+        SubnetIds:
+        {{ with $values := .Values }}
+        {{ range $az := $values.availability_zones }}
+          - "{{ index $values.subnets $az }}"
+        {{ end }}
+        {{ end }}
+        EndpointPublicAccess: true
+        EndpointPrivateAccess: true
+        # PublicAccessCidrs: [ "1.1.1.2/32" ]
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
+      Logging:
+        ClusterLogging:
+          EnabledTypes:
+            - Type: api
+            - Type: audit
+            - Type: authenticator
+            - Type: controllerManager
+            - Type: scheduler
+{{- end }}
+      # Tags:
+      # - Key: "application"
+      #   Value: "kubernetes"
+      # TODO: vanity domain name? (certficate issue)
+      #
+      #
+  EKSIdentityProvider:
+    Type: AWS::EKS::IdentityProviderConfig
+    Properties:
+      ClusterName: !Ref EKSCluster
+      IdentityProviderConfigName: "okta"
+      Oidc:
+        IssuerUrl: "{{.Cluster.ConfigItems.okta_auth_issuer_url}}"
+        ClientId: "{{.Cluster.ConfigItems.okta_auth_client_id}}"
+        UsernameClaim: "email"
+        UsernamePrefix: "okta:"
+        GroupsClaim: "groups"
+        GroupsPrefix: "okta:"
+      Type: "oidc"
+  EKSAccessEntryNodeAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-worker"
+      Type: "EC2_LINUX"
+  EKSAccessEntryZalandoIAMAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/zalando-iam"
+      Username: "zalando-iam:zalando:service:{{`{{SessionName}}`}}"
+      Type: "STANDARD"
+  # TODO: IAM POLICY
+  EKSCNIIPv6Policy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      # PolicyName: "{{.Cluster.LocalID}}-eks-cni-ipv6"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Action:
+          - "ec2:AssignIpv6Addresses"
+          - "ec2:DescribeInstances"
+          - "ec2:DescribeTags"
+          - "ec2:DescribeNetworkInterfaces"
+          - "ec2:DescribeInstanceTypes"
+          Resource: "*"
+        - Effect: Allow
+          Action:
+          - "ec2:CreateTags"
+          Resource:
+          - "arn:aws:ec2:*:*:network-interface/*"
+  EKSAWSNodeIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-aws-node"
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": [
+                    "ec2.amazonaws.com"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRole"
+                ]
+              },
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:aws-node"
+                  }
+                }
+              }
+            ]
+          }
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+      Path: /
+      ManagedPolicyArns:
+{{- if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}
+      - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+{{- else }}
+      - !Ref EKSCNIIPv6Policy
+{{- end }}
+  EKSOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      ClientIdList:
+      - "sts.amazonaws.com"
+      Url: !GetAtt EKSCluster.OpenIdConnectIssuerUrl
+      ThumbprintList:
+      # SHA-1 sum of the root certificate in the trust chain for the certificate
+      # use to serve the open id discovery document.
+      - "9e99a48a9960b14926bb7f3b02e22da2b0ab7280"
+{{ else }}
 {{ if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
   EtcdClusterSecurityGroupIngressFromMaster:
     Type: 'AWS::EC2::SecurityGroupIngress'
@@ -22,25 +214,6 @@ Resources:
       GroupId: !ImportValue '{{.Cluster.ConfigItems.etcd_stack_name}}:etcd-security-group-id'
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-  IngressLoadBalancerSecurityGroup:
-    Properties:
-      GroupDescription: !Ref 'AWS::StackName'
-      SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          FromPort: 80
-          IpProtocol: tcp
-          ToPort: 80
-        - CidrIp: 0.0.0.0/0
-          FromPort: 443
-          IpProtocol: tcp
-          ToPort: 443
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-        - Key: 'kubernetes:application'
-          Value: kube-ingress-aws-controller
-      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
-    Type: 'AWS::EC2::SecurityGroup'
   MasterKubeletToMasterKubeletSecurityGroup:
     Properties:
       FromPort: 10250
@@ -244,9 +417,58 @@ Resources:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
     Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerSecurityGroupIngressFromMasterToFlannel:
+    Properties:
+      FromPort: 8472
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: udp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 8472
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerSecurityGroupIngressFromMasterToKubelet:
+    Properties:
+      FromPort: 10250
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 10250
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerSecurityGroupIngressFromWorkerToFlannel:
+    Properties:
+      FromPort: 8472
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: udp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 8472
+    Type: 'AWS::EC2::SecurityGroupIngress'
+# end of vpc dependent resources
+{{ end }}
+  OIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      ClientIdList:
+      - "sts.amazonaws.com"
+      Url: "https://{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+      ThumbprintList:
+      # SHA-1 sum of the root certificate in the trust chain for the certificate
+      # use to serve the open id discovery document.
+      - "9e99a48a9960b14926bb7f3b02e22da2b0ab7280"
+# end of non eks resources
+{{ end }}
+
+{{ if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
   WorkerSecurityGroup:
     Properties:
-      GroupDescription: !Ref 'AWS::StackName'
+      GroupDescription: "{{ .Cluster.ID }}-worker-sg"
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
           FromPort: -1
@@ -290,10 +512,16 @@ Resources:
           FromPort: 9153
           IpProtocol: tcp
           ToPort: 9153
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        # Allow all traffic from Cluster Security Group
+        - SourceSecurityGroupId: !GetAtt EKSCluster.ClusterSecurityGroupId
+          IpProtocol : "-1"
+{{- else }}
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 10250
           IpProtocol: tcp
           ToPort: 10250
+{{- end }}
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 30000
           IpProtocol: tcp
@@ -313,39 +541,6 @@ Resources:
           Value: '{{ .Cluster.ID }}/WorkerNodeSecurityGroup'
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
-  WorkerSecurityGroupIngressFromMasterToFlannel:
-    Properties:
-      FromPort: 8472
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: udp
-      SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 8472
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromMasterToKubelet:
-    Properties:
-      FromPort: 10250
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 10250
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToFlannel:
-    Properties:
-      FromPort: 8472
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: udp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-      ToPort: 8472
-    Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToWorkerKubeletAndKubeProxy:
     Properties:
       FromPort: 10249 # KubeProxy
@@ -409,19 +604,27 @@ Resources:
           Value: owned
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
-
-# end of vpc dependent resources
-{{ end }}
-  OIDCProvider:
-    Type: AWS::IAM::OIDCProvider
+  IngressLoadBalancerSecurityGroup:
     Properties:
-      ClientIdList:
-      - "sts.amazonaws.com"
-      Url: "https://{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-      ThumbprintList:
-      # SHA-1 sum of the root certificate in the trust chain for the certificate
-      # use to serve the open id discovery document.
-      - "9e99a48a9960b14926bb7f3b02e22da2b0ab7280"
+      GroupDescription: !Ref 'AWS::StackName'
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+        - Key: 'kubernetes:application'
+          Value: kube-ingress-aws-controller
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+    Type: 'AWS::EC2::SecurityGroup'
+# end of vpc dependent resources
+{{- end }}
   WorkerIAMRole: # role used by worker nodes, including karpenter ones
     Properties:
       AssumeRolePolicyDocument:
@@ -442,6 +645,11 @@ Resources:
                   - !Ref MasterIAMRole
         Version: 2012-10-17
       Path: /
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+{{- end }}
       Policies:
         - PolicyDocument:
             Statement:
@@ -508,17 +716,34 @@ Resources:
     Type: 'AWS::IAM::Role'
   AutoscalerIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:cluster-autoscaler"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:cluster-autoscaler"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -561,18 +786,35 @@ Resources:
 {{- if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
   KarpenterIAMRole: # role for the karpenter controller
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:aud": "sts.amazonaws.com"
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:karpenter"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:aud": "sts.amazonaws.com",
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:karpenter"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyName: "KarpenterControllerPolicy-{{ .Cluster.ID | awsValidID }}"
@@ -967,17 +1209,34 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: "{{.Cluster.LocalID}}-deployment-service-controller"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:deployment-service-controller"
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:deployment-service-controller"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Policies:
         - PolicyName: ControllerPolicy
           PolicyDocument:
@@ -1052,17 +1311,34 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: "{{.Cluster.LocalID}}-deployment-service-status-service"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:deployment-service-status-service"
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:deployment-service-status-service"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Policies:
         - PolicyName: StatusServicePolicy
           PolicyDocument:
@@ -1093,17 +1369,34 @@ Resources:
                 Resource: '*'
   ExternalDNSIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:external-dns"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:external-dns"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1117,17 +1410,34 @@ Resources:
     Type: 'AWS::IAM::Role'
   IngressControllerIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{ .Values.hosted_zone }}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-ingress-aws-controller"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:kube-ingress-aws-controller"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1261,17 +1571,34 @@ Resources:
 {{ end }}
   ClusterLifecycleControllerIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Effect: Allow
-          Principal:
-            Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-          Action:
-            - 'sts:AssumeRoleWithWebIdentity'
-          Condition:
-            StringEquals:
-              "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:cluster-lifecycle-controller"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:cluster-lifecycle-controller"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
       - PolicyDocument:
@@ -1315,25 +1642,49 @@ Resources:
     Type: 'AWS::IAM::Role'
   KubeReadyIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-node-ready"
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - !Sub 'arn:aws:iam::${AWS::AccountId}:role/'
-                  - !Ref MasterIAMRole
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+{{- if ne .Cluster.ConfigItems.eks "true" }}
+              {
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "${MasterIAMRole}"
+                }
+              },
+{{- end }}
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:kube-node-ready"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+          MasterIAMRole: !Join
+            - ''
+            - - !Sub 'arn:aws:iam::${AWS::AccountId}:role/'
+              - !Ref MasterIAMRole
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1420,6 +1771,7 @@ Resources:
             Version: 2012-10-17
           PolicyName: root
     Type: 'AWS::IAM::Role'
+{{- if ne .Cluster.ConfigItems.eks "true" }}
   CloudControllerManagerIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1545,20 +1897,38 @@ Resources:
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-etcd-backup"
+{{- end }}
     Type: 'AWS::IAM::Role'
   StaticEgressControllerIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-static-egress-controller"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:kube-static-egress-controller"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1783,37 +2153,65 @@ Resources:
     Properties:
       RoleName: "{{.Cluster.LocalID}}-app-logging-agent"
       Path: /
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action: ["sts:AssumeRole"]
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - !Sub 'arn:aws:iam::${AWS::AccountId}:role/'
-                  - !Ref WorkerIAMRole
-          - Action: ["sts:AssumeRole"]
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - !Sub 'arn:aws:iam::${AWS::AccountId}:role/'
-                  - !Ref MasterIAMRole
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:visibility:logging-agent"
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Principal": {
+                  "Service": [
+                    "ec2.amazonaws.com"
+                  ]
+                }
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Principal": {
+                  "AWS": "${WorkerIAMRole}"
+                }
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Principal": {
+                  "AWS": "${MasterIAMRole}"
+                }
+              },
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:visibility:logging-agent"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
+          WorkerIAMRole: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${WorkerIAMRole}'
+          MasterIAMRole: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${MasterIAMRole}'
       Policies:
         - PolicyName: AllowS3BucketAccess
           PolicyDocument:
@@ -1843,17 +2241,34 @@ Resources:
 
   KubeMetricsIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:custom-metrics-apiserver"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:custom-metrics-apiserver"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1877,17 +2292,34 @@ Resources:
 
   EBSCSIControllerIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -2112,17 +2544,34 @@ Resources:
     Type: 'AWS::IAM::Role'
     Properties:
       RoleName: "{{.Cluster.LocalID}}-aws-node-decommissioner"
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:aws-node-decommissioner"
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:aws-node-decommissioner"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -2136,17 +2585,34 @@ Resources:
           PolicyName: root
   EmergencyAccessServiceIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:emergency-access-service"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:emergency-access-service"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -2170,17 +2636,34 @@ Resources:
     Type: 'AWS::IAM::Role'
   AudittrailAdapterIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:audittrail-adapter"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:audittrail-adapter"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -2267,6 +2750,17 @@ Resources:
             - "kms:*"
             - "tag:TagResources"
             Resource: "*"
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+          - Sid: "Allow EKSClusterRole access to describe the key"
+            Effect: "Allow"
+            Principal:
+              AWS:
+              - !GetAtt EKSClusterRole.Arn
+            Action:
+            - "kms:DescribeKey"
+            - "kms:CreateGrant"
+            Resource: "*"
+{{- else }}
           - Sid: "Enable master nodes to encrypt and decrypt secrets in etcd"
             Effect: "Allow"
             Principal:
@@ -2278,6 +2772,8 @@ Resources:
             Action:
             - "kms:Encrypt"
             - "kms:Decrypt"
+{{- end }}
+{{- if ne .Cluster.ConfigItems.eks "true" }}
   MasterFilesEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:
@@ -2315,6 +2811,7 @@ Resources:
             Resource: "*"
             Action:
             - "kms:Decrypt"
+{{- end}}
   WorkerFilesEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:
@@ -2353,22 +2850,33 @@ Resources:
             Action:
             - "kms:Decrypt"
 Outputs:
+{{- if eq .Cluster.ConfigItems.eks "true" }}
+  EKSControlPlaneEndpoint:
+    Export:
+      Name: "{{.Cluster.ID}}:eks-control-plane-endpoint"
+    Value: !GetAtt EKSCluster.Endpoint
+  # EKSServiceIpv6Cidr:
+  #   Export:
+  #     Name: "{{.Cluster.ID}}:eks-service-cidr"
+  #   Value: !GetAtt EKSCluster.KubernetesNetworkConfig.ServiceIpv6Cidr
+  EKSOpenIdConnectIssuerUrl:
+    Export:
+      Name: "{{.Cluster.ID}}:eks-oidc-url"
+    Value: !GetAtt EKSCluster.OpenIdConnectIssuerUrl
+  EKSClusterSecurityGroupId:
+    Export:
+      Name: "{{.Cluster.ID}}:eks-security-group-id"
+    Value: !GetAtt EKSCluster.ClusterSecurityGroupId
+  # Too big for Cloudformation output?
+  # EKSCertificateAuthorityData:
+  #   Export:
+  #     Name: "{{.Cluster.ID}}:eks-certificate-authority-data"
+  #   Value: !GetAtt EKSCluster.CertificateAuthorityData
+{{- else }}
   MasterIAMRole:
     Export:
       Name: '{{.Cluster.ID}}:master-iam-role'
     Value: !Ref MasterIAMRole
-  WorkerIAMRole:
-    Export:
-      Name: '{{.Cluster.ID}}:worker-iam-role'
-    Value: !Ref WorkerIAMRole
-  RemoteFilesEncryptionKey:
-    Export:
-      Name: '{{ .Cluster.ID}}:remote-files-encryption-key'
-    Value: !Ref RemoteFilesEncryptionKey
-  WorkerFilesEncryptionKey:
-    Export:
-      Name: '{{ .Cluster.ID}}:worker-files-encryption-key'
-    Value: !Ref WorkerFilesEncryptionKey
   MasterFilesEncryptionKey:
     Export:
       Name: '{{ .Cluster.ID}}:master-files-encryption-key'
@@ -2382,12 +2890,27 @@ Outputs:
     Export:
       Name: '{{.Cluster.ID}}:master-security-group'
     Value: !Ref MasterSecurityGroup
-  WorkerSecurityGroup:
-    Export:
-      Name: '{{.Cluster.ID}}:worker-security-group'
-    Value: !Ref WorkerSecurityGroup
 {{- end }}
   EtcdEncryptionKey:
     Export:
       Name: '{{ .Cluster.ID}}:etcd-encryption-key'
     Value: !Ref EtcdEncryptionKey
+{{- end}}
+  WorkerIAMRole:
+    Export:
+      Name: '{{.Cluster.ID}}:worker-iam-role'
+    Value: !Ref WorkerIAMRole
+  RemoteFilesEncryptionKey:
+    Export:
+      Name: '{{ .Cluster.ID}}:remote-files-encryption-key'
+    Value: !Ref RemoteFilesEncryptionKey
+  WorkerFilesEncryptionKey:
+    Export:
+      Name: '{{ .Cluster.ID}}:worker-files-encryption-key'
+    Value: !Ref WorkerFilesEncryptionKey
+{{- if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
+  WorkerSecurityGroup:
+    Export:
+      Name: '{{.Cluster.ID}}:worker-security-group'
+    Value: !Ref WorkerSecurityGroup
+{{- end }}
