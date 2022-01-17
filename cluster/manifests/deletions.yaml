@@ -10,6 +10,22 @@ pre_apply:
   kind: Deployment
 {{ end }}
 
+# Delete old version of vpa components for recreating with new selector
+- labels:
+    application: vertical-pod-autoscaler
+    component: recommender
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: vertical-pod-autoscaler
+    component: updater
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: vertical-pod-autoscaler
+    component: admission-controller
+  namespace: kube-system
+  kind: Deployment
 # step 2
 # - labels:
 #     application: kube-proxy
