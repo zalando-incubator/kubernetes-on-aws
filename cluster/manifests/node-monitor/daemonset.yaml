@@ -5,16 +5,22 @@ metadata:
   namespace: kube-system
   labels:
     application: node-monitor
+    # application: kubernetes # step 2
+    component: node-monitor
 spec:
   updateStrategy:
     type: RollingUpdate
   selector:
     matchLabels:
       application: node-monitor
+      # daemonset: node-monitor # step 2
   template:
     metadata:
       labels:
+        daemonset: node-monitor
         application: node-monitor
+        # application: kubernetes # step 3
+        component: node-monitor
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:

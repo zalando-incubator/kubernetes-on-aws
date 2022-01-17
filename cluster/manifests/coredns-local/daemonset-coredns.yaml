@@ -5,10 +5,11 @@ metadata:
   namespace: kube-system
   labels:
     application: coredns
+    # application: kubernetes # step 2
+    component: coredns
     version: v1.8.4
     kubernetes.io/cluster-service: "true"
     kubernetes.io/name: "CoreDNS"
-    component: cluster-dns
 spec:
   updateStrategy:
     type: OnDelete
@@ -16,13 +17,16 @@ spec:
     matchLabels:
       application: coredns
       instance: node-dns
+      # daemonset: coredns # step 2
   template:
     metadata:
       labels:
+        daemonset: coredns
         application: coredns
+        # application: kubernetes # step 3
+        component: coredns
         instance: node-dns
         version: v1.8.4
-        component: cluster-dns
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics
