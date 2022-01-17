@@ -291,3 +291,11 @@ post_apply:
 - name: skipper-ingress
   kind: ClusterRoleBinding
   namespace: kube-system
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+- name: coredns
+  kind: Deployment
+  namespace: kube-system
+- name: coredns
+  kind: ConfigMap
+  namespace: kube-system
+{{- end }}

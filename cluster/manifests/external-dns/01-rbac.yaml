@@ -8,7 +8,11 @@ metadata:
     application: kubernetes
     component: external-dns
   annotations:
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/{{ .Cluster.LocalID }}-app-external-dns"
+{{- else}}
     iam.amazonaws.com/role: "{{ .Cluster.LocalID }}-app-external-dns"
+{{- end}}
 ---
 # allows to list services and ingresses
 apiVersion: rbac.authorization.k8s.io/v1

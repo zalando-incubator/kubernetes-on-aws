@@ -1,0 +1,17 @@
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: skipper-validation-webhook
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    component: webhook
+spec:
+  selector:
+    deployment: skipper-validation-webhook
+  ports:
+  - port: 443
+    targetPort: 9085
+    protocol: TCP
+{{- end }}

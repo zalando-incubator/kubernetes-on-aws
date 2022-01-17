@@ -4,7 +4,11 @@ metadata:
   name: kube-ingress-aws-controller
   namespace: kube-system
   annotations:
+{{- if eq .Cluster.ConfigItems.eks "true"}}
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/{{ .Cluster.LocalID }}-app-ingr-ctrl"
+{{- else}}
     iam.amazonaws.com/role: "{{ .Cluster.LocalID }}-app-ingr-ctrl"
+{{- end}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
