@@ -797,16 +797,7 @@ Resources:
             Principal:
               AWS: "{{.Cluster.ConfigItems.deployment_service_api_role_arn}}"
 {{- end }}
-          - Action:
-              - s3:Put*
-              - s3:Create*
-              - s3:Update*
-              - s3:List*
-              - s3:GetObject*
-              - s3:Delete*
-              - s3:Restore*
-              - s3:Update*
-              - s3:Replicate*
+          - Action: "s3:*"
             Effect: Deny
             Resource:
               - !Sub "arn:aws:s3:::${DeploymentServiceBucket}/*"
