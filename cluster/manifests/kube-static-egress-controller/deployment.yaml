@@ -6,7 +6,7 @@ metadata:
   labels:
     application: kubernetes
     component: kube-static-egress-controller
-    version: v0.2.8
+    version: v0.2.10
 spec:
   replicas: {{if eq .Cluster.ConfigItems.static_egress_controller_enabled "true"}}1{{else}}0{{end}}
   selector:
@@ -18,7 +18,7 @@ spec:
         deployment: kube-static-egress-controller
         application: kubernetes
         component: kube-static-egress-controller
-        version: v0.2.8
+        version: v0.2.10
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
         prometheus.io/path: /metrics
@@ -32,7 +32,7 @@ spec:
       serviceAccountName: kube-static-egress-controller
       containers:
       - name: controller
-        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.2.8-r1
+        image: registry.opensource.zalan.do/teapot/kube-static-egress-controller:v0.2.10
         args:
         - "--provider=aws"
         - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
@@ -45,6 +45,7 @@ spec:
         - "--stack-termination-protection"
         - "--cluster-id={{ .ID }}"
         - "--additional-stack-tags=InfrastructureComponent=true"
+        - "--additional-stack-tags=zalando.org/cluster/{{ .Cluster.ID }}=owned"
         env:
         - name: AWS_REGION
           value: {{ .Cluster.Region }}
