@@ -889,7 +889,7 @@ func createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, image, appLa
 	}
 }
 
-func createImagePolicyWebhookTestJob(namePrefix, namespace, image, appLabel string) *batchv1.Job {
+func createTestJob(namePrefix, name, namespace, image, appLabel string, args []string) *batchv1.Job {
 	zero := int64(0)
 	zero2 := int32(0)
 	ten := int64(10)
@@ -915,14 +915,19 @@ func createImagePolicyWebhookTestJob(namePrefix, namespace, image, appLabel stri
 					TerminationGracePeriodSeconds: &zero,
 					Containers: []v1.Container{
 						{
-							Name:  "image-policy-test",
+							Name:  name,
 							Image: image,
+							Args:  args,
 						},
 					},
 				},
 			},
 		},
 	}
+}
+
+func createImagePolicyWebhookTestJob(namePrefix, namespace, image, appLabel string) *batchv1.Job {
+	return createTestJob(namePrefix, "image-policy-test", namespace, image, appLabel, []string{})
 }
 
 func createImagePolicyWebhookTestPod(namePrefix, namespace, image, appLabel string) *v1.Pod {
