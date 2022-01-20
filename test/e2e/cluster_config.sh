@@ -97,7 +97,7 @@ clusters:
       labels: dedicated=node-tests
       taints: dedicated=node-tests:NoSchedule
   - discount_strategy: spot
-    instance_types: ["p2.xlarge", "p3.2xlarge", "g3s.xlarge", "g4dn.xlarge"]
+    instance_types: ["p2.xlarge", "p3.2xlarge", "g3s.xlarge", "g3.4xlarge", "g4dn.xlarge", "g4dn.2xlarge", "g4dn.4xlarge"]
     name: worker-gpu
     profile: worker-splitaz
     min_size: 0
@@ -107,6 +107,17 @@ clusters:
       labels: zalando.org/nvidia-gpu=tesla
       taints: nvidia.com/gpu=present:NoSchedule
       scaling_priority: "-100"
+  - discount_strategy: none
+    instance_types: ["g4dn.xlarge"]
+    name: worker-gpu-on-demand
+    profile: worker-splitaz
+    min_size: 0
+    max_size: 6
+    config_items:
+      availability_zones: "eu-central-1a,eu-central-1b"
+      labels: zalando.org/nvidia-gpu=tesla
+      taints: nvidia.com/gpu=present:NoSchedule
+      scaling_priority: "-200"
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'
