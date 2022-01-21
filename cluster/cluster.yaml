@@ -8,7 +8,12 @@ Resources:
   EtcdSecurityGroupIngressFromMaster:
     Properties:
       FromPort: 2379
+{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "false"}}
       GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id'
+{{- end }}
+{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "true"}}
+      GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id-temp'
+{{- end }}
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
       ToPort: 2379
