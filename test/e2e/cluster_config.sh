@@ -16,6 +16,7 @@ clusters:
     etcd_endpoints: "${ETCD_ENDPOINTS}"
     etcd_client_ca_cert: "${ETCD_CLIENT_CA_CERT}"
     etcd_client_ca_key: "${ETCD_CLIENT_CA_KEY}"
+    etcd_scalyr_key: "${ETCD_SCALYR_KEY}"
     docker_meta_url: https://docker-meta.stups-test.zalan.do
     service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
@@ -42,6 +43,7 @@ clusters:
     routegroups_validation: "enabled"
     stackset_routegroup_support_enabled: "true"
     stackset_ingress_source_switch_ttl: "1m"
+    experimental_new_etcd_stack: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
