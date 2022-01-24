@@ -80,12 +80,10 @@ data:
 
     # 10.2.0.0/16, 10.3.0.0/16 defines that this server is authority for revese
     # lookups for these ranges.
-    cluster.local:9254 10.2.0.0/16:9254 10.3.0.0/16:9254 {{ if eq .ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ range $src := split .ConfigItems.tracing_coredns_global_traces_endpoint  "," }}{{ $src }}:9254{{ end }} {{ end }} {
+    cluster.local:9254 10.2.0.0/16:9254 10.3.0.0/16:9254 {{ if eq .ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ .ConfigItems.tracing_coredns_global_traces_endpoint }}:9254{{ end }} {
         errors
         {{ if eq .ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}
-          {{ range $src := split .ConfigItems.tracing_coredns_global_traces_endpoint  "," }}
-        rewrite name exact {{ $src }} {{ .ConfigItems.tracing_coredns_local_zone_traces_endpoint }}
-          {{ end }}
+        rewrite name exact {{ .ConfigItems.tracing_coredns_global_traces_endpoint }} {{ .ConfigItems.tracing_coredns_local_zone_traces_endpoint }}
         {{ end }}
         kubernetes {
             pods insecure
