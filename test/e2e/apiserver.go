@@ -543,4 +543,31 @@ var _ = describe("ECR Registry Pull", func() {
 
 		job.WaitForJobFinish(cs, namespace, jobObj.Name)
 	})
+
+	It("Should run a Job using a vanity image from the staging registry [ECR] [Zalando]", func() {
+		namePrefix := "ecr-registry-test"
+		appLabel := fmt.Sprintf("ecr-image-pull-staging-%s", uuid.NewUUID())
+		namespace := f.Namespace.Name
+
+		vanityStagingImage := "container-registry-test.zalando.net/automata/busybox:uno"
+		args := []string{"sleep", "10"}
+
+		By("Creating Job " + namePrefix + " in namespace " + namespace)
+
+		jobObj := createTestJob(namePrefix, "ecr-image-pull-test", namespace, vanityStagingImage, appLabel, args)
+		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		defer func() {
+			By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
+			defer GinkgoRecover()
+			err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}()
+
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		Expect(err).NotTo(HaveOccurred())
+
+		job.WaitForJobFinish(cs, namespace, jobObj.Name)
+	})
 })
