@@ -8,7 +8,12 @@ Resources:
   EtcdSecurityGroupIngressFromMaster:
     Properties:
       FromPort: 2379
+{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "false"}}
       GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id'
+{{- end }}
+{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "true"}}
+      GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id-temp'
+{{- end }}
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
       ToPort: 2379
@@ -16,7 +21,12 @@ Resources:
   EtcdSecurityGroupTLSIngressFromMaster:
     Properties:
       FromPort: 2479
+{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "false"}}
       GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id'
+{{- end }}
+{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "true"}}
+      GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id-temp'
+{{- end }}
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
       ToPort: 2479
@@ -450,6 +460,15 @@ Resources:
                   - 'ecr:GetAuthorizationToken'
                 Effect: Allow
                 Resource: '*'
+              # allow connecting via Session Manager
+              - Action:
+                - "ssm:UpdateInstanceInformation"
+                - "ssmmessages:CreateControlChannel"
+                - "ssmmessages:CreateDataChannel"
+                - "ssmmessages:OpenControlChannel"
+                - "ssmmessages:OpenDataChannel"
+                Effect: Allow
+                Resource: "*"
 {{ if eq .Cluster.Environment "e2e" }}
 # Add extra permissions to worker IAM role to test that if a pod manages to get
 # the WorkerIAMRole assigned it can list a specific s3 bucket.
@@ -1219,6 +1238,15 @@ Resources:
                   - 'ecr:GetAuthorizationToken'
                 Effect: Allow
                 Resource: '*'
+              # allow connecting via Session Manager
+              - Action:
+                - "ssm:UpdateInstanceInformation"
+                - "ssmmessages:CreateControlChannel"
+                - "ssmmessages:CreateDataChannel"
+                - "ssmmessages:OpenControlChannel"
+                - "ssmmessages:OpenDataChannel"
+                Effect: Allow
+                Resource: "*"
             Version: 2012-10-17
           PolicyName: root
     Type: 'AWS::IAM::Role'
