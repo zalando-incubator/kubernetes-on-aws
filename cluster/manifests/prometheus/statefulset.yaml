@@ -5,6 +5,8 @@ metadata:
     pdb-controller.zalando.org/non-ready-ttl: "5m"
   labels:
     application: prometheus
+    # application: kubernetes # step 2
+    component: prometheus
     version: v2.32.1
 {{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
   name: prometheus
@@ -18,11 +20,15 @@ spec:
   selector:
     matchLabels:
       application: prometheus
+      # statefulset: prometheus # step 2
   serviceName: prometheus
   template:
     metadata:
       labels:
+        statefulset: prometheus
         application: prometheus
+        # application: kubernetes # step 3
+        component: prometheus
         version: v2.32.1
       annotations:
         config/hash: {{"configmap.yaml" | manifestHash}}
