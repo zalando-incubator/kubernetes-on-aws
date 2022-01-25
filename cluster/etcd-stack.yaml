@@ -10,6 +10,13 @@ Outputs:
     Value: !GetAtt EtcdSecurityGroup.GroupId
     Export:
       Name: "etcd-cluster-etcd:security-group-id"
+{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "true"}}
+  EtcdSecurityGroupIdTemp:
+    Description: "Security Group ID of the etcd cluster"
+    Value: !GetAtt EtcdSecurityGroupTemp.GroupId
+    Export:
+      Name: "etcd-cluster-etcd:security-group-id-temp"
+{{- end }}
   LaunchTemplateId:
     Description: "Launch template ID of the etcd nodes"
     Value: !Ref LaunchTemplate
@@ -147,10 +154,38 @@ Resources:
       Tags:
         - Key: InfrastructureComponent
           Value: true
+{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "true"}}
+  EtcdSecurityGroupTemp:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Etcd Appliance Security Group
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+      - IpProtocol: tcp
+        FromPort: 2381
+        ToPort: 2381
+        CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+      - IpProtocol: tcp
+        FromPort: 9100
+        ToPort: 9100
+        CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+      Tags:
+        - Key: InfrastructureComponent
+          Value: true
+{{- end }}
   EtcdIngressMembers:
     Type: "AWS::EC2::SecurityGroupIngress"
     Properties:
+{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "false"}}
       GroupId: !GetAtt EtcdSecurityGroup.GroupId
+{{- end }}
+{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "true"}}
+      GroupId: !GetAtt EtcdSecurityGroupTemp.GroupId
+{{- end }}
       IpProtocol: tcp
       FromPort: 2379
       ToPort: 2479

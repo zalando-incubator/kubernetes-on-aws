@@ -4,20 +4,20 @@ metadata:
   name: vpa-updater
   namespace: kube-system
   labels:
-    application: vertical-pod-autoscaler
-    component: updater
+    application: kubernetes
+    component: vpa-updater
     version: v0.6.1-internal.12
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: vertical-pod-autoscaler
-      component: updater
+      deployment: vpa-updater
   template:
     metadata:
       labels:
-        application: vertical-pod-autoscaler
-        component: updater
+        deployment: vpa-updater
+        application: kubernetes
+        component: vpa-updater
         version: v0.6.1-internal.12
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"

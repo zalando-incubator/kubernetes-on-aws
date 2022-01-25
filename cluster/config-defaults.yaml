@@ -397,6 +397,9 @@ teapot_admission_controller_postgresql_delete_protection_enabled: "false"
 teapot_admission_controller_namespace_delete_protection_enabled: "false"
 {{end}}
 
+# Enable automatic replacement of vanity images with ECR images
+teapot_admission_controller_resolve_vanity_images: "true"
+
 {{if eq .Cluster.Environment "e2e"}}
 teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota|limitrange)-.*)$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "false"
@@ -462,6 +465,8 @@ etcd_ami: {{ amiID "Taupage-AMI-20210504-093855" "861068367966"}}
 # recreating the security group, which is impossible because of cross-stack references.
 # TODO investigate if it can be migrated.
 etcd_stack_specify_vpc_in_security_group: "true"
+etcd_stack_security_group_temp: "false"
+cluster_reference_etcd_sg_temp: "false"
 
 dynamodb_service_link_enabled: "false"
 
@@ -690,7 +695,7 @@ deployment_service_controller_memory: "1Gi"
 deployment_service_api_role_arn: ""
 deployment_service_tokeninfo_url: ""
 deployment_service_lightstep_token: ""
-deployment_service_ml_experiments_enabled: "false"
+deployment_service_ml_experiments_enabled: "true"
 deployment_service_cf_auto_expand_enabled: "false"
 
 # Will be dropped after the migration

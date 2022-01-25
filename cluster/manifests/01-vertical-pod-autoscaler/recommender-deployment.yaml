@@ -4,20 +4,20 @@ metadata:
   name: vpa-recommender
   namespace: kube-system
   labels:
-    application: vertical-pod-autoscaler
+    application: kubernetes
     component: recommender
     version: v0.6.1-internal.12
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: vertical-pod-autoscaler
-      component: recommender
+      deployment: vpa-recommender
   template:
     metadata:
       labels:
-        application: vertical-pod-autoscaler
-        component: recommender
+        deployment: vpa-recommender
+        application: kubernetes
+        component: vpa-recommender
         version: v0.6.1-internal.12
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"

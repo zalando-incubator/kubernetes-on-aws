@@ -9,19 +9,60 @@ pre_apply:
   namespace: default
   kind: Deployment
 {{ end }}
-#
-# skipper-ingress-redis podManagementPolicy update
-# - matches version before update
-# - version is updated with `-parallel` suffix to run once
-# - uses `propagation_policy: Orphan` to keep exiting pods running
-# - deletion can be dropped after completion along with version suffix removal
-#
+
+# Delete old version of vpa components for recreating with new selector
 - labels:
-    application: skipper-ingress-redis
-    version: v6.2.4
+    application: vertical-pod-autoscaler
+    component: recommender
   namespace: kube-system
-  kind: StatefulSet
-  propagation_policy: Orphan
+  kind: Deployment
+- labels:
+    application: vertical-pod-autoscaler
+    component: updater
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: vertical-pod-autoscaler
+    component: admission-controller
+  namespace: kube-system
+  kind: Deployment
+# step 2
+# - labels:
+#     application: kube-proxy
+#   namespace: kube-system
+#   kind: DaemonSet
+#   propagation_policy: Orphan
+# - labels:
+#     application: coredns
+#   namespace: kube-system
+#   kind: DaemonSet
+#   propagation_policy: Orphan
+# - labels:
+#     application: kube-node-ready
+#   namespace: kube-system
+#   kind: DaemonSet
+#   propagation_policy: Orphan
+# - labels:
+#     application: kube2iam
+#   namespace: kube-system
+#   kind: DaemonSet
+#   propagation_policy: Orphan
+# - labels:
+#     application: flannel
+#   namespace: kube-system
+#   kind: DaemonSet
+#   propagation_policy: Orphan
+# - labels:
+#     application: node-monitor
+#   namespace: kube-system
+#   kind: DaemonSet
+#   propagation_policy: Orphan
+# step 2 (prometheus consolidation)
+# - labels:
+#     application: prometheus
+#   namespace: kube-system
+#   kind: StatefulSet
+#   propagation_policy: Orphan
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
