@@ -4,7 +4,8 @@ kind: ClusterRole
 metadata:
   name: system:metrics-reader
   labels:
-    application: vertical-pod-autoscaler
+    application: kubernetes
+    component: vpa
 rules:
   - apiGroups:
       - "metrics.k8s.io"
@@ -19,7 +20,8 @@ kind: ClusterRole
 metadata:
   name: system:vpa-actor
   labels:
-    application: vertical-pod-autoscaler
+    application: kubernetes
+    component: vpa
 rules:
   - apiGroups:
       - ""
@@ -66,7 +68,8 @@ kind: ClusterRole
 metadata:
   name: system:vpa-checkpoint-actor
   labels:
-    application: vertical-pod-autoscaler
+    application: kubernetes
+    component: vpa
 rules:
   - apiGroups:
       - "poc.autoscaling.k8s.io"
@@ -103,7 +106,8 @@ kind: ClusterRole
 metadata:
   name: system:evictioner
   labels:
-    application: vertical-pod-autoscaler
+    application: kubernetes
+    component: vpa
 rules:
   - apiGroups:
       - "extensions"
@@ -129,7 +133,8 @@ kind: ClusterRoleBinding
 metadata:
   name: system:metrics-reader
   labels:
-    application: vertical-pod-autoscaler
+    application: kubernetes
+    component: vpa
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -144,7 +149,8 @@ kind: ClusterRoleBinding
 metadata:
   name: system:vpa-actor
   labels:
-    application: vertical-pod-autoscaler
+    application: kubernetes
+    component: vpa
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -162,7 +168,8 @@ kind: ClusterRoleBinding
 metadata:
   name: system:vpa-checkpoint-actor
   labels:
-    application: vertical-pod-autoscaler
+    application: kubernetes
+    component: vpa
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -177,7 +184,8 @@ kind: ClusterRole
 metadata:
   name: system:vpa-target-reader
   labels:
-    application: vertical-pod-autoscaler
+    application: kubernetes
+    component: vpa
 rules:
   - apiGroups:
       - ""
@@ -213,7 +221,8 @@ kind: ClusterRoleBinding
 metadata:
   name: system:vpa-target-reader-binding
   labels:
-    application: vertical-pod-autoscaler
+    application: kubernetes
+    component: vpa
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -234,7 +243,8 @@ kind: ClusterRoleBinding
 metadata:
   name: system:vpa-evictionter-binding
   labels:
-    application: vertical-pod-autoscaler
+    application: kubernetes
+    component: vpa
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -250,8 +260,8 @@ metadata:
   name: vpa-recommender
   namespace: kube-system
   labels:
-    application: vertical-pod-autoscaler
-    component: recommender
+    application: kubernetes
+    component: vpa-recommender
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -259,8 +269,8 @@ metadata:
   name: vpa-updater
   namespace: kube-system
   labels:
-    application: vertical-pod-autoscaler
-    component: updater
+    application: kubernetes
+    component: vpa-updater
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -268,16 +278,16 @@ metadata:
   name: vpa-admission-controller
   namespace: kube-system
   labels:
-    application: vertical-pod-autoscaler
-    component: admission-controller
+    application: kubernetes
+    component: vpa-admission-controller
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: system:admission-controller
   labels:
-    application: vertical-pod-autoscaler
-    component: admission-controller
+    application: kubernetes
+    component: vpa-admission-controller
 rules:
   - apiGroups:
       - ""
@@ -321,8 +331,8 @@ kind: ClusterRoleBinding
 metadata:
   name: system:admission-controller
   labels:
-    application: vertical-pod-autoscaler
-    component: admission-controller
+    application: kubernetes
+    component: vpa-admission-controller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

@@ -63,6 +63,9 @@ data:
   pod.image-check.ignored-images: "^k8s.gcr.io/pause:.+$"
 {{- end }}
 
+  # This setting enables and disables replacement of vanity images with ECR images during pod admission (during create and update)
+  pod.vanity-image-replacement.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_resolve_vanity_images }}"
+
   deployment.default.rolling-update-max-surge: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}"
   deployment.default.rolling-update-max-unavailable: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}"
 
