@@ -4,8 +4,7 @@ metadata:
   annotations:
     pdb-controller.zalando.org/non-ready-ttl: "5m"
   labels:
-    application: prometheus
-    # application: kubernetes # step 2
+    application: kubernetes
     component: prometheus
     version: v2.32.1
 {{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
@@ -19,8 +18,7 @@ spec:
   podManagementPolicy: Parallel
   selector:
     matchLabels:
-      application: prometheus
-      # statefulset: prometheus # step 2
+      statefulset: prometheus
   serviceName: prometheus
   template:
     metadata:
