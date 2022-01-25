@@ -189,7 +189,12 @@ Resources:
       IpProtocol: tcp
       FromPort: 2379
       ToPort: 2479
-      SourceSecurityGroupId: !GetAtt EtcdSecurityGroup.GroupId
+{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "false"}}
+      GroupId: !GetAtt EtcdSecurityGroup.GroupId
+{{- end }}
+{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "true"}}
+      GroupId: !GetAtt EtcdSecurityGroupTemp.GroupId
+{{- end }}
   EtcdBackupBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
