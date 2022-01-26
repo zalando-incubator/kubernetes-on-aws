@@ -107,7 +107,13 @@ skipper_redis_write_timeout: "25ms"
 
 skipper_cluster_ratelimit_max_group_shards: 1
 
+#
 # skipper routesrv settings
+#
+# skipper_routesrv_enabled is a three state switch:
+# - "false" - routesrv deployment is removed, skipper uses own k8s dataclient
+# - "pre" - routesrv is deployed, skipper uses own k8s dataclient
+# - "exec" - routesrv is deployed, skipper uses routesrv
 {{if eq .Cluster.Environment "production"}}
 skipper_routesrv_enabled: "false"
 skipper_routesrv_replicas: 3
