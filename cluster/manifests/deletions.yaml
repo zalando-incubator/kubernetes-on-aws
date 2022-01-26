@@ -129,3 +129,9 @@ post_apply:
 - name: cluster-admin-okta
   kind: ClusterRoleBinding
 {{- end }}
+
+{{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "true" }}
+- name: skipper-ingress-routesrv
+  namespace: kube-system
+  kind: Deployment
+{{ end }}
