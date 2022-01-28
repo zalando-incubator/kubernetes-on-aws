@@ -25,8 +25,8 @@ var _ = describe("Node tests", func() {
 		cs = f.ClientSet
 	})
 
-	createTestPod := func(namespace string) *corev1.Pod {
-		pausePod := nodeTestPod(namespace, "pause")
+	createTestPod := func(namespace string, nodePool string) *corev1.Pod {
+		pausePod := nodeTestPod(namespace, nodePool, "pause")
 		pausePod.Spec.Containers = []corev1.Container{pauseContainer()}
 		pausePod.Spec.RestartPolicy = corev1.RestartPolicyNever
 
@@ -44,7 +44,7 @@ var _ = describe("Node tests", func() {
 	It("Should react to spot termination notices [Slow] [Zalando] [Spot]", func() {
 		ns := f.Namespace.Name
 
-		pausePod := createTestPod(ns)
+		pausePod := createTestPod(ns, "node-tests")
 
 		nodeName := pausePod.Spec.NodeName
 		By("Ensuring that the node is schedulable initially")
@@ -114,7 +114,7 @@ var _ = describe("Node tests", func() {
 	It("Should handle kubelet restarts successfully [Slow] [Zalando]", func() {
 		ns := f.Namespace.Name
 
-		pausePod := createTestPod(ns)
+		pausePod := createTestPod(ns, "node-tests")
 
 		By(fmt.Sprintf("Restarting kubelet on node %s", pausePod.Spec.NodeName))
 		boolTrue := true
@@ -177,11 +177,10 @@ var _ = describe("Node tests", func() {
 		framework.ExpectNoError(err, "Could not create a test pod")
 		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(f.ClientSet, testPod.Name, testPod.Namespace))
 	})
-
 	It("Should handle node restart [Slow] [Zalando]", func() {
 		ns := f.Namespace.Name
 
-		pod := createTestPod(ns)
+		pod := createTestPod(ns, "node-reboot-tests")
 		nodeName := pod.Spec.NodeName
 		gracefulSeconds := int64(0)
 
