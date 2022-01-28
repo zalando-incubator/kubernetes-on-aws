@@ -58,11 +58,11 @@ pre_apply:
 #   kind: DaemonSet
 #   propagation_policy: Orphan
 # step 2 (prometheus consolidation)
-# - labels:
-#     application: prometheus
-#   namespace: kube-system
-#   kind: StatefulSet
-#   propagation_policy: Orphan
+- labels:
+    application: prometheus
+  namespace: kube-system
+  kind: StatefulSet
+  propagation_policy: Orphan
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
@@ -129,3 +129,9 @@ post_apply:
 - name: cluster-admin-okta
   kind: ClusterRoleBinding
 {{- end }}
+
+{{ if eq .Cluster.ConfigItems.skipper_routesrv_enabled "false" }}
+- name: skipper-ingress-routesrv
+  namespace: kube-system
+  kind: Deployment
+{{ end }}
