@@ -118,6 +118,15 @@ clusters:
       labels: zalando.org/nvidia-gpu=tesla
       taints: nvidia.com/gpu=present:NoSchedule
       scaling_priority: "-200"
+  - discount_strategy: none
+    instance_types: ["m5.xlarge"]
+    min_size: 0
+    max_size: 3
+    profile: worker-splitaz
+    name: node-reboot-tests
+    config_items:
+      labels: dedicated=node-reboot-tests
+      taints: dedicated=node-reboot-tests:NoSchedule
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'
