@@ -529,11 +529,9 @@ func pauseContainer() v1.Container {
 	}
 }
 
-// nodeTestPod returns a v1.Pod with the selector, tolerations and anti-affinity predicates that would result in the pod
-// running on the node-tests node pool in a dedicated mode, with just one pod per node
-func nodeTestPod(namespace string, name string) *v1.Pod {
-	poolName := "node-tests"
-
+// nodeTestPod returns a v1.Pod with the selector, tolerations and anti-affinity predicates that
+// would result in the pod on a specific pool in a dedicated mode, with just one pod per node
+func nodeTestPod(namespace string, poolName string, name string) *v1.Pod {
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
