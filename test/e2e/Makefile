@@ -2,7 +2,7 @@
 
 BINARY       ?= kubernetes-on-aws-e2e
 VERSION      ?= $(shell git describe --tags --always --dirty)
-KUBE_VERSION ?= v1.21.5
+KUBE_VERSION ?= v1.21.9
 IMAGE        ?= pierone.stups.zalan.do/teapot/$(BINARY)
 TAG          ?= $(VERSION)
 DOCKERFILE   ?= Dockerfile
@@ -27,13 +27,13 @@ generate-code: fix-go-modules $(GO_BINDATA)
 	make generated_files -C "$(MOD_PATH)/kubernetes"
 
 deps: generate-code
-	GO111MODULE=on go get github.com/onsi/ginkgo/ginkgo@v1.8.0
+	go get github.com/onsi/ginkgo/ginkgo@v1.8.0
 
 e2e.test: generate-code
-	GO111MODULE=on go test -v -c -o e2e.test
+	go test -v -c -o e2e.test
 
 stackset-e2e:
-	GO111MODULE=on CGO_ENABLED=0 go test -modfile stackset/go.mod -c -o stackset-e2e github.com/zalando-incubator/stackset-controller/cmd/e2e
+	CGO_ENABLED=0 go test -modfile stackset/go.mod -c -o stackset-e2e github.com/zalando-incubator/stackset-controller/cmd/e2e
 
 build: e2e.test stackset-e2e
 
