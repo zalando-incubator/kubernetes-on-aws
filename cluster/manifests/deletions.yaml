@@ -58,18 +58,6 @@ pre_apply:
 #   kind: DaemonSet
 #   propagation_policy: Orphan
 
-#
-# Reverts skipper-ingress selector.matchLabels update
-# - matches `v0.13.170-selector-update` version to revert already partially rolled out update
-#
-- labels:
-    application: skipper-ingress
-    component: ingress
-    version: v0.13.170-selector-update
-  namespace: kube-system
-  kind: Deployment
-  propagation_policy: Orphan
-
 # everything defined under here will be deleted after applying the manifests
 post_apply:
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
