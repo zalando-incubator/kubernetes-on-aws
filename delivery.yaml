@@ -9,8 +9,10 @@ pipeline:
   - branch: beta
   - branch: stable
   - event: pull_request
-  vm: large # speed up building kubernetes/kubernetes
-  overlay: ci/golang-1-17
+  vm_config:
+    type: linux
+    image: "cdp-runtime/go-1.17"
+    size: large # speed up building kubernetes/kubernetes
   cache:
     paths:
     - /go/pkg/mod       # pkg cache for Go modules
