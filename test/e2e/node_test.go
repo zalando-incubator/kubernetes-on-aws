@@ -25,8 +25,8 @@ var _ = describe("Node tests", func() {
 		cs = f.ClientSet
 	})
 
-	createTestPod := func(namespace string) *corev1.Pod {
-		pausePod := nodeTestPod(namespace, "pause")
+	createTestPod := func(namespace string, nodePool string) *corev1.Pod {
+		pausePod := nodeTestPod(namespace, nodePool, "pause")
 		pausePod.Spec.Containers = []corev1.Container{pauseContainer()}
 		pausePod.Spec.RestartPolicy = corev1.RestartPolicyNever
 
@@ -44,7 +44,7 @@ var _ = describe("Node tests", func() {
 	It("Should react to spot termination notices [Slow] [Zalando] [Spot]", func() {
 		ns := f.Namespace.Name
 
-		pausePod := createTestPod(ns)
+		pausePod := createTestPod(ns, "node-tests")
 
 		nodeName := pausePod.Spec.NodeName
 		By("Ensuring that the node is schedulable initially")
@@ -114,7 +114,7 @@ var _ = describe("Node tests", func() {
 	It("Should handle kubelet restarts successfully [Slow] [Zalando]", func() {
 		ns := f.Namespace.Name
 
-		pausePod := createTestPod(ns)
+		pausePod := createTestPod(ns, "node-tests")
 
 		By(fmt.Sprintf("Restarting kubelet on node %s", pausePod.Spec.NodeName))
 		boolTrue := true
@@ -176,5 +176,48 @@ var _ = describe("Node tests", func() {
 		testPod, err := cs.CoreV1().Pods(ns).Create(context.Background(), testPodTemplate, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create a test pod")
 		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(f.ClientSet, testPod.Name, testPod.Namespace))
+	})
+	It("Should handle node restart [Slow] [Zalando]", func() {
+		ns := f.Namespace.Name
+
+		pod := createTestPod(ns, "node-reboot-tests")
+		nodeName := pod.Spec.NodeName
+		gracefulSeconds := int64(0)
+
+		boolTrue := true
+		privilegedPodTemplate := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "privileged-pod-",
+				Namespace:    ns,
+			},
+			Spec: corev1.PodSpec{
+				Affinity:                      nodeNameAffinity(nodeName),
+				Tolerations:                   pod.Spec.Tolerations,
+				TerminationGracePeriodSeconds: &gracefulSeconds,
+				Containers: []corev1.Container{
+					{
+						Name:    "privileged",
+						Image:   framework.BusyBoxImage,
+						Command: []string{"sh", "-c"},
+						Args:    []string{"echo 1 > /proc/sys/kernel/sysrq; echo b > /proc/sysrq-trigger"},
+						SecurityContext: &corev1.SecurityContext{
+							Privileged: &boolTrue,
+						},
+					},
+				},
+				HostPID:       true,
+				RestartPolicy: corev1.RestartPolicyNever,
+			},
+		}
+
+		privilegedPod, err := cs.CoreV1().Pods(ns).Create(context.Background(), privilegedPodTemplate, metav1.CreateOptions{})
+		framework.ExpectNoError(err, "Could not create a test pod")
+
+		By("Ensuring that node and its respective pods are terminated")
+		framework.ExpectNoError(e2epod.WaitForPodToDisappear(f.ClientSet, privilegedPod.Namespace, privilegedPod.Name, labels.Everything(), framework.Poll, framework.PodDeleteTimeout))
+		framework.ExpectNoError(e2epod.WaitForPodToDisappear(f.ClientSet, pod.Namespace, pod.Name, labels.Everything(), framework.Poll, framework.PodDeleteTimeout))
+
+		_, err = cs.CoreV1().Nodes().Get(context.Background(), nodeName, metav1.GetOptions{})
+		framework.ExpectError(err, "Could not fetch the node")
 	})
 })
