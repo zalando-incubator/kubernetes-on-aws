@@ -44,8 +44,9 @@ Resources:
           - DeviceIndex: 0
             AssociatePublicIpAddress: true
             Groups:
+{{- if eq .Cluster.ConfigItems.etcd_stack_new_security_group "false"}}
               - !GetAtt EtcdSecurityGroup.GroupId
-{{- if eq .Cluster.ConfigItems.etcd_stack_new_security_group "true"}}
+{{- else }}
               - !GetAtt EtcdClusterSecurityGroup.GroupId
 {{- end }}
         EbsOptimized: false
