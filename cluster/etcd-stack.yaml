@@ -45,6 +45,7 @@ Resources:
             AssociatePublicIpAddress: true
             Groups:
               - !GetAtt EtcdSecurityGroup.GroupId
+              - !GetAtt EtcdClusterSecurityGroup.GroupId
         EbsOptimized: false
         IamInstanceProfile:
           Name: !Ref AppServerInstanceProfile
@@ -163,7 +164,7 @@ Resources:
       ToPort: 2479
       SourceSecurityGroupId: !GetAtt EtcdSecurityGroup.GroupId
 {{- if eq .Cluster.ConfigItems.etcd_stack_new_security_group "true"}}
-  EtcdClusterSecurityGroupTemp:
+  EtcdClusterSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Etcd Cluster Security Group
