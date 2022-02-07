@@ -45,7 +45,9 @@ Resources:
             AssociatePublicIpAddress: true
             Groups:
               - !GetAtt EtcdSecurityGroup.GroupId
+{{- if eq .Cluster.ConfigItems.etcd_stack_new_security_group "true"}}
               - !GetAtt EtcdClusterSecurityGroup.GroupId
+{{- end }}
         EbsOptimized: false
         IamInstanceProfile:
           Name: !Ref AppServerInstanceProfile
