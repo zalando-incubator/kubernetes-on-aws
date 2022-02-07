@@ -5,6 +5,7 @@ Metadata:
     InfrastructureComponent: "true"
 Resources:
 {{ if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
+{{- if eq .Cluster.ConfigItems.etcd_stack_old_security_group "true"}}
   EtcdSecurityGroupIngressFromMaster:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
@@ -21,6 +22,7 @@ Resources:
       GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id'
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
+{{- end }}
 {{- if eq .Cluster.ConfigItems.etcd_stack_new_security_group "true"}}
   EtcdClusterSecurityGroupIngressFromMaster:
     Type: 'AWS::EC2::SecurityGroupIngress'
