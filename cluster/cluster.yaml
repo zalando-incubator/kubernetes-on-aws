@@ -6,31 +6,39 @@ Metadata:
 Resources:
 {{ if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
   EtcdSecurityGroupIngressFromMaster:
+    Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
       FromPort: 2379
-{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "false"}}
+      ToPort: 2379
       GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id'
-{{- end }}
-{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "true"}}
-      GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id-temp'
-{{- end }}
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      ToPort: 2379
-    Type: 'AWS::EC2::SecurityGroupIngress'
   EtcdSecurityGroupTLSIngressFromMaster:
+    Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
       FromPort: 2479
-{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "false"}}
+      ToPort: 2479
       GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id'
-{{- end }}
-{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "true"}}
-      GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id-temp'
-{{- end }}
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      ToPort: 2479
+{{- if eq .Cluster.ConfigItems.etcd_stack_new_security_group "true"}}
+  EtcdClusterSecurityGroupIngressFromMaster:
     Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: 2379
+      ToPort: 2379
+      GroupId: !ImportValue 'etcd-cluster-etcd:etcd-security-group-id'
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+  EtcdClusterSecurityGroupTLSIngressFromMaster:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      FromPort: 2479
+      ToPort: 2479
+      GroupId: !ImportValue 'etcd-cluster-etcd:etcd-security-group-id'
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+{{- end }}
   IngressLoadBalancerSecurityGroup:
     Properties:
       GroupDescription: !Ref 'AWS::StackName'
