@@ -10,12 +10,12 @@ Outputs:
     Value: !GetAtt EtcdSecurityGroup.GroupId
     Export:
       Name: "etcd-cluster-etcd:security-group-id"
-{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "true"}}
-  EtcdSecurityGroupIdTemp:
+{{- if eq .Cluster.ConfigItems.etcd_stack_new_security_group "true"}}
+  EtcdClusterSecurityGroupId:
     Description: "Security Group ID of the etcd cluster"
-    Value: !GetAtt EtcdSecurityGroupTemp.GroupId
+    Value: !GetAtt EtcdClusterSecurityGroup.GroupId
     Export:
-      Name: "etcd-cluster-etcd:security-group-id-temp"
+      Name: "etcd-cluster-etcd:etcd-security-group-id"
 {{- end }}
   LaunchTemplateId:
     Description: "Launch template ID of the etcd nodes"
@@ -45,6 +45,7 @@ Resources:
             AssociatePublicIpAddress: true
             Groups:
               - !GetAtt EtcdSecurityGroup.GroupId
+              - !GetAtt EtcdClusterSecurityGroup.GroupId
         EbsOptimized: false
         IamInstanceProfile:
           Name: !Ref AppServerInstanceProfile
@@ -162,11 +163,11 @@ Resources:
       FromPort: 2379
       ToPort: 2479
       SourceSecurityGroupId: !GetAtt EtcdSecurityGroup.GroupId
-{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "true"}}
-  EtcdSecurityGroupTemp:
+{{- if eq .Cluster.ConfigItems.etcd_stack_new_security_group "true"}}
+  EtcdClusterSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Etcd Appliance Security Group
+      GroupDescription: Etcd Cluster Security Group
       SecurityGroupIngress:
       - IpProtocol: tcp
         FromPort: 22
@@ -184,14 +185,14 @@ Resources:
       Tags:
         - Key: InfrastructureComponent
           Value: true
-  EtcdIngressMembersTemp:
+  EtcdClusterIngressMembers:
     Type: "AWS::EC2::SecurityGroupIngress"
     Properties:
-      GroupId: !GetAtt EtcdSecurityGroupTemp.GroupId
+      GroupId: !GetAtt EtcdClusterSecurityGroup.GroupId
       IpProtocol: tcp
       FromPort: 2379
       ToPort: 2479
-      SourceSecurityGroupId: !GetAtt EtcdSecurityGroupTemp.GroupId
+      SourceSecurityGroupId: !GetAtt EtcdClusterSecurityGroup.GroupId
 {{- end }}
   EtcdBackupBucket:
     Type: AWS::S3::Bucket
