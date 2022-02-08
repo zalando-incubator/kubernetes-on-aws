@@ -58,6 +58,19 @@ pre_apply:
 #   kind: DaemonSet
 #   propagation_policy: Orphan
 
+# skipper-ingress selector.matchLabels update
+# - matches version before update
+# - version is updated with `-selector-update` suffix to run deletion only once
+# - uses `propagation_policy: Orphan` to keep exiting pods running
+# - deletion can be dropped after rollout along with version suffix removal
+- labels:
+    application: skipper-ingress
+    component: ingress
+    version: v0.13.178
+  namespace: kube-system
+  kind: Deployment
+  propagation_policy: Orphan
+
 # everything defined under here will be deleted after applying the manifests
 post_apply:
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
