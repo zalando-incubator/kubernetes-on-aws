@@ -167,6 +167,14 @@ Resources:
       ToPort: 2479
       SourceSecurityGroupId: !GetAtt EtcdSecurityGroup.GroupId
 {{- if eq .Cluster.ConfigItems.etcd_stack_new_security_group "true"}}
+  EtcdIngressMembersNewSecurityGroup:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      GroupId: !GetAtt EtcdClusterSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 2379
+      ToPort: 2479
+      SourceSecurityGroupId: !GetAtt EtcdSecurityGroup.GroupId
   EtcdClusterSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -192,6 +200,14 @@ Resources:
     Type: "AWS::EC2::SecurityGroupIngress"
     Properties:
       GroupId: !GetAtt EtcdClusterSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 2379
+      ToPort: 2479
+      SourceSecurityGroupId: !GetAtt EtcdClusterSecurityGroup.GroupId
+  EtcdClusterIngressMembersOldSecurityGroup:
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      GroupId: !GetAtt EtcdSecurityGroup.GroupId
       IpProtocol: tcp
       FromPort: 2379
       ToPort: 2479
