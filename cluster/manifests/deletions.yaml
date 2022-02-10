@@ -10,53 +10,41 @@ pre_apply:
   kind: Deployment
 {{ end }}
 
-# Delete old version of vpa components for recreating with new selector
+# step 2 ds consolidation
 - labels:
-    application: vertical-pod-autoscaler
-    component: recommender
+    application: kube-proxy
   namespace: kube-system
-  kind: Deployment
+  kind: DaemonSet
+  propagation_policy: Orphan
 - labels:
-    application: vertical-pod-autoscaler
-    component: updater
+    application: coredns
   namespace: kube-system
-  kind: Deployment
+  kind: DaemonSet
+  propagation_policy: Orphan
 - labels:
-    application: vertical-pod-autoscaler
-    component: admission-controller
+    application: kube-node-ready
   namespace: kube-system
-  kind: Deployment
-# step 2
-# - labels:
-#     application: kube-proxy
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
-# - labels:
-#     application: coredns
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
-# - labels:
-#     application: kube-node-ready
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
-# - labels:
-#     application: kube2iam
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
-# - labels:
-#     application: flannel
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
-# - labels:
-#     application: node-monitor
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
+  kind: DaemonSet
+  propagation_policy: Orphan
+- labels:
+    application: kube2iam
+  namespace: kube-system
+  kind: DaemonSet
+  propagation_policy: Orphan
+- labels:
+    application: flannel
+  namespace: kube-system
+  kind: DaemonSet
+  propagation_policy: Orphan
+- labels:
+    application: node-monitor
+  namespace: kube-system
+  kind: DaemonSet
+  propagation_policy: Orphan
+- labels:
+    application: node-monitor
+  namespace: kube-system
+  kind: Service
 
 # skipper-ingress selector.matchLabels update
 # - matches version before update
