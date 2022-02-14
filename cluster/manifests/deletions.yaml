@@ -10,42 +10,6 @@ pre_apply:
   kind: Deployment
 {{ end }}
 
-# step 2 ds consolidation
-- labels:
-    application: kube-proxy
-  namespace: kube-system
-  kind: DaemonSet
-  propagation_policy: Orphan
-- labels:
-    application: coredns
-  namespace: kube-system
-  kind: DaemonSet
-  propagation_policy: Orphan
-- labels:
-    application: kube-node-ready
-  namespace: kube-system
-  kind: DaemonSet
-  propagation_policy: Orphan
-- labels:
-    application: kube2iam
-  namespace: kube-system
-  kind: DaemonSet
-  propagation_policy: Orphan
-- labels:
-    application: flannel
-  namespace: kube-system
-  kind: DaemonSet
-  propagation_policy: Orphan
-- labels:
-    application: node-monitor
-  namespace: kube-system
-  kind: DaemonSet
-  propagation_policy: Orphan
-- labels:
-    application: node-monitor
-  namespace: kube-system
-  kind: Service
-
 # everything defined under here will be deleted after applying the manifests
 post_apply:
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
