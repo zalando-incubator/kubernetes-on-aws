@@ -1,0 +1,20 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: node-monitor
+  namespace: kube-system
+  labels:
+    application: node-monitor
+spec:
+  type: ClusterIP
+  ports:
+    - name: cadvisor
+      port: 80
+      targetPort: 9101
+      protocol: TCP
+    - name: node-exporter
+      port: 81
+      targetPort: 9100
+      protocol: TCP
+  selector:
+    application: node-monitor
