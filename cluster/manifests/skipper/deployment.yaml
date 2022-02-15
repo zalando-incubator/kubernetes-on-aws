@@ -107,7 +107,7 @@ spec:
           - "-enable-kubernetes-east-west"
           - "-kubernetes-east-west-domain=.ingress.cluster.local"
 {{ end }}
-{{ if and (ne .ConfigItems.skipper_routesrv_enabled "exec") (eq .ConfigItems.enable_skipper_eastwest_range "true")}}
+{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
 {{ end }}
