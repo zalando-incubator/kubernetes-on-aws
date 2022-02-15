@@ -130,13 +130,11 @@ spec:
           - "-metrics-flavour=prometheus"
           - "-enable-connection-metrics"
           - "-enable-route-lifo-metrics"
-{{ if eq .ConfigItems.enable_apimonitoring "true" }}
           - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
           - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
-{{ end }}
-{{ if and (ne .ConfigItems.skipper_routesrv_enabled "exec") (eq .ConfigItems.enable_apimonitoring "true")}}
+{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-default-filters-dir=/etc/config/default-filters"
 {{ end }}
           - "-max-audit-body=0"
@@ -276,7 +274,7 @@ spec:
           - name: routes
             mountPath: /etc/routes
 {{ end }}
-{{ if and (ne .ConfigItems.skipper_routesrv_enabled "exec") (eq .ConfigItems.enable_apimonitoring "true")}}
+{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
           - name: filters
             mountPath: /etc/config/default-filters
 {{ end }}
@@ -296,7 +294,7 @@ spec:
           configMap:
             name: sandbox-tokeninfo-bridge-conf
 {{ end }}
-{{ if and (ne .ConfigItems.skipper_routesrv_enabled "exec") (eq .ConfigItems.enable_apimonitoring "true") }}
+{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
         - name: filters
           configMap:
             name: skipper-default-filters
