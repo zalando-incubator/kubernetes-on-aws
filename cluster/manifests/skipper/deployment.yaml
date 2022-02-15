@@ -4,16 +4,9 @@ metadata:
   name: skipper-ingress
   namespace: kube-system
   labels:
-    # skipper-ingress selector.matchLabels update
-    # - version is updated with `-selector-update` suffix to not match the version configured in deletions.yaml
-    #   so that deletion runs only once
-    # - `-selector-update` suffix can be dropped after rollout along with deletions.yaml cleanup
-    # - `zalando.org/create-using-hpa-replicas` annotation is added to prevent replicas reset to 1
     application: skipper-ingress
-    version: v0.13.178-selector-update
+    version: v0.13.179
     component: ingress
-  annotations:
-    zalando.org/create-using-hpa-replicas: skipper-ingress
 spec:
   strategy:
     rollingUpdate:
@@ -27,7 +20,7 @@ spec:
       labels:
         deployment: skipper-ingress
         application: skipper-ingress
-        version: v0.13.178
+        version: v0.13.179
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -56,7 +49,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.178-230
+        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.179-232
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -168,7 +161,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.178-230
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.179-232
             max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
