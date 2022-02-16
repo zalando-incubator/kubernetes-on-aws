@@ -93,6 +93,9 @@ if [ "$create_cluster" = true ]; then
         git clone "https://$CDP_TARGET_REPOSITORY" "$BASE_CFG_PATH"
         git -C "$BASE_CFG_PATH" reset --hard "${CDP_TARGET_COMMIT_ID}"
 
+        # hardcode etcd hosted zone
+        sed -i 's/HOSTED_ZONE: "{{.Cluster.Alias}}/HOSTED_ZONE: "teapot-e2e/g' $BASE_CFG_PATH/cluster/etcd-stack.yaml
+
         # generate cluster.yaml
         # call the cluster_config.sh from base git checkout if possible
         if [ -f "$BASE_CFG_PATH/test/e2e/cluster_config.sh" ]; then
