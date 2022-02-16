@@ -109,7 +109,7 @@ if [ "$create_cluster" = true ]; then
             --token="${CLUSTER_ADMIN_TOKEN}" \
             --directory="$(pwd)/$BASE_CFG_PATH" \
             --debug \
-            --registry=base_cluster.yaml
+            --registry=base_cluster.yaml \
             --manage-etcd-stack
 
         # Wait for the resources to be ready
