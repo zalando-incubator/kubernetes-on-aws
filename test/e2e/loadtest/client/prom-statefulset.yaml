@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    application: loadtest-prometheus
+    version: v2.26.0
+  namespace: loadtest-e2e
+  name: loadtest-prometheus
+spec:
+  replicas: 1
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      application: loadtest-prometheus
+  serviceName: loadtest-prometheus
+  template:
+    metadata:
+      labels:
+        application: loadtest-prometheus
+        version: v2.26.0
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
+    spec:
+      serviceAccountName: loadtest-prometheus
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
+      initContainers:
+      - name: generate-config
+        image: registry.opensource.zalan.do/library/alpine-3.13:3.13-20210216
+        command:
+        - /bin/sh
+        args:
+        - -c
+        - sed s/'@@POD_NAME@@'/${POD_NAME}/g /etc/prometheus/prometheus.yml > /prometheus/prometheus.yaml ; cp /etc/prometheus/prometheus.rules.yml /prometheus/prometheus.rules.yaml
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        resources:
+          limits:
+            cpu: 1m
+            memory: 128Mi
+        volumeMounts:
+        - name: prometheus-loadtest-config-volume
+          mountPath: /etc/prometheus
+        - name: prometheus-loadtest-storage-volume
+          mountPath: /prometheus
+      containers:
+      - name: prometheus
+        image: registry.opensource.zalan.do/teapot/prometheus:v2.26.0
+        args:
+        - --config.file=/prometheus/prometheus.yaml
+        - --storage.tsdb.path=/prometheus/
+        - --storage.tsdb.retention.time=7d
+        - --storage.tsdb.wal-compression
+        - --storage.tsdb.min-block-duration=30m
+        ports:
+        - name: ingress-port
+          containerPort: 9090
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 1
+            memory: 1Gi
+          requests:
+            cpu: 1
+            memory: 1Gi
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+          # ensure that we have at least two minutes of metrics before marking ourselves as ready
+          periodSeconds: 5
+          successThreshold: 26
+        volumeMounts:
+        - name: prometheus-loadtest-storage-volume
+          mountPath: /prometheus
+        securityContext:
+          allowPrivilegeEscalation: false
+      volumes:
+      - name: prometheus-loadtest-config-volume
+        configMap:
+          defaultMode: 420
+          name: prometheus-conf
+      securityContext:
+        runAsUser: 65534
+        fsGroup: 65534
+      terminationGracePeriodSeconds: 60
+  volumeClaimTemplates:
+  - metadata:
+      name: prometheus-loadtest-storage-volume
+    spec:
+      storageClassName: standard
+      accessModes:
+      - "ReadWriteOnce"
+      resources:
+        requests:
+          storage: 10Gi

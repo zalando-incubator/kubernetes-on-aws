@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    application: e2e-vegeta
+  name: e2e-vegeta
+  namespace: loadtest-e2e
+data:
+  routes.eskip: |
+    h: PathSubtree("/healthz") -> status(200) -> inlineContent("OK") -> <shunt>;
+    r: * -> "https://%TARGET%.%ZONE%";
+  get.txt: |
+    GET http://127.0.0.1:9090
