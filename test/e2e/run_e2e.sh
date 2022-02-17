@@ -109,7 +109,8 @@ if [ "$create_cluster" = true ]; then
             --token="${CLUSTER_ADMIN_TOKEN}" \
             --directory="$(pwd)/$BASE_CFG_PATH" \
             --debug \
-            --registry=base_cluster.yaml
+            --registry=base_cluster.yaml \
+            --manage-etcd-stack
 
         # Wait for the resources to be ready
         ./wait-for-update.py --timeout 1200
@@ -132,7 +133,8 @@ if [ "$create_cluster" = true ]; then
         --token="${CLUSTER_ADMIN_TOKEN}" \
         --directory="$(pwd)/../.." \
         --debug \
-        --registry=head_cluster.yaml
+        --registry=head_cluster.yaml \
+        --manage-etcd-stack
 
     # Wait for the resources to be ready after the update
     # TODO: make a feature of CLM --wait-for-kube-system
