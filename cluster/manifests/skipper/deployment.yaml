@@ -98,7 +98,7 @@ spec:
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
-          - "-kubernetes-ingress-v1={{ .Cluster.ConfigItems.skipper_ingress_kubernetes_ingress_v1 }}"
+          - "-kubernetes-ingress-v1=true"
 {{ end }}
           - "-address=:9999"
           - "-wait-first-route-load"
@@ -107,7 +107,7 @@ spec:
           - "-enable-kubernetes-east-west"
           - "-kubernetes-east-west-domain=.ingress.cluster.local"
 {{ end }}
-{{ if and (ne .ConfigItems.skipper_routesrv_enabled "exec") (eq .ConfigItems.enable_skipper_eastwest_range "true")}}
+{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
 {{ end }}
@@ -115,9 +115,7 @@ spec:
           - "-serve-host-metrics"
           - "-serve-method-metric={{ .ConfigItems.skipper_serve_method_metric }}"
           - "-serve-status-code-metric={{ .ConfigItems.skipper_serve_status_code_metric }}"
-{{ if eq .ConfigItems.skipper_serve_host_counter "true"}}
           - "-serve-host-counter"
-{{ end }}
           - "-disable-metrics-compat"
           - "-enable-profile"
           - "-memory-profile-rate={{ .ConfigItems.skipper_memory_profile_rate }}"
@@ -132,13 +130,11 @@ spec:
           - "-metrics-flavour=prometheus"
           - "-enable-connection-metrics"
           - "-enable-route-lifo-metrics"
-{{ if eq .ConfigItems.enable_apimonitoring "true" }}
           - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
           - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
-{{ end }}
-{{ if and (ne .ConfigItems.skipper_routesrv_enabled "exec") (eq .ConfigItems.enable_apimonitoring "true")}}
+{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-default-filters-dir=/etc/config/default-filters"
 {{ end }}
           - "-max-audit-body=0"
@@ -199,8 +195,6 @@ spec:
 {{ else if eq .ConfigItems.skipper_local_tokeninfo "production" }}
           - "-oauth2-tokeninfo-url=http://127.0.0.1:9021/oauth2/tokeninfo"
           - "-status-checks=http://127.0.0.1:9021/health"
-{{ else }}
-          - "-oauth2-tokeninfo-url={{ .ConfigItems.tokeninfo_url }}"
 {{ end }}
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
           - "-enable-oauth2-grant-flow"
@@ -278,7 +272,7 @@ spec:
           - name: routes
             mountPath: /etc/routes
 {{ end }}
-{{ if and (ne .ConfigItems.skipper_routesrv_enabled "exec") (eq .ConfigItems.enable_apimonitoring "true")}}
+{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
           - name: filters
             mountPath: /etc/config/default-filters
 {{ end }}
@@ -298,7 +292,7 @@ spec:
           configMap:
             name: sandbox-tokeninfo-bridge-conf
 {{ end }}
-{{ if and (ne .ConfigItems.skipper_routesrv_enabled "exec") (eq .ConfigItems.enable_apimonitoring "true") }}
+{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
         - name: filters
           configMap:
             name: skipper-default-filters
