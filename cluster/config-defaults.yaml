@@ -87,7 +87,6 @@ skipper_tls_timeout_backend: "1m"
 skipper_close_idle_conns_period: "20s"
 
 # skipper server timeout defaults
-skipper_idle_timeout_server: "352s"
 skipper_read_timeout_server: "5m"
 skipper_write_timeout_server: "0"
 
@@ -100,8 +99,11 @@ skipper_readiness_init_delay_seconds: 1
 skipper_liveness_init_delay_seconds: 30
 {{end}}
 # skipper termination settings
-skipper_termination_grace_period: "70"
-skipper_wait_for_healthcheck_interval: "65s"
+# grace period needs to be >timeouts and healtcheck wait
+# wait for healtcheck needs to be <grace period and >skipper_idle_timeout_server
+skipper_termination_grace_period: "360"
+skipper_wait_for_healthcheck_interval: "355s"
+skipper_idle_timeout_server: "352s"
 
 # skipper redis settings
 enable_dedicate_nodepool_skipper_redis: "false"
