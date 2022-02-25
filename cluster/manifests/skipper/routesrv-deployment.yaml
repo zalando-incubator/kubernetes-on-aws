@@ -60,25 +60,21 @@ spec:
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
-          - "-kubernetes-ingress-v1={{ .Cluster.ConfigItems.skipper_ingress_kubernetes_ingress_v1 }}"
+          - "-kubernetes-ingress-v1=true"
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
 {{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
           - "-enable-kubernetes-east-west"
           - "-kubernetes-east-west-domain=.ingress.cluster.local"
 {{ end }}
-{{ if eq .ConfigItems.enable_skipper_eastwest_range "true"}}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
-{{ end }}
           - "-reverse-source-predicate"
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
           - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
           - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
           - "-default-filters-dir=/etc/config/default-filters"
-{{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
@@ -99,7 +95,6 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
-{{ if eq .ConfigItems.enable_apimonitoring "true"}}
         volumeMounts:
           - name: filters
             mountPath: /etc/config/default-filters
@@ -108,5 +103,4 @@ spec:
           configMap:
             name: skipper-default-filters
             optional: true
-{{ end }}
 {{ end }}
