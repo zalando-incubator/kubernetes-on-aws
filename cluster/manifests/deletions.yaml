@@ -10,6 +10,16 @@ pre_apply:
   kind: Deployment
 {{ end }}
 
+{{ if eq .Cluster.ConfigItems.storageclass_standard_gp3 "true" }}
+- labels:
+    volume-type: gp2
+  kind: StorageClass
+{{ else }}
+- labels:
+    volume-type: gp3
+  kind: StorageClass
+{{ end }}
+
 # everything defined under here will be deleted after applying the manifests
 post_apply:
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
