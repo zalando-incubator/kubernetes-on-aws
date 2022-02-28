@@ -1,3 +1,6 @@
+{{ $internal_version := "v0.13.185-238" }}
+{{ $version := index (split $internal_version "-") 0 }}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,7 +8,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: v0.13.185
+    version: {{ $version }}
     component: ingress
 spec:
   strategy:
@@ -20,7 +23,7 @@ spec:
       labels:
         deployment: skipper-ingress
         application: skipper-ingress
-        version: v0.13.185
+        version: {{ $version }}
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -49,7 +52,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:v0.13.185-238
+        image: registry.opensource.zalan.do/teapot/skipper-internal:{{ $internal_version }}
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -158,7 +161,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:v0.13.185-238
+            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:{{ $internal_version }}
             max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
@@ -315,4 +318,112 @@ spec:
       - effect: NoSchedule
         key: dedicated
         value: skipper-ingress
+{{ end }}
+
+{{ if ne .ConfigItems.skipper_routesrv_enabled "false" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skipper-ingress-routesrv
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    version: {{ $version }}
+    component: routesrv
+spec:
+  replicas: {{ .ConfigItems.skipper_routesrv_replicas }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      application: skipper-ingress
+      component: routesrv
+  template:
+    metadata:
+      labels:
+        deployment: skipper-ingress-routesrv
+        application: skipper-ingress
+        version: {{ $version }}
+        component: routesrv
+      annotations:
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
+        config/hash: {{"secret.yaml" | manifestHash}}
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_local}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9990"
+        prometheus.io/scrape: "true"
+    spec:
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              # This is kind of stupid, but would work for now. Ideally we should just stop filtering out the pods in
+              # kube-system in our admitters, since we've never really had any issues with them.
+              parent-resource-hash: abd943226b6885f66785592be28bdf303863fbac
+{{- end }}
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
+      serviceAccountName: skipper-ingress
+      terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
+      containers:
+      - name: routesrv
+        image: registry.opensource.zalan.do/teapot/skipper:{{ $version }}
+        ports:
+        - name: ingress-port
+          containerPort: 9990
+          protocol: TCP
+        args:
+          - "routesrv"
+          - "-kubernetes"
+          - "-kubernetes-in-cluster"
+          - "-kubernetes-path-mode=path-prefix"
+          - "-kubernetes-ingress-v1=true"
+          - "-address=:9990"
+          - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
+{{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
+          - "-enable-kubernetes-east-west"
+          - "-kubernetes-east-west-domain=.ingress.cluster.local"
+{{ end }}
+          - "-kubernetes-east-west-range-domains=ingress.cluster.local"
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+          - "-reverse-source-predicate"
+          - "-enable-api-usage-monitoring"
+          - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
+          - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
+          - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
+          - "-default-filters-dir=/etc/config/default-filters"
+{{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
+          - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
+          - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
+{{ end }}
+        resources:
+          limits:
+            cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
+            memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
+          requests:
+            cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
+            memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9990
+          timeoutSeconds: 5
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+        volumeMounts:
+          - name: filters
+            mountPath: /etc/config/default-filters
+      volumes:
+        - name: filters
+          configMap:
+            name: skipper-default-filters
+            optional: true
 {{ end }}
