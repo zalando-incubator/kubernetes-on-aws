@@ -265,12 +265,15 @@ if [ "$loadtest_e2e" = true ]; then
   >&2 echo "DEBUG: e2e loadtest not OK: $not_ok"
   >&2 echo "DEBUG: e2e loadtest OK: $ok"
 
+  sleep 30
   if [ "${ok%.*}" -lt 1000 ]
   then
     >&2 echo "FAIL: e2e loadtest too few ok count $ok"
+    sleep 30
     exit 2
   elif [ "$( echo "scale=5; $not_ok / $ok > 0.000001" | bc )" -gt 0 ]; then
     >&2 echo "FAIL: e2e loadtest did not reach 99.999% OK rate"
+    sleep 30
     exit 2
   fi
 fi
