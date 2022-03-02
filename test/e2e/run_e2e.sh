@@ -249,7 +249,7 @@ if [ "$loadtest_e2e" = true ]; then
   # get data for the last 30m
   curl --get -s -H"Accept: application/json" \
        --data-urlencode 'query=sum by(code) (rate(skipper_serve_host_count{application="e2e-vegeta"}[1m]))' \
-       --data-urlencode "start=$(( $(date +%s) - (30*60) ))" \
+       --data-urlencode "start=$(( $(date +%s) - (120*60) ))" \
        --data-urlencode "end=$(( $(date +%s) ))" \
        --data-urlencode "step=60" \
        "https://${prometheus}/api/v1/query_range" > /tmp/loadtest-e2e.json
