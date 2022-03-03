@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    application: e2e-vegeta
+  name: e2e-vegeta
+  namespace: loadtest-e2e
+spec:
+  selector:
+    matchLabels:
+      application: e2e-vegeta
+  strategy:
+    rollingUpdate:
+      maxSurge: 5%
+      maxUnavailable: 5
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9911"
+        prometheus.io/scrape: "true"
+      labels:
+        application: e2e-vegeta
+    spec:
+      containers:
+      - image: registry.opensource.zalan.do/teapot/skipper:v0.13.179
+        imagePullPolicy: IfNotPresent
+        name: skipper
+        args:
+        - skipper
+        - -routes-file=/load-targets/routes.eskip
+        - -address=:9090
+        - -wait-first-route-load
+        - -wait-for-healthcheck-interval=25s
+        - -metrics-flavour=prometheus
+        - -histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600
+        - -close-idle-conns-period=20s
+        - -serve-host-metrics
+        - -serve-method-metric=false
+        - -serve-status-code-metric=true
+        - -serve-host-counter
+        - -access-log-disabled
+        ports:
+        - containerPort: 9090
+          name: ingress-port
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 1
+          httpGet:
+            path: /healthz
+            port: 9090
+            scheme: HTTP
+          initialDelaySeconds: 1
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: "1"
+            memory: 1500Mi
+          requests:
+            cpu: "1"
+            memory: 1500Mi
+        volumeMounts:
+        - name: cfg
+          mountPath: /load-targets
+      - env:
+        - name: RATE
+          value: "1000/1s"
+        - name: TARGET_VARIANT
+          value: "get.txt"
+        - name: SLEEP_TIME
+          value: "10"
+        - name: DURATION
+          value: "1h"
+        image: pierone.stups.zalan.do/teapot/vegeta:v5.0.3
+        imagePullPolicy: IfNotPresent
+        name: e2e-vegeta
+        resources:
+          limits:
+            cpu: "2"
+            memory: 4Gi
+          requests:
+            cpu: "2"
+            memory: 4Gi
+        volumeMounts:
+        - name: cfg
+          mountPath: /load-targets
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      volumes:
+      - name: cfg
+        configMap:
+          name: e2e-vegeta
