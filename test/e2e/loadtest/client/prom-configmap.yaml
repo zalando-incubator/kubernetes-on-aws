@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    application: prometheus
+  name: prometheus-conf
+  namespace: loadtest-e2e
+data:
+  prometheus.rules.yml: |-
+    groups:
+    - name: skipper code by host
+      rules:
+      - record: job:skipper_code_by_host:sum
+        expr: sum(rate(skipper_serve_host_count{application="calibration-vegeta"}[1m])) by (code)
+
+    - name: skipper sum rate serve_host_duration by bucket
+      rules:
+      - record: job:skipper_serve_host_duration:sum
+        expr: sum(rate(skipper_serve_host_duration_seconds_bucket{application="calibration-vegeta"}[1m])) by (le)
+
+    - name: skipper sum rate serve_host_duration by host,bucket
+      rules:
+      - record: job:skipper_serve_host_duration_host_bucket:sum
+        expr: sum(rate(skipper_serve_host_duration_seconds_bucket{}[1m])) by (le,host)
+
+    - name: skipper sum rate serve_host_duration count by host,code
+      rules:
+      - record: job:skipper_count_by_host_code:sum
+        expr: sum(rate(skipper_serve_host_count{}[1m])) by (host,code)
+
+  prometheus.yml: |-
+    global:
+      scrape_interval: 15s
+      external_labels:
+        prometheus_replica: @@POD_NAME@@
+        cluster: e2e
+    rule_files:
+    - "prometheus.rules.yaml"
+    scrape_configs:
+    - job_name: "kubernetes-pods"
+      scheme: http
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - loadtest-e2e
+      relabel_configs:
+      # Look for the Prometheus annotations and scrape based on those
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: ^true$
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scheme]
+        action: replace
+        target_label: __scheme__
+        regex: (https?)
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_ip']
+        target_label: pod_ip
+      - action: replace
+        source_labels: ['__meta_kubernetes_namespace']
+        target_label: namespace
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_label_application']
+        target_label: application
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_name']
+        target_label: pod_name
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_node_name']
+        target_label: node_name
