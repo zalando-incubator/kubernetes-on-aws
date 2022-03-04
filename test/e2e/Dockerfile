@@ -9,6 +9,8 @@ RUN go get github.com/onsi/ginkgo/ginkgo@v1.8.0
 FROM registry.opensource.zalan.do/library/python-3.9-slim:latest
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  bc \
+  curl \
   git \
   jq \
   pwgen \

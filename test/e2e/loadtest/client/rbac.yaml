@@ -1,0 +1,37 @@
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: loadtest-prometheus
+  namespace: loadtest-e2e
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: loadtest-prometheus
+rules:
+- apiGroups: [""]
+  resources:
+  - services
+  - endpoints
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: loadtest-prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: loadtest-prometheus
+subjects:
+- kind: ServiceAccount
+  name: loadtest-prometheus
+  namespace: loadtest-e2e
