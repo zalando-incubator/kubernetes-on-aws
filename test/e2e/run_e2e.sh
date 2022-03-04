@@ -3,6 +3,7 @@ set -euo pipefail
 
 create_cluster=false
 e2e=false
+loadtest_e2e=false
 stackset_e2e=false
 decommission_cluster=false
 COMMAND="${1:-"all"}" # all, create-cluster, e2e, stackset-e2e, decommission-cluster
@@ -11,6 +12,7 @@ case "$COMMAND" in
     all)
         create_cluster=true
         e2e=true
+        loadtest_e2e=true
         stackset_e2e=true
         decommission_cluster=true
         ;;
@@ -19,6 +21,9 @@ case "$COMMAND" in
         ;;
     e2e)
         e2e=true
+        ;;
+    loadtest-e2e)
+        loadtest_e2e=true
         ;;
     stackset-e2e)
         stackset_e2e=true
@@ -114,6 +119,10 @@ if [ "$create_cluster" = true ]; then
 
         # Wait for the resources to be ready
         ./wait-for-update.py --timeout 1200
+
+        # provision and start load test
+        echo "provision and start load test"
+        ./start-load-test.sh --zone "$HOSTED_ZONE" --target "$(date +%s)" -v --timeout 900 --wait 30
     fi
 
     # generate updated clusters.yaml
@@ -229,6 +238,41 @@ if [ "$stackset_e2e" = true ]; then
     namespace="stackset-e2e-$(date +'%H%M%S')"
     kubectl create namespace "$namespace"
     E2E_NAMESPACE="${namespace}" ./stackset-e2e -test.parallel 20
+fi
+
+if [ "$loadtest_e2e" = true ]; then
+  >&2 echo "collect loadtest e2e data"
+  prometheus=$(kubectl -n loadtest-e2e get ing prometheus -o json | jq -r '.spec.rules[0].host')
+
+  >&2 echo "target prometheus: ${prometheus}"
+
+  # get data for the last 30m
+  curl --get -s -H"Accept: application/json" \
+       --data-urlencode 'query=sum by(code) (rate(skipper_serve_host_count{application="e2e-vegeta"}[1m]))' \
+       --data-urlencode "start=$(( $(date +%s) - (120*60) ))" \
+       --data-urlencode "end=$(( $(date +%s) ))" \
+       --data-urlencode "step=60" \
+       "https://${prometheus}/api/v1/query_range" > /tmp/loadtest-e2e.json
+  ls -l /tmp/loadtest-e2e.json
+  cat /tmp/loadtest-e2e.json
+
+  not_ok=$(jq -r '.data.result[] | select(.metric.code != "200") | .values[][1]' /tmp/loadtest-e2e.json \
+    | awk 'BEGIN{cnt=0} {cnt=cnt+$1} END{print cnt}')
+  ok=$(jq -r '.data.result[] | select(.metric.code == "200") | .values[][1]' /tmp/loadtest-e2e.json \
+    | awk 'BEGIN{cnt=0} {cnt=cnt+$1} END{print cnt}')
+
+  >&2 echo ""
+  >&2 echo "DEBUG: e2e loadtest not OK: $not_ok"
+  >&2 echo "DEBUG: e2e loadtest OK: $ok"
+
+  if [ "${ok%.*}" -lt 1000 ]
+  then
+    >&2 echo "FAIL: e2e loadtest too few ok count $ok"
+    exit 2
+  elif [ "$( echo "scale=5; $not_ok / $ok > 0.000001" | bc )" -gt 0 ]; then
+    >&2 echo "FAIL: e2e loadtest did not reach 99.999% OK rate"
+    exit 2
+  fi
 fi
 
 if [ "$decommission_cluster" = true ]; then
