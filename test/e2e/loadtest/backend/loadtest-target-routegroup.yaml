@@ -1,0 +1,19 @@
+apiVersion: zalando.org/v1
+kind: RouteGroup
+metadata:
+  name: loadtest-target
+  namespace: loadtest-e2e
+spec:
+  backends:
+  - name: simulation
+    type: shunt
+  defaultBackends:
+  - backendName: simulation
+  hosts:
+  - %TARGET%.%ZONE%
+  - %TARGET%.ingress.cluster.local
+  routes:
+  - pathSubtree: /
+    filters:
+    - disableAccessLog()
+    - inlineContent("OK")

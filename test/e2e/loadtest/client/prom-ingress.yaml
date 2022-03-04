@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus
+  namespace: loadtest-e2e
+  labels:
+    application: prometheus
+spec:
+  rules:
+  - host: prometheus-%TARGET%.%ZONE%
+    http:
+      paths:
+      - backend:
+          service:
+            name: prometheus
+            port:
+              number: 80
+        pathType: ImplementationSpecific
