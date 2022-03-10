@@ -5,18 +5,11 @@ Metadata:
     InfrastructureComponent: "true"
     "kubernetes:component": "etcd-cluster"
 Outputs:
-  EtcdSecurityGroupId:
+  EtcdClusterSecurityGroupId:
     Description: "Security Group ID of the etcd cluster"
-    Value: !GetAtt EtcdSecurityGroup.GroupId
+    Value: !GetAtt EtcdClusterSecurityGroup.GroupId
     Export:
-      Name: "etcd-cluster-etcd:security-group-id"
-{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "true"}}
-  EtcdSecurityGroupIdTemp:
-    Description: "Security Group ID of the etcd cluster"
-    Value: !GetAtt EtcdSecurityGroupTemp.GroupId
-    Export:
-      Name: "etcd-cluster-etcd:security-group-id-temp"
-{{- end }}
+      Name: "etcd-cluster-etcd:etcd-security-group-id"
   LaunchTemplateId:
     Description: "Launch template ID of the etcd nodes"
     Value: !Ref LaunchTemplate
@@ -44,7 +37,7 @@ Resources:
           - DeviceIndex: 0
             AssociatePublicIpAddress: true
             Groups:
-              - !GetAtt EtcdSecurityGroup.GroupId
+              - !GetAtt EtcdClusterSecurityGroup.GroupId
         EbsOptimized: false
         IamInstanceProfile:
           Name: !Ref AppServerInstanceProfile
@@ -60,7 +53,7 @@ Resources:
             CLIENT_KEY: "{{.Values.etcd_client_server_key}}"
             CLIENT_TLS_ENABLED: 'true'
             CLIENT_TRUSTED_CA: "{{.Values.etcd_client_ca_cert}}"
-            HOSTED_ZONE: "{{.Cluster.Alias}}.zalan.do"
+            HOSTED_ZONE: "{{.Values.hosted_zone}}"
           mounts:
             /home/etcd:
               partition: /dev/xvdb
@@ -131,42 +124,10 @@ Resources:
       AutoScalingGroupName: !Ref AppServer
       Cooldown: "60"
       ScalingAdjustment: "1"
-  EtcdSecurityGroup:
+  EtcdClusterSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Etcd Appliance Security Group
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
-        CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-      - IpProtocol: tcp
-        FromPort: 2381
-        ToPort: 2381
-        CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-      - IpProtocol: tcp
-        FromPort: 9100
-        ToPort: 9100
-        CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-{{- if eq .Cluster.ConfigItems.etcd_stack_specify_vpc_in_security_group "true"}}
-      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
-{{- end }}
-      Tags:
-        - Key: InfrastructureComponent
-          Value: true
-  EtcdIngressMembers:
-    Type: "AWS::EC2::SecurityGroupIngress"
-    Properties:
-      GroupId: !GetAtt EtcdSecurityGroup.GroupId
-      IpProtocol: tcp
-      FromPort: 2379
-      ToPort: 2479
-      SourceSecurityGroupId: !GetAtt EtcdSecurityGroup.GroupId
-{{- if eq .Cluster.ConfigItems.etcd_stack_security_group_temp "true"}}
-  EtcdSecurityGroupTemp:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Etcd Appliance Security Group
+      GroupDescription: Etcd Cluster Security Group
       SecurityGroupIngress:
       - IpProtocol: tcp
         FromPort: 22
@@ -184,15 +145,14 @@ Resources:
       Tags:
         - Key: InfrastructureComponent
           Value: true
-  EtcdIngressMembersTemp:
+  EtcdClusterIngressMembers:
     Type: "AWS::EC2::SecurityGroupIngress"
     Properties:
-      GroupId: !GetAtt EtcdSecurityGroupTemp.GroupId
+      GroupId: !GetAtt EtcdClusterSecurityGroup.GroupId
       IpProtocol: tcp
       FromPort: 2379
       ToPort: 2479
-      SourceSecurityGroupId: !GetAtt EtcdSecurityGroupTemp.GroupId
-{{- end }}
+      SourceSecurityGroupId: !GetAtt EtcdClusterSecurityGroup.GroupId
   EtcdBackupBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain

@@ -5,32 +5,22 @@ Metadata:
     InfrastructureComponent: "true"
 Resources:
 {{ if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
-  EtcdSecurityGroupIngressFromMaster:
+  EtcdClusterSecurityGroupIngressFromMaster:
+    Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
       FromPort: 2379
-{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "false"}}
-      GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id'
-{{- end }}
-{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "true"}}
-      GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id-temp'
-{{- end }}
+      ToPort: 2379
+      GroupId: !ImportValue 'etcd-cluster-etcd:etcd-security-group-id'
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      ToPort: 2379
+  EtcdClusterSecurityGroupTLSIngressFromMaster:
     Type: 'AWS::EC2::SecurityGroupIngress'
-  EtcdSecurityGroupTLSIngressFromMaster:
     Properties:
       FromPort: 2479
-{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "false"}}
-      GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id'
-{{- end }}
-{{- if eq .Cluster.ConfigItems.cluster_reference_etcd_sg_temp "true"}}
-      GroupId: !ImportValue 'etcd-cluster-etcd:security-group-id-temp'
-{{- end }}
+      ToPort: 2479
+      GroupId: !ImportValue 'etcd-cluster-etcd:etcd-security-group-id'
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      ToPort: 2479
-    Type: 'AWS::EC2::SecurityGroupIngress'
   IngressLoadBalancerSecurityGroup:
     Properties:
       GroupDescription: !Ref 'AWS::StackName'
@@ -1474,9 +1464,6 @@ Resources:
               - Action: 's3:ListBucket'
                 Effect: Allow
                 Resource: '*'
-              - Action: 's3:GetObject'
-                Effect: Allow
-                Resource: "arn:aws:s3:::zalando-stups-mint-{{.Cluster.InfrastructureAccount | getAWSAccountID}}-{{.Cluster.Region}}/gerry/*"
               - Action: 'sqs:GetQueueAttributes'
                 Effect: Allow
                 Resource: '*'
@@ -1496,6 +1483,12 @@ Resources:
                 Effect: Allow
                 Resource: '*'
               - Action: 'sagemaker:ListEndpoints'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'states:ListStateMachines'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'states:ListExecutions'
                 Effect: Allow
                 Resource: '*'
             Version: 2012-10-17

@@ -4,8 +4,7 @@ metadata:
   name: coredns
   namespace: kube-system
   labels:
-    application: coredns
-    # application: kubernetes # step 2
+    application: kubernetes
     component: coredns
     version: v1.8.7
     kubernetes.io/cluster-service: "true"
@@ -15,15 +14,12 @@ spec:
     type: OnDelete
   selector:
     matchLabels:
-      application: coredns
-      instance: node-dns
-      # daemonset: coredns # step 2
+      daemonset: coredns
   template:
     metadata:
       labels:
         daemonset: coredns
-        application: coredns
-        # application: kubernetes # step 3
+        application: kubernetes
         component: coredns
         instance: node-dns
         version: v1.8.7

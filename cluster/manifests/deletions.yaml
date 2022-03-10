@@ -10,53 +10,15 @@ pre_apply:
   kind: Deployment
 {{ end }}
 
-# Delete old version of vpa components for recreating with new selector
+{{ if eq .Cluster.ConfigItems.storageclass_standard_gp3 "true" }}
 - labels:
-    application: vertical-pod-autoscaler
-    component: recommender
-  namespace: kube-system
-  kind: Deployment
+    volume-type: gp2
+  kind: StorageClass
+{{ else }}
 - labels:
-    application: vertical-pod-autoscaler
-    component: updater
-  namespace: kube-system
-  kind: Deployment
-- labels:
-    application: vertical-pod-autoscaler
-    component: admission-controller
-  namespace: kube-system
-  kind: Deployment
-# step 2
-# - labels:
-#     application: kube-proxy
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
-# - labels:
-#     application: coredns
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
-# - labels:
-#     application: kube-node-ready
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
-# - labels:
-#     application: kube2iam
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
-# - labels:
-#     application: flannel
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
-# - labels:
-#     application: node-monitor
-#   namespace: kube-system
-#   kind: DaemonSet
-#   propagation_policy: Orphan
+    volume-type: gp3
+  kind: StorageClass
+{{ end }}
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
