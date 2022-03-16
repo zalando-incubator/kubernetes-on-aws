@@ -1,6 +1,6 @@
 module github.com/zalando-incubator/kubernetes-on-aws/tests/e2e
 
-go 1.17
+go 1.18
 
 require (
 	github.com/evanphx/json-patch v4.9.0+incompatible
