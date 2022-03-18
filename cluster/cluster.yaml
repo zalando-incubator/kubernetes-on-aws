@@ -1464,6 +1464,13 @@ Resources:
               - Action: 's3:ListBucket'
                 Effect: Allow
                 Resource: '*'
+          {{if ne "" .Cluster.ConfigItems.zmon_accessible_s3_buckets}}
+              {{range $bucket := split "," .Cluster.zmon_accessible_s3_buckets}}
+              - Action: 's3:GetObject'
+                Effect: Allow
+                Resource: '$bucket'
+              {{end}}
+          {{end}}
               - Action: 'sqs:GetQueueAttributes'
                 Effect: Allow
                 Resource: '*'
