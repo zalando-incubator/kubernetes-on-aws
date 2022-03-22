@@ -45,14 +45,14 @@ data:
       forward-addr: 127.0.0.1@9254 # coredns
   Corefile: |
 {{ if and (ne .ConfigItems.custom_dns_zone "") (ne .ConfigItems.custom_dns_zone_nameservers "") }}
-    {{ .ConfigItems.custom_dns_zone }}:9254 {
+    {{ .Cluster.ConfigItems.custom_dns_zone }}:9254 {
         errors
 {{ if ne .ConfigItems.coredns_max_upstream_concurrency "0" }}
-        forward . {{ .ConfigItems.custom_dns_zone_nameservers }} {
-          max_concurrent {{ .ConfigItems.coredns_max_upstream_concurrency }}
+        forward . {{ .Cluster.ConfigItems.custom_dns_zone_nameservers }} {
+          max_concurrent {{ .Cluster.ConfigItems.coredns_max_upstream_concurrency }}
         }
 {{ else }}
-        forward . {{ .ConfigItems.custom_dns_zone_nameservers }}
+        forward . {{ .Cluster.ConfigItems.custom_dns_zone_nameservers }}
 {{ end }}
         prometheus :9153
         ready :9155
@@ -110,7 +110,7 @@ data:
         prometheus :9153
 {{ if ne .ConfigItems.coredns_max_upstream_concurrency "0" }}
         forward . /etc/resolv.conf {
-          max_concurrent {{ .ConfigItems.coredns_max_upstream_concurrency }}
+          max_concurrent {{ .Cluster.ConfigItems.coredns_max_upstream_concurrency }}
         }
 {{ else }}
         forward . /etc/resolv.conf

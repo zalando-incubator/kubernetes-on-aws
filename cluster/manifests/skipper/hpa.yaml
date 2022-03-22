@@ -10,33 +10,33 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: skipper-ingress
-  minReplicas: {{ .ConfigItems.skipper_ingress_min_replicas }}
-  maxReplicas: {{ .ConfigItems.skipper_ingress_max_replicas }}
+  minReplicas: {{ .Cluster.ConfigItems.skipper_ingress_min_replicas }}
+  maxReplicas: {{ .Cluster.ConfigItems.skipper_ingress_max_replicas }}
   metrics:
   - type: Resource
     resource:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_cpu }}
+        averageUtilization: {{ .Cluster.ConfigItems.skipper_ingress_target_average_utilization_cpu }}
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_memory }}
+        averageUtilization: {{ .Cluster.ConfigItems.skipper_ingress_target_average_utilization_memory }}
 {{ if ne .ConfigItems.skipper_time_based_scaling_check_id "" }}
   - type: External
     external:
       target:
-        averageValue: {{ .ConfigItems.skipper_time_based_scaling_target }}
+        averageValue: {{ .Cluster.ConfigItems.skipper_time_based_scaling_target }}
         type: AverageValue
       metric:
         name: zmon-check
         selector:
           matchLabels:
             type: "zmon"
-            check-id: "{{ .ConfigItems.skipper_time_based_scaling_check_id }}"
+            check-id: "{{ .Cluster.ConfigItems.skipper_time_based_scaling_check_id }}"
             key: ""
             tag-application: "skipper-ingress"
             aggregators: last
@@ -51,7 +51,7 @@ spec:
       metric:
         name: hyped-article-release
       target:
-        averageValue: {{ .ConfigItems.skipper_scaling_schedule_hyped_articles_target }}
+        averageValue: {{ .Cluster.ConfigItems.skipper_scaling_schedule_hyped_articles_target }}
         type: AverageValue
 {{ end }}
   behavior:

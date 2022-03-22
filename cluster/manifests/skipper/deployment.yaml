@@ -115,16 +115,16 @@ spec:
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
 {{ end }}
           - "-proxy-preserve-host"
-          - "-compress-encodings={{ .ConfigItems.skipper_compress_encodings }}"
+          - "-compress-encodings={{ .Cluster.ConfigItems.skipper_compress_encodings }}"
           - "-serve-host-metrics"
-          - "-serve-method-metric={{ .ConfigItems.skipper_serve_method_metric }}"
-          - "-serve-status-code-metric={{ .ConfigItems.skipper_serve_status_code_metric }}"
+          - "-serve-method-metric={{ .Cluster.ConfigItems.skipper_serve_method_metric }}"
+          - "-serve-status-code-metric={{ .Cluster.ConfigItems.skipper_serve_status_code_metric }}"
           - "-serve-host-counter"
           - "-disable-metrics-compat"
           - "-enable-profile"
-          - "-memory-profile-rate={{ .ConfigItems.skipper_memory_profile_rate }}"
-          - "-block-profile-rate={{ .ConfigItems.skipper_block_profile_rate }}"
-          - "-mutex-profile-fraction={{ .ConfigItems.skipper_mutex_profile_fraction }}"
+          - "-memory-profile-rate={{ .Cluster.ConfigItems.skipper_memory_profile_rate }}"
+          - "-block-profile-rate={{ .Cluster.ConfigItems.skipper_block_profile_rate }}"
+          - "-mutex-profile-fraction={{ .Cluster.ConfigItems.skipper_mutex_profile_fraction }}"
           - "-debug-listener=:9922"
           - "-enable-ratelimits"
           - "-experimental-upgrade"
@@ -145,11 +145,11 @@ spec:
 {{ if ne .ConfigItems.skipper_redis_replicas "0" }}
           - "-enable-swarm"
           - "-swarm-redis-urls={{ indexedList "skipper-ingress-redis-$.skipper-ingress-redis.kube-system.svc.cluster.local:6379" (parseInt64 .ConfigItems.skipper_redis_replicas) }}"
-          - "-swarm-redis-dial-timeout={{ .ConfigItems.skipper_redis_dial_timeout }}"
-          - "-swarm-redis-pool-timeout={{ .ConfigItems.skipper_redis_pool_timeout }}"
-          - "-swarm-redis-read-timeout={{ .ConfigItems.skipper_redis_read_timeout }}"
-          - "-swarm-redis-write-timeout={{ .ConfigItems.skipper_redis_write_timeout }}"
-          - "-cluster-ratelimit-max-group-shards={{ .ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
+          - "-swarm-redis-dial-timeout={{ .Cluster.ConfigItems.skipper_redis_dial_timeout }}"
+          - "-swarm-redis-pool-timeout={{ .Cluster.ConfigItems.skipper_redis_pool_timeout }}"
+          - "-swarm-redis-read-timeout={{ .Cluster.ConfigItems.skipper_redis_read_timeout }}"
+          - "-swarm-redis-write-timeout={{ .Cluster.ConfigItems.skipper_redis_write_timeout }}"
+          - "-cluster-ratelimit-max-group-shards={{ .Cluster.ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
 {{ end }}
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
           - >-
@@ -162,37 +162,37 @@ spec:
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
             tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:{{ $internal_version }}
-            max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
-            grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
-            max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
-            min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }}
-            max-log-key-len={{ .ConfigItems.skipper_ingress_lightstep_max_log_key_len }}
-            max-log-value-len={{ .ConfigItems.skipper_ingress_lightstep_max_log_value_len }}
-            max-logs-per-span={{ .ConfigItems.skipper_ingress_lightstep_max_logs_per_span }}
-            propagators={{ .ConfigItems.skipper_ingress_lightstep_propagators }}
+            max-buffered-spans={{ .Cluster.ConfigItems.skipper_ingress_tracing_buffer }}
+            grpc-max-msg-size={{ .Cluster.ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
+            max-period={{ .Cluster.ConfigItems.skipper_ingress_lightstep_max_period }}
+            min-period={{ .Cluster.ConfigItems.skipper_ingress_lightstep_min_period }}
+            max-log-key-len={{ .Cluster.ConfigItems.skipper_ingress_lightstep_max_log_key_len }}
+            max-log-value-len={{ .Cluster.ConfigItems.skipper_ingress_lightstep_max_log_value_len }}
+            max-logs-per-span={{ .Cluster.ConfigItems.skipper_ingress_lightstep_max_logs_per_span }}
+            propagators={{ .Cluster.ConfigItems.skipper_ingress_lightstep_propagators }}
             {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
-          - "-opentracing-excluded-proxy-tags={{ .ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
+          - "-opentracing-excluded-proxy-tags={{ .Cluster.ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
 {{ if eq .ConfigItems.skipper_ingress_opentracing_backend_name_tag "true" }}
           - "-opentracing-backend-name-tag"
 {{ end }}
-          - "-opentracing-disable-filter-spans={{ .ConfigItems.skipper_opentracing_disable_filter_spans }}"
-          - "-expect-continue-timeout-backend={{ .ConfigItems.skipper_expect_continue_timeout_backend }}"
-          - "-keepalive-backend={{ .ConfigItems.skipper_keepalive_backend }}"
-          - "-max-idle-connection-backend={{ .ConfigItems.skipper_max_idle_connection_backend }}"
-          - "-response-header-timeout-backend={{ .ConfigItems.skipper_response_header_timeout_backend }}"
-          - "-timeout-backend={{ .ConfigItems.skipper_timeout_backend }}"
-          - "-tls-timeout-backend={{ .ConfigItems.skipper_tls_timeout_backend }}"
-          - "-close-idle-conns-period={{ .ConfigItems.skipper_close_idle_conns_period }}"
-          - "-idle-timeout-server={{ .ConfigItems.skipper_idle_timeout_server }}"
-          - "-read-timeout-server={{ .ConfigItems.skipper_read_timeout_server }}"
-          - "-write-timeout-server={{ .ConfigItems.skipper_write_timeout_server }}"
-          - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
-          - "-suppress-route-update-logs={{ .ConfigItems.skipper_suppress_route_update_logs }}"
+          - "-opentracing-disable-filter-spans={{ .Cluster.ConfigItems.skipper_opentracing_disable_filter_spans }}"
+          - "-expect-continue-timeout-backend={{ .Cluster.ConfigItems.skipper_expect_continue_timeout_backend }}"
+          - "-keepalive-backend={{ .Cluster.ConfigItems.skipper_keepalive_backend }}"
+          - "-max-idle-connection-backend={{ .Cluster.ConfigItems.skipper_max_idle_connection_backend }}"
+          - "-response-header-timeout-backend={{ .Cluster.ConfigItems.skipper_response_header_timeout_backend }}"
+          - "-timeout-backend={{ .Cluster.ConfigItems.skipper_timeout_backend }}"
+          - "-tls-timeout-backend={{ .Cluster.ConfigItems.skipper_tls_timeout_backend }}"
+          - "-close-idle-conns-period={{ .Cluster.ConfigItems.skipper_close_idle_conns_period }}"
+          - "-idle-timeout-server={{ .Cluster.ConfigItems.skipper_idle_timeout_server }}"
+          - "-read-timeout-server={{ .Cluster.ConfigItems.skipper_read_timeout_server }}"
+          - "-write-timeout-server={{ .Cluster.ConfigItems.skipper_write_timeout_server }}"
+          - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
+          - "-suppress-route-update-logs={{ .Cluster.ConfigItems.skipper_suppress_route_update_logs }}"
 {{ if eq .ConfigItems.skipper_enable_tcp_queue "true" }}
           - "-enable-tcp-queue"
-          - "-expected-bytes-per-request={{ .ConfigItems.skipper_expected_bytes_per_request }}"
-          - "-max-tcp-listener-concurrency={{ .ConfigItems.skipper_max_tcp_listener_concurrency }}"
-          - "-max-tcp-listener-queue={{ .ConfigItems.skipper_max_tcp_listener_queue }}"
+          - "-expected-bytes-per-request={{ .Cluster.ConfigItems.skipper_expected_bytes_per_request }}"
+          - "-max-tcp-listener-concurrency={{ .Cluster.ConfigItems.skipper_max_tcp_listener_concurrency }}"
+          - "-max-tcp-listener-queue={{ .Cluster.ConfigItems.skipper_max_tcp_listener_queue }}"
 {{ end }}
 {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
           - "-oauth2-tokeninfo-url=http://127.0.0.1:9000/oauth2/tokeninfo"
@@ -203,22 +203,22 @@ spec:
 {{ end }}
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
           - "-enable-oauth2-grant-flow"
-          - "-oauth2-auth-url={{ .ConfigItems.skipper_oauth2_auth_url }}"
-          - "-oauth2-token-url={{ .ConfigItems.skipper_oauth2_token_url }}"
+          - "-oauth2-auth-url={{ .Cluster.ConfigItems.skipper_oauth2_auth_url }}"
+          - "-oauth2-token-url={{ .Cluster.ConfigItems.skipper_oauth2_token_url }}"
           - "-oauth2-secret-file=/etc/skipper/secret/encryption-key"
           - "-oauth2-client-id-file=/etc/skipper/oauth/employee-client-id"
           - "-oauth2-client-secret-file=/etc/skipper/oauth/employee-client-secret"
           - "-credentials-paths=/etc/skipper/secret,/etc/skipper/oauth"
           - "-credentials-update-interval=1m"
-          - "-oauth2-token-cookie-name={{.ConfigItems.skipper_oauth2_cookie_name }}"
-          - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
+          - "-oauth2-token-cookie-name={{.Cluster.ConfigItems.skipper_oauth2_cookie_name }}"
+          - "-oauth2-callback-path={{ .Cluster.ConfigItems.skipper_oauth2_redirect_url }}"
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
 {{ end }}
 {{ if ne .ConfigItems.skipper_ingress_inline_routes "" }}
-          - "-inline-routes={{ .ConfigItems.skipper_ingress_inline_routes }}"
+          - "-inline-routes={{ .Cluster.ConfigItems.skipper_ingress_inline_routes }}"
 {{ end }}
 {{ if ne .ConfigItems.skipper_ingress_refuse_payload "" }}
           {{ range $pattern := split .ConfigItems.skipper_ingress_refuse_payload "[cf724afc]" }}
@@ -227,16 +227,16 @@ spec:
 {{ end }}
         resources:
           limits:
-            cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
-            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+            cpu: "{{ .Cluster.ConfigItems.skipper_ingress_cpu }}"
+            memory: "{{ .Cluster.ConfigItems.skipper_ingress_memory }}"
           requests:
-            cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
-            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+            cpu: "{{ .Cluster.ConfigItems.skipper_ingress_cpu }}"
+            memory: "{{ .Cluster.ConfigItems.skipper_ingress_memory }}"
         readinessProbe:
           httpGet:
             path: /kube-system/healthz
             port: 9999
-          initialDelaySeconds: {{ .ConfigItems.skipper_readiness_init_delay_seconds }}
+          initialDelaySeconds: {{ .Cluster.ConfigItems.skipper_readiness_init_delay_seconds }}
           timeoutSeconds: 5
 {{ if eq .ConfigItems.skipper_local_tokeninfo "production" }}
         livenessProbe:
@@ -245,7 +245,7 @@ spec:
             port: 9021
             host: 127.0.0.1
             scheme: HTTP
-          initialDelaySeconds: {{ .ConfigItems.skipper_liveness_init_delay_seconds }}
+          initialDelaySeconds: {{ .Cluster.ConfigItems.skipper_liveness_init_delay_seconds }}
           periodSeconds: 10
           timeoutSeconds: 5
           successThreshold: 1
@@ -260,7 +260,7 @@ spec:
             # wget will exit with non-zero status code if the HTTP code is no 2xx.
             # production tokeninfo, sandbox tokeninfo, bridge
             - "wget -T 1 -q -O /dev/null http://127.0.0.1:9021/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9121/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9000/healthz"
-          initialDelaySeconds: {{ .ConfigItems.skipper_liveness_init_delay_seconds }}
+          initialDelaySeconds: {{ .Cluster.ConfigItems.skipper_liveness_init_delay_seconds }}
           periodSeconds: 10
           timeoutSeconds: 5
           successThreshold: 1
@@ -332,7 +332,7 @@ metadata:
     version: {{ $version }}
     component: routesrv
 spec:
-  replicas: {{ .ConfigItems.skipper_routesrv_replicas }}
+  replicas: {{ .Cluster.ConfigItems.skipper_routesrv_replicas }}
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -404,11 +404,11 @@ spec:
 {{ end }}
         resources:
           limits:
-            cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
-            memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
+            cpu: "{{ .Cluster.ConfigItems.skipper_routesrv_cpu }}"
+            memory: "{{ .Cluster.ConfigItems.skipper_routesrv_memory }}"
           requests:
-            cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
-            memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
+            cpu: "{{ .Cluster.ConfigItems.skipper_routesrv_cpu }}"
+            memory: "{{ .Cluster.ConfigItems.skipper_routesrv_memory }}"
         readinessProbe:
           httpGet:
             path: /health

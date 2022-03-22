@@ -65,14 +65,14 @@ data:
     - "prometheus.rules.yaml"
 {{ if ne .ConfigItems.prometheus_remote_write "disabled" }}
     remote_write:
-    - url: {{ .ConfigItems.prometheus_remote_write }}
+    - url: {{ .Cluster.ConfigItems.prometheus_remote_write }}
       queue_config:
         # Maximum time a sample will wait in buffer.
-        batch_send_deadline: {{ .ConfigItems.prometheus_remote_batch_send_deadline }}
+        batch_send_deadline: {{ .Cluster.ConfigItems.prometheus_remote_batch_send_deadline }}
         # Initial retry delay. Gets doubled for every retry.
-        min_backoff: {{ .ConfigItems.prometheus_remote_min_backoff }}
+        min_backoff: {{ .Cluster.ConfigItems.prometheus_remote_min_backoff }}
         # Maximum retry delay.
-        max_backoff: {{ .ConfigItems.prometheus_remote_max_backoff }}
+        max_backoff: {{ .Cluster.ConfigItems.prometheus_remote_max_backoff }}
       bearer_token_file: /meta/credentials/remote-write-token-secret
 {{ end }}
     scrape_configs:

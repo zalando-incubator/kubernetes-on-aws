@@ -67,8 +67,8 @@ spec:
         args:
         - "--config.file=/prometheus/prometheus.yaml"
         - "--storage.tsdb.path=/prometheus/"
-        - "--storage.tsdb.retention.size={{ .ConfigItems.prometheus_retention_size }}"
-        - "--storage.tsdb.retention.time={{ .ConfigItems.prometheus_retention_time }}"
+        - "--storage.tsdb.retention.size={{ .Cluster.ConfigItems.prometheus_retention_size }}"
+        - "--storage.tsdb.retention.time={{ .Cluster.ConfigItems.prometheus_retention_time }}"
         - "--storage.tsdb.wal-compression"
         - "--storage.tsdb.min-block-duration=30m"
         ports:
@@ -77,11 +77,11 @@ spec:
           protocol: TCP
         resources:
           limits:
-            cpu: {{.ConfigItems.prometheus_cpu}}
-            memory: {{.ConfigItems.prometheus_mem}}
+            cpu: {{.Cluster.ConfigItems.prometheus_cpu}}
+            memory: {{.Cluster.ConfigItems.prometheus_mem}}
           requests:
-            cpu: {{.ConfigItems.prometheus_cpu}}
-            memory: {{.ConfigItems.prometheus_mem}}
+            cpu: {{.Cluster.ConfigItems.prometheus_cpu}}
+            memory: {{.Cluster.ConfigItems.prometheus_mem}}
         readinessProbe:
           httpGet:
             path: /-/ready
