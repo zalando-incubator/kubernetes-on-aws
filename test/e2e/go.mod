@@ -16,10 +16,10 @@ require (
 	github.com/zalando-incubator/kube-aws-iam-controller v0.1.2
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	k8s.io/api v0.21.9
-	k8s.io/apimachinery v0.21.9
+	k8s.io/api v0.21.11
+	k8s.io/apimachinery v0.21.11
 	k8s.io/apiserver v0.0.0
-	k8s.io/client-go v0.21.9
+	k8s.io/client-go v0.21.11
 	k8s.io/kubernetes v0.0.0
 )
 
@@ -211,8 +211,8 @@ require (
 	k8s.io/metrics v0.0.0 // indirect
 	k8s.io/mount-utils v0.0.0 // indirect
 	k8s.io/sample-apiserver v0.0.0 // indirect
-	k8s.io/utils v0.0.0-20210521133846-da695404a2bc // indirect
-	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.27 // indirect
+	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
+	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.30 // indirect
 	sigs.k8s.io/kustomize/api v0.8.8 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.10.17 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
