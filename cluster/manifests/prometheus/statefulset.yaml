@@ -6,7 +6,7 @@ metadata:
   labels:
     application: kubernetes
     component: prometheus
-    version: v2.32.1
+    version: v2.34.0
 {{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
   name: prometheus
 {{- else }}
@@ -26,7 +26,7 @@ spec:
         statefulset: prometheus
         application: kubernetes
         component: prometheus
-        version: v2.32.1
+        version: v2.34.0
       annotations:
         config/hash: {{"configmap.yaml" | manifestHash}}
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
@@ -63,7 +63,7 @@ spec:
           mountPath: /prometheus
       containers:
       - name: prometheus
-        image: registry.opensource.zalan.do/teapot/prometheus:v2.32.1
+        image: registry.opensource.zalan.do/teapot/prometheus:v2.34.0
         args:
         - "--config.file=/prometheus/prometheus.yaml"
         - "--storage.tsdb.path=/prometheus/"
