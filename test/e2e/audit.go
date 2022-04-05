@@ -49,7 +49,7 @@ var _ = describe("Audit", func() {
 			Spec: apiv1.PodSpec{
 				Containers: []apiv1.Container{{
 					Name:  "pause",
-					Image: "registry.opensource.zalan.do/teapot/pause-amd64:3.2",
+					Image: "registry.opensource.zalan.do/teapot/pause-amd64:3.4.1",
 				}},
 			},
 		}
