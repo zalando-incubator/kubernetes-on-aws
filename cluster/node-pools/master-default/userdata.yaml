@@ -200,7 +200,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-143
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-144
           name: admission-controller
           lifecycle:
             preStop:
@@ -580,7 +580,7 @@ write_files:
           effect: NoSchedule
         containers:
         - name: kube-controller-manager
-          image: {{if eq .Cluster.ConfigItems.kubernetes_controller_manager_image "zalando" }}registry.opensource.zalan.do/teapot/kube-controller-manager-internal:v1.21.9-2{{else}}nonexistent.zalan.do/teapot/kube-controller-manager:fixed{{end}}
+          image: nonexistent.zalan.do/teapot/{{if eq .Cluster.ConfigItems.kubernetes_controller_manager_image "zalando" }}kube-controller-manager-internal{{else}}kube-controller-manager{{end}}:fixed
           args:
           - --kubeconfig=/etc/kubernetes/controller-manager-kubeconfig
           - --leader-elect=true

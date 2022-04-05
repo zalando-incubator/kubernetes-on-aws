@@ -101,11 +101,13 @@ skipper_readiness_init_delay_seconds: 1
 skipper_liveness_init_delay_seconds: 30
 {{end}}
 # skipper termination settings
-# grace period needs to be >timeouts and healtcheck wait
-# wait for healtcheck needs to be <grace period and >skipper_idle_timeout_server
-skipper_termination_grace_period: "360"
-skipper_wait_for_healthcheck_interval: "355s"
+# (10s LB healthcheck interval) * (3 unhealthy threshold + margin of 1 interval)
+skipper_wait_for_healthcheck_interval: "40s"
+# (350s of fixed NLB connection idle timeout) + (margin of 2s)
 skipper_idle_timeout_server: "352s"
+# wait long enough for LB to detect unhealthy node and all connections become idle,
+# i.e. skipper_wait_for_healthcheck_interval + skipper_idle_timeout_server
+skipper_termination_grace_period: "392"
 
 # skipper redis settings
 enable_dedicate_nodepool_skipper_redis: "false"
@@ -488,7 +490,7 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_21: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.9-master-207" "861068367966"}}
+kuberuntu_image_v1_21: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.11-master-213" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
