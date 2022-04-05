@@ -1465,10 +1465,10 @@ Resources:
                 Effect: Allow
                 Resource: '*'
           {{if ne "" .Cluster.ConfigItems.zmon_accessible_s3_buckets}}
-              {{range $bucket := split "," .Cluster.ConfigItems.zmon_accessible_s3_buckets}}
+              {{range $bucket := split .Cluster.ConfigItems.zmon_accessible_s3_buckets ","}}
               - Action: 's3:GetObject'
                 Effect: Allow
-                Resource: '$bucket'
+                Resource: 'arn:aws:s3:::{{ $bucket }}/*'
               {{end}}
           {{end}}
               - Action: 'sqs:GetQueueAttributes'
