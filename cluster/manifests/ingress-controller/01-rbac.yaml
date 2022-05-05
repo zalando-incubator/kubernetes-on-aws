@@ -45,6 +45,28 @@ rules:
   - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kube-ingress-aws-controller-dns
+  namespace: kube-system
+rules:
+- apiGroups:
+  - externaldns.k8s.io
+  resources:
+  - dnsendpoints
+  resourceNames:
+  - kube-ingress-aws-controller-dns
+  verbs:
+  - get
+  - patch
+- apiGroups:
+  - externaldns.k8s.io
+  resources:
+  - dnsendpoints
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kube-ingress-aws-controller
@@ -52,6 +74,20 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: kube-ingress-aws-controller
+subjects:
+- kind: ServiceAccount
+  name: kube-ingress-aws-controller
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kube-ingress-aws-controller-dns
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kube-ingress-aws-controller-dns
 subjects:
 - kind: ServiceAccount
   name: kube-ingress-aws-controller
