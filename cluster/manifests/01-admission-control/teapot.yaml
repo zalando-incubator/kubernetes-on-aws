@@ -122,18 +122,6 @@ webhooks:
         apiGroups: ["apiextensions.k8s.io"]
         apiVersions: ["v1"]
         resources: ["customresourcedefinitions"]
-  - name: ingress-admitter.teapot.zalan.do
-    clientConfig:
-      url: "https://localhost:8085/ingress"
-      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
-    admissionReviewVersions: ["v1beta1"]
-    failurePolicy: Fail
-    sideEffects: "NoneOnDryRun"
-    rules:
-      - operations: ["CREATE", "UPDATE"]
-        apiGroups: ["extensions", "networking.k8s.io"]
-        apiVersions: ["v1beta1"]
-        resources: ["ingresses"]
   - name: stack-admitter.teapot.zalan.do
     clientConfig:
       url: "https://localhost:8085/stack"
