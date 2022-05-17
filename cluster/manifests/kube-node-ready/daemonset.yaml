@@ -25,6 +25,15 @@ spec:
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
+      # consider tagging ASG based instance with a label such that a simple
+      # nodeSelector can be used which is more performant.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: karpenter.sh/capacity-type
+                operator: DoesNotExist
       serviceAccountName: kube-node-ready
       dnsConfig:
         options:

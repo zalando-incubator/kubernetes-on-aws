@@ -1,0 +1,113 @@
+{{ if karpenterNodePools .Cluster.NodePools }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: karpenter
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: karpenter
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      deployment: karpenter
+  template:
+    metadata:
+      labels:
+        deployment: karpenter
+        application: kubernetes
+        component: karpenter
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+    spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      serviceAccountName: karpenter
+      securityContext:
+        fsGroup: 1000
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
+      tolerations:
+      - key: node.kubernetes.io/role
+        value: master
+        effect: NoSchedule
+      # TODO: should or can run on master?
+      # nodeSelector:
+      #   node.kubernetes.io/role: master
+      containers:
+        - name: controller
+          image: "public.ecr.aws/karpenter/controller:v0.16.0@sha256:15cb6fe00279442b752beaf642dc9d6a3a2a9570d6da77b9bd7681e4c61b0958"
+          env:
+            - name: CLUSTER_NAME
+              value: {{ .Cluster.ID }}
+            - name: CLUSTER_ENDPOINT
+              value: "https://kubernetes.default.svc.cluster.local."
+            - name: KARPENTER_SERVICE
+              value: karpenter
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: http-metrics
+              containerPort: 8080
+              protocol: TCP
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 30
+            httpGet:
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+          resources:
+            requests:
+              cpu: "{{ .Cluster.ConfigItems.karpenter_controller_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.karpenter_controller_memory }}"
+            limits:
+              cpu: "{{ .Cluster.ConfigItems.karpenter_controller_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.karpenter_controller_memory }}"
+        - name: webhook
+          image: "public.ecr.aws/karpenter/webhook:v0.16.0@sha256:946c871c74fe63e3c1a6d3790ecf351ba4f19c99a08a7f9fbe21292e24de28b2"
+          env:
+            - name: CLUSTER_NAME
+              value: {{ .Cluster.ID }}
+            - name: KUBERNETES_MIN_VERSION
+              value: "1.19.0-0"
+            - name: CLUSTER_ENDPOINT
+              value: "https://kubernetes.default.svc.cluster.local."
+            - name: KARPENTER_SERVICE
+              value: karpenter
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          args:
+            - -port=8443
+          ports:
+            - name: https-webhook
+              containerPort: 8443
+              protocol: TCP
+          livenessProbe:
+            initialDelaySeconds: 30
+            httpGet:
+              port: https-webhook
+              scheme: HTTPS
+          readinessProbe:
+            httpGet:
+              port: https-webhook
+              scheme: HTTPS
+          resources:
+            requests:
+              cpu: "{{ .Cluster.ConfigItems.karpenter_webhook_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.karpenter_webhook_memory }}"
+            limits:
+              cpu: "{{ .Cluster.ConfigItems.karpenter_webhook_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.karpenter_webhook_memory }}"
+{{ end }}
