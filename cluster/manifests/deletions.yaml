@@ -117,3 +117,37 @@ post_apply:
   namespace: kube-system
   kind: HorizontalPodAutoscaler
 {{ end }}
+
+{{ if not (karpenterNodePools .Cluster.NodePools) }}
+- name: karpenter
+  namespace: kube-system
+  kind: Deployment
+- name: karpenter
+  namespace: kube-system
+  kind: ServiceAccount
+- name: karpenter
+  kind: ClusterRole
+- name: karpenter
+  kind: ClusterRoleBinding
+- name: karpenter
+  namespace: kube-system
+  kind: Role
+- name: karpenter
+  namespace: kube-system
+  kind: RoleBinding
+- name: karpenter
+  namespace: kube-system
+  kind: Service
+- name: provisioners.karpenter.sh
+  namespace: kube-system
+  kind: CustomResourceDefinition
+- name: defaulting.webhook.provisioners.karpenter.sh
+  namespace: kube-system
+  kind: MutatingWebhookConfiguration
+- name: validation.webhook.provisioners.karpenter.sh
+  namespace: kube-system
+  kind: ValidatingWebhookConfiguration
+- name: validation.webhook.config.karpenter.sh
+  namespace: kube-system
+  kind: ValidatingWebhookConfiguration
+{{ end }}
