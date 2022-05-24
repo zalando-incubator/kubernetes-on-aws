@@ -34,6 +34,9 @@ spec:
           image: registry.opensource.zalan.do/teapot/cadvisor:v0.44.0
           args:
             - --port=9101
+{{- if eq .Cluster.ConfigItems.cadvisor_profiling_enabled "true" }}
+            - --profiling
+{{- end }}
             - --housekeeping_interval=10s
             - --max_housekeeping_interval=15s
             - --event_storage_event_limit=default=0
