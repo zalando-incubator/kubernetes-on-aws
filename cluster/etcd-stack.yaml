@@ -219,6 +219,14 @@ Resources:
             Action:
             - s3:PutObject
             Resource: [ "arn:aws:s3:::{{.Cluster.ConfigItems.etcd_s3_backup_bucket}}/*" ]
+      - PolicyName: S3ClusterLifecycle
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            Resource: 'arn:aws:s3:::*'
       - PolicyName: ASGCompleteLifecycle
         PolicyDocument:
           Version: "2012-10-17"
