@@ -55,8 +55,13 @@ Resources:
       - Key: node.kubernetes.io/role
         PropagateAtLaunch: true
         Value: worker
+# only skipper-ingress node pools should be attached to Ingress Load balancer
+{{- if and (eq $data.Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true") (eq (index $data.NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
+      - Key: zalando.org/ingress-enabled
+        Value: "true"
+        PropagateAtLaunch: true
 # only node pools without taints should be attached to Ingress Load balancer
-{{- if or (not (index $data.NodePool.ConfigItems "taints")) (eq (index $data.NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
+{{- else if and (not (eq $data.Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true")) (or (not (index $data.NodePool.ConfigItems "taints")) (eq (index $data.NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule")) }}
       - Key: zalando.org/ingress-enabled
         Value: "true"
         PropagateAtLaunch: true

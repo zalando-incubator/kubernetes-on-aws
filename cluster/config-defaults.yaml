@@ -58,17 +58,15 @@ skipper_ingress_min_replicas: "2"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1Gi"
-{{if eq .Cluster.Environment "e2e"}}
-enable_dedicate_nodepool_skipper: "false"
-{{else}}
+# skipper node-pool
 enable_dedicate_nodepool_skipper: "true"
-{{end}}
-skipper_suppress_route_update_logs: "true"
+skipper_attach_only_to_skipper_node_pool: "true"
 {{if eq .Cluster.Environment "e2e"}}
 skipper_topology_spread_enabled: "true"
 {{else}}
 skipper_topology_spread_enabled: "false"
 {{end}}
+skipper_suppress_route_update_logs: "true"
 
 # skipper default filters
 skipper_default_filters: 'enableAccessLog(4,5) -> lifo(2000,20000,"3s")'
