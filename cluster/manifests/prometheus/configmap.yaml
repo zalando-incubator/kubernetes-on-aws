@@ -139,6 +139,11 @@ data:
         action: keep
         regex: kube-state-metrics
       metric_relabel_configs:
+{{- if eq .Cluster.ConfigItems.disable_zmon_appliance_worker_tracking "true" }}
+      - action: drop
+        source_labels: [pod]
+        regex: "zmon-appliance-worker-.*"
+{{- end }}
       - action: replace
         source_labels: [pod]
         target_label: pod_name
@@ -260,6 +265,11 @@ data:
         source_labels: ['__meta_kubernetes_pod_node_name']
         target_label: node_name
       metric_relabel_configs:
+{{- if eq .Cluster.ConfigItems.disable_zmon_appliance_worker_tracking "true" }}
+      - action: drop
+        source_labels: ["container_label_application", "container_label_component"]
+        regex: "zmon-appliance;worker"
+{{- end }}
       - action: replace
         source_labels: ['container_label_application']
         target_label: application
