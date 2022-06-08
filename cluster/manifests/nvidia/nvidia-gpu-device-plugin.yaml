@@ -8,18 +8,21 @@ metadata:
   name: nvidia-gpu-device-plugin
   namespace: kube-system
   labels:
-    application: nvidia-gpu-device-plugin
+    application: kubernetes
+    component: nvidia-gpu-device-plugin
     version: v0.10.0
 spec:
   updateStrategy:
     type: RollingUpdate
   selector:
     matchLabels:
-      application: nvidia-gpu-device-plugin
+      daemonset: nvidia-gpu-device-plugin
   template:
     metadata:
       labels:
-        application: nvidia-gpu-device-plugin
+        daemonset: nvidia-gpu-device-plugin
+        application: kubernetes
+        component: nvidia-gpu-device-plugin
         version: v0.10.0
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"

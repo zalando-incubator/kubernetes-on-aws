@@ -200,7 +200,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: registry.opensource.zalan.do/teapot/admission-controller:master-140
+        - image: registry.opensource.zalan.do/teapot/admission-controller:master-146
           name: admission-controller
           lifecycle:
             preStop:
@@ -339,7 +339,7 @@ write_files:
             - name: TOKENINFO_URLS
               value: https://identity.zalando.com=http://127.0.0.1:9021/oauth2/tokeninfo{{ if ne .Cluster.Environment "production" }},https://sandbox.identity.zalando.com=http://127.0.0.1:9022/oauth2/tokeninfo{{end}}
             - name: USER_GROUPS
-              value: stups_cluster-lifecycle-manager=system:masters{{if eq .Cluster.Environment "e2e"}},stups_kubernetes-on-aws-e2e=system:masters{{end}}
+              value: stups_cluster-lifecycle-manager=system:masters{{if eq .Cluster.Environment "e2e"}},stups_kubernetes-on-aws-e2e=system:masters,stups_kubernetes=system:masters{{end}}
           volumeMounts:
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
@@ -580,7 +580,7 @@ write_files:
           effect: NoSchedule
         containers:
         - name: kube-controller-manager
-          image: {{if eq .Cluster.ConfigItems.kubernetes_controller_manager_image "zalando" }}registry.opensource.zalan.do/teapot/kube-controller-manager-internal:v1.21.9-2{{else}}nonexistent.zalan.do/teapot/kube-controller-manager:fixed{{end}}
+          image: nonexistent.zalan.do/teapot/{{if eq .Cluster.ConfigItems.kubernetes_controller_manager_image "zalando" }}kube-controller-manager-internal{{else}}kube-controller-manager{{end}}:fixed
           args:
           - --kubeconfig=/etc/kubernetes/controller-manager-kubeconfig
           - --leader-elect=true

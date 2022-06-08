@@ -101,11 +101,13 @@ skipper_readiness_init_delay_seconds: 1
 skipper_liveness_init_delay_seconds: 30
 {{end}}
 # skipper termination settings
-# grace period needs to be >timeouts and healtcheck wait
-# wait for healtcheck needs to be <grace period and >skipper_idle_timeout_server
-skipper_termination_grace_period: "360"
-skipper_wait_for_healthcheck_interval: "355s"
+# (10s LB healthcheck interval) * (3 unhealthy threshold + margin of 1 interval)
+skipper_wait_for_healthcheck_interval: "40s"
+# (350s of fixed NLB connection idle timeout) + (margin of 2s)
 skipper_idle_timeout_server: "352s"
+# wait long enough for LB to detect unhealthy node and all connections become idle,
+# i.e. skipper_wait_for_healthcheck_interval + skipper_idle_timeout_server
+skipper_termination_grace_period: "392"
 
 # skipper redis settings
 enable_dedicate_nodepool_skipper_redis: "false"
@@ -228,10 +230,17 @@ skipper_time_based_scaling_target: "1"
 # ClusterScalingSchedules
 # hyped-article-releases
 skipper_scaling_schedule_hyped_articles_target: ""
+# One or multiple cluster scaling schedules can be configured as a
+# comma-separated list of <cluster schedule name>=<target value> pairs.
+# E.g. to configure "weekdays" cluster schedule with a target value of 3 and
+# "weekends" with a target value of 5 set
+# skipper_cluster_scaling_schedules: "weekdays=3,weekends=5"
+skipper_cluster_scaling_schedules: ""
 
 # cadvisor settings
 cadvisor_cpu: "150m"
 cadvisor_memory: "150Mi"
+cadvisor_profiling_enabled: "false"
 
 # node exporter settings
 node_exporter_cpu: "20m"
@@ -488,7 +497,7 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_21: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.9-master-207" "861068367966"}}
+kuberuntu_image_v1_21: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.11-master-216" "861068367966"}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -702,4 +711,17 @@ deployment_service_cf_auto_expand_enabled: "false"
 deployment_service_enabled: "true"
 
 # Standard storageclass gp3 volume type
-storageclass_standard_gp3: "false"
+storageclass_standard_gp3: "true"
+
+# opentelemetry config
+observability_collector_endpoint: "tracing.platform-infrastructure.zalan.do"
+observability_collector_port: "8443"
+observability_collector_scheme: "https"
+observability_metrics_endpoint: "tracing.platform-infrastructure.zalan.do"
+observability_metrics_port: "8443"
+
+# list of comma separated buckets which are accessible by zmon
+zmon_accessible_s3_buckets: ""
+
+# disable zmon-appliance worker tracking in Prometheus
+disable_zmon_appliance_worker_tracking: "true"

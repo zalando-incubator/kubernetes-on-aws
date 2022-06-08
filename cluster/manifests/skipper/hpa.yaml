@@ -54,6 +54,22 @@ spec:
         averageValue: {{ .ConfigItems.skipper_scaling_schedule_hyped_articles_target }}
         type: AverageValue
 {{ end }}
+{{ if ne .ConfigItems.skipper_cluster_scaling_schedules "" }}
+  {{ range split .ConfigItems.skipper_cluster_scaling_schedules "," }}
+  {{ $name_target := split . "=" }}
+  - type: Object
+    object:
+      describedObject:
+        apiVersion: zalando.org/v1
+        kind: ClusterScalingSchedule
+        name: {{ index $name_target 0 }}
+      metric:
+        name: {{ index $name_target 0 }}
+      target:
+        averageValue: {{ index $name_target 1 }}
+        type: AverageValue
+  {{ end }}
+{{ end }}
   behavior:
     scaleDown:
       stabilizationWindowSeconds: 600
