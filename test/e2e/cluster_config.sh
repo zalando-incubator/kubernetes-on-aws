@@ -90,6 +90,15 @@ clusters:
     min_size: 0
     max_size: 21
   - discount_strategy: spot
+    instance_types: ["c5.large", "c5a.large", "m5a.large", "m5.large", "t3.large"]
+    min_size: 0
+    max_size: 9
+    profile: worker-splitaz
+    name: skipper-ingress-node
+    config_items:
+      labels: dedicated=skipper-ingress
+      taints: dedicated=skipper-ingress:NoSchedule
+  - discount_strategy: spot
     instance_types: ["m5a.large", "m5.large", "m5.xlarge", "m5a.xlarge", "t3.large", "t3.xlarge", "c5a.large", "c5a.xlarge"]
     min_size: 0
     max_size: 3
