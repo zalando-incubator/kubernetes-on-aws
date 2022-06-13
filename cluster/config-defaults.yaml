@@ -58,7 +58,11 @@ skipper_ingress_min_replicas: "2"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1Gi"
+{{if eq .Cluster.Environment "e2e"}}
 enable_dedicate_nodepool_skipper: "false"
+{{else}}
+enable_dedicate_nodepool_skipper: "true"
+{{end}}
 skipper_suppress_route_update_logs: "true"
 {{if eq .Cluster.Environment "e2e"}}
 skipper_topology_spread_enabled: "true"
@@ -240,6 +244,7 @@ skipper_cluster_scaling_schedules: ""
 # cadvisor settings
 cadvisor_cpu: "150m"
 cadvisor_memory: "150Mi"
+cadvisor_profiling_enabled: "false"
 
 # node exporter settings
 node_exporter_cpu: "20m"
@@ -721,3 +726,6 @@ observability_metrics_port: "8443"
 
 # list of comma separated buckets which are accessible by zmon
 zmon_accessible_s3_buckets: ""
+
+# disable zmon-appliance worker tracking in Prometheus
+disable_zmon_appliance_worker_tracking: "true"

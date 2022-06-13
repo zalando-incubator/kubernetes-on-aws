@@ -34,6 +34,9 @@ spec:
           image: registry.opensource.zalan.do/teapot/cadvisor:v0.44.0
           args:
             - --port=9101
+{{- if eq .Cluster.ConfigItems.cadvisor_profiling_enabled "true" }}
+            - --profiling
+{{- end }}
             - --housekeeping_interval=10s
             - --max_housekeeping_interval=15s
             - --event_storage_event_limit=default=0
@@ -42,7 +45,7 @@ spec:
             - --docker_only
             - --raw_cgroup_prefix_whitelist=/system.slice/kubelet.service
             - --store_container_labels=false
-            - --whitelisted_container_labels=io.kubernetes.container.name,io.kubernetes.pod.name,io.kubernetes.pod.namespace,io.kubernetes.pod.uid,application
+            - --whitelisted_container_labels=io.kubernetes.container.name,io.kubernetes.pod.name,io.kubernetes.pod.namespace,io.kubernetes.pod.uid,application,component
           resources:
             requests:
               cpu: "{{ .ConfigItems.cadvisor_cpu }}"
@@ -74,7 +77,7 @@ spec:
               containerPort: 9101
               hostPort: 9101
               protocol: TCP
-        - image: registry.opensource.zalan.do/teapot/prometheus-node-exporter:v1.3.1
+        - image: container-registry.zalando.net/teapot/prometheus-node-exporter:v1.3.1-master-14
           args:
 {{- if eq .Cluster.ConfigItems.node_exporter_experimental_metrics "true" }}
             - --collector.ethtool
