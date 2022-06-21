@@ -31,7 +31,7 @@ spec:
     spec:
       initContainers:
       - name: ensure-apiserver
-        image: registry.opensource.zalan.do/teapot/ensure-apiserver:master-2
+        image: container-registry.zalando.net/teapot/ensure-apiserver:master-3
         resources:
           requests:
             cpu: 1m
@@ -96,7 +96,7 @@ spec:
 {{ end }}
 {{ if eq .Cluster.ConfigItems.dns_cache "dnsmasq" }}
       - name: dnsmasq
-        image: registry.opensource.zalan.do/teapot/k8s-dns-dnsmasq-nanny-amd64:1.17.1
+        image: container-registry.zalando.net/teapot/k8s-dns-dnsmasq-nanny:1.17.4-master-15
         securityContext:
           privileged: true
         livenessProbe:
@@ -138,7 +138,7 @@ spec:
             cpu: {{.Cluster.ConfigItems.dns_dnsmasq_cpu}}
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_mem}}
       - name: sidecar
-        image: registry.opensource.zalan.do/teapot/k8s-dns-sidecar-amd64:1.17.1
+        image: container-registry.zalando.net/teapot/k8s-dns-sidecar:1.17.4-master-15
         securityContext:
           privileged: true
         livenessProbe:
@@ -167,7 +167,7 @@ spec:
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_mem}}
 {{ end }}
       - name: coredns
-        image: registry.opensource.zalan.do/teapot/coredns:1.8.7
+        image: container-registry.zalando.net/teapot/coredns:1.9.3-master-19
         args: [ "-conf", "/etc/coredns/Corefile" ]
         env:
         - name: ZONE

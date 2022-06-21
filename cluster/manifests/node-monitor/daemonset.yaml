@@ -41,7 +41,7 @@ spec:
             - --max_housekeeping_interval=15s
             - --event_storage_event_limit=default=0
             - --event_storage_age_limit=default=0
-            - --disable_metrics=sched,percpu,tcp,udp
+            - --disable_metrics=sched,percpu,tcp,udp,cpu_topology,advtcp
             - --docker_only
             - --raw_cgroup_prefix_whitelist=/system.slice/kubelet.service
             - --store_container_labels=false
@@ -110,7 +110,7 @@ spec:
               mountPath: /host
               readOnly: true
 {{- if eq .Cluster.ConfigItems.journald_reader_enabled "true" }}
-        - image: registry.opensource.zalan.do/teapot/journald-reader:master-6
+        - image: container-registry.zalando.net/teapot/journald-reader:master-10
           name: journald-reader
           env:
             - name: JOURNALD_READER_CHECKPOINT_FILE

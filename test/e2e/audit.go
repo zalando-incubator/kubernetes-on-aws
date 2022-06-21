@@ -23,8 +23,8 @@ import (
 
 var (
 	auditTestUser = authnv1.UserInfo{
-		Username: "zalando-iam:zalando:service:stups_kubernetes-on-aws-e2e",
-		UID:      "zalando-iam:zalando:service:stups_kubernetes-on-aws-e2e",
+		Username: "zalando-iam:zalando:service:stups_kubernetes",
+		UID:      "zalando-iam:zalando:service:stups_kubernetes",
 		Groups: []string{
 			"system:masters",
 			"zalando-iam:realm:services",
