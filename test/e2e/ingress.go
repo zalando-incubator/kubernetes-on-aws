@@ -23,9 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	netv1 "k8s.io/api/networking/v1"
-	"k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/framework/ingress"
@@ -83,18 +81,19 @@ var _ = describe("Ingress ALB creation", func() {
 
 		// Ingress
 		By("Creating an ingress with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
-		ing := createIngress(serviceName, hostName, ns, labels, nil, port)
+		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, nil, port)
+
 		defer func() {
 			By("deleting the ingress")
 			defer GinkgoRecover()
-			err2 := cs.NetworkingV1beta1().Ingresses(ns).Delete(context.TODO(), ing.Name, metav1.DeleteOptions{})
+			err2 := cs.NetworkingV1().Ingresses(ns).Delete(context.TODO(), ing.Name, metav1.DeleteOptions{})
 			Expect(err2).NotTo(HaveOccurred())
 		}()
-		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
+		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, 10*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
-		ingress, err := cs.NetworkingV1beta1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		ingress, err := cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("ALB endpoint from ingress status: %s", ingress.Status.LoadBalancer.Ingress[0].Hostname))
 
@@ -150,14 +149,14 @@ var __ = describe("Ingress tests simple", func() {
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		ing := createIngress(serviceName, hostName, ns, labels, nil, port)
-		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
+		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, nil, port)
+		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
 		// skipper http -> https redirect
@@ -198,13 +197,14 @@ var __ = describe("Ingress tests simple", func() {
 			hostName,
 			serviceName,
 			path,
+			netv1.PathTypeImplementationSpecific,
 			ingressCreate.ObjectMeta.Labels,
 			map[string]string{
 				"zalando.org/skipper-predicate": `Method("GET")`,
 			},
 			port,
 		)
-		ingressUpdate, err := cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with the right content for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
@@ -221,13 +221,14 @@ var __ = describe("Ingress tests simple", func() {
 			hostName,
 			serviceName,
 			path,
+			netv1.PathTypeImplementationSpecific,
 			ingressCreate.ObjectMeta.Labels,
 			map[string]string{
 				"zalando.org/skipper-predicate": `Method("PUT")`,
 			},
 			port,
 		)
-		ingressUpdate, err = cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
@@ -243,13 +244,14 @@ var __ = describe("Ingress tests simple", func() {
 			hostName,
 			serviceName,
 			path,
+			netv1.PathTypeImplementationSpecific,
 			ingressCreate.ObjectMeta.Labels,
 			map[string]string{
 				"zalando.org/skipper-filter": fmt.Sprintf(`setResponseHeader("%s", "%s")`, headerKey, headerVal),
 			},
 			port,
 		)
-		ingressUpdate, err = cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with %s header set to %s for the next request", ingressUpdate.Namespace, ingressUpdate.Name, headerKey, headerVal))
 		time.Sleep(10 * time.Second) // wait for routing change propagation
@@ -264,7 +266,7 @@ var __ = describe("Ingress tests simple", func() {
 		// Test additional hostname
 		additionalHostname := fmt.Sprintf("foo-%d.%s", time.Now().UTC().Unix(), E2EHostedZone())
 		addHostIng := addHostIngress(updatedIng, additionalHostname)
-		ingressUpdate, err = cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), addHostIng, metav1.UpdateOptions{})
+		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), addHostIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		By("Waiting for new DNS hostname to be resolvable " + additionalHostname)
 		err = waitForResponse(additionalHostname, "https", waitTime, isSuccess, false)
@@ -290,7 +292,7 @@ var __ = describe("Ingress tests simple", func() {
 		// Test changed path
 		newPath := "/foo"
 		changePathIng := changePathIngress(updatedIng, newPath)
-		ingressUpdate, err = cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), changePathIng, metav1.UpdateOptions{})
+		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), changePathIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the old request, because of the path route", ingressUpdate.Namespace, ingressUpdate.Name))
@@ -361,14 +363,14 @@ var ___ = describe("Ingress tests paths", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
-		ing := createIngress(serviceName, hostName, ns, labels, nil, port)
-		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
+		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, nil, port)
+		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
 		// skipper http -> https redirect
@@ -409,11 +411,12 @@ var ___ = describe("Ingress tests paths", func() {
 			hostName,
 			serviceName,
 			bepath,
+			netv1.PathTypeImplementationSpecific,
 			ingressCreate.ObjectMeta.Labels,
 			ingressCreate.ObjectMeta.Annotations,
 			port,
 		)
-		ingressUpdate, err := cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		// wait 20 seconds to ensure the ingress change is applied by
 		// all skippers
@@ -445,14 +448,19 @@ var ___ = describe("Ingress tests paths", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
-		updatedIng = addPathIngress(updatedIng,
+		updatedIng = addPathIngressV1(updatedIng,
 			bepath2,
-			v1beta1.IngressBackend{
-				ServiceName: serviceName2,
-				ServicePort: intstr.FromInt(port),
+			netv1.PathTypeImplementationSpecific,
+			netv1.IngressBackend{
+				Service: &netv1.IngressServiceBackend{
+					Name: serviceName2,
+					Port: netv1.ServiceBackendPort{
+						Number: int32(port),
+					},
+				},
 			},
 		)
-		ingressUpdate, err = cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		// wait 20 seconds to ensure the ingress change is applied by
 		// all skippers
@@ -512,14 +520,14 @@ var ____ = describe("Ingress tests custom routes", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
-		ing := createIngress(serviceName, hostName, ns, labels, nil, port)
-		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
+		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, nil, port)
+		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
 		// skipper http -> https redirect
@@ -565,13 +573,14 @@ var ____ = describe("Ingress tests custom routes", func() {
 			hostName,
 			serviceName,
 			path,
+			netv1.PathTypeImplementationSpecific,
 			ingressCreate.ObjectMeta.Labels,
 			map[string]string{
 				"zalando.org/skipper-routes": redirectRoute,
 			},
 			port,
 		)
-		ingressUpdate, err := cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		// wait 20 seconds to ensure the ingress change is applied by
 		// all skippers
@@ -648,7 +657,7 @@ var _____ = describe("Ingress tests paths", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
-		ing := createIngressV1(serviceName, hostName, ns, "/", netv1.PathTypePrefix, labels, nil, port)
+		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, nil, port)
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -691,7 +700,7 @@ var _____ = describe("Ingress tests paths", func() {
 		// Start actual ingress tests
 		// Test ingress with 1 path and pathType: Exact
 		bepath := "/foo"
-		updatedIng := updateIngressV1(ingressCreate.ObjectMeta.Name,
+		updatedIng := updateIngress(ingressCreate.ObjectMeta.Name,
 			ingressCreate.ObjectMeta.Namespace,
 			hostName,
 			serviceName,
@@ -741,7 +750,7 @@ var _____ = describe("Ingress tests paths", func() {
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
 		updatedIng = addPathIngressV1(updatedIng,
 			bepath2,
-			netv1.PathTypePrefix,
+			netv1.PathTypeImplementationSpecific,
 			netv1.IngressBackend{
 				Service: &netv1.IngressServiceBackend{
 					Name: serviceName2,
@@ -821,14 +830,14 @@ var ______ = describe("Ingress tests custom routes", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
-		ing := createIngress(serviceName, hostName, ns, labels, nil, port)
-		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
+		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, nil, port)
+		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
 		// skipper http -> https redirect
@@ -874,13 +883,14 @@ var ______ = describe("Ingress tests custom routes", func() {
 			hostName,
 			serviceName,
 			path,
+			netv1.PathTypeImplementationSpecific,
 			ingressCreate.ObjectMeta.Labels,
 			map[string]string{
 				"zalando.org/skipper-routes": redirectRoute,
 			},
 			port,
 		)
-		ingressUpdate, err := cs.NetworkingV1beta1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		// wait 20 seconds to ensure the ingress change is applied by
 		// all skippers
@@ -952,14 +962,14 @@ var _______ = describe("Ingress tests simple NLB", func() {
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		ing := createIngress(serviceName, hostName, ns, labels, annotations, port)
-		ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
+		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, annotations, port)
+		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = cs.NetworkingV1beta1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
 
 		// skipper http -> https redirect
