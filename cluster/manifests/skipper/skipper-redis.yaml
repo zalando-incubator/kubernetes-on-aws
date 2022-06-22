@@ -3,7 +3,7 @@ kind: StatefulSet
 metadata:
   labels:
     application: skipper-ingress-redis
-    version: v6.2.4
+    version: v6.2.7
   name: skipper-ingress-redis
   namespace: kube-system
 spec:
@@ -18,7 +18,7 @@ spec:
       labels:
         statefulset: skipper-ingress-redis
         application: skipper-ingress-redis
-        version: v6.2.4
+        version: v6.2.7
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
@@ -46,7 +46,7 @@ spec:
                 - skipper-ingress-redis
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       containers:
-      - image: container-registry.zalando.net/library/redis-6-alpine:6-alpine-20220614
+      - image: container-registry.zalando.net/library/redis-6-alpine:6-alpine-20220622
         name: skipper-ingress-redis
         args:
         - /usr/local/bin/docker-entrypoint.sh
