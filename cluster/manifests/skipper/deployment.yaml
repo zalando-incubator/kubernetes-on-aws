@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.13.218-271" }}
+{{ $internal_version := "v0.13.220-274" }}
 {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
@@ -52,7 +52,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-internal:{{ $internal_version }}
+        image: container-registry.zalando.net/teapot/skipper-internal:{{ $internal_version }}
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -161,7 +161,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=registry.opensource.zalan.do/teapot/skipper-internal:{{ $internal_version }}
+            tag=artifact=container-registry.zalando.net/teapot/skipper-internal:{{ $internal_version }}
             max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
