@@ -31,7 +31,6 @@ write_files:
 {{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
         EphemeralContainers: true
 {{- end }}
-        GenericEphemeralVolume: {{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }}
         SetHostnameAsFQDN: {{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
@@ -136,7 +135,7 @@ write_files:
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
 {{- end }}
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }}
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
@@ -589,7 +588,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
@@ -656,7 +655,7 @@ write_files:
           args:
           - --kubeconfig=/etc/kubernetes/scheduler-kubeconfig
           - --leader-elect=true
-          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},NonPreemptingPriority=true,GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
+          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},NonPreemptingPriority=true,SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           env:
           - name: KUBE_MAX_PD_VOLS
