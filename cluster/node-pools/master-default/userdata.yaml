@@ -47,11 +47,11 @@ write_files:
       kubeAPIQPS: 50
       kubeAPIBurst: 50
       systemReserved:
-        cpu: "100m"
-        memory: "164Mi"
+        cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
+        memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
       kubeReserved:
-        cpu: "100m"
-        memory: "282Mi"
+        cpu: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_cpu }}"
+        memory: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_memory }}"
       allowedUnsafeSysctls:
 {{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
         - {{$sysctl}}

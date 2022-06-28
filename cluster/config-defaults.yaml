@@ -58,6 +58,10 @@ skipper_ingress_min_replicas: "2"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1Gi"
+# When set to true (and dedicated node pool for skipper is also true) the
+# daemonset overhead will be substracted from the cpu settings such
+# that skipper will perfectly fit on the node.
+skipper_ingress_binpack: "false"
 # skipper node-pool
 enable_dedicate_nodepool_skipper: "true"
 {{if eq .Cluster.Environment "e2e"}}
@@ -373,6 +377,11 @@ teapot_admission_controller_parent_resource_hash: "true"
 teapot_admission_controller_check_daemonset_resources: "true"
 teapot_admission_controller_daemonset_reserved_cpu: "8"
 teapot_admission_controller_daemonset_reserved_memory: "64Gi"
+
+kubelet_system_reserved_cpu: "100m"
+kubelet_system_reserved_memory: "164Mi"
+kubelet_kube_reserved_cpu: "100m"
+kubelet_kube_reserved_memory: "282Mi"
 
 {{if eq .Cluster.Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
