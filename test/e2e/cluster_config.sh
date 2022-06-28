@@ -52,7 +52,7 @@ clusters:
   local_id: ${LOCAL_ID}
   node_pools:
   - discount_strategy: none
-    instance_types: ["m5a.large"]
+    instance_types: ["${MASTER_INSTANCE_TYPE}"]
     name: default-master
     profile: master-default
     min_size: 1

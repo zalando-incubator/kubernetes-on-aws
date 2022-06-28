@@ -45,11 +45,13 @@ CDP_TARGET_COMMIT_ID="${CDP_TARGET_COMMIT_ID:-"dev"}"
 CDP_HEAD_COMMIT_ID="${CDP_HEAD_COMMIT_ID:-"$(git describe --tags --always)"}"
 RESULT_BUCKET="${RESULT_BUCKET:-""}"
 
-export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-${CDP_BUILD_VERSION}"}"
-export LOCAL_ID="${LOCAL_ID:-"e2e-${CDP_BUILD_VERSION}"}"
+export CPU_ARCH="${CPU_ARCH:-"amd64"}"
+export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-${CPU_ARCH}-${CDP_BUILD_VERSION}"}"
+export LOCAL_ID="${LOCAL_ID:-"e2e-${CPU_ARCH}-${CDP_BUILD_VERSION}"}"
 export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
+export MASTER_INSTANCE_TYPE="${MASTER_INSTANCE_TYPE:-"m5a.large"}"
 
 # Generate a new key for this E2E run
 SERVICE_ACCOUNT_PRIVATE_KEY="$(openssl genrsa | base64 | tr -d '\n')"
