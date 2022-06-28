@@ -227,12 +227,22 @@ spec:
           {{ end }}
 {{ end }}
         resources:
+{{ if and (eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true") (eq .Cluster.ConfigItems.skipper_ingress_binpack "true") }}
+{{ $cpu_requests := split (printf "%s -%s -%s" .Cluster.ConfigItems.skipper_ingress_cpu .Cluster.ConfigItems.teapot_admission_controller_daemonset_reserved_cpu .Cluster.ConfigItems.kubelet_system_reserved_cpu) " " | sumQuantities }}
+          limits:
+            cpu: "{{ $cpu_requests }}"
+            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+          requests:
+            cpu: "{{ $cpu_requests }}"
+            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+{{ else }}
           limits:
             cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
             memory: "{{ .ConfigItems.skipper_ingress_memory }}"
           requests:
             cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
             memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+{{ end }}
         readinessProbe:
           httpGet:
             path: /kube-system/healthz
