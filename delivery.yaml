@@ -314,6 +314,8 @@ pipeline:
               cpu: 500m
               memory: 1Gi
 
+# Dedicated test suite for running master nodes and skipper-ingress pods on arm64. Let's remove it once it's not needed anymore.
+
 - id: create-cluster-arm64
   when:
     event: pull_request
@@ -353,6 +355,8 @@ pipeline:
               value: "https://etcd-server.etcd.teapot-e2e.zalan.do:2479"
             - name: MASTER_INSTANCE_TYPE
               value: "m6g.large"
+            - name: SKIPPER_INGRESS_INSTANCE_TYPES
+              value: '"c6g.large", "c6gn.large", "m6g.large", "t4g.large"'
             - name: CPU_ARCH
               value: arm64
             - name: HOSTED_ZONE
