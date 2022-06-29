@@ -95,7 +95,7 @@ write_files:
         terminationGracePeriodSeconds: 80
         containers:
         - name: kube-apiserver
-          image: nonexistent.zalan.do/teapot/kube-apiserver:fixed
+          image: {{.Cluster.ConfigItems.kube_apiserver_container_image_name}}
           args:
           - --apiserver-count={{ .Values.apiserver_count }}
           - --bind-address=0.0.0.0
@@ -114,7 +114,7 @@ write_files:
           - --storage-media-type=application/vnd.kubernetes.protobuf
           - --encryption-provider-config=/etc/kubernetes/config/encryption-config.yaml
           - --allow-privileged=true
-          - --service-cluster-ip-range=10.3.0.0/16
+          - --service-cluster-ip-range={{.Cluster.ConfigItems.service_cluster_ip_range}}
           - --secure-port=443
           - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,Priority,NodeRestriction
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
@@ -593,7 +593,7 @@ write_files:
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
           - --allocate-node-cidrs=true
-          - --cluster-cidr=10.2.0.0/16
+          - --cluster-cidr={{ .Cluster.ConfigItems.cluster_cidr}}
           - --node-cidr-mask-size={{ .Cluster.ConfigItems.node_cidr_mask_size }}
           - --kube-api-qps=50
           - --terminated-pod-gc-threshold=500
