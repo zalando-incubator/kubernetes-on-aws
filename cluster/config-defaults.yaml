@@ -58,6 +58,10 @@ skipper_ingress_min_replicas: "2"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1Gi"
+# When set to true (and dedicated node pool for skipper is also true) the
+# daemonset overhead will be substracted from the cpu settings such
+# that skipper will perfectly fit on the node.
+skipper_ingress_binpack: "false"
 # skipper node-pool
 enable_dedicate_nodepool_skipper: "true"
 {{if eq .Cluster.Environment "e2e"}}
@@ -162,6 +166,10 @@ zmon_kairosdb_url: "https://data-service.zmon.zalan.do/kairosdb-proxy"
 # ingress.cluster.local names explicitly on ingress/routegroup/stacksets
 enable_skipper_eastwest_dns: "true"
 enable_skipper_eastwest: "false"
+
+# Configure skipper-internal ClusterIP to Coredns query
+skipper_internal_cluster_ip: "10.3.99.99"
+skipper_internal_cluster_ip_additional: "10.3.99.99"
 
 # enable temporay logging of ingress.cluster.local names
 # used to find services for which it's being used.
@@ -369,10 +377,18 @@ teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
 teapot_admission_controller_parent_resource_hash: "true"
 
+# Define ExternalIPs is not allowed
+teapot_admission_controller_check_service_resources: "true"
+
 ## Defaults are set per-cluster
 teapot_admission_controller_check_daemonset_resources: "true"
 teapot_admission_controller_daemonset_reserved_cpu: "8"
 teapot_admission_controller_daemonset_reserved_memory: "64Gi"
+
+kubelet_system_reserved_cpu: "100m"
+kubelet_system_reserved_memory: "164Mi"
+kubelet_kube_reserved_cpu: "100m"
+kubelet_kube_reserved_memory: "282Mi"
 
 {{if eq .Cluster.Environment "production"}}
 teapot_admission_controller_validate_application_label: "true"
@@ -495,6 +511,13 @@ coredns_log_forward: "false"
 # clusters and prevent CoreDNS from running out of memory in case of spikes.
 coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 
+# Temporarily added to support Kubernetes service range migration.
+coredns_cluster_ip_2: 10.3.0.11
+coredns_cluster_ip_1: 10.3.0.11
+# Coredns reverse lookup of kubernetes addresses
+coredns_cluster_cidr_local_zone: "2.10.in-addr.arpa."
+coredns_service_cluster_local_zone: "3.10.in-addr.arpa."
+
 tracing_coredns_route_traces_to_local_zone: "false"
 tracing_coredns_global_traces_endpoint: ""
 tracing_coredns_local_zone_traces_endpoint: ""
@@ -504,7 +527,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_21: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.12-master-226" "861068367966"}}
+kuberuntu_image_v1_21_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.12-amd64-master-231" "861068367966" }}
+kuberuntu_image_v1_21_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.12-arm64-master-231" "861068367966" }}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -514,6 +538,18 @@ audittrail_url: "https://audittrail.cloud.zalando.com"
 audittrail_url: ""
 {{end}}
 audittrail_root_account_role: ""
+
+# kube-apiserver / kube-proxy container image name.
+# Temporarily added to help during the Kubernetes service network range migration.
+kube_apiserver_container_image_name: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/kube-apiserver-internal:v1.21.12-master-79
+kube_proxy_container_image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/kube-proxy-internal:v1.21.12-master-79
+
+# A CIDR notation IP range from which to assign service cluster IPs.
+# This must not overlap with any IP ranges assigned to nodes or pods.
+service_cluster_ip_range: "10.3.0.0/16"
+
+# CIDR Range for Pods in cluster
+cluster_cidr: "10.2.0.0/16"
 
 # CIDR configuration for nodes and pods
 # Changing this will change the number of nodes and pods we can schedule in the
@@ -631,10 +667,6 @@ enable_ephemeral_containers: "false"
 # this flag can be switched between true and false
 # to ensure all secrets are encrypted/decrypted all secrets need to be rewritten after masters have been rolled
 enable_encryption: "true"
-
-# Enable the feature gate GenericEphemeralVolume
-# https://kubernetes.io/docs/concepts/storage/ephemeral-volumes/#generic-ephemeral-volumes
-enable_generic_ephemeral_volume: "false"
 
 # Enable the feature gate SetHostnameAsFQDN
 # https://v1-19.docs.kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-sethostnameasfqdn-field

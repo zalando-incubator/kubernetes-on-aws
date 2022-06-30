@@ -43,7 +43,7 @@ spec:
       containers:
 {{ if eq .Cluster.ConfigItems.dns_cache "unbound" }}
       - name: unbound
-        image: registry.opensource.zalan.do/teapot/unbound:1.13.1-1
+        image: container-registry.zalando.net/teapot/unbound:1.16.0-master-4
         args:
         - -d
         - -c
@@ -79,7 +79,7 @@ spec:
           readOnly: true
           subPath: unbound.conf
       - name: unbound-telemetry
-        image: registry.opensource.zalan.do/teapot/unbound-telemetry:master-1
+        image: container-registry.zalando.net/teapot/unbound-telemetry:master-2
         args:
         - tcp
         - --bind=0.0.0.0:9054
@@ -122,7 +122,8 @@ spec:
         - --neg-ttl=60
         # send requests to the last server first, only fallback to the previous ones if it's unreachable
         - --strict-order
-        - --server=10.3.0.11#53
+        - --server={{ .Cluster.ConfigItems.coredns_cluster_ip_2 }}#53
+        - --server={{ .Cluster.ConfigItems.coredns_cluster_ip_1 }}#53
         - --server=127.0.0.1#9254
         ports:
         - containerPort: 53
