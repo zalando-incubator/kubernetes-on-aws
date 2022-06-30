@@ -90,7 +90,7 @@ clusters:
     min_size: 0
     max_size: 21
   - discount_strategy: spot
-    instance_types: ["${SKIPPER_INGRESS_INSTANCE_TYPES}"]
+    instance_types: [${SKIPPER_INGRESS_INSTANCE_TYPES}]
     min_size: 0
     max_size: 9
     profile: worker-splitaz
