@@ -31,7 +31,6 @@ write_files:
 {{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
         EphemeralContainers: true
 {{- end }}
-        GenericEphemeralVolume: {{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }}
         SetHostnameAsFQDN: {{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
@@ -47,11 +46,11 @@ write_files:
       kubeAPIQPS: 50
       kubeAPIBurst: 50
       systemReserved:
-        cpu: "100m"
-        memory: "164Mi"
+        cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
+        memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
       kubeReserved:
-        cpu: "100m"
-        memory: "282Mi"
+        cpu: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_cpu }}"
+        memory: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_memory }}"
       allowedUnsafeSysctls:
 {{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
         - {{$sysctl}}
@@ -96,7 +95,7 @@ write_files:
         terminationGracePeriodSeconds: 80
         containers:
         - name: kube-apiserver
-          image: nonexistent.zalan.do/teapot/kube-apiserver:fixed
+          image: {{.Cluster.ConfigItems.kube_apiserver_container_image_name}}
           args:
           - --apiserver-count={{ .Values.apiserver_count }}
           - --bind-address=0.0.0.0
@@ -115,7 +114,7 @@ write_files:
           - --storage-media-type=application/vnd.kubernetes.protobuf
           - --encryption-provider-config=/etc/kubernetes/config/encryption-config.yaml
           - --allow-privileged=true
-          - --service-cluster-ip-range=10.3.0.0/16
+          - --service-cluster-ip-range={{.Cluster.ConfigItems.service_cluster_ip_range}}
           - --secure-port=443
           - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,Priority,NodeRestriction
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
@@ -136,7 +135,7 @@ write_files:
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
 {{- end }}
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }}
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
@@ -589,12 +588,12 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
           - --allocate-node-cidrs=true
-          - --cluster-cidr=10.2.0.0/16
+          - --cluster-cidr={{ .Cluster.ConfigItems.cluster_cidr}}
           - --node-cidr-mask-size={{ .Cluster.ConfigItems.node_cidr_mask_size }}
           - --kube-api-qps=50
           - --terminated-pod-gc-threshold=500
@@ -656,7 +655,7 @@ write_files:
           args:
           - --kubeconfig=/etc/kubernetes/scheduler-kubeconfig
           - --leader-elect=true
-          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},NonPreemptingPriority=true,GenericEphemeralVolume={{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
+          - --feature-gates=BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},NonPreemptingPriority=true,SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           env:
           - name: KUBE_MAX_PD_VOLS

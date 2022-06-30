@@ -226,6 +226,7 @@ webhooks:
         apiGroups: [""]
         apiVersions: ["v1"]
         resources: ["namespaces"]
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_check_service_resources "true" }}
   - name: service-admitter.teapot.zalan.do
     clientConfig:
       url: "https://localhost:8085/service"
@@ -239,3 +240,4 @@ webhooks:
         apiGroups: [""]
         apiVersions: ["v1"]
         resources: ["services"]
+{{- end }}
