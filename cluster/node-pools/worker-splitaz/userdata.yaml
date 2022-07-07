@@ -65,13 +65,13 @@ write_files:
       featureGates:
         BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
         CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
+        SizeMemoryBackedVolumes: {{ .Cluster.ConfigItems.enable_size_memory_backed_volumes }}
 {{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
         EphemeralContainers: true
 {{- end }}
 {{- if eq .NodePool.ConfigItems.exec_probe_timeout_enabled "false" }}
         ExecProbeTimeout: false
 {{- end }}
-        GenericEphemeralVolume: {{ .Cluster.ConfigItems.enable_generic_ephemeral_volume }}
         SetHostnameAsFQDN: {{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}
@@ -88,11 +88,11 @@ write_files:
       kubeAPIQPS: 50
       kubeAPIBurst: 50
       systemReserved:
-        cpu: "100m"
-        memory: "164Mi"
+        cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
+        memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
       kubeReserved:
-        cpu: "100m"
-        memory: "282Mi"
+        cpu: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_cpu }}"
+        memory: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_memory }}"
       allowedUnsafeSysctls:
 {{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
         - {{$sysctl}}
