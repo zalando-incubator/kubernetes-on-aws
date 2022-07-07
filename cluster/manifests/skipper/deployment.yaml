@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.13.220-274" }}
+{{ $internal_version := "v0.13.227-284" }}
 {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
@@ -113,7 +113,7 @@ spec:
 {{ end }}
 {{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"{{ .Cluster.ConfigItems.cluster_cidr }}\", \"{{ .Values.vpc_ipv4_cidr }}\")"
 {{ end }}
           - "-proxy-preserve-host"
           - "-compress-encodings={{ .ConfigItems.skipper_compress_encodings }}"
@@ -216,7 +216,7 @@ spec:
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
-          - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
+          - "-forwarded-headers-exclude-cidrs={{ .Cluster.ConfigItems.cluster_cidr }},{{ .Values.vpc_ipv4_cidr}}"
 {{ end }}
 {{ if ne .ConfigItems.skipper_ingress_inline_routes "" }}
           - "-inline-routes={{ .ConfigItems.skipper_ingress_inline_routes }}"
@@ -227,12 +227,22 @@ spec:
           {{ end }}
 {{ end }}
         resources:
+{{ if and (eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true") (eq .Cluster.ConfigItems.skipper_ingress_binpack "true") }}
+{{ $cpu_requests := split (printf "%s -%s -%s" .Cluster.ConfigItems.skipper_ingress_cpu .Cluster.ConfigItems.teapot_admission_controller_daemonset_reserved_cpu .Cluster.ConfigItems.kubelet_system_reserved_cpu) " " | sumQuantities }}
+          limits:
+            cpu: "{{ $cpu_requests }}"
+            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+          requests:
+            cpu: "{{ $cpu_requests }}"
+            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+{{ else }}
           limits:
             cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
             memory: "{{ .ConfigItems.skipper_ingress_memory }}"
           requests:
             cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
             memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+{{ end }}
         readinessProbe:
           httpGet:
             path: /kube-system/healthz
@@ -392,7 +402,7 @@ spec:
           - "-kubernetes-east-west-domain=.ingress.cluster.local"
 {{ end }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"{{ .Cluster.ConfigItems.cluster_cidr }}\", \"{{ .Values.vpc_ipv4_cidr }}\")"
           - "-reverse-source-predicate"
           - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
@@ -401,7 +411,7 @@ spec:
           - "-default-filters-dir=/etc/config/default-filters"
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
-          - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
+          - "-forwarded-headers-exclude-cidrs={{ .Cluster.ConfigItems.cluster_cidr }},{{ .Values.vpc_ipv4_cidr}}"
 {{ end }}
         resources:
           limits:
