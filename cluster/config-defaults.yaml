@@ -61,7 +61,11 @@ skipper_ingress_memory: "1Gi"
 # When set to true (and dedicated node pool for skipper is also true) the
 # daemonset overhead will be substracted from the cpu settings such
 # that skipper will perfectly fit on the node.
+{{if eq .Cluster.Environment "e2e"}}
+skipper_ingress_binpack: "true"
+{{else}}
 skipper_ingress_binpack: "false"
+{{end}}
 # skipper node-pool
 enable_dedicate_nodepool_skipper: "true"
 {{if eq .Cluster.Environment "e2e"}}
