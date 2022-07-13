@@ -228,7 +228,7 @@ spec:
 {{ end }}
         resources:
 {{ if and (eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true") (eq .Cluster.ConfigItems.skipper_ingress_binpack "true") }}
-{{ $cpu_requests := split (printf "%s -%s -%s" .Cluster.ConfigItems.skipper_ingress_cpu .Cluster.ConfigItems.teapot_admission_controller_daemonset_reserved_cpu .Cluster.ConfigItems.kubelet_system_reserved_cpu) " " | sumQuantities }}
+{{ $cpu_requests := sumQuantities .Cluster.ConfigItems.skipper_ingress_cpu (printf "-%s"  .Cluster.ConfigItems.teapot_admission_controller_daemonset_reserved_cpu) (printf "-%s" .Cluster.ConfigItems.kubelet_system_reserved_cpu) (printf "-%s" .Cluster.ConfigItems.kubelet_kube_reserved_cpu) }}
           limits:
             cpu: "{{ $cpu_requests }}"
             memory: "{{ .ConfigItems.skipper_ingress_memory }}"
