@@ -4,18 +4,21 @@ metadata:
   name: external-dns
   namespace: kube-system
   labels:
-    application: external-dns
+    application: kubernetes
+    component: external-dns
     version: v0.9.0
 spec:
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      application: external-dns
+      deployment: external-dns
   template:
     metadata:
       labels:
-        application: external-dns
+        application: kubernetes
+        component: external-dns
+        deployment: external-dns
         version: v0.9.0
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"

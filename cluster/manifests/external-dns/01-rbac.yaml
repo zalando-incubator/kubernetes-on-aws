@@ -5,7 +5,8 @@ metadata:
   name: external-dns
   namespace: kube-system
   labels:
-    application: external-dns
+    application: kubernetes
+    component: external-dns
   annotations:
     iam.amazonaws.com/role: "{{ .LocalID }}-app-external-dns"
 ---
@@ -15,7 +16,8 @@ kind: ClusterRole
 metadata:
   name: external-dns
   labels:
-    application: external-dns
+    application: kubernetes
+    component: external-dns
 rules:
 - apiGroups: [""]
   resources: ["services", "endpoints", "pods", "nodes"]
@@ -32,7 +34,8 @@ kind: ClusterRoleBinding
 metadata:
   name: external-dns
   labels:
-    application: external-dns
+    application: kubernetes
+    component: external-dns
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
