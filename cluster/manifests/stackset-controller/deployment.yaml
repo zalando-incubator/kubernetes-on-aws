@@ -4,17 +4,20 @@ metadata:
   name: stackset-controller
   namespace: kube-system
   labels:
-    application: stackset-controller
+    application: kubernetes
+    component: stackset-controller
     version: "v1.3.54"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: stackset-controller
+      deployment: stackset-controller
   template:
     metadata:
       labels:
-        application: stackset-controller
+        application: kubernetes
+        component: stackset-controller
+        deployment: stackset-controller
         version: "v1.3.54"
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
