@@ -2,7 +2,9 @@
 
 BINARY       ?= kubernetes-on-aws-e2e
 VERSION      ?= $(shell git describe --tags --always --dirty)
-KUBE_VERSION ?= v1.21.14
+
+KUBE_VERSION ?= v1.22.9
+
 IMAGE        ?= pierone.stups.zalan.do/teapot/$(BINARY)
 TAG          ?= $(VERSION)
 DOCKERFILE   ?= Dockerfile
