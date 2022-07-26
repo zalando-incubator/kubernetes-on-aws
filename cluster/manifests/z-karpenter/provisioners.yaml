@@ -2,11 +2,12 @@
 {{- with $data := . }}
 {{- range $nodePool := .Cluster.NodePools }}
 {{- if eq $nodePool.Profile "worker-karpenter" }}
+{{- range $capacityType := capacityTypes }}
 ---
 apiVersion: karpenter.sh/v1alpha5
 kind: Provisioner
 metadata:
-  name: "{{$nodePool.Name}}"
+  name: "{{$nodePool.Name}}-{{$capacityType}}"
 spec:
   {{- if index $nodePool.ConfigItems "scaling_priority"}}
   weight: {{$nodePool.ConfigItems.scaling_priority}}
@@ -22,13 +23,16 @@ spec:
 {{- end }}
     - key: karpenter.sh/capacity-type
       operator: In
-      values: [{{if $nodePool.IsSpot}}"spot"{{else}}"on-demand"{{end}}]
+      values: [{{if eq $capacityType "spot"}}"spot", {{end}}"on-demand"]
+
     - key: "kubernetes.io/arch"
       operator: In
       values: ["arm64", "amd64"]
+
     - key: "topology.kubernetes.io/zone"
       operator: In
       values:
+
 # TODO: handle per node pool availability zone limits
 {{- $azs := $data.Values.availability_zones}}
 {{- if index $nodePool.ConfigItems "availability_zones"}}
@@ -37,6 +41,89 @@ spec:
 {{- range $az :=  $azs }}
       - "{{ $az }}"
 {{- end }}
+
+    # capacity spread constraints
+    # TODO: template function?
+    {{- if eq $capacityType "spot"}}
+    - key: "capacity.spread.1-9" # 10% spot
+      operator: In
+      values: ["1"]
+
+    - key: "capacity.spread.1-7" # 12.5% spot
+      operator: In
+      values: ["1"]
+
+    - key: "capacity.spread.1-4" # 20% spot
+      operator: In
+      values: ["1"]
+
+    - key: "capacity.spread.1-3" # 25% spot
+      operator: In
+      values: ["1"]
+
+    - key: "capacity.spread.1-2" # 33.3% spot
+      operator: In
+      values: ["1"]
+
+    - key: "capacity.spread.1-2" # 50% spot
+      operator: In
+      values: ["1"]
+
+    - key: "capacity.spread.3-2" # 60% spot
+      operator: In
+      values: ["1", "2", "3"]
+
+    - key: "capacity.spread.3-1" # 75% spot
+      operator: In
+      values: ["1", "2", "3"]
+
+    - key: "capacity.spread.4-1" # 80% spot
+      operator: In
+      values: ["1", "2", "3", "4"]
+
+    - key: "capacity.spread.9-1" # 90% spot
+      operator: In
+      values: ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    {{- else}}
+    - key: "capacity.spread.1-9" # 10% spot
+      operator: In
+      values: ["2", "3", "4", "5", "6", "7", "8", "9", "10"]
+
+    - key: "capacity.spread.1-7" # 12.5% spot
+      operator: In
+      values: ["2", "3", "4", "5", "6", "7", "8"]
+
+    - key: "capacity.spread.1-4" # 20% spot
+      operator: In
+      values: ["2", "3", "4", "5"]
+
+    - key: "capacity.spread.1-3" # 25% spot
+      operator: In
+      values: ["2", "3", "4"]
+
+    - key: "capacity.spread.1-2" # 33.3% spot
+      operator: In
+      values: ["2", "3"]
+
+    - key: "capacity.spread.3-2" # 60% spot
+      operator: In
+      values: ["4", "5"]
+
+    - key: "capacity.spread.3-1" # 75% spot
+      operator: In
+      values: ["4"]
+
+    - key: "capacity.spread.4-1" # 80% spot
+      operator: In
+      values: ["5"]
+
+    - key: "capacity.spread.9-1" # 90% spot
+      operator: In
+      values: ["10"]
+    {{- end}}
+  # limits:
+  #   resources:
+  #     cpu: 1000
 {{- $taints := $nodePool.Taints}}
 {{- if $taints }}
   taints:
@@ -95,6 +182,7 @@ spec:
 {{- end }}
       'zalando.de/cluster-local-id/{{ $data.Cluster.LocalID }}': owned
       zalando.org/pod-max-pids: "{{ $nodePool.ConfigItems.pod_max_pids }}"
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

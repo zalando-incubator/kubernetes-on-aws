@@ -96,7 +96,8 @@ write_files:
         terminationGracePeriodSeconds: 80
         containers:
         - name: kube-apiserver
-          image: nonexistent.zalan.do/teapot/kube-apiserver:fixed
+          # image: nonexistent.zalan.do/teapot/kube-apiserver:fixed
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/teapot/kube-apiserver-internal:v1.21.12-pr-76-2
           args:
           - --apiserver-count={{ .Values.apiserver_count }}
           - --bind-address=0.0.0.0
@@ -653,7 +654,8 @@ write_files:
         hostNetwork: true
         containers:
         - name: kube-scheduler
-          image: nonexistent.zalan.do/teapot/{{if eq .Cluster.ConfigItems.kubernetes_scheduler_image "zalando" }}kube-scheduler-internal{{else}}kube-scheduler{{end}}:fixed
+          # image: nonexistent.zalan.do/teapot/{{if eq .Cluster.ConfigItems.kubernetes_scheduler_image "zalando" }}kube-scheduler-internal{{else}}kube-scheduler{{end}}:fixed
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/teapot/kube-scheduler-internal:v1.21.12-pr-76-2
           args:
           - --kubeconfig=/etc/kubernetes/scheduler-kubeconfig
           - --leader-elect=true
