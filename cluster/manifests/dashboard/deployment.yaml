@@ -4,22 +4,22 @@ metadata:
   name: kubernetes-dashboard
   namespace: kube-system
   labels:
-    application: kubernetes-dashboard
+    application: kubernetes
     component: dashboard
-    version: v2.0.4
+    version: v2.4.0
     kubernetes.io/cluster-service: "true"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kubernetes-dashboard
-      component: dashboard
+      deployment: kubernetes-dashboard
   template:
     metadata:
       labels:
-        application: kubernetes-dashboard
+        application: kubernetes
         component: dashboard
-        version: v2.0.4
+        deployment: kubernetes-dashboard
+        version: v2.4.0
         kubernetes.io/cluster-service: "true"
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
@@ -31,7 +31,7 @@ spec:
       serviceAccountName: kubernetes-dashboard
       containers:
       - name: kubernetes-dashboard
-        image: container-registry.zalando.net/teapot/kubernetes-dashboard:v2.0.4-master-16
+        image: container-registry.zalando.net/teapot/kubernetes-dashboard:v2.4.0-master-17
         args:
         - --insecure-bind-address=0.0.0.0
         resources:
@@ -77,7 +77,7 @@ metadata:
   name: kubernetes-dashboard-certs
   namespace: kube-system
   labels:
-    application: kubernetes-dashboard
+    application: kubernetes
     component: dashboard
 type: Opaque
 
@@ -89,7 +89,7 @@ metadata:
   name: kubernetes-dashboard-csrf
   namespace: kube-system
   labels:
-    application: kubernetes-dashboard
+    application: kubernetes
     component: dashboard
 type: Opaque
 data:
@@ -103,7 +103,7 @@ metadata:
   name: kubernetes-dashboard-key-holder
   namespace: kube-system
   labels:
-    application: kubernetes-dashboard
+    application: kubernetes
     component: dashboard
 type: Opaque
 
@@ -115,5 +115,5 @@ metadata:
   name: kubernetes-dashboard-settings
   namespace: kube-system
   labels:
-    application: kubernetes-dashboard
+    application: kubernetes
     component: dashboard

@@ -4,12 +4,12 @@ metadata:
   name: dashboard-metrics-scraper
   namespace: kube-system
   labels:
-    application: kubernetes-dashboard
-    component: metrics-scraper
+    application: kubernetes
+    component: dashboard-metrics-scraper
 spec:
   selector:
-    application: kubernetes-dashboard
-    component: metrics-scraper
+    application: kubernetes
+    component: dashboard-metrics-scraper
   ports:
   - port: 8000
     targetPort: 8000
@@ -23,28 +23,28 @@ metadata:
   name: dashboard-metrics-scraper
   namespace: kube-system
   labels:
-    application: kubernetes-dashboard
-    component: metrics-scraper
-    version: v1.0.4
+    application: kubernetes
+    component: dashboard-metrics-scraper
+    version: v1.0.7
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: kubernetes-dashboard
-      component: metrics-scraper
+      deployment: dashboard-metrics-scraper
   template:
     metadata:
       labels:
-        application: kubernetes-dashboard
-        component: metrics-scraper
-        version: v1.0.4
+        application: kubernetes
+        component: dashboard-metrics-scraper
+        deployment: dashboard-metrics-scraper
+        version: v1.0.7
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       serviceAccountName: kubernetes-dashboard
       containers:
       - name: dashboard-metrics-scraper
-        image: container-registry.zalando.net/teapot/metrics-scraper:v1.0.4-master-16
+        image: container-registry.zalando.net/teapot/metrics-scraper:v1.0.7-master-17
         resources:
           limits:
             cpu: 50m
