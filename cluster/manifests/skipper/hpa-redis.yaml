@@ -1,3 +1,4 @@
+{{ if eq .ConfigItems.skipper_ingress_redis_autoscaling "true" }}
 apiVersion: autoscaling/v2beta2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -25,8 +26,8 @@ spec:
       target:
         type: Utilization
         averageUtilization: {{ .ConfigItems.skipper_ingress_redis_target_average_utilization_memory }}
-{{ if ne .ConfigItems.skipper_redis_cluster_scaling_schedules "" }}
-  {{ range split .ConfigItems.skipper_redis_cluster_scaling_schedules "," }}
+{{ if ne .ConfigItems.skipper_ingress_redis_cluster_scaling_schedules "" }}
+  {{ range split .ConfigItems.skipper_ingress_redis_cluster_scaling_schedules "," }}
   {{ $name_target := split . "=" }}
   - type: Object
     object:
@@ -52,3 +53,4 @@ spec:
         value: 100
         periodSeconds: 60
       selectPolicy: Min
+{{ end }}
