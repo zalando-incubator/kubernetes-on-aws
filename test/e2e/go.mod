@@ -76,10 +76,9 @@ require (
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
-	github.com/go-openapi/spec v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.14 // indirect
 	github.com/go-ozzo/ozzo-validation v3.5.0+incompatible // indirect
 	github.com/godbus/dbus/v5 v5.0.4 // indirect
@@ -210,7 +209,7 @@ require (
 	k8s.io/component-helpers v0.22.9 // indirect
 	k8s.io/cri-api v0.0.0 // indirect
 	k8s.io/csi-translation-lib v0.22.9 // indirect
-	k8s.io/klog/v2 v2.70.1 // indirect
+	k8s.io/klog/v2 v2.9.0 // indirect
 	k8s.io/kube-aggregator v0.0.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20211110012726-3cc51fd1e909 // indirect
 	k8s.io/kube-proxy v0.0.0 // indirect
@@ -230,11 +229,12 @@ require (
 )
 
 replace (
+	github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
 	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
-	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.1
+	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.5
 	github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega => github.com/onsi/gomega v1.7.0
-	google.golang.org/grpc => google.golang.org/grpc v1.27.1
+	google.golang.org/grpc => google.golang.org/grpc v1.38.0
 	k8s.io/api => k8s.io/api v0.22.9
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.22.9
 	k8s.io/apimachinery => k8s.io/apimachinery v0.22.13-rc.0
@@ -251,7 +251,7 @@ replace (
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.22.9
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.22.9
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.22.9
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd
+	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20211109043538-20434351676c
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.22.9
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.22.9
 	k8s.io/kubectl => k8s.io/kubectl v0.22.9
@@ -264,4 +264,5 @@ replace (
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.22.9
 	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.22.9
 	k8s.io/sample-controller => k8s.io/sample-controller v0.22.9
+
 )
