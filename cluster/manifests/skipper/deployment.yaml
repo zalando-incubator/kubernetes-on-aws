@@ -143,7 +143,7 @@ spec:
           - "-default-filters-dir=/etc/config/default-filters"
 {{ end }}
           - "-max-audit-body=0"
-{{ if eq .ConfigItems.skipper_ingress_redis_swarm_enabled "true") }}
+{{ if eq .ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
           - "-enable-swarm"
   {{ if and (ne .ConfigItems.skipper_redis_replicas "0") (ne .ConfigItems.skipper_ingress_redis_autoscaling "true") }}
           - "-swarm-redis-urls={{ indexedList "skipper-ingress-redis-$.skipper-ingress-redis.kube-system.svc.cluster.local:6379" (parseInt64 .ConfigItems.skipper_redis_replicas) }}"
