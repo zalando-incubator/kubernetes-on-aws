@@ -7,7 +7,9 @@ metadata:
   name: skipper-ingress-redis
   namespace: kube-system
 spec:
+{{ if ne .ConfigItems.skipper_ingress_redis_autoscaling "true" }}
   replicas: {{ .ConfigItems.skipper_redis_replicas }}
+{{ end }}
   podManagementPolicy: Parallel
   selector:
     matchLabels:

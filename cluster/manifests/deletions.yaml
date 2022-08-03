@@ -111,3 +111,9 @@ post_apply:
   namespace: kube-system
   kind: Deployment
 {{ end }}
+
+{{ if eq .ConfigItems.skipper_ingress_redis_autoscaling "false" }}
+- name: skipper-ingress-redis
+  namespace: kube-system
+  kind: HorizontalPodAutoscaler
+{{ end }}
