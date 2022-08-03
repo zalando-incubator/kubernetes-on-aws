@@ -5,16 +5,19 @@ metadata:
   name: emergency-access-service
   namespace: kube-system
   labels:
-    application: emergency-access-service
+    application: kubernetes
+    component: emergency-access-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: emergency-access-service
+      deployment: emergency-access-service
   template:
     metadata:
       labels:
-        application: emergency-access-service
+        application: kubernetes
+        component: emergency-access-service
+        deployment: emergency-access-service
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "emergency-access-service", "parser": "json-structured-log"}]

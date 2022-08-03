@@ -4,6 +4,9 @@ kind: ServiceAccount
 metadata:
   name: emergency-access-service
   namespace: kube-system
+  labels:
+    application: kubernetes
+    component: emergency-access-service
   annotations:
     iam.amazonaws.com/role: "{{ .LocalID }}-emergency-access-service"
 ---
@@ -12,6 +15,9 @@ kind: Role
 metadata:
   name: emergency-access-service
   namespace: kube-system
+  labels:
+    application: kubernetes
+    component: emergency-access-service
 rules:
 - apiGroups: [""]
   resources: ["configmaps"]
@@ -26,6 +32,9 @@ kind: RoleBinding
 metadata:
   name: emergency-access-service
   namespace: kube-system
+  labels:
+    application: kubernetes
+    component: emergency-access-service
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
