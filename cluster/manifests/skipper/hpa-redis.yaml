@@ -1,0 +1,57 @@
+{{ if eq .ConfigItems.skipper_ingress_redis_autoscaling "true" }}
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: skipper-ingress-redis
+  namespace: kube-system
+  labels:
+    application: skipper-ingress-redis
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: skipper-ingress-redis
+  minReplicas: {{ .ConfigItems.skipper_redis_replicas }}
+  #minReplicas: {{ .ConfigItems.skipper_ingress_redis_min_replicas }}
+  maxReplicas: {{ .ConfigItems.skipper_ingress_redis_max_replicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .ConfigItems.skipper_ingress_redis_target_average_utilization_cpu }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .ConfigItems.skipper_ingress_redis_target_average_utilization_memory }}
+{{ if ne .ConfigItems.skipper_ingress_redis_cluster_scaling_schedules "" }}
+  {{ range split .ConfigItems.skipper_ingress_redis_cluster_scaling_schedules "," }}
+  {{ $name_target := split . "=" }}
+  - type: Object
+    object:
+      describedObject:
+        apiVersion: zalando.org/v1
+        kind: ClusterScalingSchedule
+        name: {{ index $name_target 0 }}
+      metric:
+        name: {{ index $name_target 0 }}
+      target:
+        averageValue: {{ index $name_target 1 }}
+        type: AverageValue
+  {{ end }}
+{{ end }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+      - type: Pods
+        value: 10
+        periodSeconds: 60
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      selectPolicy: Min
+{{ end }}
