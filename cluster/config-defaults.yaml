@@ -184,8 +184,7 @@ enable_skipper_eastwest_dns: "true"
 enable_skipper_eastwest: "false"
 
 # Configure skipper-internal ClusterIP to Coredns query
-skipper_internal_cluster_ip: "10.3.99.99"
-skipper_internal_cluster_ip_additional: "10.3.99.99"
+skipper_internal_cluster_ip: "10.5.99.99"
 
 # enable temporay logging of ingress.cluster.local names
 # used to find services for which it's being used.
@@ -393,9 +392,6 @@ teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
 teapot_admission_controller_parent_resource_hash: "true"
 
-# Define ExternalIPs is not allowed
-teapot_admission_controller_check_service_resources: "true"
-
 ## Defaults are set per-cluster
 teapot_admission_controller_check_daemonset_resources: "true"
 teapot_admission_controller_daemonset_reserved_cpu: "8"
@@ -527,12 +523,11 @@ coredns_log_forward: "false"
 # clusters and prevent CoreDNS from running out of memory in case of spikes.
 coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 
-# Temporarily added to support Kubernetes service range migration.
-coredns_cluster_ip_2: 10.3.0.11
-coredns_cluster_ip_1: 10.3.0.11
+# Coredns clusterIP.
+coredns_cluster_ip_1: 10.5.0.11
 # Coredns reverse lookup of kubernetes addresses
 coredns_cluster_cidr_local_zone: "2.10.in-addr.arpa."
-coredns_service_cluster_local_zone: "3.10.in-addr.arpa."
+coredns_service_cluster_local_zone: "5.10.in-addr.arpa."
 
 tracing_coredns_route_traces_to_local_zone: "false"
 tracing_coredns_global_traces_endpoint: ""
@@ -555,14 +550,9 @@ audittrail_url: ""
 {{end}}
 audittrail_root_account_role: ""
 
-# kube-apiserver / kube-proxy container image name.
-# Temporarily added to help during the Kubernetes service network range migration.
-kube_apiserver_container_image_name: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/kube-apiserver-internal:v1.21.12-master-79
-kube_proxy_container_image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/kube-proxy-internal:v1.21.12-master-79
-
 # A CIDR notation IP range from which to assign service cluster IPs.
 # This must not overlap with any IP ranges assigned to nodes or pods.
-service_cluster_ip_range: "10.3.0.0/16"
+service_cluster_ip_range: "10.5.0.0/16"
 
 # CIDR Range for Pods in cluster
 cluster_cidr: "10.2.0.0/16"
