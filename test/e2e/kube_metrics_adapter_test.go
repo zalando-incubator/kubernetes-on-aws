@@ -71,6 +71,37 @@ var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metri
 
 	})
 
+	It("should scale down with Custom Metric of type Object from Skipper [Ingress] [CustomMetricsAutoscaling] [Zalando]", func() {
+		hostName := fmt.Sprintf("%s-%d.%s", DeploymentName, time.Now().UTC().Unix(), E2EHostedZone())
+
+		initialReplicas := 2
+		scaledReplicas := 1
+		metricValue := 10
+		metricTarget := int64(metricValue) * 2
+		labels := map[string]string{
+			"application": DeploymentName,
+		}
+		port := 80
+		targetPort := 8000
+		targetUrl := hostName + "/metrics"
+		ingress := createIngress(DeploymentName, hostName, f.Namespace.Name, "/", netv1.PathTypePrefix, labels, nil, port)
+		tc := CustomMetricTestCase{
+			framework:       f,
+			kubeClient:      cs,
+			jig:             jig,
+			initialReplicas: initialReplicas,
+			scaledReplicas:  scaledReplicas,
+			deployment:      simplePodDeployment(DeploymentName, int32(initialReplicas)),
+			ingress:         ingress,
+			hpa:             rpsBasedHPA(DeploymentName, ingress.Name, "extensions/v1beta1", "Ingress", metricTarget),
+			service:         createServiceTypeClusterIP(DeploymentName, labels, 80, targetPort),
+			auxDeployments: []*appsv1.Deployment{
+				createVegetaDeployment(targetUrl, metricValue),
+			},
+		}
+		tc.Run()
+	})
+
 	It("should scale down with Custom Metric of type Object from Skipper (networking.k8s.io) [Ingress] [CustomMetricsAutoscaling] [Zalando]", func() {
 		hostName := fmt.Sprintf("%s-%d.%s", DeploymentName, time.Now().UTC().Unix(), E2EHostedZone())
 
