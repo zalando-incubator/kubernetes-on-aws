@@ -29,7 +29,7 @@ spec:
       hostNetwork: true
       containers:
       - name: kube-aws-iam-controller
-        image: container-registry.zalando.net/teapot/kube-aws-iam-controller:v0.2.0
+        image: container-registry.zalando.net/teapot/kube-aws-iam-controller:v0.2.0-3-g8b47d5a
         args:
         - --debug
         - "--assume-role={{.Cluster.LocalID}}-worker"
@@ -40,6 +40,13 @@ spec:
           requests:
             cpu: "{{.ConfigItems.kube_aws_iam_controller_cpu}}"
             memory: "{{.ConfigItems.kube_aws_iam_controller_mem_max}}"
+        livenessProbe:
+          httpGet: 
+            path: /healthz
+            port: 8080
+          failureThreshold: 5
+          initialDelaySeconds: 10
+          periodSeconds: 10
       tolerations:
       - key: node.kubernetes.io/role
         value: master
