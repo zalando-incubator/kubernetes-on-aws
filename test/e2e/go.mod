@@ -15,11 +15,11 @@ require (
 	github.com/zalando-incubator/kube-aws-iam-controller v0.2.0
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	k8s.io/api v0.22.9
-	k8s.io/apimachinery v0.22.9
-	k8s.io/apiserver v0.22.9
-	k8s.io/client-go v0.22.9
-	k8s.io/kubernetes v1.22.9
+	k8s.io/api v0.22.12
+	k8s.io/apimachinery v0.22.12
+	k8s.io/apiserver v0.22.12
+	k8s.io/client-go v0.22.12
+	k8s.io/kubernetes v1.22.12
 )
 
 require (
@@ -88,7 +88,7 @@ require (
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/btree v1.0.1 // indirect
-	github.com/google/cadvisor v0.39.3 // indirect
+	github.com/google/cadvisor v0.39.4 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
