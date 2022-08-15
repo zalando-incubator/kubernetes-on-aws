@@ -1,12 +1,12 @@
 # builder image
-FROM golang:1.18 as builder
+FROM golang:1.19 as builder
 
 RUN go install github.com/onsi/ginkgo/ginkgo@v1.16.5
 
 # final image
 # TODO get rid of python dependencies
 # * wait-for-update.py
-FROM registry.opensource.zalan.do/library/python-3.9-slim:latest
+FROM registry.opensource.zalan.do/library/python-3.10-slim:latest
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
   bc \
