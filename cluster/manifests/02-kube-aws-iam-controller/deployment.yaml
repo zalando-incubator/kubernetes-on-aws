@@ -29,12 +29,12 @@ spec:
       hostNetwork: true
       containers:
       - name: kube-aws-iam-controller
-        image: container-registry-test.zalando.net/teapot/kube-aws-iam-controller-test:pr-62-6
+        image: container-registry-test.zalando.net/teapot/kube-aws-iam-controller-test:pr-62-7
         args:
         - --debug
         - "--assume-role={{.Cluster.LocalID}}-worker"
         ports:
-          - containerPort: 8080   # the port for the health endpoint
+          - containerPort: 7979   # the port for the health endpoint
         resources:
           limits:
             cpu: "{{.ConfigItems.kube_aws_iam_controller_cpu}}"
@@ -45,7 +45,10 @@ spec:
         livenessProbe:
           httpGet: 
             path: /healthz
-            port: 8080
+            port: 7979
+          failureThreshold: 5
+          initialDelaySeconds: 10
+          periodSeconds: 10
       tolerations:
       - key: node.kubernetes.io/role
         value: master
