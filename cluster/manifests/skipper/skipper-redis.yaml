@@ -4,6 +4,10 @@ metadata:
   labels:
     application: skipper-ingress-redis
     version: v6.2.7
+{{- if eq .ConfigItems.skipper_ingress_redis_autoscaling "true" }}
+  annotations:
+    zalando.org/update-using-hpa-replicas: skipper-ingress-redis
+{{- end }}
   name: skipper-ingress-redis
   namespace: kube-system
 spec:
