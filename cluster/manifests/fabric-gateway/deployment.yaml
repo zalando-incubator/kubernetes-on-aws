@@ -8,7 +8,8 @@ metadata:
   labels:
     application: gateway-operator
     component: fabric-gateway-controller
-    version: {{ $version }}
+    version: "{{ $version }}"
+    mode: "{{ .ConfigItems.fabric_gateway_controller_mode }}"
 spec:
 {{ if eq .ConfigItems.fabric_gateway_controller_mode "disabled" }}
   replicas: 0
@@ -26,7 +27,8 @@ spec:
         deployment: fabric-gateway-controller
         application: gateway-operator
         component: fabric-gateway-controller
-        version: {{ $version }}
+        version: "{{ $version }}"
+        mode: "{{ .ConfigItems.fabric_gateway_controller_mode }}"
       annotations:
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_infra }}"
         prometheus.io/path: /metrics
