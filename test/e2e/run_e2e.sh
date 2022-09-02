@@ -44,6 +44,8 @@ CDP_TARGET_REPOSITORY="${CDP_TARGET_REPOSITORY:-"github.com/zalando-incubator/ku
 CDP_TARGET_COMMIT_ID="${CDP_TARGET_COMMIT_ID:-"dev"}"
 CDP_HEAD_COMMIT_ID="${CDP_HEAD_COMMIT_ID:-"$(git describe --tags --always)"}"
 RESULT_BUCKET="${RESULT_BUCKET:-""}"
+E2E_STACKSET_WAIT_TIMEOUT="${E2E_STACKSET_WAIT_TIMEOUT:-"60s"}"
+E2E_STACKSET_TRAFFIC_WAIT_TIMEOUT="${E2E_STACKSET_TRAFFIC_WAIT_TIMEOUT:-"150s"}"
 
 export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-${CDP_BUILD_VERSION}"}"
 export LOCAL_ID="${LOCAL_ID:-"e2e-${CDP_BUILD_VERSION}"}"
@@ -237,7 +239,7 @@ fi
 if [ "$stackset_e2e" = true ]; then
     namespace="stackset-e2e-$(date +'%H%M%S')"
     kubectl create namespace "$namespace"
-    E2E_NAMESPACE="${namespace}" ./stackset-e2e -test.parallel 1
+    E2E_NAMESPACE="${namespace}" ./stackset-e2e -test.parallel 20 -wait-timeout="${E2E_STACKSET_WAIT_TIMEOUT}" -traffic-switch-wait-timeout="${E2E_STACKSET_TRAFFIC_WAIT_TIMEOUT}"
 fi
 
 if [ "$loadtest_e2e" = true ]; then
