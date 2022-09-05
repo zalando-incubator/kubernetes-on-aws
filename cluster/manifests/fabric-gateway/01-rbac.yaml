@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fabric-gateway-controller
+  namespace: kube-system
+  labels:
+    application: gateway-operator
+    component: fabric-gateway-controller
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fabric-gateway-controller
+  labels:
+    application: gateway-operator
+    component: fabric-gateway-controller
+rules:
+  - apiGroups:
+      - zalando.org
+    resources:
+      - fabricgateways
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - zalando.org
+    resources:
+      - fabricgateways/status
+    verbs:
+      - update
+  - apiGroups:
+      - zalando.org
+    resources:
+      - routegroups
+    verbs:
+      - list
+      - watch
+      - get
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - zalando.org
+    resources:
+      - stacksets
+    verbs:
+      - watch
+      - get
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fabric-gateway-controller
+  labels:
+    application: gateway-operator
+    component: fabric-gateway-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fabric-gateway-controller
+subjects:
+  - kind: ServiceAccount
+    name: fabric-gateway-controller
+    namespace: kube-system
