@@ -588,7 +588,6 @@ write_files:
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
           - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }},CSIMigrationAWS=true{{- end }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
-          - --horizontal-pod-autoscaler-use-rest-clients=true
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
           - --allocate-node-cidrs=true
@@ -600,7 +599,6 @@ write_files:
           - --node-cidr-mask-size={{ .Cluster.ConfigItems.node_cidr_mask_size }}
           - --kube-api-qps=50
           - --terminated-pod-gc-threshold=500
-          - --horizontal-pod-autoscaler-use-rest-clients=true
           - --horizontal-pod-autoscaler-sync-period={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_sync_period }}
           - --horizontal-pod-autoscaler-tolerance={{ .Cluster.ConfigItems.horizontal_pod_autoscaler_tolerance }}
           - --horizontal-pod-autoscaler-downscale-stabilization={{ .Cluster.ConfigItems.horizontal_pod_downscale_stabilization }}
