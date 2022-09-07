@@ -1,4 +1,4 @@
-{{ $version := "master-101" }}
+{{ $version := "master-106" }}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -48,6 +48,7 @@ spec:
             - -predicates=False()
             - -update-fabric-gateway-status=false
 {{ end }}
+            - -versioned-hosts-base-domain={{ .Values.hosted_zone }}
             - -filters=setRequestHeader("X-Route-Controller", "fabric-gateway-controller")
             - -log-level=info
           resources:
