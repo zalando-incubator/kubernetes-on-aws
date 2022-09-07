@@ -44,32 +44,29 @@ Resources:
         InstanceInitiatedShutdownBehavior: terminate
         ImageId: {{.Cluster.ConfigItems.etcd_ami}}
         InstanceType: {{.Cluster.ConfigItems.etcd_instance_type}}
-        UserData: !Base64 |
-          #taupage-ami-config
-          application_id: etcd-cluster
-          application_version: etcd
-          environment:
-            CLIENT_CERT: "{{.Values.etcd_client_server_cert}}"
-            CLIENT_KEY: "{{.Values.etcd_client_server_key}}"
-            CLIENT_TLS_ENABLED: 'true'
-            CLIENT_TRUSTED_CA: "{{.Values.etcd_client_ca_cert}}"
-            HOSTED_ZONE: "{{.Values.hosted_zone}}"
-          mounts:
-            /home/etcd:
-              partition: /dev/xvdb
-              filesystem: ext4
-              erase_on_boot: true
-          notify_cfn:
-            resource: AppServer
-            stack: etcd-cluster-etcd
-          ports:
-            2379: 2379
-            2380: 2380
-            2381: 2381
-            2479: 2479
-          runtime: Docker
-          scalyr_account_key: "{{.Values.etcd_scalyr_key}}"
-          source: "{{.Cluster.ConfigItems.etcd_docker_image}}"
+        UserData:
+          Fn::Base64: !Sub |
+            #cloud-config
+            write_files:
+              - path: /etc/scalyr-agent-2/userdata.yaml
+                permissions: 0644
+                content: |
+                  scalyr_api_key: "{{.Values.etcd_scalyr_key}}"
+                  stack_name: ${AWS::StackName}
+              - path: /etc/default/etcd
+                permissions: 0644
+                content: |
+                  ETCD_CERT_FILE="{{.Values.etcd_client_server_cert}}"
+                  ETCD_KEY_FILE="{{.Values.etcd_client_server_key}}"
+                  ETCD_TRUSTED_CA_FILE="{{.Values.etcd_client_ca_cert}}"
+                  ETCD_CLIENT_TLS_ENABLED='true'
+                  ETCD_LOG_LEVEL=info
+                  HOSTED_ZONE="{{.Values.hosted_zone}}"
+                  S3_CERTS_BUCKET="{{ .S3GeneratedFilesPath }}"
+                  AWS_DEFAULT_REGION=eu-central-1
+            runcmd:
+              - [ cfn-signal, --success, 'true', --stack, ${AWS::StackName}, --resource, AppServer, --region, ${AWS::Region} ]
+              - [ complete-asg-lifecycle.py, 'etcd-server-lifecycle-hook' ]
   AppServer:
     Type: AWS::AutoScaling::AutoScalingGroup
     CreationPolicy:
@@ -78,7 +75,7 @@ Resources:
         Timeout: PT15M
     Properties:
       DesiredCapacity: {{.Cluster.ConfigItems.etcd_instance_count}}
-      HealthCheckGracePeriod: 300
+      HealthCheckGracePeriod: 0
       HealthCheckType: EC2
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplate
@@ -110,6 +107,13 @@ Resources:
         - Key: certificate-expiry-node
           PropagateAtLaunch: true
           Value: {{certificateExpiry (base64Decode .Cluster.ConfigItems.etcd_client_server_cert)}}
+  AutoScalingLifecycleHook:
+    Type: "AWS::AutoScaling::LifecycleHook"
+    Properties:
+      AutoScalingGroupName: !Ref AppServer
+      LifecycleHookName: "etcd-server-lifecycle-hook"
+      LifecycleTransition: "autoscaling:EC2_INSTANCE_LAUNCHING"
+      HeartbeatTimeout: "300"
   AppServerScaleDown:
     Type: "AWS::AutoScaling::ScalingPolicy"
     Properties:
@@ -171,6 +175,8 @@ Resources:
   EtcdRole:
     Type: AWS::IAM::Role
     Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -213,6 +219,26 @@ Resources:
             Action:
             - s3:PutObject
             Resource: [ "arn:aws:s3:::{{.Cluster.ConfigItems.etcd_s3_backup_bucket}}/*" ]
+      - PolicyName: S3ClusterLifecycle
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:ListBucket
+            - s3:GetObject
+            - s3:HeadObject
+            Resource: [ "arn:aws:s3:::{{.Cluster.ConfigItems.etcd_s3_backup_bucket}}/*" ]
+      - PolicyName: ASGCompleteLifecycle
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - autoscaling:CompleteLifecycleAction
+            # The shitty CF doesn't allow to do something like !GetAtt AppServer.Arn
+            # Ref: https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/548
+            Resource: [ "arn:aws:autoscaling:*:*:autoScalingGroup:*:autoScalingGroupName/etcd-cluster-etcd-AppServer*" ]
       - PolicyName: KMSDecrypt
         PolicyDocument:
           Version: "2012-10-17"
