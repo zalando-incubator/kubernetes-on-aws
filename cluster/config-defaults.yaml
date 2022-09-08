@@ -136,7 +136,11 @@ skipper_redis_write_timeout: "25ms"
 # "true" enable autoscaling
 # "false" remove autoscaling
 # "" do not change
+{{if eq .Cluster.Environment "test"}}
+skipper_ingress_redis_autoscaling: "true"
+{{else}}
 skipper_ingress_redis_autoscaling: ""
+{{end}}
 skipper_ingress_redis_swarm_enabled: "true"
 skipper_ingress_redis_target_average_utilization_cpu: "60"
 skipper_ingress_redis_target_average_utilization_memory: "60"
