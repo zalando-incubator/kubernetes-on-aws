@@ -8,6 +8,9 @@ kind: Provisioner
 metadata:
   name: "{{$nodePool.Name}}"
 spec:
+  {{- if index $nodePool.ConfigItems "scaling_priority"}}
+  weight: {{$nodePool.ConfigItems.scaling_priority}}
+  {{- end}}
   consolidation:
     enabled: true
   requirements:
@@ -22,8 +25,8 @@ spec:
       values: [{{if $nodePool.IsSpot}}"spot"{{else}}"on-demand"{{end}}]
     - key: "kubernetes.io/arch"
       operator: In
-      # values: ["arm64", "amd64"]
-      values: ["amd64"]
+      values: ["arm64", "amd64"]
+#      values: ["amd64"]
     - key: "topology.kubernetes.io/zone"
       operator: In
       values:

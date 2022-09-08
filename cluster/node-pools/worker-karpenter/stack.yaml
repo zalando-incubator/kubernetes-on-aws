@@ -15,7 +15,7 @@ Resources:
   KarpenterNodeInstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
     Properties:
-      InstanceProfileName: "KarpenterNodeInstanceProfile"
+      InstanceProfileName: "{{ .Cluster.ID | awsValidID }}-{{ .NodePool.Name }}-InstanceProfile"
       Path: "/"
       Roles:
       - !ImportValue '{{ .Cluster.ID }}:worker-iam-role'
