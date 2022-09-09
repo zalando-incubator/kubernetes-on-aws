@@ -26,7 +26,6 @@ spec:
     - key: "kubernetes.io/arch"
       operator: In
       values: ["arm64", "amd64"]
-#      values: ["amd64"]
     - key: "topology.kubernetes.io/zone"
       operator: In
       values:
@@ -34,15 +33,16 @@ spec:
 {{- range $az := $data.Values.availability_zones }}
       - "{{ $az }}"
 {{- end }}
-  # limits:
-  #   resources:
-  #     cpu: 1000
-{{- if index $nodePool.ConfigItems "taints"}}
+{{- $taints := $nodePool.Taints}}
+{{- if $taints }}
   taints:
-  {{- range split $nodePool.ConfigItems.taints ","}}
-    {{- $taint := split . "="}}
-      - key: {{index $taint 0}}
-        effect: {{index $taint 1}}
+  {{- range $taints }}
+    {{- $taint := . }}
+      - key: {{$taint.Key}}
+        effect: {{$taint.Effect}}
+        {{- if $taint.Value }}
+        value: {{$taint.Value }}
+        {{- end }}
   {{- end}}
 {{- end}}
 
