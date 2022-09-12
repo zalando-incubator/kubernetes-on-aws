@@ -59,7 +59,7 @@ spec:
 {{ end }}
   behavior:
     scaleDown:
-      stabilizationWindowSeconds: 600
+      stabilizationWindowSeconds: {{ .ConfigItems.skipper_ingress_hpa_scale_down_wait }}
       policies:
       - type: Pods
         value: 10
@@ -68,3 +68,13 @@ spec:
         value: 100
         periodSeconds: 60
       selectPolicy: Min
+    scaleUp:
+      policies:
+      - periodSeconds: 15
+        type: Pods
+        value: 4
+      - periodSeconds: 15
+        type: Percent
+        value:  {{ .ConfigItems.skipper_ingress_hpa_scale_up_max_perc }}
+      selectPolicy: Max
+      stabilizationWindowSeconds: 0
