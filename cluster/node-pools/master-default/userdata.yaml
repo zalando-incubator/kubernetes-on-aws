@@ -30,8 +30,7 @@ write_files:
         SizeMemoryBackedVolumes: {{ .Cluster.ConfigItems.enable_size_memory_backed_volumes }}
 {{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
         EphemeralContainers: true
-{{- end }}
-        SetHostnameAsFQDN: {{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
+{{- end }}s
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
 {{- if ne .Cluster.ConfigItems.serialize_image_pulls "true" }}
@@ -139,7 +138,7 @@ write_files:
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
 {{- end }}
-          - --feature-gates=TTLAfterFinished=true,HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
+          - --feature-gates=TTLAfterFinished=true,HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
@@ -583,7 +582,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TTLAfterFinished=true,SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
+          - --feature-gates=TTLAfterFinished=true,IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
           - --allocate-node-cidrs=true
@@ -652,7 +651,7 @@ write_files:
           args:
           - --kubeconfig=/etc/kubernetes/scheduler-kubeconfig
           - --leader-elect=true
-          - --feature-gates=NonPreemptingPriority=true,SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
+          - --feature-gates=NonPreemptingPriority=true
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           env:
           - name: KUBE_MAX_PD_VOLS
