@@ -130,7 +130,7 @@ Resources:
       - IpProtocol: tcp
         FromPort: 22
         ToPort: 22
-        CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+        CidrIp: {{ if eq .Cluster.ConfigItems.ssh_vpc_only "true" }}"{{.Values.vpc_ipv4_cidr}}"{{ else }}"0.0.0.0/0"{{ end }}
       - IpProtocol: tcp
         FromPort: 2381
         ToPort: 2381
