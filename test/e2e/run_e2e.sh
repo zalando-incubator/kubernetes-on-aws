@@ -239,7 +239,7 @@ fi
 if [ "$stackset_e2e" = true ]; then
     namespace="stackset-e2e-$(date +'%H%M%S')"
     kubectl create namespace "$namespace"
-    E2E_NAMESPACE="${namespace}" ./stackset-e2e -test.parallel 20 -wait-timeout="${E2E_STACKSET_WAIT_TIMEOUT}" -traffic-switch-wait-timeout="${E2E_STACKSET_TRAFFIC_WAIT_TIMEOUT}"
+    E2E_NAMESPACE="${namespace}" ./stackset-e2e -test.parallel 64 -wait-timeout="${E2E_STACKSET_WAIT_TIMEOUT}" -traffic-switch-wait-timeout="${E2E_STACKSET_TRAFFIC_WAIT_TIMEOUT}"
 fi
 
 if [ "$loadtest_e2e" = true ]; then
