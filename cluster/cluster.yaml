@@ -37,6 +37,8 @@ Resources:
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
+        - Key: 'kubernetes:application'
+          Value: kube-ingress-aws-controller
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
   MasterKubeletToMasterKubeletSecurityGroup:
@@ -770,6 +772,9 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      Tags:
+        - Key: component
+          Value: deployment-service
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerPreferred
@@ -1733,7 +1738,7 @@ Resources:
         Status: Suspended
       Tags:
       - Key: component
-        Value: resend
+        Value: audittrail-adapter
   AuditTrailBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
