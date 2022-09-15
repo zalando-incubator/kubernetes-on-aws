@@ -25,14 +25,17 @@ spec:
       serviceAccountName: vpa-updater
       containers:
       - name: updater
+        {{if eq .Cluster.ConfigItems.vertical_pod_autoscaler_version "current"}}
+        image: container-registry.zalando.net/teapot/vpa-updater:v0.11.0-internal.17
+        {{else if eq .Cluster.ConfigItems.vertical_pod_autoscaler_version "legacy"}}
         image: container-registry.zalando.net/teapot/vpa-updater:v0.6.1-internal.16
+        {{end}}
         command:
           - ./updater
         args:
           - --v=1
           - --logtostderr
           - --min-replicas=1
-          - --pod-lifetime-update-threshold=12h
           - --evict-after-oom-threshold=12h
         resources:
           limits:
