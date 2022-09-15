@@ -2,7 +2,7 @@ module github.com/zalando-incubator/kubernetes-on-aws/test/e2e/stackset
 
 go 1.19
 
-require github.com/zalando-incubator/stackset-controller v1.3.59
+require github.com/zalando-incubator/stackset-controller v1.3.61
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
