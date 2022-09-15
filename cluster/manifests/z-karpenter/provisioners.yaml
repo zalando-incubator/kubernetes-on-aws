@@ -30,7 +30,11 @@ spec:
       operator: In
       values:
 # TODO: handle per node pool availability zone limits
-{{- range $az := $data.Values.availability_zones }}
+{{- $azs := $data.Values.availability_zones}}
+{{- if index $nodePool.ConfigItems "availability_zones"}}
+        {{    $azs = split $nodePool.ConfigItems.availability_zones "," }}
+{{- end}}
+{{- range $az :=  $azs }}
       - "{{ $az }}"
 {{- end }}
 {{- $taints := $nodePool.Taints}}
