@@ -51,6 +51,8 @@ nlb_switch: "exec"
 skipper_ingress_target_average_utilization_cpu: "60"
 skipper_ingress_target_average_utilization_memory: "80"
 skipper_ingress_max_replicas: "50"
+skipper_ingress_hpa_scale_down_wait: "600"
+skipper_ingress_hpa_scale_up_max_perc: "100"
 {{if eq .Cluster.Environment "production"}}
 skipper_ingress_min_replicas: "3"
 {{else}}
@@ -276,6 +278,8 @@ skipper_cluster_scaling_schedules: ""
 #
 fabric_gateway_controller_mode: "disabled"
 
+fabric_gateway_crd_v1_enabled: "false"
+
 # kube-api-server settings
 # This parameter will be set to default 'true' when testing is in progress.
 # Will later be changed to default 'false' as a sane value.
@@ -374,6 +378,11 @@ downscaler_enabled: "false"
 horizontal_pod_autoscaler_sync_period: "30s"
 horizontal_pod_autoscaler_tolerance: "0.1"
 horizontal_pod_downscale_stabilization: "5m0s"
+
+# Vertical pod autoscaler version for controlling roll-out, can be "current" or "legacy"
+# current => v0.11.0-internal.17
+# legacy => v0.6.1-internal.16
+vertical_pod_autoscaler_version: "current"
 
 # Cluster update settings
 {{if eq .Cluster.Environment "production"}}
@@ -523,7 +532,7 @@ etcd_instance_type: "t3.medium"
 
 etcd_docker_image: "registry.opensource.zalan.do/teapot/etcd-cluster:3.4.16-master-10"
 etcd_scalyr_key: ""
-etcd_ami: {{ amiID "Taupage-AMI-20210504-093855" "861068367966"}}
+etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.4.16-amd64-main-8" "861068367966"}}
 
 dynamodb_service_link_enabled: "false"
 
