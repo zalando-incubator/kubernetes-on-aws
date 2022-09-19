@@ -1,0 +1,125 @@
+{{- if eq .NodePool.Profile "worker-karpenter" }}
+---
+apiVersion: karpenter.sh/v1alpha5
+kind: Provisioner
+metadata:
+  name: "{{.NodePool.Name}}"
+spec:
+  {{- if index .NodePool.ConfigItems "scaling_priority"}}
+  weight: {{.NodePool.ConfigItems.scaling_priority}}
+  {{- end}}
+  consolidation:
+    enabled: true
+  requirements:
+    - key: "node.kubernetes.io/instance-type"
+      operator: In
+      values:
+{{- range $type := .NodePool.InstanceTypes }}
+      - "{{ $type }}"
+{{- end }}
+    - key: karpenter.sh/capacity-type
+      operator: In
+      values: [{{if .NodePool.IsSpot}}"spot"{{else}}"on-demand"{{end}}]
+    - key: "kubernetes.io/arch"
+      operator: In
+      values: ["arm64", "amd64"]
+    - key: "topology.kubernetes.io/zone"
+      operator: In
+      values:
+# TODO: handle per node pool availability zone limits
+{{- $azs := .Values.availability_zones }}
+{{- if index .NodePool.ConfigItems "availability_zones"}}
+        {{    $azs = split .NodePool.ConfigItems.availability_zones "," }}
+{{- end}}
+{{- range $az :=  $azs }}
+      - "{{ $az }}"
+{{- end }}
+{{- $taints := .NodePool.Taints}}
+{{- if $taints }}
+  taints:
+  {{- range $taints }}
+    {{- $taint := . }}
+      - key: {{$taint.Key}}
+        effect: {{$taint.Effect}}
+        {{- if $taint.Value }}
+        value: {{$taint.Value }}
+        {{- end }}
+  {{- end}}
+{{- end}}
+
+  startupTaints:
+  - key: zalando.org/node-not-ready
+    effect: NoSchedule
+
+  labels:
+    # these labels are normally set by kubelet on start-up, but because
+    # karpenter already creates the node object ahead of the instance start, we
+    # need to set them here as well.
+    lifecycle-status: ready
+    node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
+    node.kubernetes.io/role: worker
+    node.kubernetes.io/profile: "{{ .NodePool.Profile }}"
+    cluster-lifecycle-controller.zalan.do/replacement-strategy: none
+{{- if index .NodePool.ConfigItems "labels"}}
+  {{- range split .NodePool.ConfigItems.labels ","}}
+    {{- $label := split . "="}}
+    {{index $label 0}}: {{index $label 1}}
+  {{- end}}
+{{- end}}
+
+  # ttlSecondsAfterEmpty: 30
+  providerRef:
+    name: {{ .NodePool.Name }}-provider
+---
+apiVersion: karpenter.k8s.aws/v1alpha1
+kind: AWSNodeTemplate
+metadata:
+  name: {{ .NodePool.Name }}-template
+spec:
+#    launchTemplate: "{{ .Cluster.ID | awsValidID }}-{{ .NodePool.Name }}"
+    instanceProfile: {{ .Cluster.ID | awsValidID }}-{{ .NodePool.Name }}-InstanceProfile
+    amiFamily: Ubuntu
+    amiSelector:
+      environment: production
+      purpose: zalando-ubuntu-kubernetes
+      version: v1.22.13
+      revision: master-238
+    subnetSelector:
+      Name: "dmz-eu-central-1*" # TODO: use a better tag
+    securityGroupSelector: # TODO: use better tags
+      aws:cloudformation:stack-name: {{.Cluster.Alias}}
+      aws:cloudformation:logical-id: WorkerSecurityGroup
+    blockDeviceMappings:
+      - deviceName: /dev/sda1
+        ebs:
+          deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
+          volumeSize: {{ .NodePool.ConfigItems.ebs_root_volume_size }}G
+          volumeType: gp3
+    userData: |
+      MIME-Version: 1.0
+      Content-Type: multipart/mixed; boundary="BOUNDARY"
+
+      --BOUNDARY
+      Content-Type: text/yaml; charset="us-ascii"
+
+      {{.UserData}}
+
+      --BOUNDARY--
+    tags:
+      InfrastructureComponent: "true"
+      # TODO: maybe use application label on dedicated node pools?
+      application: kubernetes
+      component: worker
+      environment: "{{ .Cluster.Environment }}"
+      Name: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
+      # TODO: are these tags still needed?
+      # Do we want a node pool tag for cost tracking reasons?
+      node.kubernetes.io/role: worker
+      node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
+# only node pools without taints should be attached to Ingress Load balancer
+{{- if or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
+      zalando.org/ingress-enabled: "true"
+{{- end }}
+      'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}': owned
+      zalando.org/pod-max-pids: "{{ .NodePool.ConfigItems.pod_max_pids }}"
+{{- end }}

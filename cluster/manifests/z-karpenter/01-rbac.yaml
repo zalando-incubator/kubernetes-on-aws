@@ -1,4 +1,5 @@
 {{ if karpenterNodePools .Cluster.NodePools }}
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -54,6 +55,9 @@ rules:
   - apiGroups: [ "policy" ]
     resources: [ "poddisruptionbudgets" ]
     verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "karpenter.k8s.aws" ]
+    resources: [ "awsnodetemplates" ]
+    verbs: [ "get", "list", "watch", "create", "delete", "patch" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

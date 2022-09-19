@@ -4,47 +4,12 @@ Metadata:
   Tags:
     InfrastructureComponent: "true"
 
-Mappings:
-  Images:
-    eu-central-1:
-      # Use the node pool's architecture to construct the config item name that we're using to get the AMI name.
-      MachineImage: '{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_21_" .Values.InstanceInfo.Architecture) }}'
-
 Resources:
-# create InstanceProfile wrapper on NodeRole
+  # create InstanceProfile wrapper on NodeRole
   KarpenterNodeInstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
     Properties:
       InstanceProfileName: "{{ .Cluster.ID | awsValidID }}-{{ .NodePool.Name }}-InstanceProfile"
       Path: "/"
       Roles:
-      - !ImportValue '{{ .Cluster.ID }}:worker-iam-role'
-  LaunchTemplate:
-    Type: AWS::EC2::LaunchTemplate
-    Properties:
-      LaunchTemplateData:
-        IamInstanceProfile:
-          # Get ARN of InstanceProfile defined above
-          Arn: !GetAtt
-            - KarpenterNodeInstanceProfile
-            - Arn
-        ImageId: !FindInMap
-        - Images
-        - !Ref 'AWS::Region'
-        - MachineImage
-        # UserData is Base64 Encoded
-        UserData: "{{ .UserData }}"
-        BlockDeviceMappings:
-        - DeviceName: /dev/sda1
-          Ebs:
-            DeleteOnTermination: {{.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
-            VolumeSize: {{.NodePool.ConfigItems.ebs_root_volume_size}}
-            VolumeType: gp3
-        NetworkInterfaces:
-        - DeviceIndex: 0
-          AssociatePublicIpAddress: true
-          Groups:
-          - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
-        InstanceInitiatedShutdownBehavior: terminate
-      # name is used to resolve the launch-template version in CLM
-      LaunchTemplateName: "{{ .Cluster.ID | awsValidID }}-{{ .NodePool.Name }}"
+        - !ImportValue '{{ .Cluster.ID }}:worker-iam-role'
