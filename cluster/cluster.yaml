@@ -738,6 +738,7 @@ Resources:
               - 'kms:Delete*'
               - 'kms:ScheduleKeyDeletion'
               - 'kms:CancelKeyDeletion'
+              - 'tag:TagResources'
             Effect: Allow
             Principal:
               AWS: 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:root'
@@ -1925,6 +1926,7 @@ Resources:
                 - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/Shibboleth-Administrator"
             Action:
             - "kms:*"
+            - "tag:TagResources"
             Resource: "*"
           - Sid: "Enable master and worker nodes to decrypt the remote files"
             Effect: "Allow"
@@ -1958,7 +1960,9 @@ Resources:
             Effect: "Allow"
             Principal:
               AWS: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:role/Shibboleth-Administrator"
-            Action: "kms:*"
+            Action:
+            - "kms:*"
+            - "tag:TagResources"
             Resource: "*"
           - Sid: "Enable master nodes to encrypt and decrypt secrets in etcd"
             Effect: "Allow"
@@ -1995,6 +1999,7 @@ Resources:
                 - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/Shibboleth-Administrator"
             Action:
             - "kms:*"
+            - "tag:TagResources"
             Resource: "*"
           - Sid: "Enable master nodes to decrypt the remote files"
             Effect: "Allow"
@@ -2030,6 +2035,7 @@ Resources:
                 - "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/Shibboleth-Administrator"
             Action:
             - "kms:*"
+            - "tag:TagResources"
             Resource: "*"
           - Sid: "Enable worker nodes to decrypt the remote files"
             Effect: "Allow"
