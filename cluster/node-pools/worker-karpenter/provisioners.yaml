@@ -69,14 +69,13 @@ spec:
 
   # ttlSecondsAfterEmpty: 30
   providerRef:
-    name: {{ .NodePool.Name }}-provider
+    name: {{ .NodePool.Name }}-template
 ---
 apiVersion: karpenter.k8s.aws/v1alpha1
 kind: AWSNodeTemplate
 metadata:
   name: {{ .NodePool.Name }}-template
 spec:
-#    launchTemplate: "{{ .Cluster.ID | awsValidID }}-{{ .NodePool.Name }}"
     instanceProfile: {{ .Cluster.ID | awsValidID }}-{{ .NodePool.Name }}-InstanceProfile
     amiFamily: Ubuntu
     amiSelector:
@@ -86,9 +85,9 @@ spec:
       revision: master-238
     subnetSelector:
       Name: "dmz-eu-central-1*" # TODO: use a better tag
-    securityGroupSelector: # TODO: use better tags
-      aws:cloudformation:stack-name: {{.Cluster.Alias}}
-      aws:cloudformation:logical-id: WorkerSecurityGroup
+    securityGroupSelector:
+      karpener.sh/discovery: "WorkerNodeSecurityGroup"
+#      cluster: "{{.Cluster.ID}}"
     blockDeviceMappings:
       - deviceName: /dev/sda1
         ebs:
@@ -102,7 +101,7 @@ spec:
       --BOUNDARY
       Content-Type: text/yaml; charset="us-ascii"
 
-      {{.UserData}}
+      """{{.UserData}}"""
 
       --BOUNDARY--
     tags:

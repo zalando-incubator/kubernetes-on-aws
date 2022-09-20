@@ -301,6 +301,8 @@ Resources:
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
+        - Key: 'karpener.sh/discovery'
+          Value: 'WorkerNodeSecurityGroup'
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
   WorkerSecurityGroupIngressFromMasterToFlannel:
@@ -565,6 +567,7 @@ Resources:
                 - ec2:CreateFleet
                 - ec2:DescribeSpotPriceHistory
                 - pricing:GetProducts
+                - ec2:DescribeImages
                 Effect: Allow
                 Resource: "*"
                 Sid: Karpenter
