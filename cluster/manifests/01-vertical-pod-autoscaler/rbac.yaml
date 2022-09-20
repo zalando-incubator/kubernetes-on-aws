@@ -284,7 +284,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: system:admission-controller
+  name: system:vpa-admission-controller
   labels:
     application: kubernetes
     component: vpa-admission-controller
@@ -325,19 +325,56 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - "coordination.k8s.io"
+    resources:
+      - leases
+    verbs:
+      - create
+      - update
+      - get
+      - list
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: system:admission-controller
+  name: system:vpa-admission-controller
   labels:
     application: kubernetes
     component: vpa-admission-controller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: system:admission-controller
+  name: system:vpa-admission-controller
 subjects:
   - kind: ServiceAccount
     name: vpa-admission-controller
     namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:vpa-status-reader
+rules:
+  - apiGroups:
+      - "coordination.k8s.io"
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:vpa-status-reader-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:vpa-status-reader
+subjects:
+- kind: ServiceAccount
+  name: vpa-updater
+  namespace: kube-system
