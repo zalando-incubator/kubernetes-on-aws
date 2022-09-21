@@ -22,7 +22,11 @@ rules:
 - apiGroups: [""]
   resources: ["services", "endpoints", "pods", "nodes"]
   verbs: ["list"]
+{{- if eq .Cluster.ConfigItems.external_dns_version "current" }}
 - apiGroups: ["networking.k8s.io"]
+{{- else }}
+- apiGroups: ["extensions"]
+{{- end }}
   resources: ["ingresses"]
   verbs: ["list"]
 - apiGroups: ["zalando.org"]
