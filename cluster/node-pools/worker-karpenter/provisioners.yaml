@@ -76,49 +76,42 @@ kind: AWSNodeTemplate
 metadata:
   name: {{ .NodePool.Name }}-template
 spec:
-    instanceProfile: {{ .Cluster.ID | awsValidID }}-{{ .NodePool.Name }}-InstanceProfile
-    amiFamily: Ubuntu
-    amiSelector:
-      environment: production
-      purpose: zalando-ubuntu-kubernetes
-      version: v1.22.13
-      revision: master-238
-    subnetSelector:
-      Name: "dmz-eu-central-1*" # TODO: use a better tag
-    securityGroupSelector:
-      karpener.sh/discovery: "WorkerNodeSecurityGroup"
-#      cluster: "{{.Cluster.ID}}"
-    blockDeviceMappings:
-      - deviceName: /dev/sda1
-        ebs:
-          deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
-          volumeSize: {{ .NodePool.ConfigItems.ebs_root_volume_size }}G
-          volumeType: gp3
-    userData: |
-      MIME-Version: 1.0
-      Content-Type: multipart/mixed; boundary="BOUNDARY"
-
-      --BOUNDARY
-      Content-Type: text/yaml; charset="us-ascii"
-
-      """{{.UserData}}"""
-
-      --BOUNDARY--
-    tags:
-      InfrastructureComponent: "true"
-      # TODO: maybe use application label on dedicated node pools?
-      application: kubernetes
-      component: worker
-      environment: "{{ .Cluster.Environment }}"
-      Name: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
-      # TODO: are these tags still needed?
-      # Do we want a node pool tag for cost tracking reasons?
-      node.kubernetes.io/role: worker
-      node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
+  instanceProfile: {{ .Cluster.ID | awsValidID }}-{{ .NodePool.Name }}-InstanceProfile
+  amiFamily: Custom
+  amiSelector:
+    environment: production
+    purpose: zalando-ubuntu-kubernetes
+    version: v1.21.14
+    revision: master-236
+  metadataOptions:
+    httpTokens: optional
+  subnetSelector:
+    Name: "dmz-eu-central-1*" # TODO: use a better tag
+  securityGroupSelector:
+    karpener.sh/discovery: "WorkerNodeSecurityGroup"
+  blockDeviceMappings:
+    - deviceName: /dev/sda1
+      ebs:
+        deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
+        volumeSize: {{ .NodePool.ConfigItems.ebs_root_volume_size }}G
+        volumeType: gp3
+  userData: |
+{{.UserData | indent 4}}
+  tags:
+    InfrastructureComponent: "true"
+    # TODO: maybe use application label on dedicated node pools?
+    application: kubernetes
+    component: worker
+    environment: "{{ .Cluster.Environment }}"
+    Name: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
+    # TODO: are these tags still needed?
+    # Do we want a node pool tag for cost tracking reasons?
+    node.kubernetes.io/role: worker
+    node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
 # only node pools without taints should be attached to Ingress Load balancer
 {{- if or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
-      zalando.org/ingress-enabled: "true"
+    zalando.org/ingress-enabled: "true"
 {{- end }}
-      'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}': owned
-      zalando.org/pod-max-pids: "{{ .NodePool.ConfigItems.pod_max_pids }}"
+    'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}': owned
+    zalando.org/pod-max-pids: "{{ .NodePool.ConfigItems.pod_max_pids }}"
 {{- end }}

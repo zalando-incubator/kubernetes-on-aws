@@ -41,7 +41,7 @@ spec:
           image: "public.ecr.aws/karpenter/controller:v0.16.1@sha256:ed1f97bc2cd67e63b45546955cf763890182f1f97586fca5e6cbd25f175b9c56"
           env:
             - name: CLUSTER_NAME
-              value: {{ .Cluster.ID }}
+              value: {{ .Cluster.ID | awsValidID }}
             - name: CLUSTER_ENDPOINT
               value: "https://kubernetes.default.svc.cluster.local."
             - name: KARPENTER_SERVICE
@@ -77,7 +77,7 @@ spec:
           image: "public.ecr.aws/karpenter/webhook:v0.16.1@sha256:47860d69da18ada7567c6c6485ec8b79b270756fbf664f019d53a4375181fea7"
           env:
             - name: CLUSTER_NAME
-              value: {{ .Cluster.ID }}
+              value: {{ .Cluster.ID | awsValidID }}
             - name: KUBERNETES_MIN_VERSION
               value: "1.19.0-0"
             - name: CLUSTER_ENDPOINT
