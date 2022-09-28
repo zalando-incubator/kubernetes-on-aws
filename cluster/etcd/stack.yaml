@@ -101,6 +101,24 @@ Resources:
         - Key: certificate-expiry-node
           PropagateAtLaunch: true
           Value: {{certificateExpiry (base64Decode .Cluster.ConfigItems.etcd_client_server_cert)}}
+{{- if eq .Cluster.Environment "e2e" }}
+  ScheduledActionOut: 
+    Type: AWS::AutoScaling::ScheduledAction
+    Properties:
+      AutoScalingGroupName: !Ref AppServer
+      MinSize: {{.Cluster.ConfigItems.etcd_instance_count}}
+      MaxSize: {{.Cluster.ConfigItems.etcd_instance_count}}
+      Recurrence: "0 8 * * 1-5"
+      TimeZone: "Europe/Berlin"
+  ScheduledActionIn: 
+    Type: AWS::AutoScaling::ScheduledAction
+    Properties:
+      AutoScalingGroupName: !Ref AppServer
+      MaxSize: '0'
+      MinSize: '0'
+      Recurrence: "0 20 * * 1-5"
+      TimeZone: "Europe/Berlin"
+{{- end }}
   AutoScalingLifecycleHook:
     Type: "AWS::AutoScaling::LifecycleHook"
     Properties:
