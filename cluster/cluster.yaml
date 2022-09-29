@@ -3,6 +3,7 @@ Description: Kubernetes cluster
 Metadata:
   Tags:
     InfrastructureComponent: "true"
+    application: "kubernetes"
 Resources:
 {{ if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
   EtcdClusterSecurityGroupIngressFromMaster:
@@ -68,8 +69,6 @@ Resources:
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
-        - Key: "application"
-          Value: kube-apiserver
         - Key: "component"
           Value: "kube-apiserver"
       Type: network
@@ -88,8 +87,6 @@ Resources:
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
-        - Key: "application"
-          Value: kube-apiserver
         - Key: "component"
           Value: "kube-apiserver"
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
@@ -776,7 +773,7 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
       Tags:
-        - Key: application
+        - Key: component
           Value: deployment-service
       OwnershipControls:
         Rules:
@@ -1740,10 +1737,8 @@ Resources:
       VersioningConfiguration:
         Status: Suspended
       Tags:
-      - Key: application
-        Value: audittrail-adapter
       - Key: component
-        Value: resend
+        Value: audittrail-adapter
   AuditTrailBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
