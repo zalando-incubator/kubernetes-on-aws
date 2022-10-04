@@ -9,7 +9,11 @@ spec:
   weight: {{.NodePool.ConfigItems.scaling_priority}}
   {{- end}}
   consolidation:
+    {{- if index .NodePool.ConfigItems "consolidation" }}
+    enabled: {{ or .NodePool.ConfigItems.consolidation true }}
+    {{- else }}
     enabled: true
+    {{- end }}
   requirements:
     - key: "node.kubernetes.io/instance-type"
       operator: In
@@ -19,7 +23,11 @@ spec:
 {{- end }}
     - key: karpenter.sh/capacity-type
       operator: In
-      values: [{{if .NodePool.IsSpot}}"spot"{{else}}"on-demand"{{end}}]
+      values:
+{{if .NodePool.IsSpot}}
+        - "spot"
+{{end}}
+        - "on-demand"
     - key: "kubernetes.io/arch"
       operator: In
       values: ["arm64", "amd64"]

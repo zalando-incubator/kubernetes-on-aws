@@ -9,6 +9,9 @@ metadata:
     component: karpenter
 spec:
   replicas: 2
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1
   selector:
     matchLabels:
       deployment: karpenter
@@ -50,6 +53,12 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: MEMORY_LIMIT
+              valueFrom:
+                resourceFieldRef:
+                  containerName: controller
+                  divisor: "0"
+                  resource: limits.memory
           ports:
             - name: http-metrics
               containerPort: 8080
@@ -88,6 +97,12 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: MEMORY_LIMIT
+              valueFrom:
+                resourceFieldRef:
+                  containerName: webhook
+                  divisor: "0"
+                  resource: limits.memory
           args:
             - -port=8443
           ports:
