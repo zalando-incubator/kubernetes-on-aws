@@ -44,11 +44,6 @@ pre_apply:
   kind: ClusterRole
 - name: system:admission-controller
   kind: ClusterRoleBinding
-{{- if eq .ConfigItems.prometheus_remote_write "disabled" }}
-- name: prometheus-credentials
-  kind: PlatformCredentialsSet
-  namespace: kube-system
-{{- end }}
 # everything defined under here will be deleted after applying the manifests
 post_apply:
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
@@ -126,3 +121,8 @@ post_apply:
   namespace: kube-system
   kind: HorizontalPodAutoscaler
 {{ end }}
+{{- if eq .ConfigItems.prometheus_remote_write "disabled" }}
+- name: prometheus-credentials
+  kind: PlatformCredentialsSet
+  namespace: kube-system
+{{- end }}
