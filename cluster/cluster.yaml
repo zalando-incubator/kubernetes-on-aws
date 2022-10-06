@@ -582,6 +582,13 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-karpenter"
     Type: 'AWS::IAM::Role'
+  KarpenterNodeInstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      InstanceProfileName: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
+      Path: "/"
+      Roles:
+        - !Ref WorkerIAMRole
 {{- end }}
   DeploymentIAMPolicy:
     Type: AWS::IAM::ManagedPolicy
