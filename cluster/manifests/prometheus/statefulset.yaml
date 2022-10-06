@@ -6,7 +6,7 @@ metadata:
   labels:
     application: kubernetes
     component: prometheus
-    version: v2.37.1
+    version: v2.39.0
 {{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
   name: prometheus
 {{- else }}
@@ -26,7 +26,7 @@ spec:
         statefulset: prometheus
         application: kubernetes
         component: prometheus
-        version: v2.37.1
+        version: v2.39.0
       annotations:
         config/hash: {{"configmap.yaml" | manifestHash}}
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
@@ -63,7 +63,7 @@ spec:
           mountPath: /prometheus
       containers:
       - name: prometheus
-        image: container-registry.zalando.net/teapot/prometheus:v2.37.1-master-39
+        image: container-registry.zalando.net/teapot/prometheus:v2.39.0-master-40
         args:
         - "--config.file=/prometheus/prometheus.yaml"
         - "--storage.tsdb.path=/prometheus/"
