@@ -114,7 +114,11 @@ spec:
 {{ end }}
 {{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"{{ .Cluster.ConfigItems.cluster_cidr }}\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+{{ if or (eq .Cluster.ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage1") (eq .Cluster.ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage2") }}
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+{{ else }}
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+{{ end }}
 {{ end }}
           - "-proxy-preserve-host"
           - "-compress-encodings={{ .ConfigItems.skipper_compress_encodings }}"
@@ -225,7 +229,11 @@ spec:
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
-          - "-forwarded-headers-exclude-cidrs={{ .Cluster.ConfigItems.cluster_cidr }},{{ .Values.vpc_ipv4_cidr}}"
+{{ if or (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage1") (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage2") }}
+          - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
+{{ else }}
+          - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
+{{ end }}
 {{ end }}
 {{ if ne .ConfigItems.skipper_ingress_inline_routes "" }}
           - "-inline-routes={{ .ConfigItems.skipper_ingress_inline_routes }}"
@@ -411,7 +419,11 @@ spec:
           - "-kubernetes-east-west-domain=.ingress.cluster.local"
 {{ end }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"{{ .Cluster.ConfigItems.cluster_cidr }}\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+{{ if or (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage1") (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage2") }}
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+{{ else }}
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/16\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+{{ end }}
           - "-reverse-source-predicate"
           - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
@@ -420,7 +432,11 @@ spec:
           - "-default-filters-dir=/etc/config/default-filters"
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
-          - "-forwarded-headers-exclude-cidrs={{ .Cluster.ConfigItems.cluster_cidr }},{{ .Values.vpc_ipv4_cidr}}"
+{{ if or (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage1") (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage2") }}
+          - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
+{{ else }}
+          - "-forwarded-headers-exclude-cidrs=10.2.0.0/16,{{ .Values.vpc_ipv4_cidr}}"
+{{ end }}
 {{ end }}
         resources:
           limits:
