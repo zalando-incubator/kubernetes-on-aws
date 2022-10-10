@@ -102,6 +102,18 @@ post_apply:
   namespace: kube-system
   kind: VerticalPodAutoscaler
 {{ end }}
+{{ if ne .ConfigItems.spot_node_rescheduler "true" }}
+- name: spot-node-rescheduler
+  namespace: kube-system
+  kind: CronJob
+- name: spot-node-rescheduler
+  namespace: kube-system
+  kind: ServiceAccount
+- name: spot-node-rescheduler
+  kind: ClusterRole
+- name: spot-node-rescheduler
+  kind: ClusterRoleBinding
+{{ end }}
 - labels:
     application: external-dns
   namespace: kube-system
