@@ -1,4 +1,4 @@
-{{ if karpenterNodePools .Cluster.NodePools }}
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,9 +36,6 @@ spec:
       - key: node.kubernetes.io/role
         value: master
         effect: NoSchedule
-      # TODO: should or can run on master?
-      # nodeSelector:
-      #   node.kubernetes.io/role: master
       containers:
         - name: controller
           image: "public.ecr.aws/karpenter/controller:v0.16.1@sha256:ed1f97bc2cd67e63b45546955cf763890182f1f97586fca5e6cbd25f175b9c56"

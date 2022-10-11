@@ -532,7 +532,7 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-autoscaler"
     Type: 'AWS::IAM::Role'
-{{- if karpenterNodePools .Cluster.NodePools }}
+{{- if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
   KarpenterIAMRole:
     Properties:
       AssumeRolePolicyDocument:

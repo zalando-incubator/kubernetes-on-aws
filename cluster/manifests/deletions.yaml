@@ -123,7 +123,7 @@ post_apply:
   kind: HorizontalPodAutoscaler
 {{ end }}
 
-{{ if not (karpenterNodePools .Cluster.NodePools) }}
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "false" }}
 - name: karpenter
   namespace: kube-system
   kind: Deployment
