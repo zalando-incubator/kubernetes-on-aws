@@ -1,4 +1,4 @@
-{{- if eq .NodePool.Profile "worker-karpenter" }}
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
 ---
 apiVersion: karpenter.sh/v1alpha5
 kind: Provisioner
@@ -87,6 +87,7 @@ spec:
   instanceProfile: {{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile
   amiFamily: Custom
   amiSelector:
+#    name: kuburuntu-v1.21.14-master-236
     environment: production
     purpose: zalando-ubuntu-kubernetes
     version: v1.21.14
