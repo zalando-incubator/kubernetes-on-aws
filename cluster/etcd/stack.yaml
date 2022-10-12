@@ -4,6 +4,8 @@ Metadata:
   Tags:
     InfrastructureComponent: "true"
     "kubernetes:component": "etcd-cluster"
+    application: "kubernetes"
+    component: "etcd-cluster"
 Outputs:
   EtcdClusterSecurityGroupId:
     Description: "Security Group ID of the etcd cluster"
@@ -102,7 +104,7 @@ Resources:
           PropagateAtLaunch: true
           Value: {{certificateExpiry (base64Decode .Cluster.ConfigItems.etcd_client_server_cert)}}
 {{- if eq .Cluster.Environment "e2e" }}
-  ScheduledActionOut: 
+  ScheduledActionOut:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref AppServer
@@ -110,7 +112,7 @@ Resources:
       MaxSize: {{.Cluster.ConfigItems.etcd_instance_count}}
       Recurrence: "0 8 * * 1-5"
       TimeZone: "Europe/Berlin"
-  ScheduledActionIn: 
+  ScheduledActionIn:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref AppServer
@@ -178,7 +180,7 @@ Resources:
         Rules:
           - AbortIncompleteMultipartUpload:
               DaysAfterInitiation: 1
-            ExpirationInDays: 2
+            ExpirationInDays: 1
             NoncurrentVersionExpirationInDays: 1
             Prefix: ""
             Status: Enabled

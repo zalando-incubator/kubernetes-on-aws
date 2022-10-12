@@ -7,7 +7,7 @@ cluster_autoscaler_cpu: "100m"
 cluster_autoscaler_memory: "300Mi"
 autoscaling_utilization_threshold: "1.0"
 autoscaling_max_empty_bulk_delete: "10"
-autoscaling_scale_down_unneeded_time: "10m"
+autoscaling_scale_down_unneeded_time: "2m"
 autoscaling_unremovable_node_recheck_timeout: "5m"
 
 # How long to wait for pod eviction when scaling down.
@@ -195,8 +195,6 @@ zmon_kairosdb_url: "https://data-service.zmon.zalan.do/kairosdb-proxy"
 enable_skipper_eastwest_dns: "true"
 enable_skipper_eastwest: "false"
 
-# Configure skipper-internal ClusterIP to Coredns query
-skipper_internal_cluster_ip: "10.5.99.99"
 
 # enable temporay logging of ingress.cluster.local names
 # used to find services for which it's being used.
@@ -553,11 +551,6 @@ coredns_log_forward: "false"
 # clusters and prevent CoreDNS from running out of memory in case of spikes.
 coredns_max_upstream_concurrency: 2000 # 0 means there is no concurrency limits
 
-# Coredns clusterIP.
-coredns_cluster_ip_1: 10.5.0.11
-# Coredns reverse lookup of kubernetes addresses
-coredns_cluster_cidr_local_zone: "2.10.in-addr.arpa."
-coredns_service_cluster_local_zone: "5.10.in-addr.arpa."
 
 tracing_coredns_route_traces_to_local_zone: "false"
 tracing_coredns_global_traces_endpoint: ""
@@ -580,12 +573,17 @@ audittrail_url: ""
 {{end}}
 audittrail_root_account_role: ""
 
-# A CIDR notation IP range from which to assign service cluster IPs.
-# This must not overlap with any IP ranges assigned to nodes or pods.
-service_cluster_ip_range: "10.5.0.0/16"
+# The enable_node_scale_out_beyond_1k_nodes is feature toogle to change
+# the default cluster_cidr from 10.2.0.0/16 to 10.2.0.0/15, this change
+# enables the kubernetes cluster to scale out beyond 1000 nodes.
+#
+# Set `enable_node_scale_out_beyond_1k_nodes: "stage1"` to apply the cluster_cidr
+# change first in the components flannel, coredns, and skipper.
+#
+# Set `enable_node_scale_out_beyond_1k_nodes: "stage2"` to apply the cluster_cidr
+# change on the kube-controller-manager,
+enable_node_scale_out_beyond_1k_nodes: ""
 
-# CIDR Range for Pods in cluster
-cluster_cidr: "10.2.0.0/16"
 
 # CIDR configuration for nodes and pods
 # Changing this will change the number of nodes and pods we can schedule in the
@@ -629,7 +627,7 @@ kubernetes_controller_manager_image: "zalando"
 # when set to true, service account tokens can be used from outside the cluster
 allow_external_service_accounts: "false"
 # issue service account tokens with expiration time.
-rotate_service_account_tokens: "false"
+rotate_service_account_tokens: "true"
 # issue tokens with a long expiration time in order to detect applications that don't refresh tokens.
 rotate_service_account_tokens_extended_expiration: "true"
 

@@ -6,10 +6,10 @@ metadata:
   labels:
     application: kubernetes
     component: flannel
-    version: v0.18.1
+    version: v0.19.2
 spec:
   updateStrategy:
-    type: OnDelete
+    type: RollingUpdate
   selector:
     matchLabels:
       daemonset: kube-flannel
@@ -19,9 +19,10 @@ spec:
         daemonset: kube-flannel
         application: kubernetes
         component: flannel
-        version: v0.18.1
+        version: v0.19.2
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        config/hash: {{"configmap.yaml" | manifestHash}}
     spec:
       priorityClassName: system-node-critical
       serviceAccountName: flannel
@@ -61,7 +62,7 @@ spec:
             cpu: 25m
             memory: 50Mi
       - name: kube-flannel
-        image: container-registry.zalando.net/teapot/flannel:v0.18.1-master-9
+        image: container-registry.zalando.net/teapot/flannel:v0.19.2-master-11
         command:
         - /opt/bin/flanneld
         args:
