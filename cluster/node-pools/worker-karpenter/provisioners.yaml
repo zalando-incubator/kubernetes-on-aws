@@ -10,7 +10,7 @@ spec:
   {{- end}}
   consolidation:
     {{- if index .NodePool.ConfigItems "consolidation" }}
-    enabled: {{ or .NodePool.ConfigItems.consolidation true }}
+    enabled: {{ .NodePool.ConfigItems.consolidation }}
     {{- else }}
     enabled: true
     {{- end }}
@@ -32,7 +32,6 @@ spec:
     - key: "topology.kubernetes.io/zone"
       operator: In
       values:
-# TODO: handle per node pool availability zone limits
 {{- $azs := .Values.availability_zones }}
 {{- if index .NodePool.ConfigItems "availability_zones"}}
         {{    $azs = split .NodePool.ConfigItems.availability_zones "," }}
@@ -85,17 +84,13 @@ spec:
   instanceProfile: {{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile
   amiFamily: Custom
   amiSelector:
-#    name: kuburuntu-v1.21.14-master-236
-    environment: production
-    purpose: zalando-ubuntu-kubernetes
-    version: v1.21.14
-    revision: master-236
+    karpenter.sh/discovery: {{ .Cluster.ConfigItems.kuberuntu_image_karpenter_label  }}
   metadataOptions:
     httpTokens: optional
   subnetSelector:
     Name: "dmz-eu-central-1*" # TODO: use a better tag
   securityGroupSelector:
-    karpenter.sh/discovery: "WorkerNodeSecurityGroup"
+    karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
   blockDeviceMappings:
     - deviceName: /dev/sda1
       ebs:
@@ -115,8 +110,10 @@ spec:
     # Do we want a node pool tag for cost tracking reasons?
     node.kubernetes.io/role: worker
     node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
+{{- if and (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true") (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
+    zalando.org/ingress-enabled: "true"
 # only node pools without taints should be attached to Ingress Load balancer
-{{- if or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
+{{- else if and (not (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true")) (or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule")) }}
     zalando.org/ingress-enabled: "true"
 {{- end }}
     'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}': owned
