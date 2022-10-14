@@ -271,10 +271,13 @@ spec:
                   properties:
                     host:
                       description: This is the public host name for the service
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                       type: string
                     serviceName:
                       description: This is the name of the K8s service which Skipper
-                        should target when forwarding requests
+                        should target when forwarding requests. Name should comply
+                        to RFC 1035, see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
+                      pattern: ^[a-z][-a-z0-9]{0,61}[a-z0-9]$
                       type: string
                     servicePort:
                       description: The port to use for the service. Must be the name
