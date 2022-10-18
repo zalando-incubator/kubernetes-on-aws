@@ -434,6 +434,11 @@ spec:
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
           - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
           - "-default-filters-dir=/etc/config/default-filters"
+          - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
+{{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
+          - "-enable-oauth2-grant-flow"
+          - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
+{{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
 {{ if or (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage1") (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage2") }}
