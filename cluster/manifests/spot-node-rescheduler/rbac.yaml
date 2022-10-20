@@ -1,0 +1,33 @@
+{{ if eq .ConfigItems.spot_node_rescheduler "true" }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spot-node-rescheduler
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: spot-node-rescheduler
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["list"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["list", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: spot-node-rescheduler
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: spot-node-rescheduler
+subjects:
+- kind: ServiceAccount
+  name: spot-node-rescheduler
+  namespace: kube-system
+{{ end }}
