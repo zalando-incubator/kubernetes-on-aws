@@ -1,0 +1,62 @@
+---
+# Source: kubenurse/templates/daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    application: kubernetes
+    component: kubenurse
+  name: kubenurse
+  namespace: kubenurse
+spec:
+  selector:
+    matchLabels:
+      application: kubernetes
+      component: kubenurse
+  template:
+    metadata:
+      labels:
+        application: kubernetes
+        component: kubenurse
+      annotations:
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8080"
+        prometheus.io/scheme: "http"
+        prometheus.io/scrape: "true"
+    spec:
+      serviceAccountName: "kubenurse"
+      containers:
+        - name: "kubenurse"
+          env:
+            - name: KUBENURSE_INGRESS_URL
+              value: https://kubenurse.{{ .Values.hosted_zone }}
+            - name: KUBENURSE_SERVICE_URL
+              value: "http://kubenurse.kubenurse.svc.cluster.local:8080"
+            - name: KUBENURSE_INSECURE
+              value: "true"
+            - name: KUBENURSE_ALLOW_UNSCHEDULABLE
+              value: "false"
+            - name: KUBENURSE_NAMESPACE
+              value: kubenurse
+            - name: KUBENURSE_NEIGHBOUR_FILTER
+              value: "application=kubernetes,component=kubenurse"
+          image: "postfinance/kubenurse:v1.6.0"
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 1
+            httpGet:
+              path: /ready
+              port: 8080
+              scheme: HTTP
+            periodSeconds: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+      tolerations:
+        - effect: NoSchedule
+          key: node.kubernetes.io/role
+          value: master
+        - effect: NoSchedule
+          key: dedicated
+          value: skipper-ingress

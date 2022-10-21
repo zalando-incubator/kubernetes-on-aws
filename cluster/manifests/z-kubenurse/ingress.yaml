@@ -1,0 +1,22 @@
+---
+# Source: kubenurse/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    application: kubernetes
+    component: kubenurse
+  name: "kubenurse"
+  namespace: kubenurse
+spec:
+  rules:
+    - host: "kubenurse.{{ .Values.hosted_zone }}"
+      http:
+        paths:
+          - backend:
+              service:
+                name: "kubenurse"
+                port:
+                  name: http
+            pathType: ImplementationSpecific
+
