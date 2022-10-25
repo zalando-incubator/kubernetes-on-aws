@@ -103,6 +103,15 @@ Resources:
         - Key: certificate-expiry-node
           PropagateAtLaunch: true
           Value: {{certificateExpiry (base64Decode .Cluster.ConfigItems.etcd_client_server_cert)}}
+        - Key: InfrastructureComponent
+          PropagateAtLaunch: true
+          Value: true
+        - Key: application
+          PropagateAtLaunch: true
+          Value: kubernetes
+        - Key: component
+          PropagateAtLaunch: true
+          Value: etcd-cluster
 {{- if eq .Cluster.Environment "e2e" }}
   ScheduledActionOut:
     Type: AWS::AutoScaling::ScheduledAction
