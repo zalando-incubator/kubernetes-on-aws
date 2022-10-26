@@ -102,6 +102,9 @@ post_apply:
   kind: VerticalPodAutoscaler
 {{ end }}
 {{ if ne .ConfigItems.spot_node_rescheduler "true" }}
+- name: node-spot-rescheduler
+  namespace: kube-system
+  kind: CronJob
 - name: spot-node-rescheduler
   namespace: kube-system
   kind: CronJob
