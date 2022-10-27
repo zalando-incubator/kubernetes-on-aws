@@ -1,3 +1,4 @@
+{{if eq .Cluster.ConfigItems.network_monitoring_enabled "true" }}
 ---
 # Source: kubenurse/templates/daemonset.yaml
 apiVersion: apps/v1
@@ -34,13 +35,25 @@ spec:
               value: "http://kubenurse.kubenurse.svc.cluster.local:8080"
             - name: KUBENURSE_INSECURE
               value: "true"
-            - name: KUBENURSE_ALLOW_UNSCHEDULABLE
-              value: "true"
             - name: KUBENURSE_NAMESPACE
               value: kubenurse
             - name: KUBENURSE_NEIGHBOUR_FILTER
               value: "application=kubernetes,component=kubenurse"
-          image: "postfinance/kubenurse:v1.6.0"
+            - name: KUBENURSE_ALLOW_UNSCHEDULABLE
+              value: {{.Cluster.ConfigItems.network_monitoring_check_unschedulable_nodes}}
+            - name: KUBENURSE_CHECK_INTERVAL
+              value: {{.Cluster.ConfigItems.network_monitoring_check_interval}}
+            - name: KUBENURSE_CHECK_API_SERVER_DIRECT
+              value: {{.Cluster.ConfigItems.network_monitoring_check_api_server_direct}}
+            - name: KUBENURSE_CHECK_API_SERVER_DNS
+              value: {{.Cluster.ConfigItems.network_monitoring_check_api_server_dns}}
+            - name: KUBENURSE_CHECK_ME_SERVICE
+              value: {{.Cluster.ConfigItems.network_monitoring_check_kubenurse_service}}
+            - name: KUBENURSE_CHECK_ME_INGRESS
+              value: {{.Cluster.ConfigItems.network_monitoring_check_kubenurse_ingress}}
+            - name: KUBENURSE_CHECK_NEIGHBOURHOOD
+              value: {{.Cluster.ConfigItems.network_monitoring_check_neighborhood}}
+          image: "postfinance/kubenurse:latest"
           ports:
             - containerPort: 8080
               protocol: TCP
@@ -60,3 +73,4 @@ spec:
         - effect: NoSchedule
           key: dedicated
           value: skipper-ingress
+  {{end}}

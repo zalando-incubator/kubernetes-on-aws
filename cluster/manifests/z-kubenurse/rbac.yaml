@@ -1,3 +1,5 @@
+{{ if eq .Cluster.ConfigItems.network_monitoring_enabled "true" }}
+{{ if eq .Cluster.ConfigItems.network_monitoring_check_unschedulable_nodes "false" }}
 ---
 # Source: kubenurse/templates/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -27,6 +29,7 @@ subjects:
 - kind: ServiceAccount
   name: "kubenurse"
   namespace: kubenurse
+{{end}}
 ---
 # Source: kubenurse/templates/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -58,3 +61,4 @@ subjects:
 - kind: ServiceAccount
   name: "kubenurse"
   namespace: kubenurse
+{{end}}
