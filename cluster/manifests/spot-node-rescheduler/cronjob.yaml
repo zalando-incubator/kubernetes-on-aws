@@ -2,11 +2,11 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: node-spot-rescheduler
+  name: spot-node-rescheduler
   namespace: kube-system
   labels:
     application: kubernetes
-    component: node-spot-rescheduler
+    component: spot-node-rescheduler
 spec:
   schedule: "*/5 * * * *"
   concurrencyPolicy: Forbid
@@ -18,12 +18,12 @@ spec:
         metadata:
           labels:
             application: kubernetes
-            component: node-spot-rescheduler
+            component: spot-node-rescheduler
         spec:
-          serviceAccountName: node-spot-rescheduler
+          serviceAccountName: spot-node-rescheduler
           restartPolicy: Never
           containers:
-          - name: node-spot-rescheduler
+          - name: spot-node-rescheduler
             image: container-registry.zalando.net/teapot/spot-node-rescheduler:main-1
             resources:
               limits:

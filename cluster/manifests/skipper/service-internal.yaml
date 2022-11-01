@@ -13,6 +13,11 @@ spec:
     - port: 80
       targetPort: 9999
       protocol: TCP
+{{if eq .Cluster.ConfigItems.skipper_ingress_eastwest_additional_port "true"}}
+    - port: 8080
+      targetPort: 9999
+      protocol: TCP
+{{end}}
   selector:
     application: skipper-ingress
     component: ingress
