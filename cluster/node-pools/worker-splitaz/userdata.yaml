@@ -8,7 +8,7 @@ write_files:
     path: /etc/kubernetes/secrets.env
     content: |
       NODEPOOL_TAINTS={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}}
-      NODE_LABELS={{ .Values.node_labels }},node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
+      NODE_LABELS={{ .Values.node_labels }},node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}{{if or (eq .NodePool.Profile "worker-splitaz") (eq .NodePool.Profile "worker-combined")}},asg-lifecycle-hook=true{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=worker
       ON_DEMAND_WORKER_REPLACEMENT_STRATEGY={{ .Cluster.ConfigItems.on_demand_worker_replacement_strategy }}
