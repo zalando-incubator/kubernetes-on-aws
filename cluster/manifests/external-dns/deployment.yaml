@@ -50,7 +50,11 @@ spec:
         - --registry=txt
         - --txt-owner-id={{ .Region }}:{{ .LocalID }}
         - --txt-prefix={{ .ConfigItems.external_dns_ownership_prefix }}
-        - --aws-batch-change-size=100
+        {{- if eq .Cluster.ConfigItems.external_dns_version "current" }}
+        - --aws-batch-change-size=3
+        {{- else }}
+        - --aws-batch-change-size=2
+        {{- end }}
         - --annotation-filter=external-dns.alpha.kubernetes.io/exclude notin (true)
         - --policy={{ .ConfigItems.external_dns_policy }}
         resources:
