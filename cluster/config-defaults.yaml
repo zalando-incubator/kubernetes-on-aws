@@ -165,7 +165,7 @@ skipper_routesrv_replicas: 3
 skipper_routesrv_cpu: "1000m"
 skipper_routesrv_memory: "1Gi"
 {{else}}
-skipper_routesrv_enabled: "false"
+skipper_routesrv_enabled: "pre"
 skipper_routesrv_replicas: 3
 skipper_routesrv_cpu: "100m"
 skipper_routesrv_memory: "1Gi"
@@ -193,6 +193,9 @@ enable_skipper_eastwest: "false"
 # enable temporay logging of ingress.cluster.local names
 # used to find services for which it's being used.
 skipper_eastwest_dns_log_enabled: "false"
+
+# if enabled adds port 8080 as svc port to eastwest svc
+skipper_ingress_eastwest_additional_port: "false"
 
 # skipper tcp lifo
 # See: https://opensource.zalando.com/skipper/operation/operation/#tcp-lifo
@@ -275,8 +278,8 @@ skipper_cluster_scaling_schedules: ""
 #   - production: adds "True() && True()" predicates to routes, updates FabricGateway status
 #
 fabric_gateway_controller_mode: "disabled"
-fabric_gateway_controller_cpu: "100m"
-fabric_gateway_controller_memory: "1Gi"
+fabric_gateway_controller_cpu: "50m"
+fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_crd_v1_enabled: "false"
 
 # kube-api-server settings
