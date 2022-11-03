@@ -639,13 +639,17 @@ rotate_service_account_tokens: "true"
 # issue tokens with a long expiration time in order to detect applications that don't refresh tokens.
 rotate_service_account_tokens_extended_expiration: "true"
 
-# enable auditlogging for read access such that we can identified clients using
-# the default service account to read from the API server.
+# enable auditlogging metrics such that we can identify clients calling the
+# apiserver.
 {{ if eq .Cluster.Environment "test" }}
-auditlog_read_access: "true"
+auditlog_metrics: "true"
 {{ else }}
-auditlog_read_access: "false"
+auditlog_metrics: "false"
 {{ end }}
+
+# enable auditlogging of read access to identify service accounts reading from
+# the api. This only has effect if auditlog_metrics=true.
+auditlog_read_access: "true"
 
 # allow ssh access for internal VPC IPs only
 ssh_vpc_only: "false"
