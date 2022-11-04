@@ -127,6 +127,11 @@ data:
     - <<: *apiserver_container_metric
       job_name: "aws-encryption-provider"
       metrics_path: "/aws-encryption-provider"
+{{- if eq .Cluster.ConfigItems.auditlog_metrics "true" }}
+    - <<: *apiserver_container_metric
+      job_name: "audit-metrics"
+      metrics_path: "/audit-metrics"
+{{- end }}
     - job_name: 'kube-state-metrics'
       scheme: http
       honor_labels: true
