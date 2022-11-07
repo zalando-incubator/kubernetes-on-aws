@@ -557,8 +557,9 @@ write_files:
 {{- if eq .Cluster.ConfigItems.auditlog_metrics "true" }}
         - name: k8s-audit-metrics
           image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-audit-metrics:main-2
+          command: ["/bin/sh", "-c"]
           args:
-          - /var/log/kube-audit.log
+          - "touch /var/log/kube-audit.log && exec /k8s-audit-metrics /var/log/kube-audit.log"
           ports:
           - containerPort: 8087
             protocol: TCP
