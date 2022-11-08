@@ -28,6 +28,9 @@ spec:
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+        zalando.org/topology-spread-timeout: 7m
+{{- end }}
     spec:
 {{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:
