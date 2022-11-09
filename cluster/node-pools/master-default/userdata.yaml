@@ -146,24 +146,22 @@ write_files:
           - --service-account-issuer={{ .Cluster.APIServerURL }}
           - --service-account-jwks-uri={{ .Cluster.APIServerURL }}/openid/v1/jwks
           - --service-account-extend-token-expiration={{ .Cluster.ConfigItems.rotate_service_account_tokens_extended_expiration }}
+          - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
           {{ if and (ne .Cluster.ConfigItems.audittrail_url "") (ne .Cluster.Environment "e2e") }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
           - --audit-webhook-version=audit.k8s.io/v1
-          - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
           {{ end }}
           {{ if eq .Cluster.Environment "e2e" }}
           - --audit-log-path=/var/log/kube-audit.log
           - --audit-log-maxage=0
           - --audit-log-maxbackup=0
           - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
-          {{ else if and (eq .Cluster.ConfigItems.enable_default_sa "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
-          - --audit-log-path=/dev/stdout
+          {{ else if eq .Cluster.ConfigItems.auditlog_metrics "true" }}
+          - --audit-log-path=/var/log/kube-audit.log
           - --audit-log-maxage=0
-          - --audit-log-maxbackup=0
-          {{ if eq .Cluster.ConfigItems.audittrail_url "" }}
-          - --audit-policy-file=/etc/kubernetes/config/audit-policy-ro.yaml
-          {{ end }}
+          - --audit-log-maxbackup=1 # Limit number of rotated audit files to 1
+          - --audit-log-maxsize=100 # Limit file size to 100Mi
           {{ end }}
           # enable aggregated apiservers
           - --client-ca-file=/etc/kubernetes/ssl/ca.pem
@@ -201,6 +199,8 @@ write_files:
             readOnly: true
           - mountPath: /var/run/kmsplugin
             name: var-run-kmsplugin
+          - mountPath: /var/log
+            name: var-log
           resources:
             requests:
               cpu: 100m
@@ -275,7 +275,7 @@ write_files:
               name: ssl-certs-kubernetes
               readOnly: true
 {{- end}}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-120
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-122
           name: webhook
           ports:
           - containerPort: 8081
@@ -494,6 +494,12 @@ write_files:
               -> disableAccessLog()
               -> setPath("/metrics")
               -> "http://localhost:8086";
+{{- if eq .Cluster.ConfigItems.auditlog_metrics "true" }}
+            audit_metrics: Path("/audit-metrics")
+              -> disableAccessLog()
+              -> setPath("/metrics")
+              -> "http://localhost:8087";
+{{- end }}
             skipper_proxy: Path("/skipper-proxy")
               -> disableAccessLog()
               -> setPath("/metrics")
@@ -548,6 +554,31 @@ write_files:
           volumeMounts:
           - mountPath: /var/run/kmsplugin
             name: var-run-kmsplugin
+{{- if eq .Cluster.ConfigItems.auditlog_metrics "true" }}
+        - name: k8s-audit-metrics
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-audit-metrics:main-2
+          command: ["/bin/sh", "-c"]
+          args:
+          - "touch /var/log/kube-audit.log && exec /k8s-audit-metrics /var/log/kube-audit.log"
+          ports:
+          - containerPort: 8087
+            protocol: TCP
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c",  " sleep 60"]
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8087
+          resources:
+            requests:
+              cpu: 50m
+              memory: 50Mi
+          volumeMounts:
+          - mountPath: /var/log
+            name: var-log
+{{- end }}
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
@@ -563,6 +594,9 @@ write_files:
             path: /etc/kubernetes/admission-controller-kubeconfig
             type: File
           name: admission-controller-kubeconfig
+        - hostPath:
+            path: /var/log
+          name: var-log
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-controller-manager.yaml
@@ -814,7 +848,7 @@ write_files:
               resources: ["tokenreviews"]
           omitStages:
             - "RequestReceived"
-{{ if and (eq .Cluster.ConfigItems.enable_default_sa "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
+{{ if and (eq .Cluster.ConfigItems.auditlog_metrics "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
         - level: None
           verbs: ["watch", "list", "get"]
           userGroups: ["system:serviceaccounts:kube-system"]
@@ -831,22 +865,6 @@ write_files:
         - level: Request
           omitStages:
             - "RequestReceived"
-
-{{ if and (eq .Cluster.ConfigItems.enable_default_sa "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
-  - owner: root:root
-    path: /etc/kubernetes/config/audit-policy-ro.yaml
-    content: |
-      apiVersion: audit.k8s.io/v1beta1
-      kind: Policy
-      rules:
-      - level: None
-        userGroups: ["system:serviceaccounts:kube-system"]
-      - level: Request
-        verbs: ["watch", "list", "get"]
-        userGroups: ["system:serviceaccounts"]
-        omitStages:
-        - "RequestReceived"
-{{ end }}
 
   - owner: root:root
     path: /etc/kubernetes/config/encryption-config.yaml

@@ -1,0 +1,76 @@
+{{ if eq .Cluster.ConfigItems.network_monitoring_enabled "true" }}
+{{ if eq .Cluster.ConfigItems.network_monitoring_check_unschedulable_nodes "false" }}
+---
+# Source: kubenurse/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: "kubenurse"
+  labels:
+    application: kubernetes
+    component: kubenurse
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - list
+  - get
+  - watch
+---
+# Source: kubenurse/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: "kubenurse"
+  labels:
+    application: kubernetes
+    component: kubenurse
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: "kubenurse"
+subjects:
+- kind: ServiceAccount
+  name: "kubenurse"
+  namespace: kubenurse
+{{end}}
+---
+# Source: kubenurse/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: "kubenurse"
+  namespace: kubenurse
+  labels:
+    application: kubernetes
+    component: kubenurse
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: kubenurse/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: "kubenurse"
+  namespace: kubenurse
+  labels:
+    application: kubernetes
+    component: kubenurse
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: "kubenurse"
+subjects:
+- kind: ServiceAccount
+  name: "kubenurse"
+  namespace: kubenurse
+{{end}}

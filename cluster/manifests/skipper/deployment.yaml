@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.13.258-318" }}
+{{ $internal_version := "v0.14.5-334" }}
 {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
@@ -33,6 +33,9 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "9911"
         prometheus.io/scrape: "true"
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+        zalando.org/topology-spread-timeout: 7m
+{{- end }}
     spec:
 {{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:
@@ -388,6 +391,9 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "9990"
         prometheus.io/scrape: "true"
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+        zalando.org/topology-spread-timeout: 7m
+{{- end }}
     spec:
 {{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:
