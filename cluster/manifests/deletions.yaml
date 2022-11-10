@@ -141,3 +141,11 @@ post_apply:
   kind: PlatformCredentialsSet
   namespace: kube-system
 {{- end }}
+{{- if eq .Cluster.ConfigItems.network_monitoring_enabled "false" }}
+- kind: Namespace
+  name: kubenurse
+- kind: ClusterRole
+  name: kubenurse
+- kind: ClusterRoleBinding
+  name: kubenurse
+{{- end }}
