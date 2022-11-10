@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.14.5-334" }}
+{{ $internal_version := "v0.14.11-340" }}
 {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
@@ -444,6 +444,9 @@ spec:
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
           - "-enable-oauth2-grant-flow"
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
+{{ end }}
+{{ if ne .ConfigItems.skipper_edit_route_placeholders "" }}
+          - '-edit-route={{ .ConfigItems.skipper_edit_route_placeholders }}'
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
