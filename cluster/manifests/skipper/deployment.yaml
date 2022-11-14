@@ -33,6 +33,9 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "9911"
         prometheus.io/scrape: "true"
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+        zalando.org/topology-spread-timeout: 7m
+{{- end }}
     spec:
 {{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:
@@ -388,6 +391,9 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "9990"
         prometheus.io/scrape: "true"
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+        zalando.org/topology-spread-timeout: 7m
+{{- end }}
     spec:
 {{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:

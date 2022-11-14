@@ -1,3 +1,5 @@
+{{ $version := "v0.14.0" }}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,7 +7,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-ingress-aws-controller
-    version: v0.13.23
+    version: {{ $version }}
 spec:
   replicas: 1
   selector:
@@ -15,7 +17,7 @@ spec:
     metadata:
       labels:
         application: kube-ingress-aws-controller
-        version: v0.13.23
+        version: {{ $version }}
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
         prometheus.io/path: /metrics
@@ -30,8 +32,9 @@ spec:
       serviceAccountName: kube-ingress-aws-controller
       containers:
       - name: controller
-        image: container-registry.zalando.net/teapot/kube-ingress-aws-controller:v0.13.23
+        image: container-registry.zalando.net/teapot/kube-ingress-aws-controller:{{ $version }}
         args:
+        - --target-access-mode=HostPort
         - --stack-termination-protection
         - --ssl-policy={{ .ConfigItems.kube_aws_ingress_controller_ssl_policy }}
         - --idle-connection-timeout={{ .ConfigItems.kube_aws_ingress_controller_idle_timeout }}
