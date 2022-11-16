@@ -206,7 +206,9 @@ spec:
           - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
           - "-disabled-filters={{ .ConfigItems.skipper_disabled_filters }}"
 {{ if ne .ConfigItems.skipper_edit_route_placeholders "" }}
-          - '-edit-route={{ .ConfigItems.skipper_edit_route_placeholders }}'
+          {{ range $placeholder := split .ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
+          - '-edit-route={{ $placeholder }}'
+          {{ end }}
 {{ end }}
           - "-suppress-route-update-logs={{ .ConfigItems.skipper_suppress_route_update_logs }}"
 {{ if eq .ConfigItems.skipper_enable_tcp_queue "true" }}
