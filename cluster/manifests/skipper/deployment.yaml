@@ -448,7 +448,9 @@ spec:
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
 {{ end }}
 {{ if ne .ConfigItems.skipper_edit_route_placeholders "" }}
-          - '-edit-route={{ .ConfigItems.skipper_edit_route_placeholders }}'
+          {{ range $placeholder := split .ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
+          - '-edit-route={{ $placeholder }}'
+          {{ end }}
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
