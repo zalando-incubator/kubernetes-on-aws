@@ -15,11 +15,11 @@ require (
 	github.com/zalando-incubator/kube-aws-iam-controller v0.2.0
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	k8s.io/api v0.22.12
-	k8s.io/apimachinery v0.22.12
-	k8s.io/apiserver v0.22.12
-	k8s.io/client-go v0.22.12
-	k8s.io/kubernetes v1.22.12
+	k8s.io/api v0.22.16
+	k8s.io/apimachinery v0.22.16
+	k8s.io/apiserver v0.22.16
+	k8s.io/client-go v0.22.16
+	k8s.io/kubernetes v1.22.16
 )
 
 require (
