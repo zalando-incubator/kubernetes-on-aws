@@ -532,7 +532,7 @@ write_files:
           image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/aws-encryption-provider:master-3
           command:
           - /aws-encryption-provider
-          - --key=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:key/{{ .Values.ClusterStackOutputs.EtcdEncryptionKey }}
+          - --key=arn:aws:kms:{{ .Cluster.Region }}:${AWS::AccountId}:key/{{ .Values.ClusterStackOutputs.EtcdEncryptionKey }}
           - --region={{ .Cluster.Region }}
           - --listen=/var/run/kmsplugin/socket.sock
           - --health-port=:8086
