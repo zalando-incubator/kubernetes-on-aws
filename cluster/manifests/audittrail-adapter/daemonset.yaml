@@ -1,4 +1,3 @@
-{{ if ne .Cluster.ConfigItems.audittrail_url "" }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -36,7 +35,7 @@ spec:
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: container-registry.zalando.net/teapot/audittrail-adapter:master-30
+        image: container-registry.zalando.net/teapot/audittrail-adapter:master-35
         env:
           - name: AWS_REGION
             value: {{.Cluster.Region}}
@@ -46,6 +45,12 @@ spec:
         - --s3-bucket-name=zalando-audittrail-{{accountID .InfrastructureAccount}}-{{.LocalID}}
         - --address=:8889
         - --metrics-address=:7980
+        {{- if eq .Cluster.ConfigItems.audittrail_url "" }}
+        - --metrics-only
+        {{- end }}
+        {{- range $label := split .Cluster.ConfigItems.auditlog_metric_dimensions  "," }}
+        - --metric-labels={{ $label }}
+        {{- end }}
         volumeMounts:
         - name: platform-iam-credentials
           mountPath: /meta/credentials
@@ -65,4 +70,3 @@ spec:
       - name: platform-iam-credentials
         secret:
           secretName: audittrail-adapter
-{{ end }}
