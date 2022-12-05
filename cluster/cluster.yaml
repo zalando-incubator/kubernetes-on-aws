@@ -1601,6 +1601,7 @@ Resources:
       RoleName: "{{.Cluster.LocalID}}-kube-metrics-adapter"
     Type: 'AWS::IAM::Role'
 
+{{- if eq .Cluster.ConfigItems.enable_csi "true" }}
   EBSCSIControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1612,54 +1613,96 @@ Resources:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
               StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:ebs-csi-controller"
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref MasterIAMRole
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - 'arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/'
-                  - !Ref WorkerIAMRole
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa"
         Version: 2012-10-17
       Path: /
       Policies:
         - PolicyDocument:
             Statement:
-              - Effect: Allow # All the policies needed for the EBS CSI driver
+              - Effect: Allow
                 Action:
-                  - 'ec2:AttachVolume'
-                  - 'ec2:CreateSnapshot'
-                  - 'ec2:CreateTags'
-                  - 'ec2:CreateVolume'
-                  - 'ec2:DeleteSnapshot'
-                  - 'ec2:DeleteTags'
-                  - 'ec2:DeleteVolume'
-                  - 'ec2:DescribeInstances'
-                  - 'ec2:DescribeSnapshots'
-                  - 'ec2:DescribeTags'
-                  - 'ec2:DescribeVolumes'
-                  - 'ec2:DetachVolume'
-                  - 'ec2:ModifyVolume'
-                Resource: '*'
+                - ec2:CreateSnapshot
+                - ec2:AttachVolume
+                - ec2:DetachVolume
+                - ec2:ModifyVolume
+                - ec2:DescribeAvailabilityZones
+                - ec2:DescribeInstances
+                - ec2:DescribeSnapshots
+                - ec2:DescribeTags
+                - ec2:DescribeVolumes
+                - ec2:DescribeVolumesModifications
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                - ec2:CreateTags
+                Resource:
+                - arn:aws:ec2:*:*:volume/*
+                - arn:aws:ec2:*:*:snapshot/*
+                Condition:
+                  StringEquals:
+                    ec2:CreateAction:
+                    - CreateVolume
+                    - CreateSnapshot
+              - Effect: Allow
+                Action:
+                - ec2:DeleteTags
+                Resource:
+                - arn:aws:ec2:*:*:volume/*
+                - arn:aws:ec2:*:*:snapshot/*
+              - Effect: Allow
+                Action:
+                - ec2:CreateVolume
+                Resource: "*"
+                Condition:
+                  StringLike:
+                    aws:RequestTag/ebs.csi.aws.com/cluster: 'true'
+              - Effect: Allow
+                Action:
+                - ec2:CreateVolume
+                Resource: "*"
+                Condition:
+                  StringLike:
+                    aws:RequestTag/CSIVolumeName: "*"
+              - Effect: Allow
+                Action:
+                - ec2:DeleteVolume
+                Resource: "*"
+                Condition:
+                  StringLike:
+                    ec2:ResourceTag/ebs.csi.aws.com/cluster: 'true'
+              - Effect: Allow
+                Action:
+                - ec2:DeleteVolume
+                Resource: "*"
+                Condition:
+                  StringLike:
+                    ec2:ResourceTag/CSIVolumeName: "*"
+              - Effect: Allow
+                Action:
+                - ec2:DeleteVolume
+                Resource: "*"
+                Condition:
+                  StringLike:
+                    ec2:ResourceTag/kubernetes.io/created-for/pvc/name: "*"
+              - Effect: Allow
+                Action:
+                - ec2:DeleteSnapshot
+                Resource: "*"
+                Condition:
+                  StringLike:
+                    ec2:ResourceTag/CSIVolumeSnapshotName: "*"
+              - Effect: Allow
+                Action:
+                - ec2:DeleteSnapshot
+                Resource: "*"
+                Condition:
+                  StringLike:
+                    ec2:ResourceTag/ebs.csi.aws.com/cluster: 'true'
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-ebs-csi-controller"
     Type: 'AWS::IAM::Role'
+{{- end }}
 
   {{ if eq .Cluster.Environment "e2e" }}
 # This is a hack to easily create an aws iam role and s3 bucket for testing

@@ -54,16 +54,45 @@ post_apply:
   namespace: cron
   kind: LimitRange
 {{ end }}
-{{ if ne .ConfigItems.enable_csi_migration "true" }}
-- name: csi-node-driver
+{{ if ne .ConfigItems.enable_csi "true" }}
+- name: ebs-external-attacher-role
+  kind: ClusterRole
+- name: ebs-csi-node-role
+  kind: ClusterRole
+- name: ebs-external-provisioner-role
+  kind: ClusterRole
+- name: ebs-external-resizer-role
+  kind: ClusterRole
+- name: ebs-csi-attacher-binding
+  kind: ClusterRoleBinding
+- name: ebs-csi-node-getter-binding
+  kind: ClusterRoleBinding
+- name: ebs-csi-provisioner-binding
+  kind: ClusterRoleBinding
+- name: ebs-csi-resizer-binding
+  kind: ClusterRoleBinding
+- name: ebs-csi-controller
+  namespace: kube-system
+  kind: Deployment
+- name: ebs.csi.aws.com
+  kind: CSIDriver
+- name: ebs-csi-node
   namespace: kube-system
   kind: DaemonSet
 - name: ebs-csi-controller
   namespace: kube-system
-  kind: DaemonSet
-- name: ebs
-  kind: StorageClass
+  kind: PodDisruptionBudget
+- name: ebs-csi-node-privileged-psp
   namespace: kube-system
+  kind: RoleBinding
+- name: ebs-csi-controller-sa
+  namespace: kube-system
+  kind: ServiceAccount
+- name: ebs-csi-node-sa
+  namespace: kube-system
+  kind: ServiceAccount
+- name: ebs-sc
+  kind: StorageClass
 {{ end }}
 {{ if ne .ConfigItems.prometheus_csi_ebs "true" }}
 - name: prometheus-csi

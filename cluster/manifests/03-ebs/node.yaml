@@ -1,0 +1,142 @@
+{{- if eq .ConfigItems.enable_csi "true" }}
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: ebs-csi-node
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ebs-csi-driver
+spec:
+  selector:
+    matchLabels:
+      daemonset: ebs-csi-node
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        application: kubernetes
+        component: ebs-csi-driver
+        daemonset: ebs-csi-node
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+    spec:
+      serviceAccountName: ebs-csi-node-sa
+      priorityClassName: system-node-critical
+      tolerations:
+        - operator: Exists
+      securityContext:
+        fsGroup: 0
+        runAsGroup: 0
+        runAsNonRoot: false
+        runAsUser: 0
+      containers:
+        - name: ebs-plugin
+          image: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.13.0
+          args:
+            - node
+            - --endpoint=$(CSI_ENDPOINT)
+            - --logtostderr
+            - --v=2
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:/csi/csi.sock
+            - name: CSI_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: kubelet-dir
+              mountPath: /opt/podruntime/kubelet
+              mountPropagation: Bidirectional
+            - name: plugin-dir
+              mountPath: /csi
+            - name: device-dir
+              mountPath: /dev
+          ports:
+            - name: healthz
+              containerPort: 9808
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 10
+            failureThreshold: 5
+          # TODO: resources needes?
+          resources:
+            requests:
+              cpu: 20m
+              memory: 50Mi
+            limits:
+              cpu: 20m
+              memory: 50Mi
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: true
+        - name: node-driver-registrar
+          image: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar:v2.5.1-eks-1-20-17
+          args:
+            - --csi-address=$(ADDRESS)
+            - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+            - --v=2
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+            - name: DRIVER_REG_SOCK_PATH
+              value: /opt/podruntime/kubelet/plugins/ebs.csi.aws.com/csi.sock
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+            - name: registration-dir
+              mountPath: /registration
+          # TODO: resources needes?
+          resources:
+            requests:
+              cpu: 20m
+              memory: 50Mi
+            limits:
+              cpu: 20m
+              memory: 50Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+        - name: liveness-probe
+          image: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe:v2.6.0-eks-1-20-15
+          args:
+            - --csi-address=/csi/csi.sock
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+          # TODO: resources needes?
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+            limits:
+              cpu: 10m
+              memory: 20Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+      volumes:
+        - name: kubelet-dir
+          hostPath:
+            path: /opt/podruntime/kubelet
+            type: Directory
+        - name: plugin-dir
+          hostPath:
+            path: /opt/podruntime/kubelet/plugins/ebs.csi.aws.com/
+            type: DirectoryOrCreate
+        - name: registration-dir
+          hostPath:
+            path: /opt/podruntime/kubelet/plugins_registry/
+            type: Directory
+        - name: device-dir
+          hostPath:
+            path: /dev
+            type: Directory
+{{- end }}
