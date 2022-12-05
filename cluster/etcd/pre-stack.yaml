@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Etcd Pre-stack resources
+Metadata:
+  Tags:
+    InfrastructureComponent: "true"
+    application: "kubernetes"
+Outputs:
+  EtcdKeyArn:
+    Description: "Key used to encrypt and decrypt Etcd bootstrap secrets."
+    Value: !GetAtt EtcdFilesEncryptionKey.Arn
+    Export:
+      Name: "etcd-cluster-preapply-etcd:etcd-kms-key-arn"
+Resources:
+  EtcdFilesEncryptionKey:
+    Type: "AWS::KMS::Key"
+    DeletionPolicy: "Retain"
+    Properties:
+      Description: Key used by the etcd cluster nodes
+      EnableKeyRotation: false
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "etcd-files-key-policy"
+        Statement:
+          - Sid: "Full access for Key Administrators"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
+            Action:
+            - "kms:*"
+            Resource: "*"
+          - Sid: "Allow describe for everyone"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+            - "kms:DescribeKey"
+            Resource: "*"
+          - Sid: "Allow etcd nodes to decrypt the remote files"
+            Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+            - "kms:Decrypt"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "aws:PrincipalArn": !Sub "arn:aws:iam::${AWS::AccountId}:role/etcd-cluster-etcd-EtcdRole-*"
+  EtcdFilesSecretKeyAlias:
+    Type: 'AWS::KMS::Alias'
+    DeletionPolicy: "Retain"
+    Properties:
+      AliasName: "alias/etcd-cluster"
+      TargetKeyId: !Ref EtcdFilesEncryptionKey

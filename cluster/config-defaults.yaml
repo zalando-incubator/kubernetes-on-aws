@@ -9,6 +9,10 @@ autoscaling_utilization_threshold: "1.0"
 autoscaling_max_empty_bulk_delete: "10"
 autoscaling_scale_down_unneeded_time: "2m"
 autoscaling_unremovable_node_recheck_timeout: "5m"
+# configure the log level for the autoscaler. Setting this to 4 gives enough
+# verbosity to understand why a certain node pool is not picked for scheduling a
+# pod.
+autoscaling_autoscaler_log_level: "1"
 
 # How long to wait for pod eviction when scaling down.
 {{if eq .Cluster.Environment "production"}}
@@ -290,9 +294,12 @@ event_rate_limit_enable: "true"
 event_rate_limit_config_qps: "500"
 event_rate_limit_config_burst: "1000"
 
-# This parameter will be set to default 'true' when testing is in progress.
-# Will later be changed to default 'false' as a sane value.
-allow_v1beta1_crds: "true"
+# As CRD migration is almost finished (2 clusters remain), setting sane default to `false`.
+allow_v1beta1_crds: "false"
+
+# This parameter is set to default `true` while we migrate ingresses to v1.
+# Later, will be changed to default to `false` and after migration is done, will be removed.
+allow_v1beta1_ingresses: "true"
 
 # cadvisor settings
 cadvisor_cpu: "150m"
@@ -642,16 +649,24 @@ rotate_service_account_tokens: "true"
 # issue tokens with a long expiration time in order to detect applications that don't refresh tokens.
 rotate_service_account_tokens_extended_expiration: "true"
 
-# enable auditlogging metrics such that we can identify clients calling the
-# apiserver.
-{{ if eq .Cluster.Environment "test" }}
-auditlog_metrics: "true"
-{{ else }}
-auditlog_metrics: "false"
-{{ end }}
+# Comma separated list of dimensions to include in the Prometheus metrics
+# exposed by audittrail-adapter.
+# Adding more dimensions can help detect which clients are calling the
+# Kubernetes API. Examples:
+# * Detect clients not rotating service tokens: `authentication_stale_token` metric.
+# * Detect clients with high load on the API Server for certain calls.
+# * Detect client calling old api_version/api_groups for resources.
+#
+# Adding more dimensions has the negative effect that it produces more
+# Prometheus data, so it's not intended to be enabled ALL THE TIME, but can be
+# enabled when needed to answer one of the above questions or similar.
+#
+# The possible dimentions are:
+# authorization_decision,authentication_stale_token,user,user_agent,verb,code,resource,api_group,api_version
+auditlog_metric_dimensions: "authorization_decision"
 
 # enable auditlogging of read access to identify service accounts reading from
-# the api. This only has effect if auditlog_metrics=true.
+# the api.
 auditlog_read_access: "true"
 
 # allow ssh access for internal VPC IPs only
