@@ -9,6 +9,10 @@ autoscaling_utilization_threshold: "1.0"
 autoscaling_max_empty_bulk_delete: "10"
 autoscaling_scale_down_unneeded_time: "2m"
 autoscaling_unremovable_node_recheck_timeout: "5m"
+# configure the log level for the autoscaler. Setting this to 4 gives enough
+# verbosity to understand why a certain node pool is not picked for scheduling a
+# pod.
+autoscaling_autoscaler_log_level: "1"
 
 # How long to wait for pod eviction when scaling down.
 {{if eq .Cluster.Environment "production"}}
@@ -290,9 +294,12 @@ event_rate_limit_enable: "true"
 event_rate_limit_config_qps: "500"
 event_rate_limit_config_burst: "1000"
 
-# This parameter will be set to default 'true' when testing is in progress.
-# Will later be changed to default 'false' as a sane value.
-allow_v1beta1_crds: "true"
+# As CRD migration is almost finished (2 clusters remain), setting sane default to `false`.
+allow_v1beta1_crds: "false"
+
+# This parameter is set to default `true` while we migrate ingresses to v1.
+# Later, will be changed to default to `false` and after migration is done, will be removed.
+allow_v1beta1_ingresses: "true"
 
 # cadvisor settings
 cadvisor_cpu: "150m"
