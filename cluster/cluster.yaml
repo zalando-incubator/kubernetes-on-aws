@@ -355,6 +355,17 @@ Resources:
           Value: owned
       ToPort: 9911
     Type: 'AWS::EC2::SecurityGroupIngress'
+  WorkerSecurityGroupIngressFromWorkerToWorkerSkipperTokeninfoMetrics:
+    Properties:
+      FromPort: 9022
+      GroupId: !Ref WorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref WorkerSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 9022
+    Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToNodeMonitor:
     Properties:
       FromPort: 9100
