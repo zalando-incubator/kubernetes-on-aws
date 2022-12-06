@@ -154,19 +154,14 @@ spec:
           - "-max-audit-body=0"
 {{ if eq .ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
           - "-enable-swarm"
-  {{ if and (ne .ConfigItems.skipper_redis_replicas "0") (ne .ConfigItems.skipper_ingress_redis_autoscaling "true") }}
-          - "-swarm-redis-urls={{ indexedList "skipper-ingress-redis-$.skipper-ingress-redis.kube-system.svc.cluster.local:6379" (parseInt64 .ConfigItems.skipper_redis_replicas) }}"
-  {{ end }}
           - "-swarm-redis-dial-timeout={{ .ConfigItems.skipper_redis_dial_timeout }}"
           - "-swarm-redis-pool-timeout={{ .ConfigItems.skipper_redis_pool_timeout }}"
           - "-swarm-redis-read-timeout={{ .ConfigItems.skipper_redis_read_timeout }}"
           - "-swarm-redis-write-timeout={{ .ConfigItems.skipper_redis_write_timeout }}"
           - "-cluster-ratelimit-max-group-shards={{ .ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
-  {{ if eq .ConfigItems.skipper_ingress_redis_autoscaling "true" }}
           - "-kubernetes-redis-service-namespace=kube-system"
           - "-kubernetes-redis-service-name=skipper-ingress-redis"
           - "-kubernetes-redis-service-port=6379"
-  {{ end }}
 {{ end }}
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
           - >-
