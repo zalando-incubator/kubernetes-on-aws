@@ -51,10 +51,12 @@ spec:
         {{- range $label := split .Cluster.ConfigItems.auditlog_metric_dimensions  "," }}
         - --metric-labels={{ $label }}
         {{- end }}
+        {{- if ne .Cluster.ConfigItems.audittrail_url "" }}
         volumeMounts:
         - name: platform-iam-credentials
           mountPath: /meta/credentials
           readOnly: true
+        {{- end }}
         resources:
           limits:
             cpu: 50m
