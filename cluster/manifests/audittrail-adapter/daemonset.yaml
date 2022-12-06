@@ -66,7 +66,9 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
+      {{- if ne .Cluster.ConfigItems.audittrail_url "" }}
       volumes:
       - name: platform-iam-credentials
         secret:
           secretName: audittrail-adapter
+      {{- end }}
