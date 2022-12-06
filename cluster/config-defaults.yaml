@@ -131,7 +131,8 @@ skipper_termination_grace_period: "392"
 
 # skipper redis settings
 enable_dedicate_nodepool_skipper_redis: "false"
-skipper_redis_replicas: 2
+# TODO: skipper_redis_replicas cleanup after merge
+skipper_redis_replicas: 1
 skipper_redis_cpu: "100m"
 skipper_redis_memory: "512Mi"
 skipper_redis_dial_timeout: "25ms"
@@ -139,16 +140,8 @@ skipper_redis_pool_timeout: "250ms"
 skipper_redis_read_timeout: "25ms"
 skipper_redis_write_timeout: "25ms"
 
-# "true" enable autoscaling
-# "false" remove autoscaling
-# "" do not change
-{{if eq .Cluster.Environment "test"}}
-skipper_ingress_redis_autoscaling: "true"
-{{else}}
-skipper_ingress_redis_autoscaling: ""
-{{end}}
 skipper_ingress_redis_swarm_enabled: "true"
-skipper_ingress_redis_target_average_utilization_cpu: "60"
+skipper_ingress_redis_target_average_utilization_cpu: "30"
 skipper_ingress_redis_target_average_utilization_memory: "60"
 skipper_ingress_redis_min_replicas: "1"
 skipper_ingress_redis_max_replicas: "100"
@@ -646,17 +639,25 @@ rotate_service_account_tokens: "true"
 # issue tokens with a long expiration time in order to detect applications that don't refresh tokens.
 rotate_service_account_tokens_extended_expiration: "true"
 
-# enable auditlogging metrics such that we can identify clients calling the
-# apiserver.
-{{ if eq .Cluster.Environment "test" }}
-auditlog_metrics: "true"
-{{ else }}
-auditlog_metrics: "false"
-{{ end }}
+# Comma separated list of dimensions to include in the Prometheus metrics
+# exposed by audittrail-adapter.
+# Adding more dimensions can help detect which clients are calling the
+# Kubernetes API. Examples:
+# * Detect clients not rotating service tokens: `authentication_stale_token` metric.
+# * Detect clients with high load on the API Server for certain calls.
+# * Detect client calling old api_version/api_groups for resources.
+#
+# Adding more dimensions has the negative effect that it produces more
+# Prometheus data, so it's not intended to be enabled ALL THE TIME, but can be
+# enabled when needed to answer one of the above questions or similar.
+#
+# The possible dimentions are:
+# authorization_decision,authentication_stale_token,user,user_agent,verb,code,resource,api_group,api_version
+auditlog_metric_dimensions: "authorization_decision"
 
 # enable auditlogging of read access to identify service accounts reading from
-# the api. This only has effect if auditlog_metrics=true.
-auditlog_read_access: "true"
+# the api.
+auditlog_read_access: "false"
 
 # allow ssh access for internal VPC IPs only
 ssh_vpc_only: "false"
