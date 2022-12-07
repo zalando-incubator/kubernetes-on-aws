@@ -33,7 +33,7 @@ spec:
         runAsUser: 0
       containers:
         - name: ebs-plugin
-          image: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.13.0
+          image: container-registry.zalando.net/teapot/aws-ebs-csi-driver:v1.13.0-master-6
           args:
             - node
             - --endpoint=$(CSI_ENDPOINT)
@@ -78,7 +78,7 @@ spec:
             privileged: true
             readOnlyRootFilesystem: true
         - name: node-driver-registrar
-          image: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar:v2.5.1-eks-1-20-17
+          image: container-registry.zalando.net/teapot/node-driver-registrar:v2.5.1-eks-1-20-17-master-6
           args:
             - --csi-address=$(ADDRESS)
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
@@ -105,7 +105,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: liveness-probe
-          image: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe:v2.6.0-eks-1-20-15
+          image: container-registry.zalando.net/teapot/livenessprobe:v2.6.0-eks-1-20-15-master-6
           args:
             - --csi-address=/csi/csi.sock
           volumeMounts:

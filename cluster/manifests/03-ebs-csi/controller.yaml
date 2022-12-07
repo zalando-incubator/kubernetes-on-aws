@@ -36,7 +36,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: ebs-plugin
-          image: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.13.0
+          image: container-registry.zalando.net/teapot/aws-ebs-csi-driver:v1.13.0-master-6
           args:
             - controller # TODO - {all,controller,node} # specify the driver mode
             - --endpoint=$(CSI_ENDPOINT)
@@ -86,7 +86,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-provisioner
-          image: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner:v3.1.0-eks-1-20-15
+          image: container-registry.zalando.net/teapot/external-provisioner:v3.1.0-eks-1-20-15-master-6
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -111,7 +111,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-attacher
-          image: public.ecr.aws/eks-distro/kubernetes-csi/external-attacher:v3.4.0-eks-1-20-15
+          image: container-registry.zalando.net/teapot/external-attacher:v3.4.0-eks-1-20-15-master-6
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -133,7 +133,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-resizer
-          image: public.ecr.aws/eks-distro/kubernetes-csi/external-resizer:v1.4.0-eks-1-20-15
+          image: container-registry.zalando.net/teapot/external-resizer:v1.4.0-eks-1-20-15-master-6
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -155,7 +155,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: liveness-probe
-          image: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe:v2.6.0-eks-1-20-15
+          image: container-registry.zalando.net/teapot/livenessprobe:v2.6.0-eks-1-20-15-master-6
           args:
             - --csi-address=/csi/csi.sock
           resources:
