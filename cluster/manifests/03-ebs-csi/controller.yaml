@@ -38,7 +38,7 @@ spec:
         - name: ebs-plugin
           image: container-registry.zalando.net/teapot/aws-ebs-csi-driver:v1.13.0-master-6
           args:
-            - controller # TODO - {all,controller,node} # specify the driver mode
+            - controller
             - --endpoint=$(CSI_ENDPOINT)
             - --k8s-tag-cluster-id={{ .Cluster.ID }}
             - --logtostderr
@@ -46,12 +46,10 @@ spec:
           env:
             - name: CSI_ENDPOINT
               value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
-            # TODO: should not be needed
             - name: CSI_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-          # TODO: resources
           resources:
             requests:
               cpu: 25m
