@@ -64,6 +64,29 @@ post_apply:
 - name: ebs
   kind: StorageClass
   namespace: kube-system
+- kind: CSIDriver
+  name: ebs.csi.aws.com
+- kind: ServiceAccount
+  name: ebs-csi-controller
+  namespace: kube-system
+- kind: ClusterRole
+  name: ebs-external-attacher
+- kind: ClusterRole
+  name: ebs-external-provisioner
+- kind: ClusterRoleBinding
+  name: ebs-csi-attacher-binding
+- kind: ClusterRoleBinding
+  name: ebs-csi-provisioner-binding
+- kind: ServiceAccount
+  name: ebs-csi-node
+  namespace: kube-system
+- kind: RoleBinding
+  name: ebs-csi-node-privileged-psp
+  namespace: kube-system
+- kind: ClusterRole
+  name: ebs-external-resizer-role
+- kind: ClusterRoleBinding
+  name: ebs-csi-resizer-binding
 {{ end }}
 {{ if ne .ConfigItems.prometheus_csi_ebs "true" }}
 - name: prometheus-csi
@@ -131,11 +154,6 @@ post_apply:
   kind: Deployment
 {{ end }}
 
-{{ if eq .ConfigItems.skipper_ingress_redis_autoscaling "false" }}
-- name: skipper-ingress-redis
-  namespace: kube-system
-  kind: HorizontalPodAutoscaler
-{{ end }}
 {{- if eq .ConfigItems.prometheus_remote_write "disabled" }}
 - name: prometheus-credentials
   kind: PlatformCredentialsSet

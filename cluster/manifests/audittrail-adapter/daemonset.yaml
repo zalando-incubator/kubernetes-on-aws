@@ -51,22 +51,26 @@ spec:
         {{- range $label := split .Cluster.ConfigItems.auditlog_metric_dimensions  "," }}
         - --metric-labels={{ $label }}
         {{- end }}
+        {{- if ne .Cluster.ConfigItems.audittrail_url "" }}
         volumeMounts:
         - name: platform-iam-credentials
           mountPath: /meta/credentials
           readOnly: true
+        {{- end }}
         resources:
           limits:
-            cpu: 50m
-            memory: 200Mi
+            cpu: {{ .Cluster.ConfigItems.audittrail_adapter_cpu }}
+            memory: {{ .Cluster.ConfigItems.audittrail_adapter_memory }}
           requests:
-            cpu: 50m
-            memory: 200Mi
+            cpu: {{ .Cluster.ConfigItems.audittrail_adapter_cpu }}
+            memory: {{ .Cluster.ConfigItems.audittrail_adapter_memory }}
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
+      {{- if ne .Cluster.ConfigItems.audittrail_url "" }}
       volumes:
       - name: platform-iam-credentials
         secret:
           secretName: audittrail-adapter
+      {{- end }}
