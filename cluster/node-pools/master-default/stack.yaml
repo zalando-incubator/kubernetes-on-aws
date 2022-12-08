@@ -81,6 +81,7 @@ Resources:
       Roles:
       - !ImportValue '{{ .Cluster.ID }}:master-iam-role'
     Type: 'AWS::IAM::InstanceProfile'
+{{- if eq .Cluster.ConfigItems.control_plane_asg_lifecycle_hook "true" }}
   AutoscalingLifecycleHook:
     Properties:
       AutoScalingGroupName: !Ref AutoScalingGroup
@@ -89,3 +90,4 @@ Resources:
       HeartbeatTimeout: '600'
       LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
     Type: 'AWS::AutoScaling::LifecycleHook'
+{{- end }}
