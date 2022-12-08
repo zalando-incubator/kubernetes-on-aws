@@ -19,6 +19,11 @@ pre_apply:
     volume-type: gp3
   kind: StorageClass
 {{ end }}
+{{ if eq .Cluster.ConfigItems.storageclass_standard_sanitized_zones "true" }}
+- labels:
+    zones-sanitized: "false"
+  kind: StorageClass
+{{ end }}
 - labels:
     application: nvidia-gpu-device-plugin
   namespace: kube-system
