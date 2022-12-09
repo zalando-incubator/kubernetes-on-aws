@@ -122,7 +122,7 @@ write_files:
           {{- end }}
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config=policy/v1beta1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
+          - --runtime-config=extensions/v1beta1/networkpolicies=true,policy/v1beta1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true,apiextensions.k8s.io/v1beta1={{ .Cluster.ConfigItems.allow_v1beta1_crds }},extensions/v1beta1/ingresses={{ .Cluster.ConfigItems.allow_v1beta1_ingresses }},networking.k8s.io/v1beta1/ingresses={{ .Cluster.ConfigItems.allow_v1beta1_ingresses }}
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
@@ -138,7 +138,7 @@ write_files:
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
 {{- end }}
-          - --feature-gates=TTLAfterFinished=true,HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
@@ -582,7 +582,8 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TTLAfterFinished=true
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
+          - --horizontal-pod-autoscaler-use-rest-clients=true
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
           - --allocate-node-cidrs=true
