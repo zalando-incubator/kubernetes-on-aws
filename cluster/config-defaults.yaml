@@ -339,6 +339,7 @@ prometheus_mem_min: "2Gi"
 prometheus_cpu_min: "0"
 prometheus_retention_size: "49GB" # one GB less than prometheus' PVC
 prometheus_retention_time: "1d"
+# Deploy a replacement Prometheus that uses the CSI-based EBS-backed StorageClass directly, mostly for testing
 prometheus_csi_ebs: "false"
 
 # Upstream defaults are too aggressive:
@@ -625,7 +626,9 @@ cpu_manager_policy: "none"
 # sysctl names allowed to be used in security policies, comma-separated
 allowed_unsafe_sysctls: "net.ipv4.tcp_keepalive_time,net.ipv4.tcp_keepalive_intvl,net.ipv4.tcp_keepalive_probes,net.ipv4.tcp_syn_retries,net.ipv4.tcp_retries2"
 
-# enable CSIMigration feature flag
+# enable CSI Driver feature flag
+enable_csi: "false"
+# enable CSIMigration feature flag (make sure to set `enable_csi: true` for this to work)
 enable_csi_migration: "false"
 
 # pull images in parallel
@@ -827,7 +830,7 @@ deployment_service_enabled: "true"
 storageclass_standard_gp3: "true"
 
 # Standard storageclass gp3 volume zones fix
-storageclass_standard_sanitized_zones: "false"
+storageclass_standard_sanitized_zones: "true"
 
 # opentelemetry config
 observability_collector_endpoint: "tracing.platform-infrastructure.zalan.do"
