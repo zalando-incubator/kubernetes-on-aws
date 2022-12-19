@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.14.19-349" }}
+{{ $internal_version := "v0.14.23-353" }}
 {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
@@ -224,8 +224,8 @@ spec:
           - "-oauth2-auth-url={{ .ConfigItems.skipper_oauth2_auth_url }}"
           - "-oauth2-token-url={{ .ConfigItems.skipper_oauth2_token_url }}"
           - "-oauth2-secret-file=/etc/skipper/secret/encryption-key"
-          - "-oauth2-client-id-file=/etc/skipper/oauth/employee-client-id"
-          - "-oauth2-client-secret-file=/etc/skipper/oauth/employee-client-secret"
+          - "-oauth2-client-id-file=/etc/skipper/oauth/{{ .Cluster.Alias }}-employee-client-id"
+          - "-oauth2-client-secret-file=/etc/skipper/oauth/{{ .Cluster.Alias }}-employee-client-secret"
           - "-credentials-paths=/etc/skipper/secret,/etc/skipper/oauth"
           - "-credentials-update-interval=1m"
           - "-oauth2-token-cookie-name={{.ConfigItems.skipper_oauth2_cookie_name }}"
