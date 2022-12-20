@@ -7,16 +7,9 @@ metadata:
   labels:
     kubernetes.io/cluster-service: "true"
     volume-type: {{ if eq .Cluster.ConfigItems.storageclass_standard_gp3 "true" }}gp3{{else}}gp2{{end}}
-    zones-sanitized: "{{ if eq .Cluster.ConfigItems.storageclass_standard_sanitized_zones "true" }}true{{else}}false{{end}}"
 provisioner: kubernetes.io/aws-ebs
 parameters:
   type: {{ if eq .Cluster.ConfigItems.storageclass_standard_gp3 "true" }}gp3{{else}}gp2{{end}}
   # TODO: this assumes 3 zones per region
-  #
-  # The old definition of zones containing spaces doesn't work well with CSI Migration.
-{{- if eq .ConfigItems.storageclass_standard_sanitized_zones "true" }}
   zones: {{ .Cluster.Region }}a,{{ .Cluster.Region }}b,{{ .Cluster.Region }}c
-{{- else }}
-  zones: {{ .Cluster.Region }}a, {{ .Cluster.Region }}b, {{ .Cluster.Region }}c
-{{- end }}
 allowVolumeExpansion: true
