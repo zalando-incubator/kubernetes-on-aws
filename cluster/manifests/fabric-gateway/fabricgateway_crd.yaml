@@ -112,6 +112,43 @@ spec:
                         required:
                         - default-rate
                         type: object
+                      x-fabric-request-ratelimits:
+                        items:
+                          description: FabricGatewayRequestRateLimit is used to limit
+                            requests per specified period for particular users creating
+                            high load on the service. This rate limit works independently
+                            of the x-fabric-ratelimits but returns the same HTTP 429
+                            response as x-fabric-ratelimits.
+                          properties:
+                            headers:
+                              description: HTTP headers from request which are used
+                                to identify a specific user which should be rate limited.
+                                Limit applies per unique non-empty combination of
+                                configured header values.
+                              items:
+                                type: string
+                              type: array
+                            period:
+                              description: Time period for number of requests being
+                                counted. Valid values are 'hour', 'minute' and 'second',
+                                defaults to 'minute' if omitted.
+                              enum:
+                              - second
+                              - minute
+                              - hour
+                              type: string
+                            rate:
+                              description: User specific value to apply to the route.
+                                If the particular user makes more requests that value
+                                within the defined period, then this user will start
+                                getting HTTP 429 responses.
+                              minimum: 1
+                              type: integer
+                          required:
+                          - headers
+                          - rate
+                          type: object
+                        type: array
                       x-fabric-static-response:
                         description: This property is used to configure a static,
                           hard-coded response for a route. The request does not reach
