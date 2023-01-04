@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.14.23-353" }}
+{{ $internal_version := "v0.14.35-365" }}
 {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
@@ -219,6 +219,8 @@ spec:
           - "-oauth2-tokeninfo-url=http://127.0.0.1:9021/oauth2/tokeninfo"
           - "-status-checks=http://127.0.0.1:9021/health"
 {{ end }}
+          - "-oauth2-tokeninfo-cache-size={{ .ConfigItems.skipper_tokeninfo_cache_size }}"
+          - "-oauth2-tokeninfo-cache-ttl={{ .ConfigItems.skipper_tokeninfo_cache_ttl }}"
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
           - "-enable-oauth2-grant-flow"
           - "-oauth2-auth-url={{ .ConfigItems.skipper_oauth2_auth_url }}"
