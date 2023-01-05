@@ -244,6 +244,12 @@ skipper_local_tokeninfo: "production"
 skipper_local_tokeninfo: "bridge"
 {{end}}
 
+# tokeninfo cache
+# integer, non-zero value enables tokeninfo cache and sets the maximum number of cached tokens
+skipper_tokeninfo_cache_size: 0
+# duration, non-zero value limits the lifetime of a cached tokeninfo
+skipper_tokeninfo_cache_ttl: "1s"
+
 # oauth2 UI login - grant flow
 {{if eq .Cluster.Environment "e2e"}}
 skipper_oauth2_ui_login: "false"
@@ -597,7 +603,7 @@ kube2iam_memory: "100Mi"
 #
 # Set `enable_node_scale_out_beyond_1k_nodes: "stage2"` to apply the cluster_cidr
 # change on the kube-controller-manager,
-enable_node_scale_out_beyond_1k_nodes: ""
+enable_node_scale_out_beyond_1k_nodes: "stage1"
 
 
 # CIDR configuration for nodes and pods
