@@ -749,12 +749,6 @@ write_files:
         # don't audit any kube-controller-manager events
         - level: None
           users: ["system:kube-controller-manager"]
-        # Don't audit events from system users in kube-system
-        - level: None
-          userGroups: ["system:serviceaccounts:kube-system"]
-        # Don't audit events from high traffic infrastructure components
-        - level: None
-          users: ["credentials-provider"]
         - level: None
           userGroups: ["system:nodes"]
           verbs: ["get"]
@@ -795,6 +789,12 @@ write_files:
           resources:
             - group: "" # core
               resources: ["events"]
+{{ if ne .Cluster.ConfigItems.auditlog_read_access "true" }}
+        # Don't audit events from system users in kube-system
+        # unless auditlog_read_access=true
+        - level: None
+          userGroups: ["system:serviceaccounts:kube-system"]
+{{ end }}
         # Secrets, ConfigMaps, and TokenReviews can contain sensitive & binary data,
         # so only log at the Metadata level.
         - level: Metadata
@@ -806,18 +806,15 @@ write_files:
           omitStages:
             - "RequestReceived"
 {{ if eq .Cluster.ConfigItems.auditlog_read_access "true" }}
-        - level: None
-          verbs: ["watch", "list", "get"]
-          userGroups: ["system:serviceaccounts:kube-system"]
         - level: Request
           verbs: ["watch", "list", "get"]
-          userGroups: ["system:serviceaccounts"]
           omitStages:
           - "RequestReceived"
-{{ end }}
+{{ else }}
         # Don't audit read-only events.
         - level: None
           verbs: ["watch", "list", "get"]
+{{ end }}
         # Default level for all other requests.
         - level: Request
           omitStages:
