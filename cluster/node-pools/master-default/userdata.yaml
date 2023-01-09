@@ -28,6 +28,9 @@ write_files:
       featureGates:
         BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
         CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
+{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }}
+        CSIMigrationAWS: true
+{{- end }}
         SizeMemoryBackedVolumes: {{ .Cluster.ConfigItems.enable_size_memory_backed_volumes }}
 {{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
         EphemeralContainers: true
@@ -117,10 +120,14 @@ write_files:
           - --allow-privileged=true
           - --service-cluster-ip-range=10.5.0.0/16
           - --secure-port=443
-          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,Priority,NodeRestriction
+          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,Priority,NodeRestriction{{if eq .Cluster.ConfigItems.event_rate_limit_enable "true"}},EventRateLimit{{end}}
+          {{- if eq .Cluster.ConfigItems.event_rate_limit_enable "true"}}
+          # This file specifies the EventRateLimit admission plugin's configuration
+          - --admission-control-config-file=/etc/kubernetes/config/admission-config.yaml
+          {{- end }}
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config=extensions/v1beta1/networkpolicies=true,policy/v1beta1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true,apiextensions.k8s.io/v1beta1={{ .Cluster.ConfigItems.allow_v1beta1_crds }}
+          - --runtime-config=extensions/v1beta1/networkpolicies=true,policy/v1beta1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true,apiextensions.k8s.io/v1beta1={{ .Cluster.ConfigItems.allow_v1beta1_crds }},extensions/v1beta1/ingresses={{ .Cluster.ConfigItems.allow_v1beta1_ingresses }},networking.k8s.io/v1beta1/ingresses={{ .Cluster.ConfigItems.allow_v1beta1_ingresses }}
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
@@ -136,30 +143,21 @@ write_files:
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
 {{- end }}
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }},CSIMigrationAWS=true{{- end }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
           - --service-account-jwks-uri={{ .Cluster.APIServerURL }}/openid/v1/jwks
           - --service-account-extend-token-expiration={{ .Cluster.ConfigItems.rotate_service_account_tokens_extended_expiration }}
-          {{ if and (ne .Cluster.ConfigItems.audittrail_url "") (ne .Cluster.Environment "e2e") }}
-          - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
-          - --audit-webhook-mode=batch
-          - --audit-webhook-version=audit.k8s.io/v1
           - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
-          {{ end }}
           {{ if eq .Cluster.Environment "e2e" }}
           - --audit-log-path=/var/log/kube-audit.log
           - --audit-log-maxage=0
           - --audit-log-maxbackup=0
-          - --audit-policy-file=/etc/kubernetes/config/audit-policy.yaml
-          {{ else if and (eq .Cluster.ConfigItems.enable_default_sa "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
-          - --audit-log-path=/dev/stdout
-          - --audit-log-maxage=0
-          - --audit-log-maxbackup=0
-          {{ if eq .Cluster.ConfigItems.audittrail_url "" }}
-          - --audit-policy-file=/etc/kubernetes/config/audit-policy-ro.yaml
-          {{ end }}
+          {{ else }}
+          - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
+          - --audit-webhook-mode=batch
+          - --audit-webhook-version=audit.k8s.io/v1
           {{ end }}
           # enable aggregated apiservers
           - --client-ca-file=/etc/kubernetes/ssl/ca.pem
@@ -201,7 +199,7 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-152
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-158
           name: admission-controller
           lifecycle:
             preStop:
@@ -271,7 +269,7 @@ write_files:
               name: ssl-certs-kubernetes
               readOnly: true
 {{- end}}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-120
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-122
           name: webhook
           ports:
           - containerPort: 8081
@@ -589,7 +587,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
+          - --feature-gates=TTLAfterFinished=true,BoundServiceAccountTokenVolume={{ .Cluster.ConfigItems.rotate_service_account_tokens }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }},CSIMigrationAWS=true{{- end }},SetHostnameAsFQDN={{ .Cluster.ConfigItems.enable_hostname_as_fqdn }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
           - --horizontal-pod-autoscaler-use-rest-clients=true
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
@@ -754,12 +752,6 @@ write_files:
         # don't audit any kube-controller-manager events
         - level: None
           users: ["system:kube-controller-manager"]
-        # Don't audit events from system users in kube-system
-        - level: None
-          userGroups: ["system:serviceaccounts:kube-system"]
-        # Don't audit events from high traffic infrastructure components
-        - level: None
-          users: ["credentials-provider"]
         - level: None
           userGroups: ["system:nodes"]
           verbs: ["get"]
@@ -800,6 +792,12 @@ write_files:
           resources:
             - group: "" # core
               resources: ["events"]
+{{ if ne .Cluster.ConfigItems.auditlog_read_access "true" }}
+        # Don't audit events from system users in kube-system
+        # unless auditlog_read_access=true
+        - level: None
+          userGroups: ["system:serviceaccounts:kube-system"]
+{{ end }}
         # Secrets, ConfigMaps, and TokenReviews can contain sensitive & binary data,
         # so only log at the Metadata level.
         - level: Metadata
@@ -810,39 +808,20 @@ write_files:
               resources: ["tokenreviews"]
           omitStages:
             - "RequestReceived"
-{{ if and (eq .Cluster.ConfigItems.enable_default_sa "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
-        - level: None
-          verbs: ["watch", "list", "get"]
-          userGroups: ["system:serviceaccounts:kube-system"]
+{{ if eq .Cluster.ConfigItems.auditlog_read_access "true" }}
         - level: Request
           verbs: ["watch", "list", "get"]
-          userGroups: ["system:serviceaccounts"]
           omitStages:
           - "RequestReceived"
-{{ end }}
+{{ else }}
         # Don't audit read-only events.
         - level: None
           verbs: ["watch", "list", "get"]
+{{ end }}
         # Default level for all other requests.
         - level: Request
           omitStages:
             - "RequestReceived"
-
-{{ if and (eq .Cluster.ConfigItems.enable_default_sa "true") (eq .Cluster.ConfigItems.auditlog_read_access "true") }}
-  - owner: root:root
-    path: /etc/kubernetes/config/audit-policy-ro.yaml
-    content: |
-      apiVersion: audit.k8s.io/v1beta1
-      kind: Policy
-      rules:
-      - level: None
-        userGroups: ["system:serviceaccounts:kube-system"]
-      - level: Request
-        verbs: ["watch", "list", "get"]
-        userGroups: ["system:serviceaccounts"]
-        omitStages:
-        - "RequestReceived"
-{{ end }}
 
   - owner: root:root
     path: /etc/kubernetes/config/encryption-config.yaml
@@ -865,3 +844,26 @@ write_files:
       {{- if eq .Cluster.ConfigItems.enable_encryption "true" }}
           - identity: {}
       {{- end }}
+
+{{ if eq .Cluster.ConfigItems.event_rate_limit_enable "true"}}
+  # Enabling EventRateLimit admission plugin
+  # Reference: https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#eventratelimit
+  - owner: root:root
+    path: /etc/kubernetes/config/admission-config.yaml
+    content: |
+      apiVersion: apiserver.config.k8s.io/v1
+      kind: AdmissionConfiguration
+      plugins:
+        - name: EventRateLimit
+          path: /etc/kubernetes/config/event-config.yaml
+
+  - owner: root:root
+    path: /etc/kubernetes/config/event-config.yaml
+    content: |
+      apiVersion: eventratelimit.admission.k8s.io/v1alpha1
+      kind: Configuration
+      limits:
+        - type: Server
+          qps: {{ .Cluster.ConfigItems.event_rate_limit_config_qps }}
+          burst: {{ .Cluster.ConfigItems.event_rate_limit_config_burst }}
+{{ end }}

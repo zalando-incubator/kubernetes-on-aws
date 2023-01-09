@@ -1,4 +1,3 @@
-{{ if ne .Cluster.ConfigItems.audittrail_url "" }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -6,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: audittrail-adapter
-    version: master-30
+    version: master-36
 spec:
   selector:
     matchLabels:
@@ -17,7 +16,7 @@ spec:
     metadata:
       labels:
         application: audittrail-adapter
-        version: master-30
+        version: master-36
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics
@@ -36,7 +35,7 @@ spec:
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: container-registry.zalando.net/teapot/audittrail-adapter:master-30
+        image: container-registry.zalando.net/teapot/audittrail-adapter:master-36
         env:
           - name: AWS_REGION
             value: {{.Cluster.Region}}
@@ -46,23 +45,32 @@ spec:
         - --s3-bucket-name=zalando-audittrail-{{accountID .InfrastructureAccount}}-{{.LocalID}}
         - --address=:8889
         - --metrics-address=:7980
+        {{- if eq .Cluster.ConfigItems.audittrail_url "" }}
+        - --metrics-only
+        {{- end }}
+        {{- range $label := split .Cluster.ConfigItems.auditlog_metric_dimensions  "," }}
+        - --metric-labels={{ $label }}
+        {{- end }}
+        {{- if ne .Cluster.ConfigItems.audittrail_url "" }}
         volumeMounts:
         - name: platform-iam-credentials
           mountPath: /meta/credentials
           readOnly: true
+        {{- end }}
         resources:
           limits:
-            cpu: 50m
-            memory: 200Mi
+            cpu: {{ .Cluster.ConfigItems.audittrail_adapter_cpu }}
+            memory: {{ .Cluster.ConfigItems.audittrail_adapter_memory }}
           requests:
-            cpu: 50m
-            memory: 200Mi
+            cpu: {{ .Cluster.ConfigItems.audittrail_adapter_cpu }}
+            memory: {{ .Cluster.ConfigItems.audittrail_adapter_memory }}
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
+      {{- if ne .Cluster.ConfigItems.audittrail_url "" }}
       volumes:
       - name: platform-iam-credentials
         secret:
           secretName: audittrail-adapter
-{{ end }}
+      {{- end }}
