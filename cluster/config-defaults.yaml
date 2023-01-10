@@ -633,7 +633,11 @@ cpu_manager_policy: "none"
 allowed_unsafe_sysctls: "net.ipv4.tcp_keepalive_time,net.ipv4.tcp_keepalive_intvl,net.ipv4.tcp_keepalive_probes,net.ipv4.tcp_syn_retries,net.ipv4.tcp_retries2"
 
 # enable CSI Driver feature flag
+{{if eq .Cluster.Environment "e2e"}}
+enable_csi: "true"
+{{else}}
 enable_csi: "false"
+{{end}}
 # enable CSIMigration and CSIMigrationAWS feature flags (make sure to set `enable_csi: true` for this to work)
 enable_csi_migration: "false"
 
