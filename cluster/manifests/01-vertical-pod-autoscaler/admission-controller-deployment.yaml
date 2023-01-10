@@ -27,7 +27,11 @@ spec:
       serviceAccountName: vpa-admission-controller
       containers:
       - name: admission-controller
-        image: registry.opensource.zalan.do/teapot/vpa-admission-controller:v0.6.1-internal.12
+        {{if eq .Cluster.ConfigItems.vertical_pod_autoscaler_version "current"}}
+        image: container-registry.zalando.net/teapot/vpa-admission-controller:v0.11.0-internal.17
+        {{else if eq .Cluster.ConfigItems.vertical_pod_autoscaler_version "legacy"}}
+        image: container-registry.zalando.net/teapot/vpa-admission-controller:v0.6.1-internal.16
+        {{end}}
         command:
           - /admission-controller
         args:

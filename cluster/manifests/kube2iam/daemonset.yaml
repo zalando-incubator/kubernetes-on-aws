@@ -6,7 +6,7 @@ metadata:
   labels:
     application: kubernetes
     component: kube2iam
-    version: 0.10.11
+    version: 0.11.1
 spec:
   selector:
     matchLabels:
@@ -19,7 +19,7 @@ spec:
         daemonset: kube2iam
         application: kubernetes
         component: kube2iam
-        version: 0.10.11
+        version: 0.11.1
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
@@ -36,7 +36,7 @@ spec:
         effect: NoExecute
       hostNetwork: true
       containers:
-      - image: container-registry.zalando.net/teapot/kube2iam:0.10.11-master-10
+      - image: container-registry.zalando.net/teapot/kube2iam:0.11.1-master-13
         name: kube2iam
         args:
         - --auto-discover-base-arn
@@ -61,9 +61,9 @@ spec:
           timeoutSeconds: 3
         resources:
           requests:
-            cpu: 25m
-            memory: 100Mi
+            cpu: {{ .Cluster.ConfigItems.kube2iam_cpu }}
+            memory: {{ .Cluster.ConfigItems.kube2iam_memory }}
             ephemeral-storage: 256Mi
           limits:
-            cpu: 25m
-            memory: 100Mi
+            cpu: {{ .Cluster.ConfigItems.kube2iam_cpu }}
+            memory: {{ .Cluster.ConfigItems.kube2iam_memory }}

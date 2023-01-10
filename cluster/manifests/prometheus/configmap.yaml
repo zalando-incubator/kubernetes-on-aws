@@ -185,6 +185,7 @@ data:
         namespaces:
           names:
             - kube-system
+            - kubenurse
       relabel_configs:
       # Look for the Prometheus annotations and scrape based on those
       - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
@@ -229,7 +230,7 @@ data:
           names:
             - kube-system
       relabel_configs:
-      - source_labels: [__meta_kubernetes_pod_label_application, __meta_kubernetes_pod_container_port_number]
+      - source_labels: [__meta_kubernetes_pod_label_daemonset, __meta_kubernetes_pod_container_port_number]
         action: keep
         regex: coredns;9054
       - action: replace
@@ -288,7 +289,7 @@ data:
         target_label: uid
       - source_labels: [__name__]
         action: keep
-        regex: '(container_cpu_cfs_throttled_seconds_total|container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_memory_rss|container_memory_cache|container_network_receive_bytes_total|container_network_transmit_bytes_total|container_fs_usage_bytes|container_fs_limit_bytes|container_fs_reads_bytes_total|container_fs_writes_bytes_total|container_threads|container_threads_max)'
+        regex: '(container_cpu_cfs_throttled_seconds_total|container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_memory_rss|container_memory_cache|container_network_receive_bytes_total|container_network_receive_packets_dropped_total|container_network_transmit_bytes_total|container_network_transmit_packets_dropped_total|container_fs_usage_bytes|container_fs_limit_bytes|container_fs_reads_bytes_total|container_fs_writes_bytes_total|container_threads|container_threads_max|container_file_descriptors{{ if eq .Cluster.ConfigItems.node_exporter_experimental_metrics "true" }}|ethtool{{end}})'
     - job_name: 'node-exporter'
       scheme: http
       honor_labels: true

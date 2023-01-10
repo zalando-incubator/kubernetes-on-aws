@@ -4,7 +4,8 @@ metadata:
   name: external-dns
   namespace: kube-system
   labels:
-    application: external-dns
+    application: kubernetes
+    component: external-dns
 spec:
   targetRef:
     apiVersion: apps/v1
@@ -16,4 +17,4 @@ spec:
     containerPolicies:
     - containerName: external-dns
       maxAllowed:
-        memory: 4Gi
+        memory: {{ .ConfigItems.external_dns_mem }}

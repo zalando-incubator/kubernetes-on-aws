@@ -29,8 +29,13 @@ data:
       minimal-responses: yes
       extended-statistics: yes
       # support reverse lookup of kubernetes addresses
+{{ if or (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage1") (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage2") }}
       local-zone: "2.10.in-addr.arpa." transparent
       local-zone: "3.10.in-addr.arpa." transparent
+{{ else }}
+      local-zone: "2.10.in-addr.arpa." transparent
+{{ end }}
+      local-zone: "5.10.in-addr.arpa." transparent
       # make metrics available for the unbound-telemetry container (127.0.0.1:9054)
       remote-control:
         control-enable: yes
@@ -38,11 +43,20 @@ data:
     forward-zone:
       name: "."
       forward-addr: 127.0.0.1@9254 # coredns
+{{ if or (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage1") (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage2") }}
     forward-zone:
       name: "2.10.in-addr.arpa."
       forward-addr: 127.0.0.1@9254 # coredns
     forward-zone:
       name: "3.10.in-addr.arpa."
+      forward-addr: 127.0.0.1@9254 # coredns
+{{ else }}
+    forward-zone:
+      name: "2.10.in-addr.arpa."
+      forward-addr: 127.0.0.1@9254 # coredns
+{{ end }}
+    forward-zone:
+      name: "5.10.in-addr.arpa."
       forward-addr: 127.0.0.1@9254 # coredns
   Corefile: |
 {{ if and (ne .ConfigItems.custom_dns_zone "") (ne .ConfigItems.custom_dns_zone_nameservers "") }}
@@ -68,7 +82,7 @@ data:
 {{ end }}
         template IN A {
             match "^.*[.]ingress[.]cluster[.]local"
-            answer "{{"{{"}} .Name {{"}}"}} 60 IN A 10.3.99.99"
+            answer "{{"{{"}} .Name {{"}}"}} 60 IN A 10.5.99.99"
             fallthrough
         }
         template IN AAAA {
@@ -79,9 +93,9 @@ data:
     }
 {{ end }}
 
-    # 10.2.0.0/16, 10.3.0.0/16 defines that this server is authority for revese
+    # Defines that this server is authority for reverse
     # lookups for these ranges.
-    cluster.local:9254 10.2.0.0/16:9254 10.3.0.0/16:9254 {{ if eq .ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ range $src := split .ConfigItems.tracing_coredns_global_traces_endpoint  "," }}{{ $src }}:9254 {{ end }} {{ end }} {
+    cluster.local:9254 {{ if or (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage1") (eq .ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage2") }}10.2.0.0/15:9254{{ else }}10.2.0.0/16:9254{{ end }} 10.5.0.0/16:9254 {{ if eq .ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ range $src := split .ConfigItems.tracing_coredns_global_traces_endpoint  "," }}{{ $src }}:9254 {{ end }} {{ end }} {
         errors
         {{ if eq .ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}
           {{- with $cluster := .Cluster }}

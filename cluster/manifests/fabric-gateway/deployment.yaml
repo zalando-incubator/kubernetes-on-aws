@@ -1,0 +1,59 @@
+{{ $version := "master-165" }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fabric-gateway-controller
+  namespace: kube-system
+  labels:
+    application: gateway-operator
+    component: fabric-gateway-controller
+    version: "{{ $version }}"
+    mode: "{{ .ConfigItems.fabric_gateway_controller_mode }}"
+spec:
+{{ if eq .ConfigItems.fabric_gateway_controller_mode "disabled" }}
+  replicas: 0
+{{ else }}
+  replicas: 1
+{{ end }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      deployment: fabric-gateway-controller
+  template:
+    metadata:
+      labels:
+        deployment: fabric-gateway-controller
+        application: gateway-operator
+        component: fabric-gateway-controller
+        version: "{{ $version }}"
+        mode: "{{ .ConfigItems.fabric_gateway_controller_mode }}"
+      annotations:
+        logging/destination: "{{ .Cluster.ConfigItems.log_destination_infra }}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7979"
+        prometheus.io/scrape: "true"
+    spec:
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
+      serviceAccountName: fabric-gateway-controller
+      containers:
+        - name: controller
+          image: container-registry.zalando.net/gwproxy/fabric-gateway:{{ $version }}
+          args:
+{{ if eq .ConfigItems.fabric_gateway_controller_mode "production" }}
+            - -predicates=True() && True()
+            - -update-fabric-gateway-status=true
+{{ else }}
+            - -predicates=False()
+            - -update-fabric-gateway-status=false
+{{ end }}
+            - -versioned-hosts-base-domain={{ .Values.hosted_zone }}
+            - -log-level=info
+          resources:
+            requests:
+              cpu: {{ .ConfigItems.fabric_gateway_controller_cpu }}
+              memory: {{ .ConfigItems.fabric_gateway_controller_memory }}
+            limits:
+              cpu: {{ .ConfigItems.fabric_gateway_controller_cpu }}
+              memory: {{ .ConfigItems.fabric_gateway_controller_memory }}

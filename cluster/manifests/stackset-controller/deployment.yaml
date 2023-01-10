@@ -1,21 +1,25 @@
+{{ $version := "v1.3.62" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: stackset-controller
   namespace: kube-system
   labels:
-    application: stackset-controller
-    version: "v1.3.52"
+    application: kubernetes
+    component: stackset-controller
+    version: {{ $version }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      application: stackset-controller
+      deployment: stackset-controller
   template:
     metadata:
       labels:
-        application: stackset-controller
-        version: "v1.3.52"
+        application: kubernetes
+        component: stackset-controller
+        deployment: stackset-controller
+        version: {{ $version }}
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics
@@ -26,7 +30,7 @@ spec:
       serviceAccountName: stackset-controller
       containers:
       - name: stackset-controller
-        image: "registry.opensource.zalan.do/teapot/stackset-controller:v1.3.52"
+        image: "container-registry.zalando.net/teapot/stackset-controller:{{ $version }}"
         args:
         - "--interval={{ .Cluster.ConfigItems.stackset_controller_sync_interval }}"
 {{- if eq .Cluster.ConfigItems.stackset_routegroup_support_enabled "true" }}

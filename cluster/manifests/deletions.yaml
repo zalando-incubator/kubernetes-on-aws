@@ -23,7 +23,27 @@ pre_apply:
     application: nvidia-gpu-device-plugin
   namespace: kube-system
   kind: DaemonSet
-
+- labels:
+    application: external-dns
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: stackset-controller
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    application: kubernetes-dashboard
+  namespace: kube-system
+  kind: Deployment
+- labels:
+    component: metrics-scraper
+  namespace: kube-system
+  kind: Deployment
+# cleanup old vpa related roles
+- name: system:admission-controller
+  kind: ClusterRole
+- name: system:admission-controller
+  kind: ClusterRoleBinding
 # everything defined under here will be deleted after applying the manifests
 post_apply:
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
@@ -34,16 +54,45 @@ post_apply:
   namespace: cron
   kind: LimitRange
 {{ end }}
-{{ if ne .ConfigItems.enable_csi_migration "true" }}
-- name: csi-node-driver
+{{ if ne .ConfigItems.enable_csi "true" }}
+- name: ebs-external-attacher-role
+  kind: ClusterRole
+- name: ebs-csi-node-role
+  kind: ClusterRole
+- name: ebs-external-provisioner-role
+  kind: ClusterRole
+- name: ebs-external-resizer-role
+  kind: ClusterRole
+- name: ebs-csi-attacher-binding
+  kind: ClusterRoleBinding
+- name: ebs-csi-node-getter-binding
+  kind: ClusterRoleBinding
+- name: ebs-csi-provisioner-binding
+  kind: ClusterRoleBinding
+- name: ebs-csi-resizer-binding
+  kind: ClusterRoleBinding
+- name: ebs-csi-controller
+  namespace: kube-system
+  kind: Deployment
+- name: ebs.csi.aws.com
+  kind: CSIDriver
+- name: ebs-csi-node
   namespace: kube-system
   kind: DaemonSet
 - name: ebs-csi-controller
   namespace: kube-system
-  kind: DaemonSet
-- name: ebs
-  kind: StorageClass
+  kind: PodDisruptionBudget
+- name: ebs-csi-node-privileged-psp
   namespace: kube-system
+  kind: RoleBinding
+- name: ebs-csi-controller-sa
+  namespace: kube-system
+  kind: ServiceAccount
+- name: ebs-csi-node-sa
+  namespace: kube-system
+  kind: ServiceAccount
+- name: ebs-sc
+  kind: StorageClass
 {{ end }}
 {{ if ne .ConfigItems.prometheus_csi_ebs "true" }}
 - name: prometheus-csi
@@ -81,6 +130,21 @@ post_apply:
   namespace: kube-system
   kind: VerticalPodAutoscaler
 {{ end }}
+{{ if ne .ConfigItems.spot_node_rescheduler "true" }}
+- name: node-spot-rescheduler
+  namespace: kube-system
+  kind: CronJob
+- name: spot-node-rescheduler
+  namespace: kube-system
+  kind: CronJob
+- name: spot-node-rescheduler
+  namespace: kube-system
+  kind: ServiceAccount
+- name: spot-node-rescheduler
+  kind: ClusterRole
+- name: spot-node-rescheduler
+  kind: ClusterRoleBinding
+{{ end }}
 - labels:
     application: external-dns
   namespace: kube-system
@@ -95,3 +159,17 @@ post_apply:
   namespace: kube-system
   kind: Deployment
 {{ end }}
+
+{{- if eq .ConfigItems.prometheus_remote_write "disabled" }}
+- name: prometheus-credentials
+  kind: PlatformCredentialsSet
+  namespace: kube-system
+{{- end }}
+{{- if eq .Cluster.ConfigItems.network_monitoring_enabled "false" }}
+- kind: Namespace
+  name: kubenurse
+- kind: ClusterRole
+  name: kubenurse
+- kind: ClusterRoleBinding
+  name: kubenurse
+{{- end }}

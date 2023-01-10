@@ -1,6 +1,6 @@
 module github.com/zalando-incubator/kubernetes-on-aws/tests/e2e
 
-go 1.18
+go 1.19
 
 require (
 	github.com/evanphx/json-patch v4.9.0+incompatible
@@ -16,11 +16,11 @@ require (
 	github.com/zalando-incubator/kube-aws-iam-controller v0.1.2
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	k8s.io/api v0.21.12
-	k8s.io/apimachinery v0.21.12
-	k8s.io/apiserver v0.0.0
-	k8s.io/client-go v0.21.12
-	k8s.io/kubernetes v0.0.0
+	k8s.io/api v0.21.14
+	k8s.io/apimachinery v0.21.14
+	k8s.io/apiserver v0.21.14
+	k8s.io/client-go v0.21.14
+	k8s.io/kubernetes v1.21.14
 )
 
 require (

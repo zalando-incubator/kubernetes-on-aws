@@ -39,7 +39,7 @@ spec:
         image: container-registry.zalando.net/teapot/kube-cluster-autoscaler:v1.18.2-internal.39
         command:
           - ./cluster-autoscaler
-          - --v=1
+          - --v={{.Cluster.ConfigItems.autoscaling_autoscaler_log_level}}
           - --stderrthreshold=info
           - --scale-down-utilization-threshold={{.Cluster.ConfigItems.autoscaling_utilization_threshold}}
           - --cloud-provider=aws
@@ -51,7 +51,11 @@ spec:
           - --expander=highest-priority
           - --balance-similar-node-groups
           - --max-node-provision-time=7m
-          - --max-nodes-total={{ nodeCIDRMaxNodes (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}
+          {{ $pod_cidr_size := "16" }}
+          {{- if eq .Cluster.ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage2" }}
+          {{ $pod_cidr_size = "15" }}
+          {{- end }}
+          - --max-nodes-total={{ nodeCIDRMaxNodesPodCIDR (parseInt64 $pod_cidr_size) (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}
           - --scale-down-enabled={{ .Cluster.ConfigItems.autoscaling_scale_down_enabled }}
           - --max-empty-bulk-delete={{ .Cluster.ConfigItems.autoscaling_max_empty_bulk_delete }}
           - --scale-down-unneeded-time={{ .Cluster.ConfigItems.autoscaling_scale_down_unneeded_time }}

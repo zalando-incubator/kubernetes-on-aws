@@ -1,0 +1,35 @@
+{{ if eq .ConfigItems.spot_node_rescheduler "true" }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: spot-node-rescheduler
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: spot-node-rescheduler
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 1800
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            application: kubernetes
+            component: spot-node-rescheduler
+        spec:
+          serviceAccountName: spot-node-rescheduler
+          restartPolicy: Never
+          containers:
+          - name: spot-node-rescheduler
+            image: container-registry.zalando.net/teapot/spot-node-rescheduler:main-1
+            resources:
+              limits:
+                cpu: "{{ .ConfigItems.spot_node_rescheduler_cpu }}"
+                memory: "{{ .ConfigItems.spot_node_rescheduler_memory }}"
+              requests:
+                cpu: "{{ .ConfigItems.spot_node_rescheduler_cpu }}"
+                memory: "{{ .ConfigItems.spot_node_rescheduler_memory }}"
+{{ end }}

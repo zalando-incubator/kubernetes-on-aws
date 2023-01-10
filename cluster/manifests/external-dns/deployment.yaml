@@ -4,19 +4,22 @@ metadata:
   name: external-dns
   namespace: kube-system
   labels:
-    application: external-dns
-    version: v0.9.0
+    application: kubernetes
+    component: external-dns
+    version: v0.12.2
 spec:
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      application: external-dns
+      deployment: external-dns
   template:
     metadata:
       labels:
-        application: external-dns
-        version: v0.9.0
+        application: kubernetes
+        component: external-dns
+        deployment: external-dns
+        version: v0.12.2
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
         prometheus.io/path: /metrics
@@ -31,7 +34,11 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
+        {{- if eq .Cluster.ConfigItems.external_dns_version "current" }}
+        image: container-registry.zalando.net/teapot/external-dns:v0.13.1-master-32
+        {{- else }}
         image: container-registry.zalando.net/teapot/external-dns:v0.9.0-master-26
+        {{- end }}
         args:
         - --source=service
         - --source=ingress
@@ -43,14 +50,16 @@ spec:
         - --registry=txt
         - --txt-owner-id={{ .Region }}:{{ .LocalID }}
         - --txt-prefix={{ .ConfigItems.external_dns_ownership_prefix }}
-        - --aws-batch-change-size=100
+        - --aws-batch-change-size=120
+        - --annotation-filter=external-dns.alpha.kubernetes.io/exclude notin (true)
+        - --policy={{ .ConfigItems.external_dns_policy }}
         resources:
           requests:
             cpu: 50m
-            memory: 4Gi
+            memory: {{ .ConfigItems.external_dns_mem }}
           limits:
             cpu: 50m
-            memory: 4Gi
+            memory: {{ .ConfigItems.external_dns_mem }}
         livenessProbe:
           httpGet:
             path: /healthz

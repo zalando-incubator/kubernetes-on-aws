@@ -36,9 +36,25 @@ import (
 )
 
 const (
-	compliantImage    = "registry.opensource.zalan.do/teapot/skipper:v0.13.98"       // this image tag is compliant
-	compliantImage2   = "registry.opensource.zalan.do/teapot/skipper:v0.13.97"       // this image tag is compliant as well
-	nonCompliantImage = "registry.opensource.zalan.do/teapot/skipper-test:pr-1845-1" // this image tag is not compliant
+	compliantImage1     = "registry.opensource.zalan.do/teapot/skipper:v0.14.0" // these are several compliant images
+	compliantImage2     = "registry.opensource.zalan.do/teapot/skipper:v0.14.1"
+	compliantImage3     = "registry.opensource.zalan.do/teapot/skipper:v0.14.2"
+	compliantImage4     = "registry.opensource.zalan.do/teapot/skipper:v0.14.3"
+	compliantImage5     = "registry.opensource.zalan.do/teapot/skipper:v0.14.4"
+	compliantImage6     = "registry.opensource.zalan.do/teapot/skipper:v0.14.5"
+	compliantImage7     = "registry.opensource.zalan.do/teapot/skipper:v0.14.6"
+	compliantImage8     = "registry.opensource.zalan.do/teapot/skipper:v0.14.7"
+	nonCompliantImage1  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-2" // these are several non-compliant images
+	nonCompliantImage2  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-3"
+	nonCompliantImage3  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-5"
+	nonCompliantImage4  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-6"
+	nonCompliantImage5  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-7"
+	nonCompliantImage6  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-8"
+	nonCompliantImage7  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-10"
+	nonCompliantImage8  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-11"
+	nonCompliantImage9  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-12"
+	nonCompliantImage10 = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-13"
+	waitForPodTimeout   = 5 * time.Minute
 )
 
 var _ = describe("Image Policy Tests (Deployment)", func() {
@@ -57,7 +73,7 @@ var _ = describe("Image Policy Tests (Deployment)", func() {
 
 		By("Creating Deployment " + namePrefix + " in namespace " + namespace)
 
-		deployment := createImagePolicyWebhookTestDeployment(namePrefix, namespace, compliantImage, appLabel, int32(replicas))
+		deployment := createImagePolicyWebhookTestDeployment(namePrefix, namespace, compliantImage1, appLabel, int32(replicas))
 		_, err := cs.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -71,7 +87,7 @@ var _ = describe("Image Policy Tests (Deployment)", func() {
 		err = waitForDeploymentWithCondition(cs, namespace, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -83,7 +99,7 @@ var _ = describe("Image Policy Tests (Deployment)", func() {
 
 		By("Creating Deployment " + namePrefix + " in namespace " + namespace)
 
-		deployment := createImagePolicyWebhookTestDeployment(namePrefix, namespace, nonCompliantImage, podName, int32(replicas))
+		deployment := createImagePolicyWebhookTestDeployment(namePrefix, namespace, nonCompliantImage1, podName, int32(replicas))
 		_, err := cs.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -115,7 +131,7 @@ var _ = describe("Image Policy Tests (Deployment) (when disabled)", func() {
 
 		By("Creating Deployment " + namePrefix + " in namespace " + namespace)
 
-		deployment := createImagePolicyWebhookTestDeployment(namePrefix, namespace, nonCompliantImage, appLabel, int32(replicas))
+		deployment := createImagePolicyWebhookTestDeployment(namePrefix, namespace, nonCompliantImage2, appLabel, int32(replicas))
 		_, err := cs.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -129,7 +145,7 @@ var _ = describe("Image Policy Tests (Deployment) (when disabled)", func() {
 		err = waitForDeploymentWithCondition(cs, namespace, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
@@ -149,7 +165,7 @@ var _ = describe("Image Policy Tests (Pods)", func() {
 
 		By("Creating pod " + namePrefix + " in namespace " + namespace)
 
-		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage, appLabel)
+		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage2, appLabel)
 		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -160,7 +176,7 @@ var _ = describe("Image Policy Tests (Pods)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -171,7 +187,7 @@ var _ = describe("Image Policy Tests (Pods)", func() {
 
 		By("Creating pod " + namePrefix + " in namespace " + namespace)
 
-		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, nonCompliantImage, podName)
+		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, nonCompliantImage3, podName)
 		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).To(HaveOccurred())
 	})
@@ -192,7 +208,7 @@ var _ = describe("Image Policy Tests (Pods) (when disabled)", func() {
 
 		By("Creating pod " + namePrefix + " in namespace " + namespace)
 
-		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, nonCompliantImage, appLabel)
+		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, nonCompliantImage4, appLabel)
 		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -203,7 +219,7 @@ var _ = describe("Image Policy Tests (Pods) (when disabled)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
@@ -223,7 +239,7 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 
 		By("Creating pod " + namePrefix + " in namespace " + namespace)
 
-		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage, appLabel)
+		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage3, appLabel)
 		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -234,7 +250,7 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Updating pod " + namePrefix + " in namespace " + namespace)
@@ -242,12 +258,12 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		pod.Spec.Containers[0].Image = compliantImage2
+		pod.Spec.Containers[0].Image = compliantImage4
 
 		_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -258,7 +274,7 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 
 		By("Creating pod " + namePrefix + " in namespace " + namespace)
 
-		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage, appLabel)
+		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage5, appLabel)
 		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -269,7 +285,7 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
@@ -277,7 +293,7 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 
 		By("Updating pod " + namePrefix + " in namespace " + namespace)
 
-		pod.Spec.Containers[0].Image = nonCompliantImage
+		pod.Spec.Containers[0].Image = nonCompliantImage5
 
 		_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).To(HaveOccurred())
@@ -299,7 +315,7 @@ var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func()
 
 		By("Creating pod " + namePrefix + " in namespace " + namespace)
 
-		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage, appLabel)
+		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage6, appLabel)
 		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -310,7 +326,7 @@ var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func()
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
@@ -318,12 +334,12 @@ var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func()
 
 		By("Updating pod " + namePrefix + " in namespace " + namespace)
 
-		pod.Spec.Containers[0].Image = nonCompliantImage
+		pod.Spec.Containers[0].Image = nonCompliantImage6
 
 		_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
@@ -344,7 +360,7 @@ var _ = describe("Image Policy Tests (StatefulSet)", func() {
 
 		By("Creating StatefulSet " + namePrefix + " in namespace " + namespace)
 
-		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, compliantImage, appLabel, int32(replicas))
+		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, compliantImage7, appLabel, int32(replicas))
 		_, err := cs.AppsV1().StatefulSets(namespace).Create(context.TODO(), statefulSet, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -357,7 +373,7 @@ var _ = describe("Image Policy Tests (StatefulSet)", func() {
 
 		statefulset.WaitForRunningAndReady(cs, int32(replicas), statefulSet)
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -369,7 +385,7 @@ var _ = describe("Image Policy Tests (StatefulSet)", func() {
 
 		By("Creating StatefulSet " + namePrefix + " in namespace " + namespace)
 
-		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, nonCompliantImage, appLabel, int32(replicas))
+		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, nonCompliantImage7, appLabel, int32(replicas))
 		_, err := cs.AppsV1().StatefulSets(namespace).Create(context.TODO(), statefulSet, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -402,7 +418,7 @@ var _ = describe("Image Policy Tests (StatefulSet) (when disabled)", func() {
 
 		By("Creating StatefulSet " + namePrefix + " in namespace " + namespace)
 
-		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, nonCompliantImage, appLabel, int32(replicas))
+		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, nonCompliantImage8, appLabel, int32(replicas))
 		_, err := cs.AppsV1().StatefulSets(namespace).Create(context.TODO(), statefulSet, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -415,7 +431,7 @@ var _ = describe("Image Policy Tests (StatefulSet) (when disabled)", func() {
 
 		statefulset.WaitForRunningAndReady(cs, int32(replicas), statefulSet)
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
@@ -435,7 +451,7 @@ var _ = describe("Image Policy Tests (Job)", func() {
 
 		By("Creating Job " + namePrefix + " in namespace " + namespace)
 
-		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, compliantImage, appLabel)
+		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, compliantImage8, appLabel)
 		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -446,7 +462,7 @@ var _ = describe("Image Policy Tests (Job)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		job.WaitForJobFinish(cs, namespace, jobObj.Name)
@@ -459,7 +475,7 @@ var _ = describe("Image Policy Tests (Job)", func() {
 
 		By("Creating Job " + namePrefix + " in namespace " + namespace)
 
-		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, nonCompliantImage, appLabel)
+		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, nonCompliantImage9, appLabel)
 		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -491,7 +507,7 @@ var _ = describe("Image Policy Tests (Job) (when disabled)", func() {
 
 		By("Creating Job " + namePrefix + " in namespace " + namespace)
 
-		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, nonCompliantImage, appLabel)
+		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, nonCompliantImage10, appLabel)
 		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -502,7 +518,7 @@ var _ = describe("Image Policy Tests (Job) (when disabled)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		job.WaitForJobFinish(cs, namespace, jobObj.Name)
@@ -538,7 +554,7 @@ var _ = describe("ECR Registry Pull", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		job.WaitForJobFinish(cs, namespace, jobObj.Name)
@@ -565,7 +581,7 @@ var _ = describe("ECR Registry Pull", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		job.WaitForJobFinish(cs, namespace, jobObj.Name)
