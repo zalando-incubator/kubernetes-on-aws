@@ -1,6 +1,28 @@
 #!/bin/bash
 set -euo pipefail
 
+function fail {
+    echo $1 >&2
+    exit 1
+}
+
+function retry {
+    local n=1
+    local max=5
+    while true; do
+        "$@" && break || {
+            if [[ $n -lt $max ]]; then
+                ((n++))
+                echo "Command failed. Attempt $n/$max:"
+                local delay=$(($RANDOM % 40 + 10))
+                sleep $delay;
+            else
+                fail "The command has failed after $n attempts."
+            fi
+        }
+    done
+}
+
 create_cluster=false
 e2e=false
 loadtest_e2e=false
@@ -110,7 +132,7 @@ if [ "$create_cluster" = true ]; then
         aws-account-creator refresh-certificates --registry-file base_cluster.yaml --create-ca
 
         # Create cluster
-        clm provision \
+        retry clm provision \
             --token="${CLUSTER_ADMIN_TOKEN}" \
             --directory="$(pwd)/$BASE_CFG_PATH" \
             --debug \
@@ -138,7 +160,7 @@ if [ "$create_cluster" = true ]; then
     # Update cluster
     echo "Updating cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
 
-    clm provision \
+    retry clm provision \
         --token="${CLUSTER_ADMIN_TOKEN}" \
         --directory="$(pwd)/../.." \
         --debug \
