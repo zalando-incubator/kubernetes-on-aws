@@ -53,7 +53,22 @@ data:
       rules:
       - record: job:skipper_count_by_host_code:sum
         expr: sum(rate(skipper_serve_host_count{}[1m])) by (host,code)
+    {{if eq .Cluster.ConfigItems.network_monitoring_enabled "true" }}
+    - name: kubenurse latency of inbound requests per node
+      rules:
+      - record: job:kubenurse_node_ingress_latency_p90:histogram
+        expr: histogram_quantile(0.9, sum by (type, le) (rate(kubenurse_request_duration_bucket{type=~"path_ip-.*"}[{{.Cluster.ConfigItems.network_monitoring_check_interval}}]))) >= 0
+        
+    - name: kubenurse latency of outbound requests per node
+      rules:
+        - record: job:kubenurse_node_egress_latency_p90:histogram
+          expr: histogram_quantile(0.9, sum by (node_name, le) (rate(kubenurse_request_duration_bucket{type=~"path_ip-.*"}[{{.Cluster.ConfigItems.network_monitoring_check_interval}}]))) >= 0
 
+    - name: kubenurse error rate of inbound requests per node
+      rules:
+        - record: job:kubenurse_node_error_rate:sum
+          expr: sum by (type) (increase(kubenurse_errors_total{type=~"path_ip-.*"}[{{.Cluster.ConfigItems.network_monitoring_check_interval}}]))
+    {{end}}
 
   prometheus.yml: |-
     global:
