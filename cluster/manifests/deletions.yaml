@@ -44,6 +44,7 @@ pre_apply:
   kind: ClusterRole
 - name: system:admission-controller
   kind: ClusterRoleBinding
+
 # everything defined under here will be deleted after applying the manifests
 post_apply:
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
@@ -159,6 +160,12 @@ post_apply:
   namespace: kube-system
   kind: Deployment
 {{ end }}
+
+{{- if ne .ConfigItems.skipper_oauth2_ui_login "true" }}
+- name: skipper-ingress-auth
+  namespace: kube-system
+  kind: RouteGroup
+{{- end }}
 
 {{- if eq .ConfigItems.prometheus_remote_write "disabled" }}
 - name: prometheus-credentials
