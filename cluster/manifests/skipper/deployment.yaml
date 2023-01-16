@@ -225,8 +225,8 @@ spec:
           - "-oauth2-client-id-file=/etc/skipper/oauth/{{ .Cluster.Alias }}-employee-client-id"
           - "-oauth2-client-secret-file=/etc/skipper/oauth/{{ .Cluster.Alias }}-employee-client-secret"
           - "-credentials-update-interval=1m"
-          - "-oauth2-token-cookie-name={{.ConfigItems.skipper_oauth2_cookie_name }}"
-          - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
+          - "-oauth2-token-cookie-name={{ .ConfigItems.skipper_oauth2_cookie_name }}"
+          - "-oauth2-auth-url-parameters=redirect_uri=https://{{ .ConfigItems.skipper_oauth2_redirect_uri_host }}{{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
@@ -429,7 +429,6 @@ spec:
           - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
           - "-enable-oauth2-grant-flow"
-          - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_url }}"
 {{ end }}
 {{ if ne .ConfigItems.skipper_edit_route_placeholders "" }}
           {{ range $placeholder := split .ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
