@@ -53,14 +53,14 @@ spec:
               value: "{{.Cluster.ConfigItems.network_monitoring_check_kubenurse_ingress}}"
             - name: KUBENURSE_CHECK_NEIGHBOURHOOD
               value: "{{.Cluster.ConfigItems.network_monitoring_check_neighborhood}}"
-          image: "container-registry.zalando.net/teapot/kubenurse:v1.7.0-main-4"
+          image: "container-registry.zalando.net/teapot/kubenurse:v1.7.0-histogram-main-5"
           resources:
             requests:
-              cpu: "40m"
-              memory: "100Mi"
+              cpu: "{{.Cluster.ConfigItems.network_monitoring_daemonset_cpu}}"
+              memory: "{{.Cluster.ConfigItems.network_monitoring_daemonset_memory}}"
             limits:
-              cpu: "40m"
-              memory: "100Mi"
+              cpu: "{{.Cluster.ConfigItems.network_monitoring_daemonset_cpu}}"
+              memory: "{{.Cluster.ConfigItems.network_monitoring_daemonset_memory}}"
           ports:
             - containerPort: 8080
               protocol: TCP

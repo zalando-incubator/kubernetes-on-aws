@@ -244,6 +244,12 @@ skipper_local_tokeninfo: "production"
 skipper_local_tokeninfo: "bridge"
 {{end}}
 
+# tokeninfo cache
+# integer, non-zero value enables tokeninfo cache and sets the maximum number of cached tokens
+skipper_tokeninfo_cache_size: 0
+# duration, non-zero value limits the lifetime of a cached tokeninfo
+skipper_tokeninfo_cache_ttl: "1s"
+
 # oauth2 UI login - grant flow
 {{if eq .Cluster.Environment "e2e"}}
 skipper_oauth2_ui_login: "false"
@@ -252,13 +258,6 @@ skipper_ingress_encryption_key: ""
 skipper_oauth2_ui_login: "true"
 {{end}}
 
-# Skipper Time based scaling
-#
-# This section contains the config items related to time based scaling
-# for skipper
-# kube-zmon-scaling
-skipper_time_based_scaling_check_id: ""
-skipper_time_based_scaling_target: "1"
 # ClusterScalingSchedules
 # One or multiple cluster scaling schedules can be configured as a
 # comma-separated list of <cluster schedule name>=<target value> pairs.
@@ -588,18 +587,6 @@ audittrail_adapter_memory: "200Mi"
 kube2iam_cpu: "25m"
 kube2iam_memory: "100Mi"
 
-# The enable_node_scale_out_beyond_1k_nodes is feature toogle to change
-# the default cluster_cidr from 10.2.0.0/16 to 10.2.0.0/15, this change
-# enables the kubernetes cluster to scale out beyond 1000 nodes.
-#
-# Set `enable_node_scale_out_beyond_1k_nodes: "stage1"` to apply the cluster_cidr
-# change first in the components flannel, coredns, and skipper.
-#
-# Set `enable_node_scale_out_beyond_1k_nodes: "stage2"` to apply the cluster_cidr
-# change on the kube-controller-manager,
-enable_node_scale_out_beyond_1k_nodes: ""
-
-
 # CIDR configuration for nodes and pods
 # Changing this will change the number of nodes and pods we can schedule in the
 # cluster: https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr
@@ -854,6 +841,8 @@ subdomain_max_length: "57"
 
 # Network monitoring
 network_monitoring_enabled: "false"
+network_monitoring_daemonset_cpu: "40m"
+network_monitoring_daemonset_memory: "100Mi"
 network_monitoring_check_api_server_direct: "false"
 network_monitoring_check_api_server_dns: "false"
 network_monitoring_check_kubenurse_service: "false"
