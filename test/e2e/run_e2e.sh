@@ -51,7 +51,8 @@ export LOCAL_ID="${LOCAL_ID:-"e2e-${CPU_ARCH}-${CDP_BUILD_VERSION}"}"
 export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
-export MASTER_INSTANCE_TYPE="${MASTER_INSTANCE_TYPE:-"m5a.large"}"
+export MASTER_INSTANCE_FAMILY="${MASTER_INSTANCE_FAMILY:-"m5a"}"
+export WORKER_INSTANCE_FAMILY="${WORKER_INSTANCE_FAMILY:-"m5"}"
 export SKIPPER_INGRESS_INSTANCE_TYPES="${SKIPPER_INGRESS_INSTANCE_TYPES:-"\"c5.large\", \"c5a.large\", \"m5a.large\", \"m5.large\", \"t3.large\""}"
 
 # Generate a new key for this E2E run

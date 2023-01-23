@@ -52,13 +52,13 @@ clusters:
   local_id: ${LOCAL_ID}
   node_pools:
   - discount_strategy: none
-    instance_types: ["${MASTER_INSTANCE_TYPE}"]
+    instance_types: ["${MASTER_INSTANCE_FAMILY}.large"]
     name: default-master
     profile: master-default
     min_size: 1
     max_size: 2
   - discount_strategy: none
-    instance_types: ["m5.xlarge"]
+    instance_types: ["${WORKER_INSTANCE_FAMILY}.xlarge"]
     name: default-worker-splitaz
     profile: worker-splitaz
     min_size: 0
@@ -66,7 +66,7 @@ clusters:
     config_items:
       cpu_manager_policy: static
   - discount_strategy: none
-    instance_types: ["m5.xlarge"]
+    instance_types: ["${WORKER_INSTANCE_FAMILY}.xlarge"]
     config_items:
       availability_zones: "eu-central-1a"
       scaling_priority: "-100"
@@ -75,13 +75,13 @@ clusters:
     min_size: 0
     max_size: 21
   - discount_strategy: none
-    instance_types: ["m5d.xlarge"]
+    instance_types: ["${WORKER_INSTANCE_FAMILY}d.xlarge"]
     name: worker-instance-storage
     profile: worker-splitaz
     min_size: 0
     max_size: 21
   - discount_strategy: none
-    instance_types: ["m5.xlarge"]
+    instance_types: ["${WORKER_INSTANCE_FAMILY}.xlarge"]
     name: worker-combined
     profile: worker-combined
     config_items:
@@ -130,7 +130,7 @@ clusters:
       taints: nvidia.com/gpu=present:NoSchedule
       scaling_priority: "-200"
   - discount_strategy: none
-    instance_types: ["m5.xlarge"]
+    instance_types: ["${WORKER_INSTANCE_FAMILY}.xlarge"]
     min_size: 0
     max_size: 3
     profile: worker-splitaz
