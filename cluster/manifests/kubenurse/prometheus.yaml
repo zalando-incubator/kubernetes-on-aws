@@ -1,0 +1,195 @@
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: prometheus
+  namespace: kubenurse
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubenurse-prometheus
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/metrics
+      - services
+      - endpoints
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubenurse-prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubenurse-prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: kubenurse
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    application: kubernetes
+    component: prometheus
+  name: prometheus-conf
+  namespace: kubenurse
+data:
+  prometheus.rules.yml: |-
+    groups:
+      - name: kubenurse latency of inbound requests per node
+        rules:
+          - record: job:kubenurse_node_ingress_latency_p90:histogram
+            expr: histogram_quantile(0.9, sum by (type, le) (rate(kubenurse_request_duration_bucket{type=~"path_ip-.*"}[{{.Cluster.ConfigItems.network_monitoring_check_interval}}]))) >= 0
+
+      - name: kubenurse latency of outbound requests per node
+        rules:
+          - record: job:kubenurse_node_egress_latency_p90:histogram
+            expr: histogram_quantile(0.9, sum by (node_name, le) (rate(kubenurse_request_duration_bucket{type=~"path_ip-.*"}[{{.Cluster.ConfigItems.network_monitoring_check_interval}}]))) >= 0
+
+      - name: kubenurse error rate of inbound requests per node
+        rules:
+          - record: job:kubenurse_node_error_rate:sum
+            expr: sum by (type) (increase(kubenurse_errors_total{type=~"path_ip-.*"}[{{.Cluster.ConfigItems.network_monitoring_check_interval}}]))
+  prometheus.yml: |-
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: {{ .Cluster.Alias }}
+    rule_files:
+      - "prometheus.rules.yml"
+    scrape_configs:
+      - job_name: "kubenurse"
+        scheme: http
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - kubenurse
+        relabel_configs:
+          - source_labels: [ __meta_kubernetes_pod_label_daemonset, __meta_kubernetes_pod_container_port_number ]
+            action: keep
+            regex: kubenurse;8080
+          - action: replace
+            source_labels: [ '__meta_kubernetes_pod_ip' ]
+            target_label: pod_ip
+          - action: replace
+            source_labels: [ '__meta_kubernetes_namespace' ]
+            target_label: namespace
+          - action: replace
+            source_labels: [ '__meta_kubernetes_pod_label_application' ]
+            target_label: application
+          - action: replace
+            source_labels: [ '__meta_kubernetes_pod_label_component' ]
+            target_label: component
+          - action: replace
+            source_labels: [ '__meta_kubernetes_pod_name' ]
+            target_label: pod_name
+          - action: replace
+            source_labels: [ '__meta_kubernetes_pod_node_name' ]
+            target_label: node_name
+        metric_relabel_configs:
+          - source_labels: [ __name__ ]
+            action: keep
+            regex: '(kubenurse_request.*|kubenurse_errors.*)'
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    pdb-controller.zalando.org/non-ready-ttl: "5m"
+  labels:
+    application: kubernetes
+    component: kubenurse-prometheus
+    version: v2.41.0
+  name: prometheus
+  namespace: kubenurse
+spec:
+  replicas: 1
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      statefulset: kubenurse-prometheus
+  serviceName: prometheus
+  template:
+    metadata:
+      labels:
+        statefulset: kubenurse-prometheus
+        application: kubernetes
+        component: kubenurse-prometheus
+        version: v2.41.0
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
+    spec:
+      serviceAccountName: prometheus
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
+      containers:
+      - name: prometheus
+        image: container-registry.zalando.net/teapot/prometheus:v2.41.0-master-43
+        args:
+        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--storage.tsdb.path=/prometheus/"
+        - "--storage.tsdb.retention.time=20m"
+        - "--storage.tsdb.wal-compression"
+        - "--storage.tsdb.min-block-duration=60s"
+        - "--storage.tsdb.max-block-duration=120s"
+        ports:
+        - name: ingress-port
+          containerPort: 9090
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 100m
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+          # ensure that we have at least two minutes of metrics before marking ourselves as ready
+#          periodSeconds: 5
+#          successThreshold: 26
+        volumeMounts:
+          - name: prometheus-config-volume
+            mountPath: /etc/prometheus
+          - name: prometheus-storage-volume
+            mountPath: /prometheus
+        securityContext:
+          allowPrivilegeEscalation: false
+      volumes:
+      - name: prometheus-storage-volume
+        emptyDir: {}
+#          medium: Memory
+#          sizeLimit: 100Mi
+      - name: prometheus-config-volume
+        configMap:
+          defaultMode: 420
+          name: prometheus-conf
+      securityContext:
+        runAsUser: 65534
+        fsGroup: 65534
+      terminationGracePeriodSeconds: 60
+
