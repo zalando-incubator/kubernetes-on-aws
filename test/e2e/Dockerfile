@@ -1,5 +1,5 @@
 # builder image
-FROM golang:1.19 as builder
+FROM golang:1.20 as builder
 
 RUN go install github.com/onsi/ginkgo/ginkgo@v1.16.5
 
