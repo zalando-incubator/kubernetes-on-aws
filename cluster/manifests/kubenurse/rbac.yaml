@@ -36,6 +36,48 @@ subjects:
   name: "kubenurse"
   namespace: kubenurse
 {{end}}
+{{if eq .Cluster.ConfigItems.network_monitoring_separate_prometheus "true"}}
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: prometheus
+  namespace: kubenurse
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubenurse-prometheus
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/metrics
+      - services
+      - endpoints
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubenurse-prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubenurse-prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: kubenurse
+{{end}}
 ---
 # Source: kubenurse/templates/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -72,5 +114,14 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: "kubenurse"
+  namespace: kubenurse
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubenurse
+  labels:
+    application: kubernetes
+    component: kubenurse
   namespace: kubenurse
 {{end}}
