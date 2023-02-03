@@ -1,0 +1,78 @@
+{{ if eq .Cluster.ConfigItems.network_monitoring_enabled "true" }}
+{{if eq .Cluster.ConfigItems.network_monitoring_separate_prometheus "true"}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    application: kubernetes
+    component: kubenurse-prometheus
+  name: prometheus-conf
+  namespace: kubenurse
+data:
+  prometheus.rules.yml: |-
+    groups:
+      - name: kubenurse latency of inbound requests per node
+        rules:
+          - record: job:kubenurse_node_ingress_latency_p90:histogram
+            expr: histogram_quantile(0.9, sum by (type, le) (rate(kubenurse_request_duration_bucket{type=~"path_ip-.*"}[1m]))) >= 0
+    
+      - name: kubenurse latency of outbound requests per node
+        rules:
+          - record: job:kubenurse_node_egress_latency_p90:histogram
+            expr: histogram_quantile(0.9, sum by (node_name, le) (rate(kubenurse_request_duration_bucket{type=~"path_ip-.*"}[{{.Cluster.ConfigItems.network_monitoring_check_interval}}]))) >= 0
+    
+      - name: kubenurse error rate of inbound requests per node
+        rules:
+          - record: job:kubenurse_node_error_rate:sum
+            expr: sum by (type) (increase(kubenurse_errors_total{type=~"path_ip-.*"}[{{.Cluster.ConfigItems.network_monitoring_check_interval}}]))
+  prometheus.yml: |-
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: {{ .Cluster.Alias }}
+    rule_files:
+      - "prometheus.rules.yml"
+    scrape_configs:
+      - job_name: "kubenurse"
+        scheme: http
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - kubenurse
+        relabel_configs:
+          - source_labels: [ __meta_kubernetes_pod_label_daemonset, __meta_kubernetes_pod_container_port_number ]
+            action: keep
+            regex: kubenurse;8080
+          - action: replace
+            source_labels: [ '__meta_kubernetes_pod_ip' ]
+            target_label: pod_ip
+          - action: replace
+            source_labels: [ '__meta_kubernetes_namespace' ]
+            target_label: namespace
+          - action: replace
+            source_labels: [ '__meta_kubernetes_pod_label_application' ]
+            target_label: application
+          - action: replace
+            source_labels: [ '__meta_kubernetes_pod_label_component' ]
+            target_label: component
+          - action: replace
+            source_labels: [ '__meta_kubernetes_pod_name' ]
+            target_label: pod_name
+          - action: replace
+            source_labels: [ '__meta_kubernetes_pod_node_name' ]
+            target_label: node_name
+        metric_relabel_configs:
+          - source_labels: [ __name__ ]
+            action: keep
+            regex: '(kubenurse_request.*|kubenurse_errors.*)'
+    remote_write: 
+    - url: http://prometheus.kube-system.svc.cluster.local/api/v1/write
+      write_relabel_configs:
+      - source_labels: [ __name__ ]
+        action: keep
+        regex: 'job:kubenurse.*'
+{{ end }}
+{{ end }}
