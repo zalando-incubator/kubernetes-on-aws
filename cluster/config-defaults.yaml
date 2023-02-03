@@ -286,13 +286,6 @@ event_rate_limit_enable: "true"
 event_rate_limit_config_qps: "500"
 event_rate_limit_config_burst: "1000"
 
-# As CRD migration is almost finished (2 clusters remain), setting sane default to `false`.
-allow_v1beta1_crds: "false"
-
-# This parameter is set to default `true` while we migrate ingresses to v1.
-# Later, will be changed to default to `false` and after migration is done, will be removed.
-allow_v1beta1_ingresses: "false"
-
 # cadvisor settings
 cadvisor_cpu: "150m"
 cadvisor_memory: "150Mi"
@@ -571,6 +564,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
 kuberuntu_image_v1_21_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.14-amd64-master-236" "861068367966" }}
 kuberuntu_image_v1_21_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.14-arm64-master-236" "861068367966" }}
+kuberuntu_image_v1_22_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-amd64-master-243" "861068367966" }}
+kuberuntu_image_v1_22_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-arm64-master-243" "861068367966" }}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -630,8 +625,7 @@ kubernetes_controller_manager_image: "zalando"
 
 # when set to true, service account tokens can be used from outside the cluster
 allow_external_service_accounts: "false"
-# issue service account tokens with expiration time.
-rotate_service_account_tokens: "true"
+
 # issue tokens with a long expiration time in order to detect applications that don't refresh tokens.
 rotate_service_account_tokens_extended_expiration: "true"
 
@@ -731,10 +725,6 @@ enable_indexed_jobs: "false"
 # this flag can be switched between true and false
 # to ensure all secrets are encrypted/decrypted all secrets need to be rewritten after masters have been rolled
 enable_encryption: "true"
-
-# Enable the feature gate SetHostnameAsFQDN
-# https://v1-19.docs.kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-sethostnameasfqdn-field
-enable_hostname_as_fqdn: "false"
 
 # default ttl for kube janitor for resources build from PRs in namespaces matching .*-pr-.*
 kube_janitor_default_pr_ttl: "1w"  # 1 week
@@ -851,3 +841,6 @@ network_monitoring_check_neighborhood: "true"
 network_monitoring_check_unschedulable_nodes: "true"
 network_monitoring_check_interval: "1m"
 network_monitoring_separate_prometheus: "false"
+
+# specify if control plane nodes should rely on ASG Lifecycle Hook or not
+control_plane_asg_lifecycle_hook: "true"
