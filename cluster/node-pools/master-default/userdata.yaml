@@ -197,6 +197,10 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
+{{- if ne .Cluster.ConfigItems.apiserver_memory_limit_percent "0" }}
+            limits:
+              memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
+{{- end }}
         - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-158
           name: admission-controller
           lifecycle:
