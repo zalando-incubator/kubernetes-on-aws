@@ -162,7 +162,7 @@ skipper_routesrv_replicas: 3
 skipper_routesrv_cpu: "1000m"
 skipper_routesrv_memory: "1Gi"
 {{else}}
-skipper_routesrv_enabled: "pre"
+skipper_routesrv_enabled: "exec"
 skipper_routesrv_replicas: 3
 skipper_routesrv_cpu: "100m"
 skipper_routesrv_memory: "1Gi"
@@ -669,11 +669,6 @@ external_dns_excluded_domains: cluster.local
 # synchronization policy between Kubernetes and AWS Route53 (default: sync, options: sync, upsert-only, create-only)
 external_dns_policy: sync
 
-# eternal-dns version for controlling roll-out, can be "current" or "legacy"
-# current => v0.13.2-12-ga18bf2b5-internal-master-34
-# legacy => v0.9.0-master-26
-external_dns_version: "current"
-
 # resource configuration
 external_dns_mem: "4Gi"
 
@@ -851,3 +846,9 @@ network_monitoring_check_neighborhood: "true"
 network_monitoring_check_unschedulable_nodes: "true"
 network_monitoring_check_interval: "1m"
 network_monitoring_separate_prometheus: "false"
+
+# Percent of master node instance memory to allocate to the kube-apiserver
+# container. If this value is non-zero it will set the memory limit for the
+# kube-apiserver container in the kube-apiserver pod.
+# Must be a whole number between 0-100.
+apiserver_memory_limit_percent: "80"
