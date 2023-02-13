@@ -1,4 +1,4 @@
-{{ $version := "master-167" }}
+{{ $version := "master-177" }}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -40,14 +40,8 @@ spec:
       containers:
         - name: controller
           image: container-registry.zalando.net/gwproxy/fabric-gateway:{{ $version }}
-          args:
-{{ if eq .ConfigItems.fabric_gateway_controller_mode "production" }}
-            - -predicates=True() && True()
+          args:          
             - -update-fabric-gateway-status=true
-{{ else }}
-            - -predicates=False()
-            - -update-fabric-gateway-status=false
-{{ end }}
             - -versioned-hosts-base-domain={{ .Values.hosted_zone }}
             - -log-level=info
           resources:

@@ -199,6 +199,9 @@ if [ "$e2e" = true ]; then
     #   https://github.com/kubernetes/kubernetes/blob/v1.21.5/test/e2e/network/hostport.go#L61
     set +e
 
+    # introduce a broken DNS record to mess with ExternalDNS
+    cat broken-dns-record.yaml | kubectl apply -f -
+
     mkdir -p junit_reports
     ginkgo -nodes=25 -flakeAttempts=2 \
         -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \

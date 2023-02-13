@@ -199,7 +199,11 @@ write_files:
             requests:
               cpu: 100m
               memory: 200Mi
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-158
+{{- if ne .Cluster.ConfigItems.apiserver_memory_limit_percent "0" }}
+            limits:
+              memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
+{{- end }}
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-159
           name: admission-controller
           lifecycle:
             preStop:
@@ -269,7 +273,7 @@ write_files:
               name: ssl-certs-kubernetes
               readOnly: true
 {{- end}}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-122
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-123
           name: webhook
           ports:
           - containerPort: 8081

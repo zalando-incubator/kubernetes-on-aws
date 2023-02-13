@@ -36,7 +36,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: ebs-plugin
-          image: container-registry.zalando.net/teapot/aws-ebs-csi-driver:v1.13.0-master-6
+          image: container-registry.zalando.net/teapot/aws-ebs-csi-driver:v1.15.0-master-8
           args:
             - controller
             - --endpoint=$(CSI_ENDPOINT)
@@ -52,11 +52,11 @@ spec:
                   fieldPath: spec.nodeName
           resources:
             requests:
-              cpu: 25m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
             limits:
-              cpu: 25m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
@@ -84,7 +84,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-provisioner
-          image: container-registry.zalando.net/teapot/external-provisioner:v3.1.0-eks-1-20-15-master-6
+          image: container-registry.zalando.net/teapot/external-provisioner:v3.4.0-eks-1-22-17-master-8
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -97,11 +97,11 @@ spec:
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
           resources:
             requests:
-              cpu: 25m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
             limits:
-              cpu: 25m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
@@ -109,7 +109,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-attacher
-          image: container-registry.zalando.net/teapot/external-attacher:v3.4.0-eks-1-20-15-master-6
+          image: container-registry.zalando.net/teapot/external-attacher:v4.1.0-eks-1-22-17-master-8
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -119,11 +119,11 @@ spec:
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
           resources:
             requests:
-              cpu: 25m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
             limits:
-              cpu: 25m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
@@ -131,7 +131,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-resizer
-          image: container-registry.zalando.net/teapot/external-resizer:v1.4.0-eks-1-20-15-master-6
+          image: container-registry.zalando.net/teapot/external-resizer:v1.7.0-eks-1-22-17-master-8
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -141,11 +141,11 @@ spec:
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
           resources:
             requests:
-              cpu: 25m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
             limits:
-              cpu: 25m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
@@ -153,16 +153,16 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: liveness-probe
-          image: container-registry.zalando.net/teapot/livenessprobe:v2.6.0-eks-1-20-15-master-6
+          image: container-registry.zalando.net/teapot/livenessprobe:v2.9.0-eks-1-22-17-master-8
           args:
             - --csi-address=/csi/csi.sock
           resources:
             requests:
               cpu: 10m
-              memory: 20Mi
+              memory: 40Mi
             limits:
               cpu: 10m
-              memory: 20Mi
+              memory: 40Mi
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
