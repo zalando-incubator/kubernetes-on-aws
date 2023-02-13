@@ -895,7 +895,7 @@ func createVegetaDeployment(hostPath string, rate int) *appsv1.Deployment {
 					Containers: []corev1.Container{
 						{
 							Name:    name,
-							Image:   "container-registry.zalando.net/teapot/vegeta:v12.8.4-main-1",
+							Image:   "container-registry.zalando.net/teapot/vegeta:v12.8.4-main-2",
 							Command: []string{"sh", "-c"},
 							Args:    []string{cmd},
 							Resources: corev1.ResourceRequirements{
