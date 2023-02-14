@@ -8,7 +8,7 @@ write_files:
     path: /etc/kubernetes/secrets.env
     content: |
       NODEPOOL_TAINTS={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}}
-      NODE_LABELS={{ .Values.node_labels }},node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
+      NODE_LABELS={{ .Values.node_labels }},node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}{{if or (eq .NodePool.Profile "worker-splitaz") (eq .NodePool.Profile "worker-combined")}},asg-lifecycle-hook=true{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=worker
       ON_DEMAND_WORKER_REPLACEMENT_STRATEGY={{ .Cluster.ConfigItems.on_demand_worker_replacement_strategy }}
@@ -62,7 +62,6 @@ write_files:
       clusterDomain: cluster.local
       cpuCFSQuota: false
       featureGates:
-        BoundServiceAccountTokenVolume: {{ .Cluster.ConfigItems.rotate_service_account_tokens }}
         CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
 {{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }}
         CSIMigrationAWS: true
@@ -74,7 +73,6 @@ write_files:
 {{- if eq .NodePool.ConfigItems.exec_probe_timeout_enabled "false" }}
         ExecProbeTimeout: false
 {{- end }}
-        SetHostnameAsFQDN: {{ .Cluster.ConfigItems.enable_hostname_as_fqdn }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
