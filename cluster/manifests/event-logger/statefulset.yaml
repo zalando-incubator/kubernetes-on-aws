@@ -6,7 +6,6 @@ metadata:
   labels:
     application: kubernetes
     component: event-logger
-    version: master-4
   annotations:
     kubernetes-log-watcher/scalyr-parser: '[{"container": "logger", "parser": "json"}]'
 spec:
@@ -21,7 +20,6 @@ spec:
         statefulset: kubernetes-event-logger
         application: kubernetes
         component: event-logger
-        version: master-4
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
     spec:
@@ -32,7 +30,7 @@ spec:
       serviceAccountName: kubernetes-event-logger
       containers:
       - name: logger
-        image: container-registry.zalando.net/teapot/event-logger:master-7
+        image: container-registry.zalando.net/teapot/event-logger:master-9
         args:
             - --snapshot-namespace=kube-system
             - --snapshot-name=kubernetes-event-logger
