@@ -6,7 +6,6 @@ metadata:
   labels:
     application: kubernetes
     component: cluster-lifecycle-controller
-    version: master-26
 spec:
   replicas: 1
   selector:
@@ -20,7 +19,6 @@ spec:
         application: kubernetes
         component: cluster-lifecycle-controller
         deployment: cluster-lifecycle-controller
-        version: master-26
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
     spec:
@@ -37,7 +35,7 @@ spec:
         operator: Exists
       containers:
       - name: cluster-lifecycle-controller
-        image: container-registry.zalando.net/teapot/cluster-lifecycle-controller:master-28
+        image: container-registry.zalando.net/teapot/cluster-lifecycle-controller:master-29
         args:
             - --drain-grace-period={{.ConfigItems.drain_grace_period}}
             - --drain-min-pod-lifetime={{.ConfigItems.drain_min_pod_lifetime}}
