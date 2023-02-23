@@ -37,11 +37,30 @@ stackset-e2e:
 
 build: e2e.test stackset-e2e
 
+build/linux/amd64/e2e.test: generate-code
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -v -c -o $@
+
+build/linux/amd64/stackset-e2e:
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -modfile stackset/go.mod -c -o $@ github.com/zalando-incubator/stackset-controller/cmd/e2e
+
+build/linux/arm64/e2e.test: generate-code
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go test -v -c -o $@
+
+build/linux/arm64/stackset-e2e:
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go test -modfile stackset/go.mod -c -o $@ github.com/zalando-incubator/stackset-controller/cmd/e2e
+
+build.linux.amd64: build/linux/amd64/e2e.test build/linux/amd64/stackset-e2e
+build.linux.arm64: build/linux/arm64/e2e.test build/linux/arm64/stackset-e2e
+
 build.docker: build
 	docker build --rm --build-arg KUBE_VERSION=$(KUBE_VERSION) -t "$(IMAGE):$(TAG)" -f $(DOCKERFILE) ../..
 
 build.push: build.docker
 	docker push "$(IMAGE):$(TAG)"
+
+build.push.multiarch: build.linux.amd64 build.linux.arm64
+	docker buildx create --config /etc/cdp-buildkitd.toml --driver-opt network=host --bootstrap --use
+	docker buildx build --rm --build-arg KUBE_VERSION=$(KUBE_VERSION) -t "$(IMAGE):$(TAG)" --platform linux/amd64,linux/arm64 --push -f $(DOCKERFILE) ../..
 
 clean:
 	rm -rf e2e.test

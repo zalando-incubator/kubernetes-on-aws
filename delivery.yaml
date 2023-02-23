@@ -32,9 +32,8 @@ pipeline:
         exit 1
       fi
 
-      if [ "$CDP_TRIGGER_EVENT" == "pull_request" ]; then
-        VERSION="$CDP_BUILD_VERSION" make build.push
-      fi
+      IMAGE=container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e
+      IMAGE=$IMAGE VERSION=$CDP_BUILD_VERSION make build.push.multiarch
 
 - id: create-cluster
   when:
@@ -69,7 +68,7 @@ pipeline:
         restartPolicy: Never
         containers:
         - name: e2e
-          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - create-cluster
           env: &e2e_env
@@ -189,7 +188,7 @@ pipeline:
         restartPolicy: Never
         containers:
         - name: e2e
-          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - e2e
           env: *e2e_env
@@ -226,7 +225,7 @@ pipeline:
         restartPolicy: Never
         containers:
         - name: e2e
-          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - loadtest-e2e
           env: *e2e_env
@@ -263,7 +262,7 @@ pipeline:
         restartPolicy: Never
         containers:
         - name: e2e
-          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - stackset-e2e
           env: *e2e_env
@@ -302,7 +301,7 @@ pipeline:
         restartPolicy: Never
         containers:
         - name: e2e
-          image: "pierone.stups.zalan.do/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - decommission-cluster
           env: *e2e_env

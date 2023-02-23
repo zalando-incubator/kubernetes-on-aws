@@ -6,7 +6,9 @@ RUN go install github.com/onsi/ginkgo/ginkgo@v1.16.5
 # final image
 # TODO get rid of python dependencies
 # * wait-for-update.py
-FROM registry.opensource.zalan.do/library/python-3.10-slim:latest
+FROM container-registry.zalando.net/library/python-3.11-slim:latest
+
+ARG TARGETARCH
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
   bc \
@@ -18,14 +20,14 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
   && pip3 install awscli --no-cache-dir
 
 ARG KUBE_VERSION
-ADD https://storage.googleapis.com/kubernetes-release/release/$KUBE_VERSION/bin/linux/amd64/kubectl /usr/bin/kubectl
+ADD https://storage.googleapis.com/kubernetes-release/release/$KUBE_VERSION/bin/linux/$TARGETARCH/kubectl /usr/bin/kubectl
 RUN chmod +x /usr/bin/kubectl
 
 COPY --from=builder /go/bin/ginkgo /usr/local/bin/ginkgo
 
 # copy CLM
-COPY --from=registry.opensource.zalan.do/teapot/cluster-lifecycle-manager:latest /clm /usr/bin/clm
-COPY --from=pierone.stups.zalan.do/teapot/aws-account-creator:latest /aws-account-creator /usr/bin/aws-account-creator
+COPY --from=container-registry.zalando.net/teapot/cluster-lifecycle-manager:latest /clm /usr/bin/clm
+COPY --from=container-registry.zalando.net/teapot/aws-account-creator:latest /aws-account-creator /usr/bin/aws-account-creator
 
 ADD . /workdir
 
