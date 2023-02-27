@@ -85,6 +85,7 @@ spec:
                         minItems: 1
                         type: array
                       x-fabric-ratelimits:
+                        description: Limits the rate of client requests.
                         properties:
                           default-rate:
                             description: Non user specific value to apply to the route.
@@ -94,6 +95,9 @@ spec:
                             minimum: 1
                             type: integer
                           period:
+                            description: Time period for number of requests being
+                              counted. Valid values are 'hour', 'minute' and 'second',
+                              defaults to 'minute' if omitted.
                             enum:
                             - second
                             - minute
@@ -169,6 +173,13 @@ spec:
                         - status
                         type: object
                       x-fabric-whitelist:
+                        description: UID of a service which will be allowed access
+                          to the API if it matches all other authorization requirements.
+                          If there is a whitelist present, then ONLY services which
+                          are referenced in the whitelist will be able to access the
+                          API even if they match all other authorization requirements.
+                          If the whitelist is empty, then no service tokens can access
+                          via the gateway
                         properties:
                           service-list:
                             description: UID of a service which will be allowed access
@@ -220,12 +231,7 @@ spec:
                 minItems: 0
                 type: array
               x-fabric-compression-support:
-                description: Enable compression on response payloads. The actual compression
-                  work will be delegated to a Skipper filter (See https://opensource.zalando.com/skipper/reference/filters/#compress).
-                  If this object is not present, then no compression of the response
-                  payload will happen in Skipper. If present the response payload
-                  will be conditionally compressed based off of the requirements outlined
-                  in the Skipper filter `compress` documentation.
+                description: Enable compression on response payloads.
                 properties:
                   compressionFactor:
                     description: Set the compression level where 0 means no-compression,
