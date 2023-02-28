@@ -44,7 +44,7 @@ import (
 )
 
 const (
-	awsCliImage  = "registry.opensource.zalan.do/teapot/awscli:master-1"
+	awsCliImage  = "container-registry.zalando.net/teapot/awscli:master-2"
 	pauseImage   = "container-registry.zalando.net/teapot/pause:3.4.1-master-18"
 	appLabelName = "application"
 )
