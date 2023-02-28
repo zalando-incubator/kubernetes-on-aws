@@ -1,4 +1,4 @@
-{{ $version := "master-24" }}
+{{ $version := "master-27" }}
 
 apiVersion: apps/v1
 kind: DaemonSet
@@ -25,6 +25,9 @@ spec:
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
+      # only schedule on nodes which require ASG lifecycle hook to trigger
+      nodeSelector:
+        asg-lifecycle-hook: "true"
       serviceAccountName: kube-node-ready
       dnsConfig:
         options:
