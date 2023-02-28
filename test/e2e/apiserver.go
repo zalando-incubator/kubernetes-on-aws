@@ -538,7 +538,7 @@ var _ = describe("ECR Registry Pull", func() {
 		appLabel := fmt.Sprintf("ecr-image-pull-staging-%s", uuid.NewUUID())
 		namespace := f.Namespace.Name
 
-		ecrStagingImage := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/automata/busybox:uno"
+		ecrStagingImage := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/library/alpine-3:3-20230102"
 		args := []string{"sleep", "10"}
 
 		By("Creating Job " + namePrefix + " in namespace " + namespace)
@@ -565,7 +565,7 @@ var _ = describe("ECR Registry Pull", func() {
 		appLabel := fmt.Sprintf("ecr-image-pull-staging-%s", uuid.NewUUID())
 		namespace := f.Namespace.Name
 
-		vanityStagingImage := "container-registry-test.zalando.net/automata/busybox:uno"
+		vanityStagingImage := "container-registry-test.zalando.net/library/alpine-3:3-20230102"
 		args := []string{"sleep", "10"}
 
 		By("Creating Job " + namePrefix + " in namespace " + namespace)
