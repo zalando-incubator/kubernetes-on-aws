@@ -1,0 +1,103 @@
+{{ if eq .Cluster.ConfigItems.network_monitoring_enabled "true" }}
+{{if eq .Cluster.ConfigItems.network_monitoring_separate_prometheus "true"}}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    pdb-controller.zalando.org/non-ready-ttl: "5m"
+  labels:
+    application: kubernetes
+    component: kubenurse-prometheus
+    version: v2.41.0
+  name: prometheus
+  namespace: kubenurse
+spec:
+  replicas: 1
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      statefulset: kubenurse-prometheus
+  serviceName: prometheus
+  template:
+    metadata:
+      labels:
+        statefulset: kubenurse-prometheus
+        application: kubernetes
+        component: kubenurse-prometheus
+        version: v2.41.0
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        prometheus.io/scrape: "true"
+    spec:
+      serviceAccountName: prometheus
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
+      containers:
+      - name: prometheus
+        image: container-registry.zalando.net/teapot/prometheus:v2.41.0-master-43
+        args:
+        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--storage.tsdb.path=/prometheus/"
+        - "--storage.tsdb.retention.time=5m"
+        - "--storage.tsdb.wal-compression"
+        - "--storage.tsdb.min-block-duration=60s"
+        ports:
+        - name: ingress-port
+          containerPort: 9090
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        volumeMounts:
+          - name: prometheus-config-volume
+            mountPath: /etc/prometheus
+        securityContext:
+          allowPrivilegeEscalation: false
+      volumes:
+      - name: prometheus-config-volume
+        configMap:
+          defaultMode: 420
+          name: prometheus-conf
+      securityContext:
+        runAsUser: 65534
+        fsGroup: 65534
+      terminationGracePeriodSeconds: 60
+---
+apiVersion: autoscaling.k8s.io/v1beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: kubenurse-prometheus-vpa
+  namespace: kubenurse
+  labels:
+    application: kubernetes
+    component: kubenurse-prometheus
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: prometheus
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+      - containerName: prometheus
+        maxAllowed:
+          memory: 2Gi
+          cpu: 1000m
+{{end}}
+{{end}}

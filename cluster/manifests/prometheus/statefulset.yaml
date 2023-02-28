@@ -71,6 +71,9 @@ spec:
         - "--storage.tsdb.retention.time={{ .ConfigItems.prometheus_retention_time }}"
         - "--storage.tsdb.wal-compression"
         - "--storage.tsdb.min-block-duration=30m"
+{{if eq .Cluster.ConfigItems.network_monitoring_separate_prometheus "true"}}
+        - "--web.enable-remote-write-receiver"
+{{end}}
         ports:
         - name: ingress-port
           containerPort: 9090

@@ -33,7 +33,7 @@ spec:
         runAsUser: 0
       containers:
         - name: ebs-plugin
-          image: container-registry.zalando.net/teapot/aws-ebs-csi-driver:v1.13.0-master-6
+          image: container-registry.zalando.net/teapot/aws-ebs-csi-driver:v1.15.0-master-8
           args:
             - node
             - --endpoint=$(CSI_ENDPOINT)
@@ -68,16 +68,16 @@ spec:
             failureThreshold: 5
           resources:
             requests:
-              cpu: 20m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
             limits:
-              cpu: 20m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
           securityContext:
             privileged: true
             readOnlyRootFilesystem: true
         - name: node-driver-registrar
-          image: container-registry.zalando.net/teapot/node-driver-registrar:v2.5.1-eks-1-20-17-master-6
+          image: container-registry.zalando.net/teapot/node-driver-registrar:v2.7.0-eks-1-22-17-master-8
           args:
             - --csi-address=$(ADDRESS)
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
@@ -94,16 +94,16 @@ spec:
               mountPath: /registration
           resources:
             requests:
-              cpu: 20m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
             limits:
-              cpu: 20m
-              memory: 50Mi
+              cpu: 10m
+              memory: 40Mi
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: liveness-probe
-          image: container-registry.zalando.net/teapot/livenessprobe:v2.6.0-eks-1-20-15-master-6
+          image: container-registry.zalando.net/teapot/livenessprobe:v2.9.0-eks-1-22-17-master-8
           args:
             - --csi-address=/csi/csi.sock
           volumeMounts:
@@ -112,10 +112,10 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 20Mi
+              memory: 40Mi
             limits:
               cpu: 10m
-              memory: 20Mi
+              memory: 40Mi
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

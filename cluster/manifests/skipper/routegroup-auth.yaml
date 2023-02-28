@@ -1,0 +1,22 @@
+{{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
+apiVersion: zalando.org/v1
+kind: RouteGroup
+metadata:
+  name: skipper-ingress-auth
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    component: ingress
+spec:
+  backends:
+    - name: shunt
+      type: shunt
+  defaultBackends:
+    - backendName: shunt
+  hosts:
+    - "{{ .ConfigItems.skipper_oauth2_redirect_uri_host }}"
+  routes:
+    - path: "{{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
+      filters:
+        - grantCallback()
+{{ end }}

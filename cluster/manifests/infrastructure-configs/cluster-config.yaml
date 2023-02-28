@@ -5,8 +5,5 @@ metadata:
   namespace: kube-system
 data:
   cluster-alias: "{{.Cluster.Alias}}"
-{{ $pod_cidr_size := "16" }}
-{{- if eq .Cluster.ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage2" }}
-{{ $pod_cidr_size = "15" }}
-{{- end }}
+{{ $pod_cidr_size := "15" }}
   max-nodes: "{{ nodeCIDRMaxNodesPodCIDR (parseInt64 $pod_cidr_size) (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}"

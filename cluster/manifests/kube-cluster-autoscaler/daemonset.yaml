@@ -51,10 +51,7 @@ spec:
           - --expander=highest-priority
           - --balance-similar-node-groups
           - --max-node-provision-time=7m
-          {{ $pod_cidr_size := "16" }}
-          {{- if eq .Cluster.ConfigItems.enable_node_scale_out_beyond_1k_nodes "stage2" }}
-          {{ $pod_cidr_size = "15" }}
-          {{- end }}
+          {{ $pod_cidr_size := "15" }}
           - --max-nodes-total={{ nodeCIDRMaxNodesPodCIDR (parseInt64 $pod_cidr_size) (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}
           - --scale-down-enabled={{ .Cluster.ConfigItems.autoscaling_scale_down_enabled }}
           - --max-empty-bulk-delete={{ .Cluster.ConfigItems.autoscaling_max_empty_bulk_delete }}

@@ -44,6 +44,7 @@ pre_apply:
   kind: ClusterRole
 - name: system:admission-controller
   kind: ClusterRoleBinding
+
 # everything defined under here will be deleted after applying the manifests
 post_apply:
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
@@ -160,12 +161,53 @@ post_apply:
   kind: Deployment
 {{ end }}
 
+{{- if ne .ConfigItems.skipper_oauth2_ui_login "true" }}
+- name: skipper-ingress-auth
+  namespace: kube-system
+  kind: RouteGroup
+{{- end }}
+
 {{- if eq .ConfigItems.prometheus_remote_write "disabled" }}
 - name: prometheus-credentials
   kind: PlatformCredentialsSet
   namespace: kube-system
 {{- end }}
-
+{{- if eq .Cluster.ConfigItems.network_monitoring_check_unschedulable_nodes "true" }}
+- kind: ClusterRole
+  name: kubenurse
+- kind: ClusterRoleBinding
+  name: kubenurse
+{{- end }}
+{{- if eq .Cluster.ConfigItems.network_monitoring_separate_prometheus "false"}}
+- kind: ClusterRole
+  name: kubenurse-prometheus
+- kind: ClusterRoleBinding
+  name: kubenurse-prometheus
+- kind: StatefulSet
+  name: prometheus
+  namespace: kubenurse
+- kind: VerticalPodAutoscaler
+  name: kubenurse-prometheus-vpa
+  namespace: kubenurse
+- kind: ConfigMap
+  name: prometheus-conf
+  namespace: kubenurse
+- kind: ServiceAccount
+  name: prometheus
+  namespace: kubenurse
+{{- end }}
+{{- if eq .Cluster.ConfigItems.network_monitoring_enabled "false" }}
+- kind: Namespace
+  name: kubenurse
+- kind: ClusterRole
+  name: kubenurse
+- kind: ClusterRoleBinding
+  name: kubenurse
+- kind: ClusterRole
+  name: kubenurse-prometheus
+- kind: ClusterRoleBinding
+  name: kubenurse-prometheus
+{{- end }}
 {{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "false" }}
 - name: karpenter
   namespace: kube-system
@@ -200,12 +242,3 @@ post_apply:
   namespace: kube-system
   kind: ValidatingWebhookConfiguration
 {{ end }}
-
-{{- if eq .Cluster.ConfigItems.network_monitoring_enabled "false" }}
-- kind: Namespace
-  name: kubenurse
-- kind: ClusterRole
-  name: kubenurse
-- kind: ClusterRoleBinding
-  name: kubenurse
-{{- end }}

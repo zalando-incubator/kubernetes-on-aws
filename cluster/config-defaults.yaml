@@ -168,7 +168,7 @@ skipper_routesrv_replicas: 3
 skipper_routesrv_cpu: "1000m"
 skipper_routesrv_memory: "1Gi"
 {{else}}
-skipper_routesrv_enabled: "pre"
+skipper_routesrv_enabled: "exec"
 skipper_routesrv_replicas: 3
 skipper_routesrv_cpu: "100m"
 skipper_routesrv_memory: "1Gi"
@@ -252,25 +252,18 @@ skipper_local_tokeninfo: "bridge"
 
 # tokeninfo cache
 # integer, non-zero value enables tokeninfo cache and sets the maximum number of cached tokens
-skipper_tokeninfo_cache_size: 0
+skipper_tokeninfo_cache_size: 1000
 # duration, non-zero value limits the lifetime of a cached tokeninfo
-skipper_tokeninfo_cache_ttl: "1s"
+skipper_tokeninfo_cache_ttl: "30s"
 
 # oauth2 UI login - grant flow
 {{if eq .Cluster.Environment "e2e"}}
 skipper_oauth2_ui_login: "false"
 skipper_ingress_encryption_key: ""
 {{else}}
-skipper_oauth2_ui_login: "true"
+skipper_oauth2_ui_login: "false"
 {{end}}
 
-# Skipper Time based scaling
-#
-# This section contains the config items related to time based scaling
-# for skipper
-# kube-zmon-scaling
-skipper_time_based_scaling_check_id: ""
-skipper_time_based_scaling_target: "1"
 # ClusterScalingSchedules
 # One or multiple cluster scaling schedules can be configured as a
 # comma-separated list of <cluster schedule name>=<target value> pairs.
@@ -283,8 +276,7 @@ skipper_cluster_scaling_schedules: ""
 #
 # fabric_gateway_controller_mode:
 #   - disabled: scales controller to zero replicas
-#   - shadow: adds "False()" predicate to routes, does not update FabricGateway status
-#   - production: adds "True() && True()" predicates to routes, updates FabricGateway status
+#   - production: runs the controller
 #
 fabric_gateway_controller_mode: "disabled"
 fabric_gateway_controller_cpu: "50m"
@@ -298,13 +290,6 @@ fabric_gateway_crd_v1_enabled: "false"
 event_rate_limit_enable: "true"
 event_rate_limit_config_qps: "500"
 event_rate_limit_config_burst: "1000"
-
-# As CRD migration is almost finished (2 clusters remain), setting sane default to `false`.
-allow_v1beta1_crds: "false"
-
-# This parameter is set to default `true` while we migrate ingresses to v1.
-# Later, will be changed to default to `false` and after migration is done, will be removed.
-allow_v1beta1_ingresses: "false"
 
 # cadvisor settings
 cadvisor_cpu: "150m"
@@ -584,6 +569,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
 kuberuntu_image_v1_21_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.14-amd64-master-236" "861068367966" }}
 kuberuntu_image_v1_21_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.14-arm64-master-236" "861068367966" }}
+kuberuntu_image_v1_22_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-amd64-master-243" "861068367966" }}
+kuberuntu_image_v1_22_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-arm64-master-243" "861068367966" }}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -599,18 +586,6 @@ audittrail_adapter_memory: "200Mi"
 
 kube2iam_cpu: "25m"
 kube2iam_memory: "100Mi"
-
-# The enable_node_scale_out_beyond_1k_nodes is feature toogle to change
-# the default cluster_cidr from 10.2.0.0/16 to 10.2.0.0/15, this change
-# enables the kubernetes cluster to scale out beyond 1000 nodes.
-#
-# Set `enable_node_scale_out_beyond_1k_nodes: "stage1"` to apply the cluster_cidr
-# change first in the components flannel, coredns, and skipper.
-#
-# Set `enable_node_scale_out_beyond_1k_nodes: "stage2"` to apply the cluster_cidr
-# change on the kube-controller-manager,
-enable_node_scale_out_beyond_1k_nodes: "stage2"
-
 
 # CIDR configuration for nodes and pods
 # Changing this will change the number of nodes and pods we can schedule in the
@@ -655,8 +630,7 @@ kubernetes_controller_manager_image: "zalando"
 
 # when set to true, service account tokens can be used from outside the cluster
 allow_external_service_accounts: "false"
-# issue service account tokens with expiration time.
-rotate_service_account_tokens: "true"
+
 # issue tokens with a long expiration time in order to detect applications that don't refresh tokens.
 rotate_service_account_tokens_extended_expiration: "true"
 
@@ -693,11 +667,6 @@ external_dns_ownership_prefix: ""
 external_dns_excluded_domains: cluster.local
 # synchronization policy between Kubernetes and AWS Route53 (default: sync, options: sync, upsert-only, create-only)
 external_dns_policy: sync
-
-# eternal-dns version for controlling roll-out, can be "current" or "legacy"
-# current => v0.13.1-master-32
-# legacy => v0.9.0-master-26
-external_dns_version: "current"
 
 # resource configuration
 external_dns_mem: "4Gi"
@@ -756,10 +725,6 @@ enable_indexed_jobs: "false"
 # this flag can be switched between true and false
 # to ensure all secrets are encrypted/decrypted all secrets need to be rewritten after masters have been rolled
 enable_encryption: "true"
-
-# Enable the feature gate SetHostnameAsFQDN
-# https://v1-19.docs.kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-sethostnameasfqdn-field
-enable_hostname_as_fqdn: "false"
 
 # default ttl for kube janitor for resources build from PRs in namespaces matching .*-pr-.*
 kube_janitor_default_pr_ttl: "1w"  # 1 week
@@ -877,3 +842,13 @@ network_monitoring_check_kubenurse_ingress: "false"
 network_monitoring_check_neighborhood: "true"
 network_monitoring_check_unschedulable_nodes: "true"
 network_monitoring_check_interval: "1m"
+network_monitoring_separate_prometheus: "false"
+
+# Percent of master node instance memory to allocate to the kube-apiserver
+# container. If this value is non-zero it will set the memory limit for the
+# kube-apiserver container in the kube-apiserver pod.
+# Must be a whole number between 0-100.
+apiserver_memory_limit_percent: "80"
+
+# specify if control plane nodes should rely on ASG Lifecycle Hook or not
+control_plane_asg_lifecycle_hook: "true"

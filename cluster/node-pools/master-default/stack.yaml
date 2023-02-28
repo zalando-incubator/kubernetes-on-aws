@@ -10,7 +10,7 @@ Mappings:
   Images:
     eu-central-1:
       # Use the node pool's architecture to construct the config item name that we're using to get the AMI name.
-      MachineImage: '{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_21_" .Values.InstanceInfo.Architecture) }}'
+      MachineImage: '{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_22_" .Values.InstanceInfo.Architecture) }}'
 
 Resources:
   AutoScalingGroup:
@@ -81,6 +81,7 @@ Resources:
       Roles:
       - !ImportValue '{{ .Cluster.ID }}:master-iam-role'
     Type: 'AWS::IAM::InstanceProfile'
+{{- if eq .Cluster.ConfigItems.control_plane_asg_lifecycle_hook "true" }}
   AutoscalingLifecycleHook:
     Properties:
       AutoScalingGroupName: !Ref AutoScalingGroup
@@ -89,3 +90,4 @@ Resources:
       HeartbeatTimeout: '600'
       LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
     Type: 'AWS::AutoScaling::LifecycleHook'
+{{- end }}
