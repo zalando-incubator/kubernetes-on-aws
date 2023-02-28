@@ -121,9 +121,19 @@ post_apply:
 {{ end }}
 
 {{- if ne .ConfigItems.skipper_oauth2_ui_login "true" }}
-- name: skipper-ingress-auth
+- kind: PlatformCredentialsSet
   namespace: kube-system
-  kind: RouteGroup
+  labels:
+    application: skipper-ingress
+    component: hostname-credentials
+{{ else }}
+
+{{ with $config_hash := printf "%.32s" (.ConfigItems.skipper_oauth2_ui_login_hostnames | sha256) }}
+- kind: PlatformCredentialsSet
+  namespace: kube-system
+  selector: application=skipper-ingress,component=hostname-credentials,config-hash!={{ $config_hash }}
+{{ end }}
+
 {{- end }}
 
 {{- if eq .ConfigItems.prometheus_remote_write "disabled" }}
