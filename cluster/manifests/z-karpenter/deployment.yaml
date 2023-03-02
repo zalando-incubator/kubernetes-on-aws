@@ -24,10 +24,7 @@ spec:
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
-      dnsConfig:
-        options:
-          - name: ndots
-            value: "1"
+      dnsPolicy: Default
       serviceAccountName: karpenter
       securityContext:
         fsGroup: 1000
@@ -38,14 +35,18 @@ spec:
         effect: NoSchedule
       containers:
         - name: controller
-          image: "container-registry.zalando.net/teapot/karpenter-controller:v0.18.0-main-6"
+          image: "container-registry.zalando.net/teapot/karpenter-controller:v0.18.0-main-6" # TODO: update to v0.25.0
           env:
-            - name: CLUSTER_NAME
-              value: {{ .Cluster.ID | awsValidID }}
-            - name: CLUSTER_ENDPOINT
-              value: "https://kubernetes.default.svc.cluster.local."
+            - name: KUBERNETES_MIN_VERSION
+              value: "1.19.0-0"
             - name: KARPENTER_SERVICE
               value: karpenter
+            - name: WEBHOOK_PORT
+              value: "8443"
+            - name: METRICS_PORT
+              value: "8080"
+            - name: HEALTH_PROBE_PORT
+              value: "8081"
             - name: SYSTEM_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -63,12 +64,17 @@ spec:
             - name: http
               containerPort: 8081
               protocol: TCP
+            - name: https-webhook
+              containerPort: 8443
+              protocol: TCP
           livenessProbe:
             initialDelaySeconds: 30
+            timeoutSeconds: 30
             httpGet:
               path: /healthz
               port: http
           readinessProbe:
+            timeoutSeconds: 30
             httpGet:
               path: /readyz
               port: http
@@ -79,47 +85,4 @@ spec:
             limits:
               cpu: "{{ .Cluster.ConfigItems.karpenter_controller_cpu }}"
               memory: "{{ .Cluster.ConfigItems.karpenter_controller_memory }}"
-        - name: webhook
-          image: "container-registry.zalando.net/teapot/karpenter-webhook:v0.18.0-main-6"
-          env:
-            - name: CLUSTER_NAME
-              value: {{ .Cluster.ID | awsValidID }}
-            - name: KUBERNETES_MIN_VERSION
-              value: "1.19.0-0"
-            - name: CLUSTER_ENDPOINT
-              value: "https://kubernetes.default.svc.cluster.local."
-            - name: KARPENTER_SERVICE
-              value: karpenter
-            - name: SYSTEM_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: MEMORY_LIMIT
-              valueFrom:
-                resourceFieldRef:
-                  containerName: webhook
-                  divisor: "0"
-                  resource: limits.memory
-          args:
-            - -port=8443
-          ports:
-            - name: https-webhook
-              containerPort: 8443
-              protocol: TCP
-          livenessProbe:
-            initialDelaySeconds: 30
-            httpGet:
-              port: https-webhook
-              scheme: HTTPS
-          readinessProbe:
-            httpGet:
-              port: https-webhook
-              scheme: HTTPS
-          resources:
-            requests:
-              cpu: "{{ .Cluster.ConfigItems.karpenter_webhook_cpu }}"
-              memory: "{{ .Cluster.ConfigItems.karpenter_webhook_memory }}"
-            limits:
-              cpu: "{{ .Cluster.ConfigItems.karpenter_webhook_cpu }}"
-              memory: "{{ .Cluster.ConfigItems.karpenter_webhook_memory }}"
 {{ end }}

@@ -9,14 +9,23 @@ metadata:
     application: kubernetes
     component: karpenter
 data:
-  "batchMaxDuration": "10s"
+  "aws.clusterEndpoint": "https://kubernetes.default.svc.cluster.local."
+  "aws.clusterName": "{{ .Cluster.ID | awsValidID }}"
+  "aws.defaultInstanceProfile": "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
+  "aws.enableENILimitedPodDensity": "true"
+  "aws.enablePodENI": "false"
+  "aws.interruptionQueueName": "TODO" # TODO: define
+  "aws.isolatedVPC": "false"
+  "aws.nodeNameConvention": "ip-name"
+  "aws.vmMemoryOverheadPercent": "0.075"
   "batchIdleDuration": "1s"
+  "batchMaxDuration": "10s"
 ---
 # Source: karpenter/templates/configmap-logging.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: config-logging
+  name: config-logging # TODO: rename
   namespace: kube-system
   labels:
     application: kubernetes
@@ -47,4 +56,5 @@ data:
         "timeEncoder": "iso8601"
       }
     }
+  loglevel.webhook: "error"
 {{end}}
