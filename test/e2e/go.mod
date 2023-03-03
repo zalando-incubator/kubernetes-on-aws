@@ -215,7 +215,7 @@ require (
 	k8s.io/component-helpers v0.23.16 // indirect
 	k8s.io/cri-api v0.0.0 // indirect
 	k8s.io/csi-translation-lib v0.23.16 // indirect
-	k8s.io/klog/v2 v2.90.0 // indirect
+	k8s.io/klog/v2 v2.30.0 // indirect
 	k8s.io/kube-aggregator v0.0.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
 	k8s.io/kube-proxy v0.0.0 // indirect
@@ -226,7 +226,7 @@ require (
 	k8s.io/metrics v0.23.16 // indirect
 	k8s.io/mount-utils v0.23.16 // indirect
 	k8s.io/sample-apiserver v0.0.0 // indirect
-	k8s.io/utils v0.0.0-20230209194617-a36077c30491 // indirect
+	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.35 // indirect
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/kustomize/api v0.10.1 // indirect
@@ -236,7 +236,7 @@ require (
 )
 
 replace (
-	github.com/go-logr/logr => github.com/go-logr/logr v0.4.0
+	github.com/go-logr/logr => github.com/go-logr/logr v1.2.0
 	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.5
 	github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.11.0
@@ -256,7 +256,7 @@ replace (
 	k8s.io/controller-manager => k8s.io/controller-manager v0.23.16
 	k8s.io/cri-api => k8s.io/cri-api v0.23.16
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.23.16
-	k8s.io/klog/v2 => k8s.io/klog/v2 v2.9.0
+	k8s.io/klog/v2 => k8s.io/klog/v2 v2.30.0
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.23.16
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.23.16
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.23.16
