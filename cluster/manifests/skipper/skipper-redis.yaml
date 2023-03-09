@@ -73,6 +73,10 @@ spec:
           limits:
             cpu: {{ .Cluster.ConfigItems.skipper_redis_cpu }}
             memory: {{ .Cluster.ConfigItems.skipper_redis_memory }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ["sleep","30"]
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
