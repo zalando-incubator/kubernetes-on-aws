@@ -6,10 +6,10 @@ metadata:
     storageclass.kubernetes.io/is-default-class: "true"
   labels:
     kubernetes.io/cluster-service: "true"
-    volume-type: {{ if eq .Cluster.ConfigItems.storageclass_standard_gp3 "true" }}gp3{{else}}gp2{{end}}
+    volume-type: gp3
 provisioner: kubernetes.io/aws-ebs
 parameters:
-  type: {{ if eq .Cluster.ConfigItems.storageclass_standard_gp3 "true" }}gp3{{else}}gp2{{end}}
+  type: gp3
   # TODO: this assumes 3 zones per region
   zones: {{ .Cluster.Region }}a,{{ .Cluster.Region }}b,{{ .Cluster.Region }}c
 allowVolumeExpansion: true
