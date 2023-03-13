@@ -7,8 +7,8 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20181110185634-c63ab54fda8f // indirect
 	github.com/jteeuwen/go-bindata v0.0.0-20151023091102-a0ff2567cfb7
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
-	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.10.2
+	github.com/onsi/ginkgo v1.14.0
+	github.com/onsi/gomega v1.10.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.15.0
 	github.com/zalando-incubator/kube-aws-iam-controller v0.2.0
