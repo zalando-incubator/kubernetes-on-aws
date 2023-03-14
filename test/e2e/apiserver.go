@@ -36,24 +36,24 @@ import (
 )
 
 const (
-	compliantImage1     = "registry.opensource.zalan.do/teapot/skipper:v0.14.0" // these are several compliant images
-	compliantImage2     = "registry.opensource.zalan.do/teapot/skipper:v0.14.1"
-	compliantImage3     = "registry.opensource.zalan.do/teapot/skipper:v0.14.2"
-	compliantImage4     = "registry.opensource.zalan.do/teapot/skipper:v0.14.3"
-	compliantImage5     = "registry.opensource.zalan.do/teapot/skipper:v0.14.4"
-	compliantImage6     = "registry.opensource.zalan.do/teapot/skipper:v0.14.5"
-	compliantImage7     = "registry.opensource.zalan.do/teapot/skipper:v0.14.6"
-	compliantImage8     = "registry.opensource.zalan.do/teapot/skipper:v0.14.7"
-	nonCompliantImage1  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-2" // these are several non-compliant images
-	nonCompliantImage2  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-3"
-	nonCompliantImage3  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-5"
-	nonCompliantImage4  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-6"
-	nonCompliantImage5  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-7"
-	nonCompliantImage6  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-8"
-	nonCompliantImage7  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-10"
-	nonCompliantImage8  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-11"
-	nonCompliantImage9  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-12"
-	nonCompliantImage10 = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-13"
+	compliantImage1     = "container-registry.zalando.net/teapot/skipper:v0.15.33" // these are several compliant images
+	compliantImage2     = "container-registry.zalando.net/teapot/skipper:v0.15.32"
+	compliantImage3     = "container-registry.zalando.net/teapot/skipper:v0.15.31"
+	compliantImage4     = "container-registry.zalando.net/teapot/skipper:v0.15.30"
+	compliantImage5     = "container-registry.zalando.net/teapot/skipper:v0.15.29"
+	compliantImage6     = "container-registry.zalando.net/teapot/skipper:v0.15.28"
+	compliantImage7     = "container-registry.zalando.net/teapot/skipper:v0.15.27"
+	compliantImage8     = "container-registry.zalando.net/teapot/skipper:v0.15.26"
+	nonCompliantImage1  = "container-registry-test.zalando.net/teapot/skipper-test:pr-2216-11" // these are several non-compliant images
+	nonCompliantImage2  = "container-registry-test.zalando.net/teapot/skipper-test:pr-2237-10"
+	nonCompliantImage3  = "container-registry-test.zalando.net/teapot/skipper-test:pr-2238-2"
+	nonCompliantImage4  = "container-registry-test.zalando.net/teapot/skipper-test:pr-2238-3"
+	nonCompliantImage5  = "container-registry-test.zalando.net/teapot/skipper-test:pr-2239-1"
+	nonCompliantImage6  = "container-registry-test.zalando.net/teapot/skipper-test:pr-2241-1"
+	nonCompliantImage7  = "container-registry-test.zalando.net/teapot/skipper-test:pr-2241-3"
+	nonCompliantImage8  = "container-registry-test.zalando.net/teapot/skipper-test:pr-2242-1"
+	nonCompliantImage9  = "container-registry-test.zalando.net/teapot/skipper-test:pr-2242-5"
+	nonCompliantImage10 = "container-registry-test.zalando.net/teapot/skipper-test:pr-2244-2"
 	waitForPodTimeout   = 5 * time.Minute
 )
 
