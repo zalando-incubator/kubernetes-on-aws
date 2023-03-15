@@ -108,7 +108,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/heketi/heketi v10.3.0+incompatible // indirect
-	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -136,6 +135,7 @@ require (
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
+	github.com/nxadm/tail v1.4.4 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v1.0.2 // indirect
@@ -200,7 +200,6 @@ require (
 	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
 	google.golang.org/grpc v1.52.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
-	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
@@ -240,7 +239,7 @@ replace (
 	github.com/go-logr/logr => github.com/go-logr/logr v1.2.0
 	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.5
-	github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.11.0
+	github.com/onsi/ginkgo => github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega => github.com/onsi/gomega v1.10.1
 	google.golang.org/grpc => google.golang.org/grpc v1.38.0
 	k8s.io/api => k8s.io/api v0.23.16
