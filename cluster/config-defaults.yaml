@@ -561,8 +561,6 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_21_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.14-amd64-master-236" "861068367966" }}
-kuberuntu_image_v1_21_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.14-arm64-master-236" "861068367966" }}
 kuberuntu_image_v1_22_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-amd64-master-243" "861068367966" }}
 kuberuntu_image_v1_22_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-arm64-master-243" "861068367966" }}
 
@@ -611,6 +609,8 @@ allowed_unsafe_sysctls: "net.ipv4.tcp_keepalive_time,net.ipv4.tcp_keepalive_intv
 enable_csi: "false"
 # enable CSIMigration and CSIMigrationAWS feature flags (make sure to set `enable_csi: true` for this to work)
 enable_csi_migration: "false"
+# the maximum amount of memory for EBS CSI controller's sidecars
+ebs_csi_controller_sidecar_memory: "80Mi"
 
 # pull images in parallel
 serialize_image_pulls: "false"
@@ -796,9 +796,6 @@ deployment_service_cf_auto_expand_enabled: "false"
 
 # Will be dropped after the migration
 deployment_service_enabled: "true"
-
-# Standard storageclass gp3 volume type
-storageclass_standard_gp3: "true"
 
 # opentelemetry config
 observability_collector_endpoint: "tracing.platform-infrastructure.zalan.do"
