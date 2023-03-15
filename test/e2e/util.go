@@ -44,7 +44,7 @@ import (
 )
 
 const (
-	awsCliImage  = "registry.opensource.zalan.do/teapot/awscli:master-1"
+	awsCliImage  = "container-registry.zalando.net/teapot/awscli:master-2"
 	pauseImage   = "container-registry.zalando.net/teapot/pause:3.4.1-master-18"
 	appLabelName = "application"
 )
@@ -275,7 +275,7 @@ func createSkipperPodSpec(route string, port int32) corev1.PodSpec {
 		Containers: []corev1.Container{
 			{
 				Name:  "skipper",
-				Image: "registry.opensource.zalan.do/teapot/skipper:latest",
+				Image: "container-registry.zalando.net/teapot/skipper:v0.15.23",
 				Args: []string{
 					"skipper",
 					"-inline-routes",
