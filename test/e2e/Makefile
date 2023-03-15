@@ -58,7 +58,7 @@ build.docker: build
 build.push: build.docker
 	docker push "$(IMAGE):$(TAG)"
 
-build.push.multiarch: build.linux.amd64 build.linux.arm64
+build.push.multiarch: build.linux.amd64 #build.linux.arm64
 	docker buildx create --config /etc/cdp-buildkitd.toml --driver-opt network=host --bootstrap --use
 	# docker buildx build --rm --build-arg KUBE_VERSION=$(KUBE_VERSION) -t "$(IMAGE):$(TAG)" --platform linux/amd64,linux/arm64 --push -f $(DOCKERFILE) ../..
 	docker buildx build --rm --build-arg KUBE_VERSION=$(KUBE_VERSION) -t "$(IMAGE):$(TAG)" --platform linux/amd64 --push -f $(DOCKERFILE) ../..
