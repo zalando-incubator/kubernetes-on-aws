@@ -45,6 +45,66 @@ spec:
                 additionalProperties:
                   additionalProperties:
                     properties:
+                      x-fabric-custom-routes:
+                        items:
+                          description: The additional route which is generated for
+                            the same method and path but is applied only to requests
+                            that match the rules specified in x-fabric-match.
+                          properties:
+                            x-fabric-match:
+                              description: The description of requests which must
+                                be routed through the corresponding custom route
+                              properties:
+                                headers:
+                                  additionalProperties:
+                                    type: string
+                                  description: HTTP headers and its values from requests
+                                    which are used to find out whether specific request
+                                    should be processed by this route.
+                                  type: object
+                              required:
+                              - headers
+                              type: object
+                            x-fabric-privileges:
+                              description: The name of a scope which will be extracted
+                                from the bearer token
+                              items:
+                                type: string
+                              minItems: 1
+                              type: array
+                            x-fabric-ratelimits:
+                              description: Limits the rate of client requests.
+                              properties:
+                                default-rate:
+                                  description: Non user specific value to apply to
+                                    the route. If a client makes more requests than
+                                    this value within the defined period, then they
+                                    will start getting HTTP 429 responses.
+                                  minimum: 1
+                                  type: integer
+                                period:
+                                  description: Time period for number of requests
+                                    being counted. Valid values are 'hour', 'minute'
+                                    and 'second', defaults to 'minute' if omitted.
+                                  enum:
+                                  - second
+                                  - minute
+                                  - hour
+                                  type: string
+                                target:
+                                  additionalProperties:
+                                    type: integer
+                                  description: A uid specific number of requests that
+                                    can be made within the period before rate limiting
+                                    is applied
+                                  type: object
+                              required:
+                              - default-rate
+                              type: object
+                          required:
+                          - x-fabric-match
+                          type: object
+                        type: array
                       x-fabric-employee-access:
                         description: The `user-list` should only be populated if `type`
                           is set to `allow_list`. If `type` is not present, it will
