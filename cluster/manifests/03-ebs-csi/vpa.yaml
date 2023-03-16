@@ -1,0 +1,28 @@
+{{- if eq .Cluster.ConfigItems.enable_csi "true" }}
+apiVersion: autoscaling.k8s.io/v1beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: ebs-csi-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ebs-csi-driver
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ebs-csi-controller
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: csi-provisioner
+      maxAllowed:
+        memory: {{ .ConfigItems.ebs_csi_controller_sidecar_memory }}
+    - containerName: csi-attacher
+      maxAllowed:
+        memory: {{ .ConfigItems.ebs_csi_controller_sidecar_memory }}
+    - containerName: csi-resizer
+      maxAllowed:
+        memory: {{ .ConfigItems.ebs_csi_controller_sidecar_memory }}
+{{- end }}
