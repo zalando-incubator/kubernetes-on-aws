@@ -4,9 +4,22 @@ pre_apply:
 - name: "routegroup-admitter.teapot.zalan.do"
   kind: ValidatingWebhookConfiguration
 {{ end }}
+- name: cronjob-monitor
+  namespace: kube-system
+  kind: Deployment
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
+- name: cronjob-monitor
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
+- name: cronjob-monitor
+  kind: ClusterRole
+- name: cronjob-monitor
+  kind: ClusterRoleBinding
+- name: cronjob-monitor
+  namespace: kube-system
+  kind: ServiceAccount
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
