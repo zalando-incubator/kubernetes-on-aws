@@ -119,10 +119,6 @@ if [ "$create_cluster" = true ]; then
 
         # Wait for the resources to be ready
         ./wait-for-update.py --timeout 1200
-
-        # provision and start load test
-        echo "provision and start load test"
-        ./start-load-test.sh --zone "$HOSTED_ZONE" --target "$(date +%s)" -v --timeout 900 --wait 30
     fi
 
     # generate updated clusters.yaml
@@ -148,6 +144,10 @@ if [ "$create_cluster" = true ]; then
     # Wait for the resources to be ready after the update
     # TODO: make a feature of CLM --wait-for-kube-system
     ./wait-for-update.py --timeout 1200
+
+    # provision and start load test
+    echo "provision and start load test"
+    ./start-load-test.sh --zone "$HOSTED_ZONE" --target "$(date +%s)" -v --timeout 900 --wait 30
 fi
 
 if [ "$e2e" = true ]; then
