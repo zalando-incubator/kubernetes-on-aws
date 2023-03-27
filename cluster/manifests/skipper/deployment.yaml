@@ -1,5 +1,5 @@
-{{ $internal_version := "v0.16.3-421" }}
-{{ $version := index (split $internal_version "-") 0 }}
+# {{ $internal_version := "v0.16.3-421" }}
+# {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -8,7 +8,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: {{ $version }}
+    version: "{{ $version }}"
     component: ingress
 spec:
   strategy:
@@ -23,21 +23,21 @@ spec:
       labels:
         deployment: skipper-ingress
         application: skipper-ingress
-        version: {{ $version }}
+        version: "{{ $version }}"
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
-        config/hash: {{"secret.yaml" | manifestHash}}
+        config/hash: '{{"secret.yaml" | manifestHash}}'
         logging/destination: "{{.Cluster.ConfigItems.log_destination_local}}"
         prometheus.io/path: /metrics
         prometheus.io/port: "9911"
         prometheus.io/scrape: "true"
-{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+        # {{ if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
         zalando.org/topology-spread-timeout: 7m
-{{- end }}
+        # {{ end }}
     spec:
-{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+      # {{ if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -47,308 +47,300 @@ spec:
               # This is kind of stupid, but would work for now. Ideally we should just stop filtering out the pods in
               # kube-system in our admitters, since we've never really had any issues with them.
               parent-resource-hash: 71556441059f2d033fb06b1e73df03598c7ecaa6
-{{- end }}
+      # {{ end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
-      terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
+      # {{ replaceAll `
+      terminationGracePeriodSeconds: 30
+      # ` "30" .Cluster.ConfigItems.skipper_termination_grace_period }}
       dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true
       containers:
-      - name: skipper-ingress
-        image: container-registry.zalando.net/teapot/skipper-internal:{{ $internal_version }}
-        ports:
-        - name: ingress-port
-          containerPort: 9999
-          hostPort: 9999
-          protocol: TCP
-{{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
-        - name: http-redirect
-          containerPort: 9998
-          hostPort: 9998
-          protocol: TCP
-{{ end }}
-        env:
-        - name: LIGHTSTEP_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: skipper-ingress
-              key: lightstep-token
-{{ if or (eq .ConfigItems.skipper_local_tokeninfo "production") (eq .ConfigItems.skipper_local_tokeninfo "bridge") }}
-        - name: LOCAL_TOKENINFO
-          value: "true"
-        - name: ENABLE_OPENTRACING
-          value: "true"
-        - name: OPENTRACING_LIGHTSTEP_COMPONENT_NAME
-          value: "tokeninfo-skipper-ingress"
-        - name: OPENTRACING_LIGHTSTEP_ACCESS_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: skipper-ingress
-              key: lightstep-token
-{{ end }}
-{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
-        - name: LOCAL_TOKENINFO_SANDBOX
-          value: "true"
-{{ end }}
-{{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
-        - name: HTTP_REDIRECT
-          value: "true"
-{{ end }}
-        args:
-          - "run.sh"
-          - "skipper"
-          - "-validate-query={{ .ConfigItems.skipper_validate_query }}"
-          - "-validate-query-log={{ .Cluster.ConfigItems.skipper_validate_query_log }}"
-{{ if eq .ConfigItems.skipper_routesrv_enabled "exec" }}
-          - "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes"
-          - "-normalize-host"
-{{ else }}
-          - "-kubernetes"
-          - "-kubernetes-in-cluster"
-          - "-kubernetes-path-mode=path-prefix"
-{{ end }}
-          - "-address=:9999"
-          - "-wait-first-route-load"
-          - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
-{{ if and (ne .ConfigItems.skipper_routesrv_enabled "exec") (eq .ConfigItems.enable_skipper_eastwest "true")}}
-          - "-enable-kubernetes-east-west"
-          - "-kubernetes-east-west-domain=.ingress.cluster.local"
-{{ end }}
-{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
-          - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
-{{ end }}
-          - "-proxy-preserve-host"
-          - "-compress-encodings={{ .ConfigItems.skipper_compress_encodings }}"
-          - "-serve-host-metrics"
-          - "-serve-method-metric={{ .ConfigItems.skipper_serve_method_metric }}"
-          - "-serve-status-code-metric={{ .ConfigItems.skipper_serve_status_code_metric }}"
-          - "-serve-host-counter"
-          - "-disable-metrics-compat"
-          - "-enable-profile"
-          - "-memory-profile-rate={{ .ConfigItems.skipper_memory_profile_rate }}"
-          - "-block-profile-rate={{ .ConfigItems.skipper_block_profile_rate }}"
-          - "-mutex-profile-fraction={{ .ConfigItems.skipper_mutex_profile_fraction }}"
-          - "-debug-listener=:9922"
-          - "-enable-ratelimits"
-          - "-experimental-upgrade"
-          - "-metrics-exp-decay-sample"
-          - "-reverse-source-predicate"
-          - "-lb-healthcheck-interval=3s"
-          - "-metrics-flavour=prometheus"
-          - "-enable-connection-metrics"
-          - "-enable-route-lifo-metrics"
-          - "-enable-route-fifo-metrics"
-          - "-enable-api-usage-monitoring"
-          - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
-          - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
-          - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
-{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
-          - "-default-filters-dir=/etc/config/default-filters"
-{{ end }}
-          - "-max-audit-body=0"
-{{ if eq .ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
-          - "-enable-swarm"
-          - "-swarm-redis-dial-timeout={{ .ConfigItems.skipper_redis_dial_timeout }}"
-          - "-swarm-redis-pool-timeout={{ .ConfigItems.skipper_redis_pool_timeout }}"
-          - "-swarm-redis-read-timeout={{ .ConfigItems.skipper_redis_read_timeout }}"
-          - "-swarm-redis-write-timeout={{ .ConfigItems.skipper_redis_write_timeout }}"
-          - "-cluster-ratelimit-max-group-shards={{ .ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
-          - "-kubernetes-redis-service-namespace=kube-system"
-          - "-kubernetes-redis-service-name=skipper-ingress-redis"
-          - "-kubernetes-redis-service-port=6379"
-{{ end }}
-          - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
-          - >-
-            -opentracing=lightstep
-            component-name=skipper-ingress
-            token=$(LIGHTSTEP_TOKEN)
-            collector={{ .Cluster.ConfigItems.tracing_collector_host }}:8444
-            cmd-line=skipper-ingress
-            tag=application=skipper-ingress
-            tag=account={{ .Cluster.Alias }}
-            tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=container-registry.zalando.net/teapot/skipper-internal:{{ $internal_version }}
-            max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
-            grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
-            max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
-            min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }}
-            max-log-key-len={{ .ConfigItems.skipper_ingress_lightstep_max_log_key_len }}
-            max-log-value-len={{ .ConfigItems.skipper_ingress_lightstep_max_log_value_len }}
-            max-logs-per-span={{ .ConfigItems.skipper_ingress_lightstep_max_logs_per_span }}
-            propagators={{ .ConfigItems.skipper_ingress_lightstep_propagators }}
-            {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
-          - "-opentracing-excluded-proxy-tags={{ .ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
-{{ if eq .ConfigItems.skipper_ingress_opentracing_backend_name_tag "true" }}
-          - "-opentracing-backend-name-tag"
-{{ end }}
-          - "-opentracing-disable-filter-spans={{ .ConfigItems.skipper_opentracing_disable_filter_spans }}"
-          - "-expect-continue-timeout-backend={{ .ConfigItems.skipper_expect_continue_timeout_backend }}"
-          - "-keepalive-backend={{ .ConfigItems.skipper_keepalive_backend }}"
-          - "-max-idle-connection-backend={{ .ConfigItems.skipper_max_idle_connection_backend }}"
-          - "-response-header-timeout-backend={{ .ConfigItems.skipper_response_header_timeout_backend }}"
-          - "-timeout-backend={{ .ConfigItems.skipper_timeout_backend }}"
-          - "-tls-timeout-backend={{ .ConfigItems.skipper_tls_timeout_backend }}"
-          - "-close-idle-conns-period={{ .ConfigItems.skipper_close_idle_conns_period }}"
-          - "-idle-timeout-server={{ .ConfigItems.skipper_idle_timeout_server }}"
-          - "-read-timeout-server={{ .ConfigItems.skipper_read_timeout_server }}"
-          - "-write-timeout-server={{ .ConfigItems.skipper_write_timeout_server }}"
-          - "-disabled-filters={{ .ConfigItems.skipper_disabled_filters }}"
-{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
-          - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
-  {{ if ne .ConfigItems.skipper_edit_route_placeholders "" }}
-          {{ range $placeholder := split .ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
-          - '-edit-route={{ $placeholder }}'
-          {{ end }}
-  {{ end }}
-{{ end }}
-          - "-suppress-route-update-logs={{ .ConfigItems.skipper_suppress_route_update_logs }}"
-{{ if eq .ConfigItems.skipper_enable_tcp_queue "true" }}
-          - "-enable-tcp-queue"
-          - "-expected-bytes-per-request={{ .ConfigItems.skipper_expected_bytes_per_request }}"
-          - "-max-tcp-listener-concurrency={{ .ConfigItems.skipper_max_tcp_listener_concurrency }}"
-          - "-max-tcp-listener-queue={{ .ConfigItems.skipper_max_tcp_listener_queue }}"
-{{ end }}
-{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
-          - "-oauth2-tokeninfo-url=http://127.0.0.1:9000/oauth2/tokeninfo"
-          - "-status-checks=http://127.0.0.1:9021/health,http://127.0.0.1:9121/health,http://127.0.0.1:9000/healthz"
-{{ else if eq .ConfigItems.skipper_local_tokeninfo "production" }}
-          - "-oauth2-tokeninfo-url=http://127.0.0.1:9021/oauth2/tokeninfo"
-          - "-status-checks=http://127.0.0.1:9021/health"
-{{ end }}
-          - "-oauth2-tokeninfo-cache-size={{ .ConfigItems.skipper_tokeninfo_cache_size }}"
-          - "-oauth2-tokeninfo-cache-ttl={{ .ConfigItems.skipper_tokeninfo_cache_ttl }}"
-{{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
-          - "-enable-oauth2-grant-flow"
-          - "-oauth2-auth-url={{ .ConfigItems.skipper_oauth2_auth_url }}"
-          - "-oauth2-token-url={{ .ConfigItems.skipper_oauth2_token_url }}"
-          - "-oauth2-secret-file=/etc/skipper/secret/encryption-key"
-          - "-oauth2-client-id-file=/etc/skipper/oauth/{{ .Cluster.Alias }}-employee-client-id"
-          - "-oauth2-client-secret-file=/etc/skipper/oauth/{{ .Cluster.Alias }}-employee-client-secret"
-          - "-credentials-update-interval=1m"
-          - "-oauth2-token-cookie-name={{ .ConfigItems.skipper_oauth2_cookie_name }}"
-          - "-oauth2-token-cookie-remove-subdomains=0"
-          - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
-          - "-oauth2-auth-url-parameters=redirect_uri=https://{{ .ConfigItems.skipper_oauth2_redirect_uri_host }}{{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
-{{ end }}
-{{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
-          - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
-          - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
-{{ end }}
-{{ if ne .ConfigItems.skipper_ingress_inline_routes "" }}
-          - "-inline-routes={{ .ConfigItems.skipper_ingress_inline_routes }}"
-{{ end }}
-{{ if ne .ConfigItems.skipper_ingress_refuse_payload "" }}
-          {{ range $pattern := split .ConfigItems.skipper_ingress_refuse_payload "[cf724afc]" }}
-          - "-refuse-payload={{ $pattern }}"
-          {{ end }}
-{{ end }}
-        resources:
-{{ if and (eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true") (eq .Cluster.ConfigItems.skipper_ingress_binpack "true") }}
-{{ $cpu_requests := sumQuantities .Cluster.ConfigItems.skipper_ingress_cpu (printf "-%s"  .Cluster.ConfigItems.teapot_admission_controller_daemonset_reserved_cpu) (printf "-%s" .Cluster.ConfigItems.kubelet_system_reserved_cpu) (printf "-%s" .Cluster.ConfigItems.kubelet_kube_reserved_cpu) }}
-          limits:
-            cpu: "{{ $cpu_requests }}"
-            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
-          requests:
-            cpu: "{{ $cpu_requests }}"
-            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
-{{ else }}
-          limits:
-            cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
-            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
-          requests:
-            cpu: "{{ .ConfigItems.skipper_ingress_cpu }}"
-            memory: "{{ .ConfigItems.skipper_ingress_memory }}"
-{{ end }}
-        readinessProbe:
-          httpGet:
-            path: /kube-system/healthz
-            port: 9999
-          initialDelaySeconds: {{ .ConfigItems.skipper_readiness_init_delay_seconds }}
-          timeoutSeconds: 5
-{{ if eq .ConfigItems.skipper_local_tokeninfo "production" }}
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 9021
-            host: 127.0.0.1
-            scheme: HTTP
-          initialDelaySeconds: {{ .ConfigItems.skipper_liveness_init_delay_seconds }}
-          periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 5
-{{ else if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -ce
-            # Check all sub processes in the container and fail if one of them fails.
-            # wget will exit with non-zero status code if the HTTP code is no 2xx.
-            # production tokeninfo, sandbox tokeninfo, bridge
-            - "wget -T 1 -q -O /dev/null http://127.0.0.1:9021/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9121/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9000/healthz"
-          initialDelaySeconds: {{ .ConfigItems.skipper_liveness_init_delay_seconds }}
-          periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 5
-{{ end }}
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 1000
-        volumeMounts:
-          - name: routes-cache
-            mountPath: /tmp
-{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
-          - name: routes
-            mountPath: /etc/routes
-{{ end }}
-{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
-          - name: filters
-            mountPath: /etc/config/default-filters
-{{ end }}
-{{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
-          - name: oauth2
-            mountPath: /etc/skipper/oauth
-            readOnly: true
-          - name: encryption-key
-            mountPath: /etc/skipper/secret
-            readOnly: true
-{{ end }}
+        - name: skipper-ingress
+          image: "container-registry.zalando.net/teapot/skipper-internal:{{ $internal_version }}"
+          ports:
+            - name: ingress-port
+              containerPort: 9999
+              hostPort: 9999
+              protocol: TCP
+            # {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
+            - name: http-redirect
+              containerPort: 9998
+              hostPort: 9998
+              protocol: TCP
+            # {{ end }}
+          env:
+            - name: LIGHTSTEP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: skipper-ingress
+                  key: lightstep-token
+            # {{ if or (eq .ConfigItems.skipper_local_tokeninfo "production") (eq .ConfigItems.skipper_local_tokeninfo "bridge") }}
+            - name: LOCAL_TOKENINFO
+              value: "true"
+            - name: ENABLE_OPENTRACING
+              value: "true"
+            - name: OPENTRACING_LIGHTSTEP_COMPONENT_NAME
+              value: "tokeninfo-skipper-ingress"
+            - name: OPENTRACING_LIGHTSTEP_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: skipper-ingress
+                  key: lightstep-token
+            # {{ end }}
+            # {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
+            - name: LOCAL_TOKENINFO_SANDBOX
+              value: "true"
+            # {{ end }}
+            # {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
+            - name: HTTP_REDIRECT
+              value: "true"
+            # {{ end }}
+          args:
+            - "run.sh"
+            - "skipper"
+            - "-validate-query={{ .ConfigItems.skipper_validate_query }}"
+            - "-validate-query-log={{ .Cluster.ConfigItems.skipper_validate_query_log }}"
+            # {{ if eq .ConfigItems.skipper_routesrv_enabled "exec" }}
+            - "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes"
+            - "-normalize-host"
+            # {{ else }}
+            - "-kubernetes"
+            - "-kubernetes-in-cluster"
+            - "-kubernetes-path-mode=path-prefix"
+            # {{ end }}
+            - "-address=:9999"
+            - "-wait-first-route-load"
+            - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
+            # {{ if and (ne .ConfigItems.skipper_routesrv_enabled "exec") (eq .ConfigItems.enable_skipper_eastwest "true")}}
+            - "-enable-kubernetes-east-west"
+            - "-kubernetes-east-west-domain=.ingress.cluster.local"
+            # {{ end }}
+            # {{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
+            - "-kubernetes-east-west-range-domains=ingress.cluster.local"
+            - '-kubernetes-east-west-range-predicates=ClientIP("10.2.0.0/15", "{{ .Values.vpc_ipv4_cidr }}")'
+            # {{ end }}
+            - "-proxy-preserve-host"
+            - "-compress-encodings={{ .ConfigItems.skipper_compress_encodings }}"
+            - "-serve-host-metrics"
+            - "-serve-method-metric={{ .ConfigItems.skipper_serve_method_metric }}"
+            - "-serve-status-code-metric={{ .ConfigItems.skipper_serve_status_code_metric }}"
+            - "-serve-host-counter"
+            - "-disable-metrics-compat"
+            - "-enable-profile"
+            - "-memory-profile-rate={{ .ConfigItems.skipper_memory_profile_rate }}"
+            - "-block-profile-rate={{ .ConfigItems.skipper_block_profile_rate }}"
+            - "-mutex-profile-fraction={{ .ConfigItems.skipper_mutex_profile_fraction }}"
+            - "-debug-listener=:9922"
+            - "-enable-ratelimits"
+            - "-experimental-upgrade"
+            - "-metrics-exp-decay-sample"
+            - "-reverse-source-predicate"
+            - "-lb-healthcheck-interval=3s"
+            - "-metrics-flavour=prometheus"
+            - "-enable-connection-metrics"
+            - "-enable-route-lifo-metrics"
+            - "-enable-route-fifo-metrics"
+            - "-enable-api-usage-monitoring"
+            - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
+            - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
+            - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
+            # {{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
+            - "-default-filters-dir=/etc/config/default-filters"
+            # {{ end }}
+            - "-max-audit-body=0"
+            # {{ if eq .ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
+            - "-enable-swarm"
+            - "-swarm-redis-dial-timeout={{ .ConfigItems.skipper_redis_dial_timeout }}"
+            - "-swarm-redis-pool-timeout={{ .ConfigItems.skipper_redis_pool_timeout }}"
+            - "-swarm-redis-read-timeout={{ .ConfigItems.skipper_redis_read_timeout }}"
+            - "-swarm-redis-write-timeout={{ .ConfigItems.skipper_redis_write_timeout }}"
+            - "-cluster-ratelimit-max-group-shards={{ .ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
+            - "-kubernetes-redis-service-namespace=kube-system"
+            - "-kubernetes-redis-service-name=skipper-ingress-redis"
+            - "-kubernetes-redis-service-port=6379"
+            # {{ end }}
+            - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
+            - >-
+              -opentracing=lightstep
+              component-name=skipper-ingress
+              token=$(LIGHTSTEP_TOKEN)
+              collector={{ .Cluster.ConfigItems.tracing_collector_host }}:8444
+              cmd-line=skipper-ingress
+              tag=application=skipper-ingress
+              tag=account={{ .Cluster.Alias }}
+              tag=cluster={{ .Cluster.Alias }}
+              tag=artifact=container-registry.zalando.net/teapot/skipper-internal:{{ $internal_version }}
+              max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
+              grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
+              max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
+              min-period={{ .ConfigItems.skipper_ingress_lightstep_min_period }}
+              max-log-key-len={{ .ConfigItems.skipper_ingress_lightstep_max_log_key_len }}
+              max-log-value-len={{ .ConfigItems.skipper_ingress_lightstep_max_log_value_len }}
+              max-logs-per-span={{ .ConfigItems.skipper_ingress_lightstep_max_logs_per_span }}
+              propagators={{ .ConfigItems.skipper_ingress_lightstep_propagators }}
+              {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
+            - "-opentracing-excluded-proxy-tags={{ .ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
+            # {{ if eq .ConfigItems.skipper_ingress_opentracing_backend_name_tag "true" }}
+            - "-opentracing-backend-name-tag"
+            # {{ end }}
+            - "-opentracing-disable-filter-spans={{ .ConfigItems.skipper_opentracing_disable_filter_spans }}"
+            - "-expect-continue-timeout-backend={{ .ConfigItems.skipper_expect_continue_timeout_backend }}"
+            - "-keepalive-backend={{ .ConfigItems.skipper_keepalive_backend }}"
+            - "-max-idle-connection-backend={{ .ConfigItems.skipper_max_idle_connection_backend }}"
+            - "-response-header-timeout-backend={{ .ConfigItems.skipper_response_header_timeout_backend }}"
+            - "-timeout-backend={{ .ConfigItems.skipper_timeout_backend }}"
+            - "-tls-timeout-backend={{ .ConfigItems.skipper_tls_timeout_backend }}"
+            - "-close-idle-conns-period={{ .ConfigItems.skipper_close_idle_conns_period }}"
+            - "-idle-timeout-server={{ .ConfigItems.skipper_idle_timeout_server }}"
+            - "-read-timeout-server={{ .ConfigItems.skipper_read_timeout_server }}"
+            - "-write-timeout-server={{ .ConfigItems.skipper_write_timeout_server }}"
+            - "-disabled-filters={{ .ConfigItems.skipper_disabled_filters }}"
+            # {{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
+            - "-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}"
+            # {{ if ne .ConfigItems.skipper_edit_route_placeholders "" }}
+            # {{ range $placeholder := split .ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
+            - "-edit-route={{ $placeholder }}"
+            # {{ end }}
+            # {{ end }}
+            # {{ end }}
+            - "-suppress-route-update-logs={{ .ConfigItems.skipper_suppress_route_update_logs }}"
+            # {{ if eq .ConfigItems.skipper_enable_tcp_queue "true" }}
+            - "-enable-tcp-queue"
+            - "-expected-bytes-per-request={{ .ConfigItems.skipper_expected_bytes_per_request }}"
+            - "-max-tcp-listener-concurrency={{ .ConfigItems.skipper_max_tcp_listener_concurrency }}"
+            - "-max-tcp-listener-queue={{ .ConfigItems.skipper_max_tcp_listener_queue }}"
+            # {{ end }}
+            # {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
+            - "-oauth2-tokeninfo-url=http://127.0.0.1:9000/oauth2/tokeninfo"
+            - "-status-checks=http://127.0.0.1:9021/health,http://127.0.0.1:9121/health,http://127.0.0.1:9000/healthz"
+            # {{ else if eq .ConfigItems.skipper_local_tokeninfo "production" }}
+            - "-oauth2-tokeninfo-url=http://127.0.0.1:9021/oauth2/tokeninfo"
+            - "-status-checks=http://127.0.0.1:9021/health"
+            # {{ end }}
+            - "-oauth2-tokeninfo-cache-size={{ .ConfigItems.skipper_tokeninfo_cache_size }}"
+            - "-oauth2-tokeninfo-cache-ttl={{ .ConfigItems.skipper_tokeninfo_cache_ttl }}"
+            # {{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
+            - "-enable-oauth2-grant-flow"
+            - "-oauth2-auth-url={{ .ConfigItems.skipper_oauth2_auth_url }}"
+            - "-oauth2-token-url={{ .ConfigItems.skipper_oauth2_token_url }}"
+            - "-oauth2-secret-file=/etc/skipper/secret/encryption-key"
+            - "-oauth2-client-id-file=/etc/skipper/oauth/{{ .Cluster.Alias }}-employee-client-id"
+            - "-oauth2-client-secret-file=/etc/skipper/oauth/{{ .Cluster.Alias }}-employee-client-secret"
+            - "-credentials-update-interval=1m"
+            - "-oauth2-token-cookie-name={{ .ConfigItems.skipper_oauth2_cookie_name }}"
+            - "-oauth2-token-cookie-remove-subdomains=0"
+            - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
+            - "-oauth2-auth-url-parameters=redirect_uri=https://{{ .ConfigItems.skipper_oauth2_redirect_uri_host }}{{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
+            # {{ end }}
+            # {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
+            - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
+            - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
+            # {{ end }}
+            # {{ if ne .ConfigItems.skipper_ingress_inline_routes "" }}
+            - "-inline-routes={{ .ConfigItems.skipper_ingress_inline_routes }}"
+            # {{ end }}
+            # {{ if ne .ConfigItems.skipper_ingress_refuse_payload "" }}
+            # {{ range $pattern := split .ConfigItems.skipper_ingress_refuse_payload "[cf724afc]" }}
+            - "-refuse-payload={{ $pattern }}"
+            # {{ end }}
+            # {{ end }}
+          resources:
+            # {{ $cpu_requests := .ConfigItems.skipper_ingress_cpu }}
+            # {{ if and (eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true") (eq .Cluster.ConfigItems.skipper_ingress_binpack "true") }}
+            # {{ $cpu_requests = sumQuantities .Cluster.ConfigItems.skipper_ingress_cpu (printf "-%s"  .Cluster.ConfigItems.teapot_admission_controller_daemonset_reserved_cpu) (printf "-%s" .Cluster.ConfigItems.kubelet_system_reserved_cpu) (printf "-%s" .Cluster.ConfigItems.kubelet_kube_reserved_cpu) }}
+            # {{ end }}
+            limits:
+              cpu: "{{ $cpu_requests }}"
+              memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+            requests:
+              cpu: "{{ $cpu_requests }}"
+              memory: "{{ .ConfigItems.skipper_ingress_memory }}"
+          readinessProbe:
+            httpGet:
+              path: /kube-system/healthz
+              port: 9999
+            initialDelaySeconds: "{{ .ConfigItems.skipper_readiness_init_delay_seconds }}"
+            timeoutSeconds: 5
+          # {{ if or (eq .ConfigItems.skipper_local_tokeninfo "production") (eq .ConfigItems.skipper_local_tokeninfo "bridge") }}
+          livenessProbe:
+            initialDelaySeconds: "{{ .ConfigItems.skipper_liveness_init_delay_seconds }}"
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 5
+            # {{ if eq .ConfigItems.skipper_local_tokeninfo "production" }}
+            httpGet:
+              path: /health
+              port: 9021
+              host: 127.0.0.1
+              scheme: HTTP
+            # {{ else if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
+            exec:
+              command:
+                - /bin/sh
+                - -ce
+                # Check all sub processes in the container and fail if one of them fails.
+                # wget will exit with non-zero status code if the HTTP code is no 2xx.
+                # production tokeninfo, sandbox tokeninfo, bridge
+                - "wget -T 1 -q -O /dev/null http://127.0.0.1:9021/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9121/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9000/healthz"
+            # {{ end }}
+          # {{ end }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+          volumeMounts:
+            - name: routes-cache
+              mountPath: /tmp
+            # {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
+            - name: routes
+              mountPath: /etc/routes
+            # {{ end }}
+            # {{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
+            - name: filters
+              mountPath: /etc/config/default-filters
+            # {{ end }}
+            # {{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
+            - name: oauth2
+              mountPath: /etc/skipper/oauth
+              readOnly: true
+            - name: encryption-key
+              mountPath: /etc/skipper/secret
+              readOnly: true
+            # {{ end }}
       volumes:
         - name: routes-cache
           emptyDir: {}
-{{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
+        # {{ if eq .ConfigItems.skipper_local_tokeninfo "bridge"}}
         - name: routes
           configMap:
             name: sandbox-tokeninfo-bridge-conf
-{{ end }}
-{{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
+        # {{ end }}
+        # {{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
         - name: filters
           configMap:
             name: skipper-default-filters
             optional: true
-{{ end }}
-{{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
+        # {{ end }}
+        # {{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
         - name: oauth2
           secret:
             secretName: skipper-ingress-platform-credentials
         - name: encryption-key
           secret:
             secretName: skipper-ingress
-{{ end }}
-{{ if eq .ConfigItems.enable_dedicate_nodepool_skipper "true"}}
+        # {{ end }}
+      # {{ if eq .ConfigItems.enable_dedicate_nodepool_skipper "true"}}
       nodeSelector:
         dedicated: skipper-ingress
       tolerations:
-      - effect: NoSchedule
-        key: dedicated
-        value: skipper-ingress
-{{ end }}
+        - effect: NoSchedule
+          key: dedicated
+          value: skipper-ingress
+      # {{ end }}
 
-{{ if ne .ConfigItems.skipper_routesrv_enabled "false" }}
+# {{ if ne .ConfigItems.skipper_routesrv_enabled "false" }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -357,10 +349,12 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: {{ $version }}
+    version: "{{ $version }}"
     component: routesrv
 spec:
-  replicas: {{ .ConfigItems.skipper_routesrv_replicas }}
+  # {{ replaceAll `
+  replicas: 1
+  # ` "1" .ConfigItems.skipper_routesrv_replicas }}
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -374,21 +368,21 @@ spec:
       labels:
         deployment: skipper-ingress-routesrv
         application: skipper-ingress
-        version: {{ $version }}
+        version: "{{ $version }}"
         component: routesrv
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
-        config/hash: {{"secret.yaml" | manifestHash}}
+        config/hash: '{{"secret.yaml" | manifestHash}}'
         logging/destination: "{{.Cluster.ConfigItems.log_destination_local}}"
         prometheus.io/path: /metrics
         prometheus.io/port: "9990"
         prometheus.io/scrape: "true"
-{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+        # {{ if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
         zalando.org/topology-spread-timeout: 7m
-{{- end }}
+        # {{ end }}
     spec:
-{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+      # {{ if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -398,72 +392,74 @@ spec:
               # This is kind of stupid, but would work for now. Ideally we should just stop filtering out the pods in
               # kube-system in our admitters, since we've never really had any issues with them.
               parent-resource-hash: abd943226b6885f66785592be28bdf303863fbac
-{{- end }}
+      # {{ end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
-      terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
+      # {{ replaceAll `
+      terminationGracePeriodSeconds: 30
+      # ` "30" .Cluster.ConfigItems.skipper_termination_grace_period }}
       containers:
-      - name: routesrv
-        image: container-registry.zalando.net/teapot/skipper:{{ $version }}
-        ports:
-        - name: ingress-port
-          containerPort: 9990
-          protocol: TCP
-        args:
-          - "routesrv"
-          - "-kubernetes"
-          - "-kubernetes-in-cluster"
-          - "-kubernetes-path-mode=path-prefix"
-          - "-address=:9990"
-          - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
-{{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
-          - "-enable-kubernetes-east-west"
-          - "-kubernetes-east-west-domain=.ingress.cluster.local"
-{{ end }}
-          - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
-          - "-reverse-source-predicate"
-          - "-enable-api-usage-monitoring"
-          - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
-          - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
-          - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
-          - "-default-filters-dir=/etc/config/default-filters"
-          - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
-{{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
-          - "-enable-oauth2-grant-flow"
-          - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
-{{ end }}
-{{ if ne .ConfigItems.skipper_edit_route_placeholders "" }}
-          {{ range $placeholder := split .ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
-          - '-edit-route={{ $placeholder }}'
-          {{ end }}
-{{ end }}
-{{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
-          - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
-          - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
-{{ end }}
-        resources:
-          limits:
-            cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
-            memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
-          requests:
-            cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
-            memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 9990
-          timeoutSeconds: 5
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 1000
-        volumeMounts:
-          - name: filters
-            mountPath: /etc/config/default-filters
+        - name: routesrv
+          image: "container-registry.zalando.net/teapot/skipper:{{ $version }}"
+          ports:
+            - name: ingress-port
+              containerPort: 9990
+              protocol: TCP
+          args:
+            - "routesrv"
+            - "-kubernetes"
+            - "-kubernetes-in-cluster"
+            - "-kubernetes-path-mode=path-prefix"
+            - "-address=:9990"
+            - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
+            # {{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
+            - "-enable-kubernetes-east-west"
+            - "-kubernetes-east-west-domain=.ingress.cluster.local"
+            # {{ end }}
+            - "-kubernetes-east-west-range-domains=ingress.cluster.local"
+            - '-kubernetes-east-west-range-predicates=ClientIP("10.2.0.0/15", "{{ .Values.vpc_ipv4_cidr }}")'
+            - "-reverse-source-predicate"
+            - "-enable-api-usage-monitoring"
+            - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
+            - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
+            - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
+            - "-default-filters-dir=/etc/config/default-filters"
+            - "-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}"
+            # {{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
+            - "-enable-oauth2-grant-flow"
+            - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
+            # {{ end }}
+            # {{ if ne .ConfigItems.skipper_edit_route_placeholders "" }}
+            # {{ range $placeholder := split .ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
+            - "-edit-route={{ $placeholder }}"
+            # {{ end }}
+            # {{ end }}
+            # {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
+            - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
+            - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
+            # {{ end }}
+          resources:
+            limits:
+              cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
+              memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
+            requests:
+              cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
+              memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9990
+            timeoutSeconds: 5
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+          volumeMounts:
+            - name: filters
+              mountPath: /etc/config/default-filters
       volumes:
         - name: filters
           configMap:
             name: skipper-default-filters
             optional: true
-{{ end }}
+# {{ end }}
