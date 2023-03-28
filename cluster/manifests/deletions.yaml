@@ -133,11 +133,48 @@ post_apply:
   kind: Deployment
 {{ end }}
 
-{{- if ne .ConfigItems.skipper_oauth2_ui_login "true" }}
-- name: skipper-ingress-auth
+{{- if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
+
+# delete all PlatformCredentialsSet created for previous skipper_oauth2_ui_login_hostnames config version
+{{ with $config_hash := printf "%.32s" (.ConfigItems.skipper_oauth2_ui_login_hostnames | sha256) }}
+- kind: PlatformCredentialsSet
   namespace: kube-system
-  kind: RouteGroup
+  selector: application=skipper-ingress,component=hostname-credentials,config-hash!={{ $config_hash }}
+{{ end }}
+
+{{ else }}
+- kind: PlatformCredentialsSet
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    component: hostname-credentials
+
+- kind: CronJob
+  name: secret-combiner
+  namespace: kube-system
+- kind: RoleBinding
+  name: secret-combiner
+  namespace: kube-system
+- kind: Role
+  name: secret-combiner
+  namespace: kube-system
+- kind: ServiceAccount
+  name: secret-combiner
+  namespace: kube-system
+- kind: Secret
+  name: hostname-credentials
+  namespace: kube-system
 {{- end }}
+
+# todo: remove after hostname-credentials rollout
+- kind: RouteGroup
+  namespace: kube-system
+  name: skipper-ingress-auth
+
+- kind: PlatformCredentialsSet
+  namespace: kube-system
+  name: skipper-ingress-platform-credentials
+
 
 {{- if eq .ConfigItems.prometheus_remote_write "disabled" }}
 - name: prometheus-credentials
