@@ -216,7 +216,7 @@ Follow up code, that waits for creations to be happen:
   S3_AWS_IAM_BUCKET=zalando-e2e-aws-iam-test-12345678912-kube-1 \
   AWS_IAM_ROLE=kube-1-e2e-aws-iam-test \
   ginkgo -nodes=25 -flakeAttempts=2 -focus="\[Zalando\]" \
-  e2e.test -- -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu
+  e2e.test -- -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated
   ```
 
 * **Why is the go modules such a mess?**
