@@ -94,6 +94,12 @@ spec:
         - name: HTTP_REDIRECT
           value: "true"
 {{ end }}
+{{ if eq .ConfigItems.datadome_enabled "true" }}
+        - name: LUA_PATH
+          value: /etc/skipper/lua/?.lua
+        - name: DATADOME_API_KEY
+          value: "{{ .ConfigItems.datadome_api_key }}"
+{{ end }}
         args:
           - "run.sh"
           - "skipper"
@@ -309,6 +315,11 @@ spec:
           - name: filters
             mountPath: /etc/config/default-filters
 {{ end }}
+{{ if eq .ConfigItems.datadome_enabled "true" }}
+          - mountPath: /etc/skipper/lua
+            name: lua
+            readOnly: true
+{{ end }}
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
           - name: hostname-credentials
             mountPath: /etc/skipper/hostname-credentials
@@ -329,6 +340,13 @@ spec:
         - name: filters
           configMap:
             name: skipper-default-filters
+            optional: true
+{{ end }}
+{{ if eq .ConfigItems.datadome_enabled "true" }}
+        - name: lua
+          configMap:
+            defaultMode: 420
+            name: skipper-ingress
             optional: true
 {{ end }}
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
