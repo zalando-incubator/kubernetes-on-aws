@@ -313,7 +313,7 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("Should create routes with ratelimit filters and shunt backend [RouteGroup] [Zalando]", func() {
+	It("Should create routes with ratelimit filters and shunt backend [Ratelimits] [RouteGroup] [Zalando]", func() {
 		var resp *http.Response
 		serviceName := "rg-test-ratelimit"
 		nameprefix := serviceName + "-"
@@ -338,7 +338,7 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 			nameprefix,
 			ns,
 			fmt.Sprintf(`rHealth: Path("/") -> inlineContent("OK") -> <shunt>;
-rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
+rBackend: Path("/backend") -> clusterRatelimit("foo", 1, "1s") -> inlineContent("%s") -> status(201) -> <shunt>;
 `, expectedResponse),
 			labels,
 			targetPort)
@@ -353,10 +353,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
 			PathSubtree: "/backend",
 			Methods:     []rgv1.HTTPMethod{rgv1.MethodGet},
 			Predicates:  []string{},
-			Filters: []string{
-				`status(201)`,
-				`clusterRatelimit("foo", 1, "1s")`,
-			},
+			Filters:     []string{},
 		})
 		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -390,7 +387,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
 			return code == http.StatusTooManyRequests
 		}, false)
 		Expect(err).NotTo(HaveOccurred())
-		s, err := getBody(resp)
+		s, err = getBody(resp)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(s).To(Equal(expectedResponse))
 	})
