@@ -98,7 +98,10 @@ spec:
         - name: LUA_PATH
           value: /etc/skipper/lua/?.lua
         - name: DATADOME_API_KEY
-          value: "{{ .ConfigItems.datadome_api_key }}"
+          valueFrom:
+            secretKeyRef:
+              name: skipper-ingress
+              key: datadome-token
 {{ end }}
         args:
           - "run.sh"
@@ -345,7 +348,7 @@ spec:
 {{ if eq .ConfigItems.skipper_lua_scripts_enabled "true" }}
         - name: lua
           configMap:
-            name: skipper-ingress
+            name: skipper-ingress-lua
             optional: true
 {{ end }}
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
