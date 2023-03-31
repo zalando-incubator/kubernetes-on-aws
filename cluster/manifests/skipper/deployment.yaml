@@ -316,8 +316,8 @@ spec:
             mountPath: /etc/config/default-filters
 {{ end }}
 {{ if eq .ConfigItems.skipper_lua_scripts_enabled "true" }}
-          - mountPath: /etc/skipper/lua
-            name: lua
+          - name: lua
+            mountPath: /etc/skipper/lua
             readOnly: true
 {{ end }}
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
@@ -345,7 +345,6 @@ spec:
 {{ if eq .ConfigItems.skipper_lua_scripts_enabled "true" }}
         - name: lua
           configMap:
-            defaultMode: 420
             name: skipper-ingress
             optional: true
 {{ end }}
