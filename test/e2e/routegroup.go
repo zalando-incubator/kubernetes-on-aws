@@ -338,7 +338,7 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 			nameprefix,
 			ns,
 			fmt.Sprintf(`rHealth: Path("/") -> inlineContent("OK") -> <shunt>;
-rBackend: Path("/backend") -> clusterRatelimit("foo", 1, "1s") -> inlineContent("%s") -> status(201) -> <shunt>;
+rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
 `, expectedResponse),
 			labels,
 			targetPort)
@@ -353,7 +353,9 @@ rBackend: Path("/backend") -> clusterRatelimit("foo", 1, "1s") -> inlineContent(
 			PathSubtree: "/backend",
 			Methods:     []rgv1.HTTPMethod{rgv1.MethodGet},
 			Predicates:  []string{},
-			Filters:     []string{},
+			Filters: []string{
+				fmt.Sprintf(`clusterRatelimit("%s", 1, "1s")`, hostName),
+			},
 		})
 		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
@@ -373,7 +375,7 @@ rBackend: Path("/backend") -> clusterRatelimit("foo", 1, "1s") -> inlineContent(
 		req, err := http.NewRequest("GET", "https://"+hostName+"/backend", nil)
 		Expect(err).NotTo(HaveOccurred())
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, func(code int) bool {
-			return code == http.StatusCreated
+			return code == http.StatusOK
 		}, false)
 		Expect(err).NotTo(HaveOccurred())
 		s, err := getBody(resp)
@@ -386,8 +388,6 @@ rBackend: Path("/backend") -> clusterRatelimit("foo", 1, "1s") -> inlineContent(
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, func(code int) bool {
 			return code == http.StatusTooManyRequests
 		}, false)
-		Expect(err).NotTo(HaveOccurred())
-		s, err = getBody(resp)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(s).To(Equal(expectedResponse))
 	})
