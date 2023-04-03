@@ -139,7 +139,7 @@ post_apply:
 {{ with $config_hash := printf "%.32s" (.ConfigItems.skipper_oauth2_ui_login_hostnames | sha256) }}
 - kind: PlatformCredentialsSet
   namespace: kube-system
-  selector: application=skipper-ingress,component=hostname-credentials,config-hash!={{ $config_hash }}
+  selector: application=skipper-ingress,component=hostname-credentials,controller=cluster-lifecycle-manager,config-hash!={{ $config_hash }}
 {{ end }}
 
 {{ else }}
@@ -148,6 +148,7 @@ post_apply:
   labels:
     application: skipper-ingress
     component: hostname-credentials
+    controller: cluster-lifecycle-manager
 
 - kind: CronJob
   name: secret-combiner
