@@ -110,7 +110,8 @@ spec:
     # Do we want a node pool tag for cost tracking reasons?
     node.kubernetes.io/role: worker
     node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
-{{- if and (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true") (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
+    kubernetes.io/cluster/{{ .Cluster.ID }}: "owned"
+  {{- if and (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true") (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
     zalando.org/ingress-enabled: "true"
 # only node pools without taints should be attached to Ingress Load balancer
 {{- else if and (not (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true")) (or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule")) }}
