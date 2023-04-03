@@ -367,16 +367,14 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
 
 		// DNS ready
 		By("Waiting for ALB, DNS and skipper route to service and pod works")
-		err = waitForResponse(hostName+"/", "https", 10*time.Minute, isNotFound, false)
+		err = waitForResponse(hostName+"/", "https", 5*time.Minute, isNotFound, false)
 		Expect(err).NotTo(HaveOccurred())
 
 		// checking backend route with predicates and filters
 		By("checking the response for a request to /backend with the right header we know if we got the correct route")
 		req, err := http.NewRequest("GET", "https://"+hostName+"/backend", nil)
 		Expect(err).NotTo(HaveOccurred())
-		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, func(code int) bool {
-			return code == http.StatusOK
-		}, false)
+		resp, err = waitForResponseReturnResponse(req, 5*time.Minute, isSuccess, false)
 		Expect(err).NotTo(HaveOccurred())
 		s, err := getBody(resp)
 		Expect(err).NotTo(HaveOccurred())
@@ -385,7 +383,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
 		By("checking the response is for a request to /backend with the right header we know if we got the correct route but get ratelimited")
 		req, err = http.NewRequest("GET", "https://"+hostName+"/backend", nil)
 		Expect(err).NotTo(HaveOccurred())
-		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, func(code int) bool {
+		resp, err = waitForResponseReturnResponse(req, 5*time.Minute, func(code int) bool {
 			return code == http.StatusTooManyRequests
 		}, false)
 		Expect(err).NotTo(HaveOccurred())
