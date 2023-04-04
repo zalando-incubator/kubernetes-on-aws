@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.16.3-421" }}
+{{ $internal_version := "v0.16.5-423" }}
 {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
@@ -163,8 +163,13 @@ spec:
           - "-swarm-redis-read-timeout={{ .ConfigItems.skipper_redis_read_timeout }}"
           - "-swarm-redis-write-timeout={{ .ConfigItems.skipper_redis_write_timeout }}"
           - "-cluster-ratelimit-max-group-shards={{ .ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
+{{ if eq .ConfigItems.skipper_routesrv_enabled "exec" }}
+          - "-swarm-redis-remote=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/redis/shards"
+{{ else }}
           - "-kubernetes-redis-service-namespace=kube-system"
           - "-kubernetes-redis-service-name=skipper-ingress-redis"
+
+{{ end }}
           - "-kubernetes-redis-service-port=6379"
 {{ end }}
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
