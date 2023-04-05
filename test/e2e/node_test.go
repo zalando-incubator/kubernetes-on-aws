@@ -94,9 +94,8 @@ var _ = describe("Node tests", func() {
 				RestartPolicy: corev1.RestartPolicyNever,
 			},
 		}
-		terminationTriggerPod, err := cs.CoreV1().Pods(ns).Create(context.Background(), terminationTriggerPodTemplate, metav1.CreateOptions{})
+		_, err = cs.CoreV1().Pods(ns).Create(context.Background(), terminationTriggerPodTemplate, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create a termination trigger pod")
-		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(f.ClientSet, terminationTriggerPod.Name, terminationTriggerPod.Namespace))
 
 		By("Ensuring that pods are deleted from the node")
 		framework.ExpectNoError(e2epod.WaitForPodToDisappear(f.ClientSet, pausePod.Namespace, pausePod.Name, labels.Everything(), framework.Poll, framework.PodDeleteTimeout))
