@@ -313,6 +313,83 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("Should create routes with ratelimit filters and shunt backend [Ratelimits] [RouteGroup] [Zalando]", func() {
+		var resp *http.Response
+		serviceName := "rg-test-ratelimit"
+		nameprefix := serviceName + "-"
+		ns := f.Namespace.Name
+		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
+		labels := map[string]string{
+			"app": serviceName,
+		}
+		port := 83
+		targetPort := 80
+
+		// SVC
+		By("Creating service " + serviceName + " in namespace " + ns)
+		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
+		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		// POD
+		By("Creating a POD with prefix " + nameprefix + " in namespace " + ns)
+		expectedResponse := "OK RG fp"
+		pod := createSkipperPod(
+			nameprefix,
+			ns,
+			fmt.Sprintf(`rHealth: Path("/") -> inlineContent("OK") -> <shunt>;
+rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
+`, expectedResponse),
+			labels,
+			targetPort)
+
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
+
+		// RouteGroup
+		By("Creating a routegroup with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
+		rg := createRouteGroup(serviceName, hostName, ns, labels, nil, port, rgv1.RouteGroupRouteSpec{
+			PathSubtree: "/backend",
+			Methods:     []rgv1.HTTPMethod{rgv1.MethodGet},
+			Predicates:  []string{},
+			Filters: []string{
+				fmt.Sprintf(`clusterRatelimit("%s", 1, "1s")`, hostName),
+			},
+		})
+		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
+		Expect(err).NotTo(HaveOccurred())
+		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
+		Expect(err).NotTo(HaveOccurred())
+		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
+
+		// DNS ready
+		By("Waiting for ALB, DNS and skipper route to service and pod works")
+		err = waitForResponse(hostName+"/", "https", 5*time.Minute, isNotFound, false)
+		Expect(err).NotTo(HaveOccurred())
+
+		// checking backend route with predicates and filters
+		By("checking the response for a request to /backend with the right header we know if we got the correct route")
+		req, err := http.NewRequest("GET", "https://"+hostName+"/backend", nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err = waitForResponseReturnResponse(req, 5*time.Minute, isSuccess, false)
+		Expect(err).NotTo(HaveOccurred())
+		s, err := getBody(resp)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(s).To(Equal(expectedResponse))
+
+		By("checking the response is for a request to /backend with the right header we know if we got the correct route but get ratelimited")
+		req, err = http.NewRequest("GET", "https://"+hostName+"/backend", nil)
+		Expect(err).NotTo(HaveOccurred())
+		resp, err = waitForResponseReturnResponse(req, 5*time.Minute, func(code int) bool {
+			return code == http.StatusTooManyRequests
+		}, false)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(s).To(Equal(expectedResponse))
+	})
+
 	It("Should create blue-green routes [RouteGroup] [Zalando]", func() {
 		var resp *http.Response
 		serviceName := "rg-test-fp"
