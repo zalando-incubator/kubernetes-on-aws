@@ -126,6 +126,7 @@ spec:
 {{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+          - "-reverse-source-predicate"
 {{ end }}
           - "-proxy-preserve-host"
           - "-compress-encodings={{ .ConfigItems.skipper_compress_encodings }}"
@@ -142,7 +143,6 @@ spec:
           - "-enable-ratelimits"
           - "-experimental-upgrade"
           - "-metrics-exp-decay-sample"
-          - "-reverse-source-predicate"
           - "-lb-healthcheck-interval=3s"
           - "-metrics-flavour=prometheus"
           - "-enable-connection-metrics"
@@ -447,10 +447,6 @@ spec:
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
           - "-reverse-source-predicate"
-          - "-enable-api-usage-monitoring"
-          - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
-          - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
-          - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
 {{ if eq .ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
