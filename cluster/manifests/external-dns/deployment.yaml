@@ -6,7 +6,6 @@ metadata:
   labels:
     application: kubernetes
     component: external-dns
-    version: v0.12.2
 spec:
   strategy:
     type: Recreate
@@ -19,7 +18,6 @@ spec:
         application: kubernetes
         component: external-dns
         deployment: external-dns
-        version: v0.12.2
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
         prometheus.io/path: /metrics
@@ -34,7 +32,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: container-registry.zalando.net/teapot/external-dns:v0.13.2-12-ga18bf2b5-internal-master-35
+        image: container-registry.zalando.net/teapot/external-dns:v0.13.4-master-36
         args:
         - --source=service
         - --source=ingress
