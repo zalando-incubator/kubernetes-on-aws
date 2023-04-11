@@ -28,7 +28,7 @@ examples of how to write the tests or checkout the files already defined e.g.
     ginkgo -nodes=1 -flakeAttempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
-    "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role
+    "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated
   ```
 
   Where `~/.kube/config` is pointing to the cluster you want to run the tests
