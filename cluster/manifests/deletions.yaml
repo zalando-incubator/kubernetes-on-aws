@@ -214,15 +214,30 @@ post_apply:
   kind: Deployment
 - name: karpenter
   namespace: kube-system
+  kind: PodDisruptionBudget
+- name: karpenter
+  namespace: kube-system
   kind: ServiceAccount
-- name: karpenter
+- name: karpenter-admin
   kind: ClusterRole
-- name: karpenter
+- name: karpenter-core
+  kind: ClusterRole
+- name: karpenter-core
+  kind: ClusterRoleBinding
+- name: karpenter-webhook
+  kind: ClusterRole
+- name: karpenter-webhook
   kind: ClusterRoleBinding
 - name: karpenter
   namespace: kube-system
   kind: Role
+- name: karpenter-dns
+  namespace: kube-system
+  kind: Role
 - name: karpenter
+  namespace: kube-system
+  kind: RoleBinding
+- name: karpenter-dns
   namespace: kube-system
   kind: RoleBinding
 - name: karpenter
@@ -232,13 +247,25 @@ post_apply:
   kind: CustomResourceDefinition
 - name: awsnodetemplates.karpenter.k8s.aws
   kind: CustomResourceDefinition
-- name: defaulting.webhook.provisioners.karpenter.sh
+- name: karpenter-global-settings
+  kind: ConfigMap
+  namespace: kube-system
+- name: karpenter-logging-config
+  kind: ConfigMap
+  namespace: kube-system
+- name: karpenter-cert
+  kind: Secret
+  namespace: kube-system
+- name: defaulting.webhook.karpenter.k8s.aws
   namespace: kube-system
   kind: MutatingWebhookConfiguration
-- name: validation.webhook.provisioners.karpenter.sh
+- name: validation.webhook.karpenter.k8s.aws
   namespace: kube-system
   kind: ValidatingWebhookConfiguration
 - name: validation.webhook.config.karpenter.sh
+  namespace: kube-system
+  kind: ValidatingWebhookConfiguration
+- name: validation.webhook.karpenter.sh
   namespace: kube-system
   kind: ValidatingWebhookConfiguration
 {{ end }}

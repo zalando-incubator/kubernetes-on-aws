@@ -10,11 +10,11 @@ metadata:
     component: karpenter
 data:
   "aws.clusterEndpoint": "https://kubernetes.default.svc.cluster.local."
-  "aws.clusterName": "{{ .Cluster.ID | awsValidID }}"
+  "aws.clusterName": "{{ .Cluster.ID  }}"
   "aws.defaultInstanceProfile": "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
   "aws.enableENILimitedPodDensity": "true"
   "aws.enablePodENI": "false"
-  "aws.interruptionQueueName": "TODO" # TODO: define
+  "aws.interruptionQueueName": "{{.Cluster.LocalID}}-karpenter-interruption-queue"
   "aws.isolatedVPC": "false"
   "aws.nodeNameConvention": "ip-name"
   "aws.vmMemoryOverheadPercent": "0.075"
@@ -25,7 +25,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: config-logging # TODO: rename
+  name: karpenter-logging-config
   namespace: kube-system
   labels:
     application: kubernetes

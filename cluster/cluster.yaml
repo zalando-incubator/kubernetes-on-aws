@@ -558,27 +558,37 @@ Resources:
       Policies:
         - PolicyDocument:
             Statement:
-              - Action:
-                - ssm:GetParameter
-                - iam:PassRole
-                - ec2:RunInstances
-                - ec2:DescribeSubnets
-                - ec2:DescribeSecurityGroups
-                - ec2:DescribeLaunchTemplates
-                - ec2:DescribeInstances
-                - ec2:DescribeInstanceTypes
-                - ec2:DescribeInstanceTypeOfferings
-                - ec2:DescribeAvailabilityZones
-                - ec2:DeleteLaunchTemplate
-                - ec2:CreateTags
-                - ec2:CreateLaunchTemplate
-                - ec2:CreateFleet
-                - ec2:DescribeSpotPriceHistory
-                - pricing:GetProducts
-                - ec2:DescribeImages
-                Effect: Allow
+              - Effect: Allow
                 Resource: "*"
-                Sid: Karpenter
+                Action:
+                  # Write Operations
+                  - ec2:CreateLaunchTemplate
+                  - ec2:CreateFleet
+                  - ec2:RunInstances
+                  - ec2:CreateTags
+                  - ec2:TerminateInstances
+                  - ec2:DeleteLaunchTemplate
+                  # Read Operations
+                  - ec2:DescribeLaunchTemplates
+                  - ec2:DescribeInstances
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeImages
+                  - ec2:DescribeInstanceTypes
+                  - ec2:DescribeInstanceTypeOfferings
+                  - ec2:DescribeAvailabilityZones
+                  - ec2:DescribeSpotPriceHistory
+                  - ssm:GetParameter
+                  - pricing:GetProducts
+              - Effect: Allow
+                Action:
+                  # Write Operations
+                  - sqs:DeleteMessage
+                  # Read Operations
+                  - sqs:GetQueueUrl
+                  - sqs:GetQueueAttributes
+                  - sqs:ReceiveMessage
+                Resource: !GetAtt KarpenterInterruptionQueue.Arn
               - Action: ec2:TerminateInstances
                 Condition:
                   StringLike:
@@ -597,6 +607,70 @@ Resources:
       Path: "/"
       Roles:
         - !Ref WorkerIAMRole
+  KarpenterInterruptionQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "{{.Cluster.LocalID}}-karpenter-interruption-queue"
+      MessageRetentionPeriod: 300
+  KarpenterInterruptionQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref KarpenterInterruptionQueue
+      PolicyDocument:
+        Id: EC2InterruptionPolicy
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+                - sqs.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt KarpenterInterruptionQueue.Arn
+  ScheduledChangeRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      EventPattern:
+        source:
+          - aws.health
+        detail-type:
+          - AWS Health Event
+      Targets:
+        - Id: KarpenterInterruptionQueueTarget
+          Arn: !GetAtt KarpenterInterruptionQueue.Arn
+  SpotInterruptionRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Spot Instance Interruption Warning
+      Targets:
+        - Id: KarpenterInterruptionQueueTarget
+          Arn: !GetAtt KarpenterInterruptionQueue.Arn
+  RebalanceRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Instance Rebalance Recommendation
+      Targets:
+        - Id: KarpenterInterruptionQueueTarget
+          Arn: !GetAtt KarpenterInterruptionQueue.Arn
+  InstanceStateChangeRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Instance State-change Notification
+      Targets:
+        - Id: KarpenterInterruptionQueueTarget
+          Arn: !GetAtt KarpenterInterruptionQueue.Arn
 {{- end }}
   DeploymentIAMPolicy:
     Type: AWS::IAM::ManagedPolicy

@@ -63,7 +63,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: karpenter
+  name: karpenter-core
   labels:
     application: kubernetes
     component: karpenter
@@ -104,7 +104,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: karpenter
+  name: karpenter-webhook
   labels:
     application: kubernetes
     component: karpenter
@@ -143,7 +143,7 @@ rules:
     verbs: ["update", "patch", "delete"]
     resourceNames:
       - karpenter-global-settings
-      - config-logging
+      - karpenter-logging-config
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["patch", "update"]
@@ -211,5 +211,24 @@ subjects:
   - kind: ServiceAccount
     name: karpenter
     namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: karpenter-admin
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-poweruser: "true"
+    helm.sh/chart: karpenter-v0.25.0
+    app.kubernetes.io/name: karpenter
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.25.0"
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups: [ "karpenter.sh" ]
+    resources: [ "provisioners", "provisioners/status" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "karpenter.k8s.aws" ]
+    resources: [ "awsnodetemplates" ]
+    verbs: [ "get", "list", "watch" ]
 
 {{ end }}

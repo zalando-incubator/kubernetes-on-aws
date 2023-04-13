@@ -1,4 +1,5 @@
 {{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -35,7 +36,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: controller
-          image: "container-registry.zalando.net/teapot/karpenter-controller:v0.18.0-main-6" # TODO: update to v0.27.2
+          image: "container-registry.zalando.net/teapot/karpenter-controller:v0.27.2-main-8"
           env:
             - name: KUBERNETES_MIN_VERSION
               value: "1.19.0-0"
