@@ -20,7 +20,6 @@ spec:
         component: flannel
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
-        config/hash: {{"configmap.yaml" | manifestHash}}
     spec:
       priorityClassName: system-node-critical
       serviceAccountName: flannel
@@ -71,6 +70,8 @@ spec:
         securityContext:
           privileged: true
         volumeMounts:
+        - name: flannel-cfg
+          mountPath: /etc/kube-flannel/
         - name: run
           mountPath: /run
       - args:
@@ -92,6 +93,9 @@ spec:
           privileged: true
         stdin: true
         volumeMounts:
+        - name: flannel-cfg
+          hostPath:
+            path: /etc/kube-flannel
         - mountPath: /run
           name: run
         - mountPath: /lib/tc
