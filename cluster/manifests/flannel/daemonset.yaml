@@ -36,29 +36,6 @@ spec:
             cpu: 1m
             memory: 50Mi
       containers:
-      - name: delayed-install-cni
-        image: container-registry.zalando.net/teapot/flannel-awaiter:master-9
-        command:
-        - /await-and-copy
-        stdin: true
-        volumeMounts:
-        - name: cni
-          mountPath: /etc/cni/net.d
-        - name: flannel-cfg
-          mountPath: /etc/kube-flannel/
-        env:
-          - name: CNI_CONFIG_SOURCE
-            value: /etc/kube-flannel/cni-conf.json
-          - name: CNI_CONFIG_TARGET
-            value: /etc/cni/net.d/10-flannel.conflist
-        resources:
-          requests:
-            cpu: 25m
-            memory: 50Mi
-            ephemeral-storage: 256Mi
-          limits:
-            cpu: 25m
-            memory: 50Mi
       - name: kube-flannel
         image: container-registry.zalando.net/teapot/flannel:v0.21.3-master-13
         command:
@@ -131,9 +108,6 @@ spec:
       - name: flannel-cfg
         configMap:
           name: kube-flannel-cfg
-      - name: cni
-        hostPath:
-          path: /etc/kubernetes/cni/net.d
       - name: run
         hostPath:
           path: /run
