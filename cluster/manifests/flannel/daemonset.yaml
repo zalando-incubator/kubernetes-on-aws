@@ -93,9 +93,6 @@ spec:
           privileged: true
         stdin: true
         volumeMounts:
-        - name: flannel-cfg
-          hostPath:
-            path: /etc/kube-flannel
         - mountPath: /run
           name: run
         - mountPath: /lib/tc
@@ -107,6 +104,9 @@ spec:
       - operator: Exists
         effect: NoExecute
       volumes:
+      - name: flannel-cfg
+        hostPath:
+          path: /etc/kube-flannel
       - name: run
         hostPath:
           path: /run
