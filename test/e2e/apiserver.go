@@ -462,10 +462,7 @@ var _ = describe("Image Policy Tests (Job)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
-
-		job.WaitForJobFinish(cs, namespace, jobObj.Name)
+		job.WaitForJobComplete(cs, namespace, jobObj.Name, 1)
 	})
 
 	It("Should not create Job using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
@@ -518,10 +515,7 @@ var _ = describe("Image Policy Tests (Job) (when disabled)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
-
-		job.WaitForJobFinish(cs, namespace, jobObj.Name)
+		job.WaitForJobComplete(cs, namespace, jobObj.Name, 1)
 	})
 })
 
