@@ -483,9 +483,7 @@ var _ = describe("Image Policy Tests (Job)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(MatchRegexp("Timeout while waiting for pods with label application=%s", appLabel))
+		job.WaitForJobComplete(cs, namespace, jobObj.Name, 1)
 	})
 })
 
@@ -548,10 +546,7 @@ var _ = describe("ECR Registry Pull", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
-
-		job.WaitForJobFinish(cs, namespace, jobObj.Name)
+		job.WaitForJobComplete(cs, namespace, jobObj.Name, 1)
 	})
 
 	It("Should run a Job using a vanity image from the staging registry [ECR] [Zalando]", func() {
@@ -575,9 +570,6 @@ var _ = describe("ECR Registry Pull", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
-
-		job.WaitForJobFinish(cs, namespace, jobObj.Name)
+		job.WaitForJobComplete(cs, namespace, jobObj.Name, 1)
 	})
 })
