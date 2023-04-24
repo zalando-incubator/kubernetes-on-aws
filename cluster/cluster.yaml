@@ -581,6 +581,10 @@ Resources:
                   - ssm:GetParameter
                   - pricing:GetProducts
               - Effect: Allow
+                Action: iam:PassRole
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-worker"
+                Sid: PassNodeIAMRole
+              - Effect: Allow
                 Action:
                   # Write Operations
                   - sqs:DeleteMessage
@@ -592,7 +596,7 @@ Resources:
               - Action: ec2:TerminateInstances
                 Condition:
                   StringLike:
-                    ec2:ResourceTag/Name: "*karpenter*"
+                    ec2:ResourceTag/karpenter.sh/provisioner-name: "*"
                 Effect: Allow
                 Resource: "*"
                 Sid: ConditionalEC2Termination
