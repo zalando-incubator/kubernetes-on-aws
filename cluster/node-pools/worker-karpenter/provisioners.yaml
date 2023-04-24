@@ -83,11 +83,11 @@ metadata:
 spec:
   amiFamily: Custom
   amiSelector:
-    aws-ids: "{{ .Cluster.ConfigItems.kuberuntu_image_v1_21_amd64  }},{{ .Cluster.ConfigItems.kuberuntu_image_v1_21_arm64 }}"
+    aws-ids: "{{ .Cluster.ConfigItems.kuberuntu_image_v1_22_amd64  }},{{ .Cluster.ConfigItems.kuberuntu_image_v1_22_arm64 }}"
   metadataOptions:
     httpTokens: optional
   subnetSelector:
-    Name: "dmz-eu-central-1*" # TODO: use a better tag
+    Name: "dmz-eu-central-1*" # TODO: use a better tag + it has to have auto assign public IP enabled
   securityGroupSelector:
     karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
   blockDeviceMappings:
@@ -107,9 +107,9 @@ spec:
     Name: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
     # TODO: are these tags still needed?
     # Do we want a node pool tag for cost tracking reasons?
-    node.kubernetes.io/role: worker
-    node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
-    kubernetes.io/cluster/{{ .Cluster.ID }}: "owned"
+#    node.kubernetes.io/role: worker
+#    node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
+#    kubernetes.io/cluster/{{ .Cluster.ID }}: "owned"
   {{- if and (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true") (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
     zalando.org/ingress-enabled: "true"
 # only node pools without taints should be attached to Ingress Load balancer
