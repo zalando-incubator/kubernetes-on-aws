@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.15.23-396" }}
+{{ $internal_version := "v0.16.15-434" }}
 {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
@@ -94,6 +94,15 @@ spec:
         - name: HTTP_REDIRECT
           value: "true"
 {{ end }}
+{{ if eq .ConfigItems.skipper_lua_scripts_enabled "true" }}
+        - name: LUA_PATH
+          value: /etc/skipper/lua/?.lua
+        - name: DATADOME_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: skipper-ingress
+              key: datadome-api-key
+{{ end }}
         args:
           - "run.sh"
           - "skipper"
@@ -117,6 +126,7 @@ spec:
 {{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+          - "-reverse-source-predicate"
 {{ end }}
           - "-proxy-preserve-host"
           - "-compress-encodings={{ .ConfigItems.skipper_compress_encodings }}"
@@ -133,7 +143,6 @@ spec:
           - "-enable-ratelimits"
           - "-experimental-upgrade"
           - "-metrics-exp-decay-sample"
-          - "-reverse-source-predicate"
           - "-lb-healthcheck-interval=3s"
           - "-metrics-flavour=prometheus"
           - "-enable-connection-metrics"
@@ -154,8 +163,12 @@ spec:
           - "-swarm-redis-read-timeout={{ .ConfigItems.skipper_redis_read_timeout }}"
           - "-swarm-redis-write-timeout={{ .ConfigItems.skipper_redis_write_timeout }}"
           - "-cluster-ratelimit-max-group-shards={{ .ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
+{{ if eq .ConfigItems.skipper_routesrv_enabled "exec" }}
+          - "-swarm-redis-remote=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/redis/shards"
+{{ else }}
           - "-kubernetes-redis-service-namespace=kube-system"
           - "-kubernetes-redis-service-name=skipper-ingress-redis"
+{{ end }}
           - "-kubernetes-redis-service-port=6379"
 {{ end }}
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
@@ -223,13 +236,13 @@ spec:
           - "-oauth2-auth-url={{ .ConfigItems.skipper_oauth2_auth_url }}"
           - "-oauth2-token-url={{ .ConfigItems.skipper_oauth2_token_url }}"
           - "-oauth2-secret-file=/etc/skipper/secret/encryption-key"
-          - "-oauth2-client-id-file=/etc/skipper/oauth/{{ .Cluster.Alias }}-employee-client-id"
-          - "-oauth2-client-secret-file=/etc/skipper/oauth/{{ .Cluster.Alias }}-employee-client-secret"
+          - "-oauth2-client-id-file=/etc/skipper/hostname-credentials/{host}-credentials-employee-client-id"
+          - "-oauth2-client-secret-file=/etc/skipper/hostname-credentials/{host}-credentials-employee-client-secret"
           - "-credentials-update-interval=1m"
           - "-oauth2-token-cookie-name={{ .ConfigItems.skipper_oauth2_cookie_name }}"
           - "-oauth2-token-cookie-remove-subdomains=0"
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
-          - "-oauth2-auth-url-parameters=redirect_uri=https://{{ .ConfigItems.skipper_oauth2_redirect_uri_host }}{{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
+          - "-oauth2-grant-tokeninfo-keys={{ .ConfigItems.skipper_oauth2_ui_login_tokeninfo_keys }}"
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
@@ -309,9 +322,14 @@ spec:
           - name: filters
             mountPath: /etc/config/default-filters
 {{ end }}
+{{ if eq .ConfigItems.skipper_lua_scripts_enabled "true" }}
+          - name: lua
+            mountPath: /etc/skipper/lua
+            readOnly: true
+{{ end }}
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
-          - name: oauth2
-            mountPath: /etc/skipper/oauth
+          - name: hostname-credentials
+            mountPath: /etc/skipper/hostname-credentials
             readOnly: true
           - name: encryption-key
             mountPath: /etc/skipper/secret
@@ -331,10 +349,16 @@ spec:
             name: skipper-default-filters
             optional: true
 {{ end }}
+{{ if eq .ConfigItems.skipper_lua_scripts_enabled "true" }}
+        - name: lua
+          configMap:
+            name: skipper-ingress-lua
+            optional: true
+{{ end }}
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true"}}
-        - name: oauth2
+        - name: hostname-credentials
           secret:
-            secretName: skipper-ingress-platform-credentials
+            secretName: hostname-credentials
         - name: encryption-key
           secret:
             secretName: skipper-ingress
@@ -378,7 +402,7 @@ spec:
         component: routesrv
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
-          [{"container": "skipper-ingress", "parser": "skipper-access-log"}]
+          [{"container": "routesrv", "parser": "skipper-access-log"}]
         config/hash: {{"secret.yaml" | manifestHash}}
         logging/destination: "{{.Cluster.ConfigItems.log_destination_local}}"
         prometheus.io/path: /metrics
@@ -423,12 +447,14 @@ spec:
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
           - "-reverse-source-predicate"
-          - "-enable-api-usage-monitoring"
-          - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
-          - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
-          - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
+{{ if eq .ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
+          - "-enable-swarm"
+          - "-kubernetes-redis-service-namespace=kube-system"
+          - "-kubernetes-redis-service-name=skipper-ingress-redis"
+{{ end }}
+
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
           - "-enable-oauth2-grant-flow"
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"

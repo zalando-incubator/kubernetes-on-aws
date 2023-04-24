@@ -6,7 +6,6 @@ metadata:
   labels:
     application: kubernetes
     component: aws-iam-controller
-    version: v0.2.0
 spec:
   replicas: 1
   selector:
@@ -18,7 +17,6 @@ spec:
         application: kubernetes
         component: aws-iam-controller
         deployment: kube-aws-iam-controller
-        version: v0.2.0
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
@@ -29,7 +27,7 @@ spec:
       hostNetwork: true
       containers:
       - name: kube-aws-iam-controller
-        image: container-registry.zalando.net/teapot/kube-aws-iam-controller:v0.2.0
+        image: container-registry.zalando.net/teapot/kube-aws-iam-controller:v0.2.0-12-g8d2448c
         args:
         - --debug
         - "--assume-role={{.Cluster.LocalID}}-worker"

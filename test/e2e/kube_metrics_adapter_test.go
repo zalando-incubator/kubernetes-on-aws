@@ -299,7 +299,7 @@ func podMetricDeployment(name string, replicas int32, containers []CustomMetricC
 func podContainerSpec(name string) corev1.Container {
 	return corev1.Container{
 		Name:  name,
-		Image: "pierone.stups.zalan.do/teapot/sample-custom-metrics-autoscaling:master-13",
+		Image: "container-registry.zalando.net/teapot/sample-custom-metrics-autoscaling:master-15",
 		Ports: []corev1.ContainerPort{{ContainerPort: 8000, Protocol: "TCP"}},
 		Resources: corev1.ResourceRequirements{
 			Limits: map[corev1.ResourceName]resource.Quantity{
@@ -316,7 +316,7 @@ func podContainerSpec(name string) corev1.Container {
 func podMetricContainerSpec(container CustomMetricContainerSpec) corev1.Container {
 	return corev1.Container{
 		Name:  container.Name,
-		Image: "pierone.stups.zalan.do/teapot/sample-custom-metrics-autoscaling:master-13",
+		Image: "container-registry.zalando.net/teapot/sample-custom-metrics-autoscaling:master-15",
 		Ports: []corev1.ContainerPort{{ContainerPort: 8000, Protocol: "TCP"}},
 		Resources: corev1.ResourceRequirements{
 			Limits: map[corev1.ResourceName]resource.Quantity{

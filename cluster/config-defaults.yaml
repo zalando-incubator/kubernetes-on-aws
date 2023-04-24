@@ -69,7 +69,7 @@ skipper_ingress_min_replicas: "3"
 skipper_ingress_min_replicas: "2"
 {{end}}
 skipper_ingress_cpu: "1000m"
-skipper_ingress_memory: "1Gi"
+skipper_ingress_memory: "1500Mi"
 # When set to true (and dedicated node pool for skipper is also true) the
 # daemonset overhead will be substracted from the cpu settings such
 # that skipper will perfectly fit on the node.
@@ -154,6 +154,10 @@ skipper_ingress_redis_max_replicas: "100"
 skipper_ingress_redis_cluster_scaling_schedules: ""
 
 skipper_cluster_ratelimit_max_group_shards: 1
+
+# datadome poc
+skipper_lua_scripts_enabled: ""
+datadome_api_key: ""
 
 #
 # skipper routesrv settings
@@ -264,6 +268,14 @@ skipper_ingress_encryption_key: ""
 skipper_oauth2_ui_login: "false"
 {{end}}
 
+# Comma-separated list of <hostname>=<application> pairs.
+# E.g. to configure "foo.example.org" and "foo.example.com" hostnames for application "foo" and
+# "bar.example.net" for "bar" set
+# skipper_oauth2_ui_login_hostnames: "foo.example.org=foo,foo.example.com=foo,bar.example.net=bar"
+skipper_oauth2_ui_login_hostnames: ""
+# Comma-separated list of tokeninfo keys to retain
+skipper_oauth2_ui_login_tokeninfo_keys: ""
+
 # ClusterScalingSchedules
 # One or multiple cluster scaling schedules can be configured as a
 # comma-separated list of <cluster schedule name>=<target value> pairs.
@@ -282,6 +294,7 @@ fabric_gateway_controller_mode: "disabled"
 fabric_gateway_controller_cpu: "50m"
 fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_crd_v1_enabled: "false"
+fabric_gateway_controller_allow_all_filters: "false"
 
 # kube-api-server settings
 
@@ -546,6 +559,11 @@ etcd_scalyr_key: ""
 etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.4.16-amd64-main-10" "861068367966"}}
 
 dynamodb_service_link_enabled: "false"
+{{if eq .Cluster.Environment "e2e"}}
+quotas_service_link_enabled: "false"
+{{else}}
+quotas_service_link_enabled: "true"
+{{end}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -567,8 +585,6 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_21_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.14-amd64-master-236" "861068367966" }}
-kuberuntu_image_v1_21_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.21.14-arm64-master-236" "861068367966" }}
 kuberuntu_image_v1_22_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-amd64-master-243" "861068367966" }}
 kuberuntu_image_v1_22_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-arm64-master-243" "861068367966" }}
 
@@ -583,6 +599,8 @@ audittrail_root_account_role: ""
 
 audittrail_adapter_cpu: "50m"
 audittrail_adapter_memory: "200Mi"
+
+audittrail_adapter_timeout: "2s"
 
 kube2iam_cpu: "25m"
 kube2iam_memory: "100Mi"
@@ -614,9 +632,11 @@ cpu_manager_policy: "none"
 allowed_unsafe_sysctls: "net.ipv4.tcp_keepalive_time,net.ipv4.tcp_keepalive_intvl,net.ipv4.tcp_keepalive_probes,net.ipv4.tcp_syn_retries,net.ipv4.tcp_retries2"
 
 # enable CSI Driver feature flag
-enable_csi: "false"
+enable_csi: "true"
 # enable CSIMigration and CSIMigrationAWS feature flags (make sure to set `enable_csi: true` for this to work)
 enable_csi_migration: "false"
+# the maximum amount of memory for EBS CSI controller's sidecars
+ebs_csi_controller_sidecar_memory: "80Mi"
 
 # pull images in parallel
 serialize_image_pulls: "false"
@@ -744,6 +764,7 @@ spot_allocation_strategy: "capacity-optimized"
 stackset_controller_sync_interval: "10s"
 stackset_controller_mem_min: "120Mi"
 stackset_controller_mem_max: "4Gi"
+stackset_legacy_hpa_field_enabled: "false"
 
 # EBS settings for the root volume
 ebs_master_root_volume_size: "50"
@@ -803,15 +824,19 @@ deployment_service_cf_auto_expand_enabled: "false"
 # Will be dropped after the migration
 deployment_service_enabled: "true"
 
-# Standard storageclass gp3 volume type
-storageclass_standard_gp3: "true"
-
 # opentelemetry config
 observability_collector_endpoint: "tracing.platform-infrastructure.zalan.do"
 observability_collector_port: "8443"
 observability_collector_scheme: "https"
 observability_metrics_endpoint: "ingest.lightstep.com"
 observability_metrics_port: "443"
+
+# labels whitelisted to kube-state-metrics
+observability_metrics_pods_labels: "application,component"
+observability_metrics_ingresses_labels: ""
+
+# opentelemetry collector
+observability_otel_collector_enabled: "false"
 
 # list of comma separated buckets which are accessible by zmon
 zmon_accessible_s3_buckets: ""
