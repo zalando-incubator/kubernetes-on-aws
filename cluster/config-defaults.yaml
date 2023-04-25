@@ -63,7 +63,7 @@ skipper_ingress_min_replicas: "3"
 skipper_ingress_min_replicas: "2"
 {{end}}
 skipper_ingress_cpu: "1000m"
-skipper_ingress_memory: "1Gi"
+skipper_ingress_memory: "1500Mi"
 # When set to true (and dedicated node pool for skipper is also true) the
 # daemonset overhead will be substracted from the cpu settings such
 # that skipper will perfectly fit on the node.
@@ -288,6 +288,7 @@ fabric_gateway_controller_mode: "disabled"
 fabric_gateway_controller_cpu: "50m"
 fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_crd_v1_enabled: "false"
+fabric_gateway_controller_allow_all_filters: "false"
 
 # kube-api-server settings
 
@@ -757,6 +758,7 @@ spot_allocation_strategy: "capacity-optimized"
 stackset_controller_sync_interval: "10s"
 stackset_controller_mem_min: "120Mi"
 stackset_controller_mem_max: "4Gi"
+stackset_legacy_hpa_field_enabled: "false"
 
 # EBS settings for the root volume
 ebs_master_root_volume_size: "50"
@@ -841,6 +843,10 @@ hyped_article_lifecycle_management: "false"
 
 # enable SizeMemoryBackedVolumes feature flag
 enable_size_memory_backed_volumes: "true"
+
+# enable StatefulSetAutoDeletePVC feature flag
+# https://kubernetes.io/blog/2021/12/16/kubernetes-1-23-statefulset-pvc-auto-deletion/
+enable_statefulset_autodelete_pvc: "true"
 
 # Each subdomain can reach a max of 63 bytes on Route53
 # This custom value sets the subdomain max allowed length taking into consideration the 'cname-' prefix added by external-dns
