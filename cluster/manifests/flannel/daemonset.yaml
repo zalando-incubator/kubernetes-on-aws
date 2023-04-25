@@ -48,9 +48,11 @@ spec:
           limits:
             cpu: 25m
             memory: 50Mi
-        volumeMounts:
-        - name: run
-          mountPath: /run
+        startupProbe:
+          exec:
+            command:
+              - cat
+              - /run/flannel-ready
       - name: kube-flannel
         image: container-registry.zalando.net/teapot/flannel:v0.21.3-master-13
         command:
@@ -83,11 +85,6 @@ spec:
             host: 127.0.0.1
             port: 10267
             path: /healthz
-        startupProbe:
-          exec:
-            command:
-              - cat
-              - /flannel-ready
         securityContext:
           privileged: true
         volumeMounts:
