@@ -36,7 +36,7 @@ spec:
             memory: 50Mi
       containers:
       - name: delayed-install-cni
-        image: container-registry.zalando.net/teapot/flannel-awaiter:master-10
+        image: container-registry.zalando.net/teapot/flannel-awaiter:master-11
         command:
         - /await
         stdin: true
@@ -48,6 +48,9 @@ spec:
           limits:
             cpu: 25m
             memory: 50Mi
+        volumeMounts:
+        - name: run
+          mountPath: /run
       - name: kube-flannel
         image: container-registry.zalando.net/teapot/flannel:v0.21.3-master-13
         command:
