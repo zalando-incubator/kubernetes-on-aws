@@ -12,12 +12,14 @@ data:
   "aws.clusterEndpoint": "https://kubernetes.default.svc.cluster.local."
   "aws.clusterName": "{{ .Cluster.ID  }}"
   "aws.defaultInstanceProfile": "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
-  "aws.enableENILimitedPodDensity": "true"
+  "aws.enableENILimitedPodDensity": "true" # DEPRECATED: Use `.spec.kubeletConfiguration.maxPods` to set pod density on a per-provisioner basis
   "aws.enablePodENI": "false"
   "aws.interruptionQueueName": "{{.Cluster.LocalID}}-karpenter-interruption-queue"
   "aws.isolatedVPC": "false"
   "aws.nodeNameConvention": "ip-name"
   "aws.vmMemoryOverheadPercent": "0.075"
+#  "aws.tags": TODO: The global tags to use on all AWS infrastructure resources (launch templates, instances, etc.) across node templates
+  "featureGates.driftEnabled": "false"
   "batchIdleDuration": "1s"
   "batchMaxDuration": "10s"
 ---
