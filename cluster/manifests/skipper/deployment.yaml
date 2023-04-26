@@ -104,7 +104,9 @@ spec:
               key: datadome-api-key
 {{ end }}
         args:
+{{ if eq .ConfigItems.skipper_loadtest_mode "true" }}
           - "run.sh"
+{{ end }}
           - "skipper"
           - "-validate-query={{ .ConfigItems.skipper_validate_query }}"
           - "-validate-query-log={{ .Cluster.ConfigItems.skipper_validate_query_log }}"
@@ -228,6 +230,8 @@ spec:
 {{ else if eq .ConfigItems.skipper_local_tokeninfo "production" }}
           - "-oauth2-tokeninfo-url=http://127.0.0.1:9021/oauth2/tokeninfo"
           - "-status-checks=http://127.0.0.1:9021/health"
+{{ else if eq .ConfigItems.skipper_loadtest_mode "true" }}
+          - "-oauth2-tokeninfo-url=https://sandbox-tokeninfo-bridge.stups.zalan.do/oauth2/tokeninfo"
 {{ end }}
           - "-oauth2-tokeninfo-cache-size={{ .ConfigItems.skipper_tokeninfo_cache_size }}"
           - "-oauth2-tokeninfo-cache-ttl={{ .ConfigItems.skipper_tokeninfo_cache_ttl }}"
@@ -279,7 +283,7 @@ spec:
             port: 9999
           initialDelaySeconds: {{ .ConfigItems.skipper_readiness_init_delay_seconds }}
           timeoutSeconds: 5
-{{ if eq .ConfigItems.skipper_local_tokeninfo "production" }}
+{{ if and (eq .ConfigItems.skipper_local_tokeninfo "production") (ne .ConfigItems.skipper_loadtest_mode "true") }}
         livenessProbe:
           httpGet:
             path: /health
@@ -291,7 +295,7 @@ spec:
           timeoutSeconds: 5
           successThreshold: 1
           failureThreshold: 5
-{{ else if eq .ConfigItems.skipper_local_tokeninfo "bridge" }}
+{{ else if and (eq .ConfigItems.skipper_local_tokeninfo "bridge") (ne .ConfigItems.skipper_loadtest_mode "true") }}
         livenessProbe:
           exec:
             command:
