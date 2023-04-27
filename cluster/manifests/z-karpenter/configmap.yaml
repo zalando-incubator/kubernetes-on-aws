@@ -18,7 +18,8 @@ data:
   "aws.isolatedVPC": "false"
   "aws.nodeNameConvention": "ip-name"
   "aws.vmMemoryOverheadPercent": "0.075"
-#  "aws.tags": TODO: The global tags to use on all AWS infrastructure resources (launch templates, instances, etc.) across node templates
+  #The global tags to use on all AWS infrastructure resources (launch templates, instances, etc.) across node templates
+  "aws.tags": '{"InfrastructureComponent":"true","application":"kubernetes","component":"worker","environment":"{{ .Cluster.Environment }}"}'
   "featureGates.driftEnabled": "false"
   "batchIdleDuration": "1s"
   "batchMaxDuration": "10s"
@@ -33,10 +34,12 @@ metadata:
     application: kubernetes
     component: karpenter
 data:
+  loglevel.controller: "error"
+  loglevel.webhook: "error"
   # https://github.com/uber-go/zap/blob/aa3e73ec0896f8b066ddf668597a02f89628ee50/config.go
   zap-logger-config: |
     {
-      "level": "debug",
+      "level": "error",
       "development": false,
       "disableStacktrace": true,
       "disableCaller": true,
@@ -58,5 +61,4 @@ data:
         "timeEncoder": "iso8601"
       }
     }
-  loglevel.webhook: "error"
 {{end}}

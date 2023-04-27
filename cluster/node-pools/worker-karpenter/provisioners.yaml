@@ -99,20 +99,25 @@ spec:
   userData: |
 {{.UserData | indent 4}}
   tags:
-    InfrastructureComponent: "true"
-    # TODO: maybe use application label on dedicated node pools?
-    application: kubernetes
-    component: worker
-    environment: "{{ .Cluster.Environment }}"
     Name: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
     node.kubernetes.io/role: worker
     node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
-  {{- if and (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true") (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
+    zalando.org/pod-max-pids: "{{ .NodePool.ConfigItems.pod_max_pids }}"
+    'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}': owned
+{{- if and (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true") (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
     zalando.org/ingress-enabled: "true"
 # only node pools without taints should be attached to Ingress Load balancer
 {{- else if and (not (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true")) (or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule")) }}
     zalando.org/ingress-enabled: "true"
 {{- end }}
-    'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}': owned
-    zalando.org/pod-max-pids: "{{ .NodePool.ConfigItems.pod_max_pids }}"
+
+{{- if $taints }}
+  {{- range $taints }}
+    {{- $taint := . }}
+    {{- if eq $taint.Key "dedicated"}}
+    dedicated: "{{ $taint.Value}}"
+    {{- end}}
+  {{- end}}
+{{- end}}
+
 {{- end }}
