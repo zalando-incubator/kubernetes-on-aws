@@ -865,3 +865,20 @@ write_files:
           qps: {{ .Cluster.ConfigItems.event_rate_limit_config_qps }}
           burst: {{ .Cluster.ConfigItems.event_rate_limit_config_burst }}
 {{ end }}
+
+  - owner: root:root
+    path: /etc/kubernetes/cni/net.d/10-flannel.conflist
+    content: |
+      {
+        "name": "podnet",
+        "cniVersion": "0.3.1",
+        "plugins": [
+          {
+            "type": "flannel",
+            "delegate": {
+              "isDefaultGateway": true,
+              "hairpinMode": true
+            }
+          }
+        ]
+      }
