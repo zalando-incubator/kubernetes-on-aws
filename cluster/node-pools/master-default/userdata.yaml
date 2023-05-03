@@ -141,7 +141,7 @@ write_files:
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
 {{- end }}
-          - --feature-gates=TTLAfterFinished=true,HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }},CSIMigrationAWS=true{{- end }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
+          - --feature-gates=HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }},CSIMigrationAWS=true{{- end }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }},StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }}
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
@@ -589,7 +589,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TTLAfterFinished=true,CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }},CSIMigrationAWS=true{{- end }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
+          - --feature-gates=CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }},CSIMigrationAWS=true{{- end }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }},StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }}
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
           - --allocate-node-cidrs=true
@@ -667,8 +667,9 @@ write_files:
           livenessProbe:
             httpGet:
               host: 127.0.0.1
+              scheme: HTTPS
               path: /healthz
-              port: 10251
+              port: 10259
             initialDelaySeconds: 15
             timeoutSeconds: 15
           volumeMounts:
@@ -864,3 +865,20 @@ write_files:
           qps: {{ .Cluster.ConfigItems.event_rate_limit_config_qps }}
           burst: {{ .Cluster.ConfigItems.event_rate_limit_config_burst }}
 {{ end }}
+
+  - owner: root:root
+    path: /etc/kubernetes/cni/net.d/10-flannel.conflist
+    content: |
+      {
+        "name": "podnet",
+        "cniVersion": "0.3.1",
+        "plugins": [
+          {
+            "type": "flannel",
+            "delegate": {
+              "isDefaultGateway": true,
+              "hairpinMode": true
+            }
+          }
+        ]
+      }
