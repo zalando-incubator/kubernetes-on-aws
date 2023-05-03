@@ -36,6 +36,9 @@ spec:
 {{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
         zalando.org/topology-spread-timeout: 7m
 {{- end }}
+{{- if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+        iam.amazonaws.com/role: "{{ .ConfigItems.skipper_open_policy_agent_instance_role_arn }}"
+{{- end }}
     spec:
 {{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:
@@ -102,6 +105,15 @@ spec:
             secretKeyRef:
               name: skipper-ingress
               key: datadome-api-key
+{{ end }}
+{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+        - name: OPA_CONFIG_TEMPLATE_FILE
+          value: /etc/skipper/open-policy-agent.yaml
+        - name: STYRA_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: skipper-ingress
+              key: styra-token
 {{ end }}
         args:
           - "run.sh"
@@ -335,6 +347,11 @@ spec:
             mountPath: /etc/skipper/secret
             readOnly: true
 {{ end }}
+{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+          - name: open-policy-agent-config
+            mountPath: /etc/skipper/open-policy-agent.yaml
+            readOnly: true
+{{ end }}
       volumes:
         - name: routes-cache
           emptyDir: {}
@@ -362,6 +379,11 @@ spec:
         - name: encryption-key
           secret:
             secretName: skipper-ingress
+{{ end }}
+{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+        - name: open-policy-agent-config
+          configMap:
+            name: open-policy-agent-config
 {{ end }}
 {{ if eq .ConfigItems.enable_dedicate_nodepool_skipper "true"}}
       nodeSelector:
@@ -482,6 +504,10 @@ spec:
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
+{{ end }}
+{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+          - "-multi-plugin=open-policy-agent-skipper"
+          - "-plugindir=/skipper-plugins"
 {{ end }}
         resources:
           limits:
