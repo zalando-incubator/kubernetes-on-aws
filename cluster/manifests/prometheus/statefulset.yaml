@@ -6,11 +6,7 @@ metadata:
   labels:
     application: kubernetes
     component: prometheus
-{{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
   name: prometheus
-{{- else }}
-  name: prometheus-csi
-{{- end }}
   namespace: kube-system
 spec:
   replicas: 2
@@ -119,11 +115,7 @@ spec:
   - metadata:
       name: prometheus-storage-volume
     spec:
-{{- if ne .ConfigItems.prometheus_csi_ebs "true" }}
       storageClassName: standard
-{{- else }}
-      storageClassName: ebs-sc
-{{- end }}
       accessModes:
       - "ReadWriteOnce"
       resources:
