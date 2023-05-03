@@ -71,27 +71,6 @@ post_apply:
   namespace: kube-system
   kind: VerticalPodAutoscaler
 {{ end }}
-{{ if ne .ConfigItems.prometheus_csi_ebs "true" }}
-- name: prometheus-csi
-  namespace: kube-system
-  kind: StatefulSet
-- name: prometheus-storage-volume-prometheus-csi-0
-  kind: PersistentVolumeClaim
-  namespace: kube-system
-- name: prometheus-storage-volume-prometheus-csi-1
-  kind: PersistentVolumeClaim
-  namespace: kube-system
-{{ else }}
-- name: prometheus
-  namespace: kube-system
-  kind: StatefulSet
-- name: prometheus-storage-volume-prometheus-0
-  kind: PersistentVolumeClaim
-  namespace: kube-system
-- name: prometheus-storage-volume-prometheus-1
-  kind: PersistentVolumeClaim
-  namespace: kube-system
-{{ end }}
 {{ if ne .ConfigItems.downscaler_enabled "true" }}
 - name: kube-downscaler
   namespace: kube-system

@@ -119,3 +119,20 @@ write_files:
       vm.dirty_background_bytes = {{ .Cluster.ConfigItems.vm_dirty_background_bytes }}
       vm.dirty_bytes = {{ .Cluster.ConfigItems.vm_dirty_bytes }}
 {{- end}}
+
+  - owner: root:root
+    path: /etc/kubernetes/cni/net.d/10-flannel.conflist
+    content: |
+      {
+        "name": "podnet",
+        "cniVersion": "0.3.1",
+        "plugins": [
+          {
+            "type": "flannel",
+            "delegate": {
+              "isDefaultGateway": true,
+              "hairpinMode": true
+            }
+          }
+        ]
+      }
