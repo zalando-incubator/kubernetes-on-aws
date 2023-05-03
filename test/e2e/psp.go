@@ -24,10 +24,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	deploymentutil "k8s.io/kubernetes/pkg/controller/deployment/util"
 	"k8s.io/kubernetes/test/e2e/framework"
 	deploymentframework "k8s.io/kubernetes/test/e2e/framework/deployment"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	deploymentutil "k8s.io/kubernetes/test/utils"
 )
 
 var _ = describe("PSP use", func() {
@@ -128,7 +128,7 @@ var _ = describe("PSP use", func() {
 		Expect(err).NotTo(HaveOccurred())
 		deployment, err := cs.AppsV1().Deployments(ns).Get(context.TODO(), deploy.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		rs, err := deploymentutil.GetNewReplicaSet(deployment, cs.AppsV1())
+		rs, err := deploymentutil.GetNewReplicaSet(deployment, cs)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Got rs: %s, from deployment: %s", rs.Name, deploy.Name))
 
