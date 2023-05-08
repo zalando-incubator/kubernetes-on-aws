@@ -929,6 +929,7 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 			Labels:    labels,
 		},
 		Spec: v1.PodSpec{
+			RestartPolicy: v1.RestartPolicyNever,
 			Containers: []v1.Container{
 				{
 					Name:  "cuda-vector-add",
