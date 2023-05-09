@@ -19,13 +19,17 @@ autoscaling_autoscaler_log_level: "1"
 cluster_autoscaler_max_pod_eviction_time: "1h"
 {{else}}
 cluster_autoscaler_max_pod_eviction_time: "3h"
-{{end}}
+  {{end}}
 
 # Override terminationGracePeriodSeconds when evicting pods for scale down, if the pods' value is higher than this one
 cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
 
 # Prevent CA lock-ups caused by large amounts of pending pods. Can be disabled completely by setting to 0.
 cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
+
+# karpenter settings
+karpenter_controller_cpu: "250m"
+karpenter_controller_memory: "250Mi"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -855,6 +859,8 @@ hyped_article_lifecycle_management: "false"
 
 # enable SizeMemoryBackedVolumes feature flag
 enable_size_memory_backed_volumes: "true"
+
+karpenter_pools_enabled: "false"
 
 # enable StatefulSetAutoDeletePVC feature flag
 # https://kubernetes.io/blog/2021/12/16/kubernetes-1-23-statefulset-pvc-auto-deletion/

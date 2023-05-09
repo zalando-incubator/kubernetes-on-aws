@@ -1,0 +1,24 @@
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
+---
+apiVersion: autoscaling.k8s.io/v1beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: karpenter-vpa
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: karpenter
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: karpenter
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+      - containerName: controller
+        minAllowed:
+          memory: {{.Cluster.ConfigItems.karpenter_controller_memory}}
+          cpu: {{.Cluster.ConfigItems.karpenter_controller_cpu}}
+{{end}}
