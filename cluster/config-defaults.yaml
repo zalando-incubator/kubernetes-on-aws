@@ -19,13 +19,17 @@ autoscaling_autoscaler_log_level: "1"
 cluster_autoscaler_max_pod_eviction_time: "1h"
 {{else}}
 cluster_autoscaler_max_pod_eviction_time: "3h"
-{{end}}
+  {{end}}
 
 # Override terminationGracePeriodSeconds when evicting pods for scale down, if the pods' value is higher than this one
 cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
 
 # Prevent CA lock-ups caused by large amounts of pending pods. Can be disabled completely by setting to 0.
 cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
+
+# karpenter settings
+karpenter_controller_cpu: "250m"
+karpenter_controller_memory: "250Mi"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -396,6 +400,12 @@ downscaler_enabled: "false"
 horizontal_pod_autoscaler_sync_period: "30s"
 horizontal_pod_autoscaler_tolerance: "0.1"
 horizontal_pod_downscale_stabilization: "5m0s"
+
+# enable/disable legacy autoscaling APIs
+# Note StackSet controller still depends on autoscaling/v2beta2 in clusters
+# using horizontalPodAutoscaler field.
+autoscaling_v2beta1_enabled: "true"
+autoscaling_v2beta2_enabled: "true"
 
 # Vertical pod autoscaler version for controlling roll-out, can be "current" or "legacy"
 # current => v0.11.0-internal.17
@@ -849,6 +859,8 @@ hyped_article_lifecycle_management: "false"
 
 # enable SizeMemoryBackedVolumes feature flag
 enable_size_memory_backed_volumes: "true"
+
+karpenter_pools_enabled: "false"
 
 # enable StatefulSetAutoDeletePVC feature flag
 # https://kubernetes.io/blog/2021/12/16/kubernetes-1-23-statefulset-pvc-auto-deletion/
