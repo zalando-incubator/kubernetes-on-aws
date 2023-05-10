@@ -18,10 +18,10 @@ require (
 
 require (
 	github.com/szuecs/routegroup-client v0.21.1
-	k8s.io/api v0.23.17
-	k8s.io/apimachinery v0.23.17
-	k8s.io/apiserver v0.23.17
-	k8s.io/client-go v0.23.17
+	k8s.io/api v0.24.13
+	k8s.io/apimachinery v0.24.13
+	k8s.io/apiserver v0.24.13
+	k8s.io/client-go v0.24.13
 	k8s.io/kubernetes v0.0.0-00010101000000-000000000000
 )
 
