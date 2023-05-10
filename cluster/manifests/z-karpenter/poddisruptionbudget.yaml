@@ -1,0 +1,13 @@
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: karpenter
+  namespace: kube-system
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      deployment: karpenter
+{{ end }}
