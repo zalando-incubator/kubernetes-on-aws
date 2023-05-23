@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.6.2
+    controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
   name: fabricgateways.zalando.org
 spec:
@@ -45,6 +45,29 @@ spec:
                 additionalProperties:
                   additionalProperties:
                     properties:
+                      x-fabric-additional-filters:
+                        description: This field is used to add custom Skipper filters
+                          to this route, see https://opensource.zalando.com/skipper/reference/filters
+                          to find out more. Please try to avoid using this option
+                          unless you do understand what are you doing.
+                        properties:
+                          append:
+                            description: The list of Skipper filters. All filters
+                              specified in this field would be appended after filters
+                              created by default. Every filter should comply to the
+                              eskip syntax, see https://pkg.go.dev/github.com/zalando/skipper/eskip
+                            items:
+                              type: string
+                            type: array
+                          prepend:
+                            description: The list of Skipper filters. All filters
+                              specified in this field would be prepended before filters
+                              created by default. Every filter should comply to the
+                              eskip syntax, see https://pkg.go.dev/github.com/zalando/skipper/eskip
+                            items:
+                              type: string
+                            type: array
+                        type: object
                       x-fabric-custom-routes:
                         items:
                           description: The additional route which is generated for
@@ -326,14 +349,12 @@ spec:
                     type: array
                   allowedOrigins:
                     description: List of origins that should be allowed to access
-                      your API. Defaults to an empty list.
+                      your API. Allows any origin when not specified.
                     items:
                       type: string
-                    minItems: 1
                     type: array
                 required:
                 - allowedHeaders
-                - allowedOrigins
                 type: object
               x-fabric-employee-access:
                 description: The `user-list` should only be populated if `type` is
