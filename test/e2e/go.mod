@@ -23,6 +23,7 @@ require (
 	k8s.io/apiserver v0.24.14
 	k8s.io/client-go v0.24.14
 	k8s.io/kubernetes v0.0.0-00010101000000-000000000000
+	k8s.io/pod-security-admission v0.0.0
 )
 
 require (
@@ -220,7 +221,6 @@ require (
 	k8s.io/legacy-cloud-providers v0.0.0 // indirect
 	k8s.io/metrics v0.24.14 // indirect
 	k8s.io/mount-utils v0.24.14 // indirect
-	k8s.io/pod-security-admission v0.0.0 // indirect
 	k8s.io/sample-apiserver v0.0.0 // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.37 // indirect
