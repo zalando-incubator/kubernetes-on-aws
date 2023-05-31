@@ -232,6 +232,34 @@ data:
           regex: 'kubenurse_httpclient.*'
 {{ end }}
 {{ end }}
+    - job_name: 'akamai-datastreams'
+      scheme: http
+      metrics_path: '/metrics'
+      kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+              - akamai
+            relabel_configs:
+      - source_labels: [ __meta_kubernetes_pod_label_application, __meta_kubernetes_pod_label_component, __meta_kubernetes_pod_container_port_number ]
+        action: keep
+        regex: akamai;datastream;9999
+      - action: replace
+        source_labels: [ '__meta_kubernetes_namespace' ]
+        target_label: namespace
+      - action: replace
+        source_labels: [ '__meta_kubernetes_pod_label_application' ]
+        target_label: application
+      - action: replace
+        source_labels: [ '__meta_kubernetes_pod_label_component' ]
+        target_label: component
+      - action: replace
+        source_labels: [ '__meta_kubernetes_pod_name' ]
+        target_label: pod_name
+      - action: replace
+        source_labels: [ '__meta_kubernetes_pod_node_name' ]
+        target_label: node_name
+    
     - job_name: "kubernetes-pods"
       scheme: http
       kubernetes_sd_configs:
