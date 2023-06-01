@@ -107,8 +107,6 @@ spec:
               key: datadome-api-key
 {{ end }}
 {{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
-        - name: OPA_CONFIG_TEMPLATE_FILE
-          value: /etc/skipper/open-policy-agent.yaml
         - name: STYRA_TOKEN
           valueFrom:
             secretKeyRef:
@@ -255,6 +253,10 @@ spec:
           - "-oauth2-token-cookie-remove-subdomains=0"
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
           - "-oauth2-grant-tokeninfo-keys={{ .ConfigItems.skipper_oauth2_ui_login_tokeninfo_keys }}"
+{{ end }}
+{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+          - "--enable-open-policy-agent"
+          - "--open-policy-agent-config-template=/etc/skipper/open-policy-agent.yaml"
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
