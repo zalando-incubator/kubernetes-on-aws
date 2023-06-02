@@ -6,7 +6,6 @@ metadata:
   labels:
     application: kubernetes
     component: kube-state-metrics
-    version: v2.2.1
 spec:
   replicas: 1
   selector:
@@ -18,7 +17,6 @@ spec:
         deployment: kube-state-metrics
         application: kubernetes
         component: kube-state-metrics
-        version: v2.2.1
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
@@ -29,9 +27,9 @@ spec:
       serviceAccountName: kube-state-metrics
       containers:
       - name: kube-state-metrics
-        image: container-registry.zalando.net/teapot/kube-state-metrics:v2.2.1-master-21
+        image: container-registry.zalando.net/teapot/kube-state-metrics:v2.9.2-master-22
         args:
-        - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments,verticalpodautoscalers
+        - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments
         - --metric-labels-allowlist=pods=[{{.Cluster.ConfigItems.observability_metrics_pods_labels}}],ingresses=[{{.Cluster.ConfigItems.observability_metrics_ingresses_labels}}],nodes=[topology.kubernetes.io/zone,node.kubernetes.io/instance-type,node.kubernetes.io/node-pool,node.kubernetes.io/role,dedicated]
         ports:
         - containerPort: 8080
