@@ -23,44 +23,6 @@ rules:
       - cdpdeploymenttasks
     verbs: ["get", "list", "watch"]
   - apiGroups:
-      - ""
-    resources:
-      - pods
-      - events
-      - services
-      - persistentvolumeclaims
-    verbs: ["get", "list", "watch"]
-  - apiGroups:
-      - ""
-    resources:
-      - configmaps
-    resourceNames:
-      - deployment-config
-    verbs: ["get", "list", "watch"]
-  - apiGroups:
-      - apps
-    resources:
-      - deployments
-      - statefulsets
-      - replicasets
-    verbs: ["get", "list", "watch"]
-  - apiGroups:
-      - batch
-    resources:
-      - cronjobs
-      - jobs
-    verbs: ["get", "list", "watch"]
-  - apiGroups:
-      - networking.k8s.io
-    resources:
-      - ingresses
-    verbs: ["get", "list", "watch"]
-  - apiGroups:
-      - autoscaling
-    resources:
-      - horizontalpodautoscalers
-    verbs: ["get", "list", "watch"]
-  - apiGroups:
       - zalando.org
     resources:
       - stacksets
@@ -76,6 +38,11 @@ rules:
       - eventtypes
       - eventtypesubscriptions
       - nakadisqlqueries
+    verbs: ["get", "list", "watch"]
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
     verbs: ["get", "list", "watch"]
 ---
 kind: ClusterRoleBinding
@@ -93,3 +60,19 @@ roleRef:
   kind: ClusterRole
   name: "deployment-service-status-service"
   apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "deployment-service-status-service-readonly"
+  labels:
+    application: "deployment-service"
+    component: "status-service"
+roleRef:
+  kind: ClusterRole
+  name: readonly
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: "deployment-service-status-service"
+    namespace: "kube-system"
