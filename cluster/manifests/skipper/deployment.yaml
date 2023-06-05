@@ -258,7 +258,7 @@ spec:
 {{ end }}
 {{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
           - "--enable-open-policy-agent"
-          - "--open-policy-agent-config-template=/etc/skipper/open-policy-agent.yaml"
+          - "--open-policy-agent-config-template=/etc/skipper/open-policy-agent/opaconfig.yaml"
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
@@ -353,7 +353,7 @@ spec:
 {{ end }}
 {{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
           - name: open-policy-agent-config
-            mountPath: /etc/skipper/open-policy-agent.yaml
+            mountPath: /etc/skipper/open-policy-agent
             readOnly: true
 {{ end }}
       volumes:
