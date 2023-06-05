@@ -34,13 +34,9 @@ spec:
       securityContext:
         fsGroup: 1000
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
-      tolerations:
-      - key: node.kubernetes.io/role
-        value: master
-        effect: NoSchedule
       containers:
         - name: controller
-          image: "container-registry.zalando.net/teapot/karpenter-controller:v0.27.3-main-9"
+          image: "container-registry.zalando.net/teapot/karpenter-controller:v0.27.3-main-9" # TODO: update version to v0.28.0-rc.2@sha256:907c7f931c1ac1b789cb404d8a468b74656ddede15cfb25801cfb19c5b4fe780
           env:
             - name: KUBERNETES_MIN_VERSION
               value: "1.22.0-0"
@@ -90,4 +86,32 @@ spec:
             limits:
               cpu: "{{ .Cluster.ConfigItems.karpenter_controller_cpu }}"
               memory: "{{ .Cluster.ConfigItems.karpenter_controller_memory }}"
+      nodeSelector:
+        kubernetes.io/os: linux
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: karpenter.sh/provisioner-name
+                operator: DoesNotExist
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                deployment: karpenter
+            topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - labelSelector:
+            matchLabels:
+              deployment: karpenter
+          maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - key: node.kubernetes.io/role
+          value: master
+          effect: NoSchedule
 {{ end }}
