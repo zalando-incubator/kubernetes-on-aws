@@ -1,0 +1,64 @@
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: karpenter-global-settings
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: karpenter
+data:
+  "aws.clusterEndpoint": "https://kubernetes.default.svc.cluster.local."
+  "aws.clusterName": "{{ .Cluster.ID  }}"
+  "aws.defaultInstanceProfile": "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
+  "aws.enableENILimitedPodDensity": "true" # DEPRECATED: Use `.spec.kubeletConfiguration.maxPods` to set pod density on a per-provisioner basis
+  "aws.enablePodENI": "false"
+  "aws.interruptionQueueName": "{{.Cluster.LocalID}}-karpenter-interruption-queue"
+  "aws.isolatedVPC": "false"
+  "aws.nodeNameConvention": "ip-name"
+  "aws.vmMemoryOverheadPercent": "0.075"
+  #The global tags to use on all AWS infrastructure resources (launch templates, instances, etc.) across node templates
+  "aws.tags": '{"InfrastructureComponent":"true","application":"kubernetes","component":"worker","environment":"{{ .Cluster.Environment }}"}'
+  "featureGates.driftEnabled": "false"
+  "batchIdleDuration": "1s"
+  "batchMaxDuration": "10s"
+---
+# Source: karpenter/templates/configmap-logging.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: karpenter-logging-config
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: karpenter
+data:
+  loglevel.controller: "error"
+  loglevel.webhook: "error"
+  # https://github.com/uber-go/zap/blob/aa3e73ec0896f8b066ddf668597a02f89628ee50/config.go
+  zap-logger-config: |
+    {
+      "level": "error",
+      "development": false,
+      "disableStacktrace": true,
+      "disableCaller": true,
+      "sampling": {
+        "initial": 100,
+        "thereafter": 100
+      },
+      "outputPaths": ["stdout"],
+      "errorOutputPaths": ["stderr"],
+      "encoding": "console",
+      "encoderConfig": {
+        "timeKey": "time",
+        "levelKey": "level",
+        "nameKey": "logger",
+        "callerKey": "caller",
+        "messageKey": "message",
+        "stacktraceKey": "stacktrace",
+        "levelEncoder": "capital",
+        "timeEncoder": "iso8601"
+      }
+    }
+{{end}}

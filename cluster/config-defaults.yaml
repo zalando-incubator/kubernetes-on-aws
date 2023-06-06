@@ -19,13 +19,17 @@ autoscaling_autoscaler_log_level: "1"
 cluster_autoscaler_max_pod_eviction_time: "1h"
 {{else}}
 cluster_autoscaler_max_pod_eviction_time: "3h"
-{{end}}
+  {{end}}
 
 # Override terminationGracePeriodSeconds when evicting pods for scale down, if the pods' value is higher than this one
 cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
 
 # Prevent CA lock-ups caused by large amounts of pending pods. Can be disabled completely by setting to 0.
 cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
+
+# karpenter settings
+karpenter_controller_cpu: "250m"
+karpenter_controller_memory: "250Mi"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -86,7 +90,7 @@ skipper_suppress_route_update_logs: "true"
 skipper_validate_query: "true"
 skipper_validate_query_log: "false"
 
-skipper_default_filters: 'disableAccessLog(2,3,404,429) -> fifo(2000,20000,"3s")'
+skipper_default_filters: 'disableAccessLog(2,3,404,429) -> fifo(2000,20,"3s")'
 skipper_disabled_filters: "lua"
 skipper_edit_route_placeholders: ""
 skipper_ingress_inline_routes: ""
@@ -95,6 +99,8 @@ skipper_ingress_refuse_payload: ""
 skipper_compress_encodings: "gzip,deflate,br"
 
 # skipper profiling settings, 0 keeps default, <0 disable, >0 enable with value
+# https://pkg.go.dev/runtime@master#SetBlockProfileRate
+# https://pkg.go.dev/runtime@master#SetMutexProfileFraction
 skipper_block_profile_rate: 0
 skipper_mutex_profile_fraction: 0
 skipper_memory_profile_rate: 0
@@ -396,6 +402,12 @@ downscaler_enabled: "false"
 horizontal_pod_autoscaler_sync_period: "30s"
 horizontal_pod_autoscaler_tolerance: "0.1"
 horizontal_pod_downscale_stabilization: "5m0s"
+
+# enable/disable legacy autoscaling APIs
+# Note StackSet controller still depends on autoscaling/v2beta2 in clusters
+# using horizontalPodAutoscaler field.
+autoscaling_v2beta1_enabled: "true"
+autoscaling_v2beta2_enabled: "true"
 
 # Vertical pod autoscaler version for controlling roll-out, can be "current" or "legacy"
 # current => v0.11.0-internal.17
@@ -764,7 +776,20 @@ spot_allocation_strategy: "capacity-optimized"
 stackset_controller_sync_interval: "10s"
 stackset_controller_mem_min: "120Mi"
 stackset_controller_mem_max: "4Gi"
+
+# This is part of decommissioning the legacy `horizontalPodAutoscaler` field of
+# the stackset.StackTemplate and to migrate all use cases to the `autoscaler`
+# field.
+# We disable the use of the field in two stages:
+# 1. Block changes/new deployments of stacksets with the
+#    `horizontalPodAutoscaler` field via the admission-controller. The
+#    `stackset_legacy_hpa_field_enabled` config-item controls this.
+#
+# 2. Drop the `horizontalPodAutoscaler` field from the CRD spec. This will
+# remove it from any existing StackSet and prevent setting the field at all.
+# This is controlled by the `stackset_legacy_hpa_field_crd_enabled` config-item.
 stackset_legacy_hpa_field_enabled: "false"
+stackset_legacy_hpa_field_crd_enabled: "false"
 
 # EBS settings for the root volume
 ebs_master_root_volume_size: "50"
@@ -849,6 +874,8 @@ hyped_article_lifecycle_management: "false"
 
 # enable SizeMemoryBackedVolumes feature flag
 enable_size_memory_backed_volumes: "true"
+
+karpenter_pools_enabled: "false"
 
 # enable StatefulSetAutoDeletePVC feature flag
 # https://kubernetes.io/blog/2021/12/16/kubernetes-1-23-statefulset-pvc-auto-deletion/
