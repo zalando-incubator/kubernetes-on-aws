@@ -1,32 +1,40 @@
-{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+#{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
 apiVersion: v1
-data:
-  opaconfig.yaml: |-
-      discovery:
-        name: discovery
-        resource: v1/bundles/zalando-apps/{{ `{{ .bundlename }}` }}/discovery.tgz
-        service: styra-bundles
-      labels:
-        environment: {{ .Cluster.Environment }}
-        kubernetes-cluster-alias: {{ .Cluster.Alias }}
-        aws-account-id: {{ accountID .Cluster.InfrastructureAccount }}
-      services:
-      - credentials:
-          bearer:
-            token: "{{ `{{ .Env.STYRA_TOKEN }}` }}"
-        name: styra
-        url: "{{ .ConfigItems.skipper_open_policy_agent_observability_url }}"
-      - credentials:
-          s3_signing:
-            metadata_credentials:
-              aws_region: eu-central-1
-              iam_role: open-policy-agent-instance
-        name: styra-bundles
-        url: "{{ .ConfigItems.skipper_open_policy_agent_bundles_url }}"
 kind: ConfigMap
 metadata:
   labels:
     application: skipper-ingress
   name: open-policy-agent-config
   namespace: kube-system
-{{ end }}
+data:
+  opaconfig.yaml: |-
+    discovery:
+      name: discovery
+      resource: v1/bundles/zalando-apps/{{ `{{ .bundlename }}` }}/discovery.tgz
+      service: styra-bundles
+    labels:
+      environment: {{ .Cluster.Environment }}
+      kubernetes-cluster-alias: {{ .Cluster.Alias }}
+      aws-account-id: {{ accountID .Cluster.InfrastructureAccount }}
+    services:
+    - credentials:
+        bearer:
+          token: "{{ `{{ .Env.STYRA_TOKEN }}` }}"
+      name: styra
+      url: "{{ .ConfigItems.skipper_open_policy_agent_observability_url }}"
+    - credentials:
+        s3_signing:
+          metadata_credentials:
+            aws_region: eu-central-1
+            iam_role: open-policy-agent-instance
+      name: styra-bundles
+      url: "{{ .ConfigItems.skipper_open_policy_agent_bundles_url }}"
+  envoymetadata.json: |-
+    {
+      "filter_metadata": {
+        "envoy.filters.http.header_to_metadata": {
+          "policy_type": "ingress"
+        }	
+      }
+    }
+#{{ end }}
