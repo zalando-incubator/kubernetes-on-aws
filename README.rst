@@ -75,7 +75,7 @@ Directory Structure
 ===================
 
 * cluster/cluster.yaml: Cloud Formation template files for the cluster (will be applied by `Cluster Lifecycle Manager`_)
-* cluster/config-defaults.yaml: Default values for different kind of use that can be overriden by values from our cluster-registry (will be applied by `Cluster Lifecycle Manager`_)
+* cluster/config-defaults.yaml: Default values for different kind of use that can be overridden by values from our cluster-registry (will be applied by `Cluster Lifecycle Manager`_)
 * cluster/etcd-cluster.yaml: Senza Cloud Formation to deploy ETCD
 * cluster/manifests: Kubernetes manifests for system components (will be applied by `Cluster Lifecycle Manager`_)
 * cluster/node-pools: Cloud Formation template files and userdata (cloud-init) for ContainerLinux node-pools (will be applied by `Cluster Lifecycle Manager`_)

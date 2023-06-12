@@ -22,7 +22,7 @@ Submit the following ``yaml`` files to your cluster.
 *Note that this guide uses a top-down approach and starts with deploying the
 service first. This allows Kubernetes to better distribute pods belonging to
 the same service across the cluster to ensure high availability. You can, however,
-submit the files in any order you like and it will work. It's all declaritive.*
+submit the files in any order you like and it will work. It's all declarative.*
 
 Create a service
 ----------------

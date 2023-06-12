@@ -41,7 +41,7 @@ Once the PR is approved and merged into the ``dev`` branch/channel, all the clus
 The cluster above will be tested with smoke tests that could include the end to end tested executed on the branch. Testing on this cluster has the following goals:
 
 - Testing the update on an updated cluster and not on a fresh cluster as this might show some different behavior.
-- Testing the impact of the update on already running applications. This requires that the cluster beeing update will have running applications covering different Kubernetes features.
+- Testing the impact of the update on already running applications. This requires that the cluster being updated will have running applications covering different Kubernetes features.
 
 Additionally to the tests, ZMON metrics will be monitored closely.
 If nothing wrong is seen, after X hours, an *automatic* merge into the ``alpha`` branch will be executed. This will trigger updates to all the cluster running the alpha branch. This include as minimum the following clusters:
