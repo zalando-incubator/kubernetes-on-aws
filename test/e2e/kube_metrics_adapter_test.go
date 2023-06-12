@@ -402,17 +402,17 @@ func podHPA(deploymentName, name, apiVersion, kind string, metricTargets map[str
 		metrics = append(metrics, autoscaling.MetricSpec{
 			Type: autoscaling.ObjectMetricSourceType,
 			Object: &autoscaling.ObjectMetricSource{
+				DescribedObject: autoscaling.CrossVersionObjectReference{
+					APIVersion: apiVersion,
+					Kind:       kind,
+					Name:       name,
+				},
 				Metric: autoscaling.MetricIdentifier{
 					Name: metric,
 				},
 				Target: autoscaling.MetricTarget{
 					Type:         autoscaling.AverageValueMetricType,
 					AverageValue: resource.NewQuantity(target, resource.DecimalSI),
-				},
-				DescribedObject: autoscaling.CrossVersionObjectReference{
-					APIVersion: apiVersion,
-					Kind:       kind,
-					Name:       name,
 				},
 			},
 		})
