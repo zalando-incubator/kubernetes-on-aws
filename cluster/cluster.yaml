@@ -1983,7 +1983,7 @@ Resources:
                 - BucketArn: !GetAtt AuditTrailBucketPrimary.Arn
 {{- end }}
 
-  AuditTrailBucketFallback:
+  AuditTrailBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
     Properties:
@@ -2001,10 +2001,10 @@ Resources:
       Tags:
       - Key: component
         Value: audittrail-adapter
-  AuditTrailBucketFallbackPolicy:
+  AuditTrailBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref AuditTrailBucketFallback
+      Bucket: !Ref AuditTrailBucket
       PolicyDocument:
         Statement:
           # In-cluster access
@@ -2016,7 +2016,7 @@ Resources:
                 - !GetAtt EmergencyAccessServiceIAMRole.Arn
                 - !GetAtt AudittrailAdapterIAMRole.Arn
             Resource:
-              - !GetAtt AuditTrailBucketFallback.Arn
+              - !GetAtt AuditTrailBucket.Arn
 
           - Action:
               - s3:PutObject
@@ -2028,7 +2028,7 @@ Resources:
             Resource:
               - !Sub
                 - "${BucketArn}/*"
-                - BucketArn: !GetAtt AuditTrailBucketFallback.Arn
+                - BucketArn: !GetAtt AuditTrailBucket.Arn
 
 {{- if ne .Cluster.ConfigItems.audittrail_root_account_role "" }}
           # Central access
@@ -2039,7 +2039,7 @@ Resources:
               AWS:
                 - {{.Cluster.ConfigItems.audittrail_root_account_role}}
             Resource:
-              - !GetAtt AuditTrailBucketFallback.Arn
+              - !GetAtt AuditTrailBucket.Arn
 
           - Action:
               - s3:GetObject
@@ -2051,7 +2051,7 @@ Resources:
             Resource:
               - !Sub
                 - "${BucketArn}/*"
-                - BucketArn: !GetAtt AuditTrailBucketFallback.Arn
+                - BucketArn: !GetAtt AuditTrailBucket.Arn
 {{- end }}
 
   AWSNodeDecommissionerIAMRole:
@@ -2102,7 +2102,7 @@ Resources:
                 Effect: Allow
                 Resource:
                   - !GetAtt AuditTrailBucketPrimary.Arn
-                  - !GetAtt AuditTrailBucketFallback.Arn
+                  - !GetAtt AuditTrailBucket.Arn
 
               - Action:
                   - s3:PutObject
@@ -2113,7 +2113,7 @@ Resources:
                     - BucketArn: !GetAtt AuditTrailBucketPrimary.Arn
                   - !Sub
                     - "${BucketArn}/*"
-                    - BucketArn: !GetAtt AuditTrailBucketFallback.Arn
+                    - BucketArn: !GetAtt AuditTrailBucket.Arn
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-emergency-access-service"
@@ -2140,7 +2140,7 @@ Resources:
                 Effect: Allow
                 Resource:
                   - !GetAtt AuditTrailBucketPrimary.Arn
-                  - !GetAtt AuditTrailBucketFallback.Arn
+                  - !GetAtt AuditTrailBucket.Arn
 
               - Action:
                   - s3:PutObject
@@ -2151,7 +2151,7 @@ Resources:
                     - BucketArn: !GetAtt AuditTrailBucketPrimary.Arn
                   - !Sub
                     - "${BucketArn}/*"
-                    - BucketArn: !GetAtt AuditTrailBucketFallback.Arn
+                    - BucketArn: !GetAtt AuditTrailBucket.Arn
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
