@@ -359,6 +359,7 @@ func podMetricHPA(deploymentName string, metricTargets map[string]int64) *autosc
 					Name: metric,
 				},
 				Target: autoscaling.MetricTarget{
+					Type:         autoscaling.AverageValueMetricType,
 					AverageValue: resource.NewQuantity(target, resource.DecimalSI),
 				},
 			},
@@ -405,7 +406,7 @@ func podHPA(deploymentName, name, apiVersion, kind string, metricTargets map[str
 					Name: metric,
 				},
 				Target: autoscaling.MetricTarget{
-					Value:        resource.NewQuantity(target, resource.DecimalSI),
+					Type:         autoscaling.AverageValueMetricType,
 					AverageValue: resource.NewQuantity(target, resource.DecimalSI),
 				},
 				DescribedObject: autoscaling.CrossVersionObjectReference{
