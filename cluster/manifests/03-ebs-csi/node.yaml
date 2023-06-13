@@ -33,11 +33,10 @@ spec:
         runAsUser: 0
       containers:
         - name: ebs-plugin
-          image: container-registry.zalando.net/teapot/aws-ebs-csi-driver:v1.16.1-master-9
+          image: container-registry.zalando.net/teapot/aws-ebs-csi-driver:v1.19.0-master-13
           args:
             - node
             - --endpoint=$(CSI_ENDPOINT)
-            - --logtostderr
             - --v=2
           env:
             - name: CSI_ENDPOINT
@@ -77,7 +76,7 @@ spec:
             privileged: true
             readOnlyRootFilesystem: true
         - name: node-driver-registrar
-          image: container-registry.zalando.net/teapot/node-driver-registrar:v2.7.0-eks-1-22-21-master-9
+          image: container-registry.zalando.net/teapot/node-driver-registrar:v2.8.0-eks-1-23-22-master-13
           args:
             - --csi-address=$(ADDRESS)
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
@@ -87,11 +86,22 @@ spec:
               value: /csi/csi.sock
             - name: DRIVER_REG_SOCK_PATH
               value: /opt/podruntime/kubelet/plugins/ebs.csi.aws.com/csi.sock
+          livenessProbe:
+            exec:
+              command:
+                - /csi-node-driver-registrar
+                - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+                - --mode=kubelet-registration-probe
+            initialDelaySeconds: 30
+            timeoutSeconds: 15
+            periodSeconds: 90
           volumeMounts:
             - name: plugin-dir
               mountPath: /csi
             - name: registration-dir
               mountPath: /registration
+            - name: probe-dir
+              mountPath: /opt/podruntime/kubelet/plugins/ebs.csi.aws.com/
           resources:
             requests:
               cpu: 10m
@@ -103,7 +113,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: liveness-probe
-          image: container-registry.zalando.net/teapot/livenessprobe:v2.9.0-eks-1-22-21-master-9
+          image: container-registry.zalando.net/teapot/livenessprobe:v2.10.0-eks-1-23-22-master-13
           args:
             - --csi-address=/csi/csi.sock
           volumeMounts:
@@ -136,4 +146,6 @@ spec:
           hostPath:
             path: /dev
             type: Directory
+        - name: probe-dir
+          emptyDir: {}
 {{- end }}
