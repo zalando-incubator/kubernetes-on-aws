@@ -69,7 +69,7 @@ skipper_ingress_min_replicas: "2"
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
 # When set to true (and dedicated node pool for skipper is also true) the
-# daemonset overhead will be substracted from the cpu settings such
+# daemonset overhead will be subtracted from the cpu settings such
 # that skipper will perfectly fit on the node.
 {{if eq .Cluster.Environment "e2e"}}
 skipper_ingress_binpack: "true"
@@ -90,7 +90,7 @@ skipper_suppress_route_update_logs: "true"
 skipper_validate_query: "true"
 skipper_validate_query_log: "false"
 
-skipper_default_filters: 'disableAccessLog(2,3,404,429) -> fifo(2000,20000,"3s")'
+skipper_default_filters: 'disableAccessLog(2,3,404,429) -> fifo(2000,20,"3s")'
 skipper_disabled_filters: "lua"
 skipper_edit_route_placeholders: ""
 skipper_ingress_inline_routes: ""
@@ -99,6 +99,8 @@ skipper_ingress_refuse_payload: ""
 skipper_compress_encodings: "gzip,deflate,br"
 
 # skipper profiling settings, 0 keeps default, <0 disable, >0 enable with value
+# https://pkg.go.dev/runtime@master#SetBlockProfileRate
+# https://pkg.go.dev/runtime@master#SetMutexProfileFraction
 skipper_block_profile_rate: 0
 skipper_mutex_profile_fraction: 0
 skipper_memory_profile_rate: 0
@@ -201,7 +203,7 @@ enable_skipper_eastwest_dns: "true"
 enable_skipper_eastwest: "false"
 
 
-# enable temporay logging of ingress.cluster.local names
+# enable temporary logging of ingress.cluster.local names
 # used to find services for which it's being used.
 skipper_eastwest_dns_log_enabled: "false"
 
@@ -676,7 +678,7 @@ rotate_service_account_tokens_extended_expiration: "true"
 # Prometheus data, so it's not intended to be enabled ALL THE TIME, but can be
 # enabled when needed to answer one of the above questions or similar.
 #
-# The possible dimentions are:
+# The possible dimensions are:
 # authorization_decision,authentication_stale_token,user,user_agent,verb,code,resource,api_group,api_version
 auditlog_metric_dimensions: "authorization_decision"
 
@@ -689,7 +691,7 @@ ssh_vpc_only: "false"
 
 # configure custom dns zone
 custom_dns_zone: "" # zone name e.g. example.org
-custom_dns_zone_nameservers: "" # space seperated list of nameserver IP addresses
+custom_dns_zone_nameservers: "" # space separated list of nameserver IP addresses
 
 # prefix prepended to ownership TXT records for external-dns
 external_dns_ownership_prefix: ""
