@@ -25,7 +25,7 @@ examples of how to write the tests or checkout the files already defined e.g.
 
   ```bash
   KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org CLUSTER_ALIAS=example \
-    ginkgo -nodes=1 -flakeAttempts=2 \
+    ginkgo -procs=1 -flake-attempts=2 \
     -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
     -skip="(\[Serial\])" \
     "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated
@@ -51,49 +51,49 @@ Simple test template that shows how you can create a new file from
 scratch and test the Kubernetes type Foo.
 
 ```go
-  package e2e
+package e2e
 
-  import (
-  	. "github.com/onsi/ginkgo"
-  	. "github.com/onsi/gomega"
+import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
-  	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-  	"k8s.io/client-go/kubernetes"
-  	"k8s.io/kubernetes/test/e2e/framework"
-  )
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/kubernetes/test/e2e/framework"
+)
 
-  var _ = describe("Thing under test, func() {
-  	f := framework.NewDefaultFramework("Describe thing under test")
-  	var cs kubernetes.Interface
-      // we need always a clean clientset.Interface for all our tests
-  	BeforeEach(func() {
-  		cs = f.ClientSet
-  	})
+var _ = describe("Thing under test, func() {
+	f := framework.NewDefaultFramework("Describe thing under test")
+	var cs kubernetes.Interface
+    // we need always a clean clientset.Interface for all our tests
+	BeforeEach(func() {
+		cs = f.ClientSet
+	})
 
-  	It("Should create a test Foo [Foo] [Zalando]", func() {
-              name := "foo"
-  		ns := f.Namespace.Name
-  		labels := map[string]string{
-  			"app": name,
-  		}
+	It("Should create a test Foo [Foo] [Zalando]", func() {
+            name := "foo"
+		ns := f.Namespace.Name
+		labels := map[string]string{
+			"app": name,
+		}
 
-              // write a message to the user
-  		By("Creating foo " + name + " in namespace " + ns)
-              // creates Kubernetes foo type, function createFoo() can be found in util.go
-  		foo := createFoo(name, ns, labels)
-              // cleanup
-  		defer func() {
-  			By("deleting the foo)
-  			defer GinkgoRecover()
-  			err2 := cs.CoreV1().Foo(ns).Delete(foo.Name, metav1.NewDeleteOptions(0))
-  			Expect(err2).NotTo(HaveOccurred())
-  		}()
-              // creates the Ingress Object
-  		_, err := cs.CoreV1().Foo(ns).Create(foo)
-  		Expect(err).NotTo(HaveOccurred())
-  	})
-  })
+            // write a message to the user
+		By("Creating foo " + name + " in namespace " + ns)
+            // creates Kubernetes foo type, function createFoo() can be found in util.go
+		foo := createFoo(name, ns, labels)
+            // cleanup
+		defer func() {
+			By("deleting the foo)
+			defer GinkgoRecover()
+			err2 := cs.CoreV1().Foo(ns).Delete(foo.Name, metav1.NewDeleteOptions(0))
+			Expect(err2).NotTo(HaveOccurred())
+		}()
+            // creates the Ingress Object
+		_, err := cs.CoreV1().Foo(ns).Create(foo)
+		Expect(err).NotTo(HaveOccurred())
+	})
+})
 ```
 
 
@@ -215,7 +215,7 @@ Follow up code, that waits for creations to be happen:
   KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org CLUSTER_ALIAS=example \
   S3_AWS_IAM_BUCKET=zalando-e2e-aws-iam-test-12345678912-kube-1 \
   AWS_IAM_ROLE=kube-1-e2e-aws-iam-test \
-  ginkgo -nodes=25 -flakeAttempts=2 -focus="\[Zalando\]" \
+  ginkgo -procs=25 -flake-attempts=2 -focus="\[Zalando\]" \
   e2e.test -- -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated
   ```
 

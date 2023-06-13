@@ -271,12 +271,6 @@ post_apply:
   kind: HorizontalPodAutoscaler
   namespace: kube-system
 {{ end }}
-{{- if ne .Cluster.ConfigItems.pod_security_policy_enabled "true" }}
-- kind: PodSecurityPolicy
-  name: privileged
-- kind: PodSecurityPolicy
-  name: restricted
-{{- end }}
 {{- if eq .Cluster.ConfigItems.audittrail_nakadi_url "" }}
 - name: audittrail-adapter-nakadi
   kind: PlatformCredentialsSet
