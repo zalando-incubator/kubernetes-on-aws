@@ -144,12 +144,8 @@ spec:
               hosts:
                 description: List of hostnames for the RouteGroup
                 items:
-{{ if eq .ConfigItems.skipper_routegroup_enable_hostport "true"}}
-                  pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*(:[0-9]+)?$"
-{{ else }}
                   pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
-{{ end }}
-                  minItems: 1
+                  minItems: 1 # original CRD allows empty hosts but we explicitly want it specified in our infrastructure
                   type: string
                 type: array
               routes:
