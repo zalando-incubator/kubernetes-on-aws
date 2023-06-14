@@ -134,7 +134,7 @@ var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metri
 		tc.Run()
 	})
 
-    It("should scale with external metric based on hostname RPS", func() {
+    It("should scale with external metric based on hostname RPS [CustomMetricsAutoscaling] [Zalando]", func() {
 		hostName := fmt.Sprintf("%s-%d.%s", DeploymentName, time.Now().UTC().Unix(), E2EHostedZone())
 
 		initialReplicas := 2
