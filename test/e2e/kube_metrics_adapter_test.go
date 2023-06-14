@@ -12,7 +12,7 @@ import (
 	rgclient "github.com/szuecs/routegroup-client"
 	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscaling "k8s.io/api/autoscaling/v2beta1"
+	autoscaling "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -199,7 +199,7 @@ func (tc *CustomMetricTestCase) Run() {
 	}
 
 	// Autoscale the deployment
-	_, err = tc.kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).Create(context.TODO(), tc.hpa, metav1.CreateOptions{})
+	_, err = tc.kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).Create(context.TODO(), tc.hpa, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	waitForReplicas(tc.deployment.ObjectMeta.Name, tc.framework.Namespace.ObjectMeta.Name, tc.kubeClient, 15*time.Minute, tc.scaledReplicas)
@@ -355,8 +355,13 @@ func podMetricHPA(deploymentName string, metricTargets map[string]int64) *autosc
 		metrics = append(metrics, autoscaling.MetricSpec{
 			Type: autoscaling.PodsMetricSourceType,
 			Pods: &autoscaling.PodsMetricSource{
-				MetricName:         metric,
-				TargetAverageValue: *resource.NewQuantity(target, resource.DecimalSI),
+				Metric: autoscaling.MetricIdentifier{
+					Name: metric,
+				},
+				Target: autoscaling.MetricTarget{
+					Type:         autoscaling.AverageValueMetricType,
+					AverageValue: resource.NewQuantity(target, resource.DecimalSI),
+				},
 			},
 		})
 		metricName = metric
@@ -397,14 +402,18 @@ func podHPA(deploymentName, name, apiVersion, kind string, metricTargets map[str
 		metrics = append(metrics, autoscaling.MetricSpec{
 			Type: autoscaling.ObjectMetricSourceType,
 			Object: &autoscaling.ObjectMetricSource{
-				MetricName: metric,
-				Target: autoscaling.CrossVersionObjectReference{
+				DescribedObject: autoscaling.CrossVersionObjectReference{
 					APIVersion: apiVersion,
 					Kind:       kind,
 					Name:       name,
 				},
-				TargetValue:  *resource.NewQuantity(target, resource.DecimalSI),
-				AverageValue: resource.NewQuantity(target, resource.DecimalSI),
+				Metric: autoscaling.MetricIdentifier{
+					Name: metric,
+				},
+				Target: autoscaling.MetricTarget{
+					Type:         autoscaling.AverageValueMetricType,
+					AverageValue: resource.NewQuantity(target, resource.DecimalSI),
+				},
 			},
 		})
 	}
