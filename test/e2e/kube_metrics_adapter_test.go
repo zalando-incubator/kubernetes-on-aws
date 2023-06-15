@@ -134,7 +134,7 @@ var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metri
 		tc.Run()
 	})
 
-    It("should scale with external metric based on hostname RPS [CustomMetricsAutoscaling] [Zalando]", func() {
+	It("should scale with external metric based on hostname RPS [CustomMetricsAutoscaling] [Zalando]", func() {
 		hostName := fmt.Sprintf("%s-%d.%s", DeploymentName, time.Now().UTC().Unix(), E2EHostedZone())
 
 		initialReplicas := 2
@@ -164,7 +164,7 @@ var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metri
 			},
 		}
 		tc.Run()
-    })
+	})
 })
 
 type CustomMetricTestCase struct {
@@ -198,7 +198,6 @@ func (tc *CustomMetricTestCase) Run() {
 		Expect(err).NotTo(HaveOccurred())
 		// Wait for the deployment to run
 		waitForReplicas(deployment.ObjectMeta.Name, tc.framework.Namespace.ObjectMeta.Name, tc.kubeClient, 15*time.Minute, int(*(deployment.Spec.Replicas)))
-
 	}
 
 	// Check if an Ingress needs to be created
@@ -423,17 +422,15 @@ func podMetricHPA(deploymentName string, metricTargets map[string]int64) *autosc
 	}
 }
 
-
-
 func externalRPSHPA(deploymentName, host, weight string, target int64) *autoscaling.HorizontalPodAutoscaler {
 	return externalHPA(
-        deploymentName,
-        map[string]int64{"foo": target},
-        map[string]string{
-            "metric-config.foo.requests-per-second/hostnames": host,
-            "metric-config.foo.requests-per-second/weight": weight,
-        },
-    )
+		deploymentName,
+		map[string]int64{"foo": target},
+		map[string]string{
+			"metric-config.external.foo.requests-per-second/hostnames": host,
+			"metric-config.external.foo.requests-per-second/weight":    weight,
+		},
+	)
 }
 
 func externalHPA(deploymentName string, metricNameTargets map[string]int64, annotations map[string]string) *autoscaling.HorizontalPodAutoscaler {
@@ -441,30 +438,29 @@ func externalHPA(deploymentName string, metricNameTargets map[string]int64, anno
 	metrics := []autoscaling.MetricSpec{}
 	for metricName, target := range metricNameTargets {
 		metrics = append(metrics, autoscaling.MetricSpec{
-				Type: autoscaling.ExternalMetricSourceType,
-				External: &autoscaling.ExternalMetricSource{
-					Metric: autoscaling.MetricIdentifier{
-						Name: metricName,
-						Selector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{"type": "requests-per-second"},
-						},
+			Type: autoscaling.ExternalMetricSourceType,
+			External: &autoscaling.ExternalMetricSource{
+				Metric: autoscaling.MetricIdentifier{
+					Name: metricName,
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"type": "requests-per-second"},
 					},
-                    Target: autoscaling.MetricTarget{
-                        Type: autoscaling.AverageValueMetricType,
-                        AverageValue: resource.NewQuantity(target, resource.DecimalSI),
-                        
-                    },
 				},
+				Target: autoscaling.MetricTarget{
+					Type:         autoscaling.AverageValueMetricType,
+					AverageValue: resource.NewQuantity(target, resource.DecimalSI),
+				},
+			},
 		})
 	}
 
-    return &autoscaling.HorizontalPodAutoscaler{
+	return &autoscaling.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "custom-metrics-pods-hpa",
 			Labels: map[string]string{
 				"application": deploymentName,
 			},
-            Annotations: annotations,
+			Annotations: annotations,
 		},
 		Spec: autoscaling.HorizontalPodAutoscalerSpec{
 			Metrics:     metrics,
@@ -478,7 +474,6 @@ func externalHPA(deploymentName string, metricNameTargets map[string]int64, anno
 		},
 	}
 }
-
 
 func rpsBasedHPA(deploymentName, name, apiVersion, kind string, metricTarget int64) *autoscaling.HorizontalPodAutoscaler {
 	return podHPA(deploymentName, name, apiVersion, kind, map[string]int64{"requests-per-second": metricTarget})
@@ -506,7 +501,6 @@ func podHPA(deploymentName, name, apiVersion, kind string, metricTargets map[str
 			},
 		})
 	}
-
 
 	return &autoscaling.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
