@@ -109,6 +109,9 @@ if [ "$create_cluster" = true ]; then
         # generate the cluster certificates
         aws-account-creator refresh-certificates --registry-file base_cluster.yaml --create-ca
 
+        # TODO: debug cluster config values
+        cat base_cluster.yaml
+
         # Create cluster
         clm provision \
             --token="${CLUSTER_ADMIN_TOKEN}" \
