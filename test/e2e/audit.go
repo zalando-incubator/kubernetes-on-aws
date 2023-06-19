@@ -15,7 +15,7 @@ import (
 	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	"k8s.io/kubernetes/test/e2e/framework"
-	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
+	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 	admissionapi "k8s.io/pod-security-admission/api"
 
 	jsonpatch "github.com/evanphx/json-patch"
@@ -57,14 +57,14 @@ var _ = describe("Audit", func() {
 		}
 		updatePod := func(pod *apiv1.Pod) {}
 
-		f.PodClient().CreateSync(pod)
+		e2epod.NewPodClient(f).CreateSync(pod)
 
-		f.PodClient().Update(pod.Name, updatePod)
+		e2epod.NewPodClient(f).Update(pod.Name, updatePod)
 
-		_, err := f.PodClient().Patch(context.TODO(), pod.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
+		_, err := e2epod.NewPodClient(f).Patch(context.TODO(), pod.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
 		framework.ExpectNoError(err, "failed to patch pod")
 
-		f.PodClient().DeleteSync(pod.Name, metav1.DeleteOptions{}, framework.DefaultPodDeletionTimeout)
+		e2epod.NewPodClient(f).DeleteSync(pod.Name, metav1.DeleteOptions{}, e2epod.DefaultPodDeletionTimeout)
 
 		expectEvents(f, []utils.AuditEvent{
 			{
@@ -130,9 +130,9 @@ func expectEvents(f *framework.Framework, expectedEvents []utils.AuditEvent) {
 		defer stream.Close()
 		missingReport, err := utils.CheckAuditLines(stream, expectedEvents, auditv1.SchemeGroupVersion)
 		if err != nil {
-			e2elog.Logf("Failed to observe audit events: %v", err)
+			framework.Logf("Failed to observe audit events: %v", err)
 		} else if len(missingReport.MissingEvents) > 0 {
-			e2elog.Logf("Events %#v not found!", missingReport)
+			framework.Logf("Events %#v not found!", missingReport)
 		}
 		return len(missingReport.MissingEvents) == 0, nil
 	})
