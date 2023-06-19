@@ -51,10 +51,6 @@ export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
 
-# Generate a new key for this E2E run
-SERVICE_ACCOUNT_PRIVATE_KEY="$(openssl genrsa | base64 | tr -d '\n')"
-export SERVICE_ACCOUNT_PRIVATE_KEY
-
 # create kubeconfig
 cat >kubeconfig <<EOF
 apiVersion: v1
