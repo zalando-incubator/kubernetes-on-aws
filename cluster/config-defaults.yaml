@@ -166,15 +166,13 @@ datadome_api_key: ""
 # - "false" - routesrv deployment is removed, skipper uses own k8s dataclient
 # - "pre" - routesrv is deployed, skipper uses own k8s dataclient
 # - "exec" - routesrv is deployed, skipper uses routesrv
-{{if eq .Cluster.Environment "production"}}
-skipper_routesrv_enabled: "false"
-skipper_routesrv_cpu: "1000m"
+skipper_routesrv_enabled: "exec"
 skipper_routesrv_memory: "1Gi"
+{{if eq .Cluster.Environment "production"}}
+skipper_routesrv_cpu: "1000m"
 skipper_routesrv_min_replicas: 2
 {{else}}
-skipper_routesrv_enabled: "exec"
 skipper_routesrv_cpu: "100m"
-skipper_routesrv_memory: "1Gi"
 skipper_routesrv_min_replicas: 1
 {{end}}
 
@@ -268,14 +266,9 @@ skipper_tokeninfo_cache_ttl: "30s"
 skipper_oauth2_ui_login: "false"
 skipper_ingress_encryption_key: ""
 {{else}}
-skipper_oauth2_ui_login: "false"
+skipper_oauth2_ui_login: "true"
 {{end}}
 
-# Comma-separated list of <hostname>=<application> pairs.
-# E.g. to configure "foo.example.org" and "foo.example.com" hostnames for application "foo" and
-# "bar.example.net" for "bar" set
-# skipper_oauth2_ui_login_hostnames: "foo.example.org=foo,foo.example.com=foo,bar.example.net=bar"
-skipper_oauth2_ui_login_hostnames: ""
 # Comma-separated list of tokeninfo keys to retain
 skipper_oauth2_ui_login_tokeninfo_keys: ""
 
@@ -566,11 +559,6 @@ etcd_scalyr_key: ""
 etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.4.16-amd64-main-10" "861068367966"}}
 
 dynamodb_service_link_enabled: "false"
-{{if eq .Cluster.Environment "e2e"}}
-quotas_service_link_enabled: "false"
-{{else}}
-quotas_service_link_enabled: "true"
-{{end}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -692,6 +680,8 @@ custom_dns_zone_nameservers: "" # space separated list of nameserver IP addresse
 
 # prefix prepended to ownership TXT records for external-dns
 external_dns_ownership_prefix: ""
+# domains that should be included by ExternalDNS ("" includes all hosted zones in the account. Separate multiple domains with a comma)
+external_dns_domain_filter: ""
 # domains that should be ignored by ExternalDNS
 external_dns_excluded_domains: cluster.local
 # synchronization policy between Kubernetes and AWS Route53 (default: sync, options: sync, upsert-only, create-only)
@@ -868,6 +858,9 @@ disable_zmon_appliance_worker_tracking: "true"
 
 # Add ClusterRole for clusters required by hyped-article-lifecycle-management controller
 hyped_article_lifecycle_management: "false"
+
+# Add ClusterRole for clusters required by business-partner controller
+business_partner_service: "false"
 
 # enable SizeMemoryBackedVolumes feature flag
 enable_size_memory_backed_volumes: "true"
