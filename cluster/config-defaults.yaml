@@ -166,15 +166,13 @@ datadome_api_key: ""
 # - "false" - routesrv deployment is removed, skipper uses own k8s dataclient
 # - "pre" - routesrv is deployed, skipper uses own k8s dataclient
 # - "exec" - routesrv is deployed, skipper uses routesrv
-{{if eq .Cluster.Environment "production"}}
-skipper_routesrv_enabled: "false"
-skipper_routesrv_cpu: "1000m"
+skipper_routesrv_enabled: "exec"
 skipper_routesrv_memory: "1Gi"
+{{if eq .Cluster.Environment "production"}}
+skipper_routesrv_cpu: "1000m"
 skipper_routesrv_min_replicas: 2
 {{else}}
-skipper_routesrv_enabled: "exec"
 skipper_routesrv_cpu: "100m"
-skipper_routesrv_memory: "1Gi"
 skipper_routesrv_min_replicas: 1
 {{end}}
 
@@ -682,6 +680,8 @@ custom_dns_zone_nameservers: "" # space separated list of nameserver IP addresse
 
 # prefix prepended to ownership TXT records for external-dns
 external_dns_ownership_prefix: ""
+# domains that should be included by ExternalDNS ("" includes all hosted zones in the account. Separate multiple domains with a comma)
+external_dns_domain_filter: ""
 # domains that should be ignored by ExternalDNS
 external_dns_excluded_domains: cluster.local
 # synchronization policy between Kubernetes and AWS Route53 (default: sync, options: sync, upsert-only, create-only)
