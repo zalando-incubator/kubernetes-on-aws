@@ -268,14 +268,9 @@ skipper_tokeninfo_cache_ttl: "30s"
 skipper_oauth2_ui_login: "false"
 skipper_ingress_encryption_key: ""
 {{else}}
-skipper_oauth2_ui_login: "false"
+skipper_oauth2_ui_login: "true"
 {{end}}
 
-# Comma-separated list of <hostname>=<application> pairs.
-# E.g. to configure "foo.example.org" and "foo.example.com" hostnames for application "foo" and
-# "bar.example.net" for "bar" set
-# skipper_oauth2_ui_login_hostnames: "foo.example.org=foo,foo.example.com=foo,bar.example.net=bar"
-skipper_oauth2_ui_login_hostnames: ""
 # Comma-separated list of tokeninfo keys to retain
 skipper_oauth2_ui_login_tokeninfo_keys: ""
 
@@ -566,11 +561,6 @@ etcd_scalyr_key: ""
 etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.4.16-amd64-main-10" "861068367966"}}
 
 dynamodb_service_link_enabled: "false"
-{{if eq .Cluster.Environment "e2e"}}
-quotas_service_link_enabled: "false"
-{{else}}
-quotas_service_link_enabled: "true"
-{{end}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -868,6 +858,9 @@ disable_zmon_appliance_worker_tracking: "true"
 
 # Add ClusterRole for clusters required by hyped-article-lifecycle-management controller
 hyped_article_lifecycle_management: "false"
+
+# Add ClusterRole for clusters required by business-partner controller
+business_partner_service: "false"
 
 # enable SizeMemoryBackedVolumes feature flag
 enable_size_memory_backed_volumes: "true"
