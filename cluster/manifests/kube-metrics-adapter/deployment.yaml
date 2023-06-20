@@ -27,7 +27,7 @@ spec:
       serviceAccountName: custom-metrics-apiserver
       containers:
       - name: kube-metrics-adapter
-        image: container-registry.zalando.net/teapot/kube-metrics-adapter:v0.2.0
+        image: container-registry.zalando.net/teapot/kube-metrics-adapter:v0.2.1
         env:
         - name: AWS_REGION
           value: {{ .Region }}
@@ -35,6 +35,7 @@ spec:
         - --prometheus-server=http://prometheus.kube-system.svc.cluster.local
         - --skipper-ingress-metrics
         - --skipper-routegroup-metrics
+        - --external-rps-metrics
         - --scaling-schedule
         - --scaling-schedule-default-scaling-window={{.Cluster.ConfigItems.kube_metrics_adapter_default_scaling_window}}
         - --scaling-schedule-ramp-steps={{.Cluster.ConfigItems.kube_metrics_adapter_scaling_schedule_ramp_steps}}
