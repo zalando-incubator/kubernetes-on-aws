@@ -37,6 +37,9 @@ spec:
         - --source=service
         - --source=ingress
         - --source=skipper-routegroup
+{{- range split .ConfigItems.external_dns_domain_filter "," }}
+        - --domain-filter={{ . }}
+{{- end }}
 {{- range split .ConfigItems.external_dns_excluded_domains "," }}
         - --exclude-domains={{ . }}
 {{- end }}
