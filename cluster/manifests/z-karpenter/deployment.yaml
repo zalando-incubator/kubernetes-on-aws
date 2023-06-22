@@ -36,7 +36,7 @@ spec:
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       containers:
         - name: controller
-          image: "container-registry.zalando.net/teapot/karpenter-controller:v0.27.3-main-9" # TODO: update version to v0.28.0-rc.2@sha256:907c7f931c1ac1b789cb404d8a468b74656ddede15cfb25801cfb19c5b4fe780
+          image: "container-registry-test.zalando.net/teapot/karpenter:networkinterfaces-experimental-pr-8-3@sha256:ad8d5606be2831ce13e976c16c6333579fe3fc466e87eb7117f9c464af3b5f60
           env:
             - name: KUBERNETES_MIN_VERSION
               value: "1.22.0-0"
@@ -45,7 +45,7 @@ spec:
             - name: WEBHOOK_PORT
               value: "8443"
             - name: METRICS_PORT
-              value: "8080"
+              value: "8000"
             - name: HEALTH_PROBE_PORT
               value: "8081"
             - name: SYSTEM_NAMESPACE
@@ -60,7 +60,7 @@ spec:
                   resource: limits.memory
           ports:
             - name: http-metrics
-              containerPort: 8080
+              containerPort: 8000
               protocol: TCP
             - name: http
               containerPort: 8081
@@ -86,8 +86,6 @@ spec:
             limits:
               cpu: "{{ .Cluster.ConfigItems.karpenter_controller_cpu }}"
               memory: "{{ .Cluster.ConfigItems.karpenter_controller_memory }}"
-      nodeSelector:
-        kubernetes.io/os: linux
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -101,13 +99,13 @@ spec:
               matchLabels:
                 deployment: karpenter
             topologyKey: kubernetes.io/hostname
-      topologySpreadConstraints:
-        - labelSelector:
-            matchLabels:
-              deployment: karpenter
-          maxSkew: 1
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: ScheduleAnyway
+#      topologySpreadConstraints:
+#        - labelSelector:
+#            matchLabels:
+#              deployment: karpenter
+#          maxSkew: 1
+#          topologyKey: topology.kubernetes.io/zone
+#          whenUnsatisfiable: ScheduleAnyway
       tolerations:
         - key: CriticalAddonsOnly
           operator: Exists
