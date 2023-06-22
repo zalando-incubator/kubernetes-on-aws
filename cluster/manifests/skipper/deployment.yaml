@@ -112,7 +112,7 @@ spec:
 {{ end }}
         args:
           #- "run.sh"
-          - "skipper"
+          - "/usr/bin/skipper"
           - "-validate-query={{ .ConfigItems.skipper_validate_query }}"
           - "-validate-query-log={{ .Cluster.ConfigItems.skipper_validate_query_log }}"
 {{ if eq .ConfigItems.skipper_routesrv_enabled "exec" }}
@@ -254,9 +254,9 @@ spec:
           - "-oauth2-grant-tokeninfo-keys={{ .ConfigItems.skipper_oauth2_ui_login_tokeninfo_keys }}"
 {{ end }}
 {{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
-          - "--enable-open-policy-agent"
-          - "--open-policy-agent-config-template=/etc/skipper/open-policy-agent/opaconfig.yaml"
-          - "--open-policy-agent-envoy-metadata=/etc/skipper/open-policy-agent/envoymetadata.json"
+          - "-enable-open-policy-agent"
+          - "-open-policy-agent-config-template=/etc/skipper/open-policy-agent/opaconfig.yaml"
+          - "-open-policy-agent-envoy-metadata=/etc/skipper/open-policy-agent/envoymetadata.json"
 {{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
