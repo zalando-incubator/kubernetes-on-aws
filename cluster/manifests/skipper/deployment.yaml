@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.16.111-530" }}
+{{ $internal_version := "v0.16.118-537" }}
 {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
@@ -115,6 +115,7 @@ spec:
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
+          - "-kubernetes-backend-traffic-algorithm={{ .ConfigItems.skipper_ingress_backend_traffic_algorithm }}"
 {{ end }}
           - "-address=:9999"
           - "-wait-first-route-load"
@@ -453,6 +454,7 @@ spec:
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
+          - "-kubernetes-backend-traffic-algorithm={{ .ConfigItems.skipper_ingress_backend_traffic_algorithm }}"
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
 {{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
@@ -469,7 +471,6 @@ spec:
           - "-kubernetes-redis-service-namespace=kube-system"
           - "-kubernetes-redis-service-name=skipper-ingress-redis"
 {{ end }}
-
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
           - "-enable-oauth2-grant-flow"
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
