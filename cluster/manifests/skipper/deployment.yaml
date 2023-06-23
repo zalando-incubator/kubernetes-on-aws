@@ -55,7 +55,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: registry.opensource.zalan.do/teapot/skipper-test:pr-2407-6
+        image: container-registry.zalando.net/teapot/skipper-internal:{{ $internal_version }}
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -103,13 +103,13 @@ spec:
               name: skipper-ingress
               key: datadome-api-key
 {{ end }}
-{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+#{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
         - name: STYRA_TOKEN
           valueFrom:
             secretKeyRef:
               name: skipper-ingress
               key: styra-token
-{{ end }}
+#{{ end }}
         args:
           #- "run.sh"
           - "/usr/bin/skipper"
@@ -253,11 +253,11 @@ spec:
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
           - "-oauth2-grant-tokeninfo-keys={{ .ConfigItems.skipper_oauth2_ui_login_tokeninfo_keys }}"
 {{ end }}
-{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+#{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
           - "-enable-open-policy-agent"
           - "-open-policy-agent-config-template=/etc/skipper/open-policy-agent/opaconfig.yaml"
           - "-open-policy-agent-envoy-metadata=/etc/skipper/open-policy-agent/envoymetadata.json"
-{{ end }}
+#{{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
@@ -349,11 +349,11 @@ spec:
             mountPath: /etc/skipper/secret
             readOnly: true
 {{ end }}
-{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+#{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
           - name: open-policy-agent-config
             mountPath: /etc/skipper/open-policy-agent
             readOnly: true
-{{ end }}
+#{{ end }}
       volumes:
         - name: routes-cache
           emptyDir: {}
@@ -382,11 +382,11 @@ spec:
           secret:
             secretName: skipper-ingress
 {{ end }}
-{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+#{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
         - name: open-policy-agent-config
           configMap:
             name: open-policy-agent-config
-{{ end }}
+#{{ end }}
 {{ if eq .ConfigItems.enable_dedicate_nodepool_skipper "true"}}
       nodeSelector:
         dedicated: skipper-ingress
