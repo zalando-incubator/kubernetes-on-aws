@@ -264,7 +264,7 @@ func simplePodMetricDeployment(name string, replicas int32, metricName string, m
 		})
 }
 
-// podDeployment is a Deployment of an application that exposes an HTTP endpoint
+// simplePodDeployment is a Deployment of an application that exposes an HTTP endpoint
 func simplePodDeployment(name string, replicas int32) *appsv1.Deployment {
 	podSpec := corev1.PodSpec{Containers: []corev1.Container{}}
 	podSpec.Containers = append(podSpec.Containers, podContainerSpec(name))
