@@ -282,6 +282,12 @@ skipper_cluster_scaling_schedules: ""
 # Skipper Ingress/RouteGroup backend traffic split algorithm: traffic-predicate or traffic-segment-predicate
 skipper_ingress_backend_traffic_algorithm: "traffic-predicate"
 
+{{ if eq .Cluster.Environment "test" }}
+skipper_ingress_default_lb_algorithm: "powerOfRandomNChoices"
+{{ else }}
+skipper_ingress_default_lb_algorithm: "roundRobin"
+{{end}}
+
 #
 # FabricGateway controller config
 #
