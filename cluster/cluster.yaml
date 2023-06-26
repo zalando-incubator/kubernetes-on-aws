@@ -1914,75 +1914,6 @@ Resources:
         Status: Suspended
 {{ end }}
 
-  AuditTrailBucketPrimary:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-    Properties:
-      BucketName: "zalando-audittrail-primary-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
-      LifecycleConfiguration:
-        Rules:
-          - AbortIncompleteMultipartUpload:
-              DaysAfterInitiation: 1
-            Prefix: ""
-            Status: Enabled
-      VersioningConfiguration:
-        Status: Suspended
-      Tags:
-      - Key: component
-        Value: audittrail-adapter
-  AuditTrailBucketPrimaryPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref AuditTrailBucketPrimary
-      PolicyDocument:
-        Statement:
-          # In-cluster access
-          - Action:
-              - s3:ListBucket
-            Effect: Allow
-            Principal:
-              AWS:
-                - !GetAtt EmergencyAccessServiceIAMRole.Arn
-                - !GetAtt AudittrailAdapterIAMRole.Arn
-            Resource:
-              - !GetAtt AuditTrailBucketPrimary.Arn
-
-          - Action:
-              - s3:PutObject
-            Effect: Allow
-            Principal:
-              AWS:
-              - !GetAtt EmergencyAccessServiceIAMRole.Arn
-              - !GetAtt AudittrailAdapterIAMRole.Arn
-            Resource:
-              - !Sub
-                - "${BucketArn}/*"
-                - BucketArn: !GetAtt AuditTrailBucketPrimary.Arn
-
-{{- if ne .Cluster.ConfigItems.audittrail_root_account_role "" }}
-          # Central access
-          - Action:
-              - s3:ListBucket
-            Effect: Allow
-            Principal:
-              AWS:
-                - {{.Cluster.ConfigItems.audittrail_root_account_role}}
-            Resource:
-              - !GetAtt AuditTrailBucketPrimary.Arn
-
-          - Action:
-              - s3:GetObject
-              - s3:DeleteObject
-            Effect: Allow
-            Principal:
-              AWS:
-                - {{.Cluster.ConfigItems.audittrail_root_account_role}}
-            Resource:
-              - !Sub
-                - "${BucketArn}/*"
-                - BucketArn: !GetAtt AuditTrailBucketPrimary.Arn
-{{- end }}
-
   AuditTrailBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
@@ -2101,16 +2032,12 @@ Resources:
                   - s3:ListBucket
                 Effect: Allow
                 Resource:
-                  - !GetAtt AuditTrailBucketPrimary.Arn
                   - !GetAtt AuditTrailBucket.Arn
 
               - Action:
                   - s3:PutObject
                 Effect: Allow
                 Resource:
-                  - !Sub
-                    - "${BucketArn}/*"
-                    - BucketArn: !GetAtt AuditTrailBucketPrimary.Arn
                   - !Sub
                     - "${BucketArn}/*"
                     - BucketArn: !GetAtt AuditTrailBucket.Arn
@@ -2139,7 +2066,6 @@ Resources:
                   - s3:ListBucket
                 Effect: Allow
                 Resource:
-                  - !GetAtt AuditTrailBucketPrimary.Arn
                   - !GetAtt AuditTrailBucket.Arn
 
               - Action:
@@ -2148,14 +2074,36 @@ Resources:
                 Resource:
                   - !Sub
                     - "${BucketArn}/*"
-                    - BucketArn: !GetAtt AuditTrailBucketPrimary.Arn
-                  - !Sub
-                    - "${BucketArn}/*"
                     - BucketArn: !GetAtt AuditTrailBucket.Arn
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
     Type: 'AWS::IAM::Role'
+  AudittrailAdapterCentralIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:audittrail-adapter"
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - s3:PutObject
+                Effect: Allow
+                Resource:
+                  - arn:aws:s3:::zalando-audittrail-central/*
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "zalando-audittrail-adapter-central"
 {{- if eq .Cluster.ConfigItems.dynamodb_service_link_enabled "true" }}
   ServiceLinkedRoleAutoScalingDynamoDB:
     Properties:
