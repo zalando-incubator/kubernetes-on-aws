@@ -2097,6 +2097,12 @@ Resources:
         - PolicyDocument:
             Statement:
               - Action:
+                  - s3:ListBucket
+                Effect: Allow
+                Resource:
+                  - arn:aws:s3:::zalando-audittrail-central
+
+              - Action:
                   - s3:PutObject
                 Effect: Allow
                 Resource:
@@ -2104,6 +2110,7 @@ Resources:
             Version: 2012-10-17
           PolicyName: root
       RoleName: "zalando-audittrail-adapter-central"
+    Type: 'AWS::IAM::Role'
 {{- if eq .Cluster.ConfigItems.dynamodb_service_link_enabled "true" }}
   ServiceLinkedRoleAutoScalingDynamoDB:
     Properties:
