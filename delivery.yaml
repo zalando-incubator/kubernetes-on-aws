@@ -12,11 +12,11 @@ pipeline:
   vm_config:
     type: linux
     image: "cdp-runtime/go-1.20"
-    size: large # speed up building kubernetes/kubernetes
+    size: large  # speed up building kubernetes/kubernetes
   cache:
     paths:
-    - /go/pkg/mod       # pkg cache for Go modules
-    - ~/.cache/go-build # Go build cache
+    - /go/pkg/mod        # pkg cache for Go modules
+    - ~/.cache/go-build  # Go build cache
   type: script
   commands:
   - desc: install deps
@@ -72,89 +72,89 @@ pipeline:
           args:
           - create-cluster
           env: &e2e_env
-            - name: CLUSTER_DOMAIN
-              value: teapot-e2e.zalan.do
-            - name: CLUSTER_DOMAIN_INTERNAL
-              value: ingress.cluster.local
-            - name: RESULT_BUCKET
-              value: "teapot-kubernetes-e2e-results"
-            - name: ETCD_ENDPOINTS
-              value: "https://etcd-server.etcd.teapot-e2e.zalan.do:2479"
-            - name: HOSTED_ZONE
-              valueFrom:
-                configMapKeyRef:
-                  name: kubernetes-e2e-config
-                  key: "HOSTED_ZONE"
-            - name: REGION
-              valueFrom:
-                configMapKeyRef:
-                  name: kubernetes-e2e-config
-                  key: "REGION"
-            - name: AWS_ACCOUNT
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "AWS_ACCOUNT"
-            - name: ZMON_ROOT_ACCOUNT_ROLE
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "ZMON_ROOT_ACCOUNT_ROLE"
-            - name: AUDITTRAIL_ROOT_ACCOUNT_ROLE
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "AUDITTRAIL_ROOT_ACCOUNT_ROLE"
-            - name: APISERVER_BUSINESS_PARTNER_IDS
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "APISERVER_BUSINESS_PARTNER_IDS"
-            - name: LIGHTSTEP_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "LIGHTSTEP_TOKEN"
-            - name: OWNER
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "OWNER"
-            - name: VPC_ID
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "VPC_ID"
-            - name: EFS_ID
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "EFS_ID"
-            - name: ETCD_CLIENT_CA_CERT
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "ETCD_CLIENT_CA_CERT"
-            - name: ETCD_CLIENT_CA_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "ETCD_CLIENT_CA_KEY"
-            - name: ETCD_SCALYR_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "ETCD_SCALYR_KEY"
-            - name: OKTA_AUTH_ISSUER_URL
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-config-secret
-                  key: "OKTA_AUTH_ISSUER_URL"
-            - name: CLUSTER_ADMIN_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: kubernetes-e2e-credentials
-                  key: "cluster-token-secret"
+          - name: CLUSTER_DOMAIN
+            value: teapot-e2e.zalan.do
+          - name: CLUSTER_DOMAIN_INTERNAL
+            value: ingress.cluster.local
+          - name: RESULT_BUCKET
+            value: "teapot-kubernetes-e2e-results"
+          - name: ETCD_ENDPOINTS
+            value: "https://etcd-server.etcd.teapot-e2e.zalan.do:2479"
+          - name: HOSTED_ZONE
+            valueFrom:
+              configMapKeyRef:
+                name: kubernetes-e2e-config
+                key: "HOSTED_ZONE"
+          - name: REGION
+            valueFrom:
+              configMapKeyRef:
+                name: kubernetes-e2e-config
+                key: "REGION"
+          - name: AWS_ACCOUNT
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "AWS_ACCOUNT"
+          - name: ZMON_ROOT_ACCOUNT_ROLE
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "ZMON_ROOT_ACCOUNT_ROLE"
+          - name: AUDITTRAIL_ROOT_ACCOUNT_ROLE
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "AUDITTRAIL_ROOT_ACCOUNT_ROLE"
+          - name: APISERVER_BUSINESS_PARTNER_IDS
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "APISERVER_BUSINESS_PARTNER_IDS"
+          - name: LIGHTSTEP_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "LIGHTSTEP_TOKEN"
+          - name: OWNER
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "OWNER"
+          - name: VPC_ID
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "VPC_ID"
+          - name: EFS_ID
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "EFS_ID"
+          - name: ETCD_CLIENT_CA_CERT
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "ETCD_CLIENT_CA_CERT"
+          - name: ETCD_CLIENT_CA_KEY
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "ETCD_CLIENT_CA_KEY"
+          - name: ETCD_SCALYR_KEY
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "ETCD_SCALYR_KEY"
+          - name: OKTA_AUTH_ISSUER_URL
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-config-secret
+                key: "OKTA_AUTH_ISSUER_URL"
+          - name: CLUSTER_ADMIN_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: kubernetes-e2e-credentials
+                key: "cluster-token-secret"
           resources:
             limits:
               cpu: 500m
