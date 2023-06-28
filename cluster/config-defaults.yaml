@@ -280,7 +280,11 @@ skipper_oauth2_ui_login_tokeninfo_keys: ""
 skipper_cluster_scaling_schedules: ""
 
 # Skipper Ingress/RouteGroup backend traffic split algorithm: traffic-predicate or traffic-segment-predicate
+{{if eq .Cluster.Environment "production"}}
 skipper_ingress_backend_traffic_algorithm: "traffic-predicate"
+{{else}}
+skipper_ingress_backend_traffic_algorithm: "traffic-segment-predicate"
+{{end}}
 
 {{ if eq .Cluster.Environment "test" }}
 skipper_ingress_default_lb_algorithm: "powerOfRandomNChoices"
