@@ -907,3 +907,20 @@ apiserver_memory_limit_percent: "80"
 
 # specify if control plane nodes should rely on ASG Lifecycle Hook or not
 control_plane_asg_lifecycle_hook: "true"
+
+# This allows setting custom sysctl settings. The config-item is intended to be
+# used on node-pools rather being set globally.
+#
+# The value is a comma seprated configuration of `sysctl_setting=value` as
+# illustrated in the example below.
+#
+# Example:
+#
+#   sysctl_settings: "fs.aio-max-nr=8388608,fs.inotify.max_user_watches=100000"
+#
+# Which translates to a file on the node:
+#
+#  cat /etc/sysctl.d/99-custom-sysctl-settings.conf
+#  fs.aio-max-nr = 8388608
+#  fs.inotify.max_user_watches = 100000
+sysctl_settings: ""
