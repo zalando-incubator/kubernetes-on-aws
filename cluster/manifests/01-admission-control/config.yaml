@@ -95,7 +95,7 @@ data:
   pod.automatic-topology-spread.mode: "{{ .Cluster.ConfigItems.teapot_admission_controller_topology_spread }}"
   pod.automatic-topology-spread.timeout: "{{ .Cluster.ConfigItems.teapot_admission_controller_topology_spread_timeout }}"
 {{- range $group, $enabled := zoneDistributedNodePoolGroups .Cluster.NodePools }}
-{{- if eq $group "" }}
+{{- if not $group }}
   pod.automatic-topology-spread.pools.default: "{{ $enabled }}"
 {{- else }}
   pod.automatic-topology-spread.pools.dedicated.{{$group}}: "{{ $enabled }}"
@@ -104,7 +104,7 @@ data:
 
   pod.az-block.zone-name: "{{ .Cluster.ConfigItems.blocked_availability_zone }}"
 {{- range $group, $enabled := zoneDistributedNodePoolGroups .Cluster.NodePools }}
-{{- if eq $group "" }}
+{{- if not $group }}
   pod.az-block.pools.default: "{{ $enabled }}"
 {{- else }}
   pod.az-block.pools.dedicated.{{$group}}: "{{ $enabled }}"
