@@ -49,7 +49,7 @@ data:
       name: "5.10.in-addr.arpa."
       forward-addr: 127.0.0.1@9254 # coredns
   Corefile: |
-{{ if and (ne .ConfigItems.custom_dns_zone "") (ne .ConfigItems.custom_dns_zone_nameservers "") }}
+{{ if and .ConfigItems.custom_dns_zone .ConfigItems.custom_dns_zone_nameservers }}
     {{ .ConfigItems.custom_dns_zone }}:9254 {
         errors
 {{ if ne .ConfigItems.coredns_max_upstream_concurrency "0" }}
