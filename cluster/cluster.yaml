@@ -2067,39 +2067,6 @@ Resources:
                 Effect: Allow
                 Resource:
                   - !GetAtt AuditTrailBucket.Arn
-
-              - Action:
-                  - s3:PutObject
-                Effect: Allow
-                Resource:
-                  - !Sub
-                    - "${BucketArn}/*"
-                    - BucketArn: !GetAtt AuditTrailBucket.Arn
-            Version: 2012-10-17
-          PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
-    Type: 'AWS::IAM::Role'
-  AudittrailAdapterCentralIAMRole:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:audittrail-adapter"
-        Version: 2012-10-17
-      Path: /
-      Policies:
-        - PolicyDocument:
-            Statement:
-              - Action:
-                  - s3:ListBucket
-                Effect: Allow
-                Resource:
                   - arn:aws:s3:::zalando-audittrail-central
 
               - Action:
@@ -2107,9 +2074,12 @@ Resources:
                 Effect: Allow
                 Resource:
                   - arn:aws:s3:::zalando-audittrail-central/*
+                  - !Sub
+                    - "${BucketArn}/*"
+                    - BucketArn: !GetAtt AuditTrailBucket.Arn
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "zalando-audittrail-adapter-central-{{.Cluster.LocalID}}"
+      RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
     Type: 'AWS::IAM::Role'
 {{- if eq .Cluster.ConfigItems.dynamodb_service_link_enabled "true" }}
   ServiceLinkedRoleAutoScalingDynamoDB:
