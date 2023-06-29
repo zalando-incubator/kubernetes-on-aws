@@ -946,7 +946,7 @@ Resources:
               AWS:
                 - !GetAtt DeploymentControllerRole.Arn
                 - !GetAtt DeploymentStatusServiceRole.Arn
-{{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
+{{- if .Cluster.ConfigItems.deployment_service_api_role_arn }}
           - Action:
               - s3:PutObject
               - s3:PutObjectAcl
@@ -967,7 +967,7 @@ Resources:
                 aws:PrincipalArn:
                   - !GetAtt DeploymentControllerRole.Arn
                   - !GetAtt DeploymentStatusServiceRole.Arn
-{{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
+{{- if .Cluster.ConfigItems.deployment_service_api_role_arn }}
                   - "{{.Cluster.ConfigItems.deployment_service_api_role_arn}}"
 {{- end }}
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
@@ -1614,7 +1614,7 @@ Resources:
               - Action: 's3:ListBucket'
                 Effect: Allow
                 Resource: '*'
-          {{if ne "" .Cluster.ConfigItems.zmon_accessible_s3_buckets}}
+          {{if .Cluster.ConfigItems.zmon_accessible_s3_buckets}}
               {{range $bucket := split .Cluster.ConfigItems.zmon_accessible_s3_buckets ","}}
               - Action: 's3:GetObject'
                 Effect: Allow
@@ -1703,7 +1703,7 @@ Resources:
             - Action: ["s3:PutObject"]
               Effect: "Allow"
               Resource: 'arn:aws:s3:::{{.Cluster.ConfigItems.logging_s3_bucket}}/*'
-{{- if ne .Cluster.ConfigItems.logging_infrastructure_s3_bucket "" }}
+{{- if .Cluster.ConfigItems.logging_infrastructure_s3_bucket }}
         - PolicyName: AllowCentralTelemetryInfrastructureS3BucketAccess
           PolicyDocument:
             Version: "2012-10-17"
@@ -1961,7 +1961,7 @@ Resources:
                 - "${BucketArn}/*"
                 - BucketArn: !GetAtt AuditTrailBucket.Arn
 
-{{- if ne .Cluster.ConfigItems.audittrail_root_account_role "" }}
+{{- if .Cluster.ConfigItems.audittrail_root_account_role }}
           # Central access
           - Action:
               - s3:ListBucket
