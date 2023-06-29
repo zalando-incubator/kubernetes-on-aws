@@ -59,6 +59,11 @@ write_files:
       # https://github.com/kubernetes/kubernetes/blob/v1.13.6/staging/src/k8s.io/kubelet/config/v1beta1/types.go
       apiVersion: kubelet.config.k8s.io/v1beta1
       kind: KubeletConfiguration
+{{- if index .NodePool.ConfigItems "support_containerd" }}
+      cgroupDriver: systemd
+      containerLogMaxSize: "50Mi"
+      containerLogMaxFiles: 2
+{{- end }}
       clusterDomain: cluster.local
       cpuCFSQuota: false
       featureGates:
@@ -108,12 +113,21 @@ write_files:
           cacheUnauthorizedTTL: "30s"
       protectKernelDefaults: true
 
-{{- if ( and ( ne .Cluster.ConfigItems.vm_dirty_background_bytes "" ) ( ne .Cluster.ConfigItems.vm_dirty_bytes "" ) )}}
+{{- if and .Cluster.ConfigItems.vm_dirty_background_bytes .Cluster.ConfigItems.vm_dirty_bytes }}
   - owner: root:root
     path: /etc/sysctl.d/03-vm-dirty-ratios.conf
     content: |
       vm.dirty_background_bytes = {{ .Cluster.ConfigItems.vm_dirty_background_bytes }}
       vm.dirty_bytes = {{ .Cluster.ConfigItems.vm_dirty_bytes }}
+{{- end}}
+{{- if .NodePool.ConfigItems.sysctl_settings}}
+  - owner: root:root
+    path: /etc/sysctl.d/99-custom-sysctl-settings.conf
+    content: |
+      {{- range $i, $cfgs := split .NodePool.ConfigItems.sysctl_settings ","}}
+      {{- $cfg := split $cfgs "="}}
+      {{index $cfg 0}} = {{index $cfg 1}}
+      {{- end}}
 {{- end}}
 
   - owner: root:root

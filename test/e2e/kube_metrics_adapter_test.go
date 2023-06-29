@@ -12,7 +12,7 @@ import (
 	rgclient "github.com/szuecs/routegroup-client"
 	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscaling "k8s.io/api/autoscaling/v2beta1"
+	autoscaling "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -133,6 +133,38 @@ var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metri
 		}
 		tc.Run()
 	})
+
+	It("should scale with external metric based on hostname RPS [CustomMetricsAutoscaling] [Zalando]", func() {
+		hostName := fmt.Sprintf("%s-%d.%s", DeploymentName, time.Now().UTC().Unix(), E2EHostedZone())
+
+		initialReplicas := 2
+		scaledReplicas := 1
+		metricValue := 10
+		metricTarget := int64(metricValue) * 2
+		labels := map[string]string{
+			"application": DeploymentName,
+		}
+		port := 80
+		targetPort := 8000
+		targetUrl := hostName + "/metrics"
+		routegroup := createRouteGroup(DeploymentName, hostName, f.Namespace.Name, labels, nil, port)
+		tc := CustomMetricTestCase{
+			framework:       f,
+			kubeClient:      cs,
+			rgClient:        rgcs,
+			jig:             jig,
+			initialReplicas: initialReplicas,
+			scaledReplicas:  scaledReplicas,
+			deployment:      simplePodDeployment(DeploymentName, int32(initialReplicas)),
+			routegroup:      routegroup,
+			hpa:             externalRPSHPA(DeploymentName, hostName, "100", metricTarget),
+			service:         createServiceTypeClusterIP(DeploymentName, labels, 80, targetPort),
+			auxDeployments: []*appsv1.Deployment{
+				createVegetaDeployment(targetUrl, metricValue),
+			},
+		}
+		tc.Run()
+	})
 })
 
 type CustomMetricTestCase struct {
@@ -166,7 +198,6 @@ func (tc *CustomMetricTestCase) Run() {
 		Expect(err).NotTo(HaveOccurred())
 		// Wait for the deployment to run
 		waitForReplicas(deployment.ObjectMeta.Name, tc.framework.Namespace.ObjectMeta.Name, tc.kubeClient, 15*time.Minute, int(*(deployment.Spec.Replicas)))
-
 	}
 
 	// Check if an Ingress needs to be created
@@ -199,7 +230,7 @@ func (tc *CustomMetricTestCase) Run() {
 	}
 
 	// Autoscale the deployment
-	_, err = tc.kubeClient.AutoscalingV2beta1().HorizontalPodAutoscalers(ns).Create(context.TODO(), tc.hpa, metav1.CreateOptions{})
+	_, err = tc.kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).Create(context.TODO(), tc.hpa, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	waitForReplicas(tc.deployment.ObjectMeta.Name, tc.framework.Namespace.ObjectMeta.Name, tc.kubeClient, 15*time.Minute, tc.scaledReplicas)
@@ -233,7 +264,7 @@ func simplePodMetricDeployment(name string, replicas int32, metricName string, m
 		})
 }
 
-// podDeployment is a Deployment of an application that exposes an HTTP endpoint
+// simplePodDeployment is a Deployment of an application that exposes an HTTP endpoint
 func simplePodDeployment(name string, replicas int32) *appsv1.Deployment {
 	podSpec := corev1.PodSpec{Containers: []corev1.Container{}}
 	podSpec.Containers = append(podSpec.Containers, podContainerSpec(name))
@@ -355,8 +386,13 @@ func podMetricHPA(deploymentName string, metricTargets map[string]int64) *autosc
 		metrics = append(metrics, autoscaling.MetricSpec{
 			Type: autoscaling.PodsMetricSourceType,
 			Pods: &autoscaling.PodsMetricSource{
-				MetricName:         metric,
-				TargetAverageValue: *resource.NewQuantity(target, resource.DecimalSI),
+				Metric: autoscaling.MetricIdentifier{
+					Name: metric,
+				},
+				Target: autoscaling.MetricTarget{
+					Type:         autoscaling.AverageValueMetricType,
+					AverageValue: resource.NewQuantity(target, resource.DecimalSI),
+				},
 			},
 		})
 		metricName = metric
@@ -386,6 +422,59 @@ func podMetricHPA(deploymentName string, metricTargets map[string]int64) *autosc
 	}
 }
 
+func externalRPSHPA(deploymentName, host, weight string, target int64) *autoscaling.HorizontalPodAutoscaler {
+	return externalHPA(
+		deploymentName,
+		map[string]int64{"foo": target},
+		map[string]string{
+			"metric-config.external.foo.requests-per-second/hostnames": host,
+			"metric-config.external.foo.requests-per-second/weight":    weight,
+		},
+	)
+}
+
+func externalHPA(deploymentName string, metricNameTargets map[string]int64, annotations map[string]string) *autoscaling.HorizontalPodAutoscaler {
+	var minReplicas int32 = 1
+	metrics := []autoscaling.MetricSpec{}
+	for metricName, target := range metricNameTargets {
+		metrics = append(metrics, autoscaling.MetricSpec{
+			Type: autoscaling.ExternalMetricSourceType,
+			External: &autoscaling.ExternalMetricSource{
+				Metric: autoscaling.MetricIdentifier{
+					Name: metricName,
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"type": "requests-per-second"},
+					},
+				},
+				Target: autoscaling.MetricTarget{
+					Type:         autoscaling.AverageValueMetricType,
+					AverageValue: resource.NewQuantity(target, resource.DecimalSI),
+				},
+			},
+		})
+	}
+
+	return &autoscaling.HorizontalPodAutoscaler{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "custom-metrics-pods-hpa",
+			Labels: map[string]string{
+				"application": deploymentName,
+			},
+			Annotations: annotations,
+		},
+		Spec: autoscaling.HorizontalPodAutoscalerSpec{
+			Metrics:     metrics,
+			MaxReplicas: 3,
+			MinReplicas: &minReplicas,
+			ScaleTargetRef: autoscaling.CrossVersionObjectReference{
+				APIVersion: "apps/v1",
+				Kind:       "Deployment",
+				Name:       deploymentName,
+			},
+		},
+	}
+}
+
 func rpsBasedHPA(deploymentName, name, apiVersion, kind string, metricTarget int64) *autoscaling.HorizontalPodAutoscaler {
 	return podHPA(deploymentName, name, apiVersion, kind, map[string]int64{"requests-per-second": metricTarget})
 }
@@ -397,14 +486,18 @@ func podHPA(deploymentName, name, apiVersion, kind string, metricTargets map[str
 		metrics = append(metrics, autoscaling.MetricSpec{
 			Type: autoscaling.ObjectMetricSourceType,
 			Object: &autoscaling.ObjectMetricSource{
-				MetricName: metric,
-				Target: autoscaling.CrossVersionObjectReference{
+				DescribedObject: autoscaling.CrossVersionObjectReference{
 					APIVersion: apiVersion,
 					Kind:       kind,
 					Name:       name,
 				},
-				TargetValue:  *resource.NewQuantity(target, resource.DecimalSI),
-				AverageValue: resource.NewQuantity(target, resource.DecimalSI),
+				Metric: autoscaling.MetricIdentifier{
+					Name: metric,
+				},
+				Target: autoscaling.MetricTarget{
+					Type:         autoscaling.AverageValueMetricType,
+					AverageValue: resource.NewQuantity(target, resource.DecimalSI),
+				},
 			},
 		})
 	}

@@ -19,7 +19,6 @@ clusters:
     etcd_client_ca_key: "${ETCD_CLIENT_CA_KEY}"
     etcd_scalyr_key: "${ETCD_SCALYR_KEY}"
     docker_meta_url: https://docker-meta.stups-test.zalan.do
-    service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
     lightstep_token: "${LIGHTSTEP_TOKEN}"
     okta_auth_issuer_url: "${OKTA_AUTH_ISSUER_URL}"
@@ -44,6 +43,7 @@ clusters:
     stackset_routegroup_support_enabled: "true"
     stackset_ingress_source_switch_ttl: "1m"
     stackset_legacy_hpa_field_enabled: "true"
+    stackset_legacy_hpa_field_crd_enabled: "true"
     teapot_admission_controller_daemonset_reserved_cpu: "518m"
   criticality_level: 1
   environment: e2e

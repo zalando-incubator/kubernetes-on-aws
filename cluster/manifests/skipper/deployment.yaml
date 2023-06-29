@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.16.25-444" }}
+{{ $internal_version := "v0.16.125-544" }}
 {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
@@ -115,6 +115,8 @@ spec:
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
+          - "-kubernetes-backend-traffic-algorithm={{ .ConfigItems.skipper_ingress_backend_traffic_algorithm }}"
+          - "-kubernetes-default-lb-algorithm={{ .ConfigItems.skipper_ingress_default_lb_algorithm }}"
 {{ end }}
           - "-address=:9999"
           - "-wait-first-route-load"
@@ -209,7 +211,7 @@ spec:
           - "-disabled-filters={{ .ConfigItems.skipper_disabled_filters }}"
 {{ if ne .ConfigItems.skipper_routesrv_enabled "exec" }}
           - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
-  {{ if ne .ConfigItems.skipper_edit_route_placeholders "" }}
+  {{ if .ConfigItems.skipper_edit_route_placeholders }}
           {{ range $placeholder := split .ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
           - '-edit-route={{ $placeholder }}'
           {{ end }}
@@ -236,8 +238,8 @@ spec:
           - "-oauth2-auth-url={{ .ConfigItems.skipper_oauth2_auth_url }}"
           - "-oauth2-token-url={{ .ConfigItems.skipper_oauth2_token_url }}"
           - "-oauth2-secret-file=/etc/skipper/secret/encryption-key"
-          - "-oauth2-client-id-file=/etc/skipper/hostname-credentials/{host}-credentials-employee-client-id"
-          - "-oauth2-client-secret-file=/etc/skipper/hostname-credentials/{host}-credentials-employee-client-secret"
+          - "-oauth2-client-id-file=/etc/skipper/hostname-credentials/{host}-grant-credentials-employee-client-id"
+          - "-oauth2-client-secret-file=/etc/skipper/hostname-credentials/{host}-grant-credentials-employee-client-secret"
           - "-credentials-update-interval=1m"
           - "-oauth2-token-cookie-name={{ .ConfigItems.skipper_oauth2_cookie_name }}"
           - "-oauth2-token-cookie-remove-subdomains=0"
@@ -248,10 +250,10 @@ spec:
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
 {{ end }}
-{{ if ne .ConfigItems.skipper_ingress_inline_routes "" }}
+{{ if .ConfigItems.skipper_ingress_inline_routes }}
           - "-inline-routes={{ .ConfigItems.skipper_ingress_inline_routes }}"
 {{ end }}
-{{ if ne .ConfigItems.skipper_ingress_refuse_payload "" }}
+{{ if .ConfigItems.skipper_ingress_refuse_payload }}
           {{ range $pattern := split .ConfigItems.skipper_ingress_refuse_payload "[cf724afc]" }}
           - "-refuse-payload={{ $pattern }}"
           {{ end }}
@@ -453,6 +455,8 @@ spec:
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
+          - "-kubernetes-backend-traffic-algorithm={{ .ConfigItems.skipper_ingress_backend_traffic_algorithm }}"
+          - "-kubernetes-default-lb-algorithm={{ .ConfigItems.skipper_ingress_default_lb_algorithm }}"
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
 {{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
@@ -469,12 +473,11 @@ spec:
           - "-kubernetes-redis-service-namespace=kube-system"
           - "-kubernetes-redis-service-name=skipper-ingress-redis"
 {{ end }}
-
 {{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
           - "-enable-oauth2-grant-flow"
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
 {{ end }}
-{{ if ne .ConfigItems.skipper_edit_route_placeholders "" }}
+{{ if .ConfigItems.skipper_edit_route_placeholders }}
           {{ range $placeholder := split .ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
           - '-edit-route={{ $placeholder }}'
           {{ end }}
