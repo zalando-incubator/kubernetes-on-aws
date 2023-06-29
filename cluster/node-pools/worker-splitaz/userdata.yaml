@@ -117,12 +117,21 @@ write_files:
           cacheUnauthorizedTTL: "30s"
       protectKernelDefaults: true
 
-{{- if ( and ( ne .Cluster.ConfigItems.vm_dirty_background_bytes "" ) ( ne .Cluster.ConfigItems.vm_dirty_bytes "" ) )}}
+{{- if and .Cluster.ConfigItems.vm_dirty_background_bytes .Cluster.ConfigItems.vm_dirty_bytes }}
   - owner: root:root
     path: /etc/sysctl.d/03-vm-dirty-ratios.conf
     content: |
       vm.dirty_background_bytes = {{ .Cluster.ConfigItems.vm_dirty_background_bytes }}
       vm.dirty_bytes = {{ .Cluster.ConfigItems.vm_dirty_bytes }}
+{{- end}}
+{{- if .NodePool.ConfigItems.sysctl_settings}}
+  - owner: root:root
+    path: /etc/sysctl.d/99-custom-sysctl-settings.conf
+    content: |
+      {{- range $i, $cfgs := split .NodePool.ConfigItems.sysctl_settings ","}}
+      {{- $cfg := split $cfgs "="}}
+      {{index $cfg 0}} = {{index $cfg 1}}
+      {{- end}}
 {{- end}}
 
   - owner: root:root

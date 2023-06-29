@@ -32,11 +32,14 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: container-registry.zalando.net/teapot/external-dns:v0.13.4-master-36
+        image: container-registry.zalando.net/teapot/external-dns:v0.13.5-master-37
         args:
         - --source=service
         - --source=ingress
         - --source=skipper-routegroup
+{{- range split .ConfigItems.external_dns_domain_filter "," }}
+        - --domain-filter={{ . }}
+{{- end }}
 {{- range split .ConfigItems.external_dns_excluded_domains "," }}
         - --exclude-domains={{ . }}
 {{- end }}
@@ -64,3 +67,6 @@ spec:
           runAsUser: 65534
           capabilities:
             drop: ["ALL"]
+        env:
+        - name: AWS_REGION
+          value: {{ .Region }}

@@ -55,10 +55,6 @@ export MASTER_INSTANCE_FAMILY="${MASTER_INSTANCE_FAMILY:-"m5a"}"
 export WORKER_INSTANCE_FAMILY="${WORKER_INSTANCE_FAMILY:-"m5"}"
 export SKIPPER_INGRESS_INSTANCE_TYPES="${SKIPPER_INGRESS_INSTANCE_TYPES:-"\"c5.large\", \"c5a.large\", \"m5a.large\", \"m5.large\", \"t3.large\""}"
 
-# Generate a new key for this E2E run
-SERVICE_ACCOUNT_PRIVATE_KEY="$(openssl genrsa | base64 | tr -d '\n')"
-export SERVICE_ACCOUNT_PRIVATE_KEY
-
 # create kubeconfig
 cat >kubeconfig <<EOF
 apiVersion: v1

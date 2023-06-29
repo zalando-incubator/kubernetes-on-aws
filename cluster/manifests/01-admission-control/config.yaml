@@ -20,7 +20,7 @@ data:
   pod.service-account-iam.enable: "true"
   pod.service-account-iam.base-aws-account-id: "{{ accountID .Cluster.InfrastructureAccount }}"
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
-  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-130"
+  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-173"
 {{- end }}
   pod.env-inject.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables }}"
   pod.env-inject.variable._PLATFORM_ACCOUNT: "{{ .Cluster.Alias }}"
@@ -95,7 +95,7 @@ data:
   pod.automatic-topology-spread.mode: "{{ .Cluster.ConfigItems.teapot_admission_controller_topology_spread }}"
   pod.automatic-topology-spread.timeout: "{{ .Cluster.ConfigItems.teapot_admission_controller_topology_spread_timeout }}"
 {{- range $group, $enabled := zoneDistributedNodePoolGroups .Cluster.NodePools }}
-{{- if eq $group "" }}
+{{- if not $group }}
   pod.automatic-topology-spread.pools.default: "{{ $enabled }}"
 {{- else }}
   pod.automatic-topology-spread.pools.dedicated.{{$group}}: "{{ $enabled }}"
@@ -104,7 +104,7 @@ data:
 
   pod.az-block.zone-name: "{{ .Cluster.ConfigItems.blocked_availability_zone }}"
 {{- range $group, $enabled := zoneDistributedNodePoolGroups .Cluster.NodePools }}
-{{- if eq $group "" }}
+{{- if not $group }}
   pod.az-block.pools.default: "{{ $enabled }}"
 {{- else }}
   pod.az-block.pools.dedicated.{{$group}}: "{{ $enabled }}"

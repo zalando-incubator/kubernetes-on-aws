@@ -946,7 +946,7 @@ Resources:
               AWS:
                 - !GetAtt DeploymentControllerRole.Arn
                 - !GetAtt DeploymentStatusServiceRole.Arn
-{{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
+{{- if .Cluster.ConfigItems.deployment_service_api_role_arn }}
           - Action:
               - s3:PutObject
               - s3:PutObjectAcl
@@ -967,7 +967,7 @@ Resources:
                 aws:PrincipalArn:
                   - !GetAtt DeploymentControllerRole.Arn
                   - !GetAtt DeploymentStatusServiceRole.Arn
-{{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
+{{- if .Cluster.ConfigItems.deployment_service_api_role_arn }}
                   - "{{.Cluster.ConfigItems.deployment_service_api_role_arn}}"
 {{- end }}
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
@@ -1614,7 +1614,7 @@ Resources:
               - Action: 's3:ListBucket'
                 Effect: Allow
                 Resource: '*'
-          {{if ne "" .Cluster.ConfigItems.zmon_accessible_s3_buckets}}
+          {{if .Cluster.ConfigItems.zmon_accessible_s3_buckets}}
               {{range $bucket := split .Cluster.ConfigItems.zmon_accessible_s3_buckets ","}}
               - Action: 's3:GetObject'
                 Effect: Allow
@@ -1703,7 +1703,7 @@ Resources:
             - Action: ["s3:PutObject"]
               Effect: "Allow"
               Resource: 'arn:aws:s3:::{{.Cluster.ConfigItems.logging_s3_bucket}}/*'
-{{- if ne .Cluster.ConfigItems.logging_infrastructure_s3_bucket "" }}
+{{- if .Cluster.ConfigItems.logging_infrastructure_s3_bucket }}
         - PolicyName: AllowCentralTelemetryInfrastructureS3BucketAccess
           PolicyDocument:
             Version: "2012-10-17"
@@ -1855,7 +1855,7 @@ Resources:
 
   {{ if eq .Cluster.Environment "e2e" }}
 # This is a hack to easily create an aws iam role and s3 bucket for testing
-  # AWS IAM intergration in e2e tests.
+  # AWS IAM integration in e2e tests.
   E2EAWSIAMTestRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1913,6 +1913,7 @@ Resources:
       VersioningConfiguration:
         Status: Suspended
 {{ end }}
+
   AuditTrailBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
@@ -1960,7 +1961,7 @@ Resources:
                 - "${BucketArn}/*"
                 - BucketArn: !GetAtt AuditTrailBucket.Arn
 
-{{- if ne .Cluster.ConfigItems.audittrail_root_account_role "" }}
+{{- if .Cluster.ConfigItems.audittrail_root_account_role }}
           # Central access
           - Action:
               - s3:ListBucket
@@ -2066,11 +2067,13 @@ Resources:
                 Effect: Allow
                 Resource:
                   - !GetAtt AuditTrailBucket.Arn
+                  - arn:aws:s3:::zalando-audittrail-central
 
               - Action:
                   - s3:PutObject
                 Effect: Allow
                 Resource:
+                  - arn:aws:s3:::zalando-audittrail-central/*
                   - !Sub
                     - "${BucketArn}/*"
                     - BucketArn: !GetAtt AuditTrailBucket.Arn
@@ -2083,13 +2086,6 @@ Resources:
     Properties:
       AWSServiceName: "dynamodb.application-autoscaling.amazonaws.com"
       Description: "AWS service role for application autoscaling DynamoDB"
-    Type: "AWS::IAM::ServiceLinkedRole"
-{{- end }}
-{{- if eq .Cluster.ConfigItems.quotas_service_link_enabled "true" }}
-  ServiceLinkedRoleServiceQuotas:
-    Properties:
-      AWSServiceName: "servicequotas.amazonaws.com"
-      Description: "AWS service role for Service Quotas"
     Type: "AWS::IAM::ServiceLinkedRole"
 {{- end }}
   RemoteFilesEncryptionKey:
