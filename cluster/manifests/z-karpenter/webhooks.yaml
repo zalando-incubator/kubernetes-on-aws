@@ -49,14 +49,14 @@ webhooks:
         app.kubernetes.io/part-of: karpenter
 ---
 apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
+kind: MutatingWebhookConfiguration
 metadata:
-  name: validation.webhook.karpenter.k8s.aws
+  name: defaulting.webhook.karpenter.k8s.aws
   labels:
     application: kubernetes
     component: karpenter
 webhooks:
-  - name: validation.webhook.karpenter.k8s.aws
+  - name: defaulting.webhook.karpenter.k8s.aws
     admissionReviewVersions: ["v1"]
     clientConfig:
       service:
@@ -88,14 +88,14 @@ webhooks:
           - UPDATE
 ---
 apiVersion: admissionregistration.k8s.io/v1
-kind: MutatingWebhookConfiguration
+kind: ValidatingWebhookConfiguration
 metadata:
-  name: defaulting.webhook.karpenter.k8s.aws
+  name: validation.webhook.karpenter.k8s.aws
   labels:
     application: kubernetes
     component: karpenter
 webhooks:
-  - name: defaulting.webhook.karpenter.k8s.aws
+  - name: validation.webhook.karpenter.k8s.aws
     admissionReviewVersions: ["v1"]
     clientConfig:
       service:
