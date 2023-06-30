@@ -34,13 +34,9 @@ spec:
       securityContext:
         fsGroup: 1000
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
-      tolerations:
-      - key: node.kubernetes.io/role
-        value: master
-        effect: NoSchedule
       containers:
         - name: controller
-          image: "container-registry.zalando.net/teapot/karpenter-controller:v0.27.3-main-9"
+          image: "container-registry.zalando.net/teapot/karpenter:networkinterfaces-experimental-main-10@sha256:c1aa11c813f3ef2133eb9126e4c383fa838bf80caeb93d2d1cadfe02e8c1c8e5"
           env:
             - name: KUBERNETES_MIN_VERSION
               value: "1.22.0-0"
@@ -49,7 +45,7 @@ spec:
             - name: WEBHOOK_PORT
               value: "8443"
             - name: METRICS_PORT
-              value: "8080"
+              value: "8000"
             - name: HEALTH_PROBE_PORT
               value: "8081"
             - name: SYSTEM_NAMESPACE
@@ -64,7 +60,7 @@ spec:
                   resource: limits.memory
           ports:
             - name: http-metrics
-              containerPort: 8080
+              containerPort: 8000
               protocol: TCP
             - name: http
               containerPort: 8081
@@ -90,4 +86,30 @@ spec:
             limits:
               cpu: "{{ .Cluster.ConfigItems.karpenter_controller_cpu }}"
               memory: "{{ .Cluster.ConfigItems.karpenter_controller_memory }}"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: karpenter.sh/provisioner-name
+                operator: DoesNotExist
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                deployment: karpenter
+            topologyKey: kubernetes.io/hostname
+#      topologySpreadConstraints:
+#        - labelSelector:
+#            matchLabels:
+#              deployment: karpenter
+#          maxSkew: 1
+#          topologyKey: topology.kubernetes.io/zone
+#          whenUnsatisfiable: ScheduleAnyway
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - key: node.kubernetes.io/role
+          value: master
+          effect: NoSchedule
 {{ end }}

@@ -946,7 +946,7 @@ Resources:
               AWS:
                 - !GetAtt DeploymentControllerRole.Arn
                 - !GetAtt DeploymentStatusServiceRole.Arn
-{{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
+{{- if .Cluster.ConfigItems.deployment_service_api_role_arn }}
           - Action:
               - s3:PutObject
               - s3:PutObjectAcl
@@ -967,7 +967,7 @@ Resources:
                 aws:PrincipalArn:
                   - !GetAtt DeploymentControllerRole.Arn
                   - !GetAtt DeploymentStatusServiceRole.Arn
-{{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
+{{- if .Cluster.ConfigItems.deployment_service_api_role_arn }}
                   - "{{.Cluster.ConfigItems.deployment_service_api_role_arn}}"
 {{- end }}
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
@@ -1614,7 +1614,7 @@ Resources:
               - Action: 's3:ListBucket'
                 Effect: Allow
                 Resource: '*'
-          {{if ne "" .Cluster.ConfigItems.zmon_accessible_s3_buckets}}
+          {{if .Cluster.ConfigItems.zmon_accessible_s3_buckets}}
               {{range $bucket := split .Cluster.ConfigItems.zmon_accessible_s3_buckets ","}}
               - Action: 's3:GetObject'
                 Effect: Allow
@@ -1703,7 +1703,7 @@ Resources:
             - Action: ["s3:PutObject"]
               Effect: "Allow"
               Resource: 'arn:aws:s3:::{{.Cluster.ConfigItems.logging_s3_bucket}}/*'
-{{- if ne .Cluster.ConfigItems.logging_infrastructure_s3_bucket "" }}
+{{- if .Cluster.ConfigItems.logging_infrastructure_s3_bucket }}
         - PolicyName: AllowCentralTelemetryInfrastructureS3BucketAccess
           PolicyDocument:
             Version: "2012-10-17"
@@ -1961,7 +1961,7 @@ Resources:
                 - "${BucketArn}/*"
                 - BucketArn: !GetAtt AuditTrailBucket.Arn
 
-{{- if ne .Cluster.ConfigItems.audittrail_root_account_role "" }}
+{{- if .Cluster.ConfigItems.audittrail_root_account_role }}
           # Central access
           - Action:
               - s3:ListBucket
@@ -2067,39 +2067,6 @@ Resources:
                 Effect: Allow
                 Resource:
                   - !GetAtt AuditTrailBucket.Arn
-
-              - Action:
-                  - s3:PutObject
-                Effect: Allow
-                Resource:
-                  - !Sub
-                    - "${BucketArn}/*"
-                    - BucketArn: !GetAtt AuditTrailBucket.Arn
-            Version: 2012-10-17
-          PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
-    Type: 'AWS::IAM::Role'
-  AudittrailAdapterCentralIAMRole:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:audittrail-adapter"
-        Version: 2012-10-17
-      Path: /
-      Policies:
-        - PolicyDocument:
-            Statement:
-              - Action:
-                  - s3:ListBucket
-                Effect: Allow
-                Resource:
                   - arn:aws:s3:::zalando-audittrail-central
 
               - Action:
@@ -2107,9 +2074,12 @@ Resources:
                 Effect: Allow
                 Resource:
                   - arn:aws:s3:::zalando-audittrail-central/*
+                  - !Sub
+                    - "${BucketArn}/*"
+                    - BucketArn: !GetAtt AuditTrailBucket.Arn
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "zalando-audittrail-adapter-central-{{.Cluster.LocalID}}"
+      RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
     Type: 'AWS::IAM::Role'
 {{- if eq .Cluster.ConfigItems.dynamodb_service_link_enabled "true" }}
   ServiceLinkedRoleAutoScalingDynamoDB:
