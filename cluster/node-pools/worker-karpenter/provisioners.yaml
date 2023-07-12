@@ -15,14 +15,8 @@ spec:
     enabled: true
     {{- end }}
   requirements:
-{{- if .NodePool.InstanceTypes }}
-    - key: "node.kubernetes.io/instance-type"
-      operator: In
-      values:
-{{- range $type := .NodePool.InstanceTypes }}
-      - "{{ $type }}"
-{{- end }}
-{{- else }}
+{{- if (eq (len .NodePool.InstanceTypes) 1) && (eq (index .NodePool.InstanceTypes 0) "default-for-karpenter") }}
+
     - key: "karpenter.k8s.aws/instance-family"
       operator: In
       values:
@@ -48,6 +42,13 @@ spec:
       operator: "NotIn"
       values:
         - "metal"
+{{- else }}
+    - key: "node.kubernetes.io/instance-type"
+      operator: In
+      values:
+      {{- range $type := .NodePool.InstanceTypes }}
+      - "{{ $type }}"
+      {{- end }}
 {{- end }}
     - key: "karpenter.sh/capacity-type"
       operator: In
