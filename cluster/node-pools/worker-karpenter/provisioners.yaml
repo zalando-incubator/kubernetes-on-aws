@@ -15,8 +15,7 @@ spec:
     enabled: true
     {{- end }}
   requirements:
-{{- if (eq (len .NodePool.InstanceTypes) 1) && (eq (index .NodePool.InstanceTypes 0) "default-for-karpenter") }}
-
+{{- if and (eq (len .NodePool.InstanceTypes) 1) (eq (index .NodePool.InstanceTypes 0) "default-for-karpenter") }}
     - key: "karpenter.k8s.aws/instance-family"
       operator: In
       values:
