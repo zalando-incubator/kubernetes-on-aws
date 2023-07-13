@@ -15,13 +15,41 @@ spec:
     enabled: true
     {{- end }}
   requirements:
+{{- if and (eq (len .NodePool.InstanceTypes) 1) (eq (index .NodePool.InstanceTypes 0) "default-for-karpenter") }}
+    - key: "karpenter.k8s.aws/instance-family"
+      operator: In
+      values:
+        - "c5"
+        - "m5"
+        - "r5"
+        - "c5d"
+        - "m5d"
+        - "r5d"
+        - "c5n"
+        - "m5n"
+        - "r5n"
+        - "c6i"
+        - "m6i"
+        - "r6i"
+        - "c6id"
+        - "m6id"
+        - "r6id"
+        - "c6in"
+        - "m6in"
+        - "r6in"
+    - key: "karpenter.k8s.aws/instance-size"
+      operator: "NotIn"
+      values:
+        - "metal"
+{{- else }}
     - key: "node.kubernetes.io/instance-type"
       operator: In
       values:
-{{- range $type := .NodePool.InstanceTypes }}
+      {{- range $type := .NodePool.InstanceTypes }}
       - "{{ $type }}"
+      {{- end }}
 {{- end }}
-    - key: karpenter.sh/capacity-type
+    - key: "karpenter.sh/capacity-type"
       operator: In
       values:
         - "spot"
