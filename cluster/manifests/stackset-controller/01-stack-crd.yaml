@@ -260,6 +260,17 @@ spec:
                           - name
                           - region
                           type: object
+                        requestsPerSecond:
+                          description: MetricRequestsPerSecond specifies basic information
+                            to scale based on on external RPS metric.
+                          properties:
+                            hostnames:
+                              items:
+                                type: string
+                              type: array
+                          required:
+                          - hostnames
+                          type: object
                         scalingSchedule:
                           description: MetricsScalingSchedule specifies the ScalingSchedule
                             object which should be used for scaling.
@@ -1645,14 +1656,6 @@ spec:
                                                   and DoesNotExist.
                                                 type: string
                                               values:
-                                                description: values is an array of
-                                                  string values. If the operator is
-                                                  In or NotIn, the values array must
-                                                  be non-empty. If the operator is
-                                                  Exists or DoesNotExist, the values
-                                                  array must be empty. This array
-                                                  is replaced during a strategic merge
-                                                  patch.
                                                 items:
                                                   type: string
                                                 type: array

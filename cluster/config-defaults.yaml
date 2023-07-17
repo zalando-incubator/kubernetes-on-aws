@@ -286,11 +286,8 @@ skipper_ingress_backend_traffic_algorithm: "traffic-predicate"
 skipper_ingress_backend_traffic_algorithm: "traffic-segment-predicate"
 {{end}}
 
-{{ if eq .Cluster.Environment "test" }}
+# TODO: after a while we can remove this and hardcode (2023-06-30)
 skipper_ingress_default_lb_algorithm: "powerOfRandomNChoices"
-{{ else }}
-skipper_ingress_default_lb_algorithm: "roundRobin"
-{{end}}
 
 #
 # FabricGateway controller config
@@ -304,6 +301,7 @@ fabric_gateway_controller_cpu: "50m"
 fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_crd_v1_enabled: "false"
 fabric_gateway_controller_allow_all_filters: "false"
+fabric_gateway_controller_ssl_policy: ""
 
 # kube-api-server settings
 
@@ -595,8 +593,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
 kuberuntu_image_v1_22_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-amd64-master-243" "861068367966" }}
 kuberuntu_image_v1_22_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-arm64-master-243" "861068367966" }}
-kuberuntu_image_v1_23_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.23.17-amd64-master-256" "861068367966" }}
-kuberuntu_image_v1_23_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.23.17-arm64-master-256" "861068367966" }}
+kuberuntu_image_v1_23_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.23.17-amd64-master-273" "861068367966" }}
+kuberuntu_image_v1_23_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.23.17-arm64-master-273" "861068367966" }}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -855,7 +853,7 @@ observability_metrics_endpoint: "ingest.lightstep.com"
 observability_metrics_port: "443"
 
 # labels whitelisted to kube-state-metrics
-observability_metrics_pods_labels: "application,component"
+observability_metrics_pods_labels: "application,component,version,stack_name,stack_version,application_id,application_version,team"
 observability_metrics_ingresses_labels: ""
 
 # opentelemetry collector
