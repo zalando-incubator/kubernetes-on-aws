@@ -1750,7 +1750,6 @@ Resources:
       RoleName: "{{.Cluster.LocalID}}-kube-metrics-adapter"
     Type: 'AWS::IAM::Role'
 
-{{- if eq .Cluster.ConfigItems.enable_csi "true" }}
   EBSCSIControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1851,7 +1850,6 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-ebs-csi-controller"
     Type: 'AWS::IAM::Role'
-{{- end }}
 
   {{ if eq .Cluster.Environment "e2e" }}
 # This is a hack to easily create an aws iam role and s3 bucket for testing
