@@ -92,11 +92,18 @@ spec:
               memory: "{{ .Cluster.ConfigItems.karpenter_controller_memory }}"
       affinity:
         nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: karpenter.sh/provisioner-name
-                operator: DoesNotExist
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 50
+              preference:
+                matchExpressions:
+                - key: karpenter.sh/provisioner-name
+                  operator: DoesNotExist
+            - weight: 100
+              preference:
+                matchExpressions:
+                - key: node.kubernetes.io/role
+                  operator: Equals
+                  value: master
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
