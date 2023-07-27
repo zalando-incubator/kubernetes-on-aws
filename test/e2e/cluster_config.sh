@@ -58,6 +58,8 @@ clusters:
     profile: master-default
     min_size: 1
     max_size: 2
+    config_items:
+      kuberuntu_distro: jammy
   - discount_strategy: none
     instance_types: ["m5.xlarge"]
     name: default-worker-splitaz
