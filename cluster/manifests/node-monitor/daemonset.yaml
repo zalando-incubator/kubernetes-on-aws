@@ -31,7 +31,9 @@ spec:
       serviceAccountName: node-monitor
       containers:
         - name: cadvisor
-          image: container-registry.zalando.net/teapot/cadvisor:v0.47.0-master-11
+          # from: https://github.com/google/cadvisor/issues/2785#issuecomment-1204680206
+          image: gcr.io/cadvisor/cadvisor:v0.45.0-containerd-cri
+          # container-registry.zalando.net/teapot/cadvisor:v0.47.0-master-11
           args:
             - --port=9101
 {{- if eq .Cluster.ConfigItems.cadvisor_profiling_enabled "true" }}
