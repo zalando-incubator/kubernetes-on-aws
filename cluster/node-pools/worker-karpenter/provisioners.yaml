@@ -111,7 +111,7 @@ metadata:
 spec:
   amiFamily: Custom
   amiSelector:
-    aws-ids: "{{ .Cluster.ConfigItems.kuberuntu_image_v1_23_amd64  }},{{ .Cluster.ConfigItems.kuberuntu_image_v1_23_arm64 }}"
+    aws-ids: "{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_23_" .NodePool.ConfigItems.kuberuntu_distro_worker "_amd64")  }},{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_23_" .NodePool.ConfigItems.kuberuntu_distro_worker "_arm64") }}"
   metadataOptions:
     httpTokens: optional
   subnetSelector:
