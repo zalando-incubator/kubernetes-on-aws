@@ -28,7 +28,7 @@ cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
 cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
 
 # karpenter settings
-karpenter_controller_cpu: "250m"
+karpenter_controller_cpu: "170m"
 karpenter_controller_memory: "250Mi"
 
 # ALB config created by kube-aws-ingress-controller
@@ -595,11 +595,17 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
 kuberuntu_image_v1_23_focal_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.23.17-amd64-master-273" "861068367966" }}
 kuberuntu_image_v1_23_focal_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.23.17-arm64-master-273" "861068367966" }}
-kuberuntu_image_v1_23_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.23.17-amd64-master-273" "861068367966" }}
-kuberuntu_image_v1_23_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.23.17-arm64-master-273" "861068367966" }}
+kuberuntu_image_v1_23_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.23.17-amd64-master-279" "861068367966" }}
+kuberuntu_image_v1_23_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.23.17-arm64-master-279" "861068367966" }}
 
 # Which distro from the previous config items should be used. Valid options are `focal` and `jammy`. Can be set for each node pool.
-kuberuntu_distro: "focal"
+{{if eq .Cluster.Environment "test"}}
+kuberuntu_distro_master: "jammy"
+kuberuntu_distro_worker: "focal"
+{{else}}
+kuberuntu_distro_master: "focal"
+kuberuntu_distro_worker: "focal"
+{{end}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
