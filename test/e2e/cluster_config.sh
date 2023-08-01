@@ -45,6 +45,7 @@ clusters:
     stackset_legacy_hpa_field_enabled: "true"
     stackset_legacy_hpa_field_crd_enabled: "true"
     teapot_admission_controller_daemonset_reserved_cpu: "518m"
+    karpenter_pools_enabled: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
@@ -139,6 +140,15 @@ clusters:
     config_items:
       labels: dedicated=node-reboot-tests
       taints: dedicated=node-reboot-tests:NoSchedule
+  - discount_strategy: none
+    instance_types: ["default-for-karpenter"]
+    min_size: 0
+    max_size: 0
+    profile: worker-karpenter
+    name: worker-karpenter
+    config_items:
+      labels: dedicated=worker-karpenter
+      taints: dedicated=worker-karpenter:NoSchedule
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'
