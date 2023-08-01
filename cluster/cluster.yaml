@@ -2066,12 +2066,22 @@ Resources:
                 Resource:
                   - !GetAtt AuditTrailBucket.Arn
                   - arn:aws:s3:::zalando-audittrail-central
+                    {{- if .Environment "production" }}
+                  - arn:aws:s3:::zalando-kubernetes-audit
+                    {{- else }}
+                  - arn:aws:s3:::zalando-kubernetes-audit-test
+                    {{- end }}
 
               - Action:
                   - s3:PutObject
                 Effect: Allow
                 Resource:
                   - arn:aws:s3:::zalando-audittrail-central/*
+                    {{- if .Environment "production" }}
+                  - arn:aws:s3:::zalando-kubernetes-audit/*
+                    {{- else }}
+                  - arn:aws:s3:::zalando-kubernetes-audit-test/*
+                    {{- end }}
                   - !Sub
                     - "${BucketArn}/*"
                     - BucketArn: !GetAtt AuditTrailBucket.Arn
