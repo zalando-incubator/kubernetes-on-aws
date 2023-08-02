@@ -568,7 +568,11 @@ etcd_instance_type: "t3.medium"
 {{end}}
 
 etcd_scalyr_key: ""
+{{if eq .Cluster.Environment "test"}}
+etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.9-amd64-main-15" "861068367966"}}
+{{else}}
 etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.4.16-amd64-main-10" "861068367966"}}
+{{end}}
 
 dynamodb_service_link_enabled: "false"
 
