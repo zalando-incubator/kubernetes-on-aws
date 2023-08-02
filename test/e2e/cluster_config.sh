@@ -149,6 +149,15 @@ clusters:
     config_items:
       labels: dedicated=worker-karpenter
       taints: dedicated=worker-karpenter:NoSchedule
+  - discount_strategy: none
+    instance_types: ["m6g.large"]
+    min_size: 0
+    max_size: 3
+    profile: worker-splitaz
+    name: worker-arm64
+    config_items:
+      labels: dedicated=worker-arm64
+      taints: dedicated=worker-arm64:NoSchedule
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'
