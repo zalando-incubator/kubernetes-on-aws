@@ -1,5 +1,5 @@
 {{ if eq .Environment "e2e" }}
-{{ range $pool := split "default-worker-splitaz,worker-limit-az,worker-combined,worker-instance-storage,worker-node-tests,worker-karpenter" "," }}
+{{ range $pool := split "default-worker-splitaz,worker-limit-az,worker-combined,worker-instance-storage,worker-node-tests,worker-karpenter,worker-arm64" "," }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -37,6 +37,11 @@ spec:
         - effect: NoSchedule
           key: dedicated
           value: worker-karpenter
+      {{ end }}
+      {{ if eq $pool "worker-arm64" }}
+        - effect: NoSchedule
+          key: dedicated
+          value: worker-arm64
       {{ end }}
       terminationGracePeriodSeconds: 0
       containers:
