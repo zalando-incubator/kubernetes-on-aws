@@ -89,7 +89,7 @@ var _ = describe("Image Policy Tests (Deployment)", func() {
 		err = waitForDeploymentWithCondition(cs, namespace, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -148,7 +148,7 @@ var _ = describe("Image Policy Tests (Deployment) (when disabled)", func() {
 		err = waitForDeploymentWithCondition(cs, namespace, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
@@ -180,7 +180,7 @@ var _ = describe("Image Policy Tests (Pods)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -224,7 +224,7 @@ var _ = describe("Image Policy Tests (Pods) (when disabled)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
@@ -256,7 +256,7 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Updating pod " + namePrefix + " in namespace " + namespace)
@@ -269,7 +269,7 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 		_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -291,7 +291,7 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
@@ -333,7 +333,7 @@ var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func()
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 
 		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
@@ -346,7 +346,7 @@ var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func()
 		_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
@@ -379,9 +379,9 @@ var _ = describe("Image Policy Tests (StatefulSet)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		statefulset.WaitForRunningAndReady(cs, int32(replicas), statefulSet)
+		statefulset.WaitForRunningAndReady(context.TODO(), cs, int32(replicas), statefulSet)
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -404,7 +404,7 @@ var _ = describe("Image Policy Tests (StatefulSet)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(MatchRegexp(`timed out while waiting for at least 1 pods to be running and ready \(matched 0\)`))
 	})
@@ -438,9 +438,9 @@ var _ = describe("Image Policy Tests (StatefulSet) (when disabled)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		statefulset.WaitForRunningAndReady(cs, int32(replicas), statefulSet)
+		statefulset.WaitForRunningAndReady(context.TODO(), cs, int32(replicas), statefulSet)
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
@@ -472,7 +472,7 @@ var _ = describe("Image Policy Tests (Job)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		job.WaitForJobComplete(cs, namespace, jobObj.Name, 1)
+		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, 1)
 	})
 
 	It("Should not create Job using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
@@ -493,7 +493,7 @@ var _ = describe("Image Policy Tests (Job)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		job.WaitForJobComplete(cs, namespace, jobObj.Name, 1)
+		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, 1)
 	})
 })
 
@@ -524,7 +524,7 @@ var _ = describe("Image Policy Tests (Job) (when disabled)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		job.WaitForJobComplete(cs, namespace, jobObj.Name, 1)
+		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, 1)
 	})
 })
 
@@ -558,7 +558,7 @@ var _ = describe("ECR Registry Pull", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		job.WaitForJobComplete(cs, namespace, jobObj.Name, 1)
+		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, 1)
 	})
 
 	It("Should run a Job using a vanity image from the staging registry [ECR] [Zalando]", func() {
@@ -582,6 +582,6 @@ var _ = describe("ECR Registry Pull", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		job.WaitForJobComplete(cs, namespace, jobObj.Name, 1)
+		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, 1)
 	})
 })
