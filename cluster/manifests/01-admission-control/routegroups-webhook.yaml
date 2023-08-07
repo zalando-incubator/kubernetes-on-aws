@@ -18,4 +18,16 @@ webhooks:
     admissionReviewVersions: ["v1"]
     sideEffects: None
     timeoutSeconds: 5
+  - name: "ingress-admitter.teapot.zalan.do"
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["networking.k8s.io"]
+        apiVersions: ["v1"]
+        resources: ["ingresses"]
+    clientConfig:
+      url: "https://localhost:9085/ingresses"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    timeoutSeconds: 5 
 {{ end }}
