@@ -1,11 +1,11 @@
-{{ if eq .Cluster.ConfigItems.routegroups_validation "enabled" }}
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: "routegroup-admitter.teapot.zalan.do"
+  name: "skipper-admitter.teapot.zalan.do"
   labels:
-    application: routegroups-admission-webhook
+    application: skipper-admission-webhook
 webhooks:
+{{ if eq .Cluster.ConfigItems.routegroups_validation "enabled" }}
   - name: "routegroup-admitter.teapot.zalan.do"
     rules:
       - operations: ["CREATE", "UPDATE"]
@@ -18,6 +18,7 @@ webhooks:
     admissionReviewVersions: ["v1"]
     sideEffects: None
     timeoutSeconds: 5
+{{ end }}
   - name: "ingress-admitter.teapot.zalan.do"
     rules:
       - operations: ["CREATE", "UPDATE"]
@@ -30,4 +31,3 @@ webhooks:
     admissionReviewVersions: ["v1"]
     sideEffects: None
     timeoutSeconds: 5 
-{{ end }}
