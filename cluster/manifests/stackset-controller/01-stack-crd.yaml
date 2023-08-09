@@ -837,6 +837,7 @@ spec:
                 type: object
 # {{ end }}
               ingress:
+# {{ if eq .Cluster.ConfigItems.stackset_ingress_in_stack_crd "true" }}
                 description: Stack specific Ingress, based on the parent StackSet
                   at creation time.
                 properties:
@@ -870,6 +871,40 @@ spec:
                 - backendPort
                 - hosts
                 type: object
+# {{ else }}
+                description: Settings for the per-stack ingresses (in case the StackSet
+                  has a configured ingress)
+                properties:
+                  enabled:
+                    description: Whether to enable per-stack ingresses or routegroups.
+                      Defaults to enabled if unset.
+                    type: boolean
+                  hosts:
+                    description: Hostnames to use for the per-stack ingresses (or
+                      route groups). These must contain the special $(STACK_NAME)
+                      token, which will be replaced with the stack's name. Would be
+                      automatically generated based on the hosts in the ingress/routegroup
+                      entry if unset.
+                    items:
+                      type: string
+                    type: array
+                  metadata:
+                    description: EmbeddedObjectMetaWithAnnotations defines the metadata
+                      which can be attached to a resource. It's a slimmed down version
+                      of metav1.ObjectMeta only containing annotations.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: 'Annotations is an unstructured key value map
+                          stored with a resource that may be set by external tools
+                          to store and retrieve arbitrary metadata. They are not queryable
+                          and should be preserved when modifying objects. More info:
+                          http://kubernetes.io/docs/user-guide/annotations'
+                        type: object
+                    type: object
+                type: object
+# {{ end }}
               minReadySeconds:
                 description: Minimum number of seconds for which a newly created pod
                   should be ready without any of its container crashing, for it to
@@ -7654,6 +7689,7 @@ spec:
                 format: int32
                 type: integer
               routegroup:
+# {{ if eq .Cluster.ConfigItems.stackset_ingress_in_stack_crd "true" }}
                 description: Stack specific RouteGroup, based on the parent StackSet
                   at creation time.
                 properties:
@@ -7807,6 +7843,40 @@ spec:
                 - hosts
                 - routes
                 type: object
+# {{ else }}
+                description: Settings for the per-stack route groups (in case the
+                  StackSet has a configured RouteGroup)
+                properties:
+                  enabled:
+                    description: Whether to enable per-stack ingresses or routegroups.
+                      Defaults to enabled if unset.
+                    type: boolean
+                  hosts:
+                    description: Hostnames to use for the per-stack ingresses (or
+                      route groups). These must contain the special $(STACK_NAME)
+                      token, which will be replaced with the stack's name. Would be
+                      automatically generated based on the hosts in the ingress/routegroup
+                      entry if unset.
+                    items:
+                      type: string
+                    type: array
+                  metadata:
+                    description: EmbeddedObjectMetaWithAnnotations defines the metadata
+                      which can be attached to a resource. It's a slimmed down version
+                      of metav1.ObjectMeta only containing annotations.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: 'Annotations is an unstructured key value map
+                          stored with a resource that may be set by external tools
+                          to store and retrieve arbitrary metadata. They are not queryable
+                          and should be preserved when modifying objects. More info:
+                          http://kubernetes.io/docs/user-guide/annotations'
+                        type: object
+                    type: object
+                type: object
+# {{ end }}
               service:
                 description: Service can be used to configure a custom service, if
                   not set stackset-controller will generate a service based on container
