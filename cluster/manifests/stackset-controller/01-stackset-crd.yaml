@@ -1123,6 +1123,7 @@ spec:
                         - maxReplicas
                         type: object
 # {{ end }}
+# {{ if ne .Cluster.ConfigItems.stackset_ingress_in_stack_crd "true" }}
                       ingress:
                         description: Settings for the per-stack ingresses (in case
                           the StackSet has a configured ingress)
@@ -1157,6 +1158,7 @@ spec:
                                 type: object
                             type: object
                         type: object
+# {{ end }}
                       minReadySeconds:
                         description: Minimum number of seconds for which a newly created
                           pod should be ready without any of its container crashing,
@@ -8454,6 +8456,7 @@ spec:
                           to 1.
                         format: int32
                         type: integer
+# {{ if ne .Cluster.ConfigItems.stackset_ingress_in_stack_crd "true" }}
                       routegroup:
                         description: Settings for the per-stack route groups (in case
                           the StackSet has a configured RouteGroup)
@@ -8488,6 +8491,7 @@ spec:
                                 type: object
                             type: object
                         type: object
+# {{ end }}
                       service:
                         description: Service can be used to configure a custom service,
                           if not set stackset-controller will generate a service based
