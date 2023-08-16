@@ -241,8 +241,7 @@ write_files:
             - mountPath: /etc/kubernetes/admission-controller-kubeconfig
               name: admission-controller-kubeconfig
               readOnly: true
-{{- if or (eq .Cluster.ConfigItems.routegroups_validation "provisioned") (eq .Cluster.ConfigItems.routegroups_validation "enabled") }}
-        - name: routegroups-admission-webhook
+        - name: skipper-admission-webhook
           image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.17.1
           args:
             - webhook
@@ -270,7 +269,6 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-{{- end}}
         - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-127
           name: webhook
           ports:
@@ -491,7 +489,7 @@ write_files:
               -> disableAccessLog()
               -> setPath("/metrics")
               -> "http://127.0.0.1:8081";
-            routegroups_admission_webhook: Path("/routegroups-admission-webhook")
+            skipper_admission_webhook: Path("/skipper-admission-webhook")
               -> disableAccessLog()
               -> setPath("/metrics")
               -> "https://127.0.0.1:9085";
