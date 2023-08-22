@@ -23,12 +23,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	admissionapi "k8s.io/pod-security-admission/api"
 
 	. "github.com/onsi/ginkgo"
 )
 
 var _ = describe("GPU job processing", func() {
 	f := framework.NewDefaultFramework("gpu")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
