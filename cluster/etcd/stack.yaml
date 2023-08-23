@@ -18,6 +18,73 @@ Outputs:
     Export:
       Name: "{{.Cluster.ConfigItems.etcd_stack_name}}:launch-template-id"
 Resources:
+{{- if eq .Cluster.ConfigItems.etcd_nlb_enabled "true" }}
+  ETCDLoadBalancerNLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: "{{.Cluster.LocalID}}-etcd-nlb"
+      LoadBalancerAttributes:
+        - Key: load_balancing.cross_zone.enabled
+          Value: true
+      Scheme: internal
+      Subnets:
+  {{ with $values := .Values }}
+  {{ range $az := $values.availability_zones }}
+        - "{{ index $values.subnets $az }}"
+  {{ end }}
+  {{ end }}
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+        - Key: "component"
+          Value: "etcd-cluster"
+      Type: network
+  ETCDLoadBalancerNLBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPort: 2381
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: "/health"
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Name: "{{.Cluster.LocalID}}-etcd-nlb"
+      Port: 2479
+      Protocol: TCP
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+        - Key: "component"
+          Value: "etcd-cluster"
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 60
+        - Key: preserve_client_ip.enabled
+          Value: "false"
+  ETCDLoadBalancerNLBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref ETCDLoadBalancerNLBTargetGroup
+      LoadBalancerArn: !Ref ETCDLoadBalancerNLB
+      Port: 2479
+      Protocol: TCP
+  ETCDLoadBalancerVersionDomain:
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt
+          - ETCDLoadBalancerNLB
+          - DNSName
+        HostedZoneId: !GetAtt
+          - ETCDLoadBalancerNLB
+          - CanonicalHostedZoneID
+      HostedZoneName: "{{.Values.hosted_zone}}."
+      Name: "etcd-lb.{{ .Cluster.Region }}.{{.Values.hosted_zone}}."
+      Type: A
+    Type: 'AWS::Route53::RecordSet'
+{{- end }}
   AppServerInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -83,6 +150,10 @@ Resources:
 {{- range $az := $values.availability_zones }}
         - "{{ index $values.subnets $az }}"
 {{- end }}
+{{- end }}
+{{- if eq .Cluster.ConfigItems.etcd_nlb_enabled "true" }}
+      TargetGroupARNs:
+      - !Ref ETCDLoadBalancerNLBTargetGroup
 {{- end }}
       Tags:
         - Key: Name
@@ -164,6 +235,12 @@ Resources:
       - IpProtocol: tcp
         FromPort: 2381
         ToPort: 2381
+        CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+      # TODO: temp hack to allow traffic from NLB to etcd instances, should
+      # ideally not allow the whole VPC
+      - IpProtocol: tcp
+        FromPort: 2379
+        ToPort: 2479
         CidrIp: "{{.Values.vpc_ipv4_cidr}}"
       - IpProtocol: tcp
         FromPort: 9100

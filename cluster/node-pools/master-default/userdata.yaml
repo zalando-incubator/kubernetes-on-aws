@@ -103,7 +103,11 @@ write_files:
           image: nonexistent.zalan.do/teapot/kube-apiserver:fixed
           args:
           - --bind-address=0.0.0.0
+{{- if and (eq .Cluster.ConfigItems.etcd_use_nlb_endpoint "true") (ne .Cluster.ConfigItems.etcd_lb_endpoints "") }}
+          - --etcd-servers={{ .NodePool.ConfigItems.etcd_lb_endpoints }}
+{{- else }}
           - --etcd-servers={{ .NodePool.ConfigItems.etcd_endpoints }}
+{{- end }}
 {{- if index .Cluster.ConfigItems "etcd_client_ca_cert" }}
           - --etcd-cafile=/etc/kubernetes/ssl/etcd-ca.pem
 {{- end }}
