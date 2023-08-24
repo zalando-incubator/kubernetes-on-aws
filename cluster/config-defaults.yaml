@@ -296,7 +296,7 @@ skipper_open_policy_agent_enabled: "false"
 #   - production: runs the controller
 #
 fabric_gateway_controller_mode: "disabled"
-fabric_gateway_controller_version: "master-211"
+fabric_gateway_controller_version: "master-215"
 fabric_gateway_controller_cpu: "50m"
 fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_crd_v1_enabled: "false"
@@ -521,7 +521,7 @@ teapot_admission_controller_crd_role_provisioning_allowed_api_groups: "flink.k8s
 teapot_admission_controller_topology_spread: optin
 teapot_admission_controller_topology_spread_timeout: 7m
 
-# Supported providers: 'zalando', `karpenter`
+# keep legacy configs during rollout Supported providers: 'zalando', `karpenter`
 teapot_admission_controller_node_lifecycle_provider: "zalando"
 
 # Enable and configure runtime-policy annotation
@@ -558,6 +558,8 @@ teapot_admission_controller_graceful_termination: "true"
 blocked_availability_zone: ""
 
 # etcd cluster
+etcd_stack_name: "etcd-cluster-etcd"
+
 {{if eq .Cluster.Environment "production"}}
 etcd_instance_count: "5"
 etcd_instance_type: "m5.large"
@@ -921,6 +923,8 @@ network_monitoring_separate_prometheus: "false"
 # kube-apiserver container in the kube-apiserver pod.
 # Must be a whole number between 0-100.
 apiserver_memory_limit_percent: "80"
+
+apiserver_max_requests_inflight: "400"
 
 # specify if control plane nodes should rely on ASG Lifecycle Hook or not
 control_plane_asg_lifecycle_hook: "true"

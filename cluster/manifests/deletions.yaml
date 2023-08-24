@@ -1,15 +1,14 @@
 # everything defined under here will be deleted before applying the manifests
 pre_apply:
-{{ if ne .Cluster.ConfigItems.routegroups_validation "enabled" }}
-- name: "routegroup-admitter.teapot.zalan.do"
-  kind: ValidatingWebhookConfiguration
-{{ end }}
 - name: cronjob-monitor
   namespace: kube-system
   kind: Deployment
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
+# TODO: remove later
+- name: "routegroup-admitter.teapot.zalan.do"
+  kind: ValidatingWebhookConfiguration
 - name: cronjob-monitor
   namespace: kube-system
   kind: VerticalPodAutoscaler
@@ -146,6 +145,9 @@ post_apply:
 - kind: ClusterRoleBinding
   name: kubenurse-prometheus
 {{- end }}
+- name: karpenter-logging-config
+  kind: ConfigMap
+  namespace: kube-system
 {{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "false" }}
 - name: karpenter
   namespace: kube-system
@@ -190,7 +192,7 @@ post_apply:
 - name: karpenter-global-settings
   kind: ConfigMap
   namespace: kube-system
-- name: karpenter-logging-config
+- name: config-logging
   kind: ConfigMap
   namespace: kube-system
 - name: karpenter-cert
