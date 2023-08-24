@@ -6,7 +6,7 @@ metadata:
     application: skipper-ingress
     component: webhook
 webhooks:
-{{ if eq .Cluster.ConfigItems.routegroups_validation "enabled" }}
+  # {{ if eq .Cluster.ConfigItems.routegroups_validation "enabled" }}
   - name: "routegroup-admitter.teapot.zalan.do"
     rules:
       - operations: ["CREATE", "UPDATE"]
@@ -19,7 +19,8 @@ webhooks:
     admissionReviewVersions: ["v1"]
     sideEffects: None
     timeoutSeconds: 5
-{{ end }}
+  # {{ end }}
+  # {{ if eq .Cluster.ConfigItems.ingresses_validation "enabled" }}
   - name: "ingress-admitter.teapot.zalan.do"
     rules:
       - operations: ["CREATE", "UPDATE"]
@@ -31,4 +32,5 @@ webhooks:
       caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1"]
     sideEffects: None
-    timeoutSeconds: 5 
+    timeoutSeconds: 5
+  # {{ end }}
