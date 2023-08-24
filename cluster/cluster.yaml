@@ -11,7 +11,7 @@ Resources:
     Properties:
       FromPort: 2379
       ToPort: 2379
-      GroupId: !ImportValue 'etcd-cluster-etcd:etcd-security-group-id'
+      GroupId: !ImportValue '{{.Cluster.ConfigItems.etcd_stack_name}}:etcd-security-group-id'
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
   EtcdClusterSecurityGroupTLSIngressFromMaster:
@@ -19,7 +19,7 @@ Resources:
     Properties:
       FromPort: 2479
       ToPort: 2479
-      GroupId: !ImportValue 'etcd-cluster-etcd:etcd-security-group-id'
+      GroupId: !ImportValue '{{.Cluster.ConfigItems.etcd_stack_name}}:etcd-security-group-id'
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
   IngressLoadBalancerSecurityGroup:
