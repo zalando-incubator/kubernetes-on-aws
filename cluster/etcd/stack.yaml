@@ -11,12 +11,12 @@ Outputs:
     Description: "Security Group ID of the etcd cluster"
     Value: !GetAtt EtcdClusterSecurityGroup.GroupId
     Export:
-      Name: "etcd-cluster-etcd:etcd-security-group-id"
+      Name: "{{.Cluster.ConfigItems.etcd_stack_name}}:etcd-security-group-id"
   LaunchTemplateId:
     Description: "Launch template ID of the etcd nodes"
     Value: !Ref LaunchTemplate
     Export:
-      Name: "etcd-cluster-etcd:launch-template-id"
+      Name: "{{.Cluster.ConfigItems.etcd_stack_name}}:launch-template-id"
 Resources:
   AppServerInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -27,7 +27,7 @@ Resources:
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
-      LaunchTemplateName: 'etcd-cluster-etcd'
+      LaunchTemplateName: '{{.Cluster.ConfigItems.etcd_stack_name}}'
       LaunchTemplateData:
         NetworkInterfaces:
           - DeviceIndex: 0
@@ -87,7 +87,8 @@ Resources:
       Tags:
         - Key: Name
           PropagateAtLaunch: true
-          Value: etcd-cluster-etcd
+          Value: {{.Cluster.ConfigItems.etcd_stack_name}}
+        # TODO: used by etcd.py?
         - Key: StackName
           PropagateAtLaunch: true
           Value: etcd-cluster
@@ -198,6 +199,9 @@ Resources:
   EtcdRole:
     Type: AWS::IAM::Role
     Properties:
+      # This is a hack to make the name fit the pattern allowed by the kms key
+      # currently provisioned outside of CLM.
+      RoleName: "etcd-cluster-etcd-EtcdRole-{{.Cluster.ConfigItems.etcd_stack_name}}"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       AssumeRolePolicyDocument:
@@ -261,7 +265,7 @@ Resources:
             - autoscaling:CompleteLifecycleAction
             # The shitty CF doesn't allow to do something like !GetAtt AppServer.Arn
             # Ref: https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/548
-            Resource: [ "arn:aws:autoscaling:*:*:autoScalingGroup:*:autoScalingGroupName/etcd-cluster-etcd-AppServer*" ]
+            Resource: [ "arn:aws:autoscaling:*:*:autoScalingGroup:*:autoScalingGroupName/{{.Cluster.ConfigItems.etcd_stack_name}}-AppServer*" ]
       - PolicyName: KMSDecrypt
         PolicyDocument:
           Version: "2012-10-17"
