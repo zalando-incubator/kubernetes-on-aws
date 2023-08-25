@@ -1,0 +1,36 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: "skipper-admitter.teapot.zalan.do"
+  labels:
+    application: skipper-ingress
+    component: webhook
+webhooks:
+  # {{ if eq .Cluster.ConfigItems.routegroups_validation "enabled" }}
+  - name: "routegroup-admitter.teapot.zalan.do"
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["zalando.org"]
+        apiVersions: ["v1"]
+        resources: ["routegroups"]
+    clientConfig:
+      url: "https://localhost:9085/routegroups"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    timeoutSeconds: 5
+  # {{ end }}
+  # {{ if eq .Cluster.ConfigItems.ingresses_validation "enabled" }}
+  - name: "ingress-admitter.teapot.zalan.do"
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["networking.k8s.io"]
+        apiVersions: ["v1"]
+        resources: ["ingresses"]
+    clientConfig:
+      url: "https://localhost:9085/ingresses"
+      caBundle: "{{ .ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    timeoutSeconds: 5
+  # {{ end }}
