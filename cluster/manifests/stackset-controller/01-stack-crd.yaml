@@ -349,6 +349,20 @@ spec:
                 - maxReplicas
                 - metrics
                 type: object
+# {{ if eq .Cluster.ConfigItems.stackset_ingress_in_stack_crd "true" }}
+              externalIngress:
+                description: Stack specific ExternalIngress, based on the parent StackSet
+                  at creation time.
+                properties:
+                  backendPort:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    x-kubernetes-int-or-string: true
+                required:
+                - backendPort
+                type: object
+# {{ end }}
 # {{ if eq .Cluster.ConfigItems.stackset_legacy_hpa_field_crd_enabled "true" }}
               horizontalPodAutoscaler:
                 description: HorizontalPodAutoscaler is the Autoscaling configuration
@@ -1290,8 +1304,6 @@ spec:
                                               the key and values.
                                             properties:
                                               key:
-                                                description: key is the label key
-                                                  that the selector applies to.
                                                 type: string
                                               operator:
                                                 type: string
@@ -1337,8 +1349,6 @@ spec:
                                               the key and values.
                                             properties:
                                               key:
-                                                description: key is the label key
-                                                  that the selector applies to.
                                                 type: string
                                               operator:
                                                 type: string
@@ -1569,8 +1579,6 @@ spec:
                                               the key and values.
                                             properties:
                                               key:
-                                                description: key is the label key
-                                                  that the selector applies to.
                                                 type: string
                                               operator:
                                                 type: string
@@ -1616,8 +1624,6 @@ spec:
                                               the key and values.
                                             properties:
                                               key:
-                                                description: key is the label key
-                                                  that the selector applies to.
                                                 type: string
                                               operator:
                                                 type: string
