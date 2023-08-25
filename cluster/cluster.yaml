@@ -1229,6 +1229,9 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-ingr-ctrl"
     Type: 'AWS::IAM::Role'
+{{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
+  # Note: this is not strictly specific to Open Policy Agent and can be extend 
+  # if Skipper Ingress needs to access other AWS resources
   SkipperIngressIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1259,6 +1262,7 @@ Resources:
         {{ end }}
       RoleName: "{{.Cluster.LocalID}}-app-skipper-ingress"
     Type: 'AWS::IAM::Role'
+{{ end }}
   ClusterLifecycleControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument:

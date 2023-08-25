@@ -5,8 +5,11 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
+{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+  # Note: if the role extends beyond OPA use, this condition can be removed
   annotations:
     iam.amazonaws.com/role: "{{ .LocalID }}-app-skipper-ingress"
+{{ end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
