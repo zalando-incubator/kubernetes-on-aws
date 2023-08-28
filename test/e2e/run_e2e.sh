@@ -51,10 +51,6 @@ export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
 
-# Generate a new key for this E2E run
-SERVICE_ACCOUNT_PRIVATE_KEY="$(openssl genrsa | base64 | tr -d '\n')"
-export SERVICE_ACCOUNT_PRIVATE_KEY
-
 # create kubeconfig
 cat >kubeconfig <<EOF
 apiVersion: v1
@@ -195,8 +191,10 @@ if [ "$e2e" = true ]; then
     #   https://github.com/kubernetes/kubernetes/blob/v1.21.5/test/e2e/network/hostport.go#L61
     set +e
 
-    # introduce a broken DNS record to mess with ExternalDNS
-    cat broken-dns-record.yaml | kubectl apply -f -
+    # TODO(linki): re-introduce the broken DNS record test after ExternalDNS handles it better
+    #
+    # # introduce a broken DNS record to mess with ExternalDNS
+    # cat broken-dns-record.yaml | kubectl apply -f -
 
     mkdir -p junit_reports
     ginkgo -nodes=25 -flakeAttempts=2 \

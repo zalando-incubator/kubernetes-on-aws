@@ -19,7 +19,6 @@ clusters:
     etcd_client_ca_key: "${ETCD_CLIENT_CA_KEY}"
     etcd_scalyr_key: "${ETCD_SCALYR_KEY}"
     docker_meta_url: https://docker-meta.stups-test.zalan.do
-    service_account_private_key: ${SERVICE_ACCOUNT_PRIVATE_KEY}
     vpa_enabled: "true"
     lightstep_token: "${LIGHTSTEP_TOKEN}"
     okta_auth_issuer_url: "${OKTA_AUTH_ISSUER_URL}"
@@ -43,7 +42,10 @@ clusters:
     routegroups_validation: "enabled"
     stackset_routegroup_support_enabled: "true"
     stackset_ingress_source_switch_ttl: "1m"
+    stackset_legacy_hpa_field_enabled: "true"
+    stackset_legacy_hpa_field_crd_enabled: "true"
     teapot_admission_controller_daemonset_reserved_cpu: "518m"
+    karpenter_pools_enabled: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
@@ -138,6 +140,24 @@ clusters:
     config_items:
       labels: dedicated=node-reboot-tests
       taints: dedicated=node-reboot-tests:NoSchedule
+  - discount_strategy: none
+    instance_types: ["default-for-karpenter"]
+    min_size: 0
+    max_size: 0
+    profile: worker-karpenter
+    name: worker-karpenter
+    config_items:
+      labels: dedicated=worker-karpenter
+      taints: dedicated=worker-karpenter:NoSchedule
+  - discount_strategy: none
+    instance_types: ["m6g.large"]
+    min_size: 0
+    max_size: 3
+    profile: worker-splitaz
+    name: worker-arm64
+    config_items:
+      labels: dedicated=worker-arm64
+      taints: dedicated=worker-arm64:NoSchedule
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'

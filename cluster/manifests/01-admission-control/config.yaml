@@ -8,6 +8,7 @@ data:
   daemonset.reserved.memory: "{{ .Cluster.ConfigItems.teapot_admission_controller_daemonset_reserved_memory }}"
 
   dns.default.subdomain-max-length: "{{ .Cluster.ConfigItems.subdomain_max_length }}"
+  stackset.legacy_hpa_field.enable: "{{ .Cluster.ConfigItems.stackset_legacy_hpa_field_enabled }}"
 
   pod.container-resource-control.min-memory-request: "25Mi"
   pod.container-resource-control.default-cpu-request: "{{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}"
@@ -19,7 +20,7 @@ data:
   pod.service-account-iam.enable: "true"
   pod.service-account-iam.base-aws-account-id: "{{ accountID .Cluster.InfrastructureAccount }}"
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
-  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-130"
+  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-173"
 {{- end }}
   pod.env-inject.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables }}"
   pod.env-inject.variable._PLATFORM_ACCOUNT: "{{ .Cluster.Alias }}"
@@ -94,7 +95,7 @@ data:
   pod.automatic-topology-spread.mode: "{{ .Cluster.ConfigItems.teapot_admission_controller_topology_spread }}"
   pod.automatic-topology-spread.timeout: "{{ .Cluster.ConfigItems.teapot_admission_controller_topology_spread_timeout }}"
 {{- range $group, $enabled := zoneDistributedNodePoolGroups .Cluster.NodePools }}
-{{- if eq $group "" }}
+{{- if not $group }}
   pod.automatic-topology-spread.pools.default: "{{ $enabled }}"
 {{- else }}
   pod.automatic-topology-spread.pools.dedicated.{{$group}}: "{{ $enabled }}"
@@ -103,7 +104,7 @@ data:
 
   pod.az-block.zone-name: "{{ .Cluster.ConfigItems.blocked_availability_zone }}"
 {{- range $group, $enabled := zoneDistributedNodePoolGroups .Cluster.NodePools }}
-{{- if eq $group "" }}
+{{- if not $group }}
   pod.az-block.pools.default: "{{ $enabled }}"
 {{- else }}
   pod.az-block.pools.dedicated.{{$group}}: "{{ $enabled }}"
@@ -113,7 +114,11 @@ data:
   node.node-not-ready-taint.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_node_not_ready_taint }}"
   node.extended-node-restriction.enable: "true"
 
+  # keep legacy configs during rollouts
   pod.node-lifecycle.provider: "{{ .Cluster.ConfigItems.teapot_admission_controller_node_lifecycle_provider }}"
+{{- range $group, $provider := nodeLifeCycleProviderPerNodePoolGroup .Cluster.NodePools }}
+  pod.node-lifecycle.provider.{{ $group }}: "{{ $provider }}"
+{{- end}}
 
   pod.runtime-policy.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_runtime_policy_enabled }}"
   pod.runtime-policy.default: "{{ .Cluster.ConfigItems.teapot_admission_controller_runtime_policy_default }}"

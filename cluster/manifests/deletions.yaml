@@ -1,12 +1,24 @@
 # everything defined under here will be deleted before applying the manifests
 pre_apply:
-{{ if ne .Cluster.ConfigItems.routegroups_validation "enabled" }}
-- name: "routegroup-admitter.teapot.zalan.do"
-  kind: ValidatingWebhookConfiguration
-{{ end }}
+- name: cronjob-monitor
+  namespace: kube-system
+  kind: Deployment
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
+# TODO: remove later
+- name: "routegroup-admitter.teapot.zalan.do"
+  kind: ValidatingWebhookConfiguration
+- name: cronjob-monitor
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
+- name: cronjob-monitor
+  kind: ClusterRole
+- name: cronjob-monitor
+  kind: ClusterRoleBinding
+- name: cronjob-monitor
+  namespace: kube-system
+  kind: ServiceAccount
 {{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
@@ -14,70 +26,6 @@ post_apply:
 - name: limits
   namespace: cron
   kind: LimitRange
-{{ end }}
-{{ if ne .ConfigItems.enable_csi "true" }}
-- name: ebs-external-attacher-role
-  kind: ClusterRole
-- name: ebs-csi-node-role
-  kind: ClusterRole
-- name: ebs-external-provisioner-role
-  kind: ClusterRole
-- name: ebs-external-resizer-role
-  kind: ClusterRole
-- name: ebs-csi-attacher-binding
-  kind: ClusterRoleBinding
-- name: ebs-csi-node-getter-binding
-  kind: ClusterRoleBinding
-- name: ebs-csi-provisioner-binding
-  kind: ClusterRoleBinding
-- name: ebs-csi-resizer-binding
-  kind: ClusterRoleBinding
-- name: ebs-csi-controller
-  namespace: kube-system
-  kind: Deployment
-- name: ebs.csi.aws.com
-  kind: CSIDriver
-- name: ebs-csi-node
-  namespace: kube-system
-  kind: DaemonSet
-- name: ebs-csi-controller
-  namespace: kube-system
-  kind: PodDisruptionBudget
-- name: ebs-csi-node-privileged-psp
-  namespace: kube-system
-  kind: RoleBinding
-- name: ebs-csi-controller-sa
-  namespace: kube-system
-  kind: ServiceAccount
-- name: ebs-csi-node-sa
-  namespace: kube-system
-  kind: ServiceAccount
-- name: ebs-sc
-  kind: StorageClass
-- name: ebs-csi-controller
-  namespace: kube-system
-  kind: VerticalPodAutoscaler
-{{ end }}
-{{ if ne .ConfigItems.prometheus_csi_ebs "true" }}
-- name: prometheus-csi
-  namespace: kube-system
-  kind: StatefulSet
-- name: prometheus-storage-volume-prometheus-csi-0
-  kind: PersistentVolumeClaim
-  namespace: kube-system
-- name: prometheus-storage-volume-prometheus-csi-1
-  kind: PersistentVolumeClaim
-  namespace: kube-system
-{{ else }}
-- name: prometheus
-  namespace: kube-system
-  kind: StatefulSet
-- name: prometheus-storage-volume-prometheus-0
-  kind: PersistentVolumeClaim
-  namespace: kube-system
-- name: prometheus-storage-volume-prometheus-1
-  kind: PersistentVolumeClaim
-  namespace: kube-system
 {{ end }}
 {{ if ne .ConfigItems.downscaler_enabled "true" }}
 - name: kube-downscaler
@@ -121,9 +69,39 @@ post_apply:
 {{ end }}
 
 {{- if ne .ConfigItems.skipper_oauth2_ui_login "true" }}
-- name: skipper-ingress-auth
+# hostname-credentials-controller
+- kind: CronJob
+  name: hostname-credentials-controller
   namespace: kube-system
-  kind: RouteGroup
+- kind: ClusterRoleBinding
+  name: hostname-credentials-controller
+- kind: ClusterRole
+  name: hostname-credentials-controller
+- kind: ServiceAccount
+  name: hostname-credentials-controller
+  namespace: kube-system
+- kind: PlatformCredentialsSet
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    component: hostname-credentials
+
+# secret-combiner
+- kind: CronJob
+  name: secret-combiner
+  namespace: kube-system
+- kind: RoleBinding
+  name: secret-combiner
+  namespace: kube-system
+- kind: Role
+  name: secret-combiner
+  namespace: kube-system
+- kind: ServiceAccount
+  name: secret-combiner
+  namespace: kube-system
+- kind: Secret
+  name: hostname-credentials
+  namespace: kube-system
 {{- end }}
 
 {{- if eq .ConfigItems.prometheus_remote_write "disabled" }}
@@ -167,3 +145,80 @@ post_apply:
 - kind: ClusterRoleBinding
   name: kubenurse-prometheus
 {{- end }}
+- name: karpenter-logging-config
+  kind: ConfigMap
+  namespace: kube-system
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "false" }}
+- name: karpenter
+  namespace: kube-system
+  kind: Deployment
+- name: karpenter
+  namespace: kube-system
+  kind: PodDisruptionBudget
+- name: karpenter
+  namespace: kube-system
+  kind: ServiceAccount
+- name: karpenter-admin
+  kind: ClusterRole
+- name: karpenter-core
+  kind: ClusterRole
+- name: karpenter-core
+  kind: ClusterRoleBinding
+- name: karpenter-webhook
+  kind: ClusterRole
+- name: karpenter-webhook
+  kind: ClusterRoleBinding
+- name: karpenter
+  namespace: kube-system
+  kind: Role
+- name: karpenter-dns
+  namespace: kube-system
+  kind: Role
+- name: karpenter
+  namespace: kube-system
+  kind: RoleBinding
+- name: karpenter-dns
+  namespace: kube-system
+  kind: RoleBinding
+- name: karpenter
+  namespace: kube-system
+  kind: Service
+- name: provisioners.karpenter.sh
+  kind: CustomResourceDefinition
+- name: awsnodetemplates.karpenter.k8s.aws
+  kind: CustomResourceDefinition
+- name: machines.karpenter.sh
+  kind: CustomResourceDefinition
+- name: karpenter-global-settings
+  kind: ConfigMap
+  namespace: kube-system
+- name: config-logging
+  kind: ConfigMap
+  namespace: kube-system
+- name: karpenter-cert
+  kind: Secret
+  namespace: kube-system
+- name: defaulting.webhook.karpenter.k8s.aws
+  kind: MutatingWebhookConfiguration
+- name: validation.webhook.karpenter.k8s.aws
+  kind: ValidatingWebhookConfiguration
+- name: validation.webhook.config.karpenter.sh
+  kind: ValidatingWebhookConfiguration
+- name: validation.webhook.karpenter.sh
+  kind: ValidatingWebhookConfiguration
+- name: karpenter-vpa
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
+{{ end }}
+{{ if eq .Cluster.ConfigItems.hyped_article_lifecycle_management "false" }}
+- name: hyped-articles-lifecycle-management
+  kind: ClusterRole
+- name: hyped-articles-lifecycle-management
+  kind: ClusterRoleBinding
+{{ end }}
+{{ if eq .Cluster.ConfigItems.business_partner_service "false" }}
+- name: business-partner-service
+  kind: ClusterRole
+- name: business-partner-service
+  kind: ClusterRoleBinding
+{{ end }}

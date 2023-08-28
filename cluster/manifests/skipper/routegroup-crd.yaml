@@ -1,0 +1,260 @@
+# This is an adjusted copy of https://github.com/szuecs/routegroup-client/blob/master/zalando.org_routegroups.yaml
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
+  name: routegroups.zalando.org
+spec:
+  group: zalando.org
+  names:
+    categories:
+    - all
+    kind: RouteGroup
+    listKind: RouteGroupList
+    plural: routegroups
+    shortNames:
+    - rg
+    - rgs
+    singular: routegroup
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: Hosts defined for the RouteGroup
+      jsonPath: .spec.hosts
+      name: Hosts
+      type: string
+    - description: Address of the Load Balancer for the RouteGroup
+      jsonPath: .status.loadBalancer
+      name: Address
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              backends:
+                description: List of backends that can be referenced in the routes
+                items:
+                  properties:
+                    address:
+                      description: Address is required for type `network`
+                      type: string
+                    algorithm:
+                      description: Algorithm is required for type `lb`. `roundRobin`
+                        - backend is chosen by the round robin algorithm, starting
+                        with a random selected backend to spread across all backends
+                        from the beginning. `random` - backend is chosen at random.
+                        `consistentHash` - backend is chosen by [consistent hashing](https://en.wikipedia.org/wiki/Consistent_hashing)
+                        algorithm based on the request key. The request key is derived
+                        from `X-Forwarded-For` header or request remote IP address
+                        as the fallback. Use [`consistentHashKey`](filters.md#consistenthashkey)
+                        filter to set the request key. Use [`consistentHashBalanceFactor`](filters.md#consistenthashbalancefactor)
+                        to prevent popular keys from overloading a single backend
+                        endpoint. `powerOfRandomNChoices` - backend is chosen by selecting
+                        N random endpoints and picking the one with least outstanding
+                        requests from them (see http://www.eecs.harvard.edu/~michaelm/postscripts/handbook2001.pdf).
+                      enum:
+                      - roundRobin
+                      - random
+                      - consistentHash
+                      - powerOfRandomNChoices
+                      type: string
+                    endpoints:
+                      description: Endpoints is required for type `lb`
+                      items:
+                        type: string
+                      minItems: 1
+                      type: array
+                    name:
+                      description: Name is the BackendName that can be referenced
+                        as RouteGroupBackendReference
+                      type: string
+                    serviceName:
+                      description: ServiceName is required for type `service`
+                      type: string
+                    servicePort:
+                      description: ServicePort is required for type `service`
+                      type: integer
+                    type:
+                      description: Type of the backend. `service`- resolve Kubernetes
+                        service to the available Endpoints belonging to the Service,
+                        and generate load balanced routes using them. `shunt` - reply
+                        directly from the proxy itself. This can be used to shortcut,
+                        for example have a default that replies with 404 or use skipper
+                        as a backend serving static content in demos. `loopback` -
+                        lookup again the routing table to a better matching route
+                        after processing the current route. Like this you can add
+                        some headers or change the request path for some specific
+                        matching requests. `dynamic` - use the backend provided by
+                        filters. This allows skipper as library users to do proxy
+                        calls to a certain target from their own implementation dynamically
+                        looked up by their filters. `lb` - balance the load across
+                        multiple network endpoints using specified algorithm. If algorithm
+                        is not specified it will use the default algorithm set by
+                        Skipper at start. `network` - use arbitrary HTTP or HTTPS
+                        URL.
+                      enum:
+                      - service
+                      - shunt
+                      - loopback
+                      - dynamic
+                      - lb
+                      - network
+                      type: string
+                  required:
+                  - name
+                  - type
+                  type: object
+                type: array
+              defaultBackends:
+                description: DefaultBackends is a list of default backends defined
+                  if no explicit backend is defined for a route
+                items:
+                  properties:
+                    backendName:
+                      description: BackendName references backend by name
+                      type: string
+                    weight:
+                      description: Weight defines a portion of traffic for the referenced
+                        backend. It equals to weight divided by the sum of all backend
+                        weights. When all references have zero (or unspecified) weight
+                        then traffic is split equally between them.
+                      minimum: 0
+                      type: integer
+                  required:
+                  - backendName
+                  type: object
+                type: array
+              hosts:
+                description: List of hostnames for the RouteGroup
+                items:
+                  pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+                  minItems: 1 # original CRD allows empty hosts but we explicitly want it specified in our infrastructure
+                  type: string
+                type: array
+              routes:
+                description: Routes describe how a matching HTTP request is handled
+                  and where it is forwarded to
+                items:
+                  properties:
+                    backends:
+                      description: RouteGroupBackendReference specifies the list of
+                        backendReference that should be applied to override the defaultBackends
+                      items:
+                        properties:
+                          backendName:
+                            description: BackendName references backend by name
+                            type: string
+                          weight:
+                            description: Weight defines a portion of traffic for the
+                              referenced backend. It equals to weight divided by the
+                              sum of all backend weights. When all references have
+                              zero (or unspecified) weight then traffic is split equally
+                              between them.
+                            minimum: 0
+                            type: integer
+                        required:
+                        - backendName
+                        type: object
+                      type: array
+                    filters:
+                      description: Filters specifies the list of filters applied to
+                        the routeSpec
+                      items:
+                        type: string
+                      type: array
+                    methods:
+                      description: Methods defines valid HTTP methods for the specified
+                        routeSpec
+                      items:
+                        description: HTTPMethod is a valid HTTP method in uppercase.
+                        enum:
+                        - GET
+                        - HEAD
+                        - POST
+                        - PUT
+                        - PATCH
+                        - DELETE
+                        - CONNECT
+                        - OPTIONS
+                        - TRACE
+                        type: string
+                      type: array
+                    path:
+                      description: Path specifies Path predicate, only one of Path
+                        or PathSubtree is allowed
+                      type: string
+                    pathRegexp:
+                      description: PathRegexp can be added additionally
+                      type: string
+                    pathSubtree:
+                      description: PathSubtree specifies PathSubtree predicate, only
+                        one of Path or PathSubtree is allowed
+                      type: string
+                    predicates:
+                      description: Predicates specifies the list of predicates applied
+                        to the routeSpec
+                      items:
+                        type: string
+                      type: array
+                  type: object
+                minItems: 1
+                type: array
+            required:
+            - backends
+            type: object
+          status:
+            properties:
+              loadBalancer:
+                description: LoadBalancer is similar to ingress status, such that
+                  external-dns has the same style as in ingress
+                properties:
+                  routegroup:
+                    description: RouteGroup is similar to Ingress in ingress status.LoadBalancer.
+                    items:
+                      properties:
+                        hostname:
+                          description: Hostname is the hostname of the load balancer
+                            and is empty if IP is set
+                          type: string
+                        ip:
+                          description: IP is the IP address of the load balancer and
+                            is empty if Hostname is set
+                          type: string
+                      type: object
+                    type: array
+                required:
+                - routegroup
+                type: object
+            required:
+            - loadBalancer
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

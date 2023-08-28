@@ -11,7 +11,7 @@ Resources:
     Properties:
       FromPort: 2379
       ToPort: 2379
-      GroupId: !ImportValue 'etcd-cluster-etcd:etcd-security-group-id'
+      GroupId: !ImportValue '{{.Cluster.ConfigItems.etcd_stack_name}}:etcd-security-group-id'
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
   EtcdClusterSecurityGroupTLSIngressFromMaster:
@@ -19,7 +19,7 @@ Resources:
     Properties:
       FromPort: 2479
       ToPort: 2479
-      GroupId: !ImportValue 'etcd-cluster-etcd:etcd-security-group-id'
+      GroupId: !ImportValue '{{.Cluster.ConfigItems.etcd_stack_name}}:etcd-security-group-id'
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
   IngressLoadBalancerSecurityGroup:
@@ -298,6 +298,8 @@ Resources:
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
+        - Key: 'karpenter.sh/discovery'
+          Value: '{{ .Cluster.ID }}/WorkerNodeSecurityGroup'
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
   WorkerSecurityGroupIngressFromMasterToFlannel:
@@ -538,6 +540,142 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-autoscaler"
     Type: 'AWS::IAM::Role'
+{{- if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
+  KarpenterIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:karpenter"
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Resource: "*"
+                Action:
+                  # Write Operations
+                  - ec2:CreateLaunchTemplate
+                  - ec2:CreateFleet
+                  - ec2:RunInstances
+                  - ec2:CreateTags
+                  - ec2:TerminateInstances
+                  - ec2:DeleteLaunchTemplate
+                  # Read Operations
+                  - ec2:DescribeLaunchTemplates
+                  - ec2:DescribeInstances
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeImages
+                  - ec2:DescribeInstanceTypes
+                  - ec2:DescribeInstanceTypeOfferings
+                  - ec2:DescribeAvailabilityZones
+                  - ec2:DescribeSpotPriceHistory
+                  - ssm:GetParameter
+                  - pricing:GetProducts
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource: !Sub "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-worker"
+                Sid: PassNodeIAMRole
+              - Effect: Allow
+                Action:
+                  # Write Operations
+                  - sqs:DeleteMessage
+                  # Read Operations
+                  - sqs:GetQueueUrl
+                  - sqs:GetQueueAttributes
+                  - sqs:ReceiveMessage
+                Resource: !GetAtt KarpenterInterruptionQueue.Arn
+              - Action: ec2:TerminateInstances
+                Condition:
+                  StringLike:
+                    ec2:ResourceTag/karpenter.sh/provisioner-name: "*"
+                Effect: Allow
+                Resource: "*"
+                Sid: ConditionalEC2Termination
+            Version: 2012-10-17
+          PolicyName: root
+      RoleName: "{{.Cluster.LocalID}}-app-karpenter"
+    Type: 'AWS::IAM::Role'
+  KarpenterNodeInstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      InstanceProfileName: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
+      Path: "/"
+      Roles:
+        - !Ref WorkerIAMRole
+  KarpenterInterruptionQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "{{.Cluster.LocalID}}-karpenter-interruption-queue"
+      MessageRetentionPeriod: 300
+  KarpenterInterruptionQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref KarpenterInterruptionQueue
+      PolicyDocument:
+        Id: EC2InterruptionPolicy
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+                - sqs.amazonaws.com
+            Action: sqs:SendMessage
+            Resource: !GetAtt KarpenterInterruptionQueue.Arn
+  ScheduledChangeRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      EventPattern:
+        source:
+          - aws.health
+        detail-type:
+          - AWS Health Event
+      Targets:
+        - Id: KarpenterInterruptionQueueTarget
+          Arn: !GetAtt KarpenterInterruptionQueue.Arn
+  SpotInterruptionRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Spot Instance Interruption Warning
+      Targets:
+        - Id: KarpenterInterruptionQueueTarget
+          Arn: !GetAtt KarpenterInterruptionQueue.Arn
+  RebalanceRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Instance Rebalance Recommendation
+      Targets:
+        - Id: KarpenterInterruptionQueueTarget
+          Arn: !GetAtt KarpenterInterruptionQueue.Arn
+  InstanceStateChangeRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Instance State-change Notification
+      Targets:
+        - Id: KarpenterInterruptionQueueTarget
+          Arn: !GetAtt KarpenterInterruptionQueue.Arn
+{{- end }}
   DeploymentIAMPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -808,7 +946,7 @@ Resources:
               AWS:
                 - !GetAtt DeploymentControllerRole.Arn
                 - !GetAtt DeploymentStatusServiceRole.Arn
-{{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
+{{- if .Cluster.ConfigItems.deployment_service_api_role_arn }}
           - Action:
               - s3:PutObject
               - s3:PutObjectAcl
@@ -829,7 +967,7 @@ Resources:
                 aws:PrincipalArn:
                   - !GetAtt DeploymentControllerRole.Arn
                   - !GetAtt DeploymentStatusServiceRole.Arn
-{{- if ne .Cluster.ConfigItems.deployment_service_api_role_arn "" }}
+{{- if .Cluster.ConfigItems.deployment_service_api_role_arn }}
                   - "{{.Cluster.ConfigItems.deployment_service_api_role_arn}}"
 {{- end }}
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
@@ -1476,7 +1614,7 @@ Resources:
               - Action: 's3:ListBucket'
                 Effect: Allow
                 Resource: '*'
-          {{if ne "" .Cluster.ConfigItems.zmon_accessible_s3_buckets}}
+          {{if .Cluster.ConfigItems.zmon_accessible_s3_buckets}}
               {{range $bucket := split .Cluster.ConfigItems.zmon_accessible_s3_buckets ","}}
               - Action: 's3:GetObject'
                 Effect: Allow
@@ -1565,7 +1703,7 @@ Resources:
             - Action: ["s3:PutObject"]
               Effect: "Allow"
               Resource: 'arn:aws:s3:::{{.Cluster.ConfigItems.logging_s3_bucket}}/*'
-{{- if ne .Cluster.ConfigItems.logging_infrastructure_s3_bucket "" }}
+{{- if .Cluster.ConfigItems.logging_infrastructure_s3_bucket }}
         - PolicyName: AllowCentralTelemetryInfrastructureS3BucketAccess
           PolicyDocument:
             Version: "2012-10-17"
@@ -1612,7 +1750,6 @@ Resources:
       RoleName: "{{.Cluster.LocalID}}-kube-metrics-adapter"
     Type: 'AWS::IAM::Role'
 
-{{- if eq .Cluster.ConfigItems.enable_csi "true" }}
   EBSCSIControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1713,11 +1850,10 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-ebs-csi-controller"
     Type: 'AWS::IAM::Role'
-{{- end }}
 
   {{ if eq .Cluster.Environment "e2e" }}
 # This is a hack to easily create an aws iam role and s3 bucket for testing
-  # AWS IAM intergration in e2e tests.
+  # AWS IAM integration in e2e tests.
   E2EAWSIAMTestRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1775,6 +1911,7 @@ Resources:
       VersioningConfiguration:
         Status: Suspended
 {{ end }}
+
   AuditTrailBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
@@ -1822,7 +1959,7 @@ Resources:
                 - "${BucketArn}/*"
                 - BucketArn: !GetAtt AuditTrailBucket.Arn
 
-{{- if ne .Cluster.ConfigItems.audittrail_root_account_role "" }}
+{{- if .Cluster.ConfigItems.audittrail_root_account_role }}
           # Central access
           - Action:
               - s3:ListBucket
@@ -1928,11 +2065,23 @@ Resources:
                 Effect: Allow
                 Resource:
                   - !GetAtt AuditTrailBucket.Arn
+                  - arn:aws:s3:::zalando-audittrail-central
+                    {{- if eq .Cluster.Environment "production" }}
+                  - arn:aws:s3:::zalando-kubernetes-audit
+                    {{- else }}
+                  - arn:aws:s3:::zalando-kubernetes-audit-test
+                    {{- end }}
 
               - Action:
                   - s3:PutObject
                 Effect: Allow
                 Resource:
+                  - arn:aws:s3:::zalando-audittrail-central/*
+                    {{- if eq .Cluster.Environment "production" }}
+                  - arn:aws:s3:::zalando-kubernetes-audit/*
+                    {{- else }}
+                  - arn:aws:s3:::zalando-kubernetes-audit-test/*
+                    {{- end }}
                   - !Sub
                     - "${BucketArn}/*"
                     - BucketArn: !GetAtt AuditTrailBucket.Arn
@@ -1947,11 +2096,6 @@ Resources:
       Description: "AWS service role for application autoscaling DynamoDB"
     Type: "AWS::IAM::ServiceLinkedRole"
 {{- end }}
-  ServiceLinkedRoleServiceQuotas:
-    Properties:
-      AWSServiceName: "servicequotas.amazonaws.com"
-      Description: "AWS service role for Service Quotas"
-    Type: "AWS::IAM::ServiceLinkedRole"
   RemoteFilesEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:

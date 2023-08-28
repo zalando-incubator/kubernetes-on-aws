@@ -5,7 +5,7 @@ metadata:
   namespace: kube-system
   labels:
     application: audittrail-adapter
-    version: master-36
+    version: master-42
 spec:
   selector:
     matchLabels:
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         application: audittrail-adapter
-        version: master-36
+        version: master-42
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics
@@ -35,23 +35,26 @@ spec:
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: container-registry.zalando.net/teapot/audittrail-adapter:master-36
+        image: container-registry.zalando.net/teapot/audittrail-adapter:master-42
         env:
           - name: AWS_REGION
             value: {{.Cluster.Region}}
         args:
         - --cluster-id={{ .ID }}
-        - --audittrail-url={{.Cluster.ConfigItems.audittrail_url}}
-        - --s3-bucket-name=zalando-audittrail-{{accountID .InfrastructureAccount}}-{{.LocalID}}
+        - --cluster-alias={{ .Cluster.Alias }}
+        - --audittrail-url={{ .Cluster.ConfigItems.audittrail_url }}
+        - --s3-audit-bucket-name={{ .Cluster.ConfigItems.audittrail_adapter_bucket }}
+        - --s3-fallback-bucket-name=zalando-audittrail-{{accountID .InfrastructureAccount}}-{{.LocalID}}
         - --address=:8889
         - --metrics-address=:7980
-        {{- if eq .Cluster.ConfigItems.audittrail_url "" }}
+        - --audittrail-timeout={{ .Cluster.ConfigItems.audittrail_adapter_timeout }}
+        {{- if not .Cluster.ConfigItems.audittrail_url }}
         - --metrics-only
         {{- end }}
         {{- range $label := split .Cluster.ConfigItems.auditlog_metric_dimensions  "," }}
         - --metric-labels={{ $label }}
         {{- end }}
-        {{- if ne .Cluster.ConfigItems.audittrail_url "" }}
+        {{- if .Cluster.ConfigItems.audittrail_url }}
         volumeMounts:
         - name: platform-iam-credentials
           mountPath: /meta/credentials
@@ -68,7 +71,7 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
-      {{- if ne .Cluster.ConfigItems.audittrail_url "" }}
+      {{- if .Cluster.ConfigItems.audittrail_url }}
       volumes:
       - name: platform-iam-credentials
         secret:

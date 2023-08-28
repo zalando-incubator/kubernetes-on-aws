@@ -77,7 +77,7 @@ spec:
               containerPort: 9101
               hostPort: 9101
               protocol: TCP
-        - image: container-registry.zalando.net/teapot/prometheus-node-exporter:v1.4.0-master-15
+        - image: container-registry.zalando.net/teapot/prometheus-node-exporter:v1.6.1-master-19
           args:
 {{- if eq .Cluster.ConfigItems.node_exporter_experimental_metrics "true" }}
             - --collector.ethtool
@@ -86,6 +86,9 @@ spec:
             - --path.procfs=/host/proc
             - --path.sysfs=/host/sys
             - --path.rootfs=/host
+            - --no-collector.wifi
+            - --no-collector.hwmon
+            - --no-collector.btrfs
             - --collector.filesystem.mount-points-exclude=^/(dev|proc|run|sys|host|var/lib/lxcfs|opt/podruntime/docker/.+|opt/podruntime/kubelet/.+)($|/)
             - --collector.netdev.device-exclude=^veth.*$
             - --collector.netclass.ignored-devices=^veth.*$

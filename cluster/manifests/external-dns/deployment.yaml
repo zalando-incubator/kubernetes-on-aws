@@ -6,7 +6,6 @@ metadata:
   labels:
     application: kubernetes
     component: external-dns
-    version: v0.12.2
 spec:
   strategy:
     type: Recreate
@@ -19,7 +18,6 @@ spec:
         application: kubernetes
         component: external-dns
         deployment: external-dns
-        version: v0.12.2
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
         prometheus.io/path: /metrics
@@ -34,11 +32,14 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: container-registry.zalando.net/teapot/external-dns:v0.13.2-12-ga18bf2b5-internal-master-35
+        image: container-registry.zalando.net/teapot/external-dns:v0.13.5-master-37
         args:
         - --source=service
         - --source=ingress
         - --source=skipper-routegroup
+{{- range split .ConfigItems.external_dns_domain_filter "," }}
+        - --domain-filter={{ . }}
+{{- end }}
 {{- range split .ConfigItems.external_dns_excluded_domains "," }}
         - --exclude-domains={{ . }}
 {{- end }}
@@ -47,6 +48,7 @@ spec:
         - --txt-owner-id={{ .Region }}:{{ .LocalID }}
         - --txt-prefix={{ .ConfigItems.external_dns_ownership_prefix }}
         - --aws-batch-change-size=120
+        - --aws-zones-cache-duration={{ .ConfigItems.external_dns_zones_cache_duration }}
         - --annotation-filter=external-dns.alpha.kubernetes.io/exclude notin (true)
         - --policy={{ .ConfigItems.external_dns_policy }}
         resources:
@@ -66,3 +68,6 @@ spec:
           runAsUser: 65534
           capabilities:
             drop: ["ALL"]
+        env:
+        - name: AWS_REGION
+          value: {{ .Region }}

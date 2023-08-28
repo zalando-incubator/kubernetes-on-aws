@@ -1,4 +1,4 @@
-apiVersion: autoscaling/v2beta2
+apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: skipper-ingress-redis
@@ -25,7 +25,7 @@ spec:
       target:
         type: Utilization
         averageUtilization: {{ .ConfigItems.skipper_ingress_redis_target_average_utilization_memory }}
-{{ if ne .ConfigItems.skipper_ingress_redis_cluster_scaling_schedules "" }}
+{{ if .ConfigItems.skipper_ingress_redis_cluster_scaling_schedules }}
   {{ range split .ConfigItems.skipper_ingress_redis_cluster_scaling_schedules "," }}
   {{ $name_target := split . "=" }}
   - type: Object

@@ -27,6 +27,10 @@ cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
 # Prevent CA lock-ups caused by large amounts of pending pods. Can be disabled completely by setting to 0.
 cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
 
+# karpenter settings
+karpenter_controller_cpu: "170m"
+karpenter_controller_memory: "250Mi"
+
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
@@ -63,9 +67,9 @@ skipper_ingress_min_replicas: "3"
 skipper_ingress_min_replicas: "2"
 {{end}}
 skipper_ingress_cpu: "1000m"
-skipper_ingress_memory: "1Gi"
+skipper_ingress_memory: "1500Mi"
 # When set to true (and dedicated node pool for skipper is also true) the
-# daemonset overhead will be substracted from the cpu settings such
+# daemonset overhead will be subtracted from the cpu settings such
 # that skipper will perfectly fit on the node.
 {{if eq .Cluster.Environment "e2e"}}
 skipper_ingress_binpack: "true"
@@ -86,7 +90,7 @@ skipper_suppress_route_update_logs: "true"
 skipper_validate_query: "true"
 skipper_validate_query_log: "false"
 
-skipper_default_filters: 'disableAccessLog(2,3,404,429) -> fifo(2000,20000,"3s")'
+skipper_default_filters: 'disableAccessLog(2,3,404,429) -> fifo(2000,20,"1s")'
 skipper_disabled_filters: "lua"
 skipper_edit_route_placeholders: ""
 skipper_ingress_inline_routes: ""
@@ -95,6 +99,8 @@ skipper_ingress_refuse_payload: ""
 skipper_compress_encodings: "gzip,deflate,br"
 
 # skipper profiling settings, 0 keeps default, <0 disable, >0 enable with value
+# https://pkg.go.dev/runtime@master#SetBlockProfileRate
+# https://pkg.go.dev/runtime@master#SetMutexProfileFraction
 skipper_block_profile_rate: 0
 skipper_mutex_profile_fraction: 0
 skipper_memory_profile_rate: 0
@@ -149,6 +155,10 @@ skipper_ingress_redis_cluster_scaling_schedules: ""
 
 skipper_cluster_ratelimit_max_group_shards: 1
 
+# datadome poc
+skipper_lua_scripts_enabled: ""
+datadome_api_key: ""
+
 #
 # skipper routesrv settings
 #
@@ -156,17 +166,21 @@ skipper_cluster_ratelimit_max_group_shards: 1
 # - "false" - routesrv deployment is removed, skipper uses own k8s dataclient
 # - "pre" - routesrv is deployed, skipper uses own k8s dataclient
 # - "exec" - routesrv is deployed, skipper uses routesrv
-{{if eq .Cluster.Environment "production"}}
-skipper_routesrv_enabled: "false"
-skipper_routesrv_replicas: 3
-skipper_routesrv_cpu: "1000m"
-skipper_routesrv_memory: "1Gi"
-{{else}}
 skipper_routesrv_enabled: "exec"
-skipper_routesrv_replicas: 3
-skipper_routesrv_cpu: "100m"
 skipper_routesrv_memory: "1Gi"
+{{if eq .Cluster.Environment "production"}}
+skipper_routesrv_cpu: "1000m"
+skipper_routesrv_min_replicas: 2
+{{else}}
+skipper_routesrv_cpu: "100m"
+skipper_routesrv_min_replicas: 1
 {{end}}
+
+skipper_routesrv_node_affinity_enabled: "false"
+skipper_routesrv_max_replicas: 10
+skipper_routesrv_target_average_utilization_cpu: "80"
+skipper_routesrv_target_average_utilization_memory: "80"
+skipper_ingress_routesrv_scaling_schedules: ""
 
 # Kube-Metrics-Adapter
 ## Scheduled scaling metrics: ramp up/down over this period of time
@@ -187,7 +201,7 @@ enable_skipper_eastwest_dns: "true"
 enable_skipper_eastwest: "false"
 
 
-# enable temporay logging of ingress.cluster.local names
+# enable temporary logging of ingress.cluster.local names
 # used to find services for which it's being used.
 skipper_eastwest_dns_log_enabled: "false"
 
@@ -228,12 +242,12 @@ skipper_serve_method_metric: "false"
 # of the skipper_serve_host_duration_seconds_bucket metric.
 skipper_serve_status_code_metric: "false"
 
-# disabled|provisioned|enabled routegroup validation ( skipper webhook )
+# disabled|provisioned|enabled routegroup validation via skipper webhook
 # can be one of disabled|provisioned|enabled
 routegroups_validation: "enabled"
 
-# enable hostnames with port in host definition
-skipper_routegroup_enable_hostport: "false"
+# disabled|enabled ingress validation via skipper webhook
+ingresses_validation: "disabled"
 
 # tokeninfo
 {{if eq .Cluster.Environment "production"}}
@@ -255,8 +269,11 @@ skipper_tokeninfo_cache_ttl: "30s"
 skipper_oauth2_ui_login: "false"
 skipper_ingress_encryption_key: ""
 {{else}}
-skipper_oauth2_ui_login: "false"
+skipper_oauth2_ui_login: "true"
 {{end}}
+
+# Comma-separated list of tokeninfo keys to retain
+skipper_oauth2_ui_login_tokeninfo_keys: ""
 
 # ClusterScalingSchedules
 # One or multiple cluster scaling schedules can be configured as a
@@ -264,6 +281,12 @@ skipper_oauth2_ui_login: "false"
 # E.g. to configure "schedule1" cluster schedule with a target value of 3 and "schedule2" with a target value of 5 set
 # skipper_cluster_scaling_schedules: "schedule1=3,schedule2=5"
 skipper_cluster_scaling_schedules: ""
+
+# Skipper Ingress/RouteGroup backend traffic split algorithm: traffic-predicate or traffic-segment-predicate
+skipper_ingress_backend_traffic_algorithm: "traffic-segment-predicate"
+
+# TODO: after a while we can remove this and hardcode (2023-06-30)
+skipper_ingress_default_lb_algorithm: "powerOfRandomNChoices"
 
 #
 # FabricGateway controller config
@@ -273,9 +296,12 @@ skipper_cluster_scaling_schedules: ""
 #   - production: runs the controller
 #
 fabric_gateway_controller_mode: "disabled"
+fabric_gateway_controller_version: "master-215"
 fabric_gateway_controller_cpu: "50m"
 fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_crd_v1_enabled: "false"
+fabric_gateway_controller_allow_all_filters: "false"
+fabric_gateway_controller_ssl_policy: ""
 
 # kube-api-server settings
 
@@ -330,8 +356,7 @@ prometheus_mem_min: "2Gi"
 prometheus_cpu_min: "0"
 prometheus_retention_size: "49GB" # one GB less than prometheus' PVC
 prometheus_retention_time: "1d"
-# Deploy a replacement Prometheus that uses the CSI-based EBS-backed StorageClass directly, mostly for testing
-prometheus_csi_ebs: "false"
+prometheus_storage_size: "50Gi"
 
 # Upstream defaults are too aggressive:
 # https://prometheus.io/docs/prometheus/latest/configuration/configuration/#remote_write
@@ -379,6 +404,12 @@ downscaler_enabled: "false"
 horizontal_pod_autoscaler_sync_period: "30s"
 horizontal_pod_autoscaler_tolerance: "0.1"
 horizontal_pod_downscale_stabilization: "5m0s"
+
+# enable/disable legacy autoscaling APIs
+# Note StackSet controller still depends on autoscaling/v2beta2 in clusters
+# using horizontalPodAutoscaler field.
+autoscaling_v2beta1_enabled: "true"
+autoscaling_v2beta2_enabled: "true"
 
 # Vertical pod autoscaler version for controlling roll-out, can be "current" or "legacy"
 # current => v0.11.0-internal.17
@@ -490,7 +521,7 @@ teapot_admission_controller_crd_role_provisioning_allowed_api_groups: "flink.k8s
 teapot_admission_controller_topology_spread: optin
 teapot_admission_controller_topology_spread_timeout: 7m
 
-# Supported providers: 'zalando'
+# keep legacy configs during rollout Supported providers: 'zalando', `karpenter`
 teapot_admission_controller_node_lifecycle_provider: "zalando"
 
 # Enable and configure runtime-policy annotation
@@ -527,6 +558,8 @@ teapot_admission_controller_graceful_termination: "true"
 blocked_availability_zone: ""
 
 # etcd cluster
+etcd_stack_name: "etcd-cluster-etcd"
+
 {{if eq .Cluster.Environment "production"}}
 etcd_instance_count: "5"
 etcd_instance_type: "m5.large"
@@ -535,9 +568,8 @@ etcd_instance_count: "3"
 etcd_instance_type: "t3.medium"
 {{end}}
 
-etcd_docker_image: "registry.opensource.zalan.do/teapot/etcd-cluster:3.4.16-master-10"
 etcd_scalyr_key: ""
-etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.4.16-amd64-main-10" "861068367966"}}
+etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.9-amd64-main-15" "861068367966"}}
 
 dynamodb_service_link_enabled: "false"
 
@@ -561,8 +593,19 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_22_amd64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-amd64-master-243" "861068367966" }}
-kuberuntu_image_v1_22_arm64: {{ amiID "zalando-ubuntu-kubernetes-production-v1.22.17-arm64-master-243" "861068367966" }}
+kuberuntu_image_v1_23_focal_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.23.17-amd64-master-273" "861068367966" }}
+kuberuntu_image_v1_23_focal_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.23.17-arm64-master-273" "861068367966" }}
+kuberuntu_image_v1_23_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.23.17-amd64-master-279" "861068367966" }}
+kuberuntu_image_v1_23_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.23.17-arm64-master-279" "861068367966" }}
+
+# Which distro from the previous config items should be used. Valid options are `focal` and `jammy`. Can be set for each node pool.
+{{if eq .Cluster.Environment "test"}}
+kuberuntu_distro_master: "jammy"
+kuberuntu_distro_worker: "focal"
+{{else}}
+kuberuntu_distro_master: "jammy"
+kuberuntu_distro_worker: "focal"
+{{end}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -575,6 +618,11 @@ audittrail_root_account_role: ""
 
 audittrail_adapter_cpu: "50m"
 audittrail_adapter_memory: "200Mi"
+
+audittrail_adapter_timeout: "2s"
+audittrail_adapter_bucket: "zalando-kubernetes-audit"
+
+audit_webhook_batch_max_size: "250"
 
 kube2iam_cpu: "25m"
 kube2iam_memory: "100Mi"
@@ -605,10 +653,6 @@ cpu_manager_policy: "none"
 # sysctl names allowed to be used in security policies, comma-separated
 allowed_unsafe_sysctls: "net.ipv4.tcp_keepalive_time,net.ipv4.tcp_keepalive_intvl,net.ipv4.tcp_keepalive_probes,net.ipv4.tcp_syn_retries,net.ipv4.tcp_retries2"
 
-# enable CSI Driver feature flag
-enable_csi: "false"
-# enable CSIMigration and CSIMigrationAWS feature flags (make sure to set `enable_csi: true` for this to work)
-enable_csi_migration: "false"
 # the maximum amount of memory for EBS CSI controller's sidecars
 ebs_csi_controller_sidecar_memory: "80Mi"
 
@@ -640,7 +684,7 @@ rotate_service_account_tokens_extended_expiration: "true"
 # Prometheus data, so it's not intended to be enabled ALL THE TIME, but can be
 # enabled when needed to answer one of the above questions or similar.
 #
-# The possible dimentions are:
+# The possible dimensions are:
 # authorization_decision,authentication_stale_token,user,user_agent,verb,code,resource,api_group,api_version
 auditlog_metric_dimensions: "authorization_decision"
 
@@ -653,14 +697,18 @@ ssh_vpc_only: "false"
 
 # configure custom dns zone
 custom_dns_zone: "" # zone name e.g. example.org
-custom_dns_zone_nameservers: "" # space seperated list of nameserver IP addresses
+custom_dns_zone_nameservers: "" # space separated list of nameserver IP addresses
 
 # prefix prepended to ownership TXT records for external-dns
 external_dns_ownership_prefix: ""
+# domains that should be included by ExternalDNS ("" includes all hosted zones in the account. Separate multiple domains with a comma)
+external_dns_domain_filter: ""
 # domains that should be ignored by ExternalDNS
 external_dns_excluded_domains: cluster.local
 # synchronization policy between Kubernetes and AWS Route53 (default: sync, options: sync, upsert-only, create-only)
 external_dns_policy: sync
+# the duration for how long to cache the list of hosted zones in memory
+external_dns_zones_cache_duration: "1h"
 
 # resource configuration
 external_dns_mem: "4Gi"
@@ -701,6 +749,8 @@ vm_dirty_bytes: "134217728"
 
 # enable kube-proxy to use endpoint slice
 enable_endpointsliceproxying: "true"
+# Option to Enable FeatureGate TopologyAwareHints
+enable_topology_aware_hints: "false"
 
 # Enable FeatureGate HPAScaleToZero
 enable_hpa_scale_to_zero: "true"
@@ -738,6 +788,23 @@ spot_allocation_strategy: "capacity-optimized"
 stackset_controller_sync_interval: "10s"
 stackset_controller_mem_min: "120Mi"
 stackset_controller_mem_max: "4Gi"
+
+# This is part of decommissioning the legacy `horizontalPodAutoscaler` field of
+# the stackset.StackTemplate and to migrate all use cases to the `autoscaler`
+# field.
+# We disable the use of the field in two stages:
+# 1. Block changes/new deployments of stacksets with the
+#    `horizontalPodAutoscaler` field via the admission-controller. The
+#    `stackset_legacy_hpa_field_enabled` config-item controls this.
+#
+# 2. Drop the `horizontalPodAutoscaler` field from the CRD spec. This will
+# remove it from any existing StackSet and prevent setting the field at all.
+# This is controlled by the `stackset_legacy_hpa_field_crd_enabled` config-item.
+stackset_legacy_hpa_field_enabled: "false"
+stackset_legacy_hpa_field_crd_enabled: "false"
+
+# Flag to include the stackset ingress in the stack definition
+stackset_ingress_in_stack_crd: "false"
 
 # EBS settings for the root volume
 ebs_master_root_volume_size: "50"
@@ -805,11 +872,14 @@ observability_metrics_endpoint: "ingest.lightstep.com"
 observability_metrics_port: "443"
 
 # labels whitelisted to kube-state-metrics
-observability_metrics_pods_labels: "application,component"
+observability_metrics_pods_labels: "application,component,version,environment,stack_name,stack_version,application_id,application_version,team,job-name"
+
 observability_metrics_ingresses_labels: ""
 
+observability_metrics_pods_annotations: "zalando.org/zmon-job-metric-stored"
+
 # opentelemetry collector
-observability_otel_collector_enabled: "false"
+observability_otel_collector_enabled: "true"
 
 # list of comma separated buckets which are accessible by zmon
 zmon_accessible_s3_buckets: ""
@@ -820,8 +890,17 @@ disable_zmon_appliance_worker_tracking: "true"
 # Add ClusterRole for clusters required by hyped-article-lifecycle-management controller
 hyped_article_lifecycle_management: "false"
 
+# Add ClusterRole for clusters required by business-partner controller
+business_partner_service: "false"
+
 # enable SizeMemoryBackedVolumes feature flag
 enable_size_memory_backed_volumes: "true"
+
+karpenter_pools_enabled: "false"
+
+# enable StatefulSetAutoDeletePVC feature flag
+# https://kubernetes.io/blog/2021/12/16/kubernetes-1-23-statefulset-pvc-auto-deletion/
+enable_statefulset_autodelete_pvc: "true"
 
 # Each subdomain can reach a max of 63 bytes on Route53
 # This custom value sets the subdomain max allowed length taking into consideration the 'cname-' prefix added by external-dns
@@ -846,5 +925,24 @@ network_monitoring_separate_prometheus: "false"
 # Must be a whole number between 0-100.
 apiserver_memory_limit_percent: "80"
 
+apiserver_max_requests_inflight: "400"
+
 # specify if control plane nodes should rely on ASG Lifecycle Hook or not
 control_plane_asg_lifecycle_hook: "true"
+
+# This allows setting custom sysctl settings. The config-item is intended to be
+# used on node-pools rather being set globally.
+#
+# The value is a comma seprated configuration of `sysctl_setting=value` as
+# illustrated in the example below.
+#
+# Example:
+#
+#   sysctl_settings: "fs.aio-max-nr=8388608,fs.inotify.max_user_watches=100000"
+#
+# Which translates to a file on the node:
+#
+#  cat /etc/sysctl.d/99-custom-sysctl-settings.conf
+#  fs.aio-max-nr = 8388608
+#  fs.inotify.max_user_watches = 100000
+sysctl_settings: ""

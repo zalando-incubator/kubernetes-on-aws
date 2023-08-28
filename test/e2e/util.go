@@ -275,7 +275,7 @@ func createSkipperPodSpec(route string, port int32) corev1.PodSpec {
 		Containers: []corev1.Container{
 			{
 				Name:  "skipper",
-				Image: "container-registry.zalando.net/teapot/skipper:v0.15.23",
+				Image: "container-registry.zalando.net/teapot/skipper:v0.16.154",
 				Args: []string{
 					"skipper",
 					"-inline-routes",
@@ -929,6 +929,7 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 			Labels:    labels,
 		},
 		Spec: v1.PodSpec{
+			RestartPolicy: v1.RestartPolicyNever,
 			Containers: []v1.Container{
 				{
 					Name:  "cuda-vector-add",

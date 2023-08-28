@@ -59,13 +59,12 @@ write_files:
       # https://github.com/kubernetes/kubernetes/blob/v1.13.6/staging/src/k8s.io/kubelet/config/v1beta1/types.go
       apiVersion: kubelet.config.k8s.io/v1beta1
       kind: KubeletConfiguration
+      cgroupDriver: systemd
+      containerLogMaxSize: "50Mi"
+      containerLogMaxFiles: 2
       clusterDomain: cluster.local
       cpuCFSQuota: false
       featureGates:
-        CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
-{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }}
-        CSIMigrationAWS: true
-{{- end }}
         SizeMemoryBackedVolumes: {{ .Cluster.ConfigItems.enable_size_memory_backed_volumes }}
 {{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
         EphemeralContainers: true
@@ -112,10 +111,36 @@ write_files:
           cacheUnauthorizedTTL: "30s"
       protectKernelDefaults: true
 
-{{- if ( and ( ne .Cluster.ConfigItems.vm_dirty_background_bytes "" ) ( ne .Cluster.ConfigItems.vm_dirty_bytes "" ) )}}
+{{- if and .Cluster.ConfigItems.vm_dirty_background_bytes .Cluster.ConfigItems.vm_dirty_bytes }}
   - owner: root:root
     path: /etc/sysctl.d/03-vm-dirty-ratios.conf
     content: |
       vm.dirty_background_bytes = {{ .Cluster.ConfigItems.vm_dirty_background_bytes }}
       vm.dirty_bytes = {{ .Cluster.ConfigItems.vm_dirty_bytes }}
 {{- end}}
+{{- if .NodePool.ConfigItems.sysctl_settings}}
+  - owner: root:root
+    path: /etc/sysctl.d/99-custom-sysctl-settings.conf
+    content: |
+      {{- range $i, $cfgs := split .NodePool.ConfigItems.sysctl_settings ","}}
+      {{- $cfg := split $cfgs "="}}
+      {{index $cfg 0}} = {{index $cfg 1}}
+      {{- end}}
+{{- end}}
+
+  - owner: root:root
+    path: /etc/kubernetes/cni/net.d/10-flannel.conflist
+    content: |
+      {
+        "name": "podnet",
+        "cniVersion": "0.3.1",
+        "plugins": [
+          {
+            "type": "flannel",
+            "delegate": {
+              "isDefaultGateway": true,
+              "hairpinMode": true
+            }
+          }
+        ]
+      }

@@ -1,10 +1,10 @@
-
+# This is an adjusted copy of https://github.com/zalando-incubator/stackset-controller/blob/master/docs/stackset_crd.yaml
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.6.2
+    controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
   name: stacksets.zalando.org
 spec:
@@ -354,10 +354,11 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                    x-kubernetes-list-type: atomic
                                   selectPolicy:
                                     description: selectPolicy is used to specify which
                                       policy should be used. If not set, the default
-                                      value MaxPolicySelect is used.
+                                      value Max is used.
                                     type: string
                                   stabilizationWindowSeconds:
                                     description: 'StabilizationWindowSeconds is the
@@ -375,8 +376,8 @@ spec:
                               scaleUp:
                                 description: 'scaleUp is scaling policy for scaling
                                   Up. If not set, the default value is the higher
-                                  of:   * increase no more than 4 pods per 60 seconds   *
-                                  double the number of pods per 60 seconds No stabilization
+                                  of: * increase no more than 4 pods per 60 seconds
+                                  * double the number of pods per 60 seconds No stabilization
                                   is used.'
                                 properties:
                                   policies:
@@ -413,10 +414,11 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                    x-kubernetes-list-type: atomic
                                   selectPolicy:
                                     description: selectPolicy is used to specify which
                                       policy should be used. If not set, the default
-                                      value MaxPolicySelect is used.
+                                      value Max is used.
                                     type: string
                                   stabilizationWindowSeconds:
                                     description: 'StabilizationWindowSeconds is the
@@ -503,6 +505,18 @@ spec:
                                   - name
                                   - region
                                   type: object
+                                requestsPerSecond:
+                                  description: MetricRequestsPerSecond specifies basic
+                                    information to scale based on on external RPS
+                                    metric.
+                                  properties:
+                                    hostnames:
+                                      items:
+                                        type: string
+                                      type: array
+                                  required:
+                                  - hostnames
+                                  type: object
                                 scalingSchedule:
                                   description: MetricsScalingSchedule specifies the
                                     ScalingSchedule object which should be used for
@@ -529,6 +543,7 @@ spec:
                                   - ZMON
                                   - ScalingSchedule
                                   - ClusterScalingSchedule
+                                  - RequestsPerSecond
                                   type: string
                                 zmon:
                                   description: MetricsZMON specifies the ZMON check
@@ -581,6 +596,7 @@ spec:
                         - maxReplicas
                         - metrics
                         type: object
+# {{ if eq .Cluster.ConfigItems.stackset_legacy_hpa_field_crd_enabled "true" }}
                       horizontalPodAutoscaler:
                         description: HorizontalPodAutoscaler is the Autoscaling configuration
                           of a Stack. If defined an HPA will be created for the Stack.
@@ -633,10 +649,11 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                    x-kubernetes-list-type: atomic
                                   selectPolicy:
                                     description: selectPolicy is used to specify which
                                       policy should be used. If not set, the default
-                                      value MaxPolicySelect is used.
+                                      value Max is used.
                                     type: string
                                   stabilizationWindowSeconds:
                                     description: 'StabilizationWindowSeconds is the
@@ -654,8 +671,8 @@ spec:
                               scaleUp:
                                 description: 'scaleUp is scaling policy for scaling
                                   Up. If not set, the default value is the higher
-                                  of:   * increase no more than 4 pods per 60 seconds   *
-                                  double the number of pods per 60 seconds No stabilization
+                                  of: * increase no more than 4 pods per 60 seconds
+                                  * double the number of pods per 60 seconds No stabilization
                                   is used.'
                                 properties:
                                   policies:
@@ -692,10 +709,11 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                    x-kubernetes-list-type: atomic
                                   selectPolicy:
                                     description: selectPolicy is used to specify which
                                       policy should be used. If not set, the default
-                                      value MaxPolicySelect is used.
+                                      value Max is used.
                                     type: string
                                   stabilizationWindowSeconds:
                                     description: 'StabilizationWindowSeconds is the
@@ -1104,6 +1122,8 @@ spec:
                         required:
                         - maxReplicas
                         type: object
+# {{ end }}
+# {{ if ne .Cluster.ConfigItems.stackset_ingress_in_stack_crd "true" }}
                       ingress:
                         description: Settings for the per-stack ingresses (in case
                           the StackSet has a configured ingress)
@@ -1138,6 +1158,7 @@ spec:
                                 type: object
                             type: object
                         type: object
+# {{ end }}
                       minReadySeconds:
                         description: Minimum number of seconds for which a newly created
                           pod should be ready without any of its container crashing,
@@ -1225,32 +1246,10 @@ spec:
                                                       that relates the key and values.
                                                     properties:
                                                       key:
-                                                        description: The label key
-                                                          that the selector applies
-                                                          to.
                                                         type: string
                                                       operator:
-                                                        description: Represents a
-                                                          key's relationship to a
-                                                          set of values. Valid operators
-                                                          are In, NotIn, Exists, DoesNotExist.
-                                                          Gt, and Lt.
                                                         type: string
                                                       values:
-                                                        description: An array of string
-                                                          values. If the operator
-                                                          is In or NotIn, the values
-                                                          array must be non-empty.
-                                                          If the operator is Exists
-                                                          or DoesNotExist, the values
-                                                          array must be empty. If
-                                                          the operator is Gt or Lt,
-                                                          the values array must have
-                                                          a single element, which
-                                                          will be interpreted as an
-                                                          integer. This array is replaced
-                                                          during a strategic merge
-                                                          patch.
                                                         items:
                                                           type: string
                                                         type: array
@@ -1269,32 +1268,10 @@ spec:
                                                       that relates the key and values.
                                                     properties:
                                                       key:
-                                                        description: The label key
-                                                          that the selector applies
-                                                          to.
                                                         type: string
                                                       operator:
-                                                        description: Represents a
-                                                          key's relationship to a
-                                                          set of values. Valid operators
-                                                          are In, NotIn, Exists, DoesNotExist.
-                                                          Gt, and Lt.
                                                         type: string
                                                       values:
-                                                        description: An array of string
-                                                          values. If the operator
-                                                          is In or NotIn, the values
-                                                          array must be non-empty.
-                                                          If the operator is Exists
-                                                          or DoesNotExist, the values
-                                                          array must be empty. If
-                                                          the operator is Gt or Lt,
-                                                          the values array must have
-                                                          a single element, which
-                                                          will be interpreted as an
-                                                          integer. This array is replaced
-                                                          during a strategic merge
-                                                          patch.
                                                         items:
                                                           type: string
                                                         type: array
@@ -1344,32 +1321,10 @@ spec:
                                                       that relates the key and values.
                                                     properties:
                                                       key:
-                                                        description: The label key
-                                                          that the selector applies
-                                                          to.
                                                         type: string
                                                       operator:
-                                                        description: Represents a
-                                                          key's relationship to a
-                                                          set of values. Valid operators
-                                                          are In, NotIn, Exists, DoesNotExist.
-                                                          Gt, and Lt.
                                                         type: string
                                                       values:
-                                                        description: An array of string
-                                                          values. If the operator
-                                                          is In or NotIn, the values
-                                                          array must be non-empty.
-                                                          If the operator is Exists
-                                                          or DoesNotExist, the values
-                                                          array must be empty. If
-                                                          the operator is Gt or Lt,
-                                                          the values array must have
-                                                          a single element, which
-                                                          will be interpreted as an
-                                                          integer. This array is replaced
-                                                          during a strategic merge
-                                                          patch.
                                                         items:
                                                           type: string
                                                         type: array
@@ -1388,32 +1343,10 @@ spec:
                                                       that relates the key and values.
                                                     properties:
                                                       key:
-                                                        description: The label key
-                                                          that the selector applies
-                                                          to.
                                                         type: string
                                                       operator:
-                                                        description: Represents a
-                                                          key's relationship to a
-                                                          set of values. Valid operators
-                                                          are In, NotIn, Exists, DoesNotExist.
-                                                          Gt, and Lt.
                                                         type: string
                                                       values:
-                                                        description: An array of string
-                                                          values. If the operator
-                                                          is In or NotIn, the values
-                                                          array must be non-empty.
-                                                          If the operator is Exists
-                                                          or DoesNotExist, the values
-                                                          array must be empty. If
-                                                          the operator is Gt or Lt,
-                                                          the values array must have
-                                                          a single element, which
-                                                          will be interpreted as an
-                                                          integer. This array is replaced
-                                                          during a strategic merge
-                                                          patch.
                                                         items:
                                                           type: string
                                                         type: array
@@ -1465,42 +1398,13 @@ spec:
                                                     pods.
                                                   properties:
                                                     matchExpressions:
-                                                      description: matchExpressions
-                                                        is a list of label selector
-                                                        requirements. The requirements
-                                                        are ANDed.
                                                       items:
-                                                        description: A label selector
-                                                          requirement is a selector
-                                                          that contains values, a
-                                                          key, and an operator that
-                                                          relates the key and values.
                                                         properties:
                                                           key:
-                                                            description: key is the
-                                                              label key that the selector
-                                                              applies to.
                                                             type: string
                                                           operator:
-                                                            description: operator
-                                                              represents a key's relationship
-                                                              to a set of values.
-                                                              Valid operators are
-                                                              In, NotIn, Exists and
-                                                              DoesNotExist.
                                                             type: string
                                                           values:
-                                                            description: values is
-                                                              an array of string values.
-                                                              If the operator is In
-                                                              or NotIn, the values
-                                                              array must be non-empty.
-                                                              If the operator is Exists
-                                                              or DoesNotExist, the
-                                                              values array must be
-                                                              empty. This array is
-                                                              replaced during a strategic
-                                                              merge patch.
                                                             items:
                                                               type: string
                                                             type: array
@@ -1512,16 +1416,6 @@ spec:
                                                     matchLabels:
                                                       additionalProperties:
                                                         type: string
-                                                      description: matchLabels is
-                                                        a map of {key,value} pairs.
-                                                        A single {key,value} in the
-                                                        matchLabels map is equivalent
-                                                        to an element of matchExpressions,
-                                                        whose key field is "key",
-                                                        the operator is "In", and
-                                                        the values array contains
-                                                        only "value". The requirements
-                                                        are ANDed.
                                                       type: object
                                                   type: object
                                                 namespaceSelector:
@@ -1540,42 +1434,13 @@ spec:
                                                     feature is enabled.
                                                   properties:
                                                     matchExpressions:
-                                                      description: matchExpressions
-                                                        is a list of label selector
-                                                        requirements. The requirements
-                                                        are ANDed.
                                                       items:
-                                                        description: A label selector
-                                                          requirement is a selector
-                                                          that contains values, a
-                                                          key, and an operator that
-                                                          relates the key and values.
                                                         properties:
                                                           key:
-                                                            description: key is the
-                                                              label key that the selector
-                                                              applies to.
                                                             type: string
                                                           operator:
-                                                            description: operator
-                                                              represents a key's relationship
-                                                              to a set of values.
-                                                              Valid operators are
-                                                              In, NotIn, Exists and
-                                                              DoesNotExist.
                                                             type: string
                                                           values:
-                                                            description: values is
-                                                              an array of string values.
-                                                              If the operator is In
-                                                              or NotIn, the values
-                                                              array must be non-empty.
-                                                              If the operator is Exists
-                                                              or DoesNotExist, the
-                                                              values array must be
-                                                              empty. This array is
-                                                              replaced during a strategic
-                                                              merge patch.
                                                             items:
                                                               type: string
                                                             type: array
@@ -1587,16 +1452,6 @@ spec:
                                                     matchLabels:
                                                       additionalProperties:
                                                         type: string
-                                                      description: matchLabels is
-                                                        a map of {key,value} pairs.
-                                                        A single {key,value} in the
-                                                        matchLabels map is equivalent
-                                                        to an element of matchExpressions,
-                                                        whose key field is "key",
-                                                        the operator is "In", and
-                                                        the values array contains
-                                                        only "value". The requirements
-                                                        are ANDed.
                                                       type: object
                                                   type: object
                                                 namespaces:
@@ -1679,28 +1534,10 @@ spec:
                                                       key and values.
                                                     properties:
                                                       key:
-                                                        description: key is the label
-                                                          key that the selector applies
-                                                          to.
                                                         type: string
                                                       operator:
-                                                        description: operator represents
-                                                          a key's relationship to
-                                                          a set of values. Valid operators
-                                                          are In, NotIn, Exists and
-                                                          DoesNotExist.
                                                         type: string
                                                       values:
-                                                        description: values is an
-                                                          array of string values.
-                                                          If the operator is In or
-                                                          NotIn, the values array
-                                                          must be non-empty. If the
-                                                          operator is Exists or DoesNotExist,
-                                                          the values array must be
-                                                          empty. This array is replaced
-                                                          during a strategic merge
-                                                          patch.
                                                         items:
                                                           type: string
                                                         type: array
@@ -1749,28 +1586,10 @@ spec:
                                                       key and values.
                                                     properties:
                                                       key:
-                                                        description: key is the label
-                                                          key that the selector applies
-                                                          to.
                                                         type: string
                                                       operator:
-                                                        description: operator represents
-                                                          a key's relationship to
-                                                          a set of values. Valid operators
-                                                          are In, NotIn, Exists and
-                                                          DoesNotExist.
                                                         type: string
                                                       values:
-                                                        description: values is an
-                                                          array of string values.
-                                                          If the operator is In or
-                                                          NotIn, the values array
-                                                          must be non-empty. If the
-                                                          operator is Exists or DoesNotExist,
-                                                          the values array must be
-                                                          empty. This array is replaced
-                                                          during a strategic merge
-                                                          patch.
                                                         items:
                                                           type: string
                                                         type: array
@@ -1859,42 +1678,13 @@ spec:
                                                     pods.
                                                   properties:
                                                     matchExpressions:
-                                                      description: matchExpressions
-                                                        is a list of label selector
-                                                        requirements. The requirements
-                                                        are ANDed.
                                                       items:
-                                                        description: A label selector
-                                                          requirement is a selector
-                                                          that contains values, a
-                                                          key, and an operator that
-                                                          relates the key and values.
                                                         properties:
                                                           key:
-                                                            description: key is the
-                                                              label key that the selector
-                                                              applies to.
                                                             type: string
                                                           operator:
-                                                            description: operator
-                                                              represents a key's relationship
-                                                              to a set of values.
-                                                              Valid operators are
-                                                              In, NotIn, Exists and
-                                                              DoesNotExist.
                                                             type: string
                                                           values:
-                                                            description: values is
-                                                              an array of string values.
-                                                              If the operator is In
-                                                              or NotIn, the values
-                                                              array must be non-empty.
-                                                              If the operator is Exists
-                                                              or DoesNotExist, the
-                                                              values array must be
-                                                              empty. This array is
-                                                              replaced during a strategic
-                                                              merge patch.
                                                             items:
                                                               type: string
                                                             type: array
@@ -1906,16 +1696,6 @@ spec:
                                                     matchLabels:
                                                       additionalProperties:
                                                         type: string
-                                                      description: matchLabels is
-                                                        a map of {key,value} pairs.
-                                                        A single {key,value} in the
-                                                        matchLabels map is equivalent
-                                                        to an element of matchExpressions,
-                                                        whose key field is "key",
-                                                        the operator is "In", and
-                                                        the values array contains
-                                                        only "value". The requirements
-                                                        are ANDed.
                                                       type: object
                                                   type: object
                                                 namespaceSelector:
@@ -1934,42 +1714,13 @@ spec:
                                                     feature is enabled.
                                                   properties:
                                                     matchExpressions:
-                                                      description: matchExpressions
-                                                        is a list of label selector
-                                                        requirements. The requirements
-                                                        are ANDed.
                                                       items:
-                                                        description: A label selector
-                                                          requirement is a selector
-                                                          that contains values, a
-                                                          key, and an operator that
-                                                          relates the key and values.
                                                         properties:
                                                           key:
-                                                            description: key is the
-                                                              label key that the selector
-                                                              applies to.
                                                             type: string
                                                           operator:
-                                                            description: operator
-                                                              represents a key's relationship
-                                                              to a set of values.
-                                                              Valid operators are
-                                                              In, NotIn, Exists and
-                                                              DoesNotExist.
                                                             type: string
                                                           values:
-                                                            description: values is
-                                                              an array of string values.
-                                                              If the operator is In
-                                                              or NotIn, the values
-                                                              array must be non-empty.
-                                                              If the operator is Exists
-                                                              or DoesNotExist, the
-                                                              values array must be
-                                                              empty. This array is
-                                                              replaced during a strategic
-                                                              merge patch.
                                                             items:
                                                               type: string
                                                             type: array
@@ -1981,16 +1732,6 @@ spec:
                                                     matchLabels:
                                                       additionalProperties:
                                                         type: string
-                                                      description: matchLabels is
-                                                        a map of {key,value} pairs.
-                                                        A single {key,value} in the
-                                                        matchLabels map is equivalent
-                                                        to an element of matchExpressions,
-                                                        whose key field is "key",
-                                                        the operator is "In", and
-                                                        the values array contains
-                                                        only "value". The requirements
-                                                        are ANDed.
                                                       type: object
                                                   type: object
                                                 namespaces:
@@ -2073,28 +1814,10 @@ spec:
                                                       key and values.
                                                     properties:
                                                       key:
-                                                        description: key is the label
-                                                          key that the selector applies
-                                                          to.
                                                         type: string
                                                       operator:
-                                                        description: operator represents
-                                                          a key's relationship to
-                                                          a set of values. Valid operators
-                                                          are In, NotIn, Exists and
-                                                          DoesNotExist.
                                                         type: string
                                                       values:
-                                                        description: values is an
-                                                          array of string values.
-                                                          If the operator is In or
-                                                          NotIn, the values array
-                                                          must be non-empty. If the
-                                                          operator is Exists or DoesNotExist,
-                                                          the values array must be
-                                                          empty. This array is replaced
-                                                          during a strategic merge
-                                                          patch.
                                                         items:
                                                           type: string
                                                         type: array
@@ -2143,28 +1866,10 @@ spec:
                                                       key and values.
                                                     properties:
                                                       key:
-                                                        description: key is the label
-                                                          key that the selector applies
-                                                          to.
                                                         type: string
                                                       operator:
-                                                        description: operator represents
-                                                          a key's relationship to
-                                                          a set of values. Valid operators
-                                                          are In, NotIn, Exists and
-                                                          DoesNotExist.
                                                         type: string
                                                       values:
-                                                        description: values is an
-                                                          array of string values.
-                                                          If the operator is In or
-                                                          NotIn, the values array
-                                                          must be non-empty. If the
-                                                          operator is Exists or DoesNotExist,
-                                                          the values array must be
-                                                          empty. This array is replaced
-                                                          during a strategic merge
-                                                          patch.
                                                         items:
                                                           type: string
                                                         type: array
@@ -2469,9 +2174,8 @@ spec:
                                             until the hook completes. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
                                           properties:
                                             exec:
-                                              description: One and only one of the
-                                                following should be specified. Exec
-                                                specifies the action to take.
+                                              description: Exec specifies the action
+                                                to take.
                                               properties:
                                                 command:
                                                   description: Command is the command
@@ -2511,12 +2215,8 @@ spec:
                                                       HTTP probes
                                                     properties:
                                                       name:
-                                                        description: The header field
-                                                          name
                                                         type: string
                                                       value:
-                                                        description: The header field
-                                                          value
                                                         type: string
                                                     required:
                                                     - name
@@ -2544,10 +2244,12 @@ spec:
                                               - port
                                               type: object
                                             tcpSocket:
-                                              description: 'TCPSocket specifies an
-                                                action involving a TCP port. TCP hooks
-                                                not yet supported TODO: implement
-                                                a realistic TCP lifecycle hook'
+                                              description: Deprecated. TCPSocket is
+                                                NOT supported as a LifecycleHandler
+                                                and kept for the backward compatibility.
+                                                There are no validation of this field
+                                                and lifecycle hooks will fail in runtime
+                                                when tcp handler is specified.
                                               properties:
                                                 host:
                                                   description: 'Optional: Host name
@@ -2574,21 +2276,20 @@ spec:
                                             as liveness/startup probe failure, preemption,
                                             resource contention, etc. The handler
                                             is not called if the container crashes
-                                            or exits. The reason for termination is
-                                            passed to the handler. The Pod''s termination
-                                            grace period countdown begins before the
-                                            PreStop hooked is executed. Regardless
-                                            of the outcome of the handler, the container
-                                            will eventually terminate within the Pod''s
-                                            termination grace period. Other management
-                                            of the container blocks until the hook
-                                            completes or until the termination grace
-                                            period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
+                                            or exits. The Pod''s termination grace
+                                            period countdown begins before the PreStop
+                                            hook is executed. Regardless of the outcome
+                                            of the handler, the container will eventually
+                                            terminate within the Pod''s termination
+                                            grace period (unless delayed by finalizers).
+                                            Other management of the container blocks
+                                            until the hook completes or until the
+                                            termination grace period is reached. More
+                                            info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
                                           properties:
                                             exec:
-                                              description: One and only one of the
-                                                following should be specified. Exec
-                                                specifies the action to take.
+                                              description: Exec specifies the action
+                                                to take.
                                               properties:
                                                 command:
                                                   description: Command is the command
@@ -2628,12 +2329,8 @@ spec:
                                                       HTTP probes
                                                     properties:
                                                       name:
-                                                        description: The header field
-                                                          name
                                                         type: string
                                                       value:
-                                                        description: The header field
-                                                          value
                                                         type: string
                                                     required:
                                                     - name
@@ -2661,10 +2358,12 @@ spec:
                                               - port
                                               type: object
                                             tcpSocket:
-                                              description: 'TCPSocket specifies an
-                                                action involving a TCP port. TCP hooks
-                                                not yet supported TODO: implement
-                                                a realistic TCP lifecycle hook'
+                                              description: Deprecated. TCPSocket is
+                                                NOT supported as a LifecycleHandler
+                                                and kept for the backward compatibility.
+                                                There are no validation of this field
+                                                and lifecycle hooks will fail in runtime
+                                                when tcp handler is specified.
                                               properties:
                                                 host:
                                                   description: 'Optional: Host name
@@ -2691,9 +2390,8 @@ spec:
                                         Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes'
                                       properties:
                                         exec:
-                                          description: One and only one of the following
-                                            should be specified. Exec specifies the
-                                            action to take.
+                                          description: Exec specifies the action to
+                                            take.
                                           properties:
                                             command:
                                               description: Command is the command
@@ -2718,6 +2416,28 @@ spec:
                                             Minimum value is 1.
                                           format: int32
                                           type: integer
+                                        grpc:
+                                          description: GRPC specifies an action involving
+                                            a GRPC port. This is an alpha field and
+                                            requires enabling GRPCContainerProbe feature
+                                            gate.
+                                          properties:
+                                            port:
+                                              description: Port number of the gRPC
+                                                service. Number must be in the range
+                                                1 to 65535.
+                                              format: int32
+                                              type: integer
+                                            service:
+                                              description: "Service is the name of
+                                                the service to place in the gRPC HealthCheckRequest
+                                                (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+                                                \n If this is not specified, the default
+                                                behavior is defined by gRPC."
+                                              type: string
+                                          required:
+                                          - port
+                                          type: object
                                         httpGet:
                                           description: HTTPGet specifies the http
                                             request to perform.
@@ -2791,10 +2511,8 @@ spec:
                                           format: int32
                                           type: integer
                                         tcpSocket:
-                                          description: 'TCPSocket specifies an action
-                                            involving a TCP port. TCP hooks not yet
-                                            supported TODO: implement a realistic
-                                            TCP lifecycle hook'
+                                          description: TCPSocket specifies an action
+                                            involving a TCP port.
                                           properties:
                                             host:
                                               description: 'Optional: Host name to
@@ -2908,9 +2626,8 @@ spec:
                                         be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes'
                                       properties:
                                         exec:
-                                          description: One and only one of the following
-                                            should be specified. Exec specifies the
-                                            action to take.
+                                          description: Exec specifies the action to
+                                            take.
                                           properties:
                                             command:
                                               description: Command is the command
@@ -2935,6 +2652,28 @@ spec:
                                             Minimum value is 1.
                                           format: int32
                                           type: integer
+                                        grpc:
+                                          description: GRPC specifies an action involving
+                                            a GRPC port. This is an alpha field and
+                                            requires enabling GRPCContainerProbe feature
+                                            gate.
+                                          properties:
+                                            port:
+                                              description: Port number of the gRPC
+                                                service. Number must be in the range
+                                                1 to 65535.
+                                              format: int32
+                                              type: integer
+                                            service:
+                                              description: "Service is the name of
+                                                the service to place in the gRPC HealthCheckRequest
+                                                (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+                                                \n If this is not specified, the default
+                                                behavior is defined by gRPC."
+                                              type: string
+                                          required:
+                                          - port
+                                          type: object
                                         httpGet:
                                           description: HTTPGet specifies the http
                                             request to perform.
@@ -3008,10 +2747,8 @@ spec:
                                           format: int32
                                           type: integer
                                         tcpSocket:
-                                          description: 'TCPSocket specifies an action
-                                            involving a TCP port. TCP hooks not yet
-                                            supported TODO: implement a realistic
-                                            TCP lifecycle hook'
+                                          description: TCPSocket specifies an action
+                                            involving a TCP port.
                                           properties:
                                             host:
                                               description: 'Optional: Host name to
@@ -3103,13 +2840,17 @@ spec:
                                             controls if the no_new_privs flag will
                                             be set on the container process. AllowPrivilegeEscalation
                                             is true always when the container is:
-                                            1) run as Privileged 2) has CAP_SYS_ADMIN'
+                                            1) run as Privileged 2) has CAP_SYS_ADMIN
+                                            Note that this field cannot be set when
+                                            spec.os.name is windows.'
                                           type: boolean
                                         capabilities:
                                           description: The capabilities to add/drop
                                             when running containers. Defaults to the
                                             default set of capabilities granted by
-                                            the container runtime.
+                                            the container runtime. Note that this
+                                            field cannot be set when spec.os.name
+                                            is windows.
                                           properties:
                                             add:
                                               description: Added capabilities
@@ -3130,7 +2871,9 @@ spec:
                                           description: Run container in privileged
                                             mode. Processes in privileged containers
                                             are essentially equivalent to root on
-                                            the host. Defaults to false.
+                                            the host. Defaults to false. Note that
+                                            this field cannot be set when spec.os.name
+                                            is windows.
                                           type: boolean
                                         procMount:
                                           description: procMount denotes the type
@@ -3139,12 +2882,14 @@ spec:
                                             uses the container runtime defaults for
                                             readonly paths and masked paths. This
                                             requires the ProcMountType feature flag
-                                            to be enabled.
+                                            to be enabled. Note that this field cannot
+                                            be set when spec.os.name is windows.
                                           type: string
                                         readOnlyRootFilesystem:
                                           description: Whether this container has
                                             a read-only root filesystem. Default is
-                                            false.
+                                            false. Note that this field cannot be
+                                            set when spec.os.name is windows.
                                           type: boolean
                                         runAsGroup:
                                           description: The GID to run the entrypoint
@@ -3152,7 +2897,8 @@ spec:
                                             default if unset. May also be set in PodSecurityContext.  If
                                             set in both SecurityContext and PodSecurityContext,
                                             the value specified in SecurityContext
-                                            takes precedence.
+                                            takes precedence. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           format: int64
                                           type: integer
                                         runAsNonRoot:
@@ -3175,7 +2921,8 @@ spec:
                                             May also be set in PodSecurityContext.  If
                                             set in both SecurityContext and PodSecurityContext,
                                             the value specified in SecurityContext
-                                            takes precedence.
+                                            takes precedence. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           format: int64
                                           type: integer
                                         seLinuxOptions:
@@ -3186,7 +2933,8 @@ spec:
                                             also be set in PodSecurityContext.  If
                                             set in both SecurityContext and PodSecurityContext,
                                             the value specified in SecurityContext
-                                            takes precedence.
+                                            takes precedence. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           properties:
                                             level:
                                               description: Level is SELinux level
@@ -3210,7 +2958,8 @@ spec:
                                             by this container. If seccomp options
                                             are provided at both the pod & container
                                             level, the container options override
-                                            the pod options.
+                                            the pod options. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           properties:
                                             localhostProfile:
                                               description: localhostProfile indicates
@@ -3236,6 +2985,14 @@ spec:
                                           - type
                                           type: object
                                         windowsOptions:
+                                          description: The Windows specific settings
+                                            applied to all containers. If unspecified,
+                                            the options from the PodSecurityContext
+                                            will be used. If set in both SecurityContext
+                                            and PodSecurityContext, the value specified
+                                            in SecurityContext takes precedence. Note
+                                            that this field cannot be set when spec.os.name
+                                            is linux.
                                           properties:
                                             gmsaCredentialSpec:
                                               description: GMSACredentialSpec is where
@@ -3250,8 +3007,30 @@ spec:
                                                 spec to use.
                                               type: string
                                             hostProcess:
+                                              description: HostProcess determines
+                                                if a container should be run as a
+                                                'Host Process' container. This field
+                                                is alpha-level and will only be honored
+                                                by components that enable the WindowsHostProcessContainers
+                                                feature flag. Setting this field without
+                                                the feature flag will result in errors
+                                                when validating the Pod. All of a
+                                                Pod's containers must have the same
+                                                effective HostProcess value (it is
+                                                not allowed to have a mix of HostProcess
+                                                containers and non-HostProcess containers).  In
+                                                addition, if HostProcess is true then
+                                                HostNetwork must also be set to true.
                                               type: boolean
                                             runAsUserName:
+                                              description: The UserName in Windows
+                                                to run the entrypoint of the container
+                                                process. Defaults to the user specified
+                                                in image metadata if unspecified.
+                                                May also be set in PodSecurityContext.
+                                                If set in both SecurityContext and
+                                                PodSecurityContext, the value specified
+                                                in SecurityContext takes precedence.
                                               type: string
                                           type: object
                                       type: object
@@ -3269,9 +3048,8 @@ spec:
                                         More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes'
                                       properties:
                                         exec:
-                                          description: One and only one of the following
-                                            should be specified. Exec specifies the
-                                            action to take.
+                                          description: Exec specifies the action to
+                                            take.
                                           properties:
                                             command:
                                               description: Command is the command
@@ -3296,6 +3074,28 @@ spec:
                                             Minimum value is 1.
                                           format: int32
                                           type: integer
+                                        grpc:
+                                          description: GRPC specifies an action involving
+                                            a GRPC port. This is an alpha field and
+                                            requires enabling GRPCContainerProbe feature
+                                            gate.
+                                          properties:
+                                            port:
+                                              description: Port number of the gRPC
+                                                service. Number must be in the range
+                                                1 to 65535.
+                                              format: int32
+                                              type: integer
+                                            service:
+                                              description: "Service is the name of
+                                                the service to place in the gRPC HealthCheckRequest
+                                                (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+                                                \n If this is not specified, the default
+                                                behavior is defined by gRPC."
+                                              type: string
+                                          required:
+                                          - port
+                                          type: object
                                         httpGet:
                                           description: HTTPGet specifies the http
                                             request to perform.
@@ -3369,10 +3169,8 @@ spec:
                                           format: int32
                                           type: integer
                                         tcpSocket:
-                                          description: 'TCPSocket specifies an action
-                                            involving a TCP port. TCP hooks not yet
-                                            supported TODO: implement a realistic
-                                            TCP lifecycle hook'
+                                          description: TCPSocket specifies an action
+                                            involving a TCP port.
                                           properties:
                                             host:
                                               description: 'Optional: Host name to
@@ -3612,23 +3410,23 @@ spec:
                                   and it cannot be modified by updating the pod spec.
                                   In order to add an ephemeral container to an existing
                                   pod, use the pod's ephemeralcontainers subresource.
-                                  This field is alpha-level and is only honored by
-                                  servers that enable the EphemeralContainers feature.
+                                  This field is beta-level and available on clusters
+                                  that haven't disabled the EphemeralContainers feature
+                                  gate.
                                 items:
-                                  description: An EphemeralContainer is a container
-                                    that may be added temporarily to an existing pod
+                                  description: "An EphemeralContainer is a temporary
+                                    container that you may add to an existing Pod
                                     for user-initiated activities such as debugging.
                                     Ephemeral containers have no resource or scheduling
                                     guarantees, and they will not be restarted when
-                                    they exit or when a pod is removed or restarted.
-                                    If an ephemeral container causes a pod to exceed
-                                    its resource allocation, the pod may be evicted.
-                                    Ephemeral containers may not be added by directly
-                                    updating the pod spec. They must be added via
-                                    the pod's ephemeralcontainers subresource, and
-                                    they will appear in the pod spec once added. This
-                                    is an alpha feature enabled by the EphemeralContainers
-                                    feature flag.
+                                    they exit or when a Pod is removed or restarted.
+                                    The kubelet may evict a Pod if an ephemeral container
+                                    causes the Pod to exceed its resource allocation.
+                                    \n To add an ephemeral container, use the ephemeralcontainers
+                                    subresource of an existing Pod. Ephemeral containers
+                                    may not be removed or restarted. \n This is a
+                                    beta feature available on clusters that haven't
+                                    disabled the EphemeralContainers feature gate."
                                   properties:
                                     args:
                                       description: 'Arguments to the entrypoint. The
@@ -3863,9 +3661,8 @@ spec:
                                             until the hook completes. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
                                           properties:
                                             exec:
-                                              description: One and only one of the
-                                                following should be specified. Exec
-                                                specifies the action to take.
+                                              description: Exec specifies the action
+                                                to take.
                                               properties:
                                                 command:
                                                   description: Command is the command
@@ -3905,12 +3702,8 @@ spec:
                                                       HTTP probes
                                                     properties:
                                                       name:
-                                                        description: The header field
-                                                          name
                                                         type: string
                                                       value:
-                                                        description: The header field
-                                                          value
                                                         type: string
                                                     required:
                                                     - name
@@ -3938,10 +3731,12 @@ spec:
                                               - port
                                               type: object
                                             tcpSocket:
-                                              description: 'TCPSocket specifies an
-                                                action involving a TCP port. TCP hooks
-                                                not yet supported TODO: implement
-                                                a realistic TCP lifecycle hook'
+                                              description: Deprecated. TCPSocket is
+                                                NOT supported as a LifecycleHandler
+                                                and kept for the backward compatibility.
+                                                There are no validation of this field
+                                                and lifecycle hooks will fail in runtime
+                                                when tcp handler is specified.
                                               properties:
                                                 host:
                                                   description: 'Optional: Host name
@@ -3968,21 +3763,20 @@ spec:
                                             as liveness/startup probe failure, preemption,
                                             resource contention, etc. The handler
                                             is not called if the container crashes
-                                            or exits. The reason for termination is
-                                            passed to the handler. The Pod''s termination
-                                            grace period countdown begins before the
-                                            PreStop hooked is executed. Regardless
-                                            of the outcome of the handler, the container
-                                            will eventually terminate within the Pod''s
-                                            termination grace period. Other management
-                                            of the container blocks until the hook
-                                            completes or until the termination grace
-                                            period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
+                                            or exits. The Pod''s termination grace
+                                            period countdown begins before the PreStop
+                                            hook is executed. Regardless of the outcome
+                                            of the handler, the container will eventually
+                                            terminate within the Pod''s termination
+                                            grace period (unless delayed by finalizers).
+                                            Other management of the container blocks
+                                            until the hook completes or until the
+                                            termination grace period is reached. More
+                                            info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
                                           properties:
                                             exec:
-                                              description: One and only one of the
-                                                following should be specified. Exec
-                                                specifies the action to take.
+                                              description: Exec specifies the action
+                                                to take.
                                               properties:
                                                 command:
                                                   description: Command is the command
@@ -4022,12 +3816,8 @@ spec:
                                                       HTTP probes
                                                     properties:
                                                       name:
-                                                        description: The header field
-                                                          name
                                                         type: string
                                                       value:
-                                                        description: The header field
-                                                          value
                                                         type: string
                                                     required:
                                                     - name
@@ -4055,10 +3845,12 @@ spec:
                                               - port
                                               type: object
                                             tcpSocket:
-                                              description: 'TCPSocket specifies an
-                                                action involving a TCP port. TCP hooks
-                                                not yet supported TODO: implement
-                                                a realistic TCP lifecycle hook'
+                                              description: Deprecated. TCPSocket is
+                                                NOT supported as a LifecycleHandler
+                                                and kept for the backward compatibility.
+                                                There are no validation of this field
+                                                and lifecycle hooks will fail in runtime
+                                                when tcp handler is specified.
                                               properties:
                                                 host:
                                                   description: 'Optional: Host name
@@ -4084,9 +3876,8 @@ spec:
                                         containers.
                                       properties:
                                         exec:
-                                          description: One and only one of the following
-                                            should be specified. Exec specifies the
-                                            action to take.
+                                          description: Exec specifies the action to
+                                            take.
                                           properties:
                                             command:
                                               description: Command is the command
@@ -4111,6 +3902,28 @@ spec:
                                             Minimum value is 1.
                                           format: int32
                                           type: integer
+                                        grpc:
+                                          description: GRPC specifies an action involving
+                                            a GRPC port. This is an alpha field and
+                                            requires enabling GRPCContainerProbe feature
+                                            gate.
+                                          properties:
+                                            port:
+                                              description: Port number of the gRPC
+                                                service. Number must be in the range
+                                                1 to 65535.
+                                              format: int32
+                                              type: integer
+                                            service:
+                                              description: "Service is the name of
+                                                the service to place in the gRPC HealthCheckRequest
+                                                (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+                                                \n If this is not specified, the default
+                                                behavior is defined by gRPC."
+                                              type: string
+                                          required:
+                                          - port
+                                          type: object
                                         httpGet:
                                           description: HTTPGet specifies the http
                                             request to perform.
@@ -4184,10 +3997,8 @@ spec:
                                           format: int32
                                           type: integer
                                         tcpSocket:
-                                          description: 'TCPSocket specifies an action
-                                            involving a TCP port. TCP hooks not yet
-                                            supported TODO: implement a realistic
-                                            TCP lifecycle hook'
+                                          description: TCPSocket specifies an action
+                                            involving a TCP port.
                                           properties:
                                             host:
                                               description: 'Optional: Host name to
@@ -4282,14 +4093,17 @@ spec:
                                         - containerPort
                                         type: object
                                       type: array
+                                      x-kubernetes-list-map-keys:
+                                      - containerPort
+                                      - protocol
+                                      x-kubernetes-list-type: map
                                     readinessProbe:
                                       description: Probes are not allowed for ephemeral
                                         containers.
                                       properties:
                                         exec:
-                                          description: One and only one of the following
-                                            should be specified. Exec specifies the
-                                            action to take.
+                                          description: Exec specifies the action to
+                                            take.
                                           properties:
                                             command:
                                               description: Command is the command
@@ -4314,6 +4128,28 @@ spec:
                                             Minimum value is 1.
                                           format: int32
                                           type: integer
+                                        grpc:
+                                          description: GRPC specifies an action involving
+                                            a GRPC port. This is an alpha field and
+                                            requires enabling GRPCContainerProbe feature
+                                            gate.
+                                          properties:
+                                            port:
+                                              description: Port number of the gRPC
+                                                service. Number must be in the range
+                                                1 to 65535.
+                                              format: int32
+                                              type: integer
+                                            service:
+                                              description: "Service is the name of
+                                                the service to place in the gRPC HealthCheckRequest
+                                                (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+                                                \n If this is not specified, the default
+                                                behavior is defined by gRPC."
+                                              type: string
+                                          required:
+                                          - port
+                                          type: object
                                         httpGet:
                                           description: HTTPGet specifies the http
                                             request to perform.
@@ -4387,10 +4223,8 @@ spec:
                                           format: int32
                                           type: integer
                                         tcpSocket:
-                                          description: 'TCPSocket specifies an action
-                                            involving a TCP port. TCP hooks not yet
-                                            supported TODO: implement a realistic
-                                            TCP lifecycle hook'
+                                          description: TCPSocket specifies an action
+                                            involving a TCP port.
                                           properties:
                                             host:
                                               description: 'Optional: Host name to
@@ -4482,13 +4316,17 @@ spec:
                                             controls if the no_new_privs flag will
                                             be set on the container process. AllowPrivilegeEscalation
                                             is true always when the container is:
-                                            1) run as Privileged 2) has CAP_SYS_ADMIN'
+                                            1) run as Privileged 2) has CAP_SYS_ADMIN
+                                            Note that this field cannot be set when
+                                            spec.os.name is windows.'
                                           type: boolean
                                         capabilities:
                                           description: The capabilities to add/drop
                                             when running containers. Defaults to the
                                             default set of capabilities granted by
-                                            the container runtime.
+                                            the container runtime. Note that this
+                                            field cannot be set when spec.os.name
+                                            is windows.
                                           properties:
                                             add:
                                               description: Added capabilities
@@ -4509,7 +4347,9 @@ spec:
                                           description: Run container in privileged
                                             mode. Processes in privileged containers
                                             are essentially equivalent to root on
-                                            the host. Defaults to false.
+                                            the host. Defaults to false. Note that
+                                            this field cannot be set when spec.os.name
+                                            is windows.
                                           type: boolean
                                         procMount:
                                           description: procMount denotes the type
@@ -4518,12 +4358,14 @@ spec:
                                             uses the container runtime defaults for
                                             readonly paths and masked paths. This
                                             requires the ProcMountType feature flag
-                                            to be enabled.
+                                            to be enabled. Note that this field cannot
+                                            be set when spec.os.name is windows.
                                           type: string
                                         readOnlyRootFilesystem:
                                           description: Whether this container has
                                             a read-only root filesystem. Default is
-                                            false.
+                                            false. Note that this field cannot be
+                                            set when spec.os.name is windows.
                                           type: boolean
                                         runAsGroup:
                                           description: The GID to run the entrypoint
@@ -4531,7 +4373,8 @@ spec:
                                             default if unset. May also be set in PodSecurityContext.  If
                                             set in both SecurityContext and PodSecurityContext,
                                             the value specified in SecurityContext
-                                            takes precedence.
+                                            takes precedence. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           format: int64
                                           type: integer
                                         runAsNonRoot:
@@ -4554,7 +4397,8 @@ spec:
                                             May also be set in PodSecurityContext.  If
                                             set in both SecurityContext and PodSecurityContext,
                                             the value specified in SecurityContext
-                                            takes precedence.
+                                            takes precedence. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           format: int64
                                           type: integer
                                         seLinuxOptions:
@@ -4565,7 +4409,8 @@ spec:
                                             also be set in PodSecurityContext.  If
                                             set in both SecurityContext and PodSecurityContext,
                                             the value specified in SecurityContext
-                                            takes precedence.
+                                            takes precedence. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           properties:
                                             level:
                                               description: Level is SELinux level
@@ -4589,7 +4434,8 @@ spec:
                                             by this container. If seccomp options
                                             are provided at both the pod & container
                                             level, the container options override
-                                            the pod options.
+                                            the pod options. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           properties:
                                             localhostProfile:
                                               description: localhostProfile indicates
@@ -4615,6 +4461,14 @@ spec:
                                           - type
                                           type: object
                                         windowsOptions:
+                                          description: The Windows specific settings
+                                            applied to all containers. If unspecified,
+                                            the options from the PodSecurityContext
+                                            will be used. If set in both SecurityContext
+                                            and PodSecurityContext, the value specified
+                                            in SecurityContext takes precedence. Note
+                                            that this field cannot be set when spec.os.name
+                                            is linux.
                                           properties:
                                             gmsaCredentialSpec:
                                               description: GMSACredentialSpec is where
@@ -4629,8 +4483,30 @@ spec:
                                                 spec to use.
                                               type: string
                                             hostProcess:
+                                              description: HostProcess determines
+                                                if a container should be run as a
+                                                'Host Process' container. This field
+                                                is alpha-level and will only be honored
+                                                by components that enable the WindowsHostProcessContainers
+                                                feature flag. Setting this field without
+                                                the feature flag will result in errors
+                                                when validating the Pod. All of a
+                                                Pod's containers must have the same
+                                                effective HostProcess value (it is
+                                                not allowed to have a mix of HostProcess
+                                                containers and non-HostProcess containers).  In
+                                                addition, if HostProcess is true then
+                                                HostNetwork must also be set to true.
                                               type: boolean
                                             runAsUserName:
+                                              description: The UserName in Windows
+                                                to run the entrypoint of the container
+                                                process. Defaults to the user specified
+                                                in image metadata if unspecified.
+                                                May also be set in PodSecurityContext.
+                                                If set in both SecurityContext and
+                                                PodSecurityContext, the value specified
+                                                in SecurityContext takes precedence.
                                               type: string
                                           type: object
                                       type: object
@@ -4639,9 +4515,8 @@ spec:
                                         containers.
                                       properties:
                                         exec:
-                                          description: One and only one of the following
-                                            should be specified. Exec specifies the
-                                            action to take.
+                                          description: Exec specifies the action to
+                                            take.
                                           properties:
                                             command:
                                               description: Command is the command
@@ -4666,6 +4541,28 @@ spec:
                                             Minimum value is 1.
                                           format: int32
                                           type: integer
+                                        grpc:
+                                          description: GRPC specifies an action involving
+                                            a GRPC port. This is an alpha field and
+                                            requires enabling GRPCContainerProbe feature
+                                            gate.
+                                          properties:
+                                            port:
+                                              description: Port number of the gRPC
+                                                service. Number must be in the range
+                                                1 to 65535.
+                                              format: int32
+                                              type: integer
+                                            service:
+                                              description: "Service is the name of
+                                                the service to place in the gRPC HealthCheckRequest
+                                                (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+                                                \n If this is not specified, the default
+                                                behavior is defined by gRPC."
+                                              type: string
+                                          required:
+                                          - port
+                                          type: object
                                         httpGet:
                                           description: HTTPGet specifies the http
                                             request to perform.
@@ -4739,10 +4636,8 @@ spec:
                                           format: int32
                                           type: integer
                                         tcpSocket:
-                                          description: 'TCPSocket specifies an action
-                                            involving a TCP port. TCP hooks not yet
-                                            supported TODO: implement a realistic
-                                            TCP lifecycle hook'
+                                          description: TCPSocket specifies an action
+                                            involving a TCP port.
                                           properties:
                                             host:
                                               description: 'Optional: Host name to
@@ -4812,14 +4707,16 @@ spec:
                                         receive an EOF. Default is false
                                       type: boolean
                                     targetContainerName:
-                                      description: If set, the name of the container
+                                      description: "If set, the name of the container
                                         from PodSpec that this ephemeral container
                                         targets. The ephemeral container will be run
                                         in the namespaces (IPC, PID, etc) of this
                                         container. If not set then the ephemeral container
-                                        is run in whatever namespaces are shared for
-                                        the pod. Note that the container runtime must
-                                        support this feature.
+                                        uses the namespaces configured in the Pod
+                                        spec. \n The container runtime must implement
+                                        support for this feature. If the runtime does
+                                        not support namespace targeting then the result
+                                        of setting this field is undefined."
                                       type: string
                                     terminationMessagePath:
                                       description: 'Optional: Path at which the file
@@ -4873,7 +4770,8 @@ spec:
                                       type: array
                                     volumeMounts:
                                       description: Pod volumes to mount into the container's
-                                        filesystem. Cannot be updated.
+                                        filesystem. Subpath mounts are not allowed
+                                        for ephemeral containers. Cannot be updated.
                                       items:
                                         description: VolumeMount describes a mounting
                                           of a Volume within a container.
@@ -5249,9 +5147,8 @@ spec:
                                             until the hook completes. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
                                           properties:
                                             exec:
-                                              description: One and only one of the
-                                                following should be specified. Exec
-                                                specifies the action to take.
+                                              description: Exec specifies the action
+                                                to take.
                                               properties:
                                                 command:
                                                   description: Command is the command
@@ -5291,12 +5188,8 @@ spec:
                                                       HTTP probes
                                                     properties:
                                                       name:
-                                                        description: The header field
-                                                          name
                                                         type: string
                                                       value:
-                                                        description: The header field
-                                                          value
                                                         type: string
                                                     required:
                                                     - name
@@ -5324,10 +5217,12 @@ spec:
                                               - port
                                               type: object
                                             tcpSocket:
-                                              description: 'TCPSocket specifies an
-                                                action involving a TCP port. TCP hooks
-                                                not yet supported TODO: implement
-                                                a realistic TCP lifecycle hook'
+                                              description: Deprecated. TCPSocket is
+                                                NOT supported as a LifecycleHandler
+                                                and kept for the backward compatibility.
+                                                There are no validation of this field
+                                                and lifecycle hooks will fail in runtime
+                                                when tcp handler is specified.
                                               properties:
                                                 host:
                                                   description: 'Optional: Host name
@@ -5354,21 +5249,20 @@ spec:
                                             as liveness/startup probe failure, preemption,
                                             resource contention, etc. The handler
                                             is not called if the container crashes
-                                            or exits. The reason for termination is
-                                            passed to the handler. The Pod''s termination
-                                            grace period countdown begins before the
-                                            PreStop hooked is executed. Regardless
-                                            of the outcome of the handler, the container
-                                            will eventually terminate within the Pod''s
-                                            termination grace period. Other management
-                                            of the container blocks until the hook
-                                            completes or until the termination grace
-                                            period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
+                                            or exits. The Pod''s termination grace
+                                            period countdown begins before the PreStop
+                                            hook is executed. Regardless of the outcome
+                                            of the handler, the container will eventually
+                                            terminate within the Pod''s termination
+                                            grace period (unless delayed by finalizers).
+                                            Other management of the container blocks
+                                            until the hook completes or until the
+                                            termination grace period is reached. More
+                                            info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks'
                                           properties:
                                             exec:
-                                              description: One and only one of the
-                                                following should be specified. Exec
-                                                specifies the action to take.
+                                              description: Exec specifies the action
+                                                to take.
                                               properties:
                                                 command:
                                                   description: Command is the command
@@ -5408,12 +5302,8 @@ spec:
                                                       HTTP probes
                                                     properties:
                                                       name:
-                                                        description: The header field
-                                                          name
                                                         type: string
                                                       value:
-                                                        description: The header field
-                                                          value
                                                         type: string
                                                     required:
                                                     - name
@@ -5441,10 +5331,12 @@ spec:
                                               - port
                                               type: object
                                             tcpSocket:
-                                              description: 'TCPSocket specifies an
-                                                action involving a TCP port. TCP hooks
-                                                not yet supported TODO: implement
-                                                a realistic TCP lifecycle hook'
+                                              description: Deprecated. TCPSocket is
+                                                NOT supported as a LifecycleHandler
+                                                and kept for the backward compatibility.
+                                                There are no validation of this field
+                                                and lifecycle hooks will fail in runtime
+                                                when tcp handler is specified.
                                               properties:
                                                 host:
                                                   description: 'Optional: Host name
@@ -5471,9 +5363,8 @@ spec:
                                         Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes'
                                       properties:
                                         exec:
-                                          description: One and only one of the following
-                                            should be specified. Exec specifies the
-                                            action to take.
+                                          description: Exec specifies the action to
+                                            take.
                                           properties:
                                             command:
                                               description: Command is the command
@@ -5498,6 +5389,28 @@ spec:
                                             Minimum value is 1.
                                           format: int32
                                           type: integer
+                                        grpc:
+                                          description: GRPC specifies an action involving
+                                            a GRPC port. This is an alpha field and
+                                            requires enabling GRPCContainerProbe feature
+                                            gate.
+                                          properties:
+                                            port:
+                                              description: Port number of the gRPC
+                                                service. Number must be in the range
+                                                1 to 65535.
+                                              format: int32
+                                              type: integer
+                                            service:
+                                              description: "Service is the name of
+                                                the service to place in the gRPC HealthCheckRequest
+                                                (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+                                                \n If this is not specified, the default
+                                                behavior is defined by gRPC."
+                                              type: string
+                                          required:
+                                          - port
+                                          type: object
                                         httpGet:
                                           description: HTTPGet specifies the http
                                             request to perform.
@@ -5571,10 +5484,8 @@ spec:
                                           format: int32
                                           type: integer
                                         tcpSocket:
-                                          description: 'TCPSocket specifies an action
-                                            involving a TCP port. TCP hooks not yet
-                                            supported TODO: implement a realistic
-                                            TCP lifecycle hook'
+                                          description: TCPSocket specifies an action
+                                            involving a TCP port.
                                           properties:
                                             host:
                                               description: 'Optional: Host name to
@@ -5688,9 +5599,8 @@ spec:
                                         be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes'
                                       properties:
                                         exec:
-                                          description: One and only one of the following
-                                            should be specified. Exec specifies the
-                                            action to take.
+                                          description: Exec specifies the action to
+                                            take.
                                           properties:
                                             command:
                                               description: Command is the command
@@ -5715,6 +5625,28 @@ spec:
                                             Minimum value is 1.
                                           format: int32
                                           type: integer
+                                        grpc:
+                                          description: GRPC specifies an action involving
+                                            a GRPC port. This is an alpha field and
+                                            requires enabling GRPCContainerProbe feature
+                                            gate.
+                                          properties:
+                                            port:
+                                              description: Port number of the gRPC
+                                                service. Number must be in the range
+                                                1 to 65535.
+                                              format: int32
+                                              type: integer
+                                            service:
+                                              description: "Service is the name of
+                                                the service to place in the gRPC HealthCheckRequest
+                                                (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+                                                \n If this is not specified, the default
+                                                behavior is defined by gRPC."
+                                              type: string
+                                          required:
+                                          - port
+                                          type: object
                                         httpGet:
                                           description: HTTPGet specifies the http
                                             request to perform.
@@ -5788,10 +5720,8 @@ spec:
                                           format: int32
                                           type: integer
                                         tcpSocket:
-                                          description: 'TCPSocket specifies an action
-                                            involving a TCP port. TCP hooks not yet
-                                            supported TODO: implement a realistic
-                                            TCP lifecycle hook'
+                                          description: TCPSocket specifies an action
+                                            involving a TCP port.
                                           properties:
                                             host:
                                               description: 'Optional: Host name to
@@ -5883,13 +5813,17 @@ spec:
                                             controls if the no_new_privs flag will
                                             be set on the container process. AllowPrivilegeEscalation
                                             is true always when the container is:
-                                            1) run as Privileged 2) has CAP_SYS_ADMIN'
+                                            1) run as Privileged 2) has CAP_SYS_ADMIN
+                                            Note that this field cannot be set when
+                                            spec.os.name is windows.'
                                           type: boolean
                                         capabilities:
                                           description: The capabilities to add/drop
                                             when running containers. Defaults to the
                                             default set of capabilities granted by
-                                            the container runtime.
+                                            the container runtime. Note that this
+                                            field cannot be set when spec.os.name
+                                            is windows.
                                           properties:
                                             add:
                                               description: Added capabilities
@@ -5910,7 +5844,9 @@ spec:
                                           description: Run container in privileged
                                             mode. Processes in privileged containers
                                             are essentially equivalent to root on
-                                            the host. Defaults to false.
+                                            the host. Defaults to false. Note that
+                                            this field cannot be set when spec.os.name
+                                            is windows.
                                           type: boolean
                                         procMount:
                                           description: procMount denotes the type
@@ -5919,12 +5855,14 @@ spec:
                                             uses the container runtime defaults for
                                             readonly paths and masked paths. This
                                             requires the ProcMountType feature flag
-                                            to be enabled.
+                                            to be enabled. Note that this field cannot
+                                            be set when spec.os.name is windows.
                                           type: string
                                         readOnlyRootFilesystem:
                                           description: Whether this container has
                                             a read-only root filesystem. Default is
-                                            false.
+                                            false. Note that this field cannot be
+                                            set when spec.os.name is windows.
                                           type: boolean
                                         runAsGroup:
                                           description: The GID to run the entrypoint
@@ -5932,7 +5870,8 @@ spec:
                                             default if unset. May also be set in PodSecurityContext.  If
                                             set in both SecurityContext and PodSecurityContext,
                                             the value specified in SecurityContext
-                                            takes precedence.
+                                            takes precedence. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           format: int64
                                           type: integer
                                         runAsNonRoot:
@@ -5955,7 +5894,8 @@ spec:
                                             May also be set in PodSecurityContext.  If
                                             set in both SecurityContext and PodSecurityContext,
                                             the value specified in SecurityContext
-                                            takes precedence.
+                                            takes precedence. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           format: int64
                                           type: integer
                                         seLinuxOptions:
@@ -5966,7 +5906,8 @@ spec:
                                             also be set in PodSecurityContext.  If
                                             set in both SecurityContext and PodSecurityContext,
                                             the value specified in SecurityContext
-                                            takes precedence.
+                                            takes precedence. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           properties:
                                             level:
                                               description: Level is SELinux level
@@ -5990,7 +5931,8 @@ spec:
                                             by this container. If seccomp options
                                             are provided at both the pod & container
                                             level, the container options override
-                                            the pod options.
+                                            the pod options. Note that this field
+                                            cannot be set when spec.os.name is windows.
                                           properties:
                                             localhostProfile:
                                               description: localhostProfile indicates
@@ -6016,6 +5958,14 @@ spec:
                                           - type
                                           type: object
                                         windowsOptions:
+                                          description: The Windows specific settings
+                                            applied to all containers. If unspecified,
+                                            the options from the PodSecurityContext
+                                            will be used. If set in both SecurityContext
+                                            and PodSecurityContext, the value specified
+                                            in SecurityContext takes precedence. Note
+                                            that this field cannot be set when spec.os.name
+                                            is linux.
                                           properties:
                                             gmsaCredentialSpec:
                                               description: GMSACredentialSpec is where
@@ -6030,8 +5980,30 @@ spec:
                                                 spec to use.
                                               type: string
                                             hostProcess:
+                                              description: HostProcess determines
+                                                if a container should be run as a
+                                                'Host Process' container. This field
+                                                is alpha-level and will only be honored
+                                                by components that enable the WindowsHostProcessContainers
+                                                feature flag. Setting this field without
+                                                the feature flag will result in errors
+                                                when validating the Pod. All of a
+                                                Pod's containers must have the same
+                                                effective HostProcess value (it is
+                                                not allowed to have a mix of HostProcess
+                                                containers and non-HostProcess containers).  In
+                                                addition, if HostProcess is true then
+                                                HostNetwork must also be set to true.
                                               type: boolean
                                             runAsUserName:
+                                              description: The UserName in Windows
+                                                to run the entrypoint of the container
+                                                process. Defaults to the user specified
+                                                in image metadata if unspecified.
+                                                May also be set in PodSecurityContext.
+                                                If set in both SecurityContext and
+                                                PodSecurityContext, the value specified
+                                                in SecurityContext takes precedence.
                                               type: string
                                           type: object
                                       type: object
@@ -6049,9 +6021,8 @@ spec:
                                         More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes'
                                       properties:
                                         exec:
-                                          description: One and only one of the following
-                                            should be specified. Exec specifies the
-                                            action to take.
+                                          description: Exec specifies the action to
+                                            take.
                                           properties:
                                             command:
                                               description: Command is the command
@@ -6076,6 +6047,28 @@ spec:
                                             Minimum value is 1.
                                           format: int32
                                           type: integer
+                                        grpc:
+                                          description: GRPC specifies an action involving
+                                            a GRPC port. This is an alpha field and
+                                            requires enabling GRPCContainerProbe feature
+                                            gate.
+                                          properties:
+                                            port:
+                                              description: Port number of the gRPC
+                                                service. Number must be in the range
+                                                1 to 65535.
+                                              format: int32
+                                              type: integer
+                                            service:
+                                              description: "Service is the name of
+                                                the service to place in the gRPC HealthCheckRequest
+                                                (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+                                                \n If this is not specified, the default
+                                                behavior is defined by gRPC."
+                                              type: string
+                                          required:
+                                          - port
+                                          type: object
                                         httpGet:
                                           description: HTTPGet specifies the http
                                             request to perform.
@@ -6149,10 +6142,8 @@ spec:
                                           format: int32
                                           type: integer
                                         tcpSocket:
-                                          description: 'TCPSocket specifies an action
-                                            involving a TCP port. TCP hooks not yet
-                                            supported TODO: implement a realistic
-                                            TCP lifecycle hook'
+                                          description: TCPSocket specifies an action
+                                            involving a TCP port.
                                           properties:
                                             host:
                                               description: 'Optional: Host name to
@@ -6345,6 +6336,40 @@ spec:
                                   on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/'
                                 type: object
                                 x-kubernetes-map-type: atomic
+                              os:
+                                description: "Specifies the OS of the containers in
+                                  the pod. Some pod and container fields are restricted
+                                  if this is set. \n If the OS field is set to linux,
+                                  the following fields must be unset: -securityContext.windowsOptions
+                                  \n If the OS field is set to windows, following
+                                  fields must be unset: - spec.hostPID - spec.hostIPC
+                                  - spec.securityContext.seLinuxOptions - spec.securityContext.seccompProfile
+                                  - spec.securityContext.fsGroup - spec.securityContext.fsGroupChangePolicy
+                                  - spec.securityContext.sysctls - spec.shareProcessNamespace
+                                  - spec.securityContext.runAsUser - spec.securityContext.runAsGroup
+                                  - spec.securityContext.supplementalGroups - spec.containers[*].securityContext.seLinuxOptions
+                                  - spec.containers[*].securityContext.seccompProfile
+                                  - spec.containers[*].securityContext.capabilities
+                                  - spec.containers[*].securityContext.readOnlyRootFilesystem
+                                  - spec.containers[*].securityContext.privileged
+                                  - spec.containers[*].securityContext.allowPrivilegeEscalation
+                                  - spec.containers[*].securityContext.procMount -
+                                  spec.containers[*].securityContext.runAsUser - spec.containers[*].securityContext.runAsGroup
+                                  This is an alpha field and requires the IdentifyPodOS
+                                  feature"
+                                properties:
+                                  name:
+                                    description: 'Name is the name of the operating
+                                      system. The currently supported values are linux
+                                      and windows. Additional value may be defined
+                                      in future and can be one of: https://github.com/opencontainers/runtime-spec/blob/master/config.md#platform-specific-configuration
+                                      Clients should expect to handle additional values
+                                      and treat unrecognized values in this field
+                                      as os: null'
+                                    type: string
+                                required:
+                                - name
+                                type: object
                               overhead:
                                 additionalProperties:
                                   anyOf:
@@ -6450,7 +6475,8 @@ spec:
                                       will be owned by FSGroup) 3. The permission
                                       bits are OR'd with rw-rw---- \n If unset, the
                                       Kubelet will not modify the ownership and permissions
-                                      of any volume."
+                                      of any volume. Note that this field cannot be
+                                      set when spec.os.name is windows."
                                     format: int64
                                     type: integer
                                   fsGroupChangePolicy:
@@ -6462,7 +6488,8 @@ spec:
                                       It will have no effect on ephemeral volume types
                                       such as: secret, configmaps and emptydir. Valid
                                       values are "OnRootMismatch" and "Always". If
-                                      not specified, "Always" is used.'
+                                      not specified, "Always" is used. Note that this
+                                      field cannot be set when spec.os.name is windows.'
                                     type: string
                                   runAsGroup:
                                     description: The GID to run the entrypoint of
@@ -6470,7 +6497,8 @@ spec:
                                       if unset. May also be set in SecurityContext.  If
                                       set in both SecurityContext and PodSecurityContext,
                                       the value specified in SecurityContext takes
-                                      precedence for that container.
+                                      precedence for that container. Note that this
+                                      field cannot be set when spec.os.name is windows.
                                     format: int64
                                     type: integer
                                   runAsNonRoot:
@@ -6492,7 +6520,8 @@ spec:
                                       set in SecurityContext.  If set in both SecurityContext
                                       and PodSecurityContext, the value specified
                                       in SecurityContext takes precedence for that
-                                      container.
+                                      container. Note that this field cannot be set
+                                      when spec.os.name is windows.
                                     format: int64
                                     type: integer
                                   seLinuxOptions:
@@ -6502,7 +6531,8 @@ spec:
                                       for each container.  May also be set in SecurityContext.  If
                                       set in both SecurityContext and PodSecurityContext,
                                       the value specified in SecurityContext takes
-                                      precedence for that container.
+                                      precedence for that container. Note that this
+                                      field cannot be set when spec.os.name is windows.
                                     properties:
                                       level:
                                         description: Level is SELinux level label
@@ -6523,7 +6553,8 @@ spec:
                                     type: object
                                   seccompProfile:
                                     description: The seccomp options to use by the
-                                      containers in this pod.
+                                      containers in this pod. Note that this field
+                                      cannot be set when spec.os.name is windows.
                                     properties:
                                       localhostProfile:
                                         description: localhostProfile indicates a
@@ -6550,7 +6581,9 @@ spec:
                                     description: A list of groups applied to the first
                                       process run in each container, in addition to
                                       the container's primary GID.  If unspecified,
-                                      no groups will be added to any container.
+                                      no groups will be added to any container. Note
+                                      that this field cannot be set when spec.os.name
+                                      is windows.
                                     items:
                                       format: int64
                                       type: integer
@@ -6559,7 +6592,8 @@ spec:
                                     description: Sysctls hold a list of namespaced
                                       sysctls used for the pod. Pods with unsupported
                                       sysctls (by the container runtime) might fail
-                                      to launch.
+                                      to launch. Note that this field cannot be set
+                                      when spec.os.name is windows.
                                     items:
                                       description: Sysctl defines a kernel parameter
                                         to be set
@@ -6581,7 +6615,8 @@ spec:
                                       within a container's SecurityContext will be
                                       used. If set in both SecurityContext and PodSecurityContext,
                                       the value specified in SecurityContext takes
-                                      precedence.
+                                      precedence. Note that this field cannot be set
+                                      when spec.os.name is linux.
                                     properties:
                                       gmsaCredentialSpec:
                                         description: GMSACredentialSpec is where the
@@ -6818,11 +6853,11 @@ spec:
                                         the spread constraint. - DoNotSchedule (default)
                                         tells the scheduler not to schedule it. -
                                         ScheduleAnyway tells the scheduler to schedule
-                                        the pod in any location,   but giving higher
+                                        the pod in any location, but giving higher
                                         precedence to topologies that would help reduce
-                                        the   skew. A constraint is considered "Unsatisfiable"
+                                        the skew. A constraint is considered "Unsatisfiable"
                                         for an incoming pod if and only if every possible
-                                        node assigment for that pod would violate
+                                        node assignment for that pod would violate
                                         "MaxSkew" on some topology. For example, in
                                         a 3-zone cluster, MaxSkew is set to 1, and
                                         pods with the same labelSelector spread as
@@ -7310,13 +7345,13 @@ spec:
                                         removed. \n Use this if: a) the volume is
                                         only needed while the pod runs, b) features
                                         of normal volumes like restoring from snapshot
-                                        or capacity    tracking are needed, c) the
-                                        storage driver is specified through a storage
-                                        class, and d) the storage driver supports
-                                        dynamic volume provisioning through    a PersistentVolumeClaim
-                                        (see EphemeralVolumeSource for more    information
+                                        or capacity tracking are needed, c) the storage
+                                        driver is specified through a storage class,
+                                        and d) the storage driver supports dynamic
+                                        volume provisioning through a PersistentVolumeClaim
+                                        (see EphemeralVolumeSource for more information
                                         on the connection between this volume type
-                                        \   and PersistentVolumeClaim). \n Use PersistentVolumeClaim
+                                        and PersistentVolumeClaim). \n Use PersistentVolumeClaim
                                         or one of the vendor-specific APIs for volumes
                                         that persist for longer than the lifecycle
                                         of an individual pod. \n Use CSI for light-weight
@@ -7324,10 +7359,7 @@ spec:
                                         is meant to be used that way - see the documentation
                                         of the driver for more information. \n A pod
                                         can use both types of ephemeral volumes and
-                                        persistent volumes at the same time. \n This
-                                        is a beta feature and only available when
-                                        the GenericEphemeralVolume feature gate is
-                                        enabled."
+                                        persistent volumes at the same time."
                                       properties:
                                         volumeClaimTemplate:
                                           description: "Will be used to create a stand-alone
@@ -7395,21 +7427,10 @@ spec:
                                                     as the DataSourceRef field.'
                                                   properties:
                                                     apiGroup:
-                                                      description: APIGroup is the
-                                                        group for the resource being
-                                                        referenced. If APIGroup is
-                                                        not specified, the specified
-                                                        Kind must be in the core API
-                                                        group. For any other third-party
-                                                        types, APIGroup is required.
                                                       type: string
                                                     kind:
-                                                      description: Kind is the type
-                                                        of resource being referenced
                                                       type: string
                                                     name:
-                                                      description: Name is the name
-                                                        of resource being referenced
                                                       type: string
                                                   required:
                                                   - kind
@@ -7440,33 +7461,21 @@ spec:
                                                     between DataSource and DataSourceRef:
                                                     * While DataSource only allows
                                                     two specific types of objects,
-                                                    DataSourceRef   allows any non-core
+                                                    DataSourceRef allows any non-core
                                                     object, as well as PersistentVolumeClaim
                                                     objects. * While DataSource ignores
                                                     disallowed values (dropping them),
-                                                    DataSourceRef   preserves all
-                                                    values, and generates an error
-                                                    if a disallowed value is   specified.
-                                                    (Alpha) Using this field requires
-                                                    the AnyVolumeDataSource feature
-                                                    gate to be enabled.'
+                                                    DataSourceRef preserves all values,
+                                                    and generates an error if a disallowed
+                                                    value is specified. (Alpha) Using
+                                                    this field requires the AnyVolumeDataSource
+                                                    feature gate to be enabled.'
                                                   properties:
                                                     apiGroup:
-                                                      description: APIGroup is the
-                                                        group for the resource being
-                                                        referenced. If APIGroup is
-                                                        not specified, the specified
-                                                        Kind must be in the core API
-                                                        group. For any other third-party
-                                                        types, APIGroup is required.
                                                       type: string
                                                     kind:
-                                                      description: Kind is the type
-                                                        of resource being referenced
                                                       type: string
                                                     name:
-                                                      description: Name is the name
-                                                        of resource being referenced
                                                       type: string
                                                   required:
                                                   - kind
@@ -7475,7 +7484,14 @@ spec:
                                                 resources:
                                                   description: 'Resources represents
                                                     the minimum resources the volume
-                                                    should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources'
+                                                    should have. If RecoverVolumeExpansionFailure
+                                                    feature is enabled users are allowed
+                                                    to specify resource requirements
+                                                    that are lower than previous value
+                                                    but must still be higher than
+                                                    capacity recorded in the status
+                                                    field of the claim. More info:
+                                                    https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources'
                                                   properties:
                                                     limits:
                                                       additionalProperties:
@@ -7484,10 +7500,6 @@ spec:
                                                         - type: string
                                                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                                         x-kubernetes-int-or-string: true
-                                                      description: 'Limits describes
-                                                        the maximum amount of compute
-                                                        resources allowed. More info:
-                                                        https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                                                       type: object
                                                     requests:
                                                       additionalProperties:
@@ -7496,14 +7508,6 @@ spec:
                                                         - type: string
                                                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                                         x-kubernetes-int-or-string: true
-                                                      description: 'Requests describes
-                                                        the minimum amount of compute
-                                                        resources required. If Requests
-                                                        is omitted for a container,
-                                                        it defaults to Limits if that
-                                                        is explicitly specified, otherwise
-                                                        to an implementation-defined
-                                                        value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                                                       type: object
                                                   type: object
                                                 selector:
@@ -7511,42 +7515,13 @@ spec:
                                                     volumes to consider for binding.
                                                   properties:
                                                     matchExpressions:
-                                                      description: matchExpressions
-                                                        is a list of label selector
-                                                        requirements. The requirements
-                                                        are ANDed.
                                                       items:
-                                                        description: A label selector
-                                                          requirement is a selector
-                                                          that contains values, a
-                                                          key, and an operator that
-                                                          relates the key and values.
                                                         properties:
                                                           key:
-                                                            description: key is the
-                                                              label key that the selector
-                                                              applies to.
                                                             type: string
                                                           operator:
-                                                            description: operator
-                                                              represents a key's relationship
-                                                              to a set of values.
-                                                              Valid operators are
-                                                              In, NotIn, Exists and
-                                                              DoesNotExist.
                                                             type: string
                                                           values:
-                                                            description: values is
-                                                              an array of string values.
-                                                              If the operator is In
-                                                              or NotIn, the values
-                                                              array must be non-empty.
-                                                              If the operator is Exists
-                                                              or DoesNotExist, the
-                                                              values array must be
-                                                              empty. This array is
-                                                              replaced during a strategic
-                                                              merge patch.
                                                             items:
                                                               type: string
                                                             type: array
@@ -7558,16 +7533,6 @@ spec:
                                                     matchLabels:
                                                       additionalProperties:
                                                         type: string
-                                                      description: matchLabels is
-                                                        a map of {key,value} pairs.
-                                                        A single {key,value} in the
-                                                        matchLabels map is equivalent
-                                                        to an element of matchExpressions,
-                                                        whose key field is "key",
-                                                        the operator is "In", and
-                                                        the values array contains
-                                                        only "value". The requirements
-                                                        are ANDed.
                                                       type: object
                                                   type: object
                                                 storageClassName:
@@ -8004,60 +7969,14 @@ spec:
                                                   configMap data to project
                                                 properties:
                                                   items:
-                                                    description: If unspecified, each
-                                                      key-value pair in the Data field
-                                                      of the referenced ConfigMap
-                                                      will be projected into the volume
-                                                      as a file whose name is the
-                                                      key and content is the value.
-                                                      If specified, the listed keys
-                                                      will be projected into the specified
-                                                      paths, and unlisted keys will
-                                                      not be present. If a key is
-                                                      specified which is not present
-                                                      in the ConfigMap, the volume
-                                                      setup will error unless it is
-                                                      marked optional. Paths must
-                                                      be relative and may not contain
-                                                      the '..' path or start with
-                                                      '..'.
                                                     items:
-                                                      description: Maps a string key
-                                                        to a path within a volume.
                                                       properties:
                                                         key:
-                                                          description: The key to
-                                                            project.
                                                           type: string
                                                         mode:
-                                                          description: 'Optional:
-                                                            mode bits used to set
-                                                            permissions on this file.
-                                                            Must be an octal value
-                                                            between 0000 and 0777
-                                                            or a decimal value between
-                                                            0 and 511. YAML accepts
-                                                            both octal and decimal
-                                                            values, JSON requires
-                                                            decimal values for mode
-                                                            bits. If not specified,
-                                                            the volume defaultMode
-                                                            will be used. This might
-                                                            be in conflict with other
-                                                            options that affect the
-                                                            file mode, like fsGroup,
-                                                            and the result can be
-                                                            other mode bits set.'
                                                           format: int32
                                                           type: integer
                                                         path:
-                                                          description: The relative
-                                                            path of the file to map
-                                                            the key to. May not be
-                                                            an absolute path. May
-                                                            not contain the path element
-                                                            '..'. May not start with
-                                                            the string '..'.
                                                           type: string
                                                       required:
                                                       - key
@@ -8084,95 +8003,32 @@ spec:
                                                     description: Items is a list of
                                                       DownwardAPIVolume file
                                                     items:
-                                                      description: DownwardAPIVolumeFile
-                                                        represents information to
-                                                        create the file containing
-                                                        the pod field
                                                       properties:
                                                         fieldRef:
-                                                          description: 'Required:
-                                                            Selects a field of the
-                                                            pod: only annotations,
-                                                            labels, name and namespace
-                                                            are supported.'
                                                           properties:
                                                             apiVersion:
-                                                              description: Version
-                                                                of the schema the
-                                                                FieldPath is written
-                                                                in terms of, defaults
-                                                                to "v1".
                                                               type: string
                                                             fieldPath:
-                                                              description: Path of
-                                                                the field to select
-                                                                in the specified API
-                                                                version.
                                                               type: string
                                                           required:
                                                           - fieldPath
                                                           type: object
                                                         mode:
-                                                          description: 'Optional:
-                                                            mode bits used to set
-                                                            permissions on this file,
-                                                            must be an octal value
-                                                            between 0000 and 0777
-                                                            or a decimal value between
-                                                            0 and 511. YAML accepts
-                                                            both octal and decimal
-                                                            values, JSON requires
-                                                            decimal values for mode
-                                                            bits. If not specified,
-                                                            the volume defaultMode
-                                                            will be used. This might
-                                                            be in conflict with other
-                                                            options that affect the
-                                                            file mode, like fsGroup,
-                                                            and the result can be
-                                                            other mode bits set.'
                                                           format: int32
                                                           type: integer
                                                         path:
-                                                          description: 'Required:
-                                                            Path is  the relative
-                                                            path name of the file
-                                                            to be created. Must not
-                                                            be absolute or contain
-                                                            the ''..'' path. Must
-                                                            be utf-8 encoded. The
-                                                            first item of the relative
-                                                            path must not start with
-                                                            ''..'''
                                                           type: string
                                                         resourceFieldRef:
-                                                          description: 'Selects a
-                                                            resource of the container:
-                                                            only resources limits
-                                                            and requests (limits.cpu,
-                                                            limits.memory, requests.cpu
-                                                            and requests.memory) are
-                                                            currently supported.'
                                                           properties:
                                                             containerName:
-                                                              description: 'Container
-                                                                name: required for
-                                                                volumes, optional
-                                                                for env vars'
                                                               type: string
                                                             divisor:
                                                               anyOf:
                                                               - type: integer
                                                               - type: string
-                                                              description: Specifies
-                                                                the output format
-                                                                of the exposed resources,
-                                                                defaults to "1"
                                                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                                               x-kubernetes-int-or-string: true
                                                             resource:
-                                                              description: 'Required:
-                                                                resource to select'
                                                               type: string
                                                           required:
                                                           - resource
@@ -8204,42 +8060,13 @@ spec:
                                                       and may not contain the '..'
                                                       path or start with '..'.
                                                     items:
-                                                      description: Maps a string key
-                                                        to a path within a volume.
                                                       properties:
                                                         key:
-                                                          description: The key to
-                                                            project.
                                                           type: string
                                                         mode:
-                                                          description: 'Optional:
-                                                            mode bits used to set
-                                                            permissions on this file.
-                                                            Must be an octal value
-                                                            between 0000 and 0777
-                                                            or a decimal value between
-                                                            0 and 511. YAML accepts
-                                                            both octal and decimal
-                                                            values, JSON requires
-                                                            decimal values for mode
-                                                            bits. If not specified,
-                                                            the volume defaultMode
-                                                            will be used. This might
-                                                            be in conflict with other
-                                                            options that affect the
-                                                            file mode, like fsGroup,
-                                                            and the result can be
-                                                            other mode bits set.'
                                                           format: int32
                                                           type: integer
                                                         path:
-                                                          description: The relative
-                                                            path of the file to map
-                                                            the key to. May not be
-                                                            an absolute path. May
-                                                            not contain the path element
-                                                            '..'. May not start with
-                                                            the string '..'.
                                                           type: string
                                                       required:
                                                       - key
@@ -8629,6 +8456,7 @@ spec:
                           to 1.
                         format: int32
                         type: integer
+# {{ if ne .Cluster.ConfigItems.stackset_ingress_in_stack_crd "true" }}
                       routegroup:
                         description: Settings for the per-stack route groups (in case
                           the StackSet has a configured RouteGroup)
@@ -8663,6 +8491,7 @@ spec:
                                 type: object
                             type: object
                         type: object
+# {{ end }}
                       service:
                         description: Service can be used to configure a custom service,
                           if not set stackset-controller will generate a service based

@@ -20,16 +20,15 @@ write_files:
       # https://github.com/kubernetes/kubernetes/blob/v1.13.6/staging/src/k8s.io/kubelet/config/v1beta1/types.go
       apiVersion: kubelet.config.k8s.io/v1beta1
       kind: KubeletConfiguration
+      cgroupDriver: systemd
+      containerLogMaxSize: "50Mi"
+      containerLogMaxFiles: 2
       staticPodPath: "/etc/kubernetes/manifests"
       clusterDomain: cluster.local
 {{- if not (index .Cluster.ConfigItems "enable_cfs_quota") }}
       cpuCFSQuota: false
 {{- end }}
       featureGates:
-        CSIMigration: {{ .Cluster.ConfigItems.enable_csi_migration }}
-{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }}
-        CSIMigrationAWS: true
-{{- end }}
         SizeMemoryBackedVolumes: {{ .Cluster.ConfigItems.enable_size_memory_backed_volumes }}
 {{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
         EphemeralContainers: true
@@ -59,14 +58,14 @@ write_files:
 {{- end }}
       authentication:
         anonymous:
-          enabled: true
+          enabled: false
         webhook:
           enabled: true
           cacheTTL: "2m"
         x509:
           clientCAFile: "/etc/kubernetes/ssl/ca.pem"
       authorization:
-        mode: AlwaysAllow
+        mode: Webhook
         webhook:
           cacheAuthorizedTTL: "5m"
           cacheUnauthorizedTTL: "30s"
@@ -125,7 +124,7 @@ write_files:
           {{- end }}
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config=policy/v1beta1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
+          - --runtime-config=policy/v1beta1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true,autoscaling/v2beta2={{ .Cluster.ConfigItems.autoscaling_v2beta2_enabled }},autoscaling/v2beta1={{ .Cluster.ConfigItems.autoscaling_v2beta1_enabled }}
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
@@ -141,7 +140,7 @@ write_files:
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
 {{- end }}
-          - --feature-gates=TTLAfterFinished=true,HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }},CSIMigrationAWS=true{{- end }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
+          - --feature-gates=HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }},StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }},TopologyAwareHints={{ .Cluster.ConfigItems.enable_topology_aware_hints }}
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
@@ -155,6 +154,7 @@ write_files:
           {{ else }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
+          - --audit-webhook-batch-max-size={{ .Cluster.ConfigItems.audit_webhook_batch_max_size }}
           - --audit-webhook-version=audit.k8s.io/v1
           {{ end }}
           # enable aggregated apiservers
@@ -172,6 +172,7 @@ write_files:
           - --kubelet-client-key=/etc/kubernetes/ssl/kubelet-client-key.pem
           - --shutdown-delay-duration=60s
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
+          - --max-requests-inflight={{ .Cluster.ConfigItems.apiserver_max_requests_inflight }}
           readinessProbe:
             httpGet:
               scheme: HTTPS
@@ -201,7 +202,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-161
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-172
           name: admission-controller
           lifecycle:
             preStop:
@@ -241,9 +242,8 @@ write_files:
             - mountPath: /etc/kubernetes/admission-controller-kubeconfig
               name: admission-controller-kubeconfig
               readOnly: true
-{{- if or (eq .Cluster.ConfigItems.routegroups_validation "provisioned") (eq .Cluster.ConfigItems.routegroups_validation "enabled") }}
-        - name: routegroups-admission-webhook
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.13.240
+        - name: skipper-admission-webhook
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.17.1
           args:
             - webhook
             - --address=:9085
@@ -262,7 +262,7 @@ write_files:
             timeoutSeconds: 5
           resources:
             requests:
-              cpu: 50m
+              cpu: 30m
               memory: 100Mi
           ports:
             - containerPort: 9085
@@ -270,8 +270,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-{{- end}}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-125
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-127
           name: webhook
           ports:
           - containerPort: 8081
@@ -293,7 +292,7 @@ write_files:
             timeoutSeconds: 5
           resources:
             requests:
-              cpu: 50m
+              cpu: 40m
               memory: 50Mi
           args:
             - --node-auth-cluster-id={{.Cluster.ID}}
@@ -314,6 +313,7 @@ write_files:
 {{- if eq .Cluster.ConfigItems.collaborator_administrator_access "true"}}
             - --role-mapping=Administrator=cn=Contributor,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
 {{- end}}
+            - --role-mapping=CollaboratorPostgresAdmin=cn=Postgres Admin,ou=collaborators,ou=Kubernetes,ou=apps,dc=zalando,dc=net
 
             # Member roles
             - --role-mapping=Administrator=cn=Administrator,ou={{.Cluster.ID}},ou=Kubernetes,ou=apps,dc=zalando,dc=net
@@ -335,6 +335,8 @@ write_files:
             - --system-users=system:serviceaccount:api-infrastructure:api-monitoring-controller
             - --collaborator-app-users=zalando-iam:zalando:service:stups_scalyr-key-rotation
           env:
+            - name: KUBECONFIG
+              value: /etc/kubernetes/k8s-authnz-webhook-kubeconfig
             - name: TEAMS_API_URL
               value: https://teams.auth.zalando.com
             - name: TOKENINFO_URLS
@@ -342,10 +344,16 @@ write_files:
             - name: USER_GROUPS
               value: stups_cluster-lifecycle-manager=system:masters{{if eq .Cluster.Environment "e2e"}},stups_kubernetes-on-aws-e2e=system:masters,stups_kubernetes=system:masters{{end}}
           volumeMounts:
+          - mountPath: /etc/kubernetes/ssl
+            name: ssl-certs-kubernetes
+            readOnly: true
           - mountPath: /etc/kubernetes/config
             name: kubernetes-configs
             readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-19
+          - mountPath: /etc/kubernetes/k8s-authnz-webhook-kubeconfig
+            name: k8s-authnz-webhook-kubeconfig
+            readOnly: true
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-55
           name: tokeninfo
           ports:
             - containerPort: 9021
@@ -376,7 +384,7 @@ write_files:
               value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ if ne .Cluster.Environment "production" }}
         - name: tokeninfo-sandbox
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-19
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-55
           ports:
           - containerPort: 9022
           lifecycle:
@@ -410,7 +418,7 @@ write_files:
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
         - name: skipper-proxy
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.13.240
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.16.154
           args:
           - skipper
           - -access-log-strip-query
@@ -461,7 +469,7 @@ write_files:
             name: ssl-certs-kubernetes
             readOnly: true
         - name: skipper-metrics
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.13.240
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.16.154
           args:
           - skipper
           - -access-log-strip-query
@@ -482,7 +490,7 @@ write_files:
               -> disableAccessLog()
               -> setPath("/metrics")
               -> "http://127.0.0.1:8081";
-            routegroups_admission_webhook: Path("/routegroups-admission-webhook")
+            skipper_admission_webhook: Path("/skipper-admission-webhook")
               -> disableAccessLog()
               -> setPath("/metrics")
               -> "https://127.0.0.1:9085";
@@ -559,6 +567,10 @@ write_files:
             path: /etc/kubernetes/admission-controller-kubeconfig
             type: File
           name: admission-controller-kubeconfig
+        - hostPath:
+            path: /etc/kubernetes/k8s-authnz-webhook-kubeconfig
+            type: File
+          name: k8s-authnz-webhook-kubeconfig
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-controller-manager.yaml
@@ -589,7 +601,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=aws
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=TTLAfterFinished=true,CSIMigration={{ .Cluster.ConfigItems.enable_csi_migration }}{{- if eq .Cluster.ConfigItems.enable_csi_migration "true" }},CSIMigrationAWS=true{{- end }},IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }}
+          - --feature-gates=IndexedJob={{ .Cluster.ConfigItems.enable_indexed_jobs }},StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }},TopologyAwareHints={{ .Cluster.ConfigItems.enable_topology_aware_hints }}
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
           - --allocate-node-cidrs=true
@@ -657,9 +669,6 @@ write_files:
           - --leader-elect=true
           - --feature-gates=NonPreemptingPriority=true
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
-          env:
-          - name: KUBE_MAX_PD_VOLS
-            value: "26"
           resources:
             requests:
               cpu: 100m
@@ -667,8 +676,9 @@ write_files:
           livenessProbe:
             httpGet:
               host: 127.0.0.1
+              scheme: HTTPS
               path: /healthz
-              port: 10251
+              port: 10259
             initialDelaySeconds: 15
             timeoutSeconds: 15
           volumeMounts:
@@ -864,3 +874,29 @@ write_files:
           qps: {{ .Cluster.ConfigItems.event_rate_limit_config_qps }}
           burst: {{ .Cluster.ConfigItems.event_rate_limit_config_burst }}
 {{ end }}
+{{- if .NodePool.ConfigItems.sysctl_settings}}
+  - owner: root:root
+    path: /etc/sysctl.d/99-custom-sysctl-settings.conf
+    content: |
+      {{- range $i, $cfgs := split .NodePool.ConfigItems.sysctl_settings ","}}
+      {{- $cfg := split $cfgs "="}}
+      {{index $cfg 0}} = {{index $cfg 1}}
+      {{- end}}
+{{- end}}
+
+  - owner: root:root
+    path: /etc/kubernetes/cni/net.d/10-flannel.conflist
+    content: |
+      {
+        "name": "podnet",
+        "cniVersion": "0.3.1",
+        "plugins": [
+          {
+            "type": "flannel",
+            "delegate": {
+              "isDefaultGateway": true,
+              "hairpinMode": true
+            }
+          }
+        ]
+      }

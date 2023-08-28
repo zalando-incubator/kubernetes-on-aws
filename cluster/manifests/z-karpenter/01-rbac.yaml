@@ -1,0 +1,231 @@
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: karpenter
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: karpenter
+  annotations:
+    iam.amazonaws.com/role: "{{ .LocalID }}-app-karpenter"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: karpenter-core
+  labels:
+    application: kubernetes
+    component: karpenter
+rules:
+  # Read
+  - apiGroups: ["karpenter.sh"]
+    resources: ["provisioners", "provisioners/status", "machines", "machines/status"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "nodes", "persistentvolumes", "persistentvolumeclaims", "replicationcontrollers", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses", "csinodes"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["apps"]
+    resources: ["daemonsets", "deployments", "replicasets", "statefulsets"]
+    verbs: ["list", "watch"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: [ "policy" ]
+    resources: [ "poddisruptionbudgets" ]
+    verbs: [ "get", "list", "watch" ]
+  # Write
+  - apiGroups: ["karpenter.sh"]
+    resources: ["provisioners/status", "machines", "machines/status"]
+    verbs: ["create", "delete", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["create", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/eviction"]
+    verbs: ["create"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["validatingwebhookconfigurations"]
+    verbs: ["update"]
+    resourceNames: ["validation.webhook.karpenter.sh", "validation.webhook.config.karpenter.sh"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["mutatingwebhookconfigurations"]
+    verbs: ["update"]
+    resourceNames: ["defaulting.webhook.karpenter.sh"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: karpenter-core
+  labels:
+    application: kubernetes
+    component: karpenter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: karpenter-core
+subjects:
+  - kind: ServiceAccount
+    name: karpenter
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: karpenter-webhook
+  labels:
+    application: kubernetes
+    component: karpenter
+rules:
+  # Read
+  - apiGroups: ["karpenter.k8s.aws"]
+    resources: ["awsnodetemplates"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["validatingwebhookconfigurations"]
+    verbs: ["update"]
+    resourceNames: ["validation.webhook.karpenter.k8s.aws"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["mutatingwebhookconfigurations"]
+    verbs: ["update"]
+    resourceNames: ["defaulting.webhook.karpenter.k8s.aws"]
+  # Write
+  - apiGroups: ["karpenter.k8s.aws"]
+    resources: ["awsnodetemplates/status"]
+    verbs: ["patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: karpenter-webhook
+  labels:
+    application: kubernetes
+    component: karpenter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: karpenter-webhook
+subjects:
+  - kind: ServiceAccount
+    name: karpenter
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: karpenter
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: karpenter
+rules:
+  # Read
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "watch"]
+  - apiGroups: [""]
+    resources: ["configmaps", "namespaces", "secrets"]
+    verbs: ["get", "list", "watch"]
+  # Write
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["update"]
+    resourceNames: ["karpenter-cert"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["update", "patch", "delete"]
+    resourceNames:
+      - karpenter-global-settings
+      - config-logging
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["patch", "update"]
+    resourceNames:
+      - "karpenter-leader-election"
+      - "webhook.configmapwebhook.00-of-01"
+      - "webhook.defaultingwebhook.00-of-01"
+      - "webhook.validationwebhook.00-of-01"
+      - "webhook.webhookcertificates.00-of-01"
+  # Cannot specify resourceNames on create
+  # https://kubernetes.io/docs/reference/access-authn-authz/rbac/#referring-to-resources
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: karpenter-dns
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: karpenter
+rules:
+  # Read
+  - apiGroups: [ "" ]
+    resources: [ "services" ]
+    resourceNames: [ "kube-dns" ]
+    verbs: [ "get" ]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: karpenter
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: karpenter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: karpenter
+subjects:
+  - kind: ServiceAccount
+    name: karpenter
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: karpenter-dns
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: karpenter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: karpenter-dns
+subjects:
+  - kind: ServiceAccount
+    name: karpenter
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: karpenter-admin
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-poweruser: "true"
+    application: kubernetes
+    component: karpenter
+rules:
+  - apiGroups: [ "karpenter.sh" ]
+    resources: [ "provisioners", "provisioners/status", "machines", "machines/status"]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "karpenter.k8s.aws" ]
+    resources: [ "awsnodetemplates" ]
+    verbs: [ "get", "list", "watch" ]
+
+{{ end }}
