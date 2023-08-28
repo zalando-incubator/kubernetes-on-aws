@@ -28,10 +28,12 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/framework/ingress"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	admissionapi "k8s.io/pod-security-admission/api"
 )
 
 var _ = describe("Ingress ALB creation", func() {
 	f := framework.NewDefaultFramework("ingress")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
 		jig *ingress.TestJig
@@ -116,6 +118,7 @@ var _ = describe("Ingress ALB creation", func() {
 
 var __ = describe("Ingress tests simple", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-simple")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
 		jig *ingress.TestJig
@@ -314,6 +317,7 @@ var __ = describe("Ingress tests simple", func() {
 
 var ___ = describe("Ingress tests paths", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-paths")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
 		jig *ingress.TestJig
@@ -486,6 +490,7 @@ var ___ = describe("Ingress tests paths", func() {
 
 var ____ = describe("Ingress tests custom routes", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-custom")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
 		jig *ingress.TestJig
@@ -608,6 +613,7 @@ var ____ = describe("Ingress tests custom routes", func() {
 
 var _____ = describe("Ingress tests paths", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-paths")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
 		jig *ingress.TestJig
@@ -796,6 +802,7 @@ var _____ = describe("Ingress tests paths", func() {
 
 var ______ = describe("Ingress tests custom routes", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-custom")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
 		jig *ingress.TestJig
@@ -918,6 +925,7 @@ var ______ = describe("Ingress tests custom routes", func() {
 
 var _______ = describe("Ingress tests simple NLB", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-simple-nlb")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
 		jig *ingress.TestJig

@@ -16,6 +16,7 @@ import (
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
+	admissionapi "k8s.io/pod-security-admission/api"
 
 	jsonpatch "github.com/evanphx/json-patch"
 	. "github.com/onsi/ginkgo"
@@ -36,6 +37,7 @@ var (
 
 var _ = describe("Audit", func() {
 	f := framework.NewDefaultFramework("audit")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var namespace string
 	BeforeEach(func() {
 		namespace = f.Namespace.Name

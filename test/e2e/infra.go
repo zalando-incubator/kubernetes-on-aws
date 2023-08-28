@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 	kubeapi "k8s.io/kubernetes/pkg/apis/core"
+	admissionapi "k8s.io/pod-security-admission/api"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -17,6 +18,7 @@ import (
 
 var _ = describe("Infrastructure tests", func() {
 	f := framework.NewDefaultFramework("zalando-kube-infra")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
