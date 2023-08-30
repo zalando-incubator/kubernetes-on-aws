@@ -42,8 +42,6 @@ clusters:
     routegroups_validation: "enabled"
     stackset_routegroup_support_enabled: "true"
     stackset_ingress_source_switch_ttl: "1m"
-    stackset_legacy_hpa_field_enabled: "true"
-    stackset_legacy_hpa_field_crd_enabled: "true"
     teapot_admission_controller_daemonset_reserved_cpu: "518m"
     karpenter_pools_enabled: "true"
   criticality_level: 1
