@@ -5,6 +5,8 @@ kind: Provisioner
 metadata:
   name: "{{.NodePool.Name}}"
 spec:
+  kubeletConfiguration:
+    maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
   {{- if index .NodePool.ConfigItems "scaling_priority"}}
   weight: {{.NodePool.ConfigItems.scaling_priority}}
   {{- end}}
@@ -111,7 +113,7 @@ metadata:
 spec:
   amiFamily: Custom
   amiSelector:
-    aws-ids: "{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_23_" .NodePool.ConfigItems.kuberuntu_distro_worker "_amd64")  }},{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_23_" .NodePool.ConfigItems.kuberuntu_distro_worker "_arm64") }}"
+    aws-ids: "{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_24_" .NodePool.ConfigItems.kuberuntu_distro_worker "_amd64")  }},{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_24_" .NodePool.ConfigItems.kuberuntu_distro_worker "_arm64") }}"
   metadataOptions:
     httpTokens: optional
   subnetSelector:

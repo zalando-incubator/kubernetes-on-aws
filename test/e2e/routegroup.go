@@ -24,6 +24,7 @@ import (
 	rgclient "github.com/szuecs/routegroup-client"
 	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	admissionapi "k8s.io/pod-security-admission/api"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -31,6 +32,7 @@ import (
 
 var _ = describe("RouteGroup ALB creation", func() {
 	f := framework.NewDefaultFramework("routegroup")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs rgclient.Interface
 	)
