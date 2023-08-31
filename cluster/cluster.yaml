@@ -1247,7 +1247,6 @@ Resources:
         Version: 2012-10-17
       Path: /
       Policies:
-        {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
         - PolicyDocument:
             Statement:
               - Effect: "Allow"
@@ -1257,9 +1256,6 @@ Resources:
                   - "{{ .Cluster.ConfigItems.skipper_open_policy_agent_bucket_arn }}/*"
             Version: 2012-10-17
           PolicyName: read-opa-bundles
-        {{ else }}
-          []
-        {{ end }}
       RoleName: "{{.Cluster.LocalID}}-app-skipper-ingress"
     Type: 'AWS::IAM::Role'
 {{ end }}
