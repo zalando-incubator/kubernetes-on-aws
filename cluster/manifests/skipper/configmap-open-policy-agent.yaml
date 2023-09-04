@@ -1,0 +1,41 @@
+{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    application: skipper-ingress
+    component: ingress
+  name: open-policy-agent-config
+  namespace: kube-system
+data:
+  opaconfig.yaml: |-
+    discovery:
+      name: discovery
+      resource: v1/bundles/zalando-apps/{{ `{{ .bundlename }}` }}/discovery.tgz
+      service: styra-bundles
+    labels:
+      environment: {{ .Cluster.Environment }}
+      kubernetes-cluster-alias: {{ .Cluster.Alias }}
+      aws-account-id: "{{ accountID .Cluster.InfrastructureAccount }}"
+    services:
+    - credentials:
+        bearer:
+          token: "{{ `{{ .Env.STYRA_TOKEN }}` }}"
+      name: styra
+      url: "{{ .ConfigItems.skipper_open_policy_agent_observability_url }}"
+    - credentials:
+        s3_signing:
+          web_identity_credentials:
+            aws_region: eu-central-1
+            session_name: open-policy-agent-instance
+      name: styra-bundles
+      url: "{{ .ConfigItems.skipper_open_policy_agent_bundles_url }}"
+  envoymetadata.json: |-
+    {
+      "filter_metadata": {
+        "envoy.filters.http.header_to_metadata": {
+          "policy_type": "ingress"
+        }	
+      }
+    }
+{{ end }}
