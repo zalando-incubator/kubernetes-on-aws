@@ -40,8 +40,11 @@ rules:
     verbs: [ "get", "list", "watch" ]
   # Write
   - apiGroups: ["karpenter.sh"]
-    resources: ["provisioners/status", "machines", "machines/status"]
-    verbs: ["create", "delete", "patch"]
+    resources: ["machines", "machines/status"]
+    verbs: ["create", "delete", "update", "patch"]
+  - apiGroups: ["karpenter.sh"]
+    resources: ["provisioners", "provisioners/status"]
+    verbs: ["update", "patch"]
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["create", "patch"]
@@ -55,10 +58,7 @@ rules:
     resources: ["validatingwebhookconfigurations"]
     verbs: ["update"]
     resourceNames: ["validation.webhook.karpenter.sh", "validation.webhook.config.karpenter.sh"]
-  - apiGroups: ["admissionregistration.k8s.io"]
-    resources: ["mutatingwebhookconfigurations"]
-    verbs: ["update"]
-    resourceNames: ["defaulting.webhook.karpenter.sh"]
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -98,7 +98,7 @@ rules:
     resourceNames: ["defaulting.webhook.karpenter.k8s.aws"]
   # Write
   - apiGroups: ["karpenter.k8s.aws"]
-    resources: ["awsnodetemplates/status"]
+    resources: ["awsnodetemplates", "awsnodetemplates/status"]
     verbs: ["patch", "update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -213,6 +213,41 @@ subjects:
     namespace: kube-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: karpenter-lease
+  namespace: kube-node-lease
+  labels:
+    application: kubernetes
+    component: karpenter
+rules:
+  # Read
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch"]
+  # Write
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: karpenter-lease
+  namespace: kube-node-lease
+  labels:
+    application: kubernetes
+    component: karpenter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: karpenter-lease
+subjects:
+  - kind: ServiceAccount
+    name: karpenter
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: karpenter-admin
@@ -227,5 +262,4 @@ rules:
   - apiGroups: [ "karpenter.k8s.aws" ]
     resources: [ "awsnodetemplates" ]
     verbs: [ "get", "list", "watch" ]
-
 {{ end }}
