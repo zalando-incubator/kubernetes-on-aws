@@ -5,7 +5,6 @@ metadata:
   namespace: kube-system
   labels:
     application: audittrail-adapter
-    version: master-42
 spec:
   selector:
     matchLabels:
@@ -16,7 +15,6 @@ spec:
     metadata:
       labels:
         application: audittrail-adapter
-        version: master-42
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics
@@ -35,7 +33,7 @@ spec:
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: container-registry.zalando.net/teapot/audittrail-adapter:master-42
+        image: container-registry.zalando.net/teapot/audittrail-adapter:master-44
         env:
           - name: AWS_REGION
             value: {{.Cluster.Region}}
