@@ -511,3 +511,127 @@ spec:
             name: skipper-default-filters
             optional: true
 {{ end }}
+
+## shadow routesrv
+{{ if eq .ConfigItems.skipper_routesrv_shadow_deploy_enabled "true" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skipper-ingress-routesrv-shadow
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    version: {{ $version }}
+    component: routesrv-shadow
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      application: skipper-ingress
+      component: routesrv-shadow
+  template:
+    metadata:
+      labels:
+        deployment: skipper-ingress-routesrv-shadow
+        application: skipper-ingress
+        version: {{ $version }}
+        component: routesrv-shadow
+      annotations:
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "routesrv", "parser": "skipper-access-log"}]
+        config/hash: {{"secret.yaml" | manifestHash}}
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_local}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9990"
+        prometheus.io/scrape: "true"
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+        zalando.org/topology-spread-timeout: 7m
+{{- end }}
+    spec:
+{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              # This is kind of stupid, but would work for now. Ideally we should just stop filtering out the pods in
+              # kube-system in our admitters, since we've never really had any issues with them.
+              parent-resource-hash: abd943226b6885f66785592be28bdf303863fbac
+{{- end }}
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
+      serviceAccountName: skipper-ingress
+      terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
+      containers:
+      - name: routesrv-shadow
+        image: container-registry.zalando.net/teapot/skipper:{{ $version }}
+        ports:
+        - name: ingress-port
+          containerPort: 9990
+          protocol: TCP
+        args:
+          - "routesrv"
+          - "-enable-kubernetes-endpointslices"
+          - "-kubernetes"
+          - "-kubernetes-in-cluster"
+          - "-kubernetes-path-mode=path-prefix"
+          - "-kubernetes-backend-traffic-algorithm={{ .ConfigItems.skipper_ingress_backend_traffic_algorithm }}"
+          - "-kubernetes-default-lb-algorithm={{ .ConfigItems.skipper_ingress_default_lb_algorithm }}"
+          - "-address=:9990"
+          - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
+{{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
+          - "-enable-kubernetes-east-west"
+          - "-kubernetes-east-west-domain=.ingress.cluster.local"
+{{ end }}
+          - "-kubernetes-east-west-range-domains=ingress.cluster.local"
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+          - "-reverse-source-predicate"
+          - "-default-filters-dir=/etc/config/default-filters"
+          - '-default-filters-prepend={{ .ConfigItems.skipper_default_filters }}'
+{{ if eq .ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
+          - "-enable-swarm"
+          - "-kubernetes-redis-service-namespace=kube-system"
+          - "-kubernetes-redis-service-name=skipper-ingress-redis"
+{{ end }}
+{{ if eq .ConfigItems.skipper_oauth2_ui_login "true" }}
+          - "-enable-oauth2-grant-flow"
+          - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
+{{ end }}
+{{ if .ConfigItems.skipper_edit_route_placeholders }}
+          {{ range $placeholder := split .ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
+          - '-edit-route={{ $placeholder }}'
+          {{ end }}
+{{ end }}
+{{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
+          - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
+          - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
+{{ end }}
+        resources:
+          limits:
+            cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
+            memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
+          requests:
+            cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
+            memory: "{{ .ConfigItems.skipper_routesrv_memory }}"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9990
+          timeoutSeconds: 5
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+        volumeMounts:
+          - name: filters
+            mountPath: /etc/config/default-filters
+      volumes:
+        - name: filters
+          configMap:
+            name: skipper-default-filters
+            optional: true
+{{ end }}
