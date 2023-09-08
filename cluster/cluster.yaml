@@ -935,6 +935,11 @@ Resources:
                   - !Sub "arn:aws:s3:::${DeploymentServiceBucket}"
                 Effect: Allow
               - Action:
+                  - kms:Decrypt
+                Resource:
+                  - !GetAtt DeploymentSecretKey.Arn
+                Effect: Allow
+              - Action:
                   - 'cloudformation:DescribeStackEvents'
                   - 'cloudformation:DescribeStackResources'
                   - 'cloudformation:DescribeStacks'
