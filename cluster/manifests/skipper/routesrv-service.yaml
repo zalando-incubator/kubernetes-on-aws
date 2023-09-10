@@ -16,3 +16,25 @@ spec:
   selector:
     application: skipper-ingress
     component: routesrv
+## shadow routesrv
+{{ if eq .ConfigItems.skipper_routesrv_shadow_deploy_enabled "true" }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: skipper-ingress-routesrv-shadow
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    component: routesrv-shadow
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 9990
+    protocol: TCP
+  selector:
+    application: skipper-ingress
+    component: routesrv-shadow
+{{ end }}
