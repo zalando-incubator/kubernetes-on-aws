@@ -70,6 +70,10 @@ write_files:
           cacheAuthorizedTTL: "5m"
           cacheUnauthorizedTTL: "30s"
       protectKernelDefaults: true
+{{- if eq .Cluster.ConfigItems.control_plane_graceful_shutdown "true" }}
+      shutdownGracePeriod: "120s"
+      shutdownGracePeriodCriticalPods: "80s"
+{{- end }}
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-apiserver.yaml
