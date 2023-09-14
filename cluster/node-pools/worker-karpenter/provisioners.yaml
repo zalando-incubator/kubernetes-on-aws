@@ -7,6 +7,12 @@ metadata:
 spec:
   kubeletConfiguration:
     maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
+    systemReserved:
+      cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
+      memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
+    kubeReserved:
+      cpu: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_cpu }}"
+      memory: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_memory }}"
   {{- if index .NodePool.ConfigItems "scaling_priority"}}
   weight: {{.NodePool.ConfigItems.scaling_priority}}
   {{- end}}
