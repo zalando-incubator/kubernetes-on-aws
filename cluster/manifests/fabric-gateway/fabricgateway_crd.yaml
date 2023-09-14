@@ -1,4 +1,4 @@
-{{ if eq .ConfigItems.fabric_gateway_crd_v1_enabled "true" }}
+# {{ if eq .ConfigItems.fabric_gateway_crd_v1_enabled "true" }}
 
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -74,6 +74,63 @@ spec:
                             the same method and path but is applied only to requests
                             that match the rules specified in x-fabric-match.
                           properties:
+                            x-fabric-additional-filters:
+                              description: This field is used to add custom Skipper
+                                filters to this route, see https://opensource.zalando.com/skipper/reference/filters
+                                to find out more. Please try to avoid using this option
+                                unless you do understand what are you doing.
+                              properties:
+                                append:
+                                  description: The list of Skipper filters. All filters
+                                    specified in this field would be appended after
+                                    filters created by default. Every filter should
+                                    comply to the eskip syntax, see https://pkg.go.dev/github.com/zalando/skipper/eskip
+                                  items:
+                                    type: string
+                                  type: array
+                                prepend:
+                                  description: The list of Skipper filters. All filters
+                                    specified in this field would be prepended before
+                                    filters created by default. Every filter should
+                                    comply to the eskip syntax, see https://pkg.go.dev/github.com/zalando/skipper/eskip
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
+                            x-fabric-employee-access:
+                              description: The `user-list` should only be populated
+                                if `type` is set to `allow_list`. If `type` is not
+                                present, it will be defaulted to `scoped_access`
+                              properties:
+                                type:
+                                  description: If `allow_list` is selected, then the
+                                    `user-list` property must be populated, otherwise
+                                    it is ignored. If allow_all is selected, any token
+                                    which is Employee realm will be able to access
+                                    the endpoint in spite of any scope restrictions.
+                                    If `deny_all` is selected, then any employee realm
+                                    token will be rejected even if there are no scope
+                                    restrictions beyond `uid`. If the employee access
+                                    route config object is not present, the employee
+                                    access configuration is inherited from any globally
+                                    defined employee access config. If no employee
+                                    access configuration is configured then employee
+                                    access will work as per normal scope rules; i.e.
+                                    employees will have access to routes which aren't
+                                    scope protected. This can be overridden on a per
+                                    route basis.
+                                  enum:
+                                  - allow_list
+                                  - allow_all
+                                  - deny_all
+                                  type: string
+                                user-list:
+                                  description: UID of a user who should bypass scope
+                                    checks, since user tokens can't have scopes.
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
                             x-fabric-match:
                               description: The description of requests which must
                                 be routed through the corresponding custom route
@@ -123,6 +180,98 @@ spec:
                                   type: object
                               required:
                               - default-rate
+                              type: object
+                            x-fabric-request-ratelimits:
+                              items:
+                                description: FabricGatewayRequestRateLimit is used
+                                  to limit requests per specified period for particular
+                                  users creating high load on the service. This rate
+                                  limit works independently of the x-fabric-ratelimits
+                                  but returns the same HTTP 429 response as x-fabric-ratelimits.
+                                properties:
+                                  headers:
+                                    description: HTTP headers from request which are
+                                      used to identify a specific user which should
+                                      be rate limited. Limit applies per unique non-empty
+                                      combination of configured header values.
+                                    items:
+                                      type: string
+                                    type: array
+                                  period:
+                                    description: Time period for number of requests
+                                      being counted. Valid values are 'hour', 'minute'
+                                      and 'second', defaults to 'minute' if omitted.
+                                    enum:
+                                    - second
+                                    - minute
+                                    - hour
+                                    type: string
+                                  rate:
+                                    description: User specific value to apply to the
+                                      route. If the particular user makes more requests
+                                      that value within the defined period, then this
+                                      user will start getting HTTP 429 responses.
+                                    minimum: 1
+                                    type: integer
+                                required:
+                                - headers
+                                - rate
+                                type: object
+                              type: array
+                            x-fabric-static-response:
+                              description: This property is used to configure a static,
+                                hard-coded response for a route. The request does
+                                not reach the backend, the response is returned immediately
+                                from skipper.
+                              properties:
+                                body:
+                                  description: The body of the static response.
+                                  type: string
+                                headers:
+                                  additionalProperties:
+                                    type: string
+                                  description: The headers which should be present
+                                    in the static response. This is an object whose
+                                    values are all Strings.
+                                  type: object
+                                status:
+                                  description: The status code to use in the static
+                                    response.
+                                  type: integer
+                              required:
+                              - body
+                              - headers
+                              - status
+                              type: object
+                            x-fabric-whitelist:
+                              description: UID of a service which will be allowed
+                                access to the API if it matches all other authorization
+                                requirements. If there is a whitelist present, then
+                                ONLY services which are referenced in the whitelist
+                                will be able to access the API even if they match
+                                all other authorization requirements. If the whitelist
+                                is empty, then no service tokens can access via the
+                                gateway
+                              properties:
+                                service-list:
+                                  description: UID of a service which will be allowed
+                                    access to the API if it matches all other authorization
+                                    requirements. If there is a whitelist present,
+                                    then ONLY services which are referenced in the
+                                    whitelist will be able to access the API even
+                                    if they match all other authorization requirements
+                                  items:
+                                    type: string
+                                  type: array
+                                state:
+                                  description: Turns whitelisting on and off for this
+                                    path/operation. Default is `enabled`
+                                  enum:
+                                  - enabled
+                                  - disabled
+                                  type: string
+                              required:
+                              - service-list
                               type: object
                           required:
                           - x-fabric-match
@@ -457,4 +606,4 @@ status:
   conditions: []
   storedVersions: []
 
-{{ end }}
+# {{ end }}

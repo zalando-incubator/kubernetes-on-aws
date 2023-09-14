@@ -34,12 +34,12 @@ metadata:
     application: kubernetes
     component: karpenter
 data:
-  loglevel.controller: "error"
-  loglevel.webhook: "error"
+  loglevel.controller: "{{ .Cluster.ConfigItems.karpenter_log_level }}"
+  loglevel.webhook: "{{ .Cluster.ConfigItems.karpenter_log_level }}"
   # https://github.com/uber-go/zap/blob/aa3e73ec0896f8b066ddf668597a02f89628ee50/config.go
   zap-logger-config: |
     {
-      "level": "error",
+      "level": "{{ .Cluster.ConfigItems.karpenter_log_level }}",
       "development": false,
       "disableStacktrace": true,
       "disableCaller": true,
