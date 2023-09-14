@@ -25,10 +25,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	admissionapi "k8s.io/pod-security-admission/api"
 )
 
 var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
 	f := framework.NewDefaultFramework("aws-iam")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 	var zcs awsiamrole.Interface
 

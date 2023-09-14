@@ -200,16 +200,16 @@ Resources:
           Value: owned
       ToPort: 443
     Type: 'AWS::EC2::SecurityGroupIngress'
-  MasterSecurityGroupIngressFromWorkerToMasterKubelet:
+  MasterSecurityGroupIngressFromWorkerToMasterKubeletAndKubeProxy:
     Properties:
-      FromPort: 10250
+      FromPort: 10249 # KubeProxy
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
-      ToPort: 10250
+      ToPort: 10250 # Kubelet
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromWorkerToNodeMonitor:
     Properties:
@@ -335,16 +335,16 @@ Resources:
           Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToWorkerKubelet:
+  WorkerSecurityGroupIngressFromWorkerToWorkerKubeletAndKubeProxy:
     Properties:
-      FromPort: 10250
+      FromPort: 10249 # KubeProxy
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
-      ToPort: 10250
+      ToPort: 10250 # Kubelet
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToWorkerSkipperMetrics:
     Properties:
@@ -1072,6 +1072,36 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-ingr-ctrl"
     Type: 'AWS::IAM::Role'
+{{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
+  # Note: this is not strictly specific to Open Policy Agent and can be extend 
+  # if Skipper Ingress needs to access other AWS resources
+  SkipperIngressIAMRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{ .Values.hosted_zone }}"
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:skipper-ingress"
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                Resource:
+                  - "{{ .Cluster.ConfigItems.skipper_open_policy_agent_bucket_arn }}/*"
+            Version: 2012-10-17
+          PolicyName: read-opa-bundles
+      RoleName: "{{.Cluster.LocalID}}-app-skipper-ingress"
+    Type: 'AWS::IAM::Role'
+{{ end }}
   ClusterLifecycleControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument:

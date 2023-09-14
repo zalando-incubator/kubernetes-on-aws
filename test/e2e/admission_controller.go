@@ -27,6 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	admissionapi "k8s.io/pod-security-admission/api"
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,6 +47,7 @@ const (
 
 var _ = describe("Admission controller tests", func() {
 	f := framework.NewDefaultFramework("zalando-kube-admission-controller")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
