@@ -113,8 +113,6 @@ data:
   node.node-not-ready-taint.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_node_not_ready_taint }}"
   node.extended-node-restriction.enable: "true"
 
-  # keep legacy configs during rollouts
-  pod.node-lifecycle.provider: "{{ .Cluster.ConfigItems.teapot_admission_controller_node_lifecycle_provider }}"
 {{- range $group, $provider := nodeLifeCycleProviderPerNodePoolGroup .Cluster.NodePools }}
   pod.node-lifecycle.provider.{{ $group }}: "{{ $provider }}"
 {{- end}}
