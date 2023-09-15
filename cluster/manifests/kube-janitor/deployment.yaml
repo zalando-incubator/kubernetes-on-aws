@@ -1,4 +1,6 @@
-{{ if ne .Environment "production" }}
+# {{ if ne .Environment "production" }}
+# {{ $internal_version := "22.7.2-master-17" }}
+# {{ $version := index (split $internal_version "-") 0 }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +9,7 @@ metadata:
   labels:
     application: kubernetes
     component: kube-janitor
-    version: v20.4.1
+    version: "{{ $version }}"
 spec:
   replicas: 1
   selector:
@@ -19,8 +21,9 @@ spec:
         deployment: kube-janitor
         application: kubernetes
         component: kube-janitor
-        version: v20.4.1
+        version: "{{ $version }}"
       annotations:
+        config/hash: '{{"rules-config.yaml" | manifestHash}}'
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
       dnsConfig:
@@ -29,33 +32,33 @@ spec:
             value: "1"
       serviceAccountName: kube-janitor
       containers:
-      - name: janitor
-        # see https://github.com/hjacobs/kube-janitor/releases
-        image: container-registry.zalando.net/teapot/kube-janitor:22.7.2-master-17
-        args:
-          # run every minute
-          - --interval=60
-          # do not touch system/infra namespaces
-          - --exclude-namespaces=kube-system,visibility
-          - --rules-file=/config/rules.yaml
-          - --deployment-time-annotation=deployment-time
-        resources:
-          limits:
-            cpu: 5m
-            memory: 4Gi
-          requests:
-            # this is a background app ==> low priority, low CPU requests
-            cpu: 5m
-            memory: 4Gi
-        securityContext:
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 1000
-        volumeMounts:
-          - name: config-volume
-            mountPath: /config
+        - name: janitor
+          # see https://github.com/hjacobs/kube-janitor/releases
+          image: container-registry.zalando.net/teapot/kube-janitor:{{ $internal_version }}
+          args:
+            # run every minute
+            - --interval=60
+            # do not touch system/infra namespaces
+            - --exclude-namespaces=kube-system,visibility
+            - --rules-file=/config/rules.yaml
+            - --deployment-time-annotation=deployment-time
+          resources:
+            limits:
+              cpu: 5m
+              memory: 4Gi
+            requests:
+              # this is a background app ==> low priority, low CPU requests
+              cpu: 5m
+              memory: 4Gi
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
       volumes:
-      - name: config-volume
-        configMap:
-          name: kube-janitor
-{{ end }}
+        - name: config-volume
+          configMap:
+            name: kube-janitor
+# {{ end }}
