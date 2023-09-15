@@ -54,9 +54,8 @@ data:
 
       {{ if eq .ConfigItems.kube_janitor_cleanup_pr_resources "true" }}
       - id: cleanup-resources-from-pull-requests
-        # Delete resources matching .*-pr-[0-9] after configured period.
+        # Delete non-owned resources matching .*-pr-[0-9] after configured period.
         # Note that jmespath does not support regexps, see https://github.com/jmespath/jmespath.jep/issues/23
-        # TODO: merge namespaces rule here after rollout
         resources:
           - stacksets
           - deployments
@@ -68,16 +67,19 @@ data:
           {{ if eq .ConfigItems.fabric_gateway_crd_v1_enabled "true" }}- fabricgateways{{ end }}
           - platformcredentialssets
         jmespath: >-
-          contains(metadata.name, '-pr-0') ||
-          contains(metadata.name, '-pr-1') ||
-          contains(metadata.name, '-pr-2') ||
-          contains(metadata.name, '-pr-3') ||
-          contains(metadata.name, '-pr-4') ||
-          contains(metadata.name, '-pr-5') ||
-          contains(metadata.name, '-pr-6') ||
-          contains(metadata.name, '-pr-7') ||
-          contains(metadata.name, '-pr-8') ||
-          contains(metadata.name, '-pr-9')
+          (metadata.ownerReferences == null) &&
+          (
+            contains(metadata.name, '-pr-0') ||
+            contains(metadata.name, '-pr-1') ||
+            contains(metadata.name, '-pr-2') ||
+            contains(metadata.name, '-pr-3') ||
+            contains(metadata.name, '-pr-4') ||
+            contains(metadata.name, '-pr-5') ||
+            contains(metadata.name, '-pr-6') ||
+            contains(metadata.name, '-pr-7') ||
+            contains(metadata.name, '-pr-8') ||
+            contains(metadata.name, '-pr-9')
+          )
         ttl: "{{ .Cluster.ConfigItems.kube_janitor_default_pr_ttl }}"
       {{ end }}
 
