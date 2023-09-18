@@ -1,9 +1,12 @@
-{{ if ne .Environment "production" }}
+# {{ if ne .Environment "production" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kube-janitor
   namespace: kube-system
+  labels:
+    application: kubernetes
+    component: kube-janitor
 data:
   rules.yaml: |-
     # example rules configuration to set TTL for arbitrary objects
@@ -39,8 +42,8 @@ data:
         # see http://jmespath.org/specification.html#starts-with
         jmespath: "starts_with(metadata.name, 'd-')"
         ttl: 24h
-      - id: cleanup-resources-from-pull-requests
-        # Delete all resources in namespaces matching .*-pr-.* after configured period:
+      - id: cleanup-namespaces-from-pull-requests
+        # Delete namespaces matching .*-pr-.* after configured period:
         # This allows to put resources build from pull requests into a
         # namespace like my-project-pr-123 . They won't mess up the cluster
         # anymore, see #2930.
@@ -48,6 +51,36 @@ data:
           - namespaces
         jmespath: "contains(metadata.name, '-pr-')"
         ttl: "{{ .Cluster.ConfigItems.kube_janitor_default_pr_ttl }}"
+
+      {{ if eq .ConfigItems.kube_janitor_cleanup_pr_resources "true" }}
+      - id: cleanup-resources-from-pull-requests
+        # Delete resources matching .*-pr-[0-9] after configured period.
+        # Note that jmespath does not support regexps, see https://github.com/jmespath/jmespath.jep/issues/23
+        # TODO: merge namespaces rule here after rollout
+        resources:
+          - stacksets
+          - deployments
+          - statefulsets
+          - cronjobs
+          - services
+          - ingresses
+          - routegroups
+          {{ if eq .ConfigItems.fabric_gateway_crd_v1_enabled "true" }}- fabricgateways{{ end }}
+          - platformcredentialssets
+        jmespath: >-
+          contains(metadata.name, '-pr-0') ||
+          contains(metadata.name, '-pr-1') ||
+          contains(metadata.name, '-pr-2') ||
+          contains(metadata.name, '-pr-3') ||
+          contains(metadata.name, '-pr-4') ||
+          contains(metadata.name, '-pr-5') ||
+          contains(metadata.name, '-pr-6') ||
+          contains(metadata.name, '-pr-7') ||
+          contains(metadata.name, '-pr-8') ||
+          contains(metadata.name, '-pr-9')
+        ttl: "{{ .Cluster.ConfigItems.kube_janitor_default_pr_ttl }}"
+      {{ end }}
+
       - id: cleanup-unused-pvcs
         # Delete all unused PersistentVolumeClaims (PVCs) and their EBS volumes
         # to save costs ($0.119/GiB per month)
@@ -55,4 +88,5 @@ data:
           - persistentvolumeclaims
         jmespath: "_context.pvc_is_not_mounted && _context.pvc_is_not_referenced"
         ttl: "{{ .Cluster.ConfigItems.kube_janitor_default_unused_pvc_ttl }}"
-{{ end }}
+
+# {{ end }}
