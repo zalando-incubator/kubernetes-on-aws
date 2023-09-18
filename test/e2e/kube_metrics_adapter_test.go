@@ -20,6 +20,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/framework/ingress"
+	admissionapi "k8s.io/pod-security-admission/api"
 )
 
 // Test Scale down with custom metrics from an app's /metrics endpoint
@@ -28,6 +29,7 @@ import (
 // 3. Observe if the HPA downscales
 var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metrics from kube-metrics-adapter)", func() {
 	f := framework.NewDefaultFramework("zalando-kube-metrics-adapter")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 	var rgcs rgclient.Interface
 	var jig *ingress.TestJig

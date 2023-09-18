@@ -28,12 +28,14 @@ import (
 	deploymentframework "k8s.io/kubernetes/test/e2e/framework/deployment"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 	deploymentutil "k8s.io/kubernetes/test/utils"
+	admissionapi "k8s.io/pod-security-admission/api"
 )
 
 var _ = describe("PSP use", func() {
 	privilegedRole := "privileged-psp"
 	privilegedSA := "privileged-sa"
 	f := framework.NewDefaultFramework("psp")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelPrivileged
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
