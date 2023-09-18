@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ebs-csi-leases-rolebinding
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ebs-csi-driver
+subjects:
+- kind: ServiceAccount
+  name: ebs-csi-controller-sa
+roleRef:
+  kind: Role
+  name: ebs-csi-leases-role
+  apiGroup: rbac.authorization.k8s.io

@@ -103,6 +103,13 @@ spec:
               name: skipper-ingress
               key: datadome-api-key
 {{ end }}
+{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+        - name: STYRA_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: skipper-ingress
+              key: styra-token
+{{ end }}
         args:
           - "run.sh"
           - "skipper"
@@ -246,6 +253,11 @@ spec:
           - "-oauth2-callback-path={{ .ConfigItems.skipper_oauth2_redirect_uri_path }}"
           - "-oauth2-grant-tokeninfo-keys={{ .ConfigItems.skipper_oauth2_ui_login_tokeninfo_keys }}"
 {{ end }}
+{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+          - "-enable-open-policy-agent"
+          - "-open-policy-agent-config-template=/etc/skipper/open-policy-agent/opaconfig.yaml"
+          - "-open-policy-agent-envoy-metadata=/etc/skipper/open-policy-agent/envoymetadata.json"
+{{ end }}
 {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
@@ -337,6 +349,11 @@ spec:
             mountPath: /etc/skipper/secret
             readOnly: true
 {{ end }}
+{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+          - name: open-policy-agent-config
+            mountPath: /etc/skipper/open-policy-agent
+            readOnly: true
+{{ end }}
       volumes:
         - name: routes-cache
           emptyDir: {}
@@ -364,6 +381,11 @@ spec:
         - name: encryption-key
           secret:
             secretName: skipper-ingress
+{{ end }}
+{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "true" }}
+        - name: open-policy-agent-config
+          configMap:
+            name: open-policy-agent-config
 {{ end }}
 {{ if eq .ConfigItems.enable_dedicate_nodepool_skipper "true"}}
       nodeSelector:

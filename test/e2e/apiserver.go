@@ -33,6 +33,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework/job"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 	"k8s.io/kubernetes/test/e2e/framework/statefulset"
+	admissionapi "k8s.io/pod-security-admission/api"
 )
 
 const (
@@ -59,6 +60,7 @@ const (
 
 var _ = describe("Image Policy Tests (Deployment)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-enabled")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
@@ -117,6 +119,7 @@ var _ = describe("Image Policy Tests (Deployment)", func() {
 
 var _ = describe("Image Policy Tests (Deployment) (when disabled)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-disabled")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
@@ -152,6 +155,7 @@ var _ = describe("Image Policy Tests (Deployment) (when disabled)", func() {
 
 var _ = describe("Image Policy Tests (Pods)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-enabled")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
@@ -195,6 +199,7 @@ var _ = describe("Image Policy Tests (Pods)", func() {
 
 var _ = describe("Image Policy Tests (Pods) (when disabled)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-disabled")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
@@ -226,6 +231,7 @@ var _ = describe("Image Policy Tests (Pods) (when disabled)", func() {
 
 var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-enabled")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
@@ -302,6 +308,7 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 
 var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-disabled")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
@@ -346,6 +353,7 @@ var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func()
 
 var _ = describe("Image Policy Tests (StatefulSet)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-enabled")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
@@ -404,6 +412,7 @@ var _ = describe("Image Policy Tests (StatefulSet)", func() {
 
 var _ = describe("Image Policy Tests (StatefulSet) (when disabled)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-disabled")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
@@ -438,6 +447,7 @@ var _ = describe("Image Policy Tests (StatefulSet) (when disabled)", func() {
 
 var _ = describe("Image Policy Tests (Job)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-enabled")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
@@ -489,6 +499,7 @@ var _ = describe("Image Policy Tests (Job)", func() {
 
 var _ = describe("Image Policy Tests (Job) (when disabled)", func() {
 	f := framework.NewDefaultFramework("image-policy-test-disabled")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
@@ -519,6 +530,7 @@ var _ = describe("Image Policy Tests (Job) (when disabled)", func() {
 
 var _ = describe("ECR Registry Pull", func() {
 	f := framework.NewDefaultFramework("ecr-registry")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {

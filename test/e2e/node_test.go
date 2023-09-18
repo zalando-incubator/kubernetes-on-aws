@@ -12,6 +12,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2eevents "k8s.io/kubernetes/test/e2e/framework/events"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	admissionapi "k8s.io/pod-security-admission/api"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,6 +20,7 @@ import (
 
 var _ = describe("Node tests", func() {
 	f := framework.NewDefaultFramework("node-tests")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelPrivileged
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
