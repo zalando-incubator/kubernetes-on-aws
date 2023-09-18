@@ -33,7 +33,7 @@ spec:
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: container-registry.zalando.net/teapot/audittrail-adapter:master-44
+        image: container-registry.zalando.net/teapot/audittrail-adapter:master-46
         env:
           - name: AWS_REGION
             value: {{.Cluster.Region}}
@@ -46,6 +46,9 @@ spec:
         - --address=:8889
         - --metrics-address=:7980
         - --audittrail-timeout={{ .Cluster.ConfigItems.audittrail_adapter_timeout }}
+        {{- if eq .Cluster.ConfigItems.audittrail_adapter_drop_audittrail_api_read_only "true" }}
+        - --audittrail-drop-read-only
+        {{- end }}
         {{- if not .Cluster.ConfigItems.audittrail_url }}
         - --metrics-only
         {{- end }}
