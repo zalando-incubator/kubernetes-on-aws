@@ -632,6 +632,12 @@ audittrail_adapter_memory: "200Mi"
 audittrail_adapter_timeout: "2s"
 audittrail_adapter_bucket: "zalando-kubernetes-audit"
 
+# When enabled, any read-only events are added to the metrics, but are dropped
+# before being sent to audittrail-api.
+# When this is set to true, `auditlog_read_access` can safely be set true
+# without overloading audittrail-api.
+audittrail_adapter_drop_audittrail_api_read_only: "true"
+
 audit_webhook_batch_max_size: "250"
 
 kube2iam_cpu: "25m"
@@ -774,8 +780,11 @@ enable_ephemeral_containers: "false"
 # to ensure all secrets are encrypted/decrypted all secrets need to be rewritten after masters have been rolled
 enable_encryption: "true"
 
-# default ttl for kube janitor for resources build from PRs in namespaces matching .*-pr-.*
+# default ttl for kube janitor for resources build from PRs
 kube_janitor_default_pr_ttl: "1w"  # 1 week
+# enable cleanup of pr resources other than namespaces
+kube_janitor_cleanup_pr_resources: "false"
+
 # opt-in deletion of unused PVCs
 kube_janitor_default_unused_pvc_ttl: "forever"
 
