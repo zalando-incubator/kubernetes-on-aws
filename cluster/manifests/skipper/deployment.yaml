@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.17.40-634" }}
+{{ $internal_version := "v0.18.0-648" }}
 {{ $version := index (split $internal_version "-") 0 }}
 
 apiVersion: apps/v1
@@ -479,6 +479,7 @@ spec:
           - "-kubernetes-path-mode=path-prefix"
           - "-kubernetes-backend-traffic-algorithm={{ .ConfigItems.skipper_ingress_backend_traffic_algorithm }}"
           - "-kubernetes-default-lb-algorithm={{ .ConfigItems.skipper_ingress_default_lb_algorithm }}"
+          - "-enable-kubernetes-endpointslices={{ .ConfigItems.skipper_endpointslices_enabled }}"
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
 {{ if eq .ConfigItems.enable_skipper_eastwest "true"}}
