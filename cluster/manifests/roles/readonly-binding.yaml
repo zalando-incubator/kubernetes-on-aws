@@ -7,20 +7,20 @@ roleRef:
   kind: ClusterRole
   name: readonly
 subjects:
-- kind: Group
-  name: ReadOnly
-  apiGroup: rbac.authorization.k8s.io
-{{- if eq .Cluster.ConfigItems.okta_auth_enabled "true" }}
-- kind: Group
-  name: "okta:common/engineer"
-  apiGroup: rbac.authorization.k8s.io
-- kind: Group
-  name: "okta:common/collaborator"
-  apiGroup: rbac.authorization.k8s.io
-- kind: Group
-  name: "okta:common/read-only"
-  apiGroup: rbac.authorization.k8s.io
-{{- end }}
+  - kind: Group
+    name: ReadOnly
+    apiGroup: rbac.authorization.k8s.io
+  # {{ if eq .Cluster.ConfigItems.okta_auth_enabled "true" }}
+  - kind: Group
+    name: "okta:common/engineer"
+    apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: "okta:common/collaborator"
+    apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: "okta:common/read-only"
+    apiGroup: rbac.authorization.k8s.io
+  # {{ end }}
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -32,17 +32,42 @@ roleRef:
   kind: Role
   name: readonly-dashboard
 subjects:
-- kind: Group
-  name: ReadOnly
+  - kind: Group
+    name: ReadOnly
+    apiGroup: rbac.authorization.k8s.io
+  # {{ if eq .Cluster.ConfigItems.okta_auth_enabled "true" }}
+  - kind: Group
+    name: "okta:common/engineer"
+    apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: "okta:common/collaborator"
+    apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: "okta:common/read-only"
+    apiGroup: rbac.authorization.k8s.io
+  # {{ end }}
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: readonly-routesrv
+  namespace: kube-system
+roleRef:
   apiGroup: rbac.authorization.k8s.io
-{{- if eq .Cluster.ConfigItems.okta_auth_enabled "true" }}
-- kind: Group
-  name: "okta:common/engineer"
-  apiGroup: rbac.authorization.k8s.io
-- kind: Group
-  name: "okta:common/collaborator"
-  apiGroup: rbac.authorization.k8s.io
-- kind: Group
-  name: "okta:common/read-only"
-  apiGroup: rbac.authorization.k8s.io
-{{- end }}
+  kind: Role
+  name: readonly-routesrv
+subjects:
+  - kind: Group
+    name: ReadOnly
+    apiGroup: rbac.authorization.k8s.io
+  # {{ if eq .Cluster.ConfigItems.okta_auth_enabled "true" }}
+  - kind: Group
+    name: "okta:common/engineer"
+    apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: "okta:common/collaborator"
+    apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: "okta:common/read-only"
+    apiGroup: rbac.authorization.k8s.io
+  # {{ end }}
