@@ -1,18 +1,20 @@
-kind: Service
+# {{ if ne .ConfigItems.skipper_routesrv_enabled "false" }}
 apiVersion: v1
+kind: Service
 metadata:
   name: skipper-ingress-routesrv
   namespace: kube-system
   labels:
     application: skipper-ingress
     component: routesrv
+    kubernetes.io/cluster-service: "true"
 spec:
   type: ClusterIP
   ports:
-  - name: http
-    port: 80
-    targetPort: 9990
-    protocol: TCP
+    - port: 80
+      targetPort: 9990
+      protocol: TCP
   selector:
     application: skipper-ingress
     component: routesrv
+# {{ end }}
