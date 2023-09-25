@@ -510,6 +510,32 @@ spec:
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
 {{ end }}
+          - >-
+            -opentracing=lightstep
+            component-name=routesrv
+            token=$(LIGHTSTEP_TOKEN)
+            collector={{ .Cluster.ConfigItems.tracing_collector_host }}:8444
+            cmd-line=routesrv
+            tag=application=skipper-ingress
+            tag=component=routesrv
+            tag=account={{ .Cluster.Alias }}
+            tag=cluster={{ .Cluster.Alias }}
+            tag=artifact=container-registry.zalando.net/teapot/skipper-internal:{{ $internal_version }}
+            max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
+            grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
+            max-period=2500ms
+            min-period=500ms
+            max-log-key-len={{ .ConfigItems.skipper_ingress_lightstep_max_log_key_len }}
+            max-log-value-len={{ .ConfigItems.skipper_ingress_lightstep_max_log_value_len }}
+            max-logs-per-span={{ .ConfigItems.skipper_ingress_lightstep_max_logs_per_span }}
+            propagators={{ .ConfigItems.skipper_ingress_lightstep_propagators }}
+            {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
+        env:
+        - name: LIGHTSTEP_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: skipper-ingress
+              key: lightstep-token
         resources:
           limits:
             cpu: "{{ .ConfigItems.skipper_routesrv_cpu }}"
