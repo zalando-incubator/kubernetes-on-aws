@@ -1,0 +1,21 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: event-logger-vpa
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: event-logger
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: kubernetes-event-logger
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: logger
+      minAllowed:
+        memory: 100Mi
+        cpu: 20m
