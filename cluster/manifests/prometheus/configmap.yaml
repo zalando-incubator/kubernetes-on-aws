@@ -14,6 +14,11 @@ data:
       - record: job:skipper_code_by_host:sum
         expr: sum(rate(skipper_serve_host_count{application="skipper-ingress"}[1m])) by (code)
 
+    - name: skipper sum custom gauge by key
+      rules:
+      - record: job:skipper_custom_gauge_by_key:sum
+        expr: sum(skipper_custom_gauges{} > 0) by (key)
+
     - name: skipper sum rate serve_host_duration by bucket
       rules:
       - record: job:skipper_serve_host_duration:sum
