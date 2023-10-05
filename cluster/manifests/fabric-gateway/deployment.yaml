@@ -28,6 +28,8 @@ spec:
         version: "{{ .ConfigItems.fabric_gateway_controller_version }}"
         mode: "{{ .ConfigItems.fabric_gateway_controller_mode }}"
       annotations:
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "controller", "parser": "keyValue"}]
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_infra }}"
         prometheus.io/path: /metrics
         prometheus.io/port: "7979"
