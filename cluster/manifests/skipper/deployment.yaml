@@ -424,9 +424,9 @@ spec:
         version: {{ $version }}
         component: routesrv
       annotations:
-        kubernetes-log-watcher/scalyr-parser: |
-          [{"container": "routesrv", "parser": "skipper-access-log"}]
         config/hash: {{"secret.yaml" | manifestHash}}
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "routesrv", "parser": "keyValue"}]
         logging/destination: "{{.Cluster.ConfigItems.log_destination_local}}"
         prometheus.io/path: /metrics
         prometheus.io/port: "9990"
