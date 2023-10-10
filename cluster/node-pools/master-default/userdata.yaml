@@ -439,6 +439,9 @@ write_files:
           # integrated with the health endpoint, using that instead of a
           # preStop hook.
           - -wait-for-healthcheck-interval=70s
+{{- if ne .Cluster.ConfigItems.apiserver_watch_ratelimit "" }}
+          - -enable-ratelimits
+{{- end }}
           - -inline-routes
           - |
             s: JWTPayloadAllKV("iss", "kubernetes/serviceaccount")
@@ -448,6 +451,12 @@ write_files:
               -> setPath("/readyz")
               -> disableAccessLog()
               -> "https://127.0.0.1:443";
+{{- if ne .Cluster.ConfigItems.apiserver_watch_ratelimit "" }}
+            watch: QueryParam("watch")
+              -> ratelimit({{ .Cluster.ConfigItems.apiserver_watch_ratelimit }}, "1s")
+              -> disableAccessLog()
+              -> "https://127.0.0.1:443";
+{{- end }}
             all: *
               -> disableAccessLog()
               -> "https://127.0.0.1:443";
