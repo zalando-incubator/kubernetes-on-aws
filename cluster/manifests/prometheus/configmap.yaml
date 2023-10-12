@@ -153,14 +153,14 @@ data:
       scheme: http
       honor_labels: true
       kubernetes_sd_configs:
-      - role: endpoints
+      - role: endpointslice
         namespaces:
           names:
             - kube-system
       relabel_configs:
-      - source_labels: [__meta_kubernetes_endpoints_name]
+      - source_labels: [__meta_kubernetes_endpointslice_name]
         action: keep
-        regex: kube-state-metrics
+        regex: "kube-state-metrics-.*"
       metric_relabel_configs:
 {{- if eq .Cluster.ConfigItems.disable_zmon_appliance_worker_tracking "true" }}
       - action: drop
@@ -310,15 +310,15 @@ data:
       scheme: http
       honor_labels: true
       kubernetes_sd_configs:
-      - role: endpoints
+      - role: endpointslice
         namespaces:
           names:
             - kube-system
       relabel_configs:
-      - source_labels: [__meta_kubernetes_endpoints_name]
+      - source_labels: [__meta_kubernetes_endpointslice_name]
         action: keep
-        regex: node-monitor
-      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        regex: "node-monitor-.*"
+      - source_labels: [__meta_kubernetes_endpointslice_port_name]
         action: keep
         regex: cadvisor
       - action: replace
@@ -352,15 +352,15 @@ data:
       scheme: http
       honor_labels: true
       kubernetes_sd_configs:
-      - role: endpoints
+      - role: endpointslice
         namespaces:
           names:
             - kube-system
       relabel_configs:
-        - source_labels: [__meta_kubernetes_endpoints_name]
+        - source_labels: [__meta_kubernetes_endpointslice_name]
           action: keep
-          regex: node-monitor
-        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          regex: "node-monitor-.*"
+        - source_labels: [__meta_kubernetes_endpointslice_port_name]
           action: keep
           regex: node-exporter
         - action: replace
