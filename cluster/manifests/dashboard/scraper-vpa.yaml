@@ -1,0 +1,21 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: scraper-vpa
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: dashboard-metrics-scraper
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: dashboard-metrics-scraper
+  updatePolicy:
+    updateMode: auto
+  resourcePolicy:
+    containerPolicies:
+      - containerName: dashboard-metrics-scraper
+        minAllowed:
+          memory: {{ dashboard_metrics_scraper_mem_min }}
+          cpu: {{ dashboard_metrics_scraper_cpu_min }}
