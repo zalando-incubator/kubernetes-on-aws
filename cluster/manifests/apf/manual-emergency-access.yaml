@@ -1,0 +1,44 @@
+apiVersion: flowcontrol.apiserver.k8s.io/v1beta2
+kind: FlowSchema
+metadata:
+  name: manual-emergency-access
+spec:
+  matchingPrecedence: 3
+  priorityLevelConfiguration:
+    name: exempt
+  rules:
+    - nonResourceRules:
+      - nonResourceURLs:
+        - '*'
+        verbs:
+        - '*'
+      subjects:
+      - group:
+          name: "PowerUser"
+        kind: Group
+      - group:
+          name: "Manual"
+        kind: Group
+      - group:
+          name: "Emergency"
+        kind: Group
+    - resourceRules:
+      - apiGroups:
+        - '*'
+        clusterScope: true
+        namespaces:
+        - '*'
+        resources:
+        - '*'
+        verbs:
+        - '*'
+      subjects:
+      - group:
+          name: "PowerUser"
+        kind: Group
+      - group:
+          name: "Manual"
+        kind: Group
+      - group:
+          name: "Emergency"
+        kind: Group
