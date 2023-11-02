@@ -749,6 +749,13 @@ Resources:
         Version: 2012-10-17
       KeyUsage: ENCRYPT_DECRYPT
     Type: 'AWS::KMS::Key'
+{{- if ne .Cluster.Environment "e2e" }}
+  DeploymentSecretKeyCommonAlias:
+    Properties:
+      AliasName: "alias/deployment-secret"
+      TargetKeyId: !Ref DeploymentSecretKey
+    Type: 'AWS::KMS::Alias'
+{{- end }}
   DeploymentSecretKeyAlias:
     Properties:
       AliasName: "alias/{{.Cluster.LocalID}}-deployment-secret"
