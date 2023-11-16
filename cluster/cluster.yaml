@@ -178,6 +178,17 @@ Resources:
           Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
+  MasterSecurityGroupIngressFromMasterFlannelToMaster:
+    Properties:
+      FromPort: 8472
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: udp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 8472
+    Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromMaster:
     Properties:
       FromPort: 443
