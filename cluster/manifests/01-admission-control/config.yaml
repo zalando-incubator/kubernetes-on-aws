@@ -61,6 +61,10 @@ data:
   podfactory.base-image-check.namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_base_images_namespaces }}"
 {{- end }}
 
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_custom_default_service_account "true"}}
+  podfactory.custom-default-service-account.enable: "true"
+{{- end }}
+
   # This setting enables and disables the container image compliance checks
   pod.image-check.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images }}"
 
