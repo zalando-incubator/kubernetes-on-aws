@@ -145,6 +145,20 @@ post_apply:
 - kind: ClusterRoleBinding
   name: kubenurse-prometheus
 {{- end }}
+{{- if or (eq .Cluster.ConfigItems.network_monitoring_enabled "false") (eq .Cluster.ConfigItems.network_monitoring_check_kubenurse_ingress "false")}}
+- name: kubenurse
+  namespace: kubenurse
+  kind: Ingress
+{{- end }}
+{{- if or
+  (eq .Cluster.ConfigItems.network_monitoring_enabled "false")
+  (and (eq .Cluster.ConfigItems.network_monitoring_check_kubenurse_service "false") (eq .Cluster.ConfigItems.network_monitoring_check_kubenurse_ingress "false"))
+}}
+- name: kubenurse
+  namespace: kubenurse
+  kind: Service
+{{- end }}
+
 - name: karpenter-logging-config
   kind: ConfigMap
   namespace: kube-system
