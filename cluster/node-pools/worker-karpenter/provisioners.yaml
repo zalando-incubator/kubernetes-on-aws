@@ -121,7 +121,8 @@ spec:
   amiSelector:
     aws-ids: "{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_24_" .NodePool.ConfigItems.kuberuntu_distro_worker "_amd64")  }},{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_24_" .NodePool.ConfigItems.kuberuntu_distro_worker "_arm64") }}"
   metadataOptions:
-    httpTokens: optional
+    httpTokens: required
+    httpPutResponseHopLimit: 2
   subnetSelector:
     kubernetes.io/role/karpenter: "enabled"
   securityGroupSelector:
