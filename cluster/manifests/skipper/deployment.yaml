@@ -1,16 +1,17 @@
-{{- if eq .ConfigItems.skipper_canary_enabled "true" }}
 
 {{ range json `[
   {
   "name": "skipper-ingress",
-  "internal_version": "v0.18.42-691"
+  "internal_version": "v0.18.42-691",
   "version": "v0.18.42"
+{{- if eq .ConfigItems.skipper_canary_enabled "true" }}
   },
   {
   "name": "skipper-ingress-canary",
-  "internal_version": "v0.18.53-702"
+  "internal_version": "v0.18.53-702",
   "version": "v0.18.53",
-  "replicas": 1,
+  "replicas": 1
+{{ end }}
   }
 ]` }}
 
@@ -417,7 +418,6 @@ spec:
         value: skipper-ingress
 {{ end }}
 
-{{ end }}
 {{ end }}
 
 {{ if ne .ConfigItems.skipper_routesrv_enabled "false" }}
