@@ -1,29 +1,48 @@
+{{- if eq .ConfigItems.skipper_canary_enabled "true" }}
+
+{{ range json `[
+  {
+  "name": "skipper-ingress",
+  "internal_version": "v0.18.42-691"
+  "version": "v0.18.42"
+  },
+  {
+  "name": "skipper-ingress-canary",
+  "internal_version": "v0.18.53-702"
+  "version": "v0.18.53",
+  "replicas": 1,
+  }
+]` }}
+
 {{ $internal_version := "v0.18.42-691" }}
 {{ $version := index (split $internal_version "-") 0 }}
-
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: skipper-ingress
+  name: "{{ .name }}"
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: {{ $version }}
+    version: "{{ .version }}"
     component: ingress
 spec:
+{{ if index . "replicas" }}
+  replicas: {{ .replicas }}
+{{- end }}
   strategy:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
   selector:
     matchLabels:
-      deployment: skipper-ingress
+      deployment: "{{ .name }}"
   template:
     metadata:
       labels:
-        deployment: skipper-ingress
+        deployment: "{{ .name }}"
         application: skipper-ingress
-        version: {{ $version }}
+        version: "{{ .version }}"
         component: ingress
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -55,7 +74,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: container-registry.zalando.net/teapot/skipper-internal:{{ $internal_version }}
+        image: "container-registry.zalando.net/teapot/skipper-internal:{{ .internal_version }}"
         ports:
         - name: ingress-port
           containerPort: 9999
@@ -192,7 +211,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=container-registry.zalando.net/teapot/skipper-internal:{{ $internal_version }}
+            tag=artifact=container-registry.zalando.net/teapot/skipper-internal:{{ .internal_version }}
             max-buffered-spans={{ .ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .ConfigItems.skipper_ingress_lightstep_max_period }}
@@ -396,6 +415,9 @@ spec:
       - effect: NoSchedule
         key: dedicated
         value: skipper-ingress
+{{ end }}
+
+{{ end }}
 {{ end }}
 
 {{ if ne .ConfigItems.skipper_routesrv_enabled "false" }}
