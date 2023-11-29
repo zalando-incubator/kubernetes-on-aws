@@ -401,3 +401,17 @@ data:
        - source_labels: [ __name__ ]
          regex: 'reflector.*'
          action: drop
+    # {{ if eq .Cluster.ConfigItems.kubelet_summary_metrics_enabled "true" }}
+    - job_name: "kubelet-summary"
+      kubernetes_sd_configs:
+        - role: node
+      relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /nodes/${1}/metrics
+        - target_label: __address__
+          replacement: kubelet-summary-metrics
+    # {{ end }}
