@@ -178,6 +178,17 @@ Resources:
           Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
+  MasterSecurityGroupIngressFromMasterFlannelToMaster:
+    Properties:
+      FromPort: 8472
+      GroupId: !Ref MasterSecurityGroup
+      IpProtocol: udp
+      SourceSecurityGroupId: !Ref MasterSecurityGroup
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+      ToPort: 8472
+    Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromMaster:
     Properties:
       FromPort: 443
@@ -815,6 +826,7 @@ Resources:
 {{- end }}
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
   DeploymentControllerRole:
     Type: AWS::IAM::Role
     Properties:
@@ -1992,6 +2004,7 @@ Resources:
               AWS:
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
             Action:
             - "kms:*"
             - "tag:TagResources"
@@ -2027,7 +2040,9 @@ Resources:
           - Sid: "Allow Administrator to manage and use this key"
             Effect: "Allow"
             Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
+              AWS:
+              - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
+              - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
             Action:
             - "kms:*"
             - "tag:TagResources"
@@ -2065,6 +2080,7 @@ Resources:
               AWS:
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
             Action:
             - "kms:*"
             - "tag:TagResources"
@@ -2101,6 +2117,7 @@ Resources:
               AWS:
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
             Action:
             - "kms:*"
             - "tag:TagResources"
