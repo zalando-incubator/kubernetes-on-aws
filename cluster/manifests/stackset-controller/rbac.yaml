@@ -99,6 +99,17 @@ rules:
   - create
   - update
   - patch
+{{- if eq .Cluster.ConfigItems.stackset_configmap_support_enabled "true" }}
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - create
+  - update
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
