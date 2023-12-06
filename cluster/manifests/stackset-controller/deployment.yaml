@@ -1,4 +1,4 @@
-{{ $version := "v1.4.15" }}
+{{ $version := "v1.4.22" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,6 +36,9 @@ spec:
 {{- if eq .Cluster.ConfigItems.stackset_routegroup_support_enabled "true" }}
         - "--enable-routegroup-support"
         - "--ingress-source-switch-ttl={{ .Cluster.ConfigItems.stackset_ingress_source_switch_ttl }}"
+{{- end }}
+{{- if eq .Cluster.ConfigItems.stackset_configmap_support_enabled "true" }}
+        - "--enable-configmap-support"
 {{- end }}
         - "--cluster-domain={{ .Values.hosted_zone }}"
         - "--cluster-domain=ingress.cluster.local"
