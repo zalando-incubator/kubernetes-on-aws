@@ -70,6 +70,14 @@ skipper_ingress_min_replicas: "2"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
+
+# Enables deployment of canary version
+skipper_ingress_canary_enabled: "false"
+
+# Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g.:
+# skipper_ingress_canary_args: "-foo=has a whitespace[cf724afc]-baz=qux"
+skipper_ingress_canary_args: ""
+
 # When set to true (and dedicated node pool for skipper is also true) the
 # daemonset overhead will be subtracted from the cpu settings such
 # that skipper will perfectly fit on the node.
@@ -613,8 +621,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
 kuberuntu_image_v1_24_focal_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.24.17-amd64-master-283" "861068367966" }}
 kuberuntu_image_v1_24_focal_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.24.17-arm64-master-283" "861068367966" }}
-kuberuntu_image_v1_24_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.24.17-amd64-master-293" "861068367966" }}
-kuberuntu_image_v1_24_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.24.17-arm64-master-293" "861068367966" }}
+kuberuntu_image_v1_24_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.24.17-amd64-master-294" "861068367966" }}
+kuberuntu_image_v1_24_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.24.17-arm64-master-294" "861068367966" }}
 
 # Which distro from the previous config items should be used. Valid options are `focal` and `jammy`. Can be set for each node pool.
 {{if eq .Cluster.Environment "test"}}
