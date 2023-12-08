@@ -1,3 +1,11 @@
+{{ $min_replicas := .Cluster.ConfigItems.skipper_ingress_min_replicas }}
+{{ if and
+  (eq .Cluster.ConfigItems.skipper_ingress_canary_enabled "true")
+  (ne .Cluster.ConfigItems.skipper_ingress_min_replicas "0")
+  (ne .Cluster.ConfigItems.skipper_ingress_min_replicas "1") }}
+{{ $min_replicas = sumQuantities .Cluster.ConfigItems.skipper_ingress_min_replicas "-1" }}
+{{ end }}
+
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -5,28 +13,29 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
+    component: ingress
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: skipper-ingress
-  minReplicas: {{ .ConfigItems.skipper_ingress_min_replicas }}
-  maxReplicas: {{ .ConfigItems.skipper_ingress_max_replicas }}
+  minReplicas: {{ $min_replicas }}
+  maxReplicas: {{ .Cluster.ConfigItems.skipper_ingress_max_replicas }}
   metrics:
   - type: Resource
     resource:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_cpu }}
+        averageUtilization: {{ .Cluster.ConfigItems.skipper_ingress_target_average_utilization_cpu }}
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: {{ .ConfigItems.skipper_ingress_target_average_utilization_memory }}
-{{ if .ConfigItems.skipper_cluster_scaling_schedules }}
-  {{ range split .ConfigItems.skipper_cluster_scaling_schedules "," }}
+        averageUtilization: {{ .Cluster.ConfigItems.skipper_ingress_target_average_utilization_memory }}
+{{ if .Cluster.ConfigItems.skipper_cluster_scaling_schedules }}
+  {{ range split .Cluster.ConfigItems.skipper_cluster_scaling_schedules "," }}
   {{ $name_target := split . "=" }}
   - type: Object
     object:
@@ -43,7 +52,7 @@ spec:
 {{ end }}
   behavior:
     scaleDown:
-      stabilizationWindowSeconds: {{ .ConfigItems.skipper_ingress_hpa_scale_down_wait }}
+      stabilizationWindowSeconds: {{ .Cluster.ConfigItems.skipper_ingress_hpa_scale_down_wait }}
       policies:
       - type: Pods
         value: 10
@@ -59,6 +68,6 @@ spec:
         value: 4
       - periodSeconds: 15
         type: Percent
-        value:  {{ .ConfigItems.skipper_ingress_hpa_scale_up_max_perc }}
+        value: {{ .Cluster.ConfigItems.skipper_ingress_hpa_scale_up_max_perc }}
       selectPolicy: Max
       stabilizationWindowSeconds: 0
