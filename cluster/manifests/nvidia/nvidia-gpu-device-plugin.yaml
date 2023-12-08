@@ -10,7 +10,6 @@ metadata:
   labels:
     application: kubernetes
     component: nvidia-gpu-device-plugin
-    version: v0.10.0
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -23,7 +22,6 @@ spec:
         daemonset: nvidia-gpu-device-plugin
         application: kubernetes
         component: nvidia-gpu-device-plugin
-        version: v0.10.0
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
@@ -40,6 +38,11 @@ spec:
             - matchExpressions:
               - key: zalando.org/nvidia-gpu
                 operator: Exists
+            - matchExpressions:
+              - key: karpenter.k8s.aws/instance-gpu-manufacturer
+                operator: In
+                values:
+                - nvidia
       priorityClassName: system-node-critical
       volumes:
       - name: device-plugin
@@ -47,7 +50,7 @@ spec:
           path: /var/lib/kubelet/device-plugins
       containers:
       - name: nvidia-gpu-device-plugin
-        image: container-registry.zalando.net/teapot/nvidia-gpu-device-plugin:v0.13.0-master-7
+        image: container-registry.zalando.net/teapot/nvidia-gpu-device-plugin:v0.14.3-master-8
         args:
         - --fail-on-init-error=false
         - --pass-device-specs
