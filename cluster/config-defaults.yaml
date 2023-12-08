@@ -579,7 +579,13 @@ teapot_admission_controller_log4j_format_msg_no_lookups: "true"
 teapot_admission_controller_graceful_termination: "true"
 
 # toggle that prevents active configmaps from being deleted
+{{if eq .Cluster.Environment "e2e"}}
+# allow deletion of active configmaps in e2e clusters because some tests rely on it
+teapot_admission_controller_configmap_deletion_protection_enabled: "false"
+{{else}}
+# prevent deletion of active configmaps in all test and production clusters
 teapot_admission_controller_configmap_deletion_protection_enabled: "true"
+{{end}}
 
 # Prevent the use of a particular AZ as much as possible
 blocked_availability_zone: ""
