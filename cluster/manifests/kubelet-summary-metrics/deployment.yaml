@@ -1,0 +1,38 @@
+# {{ if eq .Cluster.ConfigItems.kubelet_summary_metrics_enabled "true" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubelet-summary-metrics
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: kubelet-summary-metrics
+spec:
+  selector:
+    matchLabels:
+      deployment: kubelet-summary-metrics
+  template:
+    metadata:
+      labels:
+        application: kubernetes
+        component: kubelet-summary-metrics
+        deployment: kubelet-summary-metrics
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+    spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      serviceAccountName: kubelet-summary-metrics
+      containers:
+      - name: proxy
+        image: container-registry.zalando.net/teapot/kubelet-summary-metrics:main-1
+        resources:
+          limits:
+            cpu: "{{.Cluster.ConfigItems.kubelet_summary_metrics_cpu}}"
+            memory: "{{.Cluster.ConfigItems.kubelet_summary_metrics_memory}}"
+          requests:
+            cpu: "{{.Cluster.ConfigItems.kubelet_summary_metrics_cpu}}"
+            memory: "{{.Cluster.ConfigItems.kubelet_summary_metrics_memory}}"
+# {{ end }}

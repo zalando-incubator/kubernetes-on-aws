@@ -1,0 +1,18 @@
+# {{ if eq .Cluster.ConfigItems.kubelet_summary_metrics_enabled "true" }}
+kind: Service
+apiVersion: v1
+metadata:
+  name: kubelet-summary-metrics
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: kubelet-summary-metrics
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 9090
+      protocol: TCP
+  selector:
+    deployment: kubelet-summary-metrics
+# {{ end }}
