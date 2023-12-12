@@ -247,3 +247,21 @@ post_apply:
 - name: business-partner-service
   kind: ClusterRoleBinding
 {{ end }}
+{{ if ne .Cluster.ConfigItems.kubelet_summary_metrics_enabled "true" }}
+- name: kubelet-summary-metrics
+  kind: ClusterRole
+- name: kubelet-summary-metrics
+  kind: ClusterRoleBinding
+- name: kubelet-summary-metrics
+  kind: ServiceAccount
+  namespace: kube-system
+- name: kubelet-summary-metrics
+  kind: Service
+  namespace: kube-system
+- name: kubelet-summary-metrics
+  kind: Deployment
+  namespace: kube-system
+- name: kubelet-summary-metrics
+  kind: HorizontalPodAutoscaler
+  namespace: kube-system
+{{ end }}
