@@ -312,3 +312,16 @@ pipeline:
             requests:
               cpu: 500m
               memory: 1Gi
+
+- id: deploy-event
+  type: deploy
+  target: stups
+  when:
+    event: push
+    branch:
+    - dev
+    - alpha
+    - beta
+    - stable
+  sources:
+    - dir: _deploy_event
