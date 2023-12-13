@@ -1,4 +1,4 @@
-{{ $version := "v0.14.30" }}
+# {{ $version := "v0.14.34" }}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -7,7 +7,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-ingress-aws-controller
-    version: {{ $version }}
+    version: "{{ $version }}"
 spec:
   replicas: 1
   selector:
@@ -17,9 +17,9 @@ spec:
     metadata:
       labels:
         application: kube-ingress-aws-controller
-        version: {{ $version }}
+        version: "{{ $version }}"
       annotations:
-        logging/destination: "{{.Cluster.ConfigItems.log_destination_both}}"
+        logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
         prometheus.io/path: /metrics
         prometheus.io/port: "7979"
         prometheus.io/scrape: "true"
@@ -31,40 +31,40 @@ spec:
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: kube-ingress-aws-controller
       containers:
-      - name: controller
-        image: container-registry.zalando.net/teapot/kube-ingress-aws-controller:{{ $version }}
-        args:
-        - --target-access-mode=HostPort
-        - --stack-termination-protection
-        - --ssl-policy={{ .ConfigItems.kube_aws_ingress_controller_ssl_policy }}
-        - --idle-connection-timeout={{ .ConfigItems.kube_aws_ingress_controller_idle_timeout }}
-        - --deregistration-delay-timeout={{ .ConfigItems.kube_aws_ingress_controller_deregistration_delay_timeout }}
-        {{ if eq .ConfigItems.kube_aws_ingress_controller_nlb_cross_zone "true" }}
-        - --nlb-cross-zone
-        {{ end }}
-        - --cluster-local-domain=cluster.local
-        - --deny-internal-domains
-        - "--additional-stack-tags=InfrastructureComponent=true"
-        {{ if or (eq .ConfigItems.nlb_switch "pre") (eq .ConfigItems.nlb_switch "exec") }}
-        - --nlb-http-enabled
-        - --nlb-http-target-port=9998
-        {{ end }}
-        {{ if eq .Cluster.ConfigItems.nlb_switch "exec" }}
-        - --load-balancer-type=network
-{{else}}
-        - --load-balancer-type={{ .Cluster.ConfigItems.kube_aws_ingress_default_lb_type }}
-{{end}}
-        - --cert-polling-interval={{ .Cluster.ConfigItems.kube_aws_ingress_controller_cert_polling_interval }}
-        - --ingress-api-version=networking.k8s.io/{{ .Cluster.ConfigItems.kube_aws_ingress_controller_ingress_version }}
-        env:
-        - name: CUSTOM_FILTERS
-          value: "tag:kubernetes.io/cluster/{{ .Cluster.ID }}=owned tag:node.kubernetes.io/role=worker tag:zalando.org/ingress-enabled=true"
-        - name: AWS_REGION
-          value: {{ .Region }}
-        resources:
-          limits:
-            cpu: 50m
-            memory: 4Gi
-          requests:
-            cpu: 50m
-            memory: 4Gi
+        - name: controller
+          image: container-registry.zalando.net/teapot/kube-ingress-aws-controller:{{ $version }}
+          args:
+            - --target-access-mode=HostPort
+            - --stack-termination-protection
+            - --ssl-policy={{ .Cluster.ConfigItems.kube_aws_ingress_controller_ssl_policy }}
+            - --idle-connection-timeout={{ .Cluster.ConfigItems.kube_aws_ingress_controller_idle_timeout }}
+            - --deregistration-delay-timeout={{ .Cluster.ConfigItems.kube_aws_ingress_controller_deregistration_delay_timeout }}
+            # {{ if eq .Cluster.ConfigItems.kube_aws_ingress_controller_nlb_cross_zone "true" }}
+            - --nlb-cross-zone
+            # {{ end }}
+            - --cluster-local-domain=cluster.local
+            - --deny-internal-domains
+            - "--additional-stack-tags=InfrastructureComponent=true"
+            # {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
+            - --nlb-http-enabled
+            - --nlb-http-target-port=9998
+            # {{ end }}
+            # {{ if eq .Cluster.ConfigItems.nlb_switch "exec" }}
+            - --load-balancer-type=network
+            # {{ else }}
+            - --load-balancer-type={{ .Cluster.ConfigItems.kube_aws_ingress_default_lb_type }}
+            # {{ end }}
+            - --cert-polling-interval={{ .Cluster.ConfigItems.kube_aws_ingress_controller_cert_polling_interval }}
+            - --ingress-api-version=networking.k8s.io/{{ .Cluster.ConfigItems.kube_aws_ingress_controller_ingress_version }}
+          env:
+            - name: CUSTOM_FILTERS
+              value: "tag:kubernetes.io/cluster/{{ .Cluster.ID }}=owned tag:node.kubernetes.io/role=worker tag:zalando.org/ingress-enabled=true"
+            - name: AWS_REGION
+              value: "{{ .Cluster.Region }}"
+          resources:
+            limits:
+              cpu: 50m
+              memory: 4Gi
+            requests:
+              cpu: 50m
+              memory: 4Gi
