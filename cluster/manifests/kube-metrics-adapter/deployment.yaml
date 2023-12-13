@@ -27,7 +27,7 @@ spec:
       serviceAccountName: custom-metrics-apiserver
       containers:
       - name: kube-metrics-adapter
-        image: container-registry.zalando.net/teapot/kube-metrics-adapter:v0.2.1-18-g85f1c3e
+        image: container-registry.zalando.net/teapot/kube-metrics-adapter:v0.2.2
         env:
         - name: AWS_REGION
           value: {{ .Region }}
@@ -46,12 +46,15 @@ spec:
         {{ if eq .Environment "production" }}
         - --zmon-kariosdb-endpoint={{.Cluster.ConfigItems.zmon_kairosdb_url}}
         {{ end }}
+        {{- if ne .Cluster.ConfigItems.nakadi_url "" }}
+        - --nakadi-endpoint={{.Cluster.ConfigItems.nakadi_url}}
+        {{- end }}
         volumeMounts:
-        {{ if eq .Environment "production" }}
+        {{- if or (eq .Environment "production") (ne .Cluster.ConfigItems.nakadi_url "") }}
         - name: credentials
           mountPath: /meta/credentials
           readOnly: true
-        {{ end }}
+        {{- end }}
         resources:
           limits:
             cpu: 10m
@@ -60,8 +63,8 @@ spec:
             cpu: 10m
             memory: 4Gi
       volumes:
-      {{ if eq .Environment "production" }}
+      {{- if or (eq .Environment "production") (ne .Cluster.ConfigItems.nakadi_url "") }}
       - name: credentials
         secret:
           secretName: "kube-metrics-adapter"
-      {{ end }}
+      {{- end }}
