@@ -714,6 +714,7 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
       RoleName: "{{.Cluster.LocalID}}-deployment"
     Type: 'AWS::IAM::Role'
+{{- if eq .Cluster.ConfigItems.deployment_secret_key_managed "true" }}
   DeploymentSecretKey:
     Properties:
       Description: Key used by deployment pipeline for secret encryption/decryption
@@ -769,6 +770,7 @@ Resources:
     Type: 'AWS::KMS::Alias'
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
+{{- end }}
   DeploymentServiceBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
