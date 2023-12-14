@@ -760,11 +760,15 @@ Resources:
         Version: 2012-10-17
       KeyUsage: ENCRYPT_DECRYPT
     Type: 'AWS::KMS::Key'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
   DeploymentSecretKeyAlias:
     Properties:
       AliasName: "alias/{{.Cluster.LocalID}}-deployment-secret"
       TargetKeyId: !Ref DeploymentSecretKey
     Type: 'AWS::KMS::Alias'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
   DeploymentServiceBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
