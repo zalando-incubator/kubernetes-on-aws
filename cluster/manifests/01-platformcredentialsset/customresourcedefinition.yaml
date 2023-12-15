@@ -5,6 +5,7 @@ kind: CustomResourceDefinition
 metadata:
   name: platformcredentialssets.zalando.org
 spec:
+  preserveUnknownFields: false
   scope: Namespaced
   group: zalando.org
   names:
@@ -66,6 +67,9 @@ spec:
                         - client-credentials
                     redirectUri:
                       type: string
+                  required:
+                    - realm
+                    - grant
               tokens:
                 type: object
                 additionalProperties:
@@ -83,6 +87,8 @@ spec:
                       nullable: true
                       items:
                         type: string
+                  required:
+                    - privileges
               token_version:
                 type: string
                 enum:
