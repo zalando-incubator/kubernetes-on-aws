@@ -1,4 +1,4 @@
-{{ $version := "v1.4.22" }}
+{{ $version := "v1.4.23" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,6 +39,12 @@ spec:
 {{- end }}
 {{- if eq .Cluster.ConfigItems.stackset_configmap_support_enabled "true" }}
         - "--enable-configmap-support"
+{{- end }}
+{{- if eq .Cluster.ConfigItems.stackset_enable_traffic_segments "true" }}
+        - "--enable-traffic-segments"
+{{- end }}
+{{- if eq .Cluster.ConfigItems.stackset_annotated_traffic_segments "true" }}
+        - "--annotated-traffic-segments"
 {{- end }}
         - "--cluster-domain={{ .Values.hosted_zone }}"
         - "--cluster-domain=ingress.cluster.local"

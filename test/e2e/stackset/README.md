@@ -8,6 +8,7 @@ If you're updating `stackset-controller` you should also update the version
 
 ```
 go get -u github.com/zalando-incubator/stackset-controller
+go mod tidy
 ```
 
 The actual build happens from running `make` one level above.
