@@ -875,9 +875,13 @@ Resources:
                 Effect: Allow
               - Action:
                   - kms:Decrypt
-                Resource:
-                  - !GetAtt DeploymentSecretKey.Arn
                 Effect: Allow
+                Resource:
+{{- if eq .Cluster.ConfigItems.deployment_secret_key_managed "true" }}
+                  - !GetAtt DeploymentSecretKey.Arn
+{{- else }}
+                  - !ImportValue "DeploymentKeyArn"
+{{- end }}
               - Action:
                   - 'sts:AssumeRole'
                 Effect: Allow
