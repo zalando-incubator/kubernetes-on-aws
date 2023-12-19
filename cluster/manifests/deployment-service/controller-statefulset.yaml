@@ -29,9 +29,10 @@ spec:
       terminationGracePeriodSeconds: 300
       containers:
         - name: "deployment-service-controller"
-          image: "container-registry.zalando.net/teapot/deployment-controller:master-159"
+          image: "container-registry.zalando.net/teapot/deployment-controller:master-162"
           args:
             - "--config-namespace=kube-system"
+            - "--decrypt-kms-alias-arn=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:alias/deployment-secret"
           env:
             - name: AWS_REGION
               value: "{{.Cluster.Region}}"
