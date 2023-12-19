@@ -32,7 +32,9 @@ spec:
           image: "container-registry.zalando.net/teapot/deployment-controller:master-162"
           args:
             - "--config-namespace=kube-system"
+{{- if ne .Cluster.ConfigItems.deployment_secret_key_managed "true" }}
             - "--decrypt-kms-alias-arn=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:alias/deployment-secret"
+{{- end }}
           env:
             - name: AWS_REGION
               value: "{{.Cluster.Region}}"
