@@ -244,7 +244,8 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 		}, rgv1.RouteGroupRouteSpec{
 			PathSubtree: "/router-response",
 			Filters: []string{
-				`status(418) -> inlineContent("I am a teapot")`,
+				`status(418)`,
+				`inlineContent("I am a teapot")`,
 			},
 			Backends: []rgv1.RouteGroupBackendReference{
 				{
@@ -433,7 +434,8 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 		}, rgv1.RouteGroupRouteSpec{
 			PathSubtree: "/blue-green",
 			Filters: []string{
-				`status(201) -> inlineContent("blue")`,
+				`status(201)`,
+				`inlineContent("blue")`,
 			},
 			Backends: []rgv1.RouteGroupBackendReference{
 				{
@@ -447,7 +449,8 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 				`Traffic(0.5)`,
 			},
 			Filters: []string{
-				`status(202) -> inlineContent("green")`,
+				`status(202)`,
+				`inlineContent("green")`,
 			},
 			Backends: []rgv1.RouteGroupBackendReference{
 				{
