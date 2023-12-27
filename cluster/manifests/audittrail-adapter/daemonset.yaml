@@ -33,7 +33,7 @@ spec:
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: container-registry.zalando.net/teapot/audittrail-adapter:master-48
+        image: container-registry.zalando.net/teapot/audittrail-adapter:master-49
         env:
           - name: AWS_REGION
             value: {{.Cluster.Region}}
@@ -41,7 +41,6 @@ spec:
         - --cluster-id={{ .ID }}
         - --cluster-alias={{ .Cluster.Alias }}
         - --audittrail-url={{ .Cluster.ConfigItems.audittrail_url }}
-        - --s3-audit-bucket-name={{ .Cluster.ConfigItems.audittrail_adapter_bucket }}
         - --s3-fallback-bucket-name=zalando-audittrail-{{accountID .InfrastructureAccount}}-{{.LocalID}}
         - --address=:8889
         - --metrics-address=:7980
