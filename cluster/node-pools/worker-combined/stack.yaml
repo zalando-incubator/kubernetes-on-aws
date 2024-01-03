@@ -124,6 +124,13 @@ Resources:
     Properties:
       LaunchTemplateName: '{{.Cluster.LocalID}}-{{ .NodePool.Name }}'
       LaunchTemplateData:
+        TagSpecifications:
+        - ResourceType: "volume"
+          Tags:
+          - Key: application
+            Value: kubernetes
+          - Key: component
+            Value: "shared-resource"
         BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
