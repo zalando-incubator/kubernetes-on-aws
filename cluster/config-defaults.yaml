@@ -74,10 +74,6 @@ skipper_ingress_memory: "1500Mi"
 # Enables deployment of canary version
 skipper_ingress_canary_enabled: "true"
 
-# Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g.:
-# skipper_ingress_canary_args: "-foo=has a whitespace[cf724afc]-baz=qux"
-skipper_ingress_canary_args: ""
-
 # When set to true (and dedicated node pool for skipper is also true) the
 # daemonset overhead will be subtracted from the cpu settings such
 # that skipper will perfectly fit on the node.
@@ -445,8 +441,11 @@ horizontal_pod_downscale_stabilization: "5m0s"
 # enable/disable legacy autoscaling APIs
 # Note StackSet controller still depends on autoscaling/v2beta2 in clusters
 # using horizontalPodAutoscaler field.
-autoscaling_v2beta1_enabled: "true"
-autoscaling_v2beta2_enabled: "true"
+autoscaling_v2beta1_enabled: "false"
+autoscaling_v2beta2_enabled: "false"
+
+# enable/disable legacy api versions prior to v1.25
+batch_v1beta1_enabled: "false"
 
 # Vertical pod autoscaler version for controlling roll-out, can be "current" or "legacy"
 # current => v0.11.0-internal.17

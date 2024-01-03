@@ -1,6 +1,9 @@
 {{ $internal_version := "v0.18.69-718" }}
 {{ $canary_internal_version := "v0.18.82-731" }}
 
+{{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
+{{ $canary_args := "" }}
+
 {{ template "skipper-ingress" dict
   "name" "skipper-ingress"
   "internal_version" $internal_version
@@ -14,7 +17,7 @@
   "name" "skipper-ingress-canary"
   "internal_version" $canary_internal_version
   "replicas" 1
-  "args" (index .Cluster.ConfigItems "skipper_ingress_canary_args")
+  "args" $canary_args
 
   "Cluster" .Cluster
   "Values" .Values
