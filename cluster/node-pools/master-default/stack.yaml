@@ -49,6 +49,13 @@ Resources:
     Properties:
       LaunchTemplateName: '{{.Cluster.LocalID}}-{{ .NodePool.Name }}'
       LaunchTemplateData:
+        TagSpecifications:
+        - ResourceType: "volume"
+          Tags:
+          - Key: application
+            Value: kubernetes
+          - Key: component
+            Value: control-plane
 {{ if .Values.supports_t2_unlimited }}
         CreditSpecification:
           CpuCredits: unlimited
