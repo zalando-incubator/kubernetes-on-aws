@@ -137,6 +137,15 @@ Resources:
     Properties:
       LaunchTemplateName: '{{ $data.Cluster.LocalID }}-{{ $data.NodePool.Name }}'
       LaunchTemplateData:
+{{- if eq .Cluster.ConfigItems.kuberuntu_distro_worker "jammy" }}
+        TagSpecifications:
+        - ResourceType: "volume"
+          Tags:
+          - Key: application
+            Value: kubernetes
+          - Key: component
+            Value: "shared-resource"
+{{- end }}
         BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:

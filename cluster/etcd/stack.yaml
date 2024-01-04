@@ -29,6 +29,13 @@ Resources:
     Properties:
       LaunchTemplateName: '{{.Cluster.ConfigItems.etcd_stack_name}}'
       LaunchTemplateData:
+        TagSpecifications:
+        - ResourceType: "volume"
+          Tags:
+          - Key: application
+            Value: kubernetes
+          - Key: component
+            Value: etcd-cluster
         NetworkInterfaces:
           - DeviceIndex: 0
             AssociatePublicIpAddress: true
