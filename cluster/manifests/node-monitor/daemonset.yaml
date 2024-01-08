@@ -30,6 +30,7 @@ spec:
       priorityClassName: system-node-critical
       serviceAccountName: node-monitor
       containers:
+{{- if eq .Cluster.ConfigItems.cadvisor_enabled "true" }}
         - name: cadvisor
           image: container-registry.zalando.net/teapot/cadvisor:v0.47.0-master-11
           args:
@@ -77,6 +78,7 @@ spec:
               containerPort: 9101
               hostPort: 9101
               protocol: TCP
+{{- end }}
         - image: container-registry.zalando.net/teapot/prometheus-node-exporter:v1.7.0-master-20
           args:
 {{- if eq .Cluster.ConfigItems.node_exporter_experimental_metrics "true" }}
