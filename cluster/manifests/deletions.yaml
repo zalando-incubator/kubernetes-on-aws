@@ -247,6 +247,12 @@ post_apply:
 - name: business-partner-service
   kind: ClusterRoleBinding
 {{ end }}
+{{ if eq .Cluster.ConfigItems.config_provider_service "false" }}
+- name: config-provider-service
+  kind: ClusterRole
+- name: config-provider-service
+  kind: ClusterRoleBinding
+{{ end }}
 {{ if ne .Cluster.ConfigItems.kubelet_summary_metrics_enabled "true" }}
 - name: kubelet-summary-metrics
   kind: ClusterRole
