@@ -8,10 +8,12 @@ metadata:
 spec:
   type: ClusterIP
   ports:
+{{- if eq .Cluster.ConfigItems.cadvisor_enabled "true" }}
     - name: cadvisor
       port: 80
       targetPort: 9101
       protocol: TCP
+{{- end }}
     - name: node-exporter
       port: 81
       targetPort: 9100
