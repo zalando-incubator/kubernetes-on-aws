@@ -244,6 +244,9 @@ data:
         namespaces:
           names:
             - kube-system
+{{ if eq .Cluster.ConfigItems.polarsignals_enabled "true" }}
+            - polarsignals
+{{ end }}
       relabel_configs:
       # Look for the Prometheus annotations and scrape based on those
       - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
