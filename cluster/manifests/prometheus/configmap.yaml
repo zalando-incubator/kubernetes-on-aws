@@ -309,6 +309,7 @@ data:
       - action: replace
         source_labels: ['__meta_kubernetes_pod_node_name']
         target_label: node_name
+{{- if eq .Cluster.ConfigItems.cadvisor_enabled "true" }}
     - job_name: 'cadvisor'
       scheme: http
       honor_labels: true
@@ -351,6 +352,7 @@ data:
       - source_labels: [__name__]
         action: keep
         regex: '(container_cpu_cfs_throttled_seconds_total|container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_memory_rss|container_memory_cache|container_network_receive_bytes_total|container_network_receive_packets_dropped_total|container_network_transmit_bytes_total|container_network_transmit_packets_dropped_total|container_fs_usage_bytes|container_fs_limit_bytes|container_fs_reads_bytes_total|container_fs_writes_bytes_total|container_threads|container_threads_max|container_file_descriptors{{ if eq .Cluster.ConfigItems.node_exporter_experimental_metrics "true" }}|ethtool{{end}})'
+{{- end }}
     - job_name: 'node-exporter'
       scheme: http
       honor_labels: true
@@ -414,4 +416,43 @@ data:
           replacement: /nodes/${1}/metrics
         - target_label: __address__
           replacement: kubelet-summary-metrics
+    # {{ end }}
+    # {{ if eq .Cluster.ConfigItems.kubelet_cadvisor_enabled "true" }}
+    - job_name: 'kubelet-cadvisor'
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - target_label: __metrics_path__
+        replacement: /metrics/cadvisor
+      - source_labels: [__meta_kubernetes_node_address_Hostname]
+        target_label: __address__
+        regex: (.*)
+        replacement: $1:10250
+      metric_relabel_configs:
+      - action: labeldrop
+        regex: "(name|id|image)"
+      - action: replace
+        source_labels: ['container']
+        target_label: container_name
+      - action: replace
+        source_labels: ['pod']
+        target_label: pod_name
+      - action: labeldrop # drop pod|container label as we rename it to pod_name, container_name for compatability.
+        regex: "(pod|container)"
+      - source_labels: [pod_name] # only keep metrics with a pod_name label
+        regex: .+
+        action: keep
+      - source_labels: [container_name] # only keep metrics with a container_name label
+        regex: .+
+        action: keep
+      - action: replace
+        source_labels: ['__meta_kubernetes_pod_node_name']
+        target_label: node_name
+      - source_labels: [__name__]
+        action: keep
+        regex: '(container_threads|container_file_descriptors)'
     # {{ end }}
