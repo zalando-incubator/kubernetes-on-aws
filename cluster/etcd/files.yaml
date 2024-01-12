@@ -11,3 +11,7 @@ files:
     data: "{{ .Cluster.ConfigItems.etcd_client_server_key }}"
     permissions: 0400
     encrypted: true
+  - path: /etc/scalyr-agent-2/userdata.yaml
+    data: {{ printf "scalyr_api_key: %s\ncluster_alias: %s\n" .Cluster.ConfigItems.etcd_scalyr_key .Cluster.Alias | base64 }}
+    permissions: 0400
+    encrypted: true
