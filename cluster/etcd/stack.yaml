@@ -51,11 +51,6 @@ Resources:
           Fn::Base64: !Sub |
             #cloud-config
             write_files:
-              - path: /etc/scalyr-agent-2/userdata.yaml
-                permissions: 0644
-                content: |
-                  scalyr_api_key: "{{.Values.etcd_scalyr_key}}"
-                  stack_name: ${AWS::StackName}
               - path: /etc/default/etcd
                 permissions: 0644
                 content: |
@@ -65,7 +60,7 @@ Resources:
                   ETCD_LOG_LEVEL=info
                   HOSTED_ZONE="{{.Values.hosted_zone}}"
                   S3_CERTS_BUCKET="{{ .S3GeneratedFilesPath }}"
-                  AWS_DEFAULT_REGION=eu-central-1
+                  AWS_DEFAULT_REGION="{{ .Cluster.Region }}"
             runcmd:
               - [ cfn-signal, --success, 'true', --stack, ${AWS::StackName}, --resource, AppServer, --region, ${AWS::Region} ]
               - [ complete-asg-lifecycle.py, 'etcd-server-lifecycle-hook' ]
