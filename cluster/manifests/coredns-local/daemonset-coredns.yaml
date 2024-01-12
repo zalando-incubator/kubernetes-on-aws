@@ -6,7 +6,6 @@ metadata:
   labels:
     application: kubernetes
     component: coredns
-    version: v1.9.3
 spec:
   updateStrategy:
     type: OnDelete
@@ -20,7 +19,6 @@ spec:
         application: kubernetes
         component: coredns
         instance: node-dns
-        version: v1.9.3
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics
@@ -41,7 +39,7 @@ spec:
       containers:
 {{ if eq .Cluster.ConfigItems.dns_cache "unbound" }}
       - name: unbound
-        image: container-registry.zalando.net/teapot/unbound:1.18.0-master-6
+        image: container-registry.zalando.net/teapot/unbound:1.19.0-master-7
         args:
         - -d
         - -c
