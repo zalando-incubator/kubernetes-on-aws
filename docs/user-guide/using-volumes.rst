@@ -39,7 +39,6 @@ instance.
         metadata:
           labels:
             application: redis
-            version: 3.2.5
         spec:
           containers:
           - name: redis
@@ -147,7 +146,6 @@ Modify your deployment in the following way in order to use the persistent volum
         metadata:
           labels:
             application: redis
-            version: 3.2.5
         spec:
           containers:
           - name: redis
