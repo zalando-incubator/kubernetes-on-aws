@@ -714,7 +714,7 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
       RoleName: "{{.Cluster.LocalID}}-deployment"
     Type: 'AWS::IAM::Role'
-{{- if eq .Cluster.ConfigItems.deployment_secret_key_managed "true" }}
+{{- if and (eq .Cluster.ConfigItems.deployment_secret_key_managed "true") (ne .Cluster.Environment "e2e") }}
   DeploymentSecretKey:
     Properties:
       Description: Key used by deployment pipeline for secret encryption/decryption
@@ -876,7 +876,7 @@ Resources:
               - Action:
                   - kms:Decrypt
                 Effect: Allow
-{{- if eq .Cluster.ConfigItems.deployment_secret_key_managed "true" }}
+{{- if and (eq .Cluster.ConfigItems.deployment_secret_key_managed "true") (ne .Cluster.Environment "e2e") }}
                 Resource:
                   - !GetAtt DeploymentSecretKey.Arn
 {{- else }}
