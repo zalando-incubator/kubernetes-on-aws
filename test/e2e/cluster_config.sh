@@ -29,7 +29,6 @@ clusters:
     zmon_worker_replicas: '0'
     node_pool_feature_enabled: "true"
     enable_rbac: "true"
-    dynamodb_service_link_enabled: "false"
     skipper_ingress_refuse_payload: "refused-pattern-1[cf724afc]refused-pattern-2"
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
