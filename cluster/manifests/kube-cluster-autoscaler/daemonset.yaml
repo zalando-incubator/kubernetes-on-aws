@@ -43,7 +43,7 @@ spec:
           - --stderrthreshold=info
           - --scale-down-utilization-threshold={{.Cluster.ConfigItems.autoscaling_utilization_threshold}}
           - --cloud-provider=aws
-          - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,zalando.de/cluster-local-id/{{ .LocalID }}
+          - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,zalando.de/cluster-local-id/{{ .Cluster.LocalID }}
           - --expendable-pods-priority-cutoff=-1000000
           - --skip-nodes-with-system-pods=false
           - --skip-nodes-with-local-storage=false
@@ -71,6 +71,6 @@ spec:
             ephemeral-storage: 256Mi
         env:
           - name: AWS_REGION
-            value: {{ .Region }}
+            value: "{{ .Cluster.Region }}"
       nodeSelector:
         node.kubernetes.io/role: master
