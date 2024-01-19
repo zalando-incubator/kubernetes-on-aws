@@ -632,8 +632,6 @@ etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.9-amd64-main-27" "861068
 etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.9-amd64-main-24" "861068367966"}}
 {{end}}
 
-dynamodb_service_link_enabled: "false"
-
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
 coredns_log_forward: "false"
@@ -888,8 +886,13 @@ stackset_configmap_support_enabled: "false"
 {{end}}
 
 # enable/disable traffic segment support for stackset
+{{if eq .Cluster.Environment "e2e"}}
+stackset_enable_traffic_segments: "true"
+stackset_annotated_traffic_segments: "true"
+{{else}}
 stackset_enable_traffic_segments: "false"
 stackset_annotated_traffic_segments: "false"
+{{end}}
 
 # Enable/Disable profiling for Kubernetes components
 enable_control_plane_profiling: "false"
