@@ -43,8 +43,6 @@ clusters:
     stackset_ingress_source_switch_ttl: "1m"
     teapot_admission_controller_daemonset_reserved_cpu: "518m"
     karpenter_pools_enabled: "true"
-    stackset_enable_traffic_segments: "true"
-    stackset_annotated_traffic_segments: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
