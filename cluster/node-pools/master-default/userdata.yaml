@@ -443,7 +443,7 @@ write_files:
           - |
             s: JWTPayloadAllKV("iss", "kubernetes/serviceaccount")
               -> enableAccessLog()
-              -> {{ if eq .ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }};
+              -> {{ if eq .Cluster.ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }};
             h: Path("/kube-system/readyz")
               -> setPath("/readyz")
               -> disableAccessLog()
@@ -749,7 +749,7 @@ write_files:
         # don't audit events from the system:apiserver user
         - level: None
           users: ["system:apiserver"]
-        {{ if eq .ConfigItems.audit_pod_events "true" }}
+        {{ if eq .Cluster.ConfigItems.audit_pod_events "true" }}
         # audit pod events
         - level: Request
           omitStages:
