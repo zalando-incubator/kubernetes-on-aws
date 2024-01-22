@@ -49,15 +49,15 @@ data:
       name: "5.10.in-addr.arpa."
       forward-addr: 127.0.0.1@9254 # coredns
   Corefile: |
-{{ if and .ConfigItems.custom_dns_zone .ConfigItems.custom_dns_zone_nameservers }}
-    {{ .ConfigItems.custom_dns_zone }}:9254 {
+{{ if and .Cluster.ConfigItems.custom_dns_zone .Cluster.ConfigItems.custom_dns_zone_nameservers }}
+    {{ .Cluster.ConfigItems.custom_dns_zone }}:9254 {
         errors
-{{ if ne .ConfigItems.coredns_max_upstream_concurrency "0" }}
-        forward . {{ .ConfigItems.custom_dns_zone_nameservers }} {
-          max_concurrent {{ .ConfigItems.coredns_max_upstream_concurrency }}
+{{ if ne .Cluster.ConfigItems.coredns_max_upstream_concurrency "0" }}
+        forward . {{ .Cluster.ConfigItems.custom_dns_zone_nameservers }} {
+          max_concurrent {{ .Cluster.ConfigItems.coredns_max_upstream_concurrency }}
         }
 {{ else }}
-        forward . {{ .ConfigItems.custom_dns_zone_nameservers }}
+        forward . {{ .Cluster.ConfigItems.custom_dns_zone_nameservers }}
 {{ end }}
         prometheus :9153
         ready :9155
@@ -65,9 +65,9 @@ data:
     }
 {{ end }}
 
-{{ if eq .ConfigItems.enable_skipper_eastwest_dns "true"}}
+{{ if eq .Cluster.ConfigItems.enable_skipper_eastwest_dns "true"}}
     ingress.cluster.local:9254 {
-{{ if eq .ConfigItems.skipper_eastwest_dns_log_enabled "true"}}
+{{ if eq .Cluster.ConfigItems.skipper_eastwest_dns_log_enabled "true"}}
         log
 {{ end }}
         template IN A {
@@ -85,11 +85,11 @@ data:
 
     # Defines that this server is authority for reverse
     # lookups for these ranges.
-    cluster.local:9254 10.2.0.0/15:9254 10.5.0.0/16:9254 {{ if eq .ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ range $src := split .ConfigItems.tracing_coredns_global_traces_endpoint  "," }}{{ $src }}:9254 {{ end }} {{ end }} {
+    cluster.local:9254 10.2.0.0/15:9254 10.5.0.0/16:9254 {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ range $src := split .Cluster.ConfigItems.tracing_coredns_global_traces_endpoint  "," }}{{ $src }}:9254 {{ end }} {{ end }} {
         errors
-        {{ if eq .ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}
+        {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}
           {{- with $cluster := .Cluster }}
-          {{ range $src := split .ConfigItems.tracing_coredns_global_traces_endpoint  "," }}
+          {{ range $src := split .Cluster.ConfigItems.tracing_coredns_global_traces_endpoint  "," }}
         rewrite name exact {{ $src }} {{ $cluster.ConfigItems.tracing_coredns_local_zone_traces_endpoint }}
           {{ end }}
           {{- end }}
@@ -98,7 +98,7 @@ data:
             pods insecure
         }
         cache 30
-{{ if eq .ConfigItems.coredns_log_svc_names "true"}}
+{{ if eq .Cluster.ConfigItems.coredns_log_svc_names "true"}}
         log svc.svc.cluster.local.
 {{ end }}
         prometheus :9153
@@ -106,16 +106,16 @@ data:
     }
 
     .:9254 {
-{{ if eq .ConfigItems.coredns_log_forward "true"}}
+{{ if eq .Cluster.ConfigItems.coredns_log_forward "true"}}
         log
 {{ end }}
         errors
         health :9154 # this is global for all servers
         ready :9155
         prometheus :9153
-{{ if ne .ConfigItems.coredns_max_upstream_concurrency "0" }}
+{{ if ne .Cluster.ConfigItems.coredns_max_upstream_concurrency "0" }}
         forward . /etc/resolv.conf {
-          max_concurrent {{ .ConfigItems.coredns_max_upstream_concurrency }}
+          max_concurrent {{ .Cluster.ConfigItems.coredns_max_upstream_concurrency }}
         }
 {{ else }}
         forward . /etc/resolv.conf

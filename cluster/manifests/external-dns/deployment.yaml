@@ -37,27 +37,27 @@ spec:
         - --source=service
         - --source=ingress
         - --source=skipper-routegroup
-{{- range split .ConfigItems.external_dns_domain_filter "," }}
+{{- range split .Cluster.ConfigItems.external_dns_domain_filter "," }}
         - --domain-filter={{ . }}
 {{- end }}
-{{- range split .ConfigItems.external_dns_excluded_domains "," }}
+{{- range split .Cluster.ConfigItems.external_dns_excluded_domains "," }}
         - --exclude-domains={{ . }}
 {{- end }}
         - --provider=aws
         - --registry=txt
         - --txt-owner-id={{ .Cluster.Region }}:{{ .Cluster.LocalID }}
-        - --txt-prefix={{ .ConfigItems.external_dns_ownership_prefix }}
+        - --txt-prefix={{ .Cluster.ConfigItems.external_dns_ownership_prefix }}
         - --aws-batch-change-size=120
-        - --aws-zones-cache-duration={{ .ConfigItems.external_dns_zones_cache_duration }}
+        - --aws-zones-cache-duration={{ .Cluster.ConfigItems.external_dns_zones_cache_duration }}
         - --annotation-filter=external-dns.alpha.kubernetes.io/exclude notin (true)
-        - --policy={{ .ConfigItems.external_dns_policy }}
+        - --policy={{ .Cluster.ConfigItems.external_dns_policy }}
         resources:
           requests:
             cpu: 50m
-            memory: {{ .ConfigItems.external_dns_mem }}
+            memory: {{ .Cluster.ConfigItems.external_dns_mem }}
           limits:
             cpu: 50m
-            memory: {{ .ConfigItems.external_dns_mem }}
+            memory: {{ .Cluster.ConfigItems.external_dns_mem }}
         livenessProbe:
           httpGet:
             path: /healthz
