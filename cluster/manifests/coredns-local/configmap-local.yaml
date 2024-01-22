@@ -89,7 +89,7 @@ data:
         errors
         {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}
           {{- with $cluster := .Cluster }}
-          {{ range $src := split .Cluster.ConfigItems.tracing_coredns_global_traces_endpoint  "," }}
+          {{ range $src := split $cluster.ConfigItems.tracing_coredns_global_traces_endpoint  "," }}
         rewrite name exact {{ $src }} {{ $cluster.ConfigItems.tracing_coredns_local_zone_traces_endpoint }}
           {{ end }}
           {{- end }}
