@@ -1,4 +1,4 @@
-{{ $version := "v1.4.23" }}
+{{ $version := "v1.4.26" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,6 +46,20 @@ spec:
 {{- if eq .Cluster.ConfigItems.stackset_annotated_traffic_segments "true" }}
         - "--annotated-traffic-segments"
 {{- end }}
+{{if eq .Cluster.Environment "e2e"}}
+        - "--sync-ingress-annotation=example.org/i-haz-synchronize"
+        - "--sync-ingress-annotation=teapot.org/the-best"
+{{else}}
+        - "--sync-ingress-annotation=alb.ingress.kubernetes.io/ip-address-type"
+        - "--sync-ingress-annotation=zalando.org/aws-load-balancer-ssl-cert"
+        - "--sync-ingress-annotation=zalando.org/aws-load-balancer-scheme"
+        - "--sync-ingress-annotation=zalando.org/aws-load-balancer-security-group"
+        - "--sync-ingress-annotation=zalando.org/aws-load-balancer-ssl-policy"
+        - "--sync-ingress-annotation=zalando.org/aws-load-balancer-type"
+        - "--sync-ingress-annotation=zalando.org/aws-load-balancer-http2"
+        - "--sync-ingress-annotation=zalando.org/aws-waf-web-acl-id"
+        - "--sync-ingress-annotation=kubernetes.io/ingress.class"
+{{ end}}
         - "--cluster-domain={{ .Values.hosted_zone }}"
         - "--cluster-domain=ingress.cluster.local"
         resources:
