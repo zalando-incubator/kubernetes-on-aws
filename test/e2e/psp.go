@@ -32,49 +32,63 @@ import (
 )
 
 var _ = describe("PSP use", func() {
-	privilegedRole := "privileged-psp"
 	privilegedSA := "privileged-sa"
 	f := framework.NewDefaultFramework("psp")
+	f.SkipNamespaceCreation = true
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelPrivileged
 	var cs kubernetes.Interface
 
 	BeforeEach(func() {
 		cs = f.ClientSet
-		saObj := createServiceAccount(f.Namespace.Name, privilegedSA)
-		_, err := cs.CoreV1().ServiceAccounts(f.Namespace.Name).Create(context.TODO(), saObj, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
-
-		_, err = cs.RbacV1().RoleBindings(f.Namespace.Name).Create(context.TODO(), createRBACRoleBindingSA(privilegedRole, f.Namespace.Name, privilegedSA), metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
 	})
 
-	// TODO: We have to have a solution to get an unprivileged
-	// User to check this, if not it would always create a
-	// privileged POD for an unprivileged serviceAccount.
-	// --
-	// It("Should not create a POD that use privileged PSP [PSP] [Zalando]", func() {
-	//      defaultSA := "default"
-	// 	ns := f.Namespace.Name
-	// 	label := map[string]string{
-	// 		"app": "psp",
-	// 	}
-	// 	msg := fmt.Sprintf("Creating a privileged POD as %s", defaultSA)
-	// 	By(msg)
-	//      route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
-	// 	pod := createSkipperPodWithHostNetwork("", ns, defaultSA, route, label, 80)
-	// 	defer func() {
-	// 		By(msg)
-	// 		defer GinkgoRecover()
-	// 		err := cs.CoreV1().Pods(ns).Delete(pod.Name, metav1.NewDeleteOptions(0))
-	// 		Expect(err).To(HaveOccurred())
-	// 	}()
-	// 	_, err := cs.CoreV1().Pods(ns).Create(pod)
-	// 	Expect(err).To(HaveOccurred())
-	// 	framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
-	// })
+	It("Should not create a privileged POD if restricted SA [PSP] [Zalando]", func() {
+		defaultSA := "default"
+		ns := "psp-restricted-zalando"
+		_, err := cs.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: ns,
+			},
+		}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		// create SA
+		saObj := createServiceAccount(ns, privilegedSA)
+		_, err = cs.CoreV1().ServiceAccounts(ns).Create(context.TODO(), saObj, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		label := map[string]string{
+			"app": "psp",
+		}
+		msg := fmt.Sprintf("Creating a privileged POD as %s", defaultSA)
+		By(msg)
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
+		pod := createSkipperPodWithHostNetwork("", ns, defaultSA, route, label, 80)
+		defer func() {
+			By(msg)
+			defer GinkgoRecover()
+
+			err = cs.CoreV1().Namespaces().Delete(context.TODO(), ns, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}()
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
+		Expect(err).To(HaveOccurred())
+	})
 
 	It("Should create a POD that use privileged PSP [PSP] [Zalando]", func() {
-		ns := f.Namespace.Name
+		ns := "psp-privileged-zalando"
+		_, err := cs.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: ns,
+			},
+		}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		// create SA
+		saObj := createServiceAccount(ns, privilegedSA)
+		_, err = cs.CoreV1().ServiceAccounts(ns).Create(context.TODO(), saObj, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
 		label := map[string]string{
 			"app": "psp",
 		}
@@ -89,16 +103,31 @@ var _ = describe("PSP use", func() {
 			defer GinkgoRecover()
 			err := cs.CoreV1().Pods(ns).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
+
+			err = cs.CoreV1().Namespaces().Delete(context.TODO(), ns, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
 	})
 
 	It("Should create a POD that use privileged PSP via deployment [PSP] [Zalando]", func() {
-		ns := f.Namespace.Name
+		ns := "psp-privileged-deployment-zalando"
+		_, err := cs.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: ns,
+			},
+		}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		// create SA
+		saObj := createServiceAccount(ns, privilegedSA)
+		_, err = cs.CoreV1().ServiceAccounts(ns).Create(context.TODO(), saObj, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
 		label := map[string]string{
 			"app": "psp",
 		}
@@ -117,6 +146,9 @@ var _ = describe("PSP use", func() {
 			defer GinkgoRecover()
 			err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), d.Name, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
+
+			err = cs.CoreV1().Namespaces().Delete(context.TODO(), ns, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
 		}()
 
 		deploy, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), d, metav1.CreateOptions{})
@@ -134,7 +166,7 @@ var _ = describe("PSP use", func() {
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Got rs: %s, from deployment: %s", rs.Name, deploy.Name))
 
-		pods, err := e2epod.PodsCreatedByLabel(f.ClientSet, f.Namespace.Name, rs.Name, replicas, labelSelector)
+		pods, err := e2epod.PodsCreatedByLabel(f.ClientSet, ns, rs.Name, replicas, labelSelector)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Ensuring each pod is running for rs: %s, pod: %s", rs.Name, pods.Items[0].Name))
 		// Wait for the pods to enter the running state. Waiting loops until the pods
