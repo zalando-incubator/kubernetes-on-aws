@@ -82,6 +82,33 @@ data:
   # This setting enables and disables replacement of vanity images with ECR images during pod admission (during create and update)
   pod.vanity-image-replacement.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_resolve_vanity_images }}"
 
+  # Pod Security Policy
+  pod.pod-security-policy.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_enabled }}"
+
+  # service accounts that need privileged PSP should be defined here as `<namespace>_<sa-name>`
+  pod.pod-security-policy.privileged-service-accounts.kube-system_kube-proxy: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_skipper-ingress: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_node-monitor: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_nvidia: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_audittrail-adapter: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_kube-aws-iam-controller: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_kube2iam: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_ebs-csi-node-sa: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_flannel: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_etcd-backup: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_coredns: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_efs-provisioner: ""
+  pod.pod-security-policy.privileged-service-accounts.visibility_logging-agent: ""
+{{- range $sa := split .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_privileged_service_accounts "," }}
+  pod.pod-security-policy.privileged-service-accounts.{{ $sa }}: ""
+{{- end}}
+
+{{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
+  pod.pod-security-policy.allowed-unsafe-sysctls.{{ $sysctl }}: ""
+{{- end}}
+
+  pod.pod-security-policy.allow-privilege-escalation: "{{ .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_privileged_allow_privilege_escalation }}"
+
   deployment.default.rolling-update-max-surge: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}"
   deployment.default.rolling-update-max-unavailable: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}"
 

@@ -27,6 +27,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework/config"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 	testutil "k8s.io/kubernetes/test/utils"
+	"k8s.io/utils/ptr"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -251,6 +252,7 @@ func createSkipperPodWithHostNetwork(nameprefix, namespace, serviceAccount, rout
 	pod := createSkipperPod(nameprefix, namespace, route, labels, port)
 	pod.Spec.HostNetwork = true
 	pod.Spec.ServiceAccountName = serviceAccount
+	pod.Spec.TerminationGracePeriodSeconds = ptr.To(int64(0))
 	pod.Spec.Containers[0].Ports[0].HostPort = int32(port)
 	return pod
 }
@@ -272,6 +274,7 @@ func createSkipperPod(nameprefix, namespace, route string, labels map[string]str
 
 func createSkipperPodSpec(route string, port int32) corev1.PodSpec {
 	return corev1.PodSpec{
+		TerminationGracePeriodSeconds: ptr.To(int64(0)),
 		Containers: []corev1.Container{
 			{
 				Name:  "skipper",
