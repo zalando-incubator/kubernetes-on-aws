@@ -271,3 +271,9 @@ post_apply:
   kind: HorizontalPodAutoscaler
   namespace: kube-system
 {{ end }}
+{{- if ne .Cluster.ConfigItems.pod_security_policy_enabled "true" }}
+- kind: PodSecurityPolicy
+  name: privileged
+- kind: PodSecurityPolicy
+  name: restricted
+{{- end }}
