@@ -16,7 +16,7 @@ post_apply:
 - name: cronjob-monitor
   namespace: kube-system
   kind: ServiceAccount
-{{ if eq .ConfigItems.teapot_admission_controller_process_resources "true" }}
+{{ if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
   kind: LimitRange
@@ -24,7 +24,7 @@ post_apply:
   namespace: cron
   kind: LimitRange
 {{ end }}
-{{ if ne .ConfigItems.downscaler_enabled "true" }}
+{{ if ne .Cluster.ConfigItems.downscaler_enabled "true" }}
 - name: kube-downscaler
   namespace: kube-system
   kind: Deployment
@@ -39,7 +39,7 @@ post_apply:
   namespace: kube-system
   kind: VerticalPodAutoscaler
 {{ end }}
-{{ if ne .ConfigItems.spot_node_rescheduler "true" }}
+{{ if ne .Cluster.ConfigItems.spot_node_rescheduler "true" }}
 - name: node-spot-rescheduler
   namespace: kube-system
   kind: CronJob
@@ -74,7 +74,7 @@ post_apply:
   kind: Service
 {{ end }}
 
-{{- if ne .ConfigItems.skipper_oauth2_ui_login "true" }}
+{{- if ne .Cluster.ConfigItems.skipper_oauth2_ui_login "true" }}
 # hostname-credentials-controller
 - kind: CronJob
   name: hostname-credentials-controller
@@ -110,7 +110,7 @@ post_apply:
   namespace: kube-system
 {{- end }}
 
-{{- if eq .ConfigItems.prometheus_remote_write "disabled" }}
+{{- if eq .Cluster.ConfigItems.prometheus_remote_write "disabled" }}
 - name: prometheus-credentials
   kind: PlatformCredentialsSet
   namespace: kube-system
@@ -230,7 +230,7 @@ post_apply:
   namespace: kube-system
   kind: VerticalPodAutoscaler
 {{ end }}
-{{ if eq .ConfigItems.skipper_open_policy_agent_enabled "false" }}
+{{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "false" }}
 - kind: ConfigMap
   name: open-policy-agent-config
   namespace: kube-system
