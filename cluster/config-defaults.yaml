@@ -60,13 +60,14 @@ nlb_switch: "exec"
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "60"
 skipper_ingress_target_average_utilization_memory: "80"
-skipper_ingress_max_replicas: "50"
 skipper_ingress_hpa_scale_down_wait: "600"
 skipper_ingress_hpa_scale_up_max_perc: "100"
 {{if eq .Cluster.Environment "production"}}
 skipper_ingress_min_replicas: "3"
+skipper_ingress_max_replicas: "300"
 {{else}}
 skipper_ingress_min_replicas: "2"
+skipper_ingress_max_replicas: "50"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
@@ -554,7 +555,7 @@ teapot_admission_controller_namespace_delete_protection_enabled: "false"
 teapot_admission_controller_resolve_vanity_images: "true"
 
 {{if eq .Cluster.Environment "e2e"}}
-teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota|limitrange)-.*)$"
+teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota|limitrange|sysctl|node-tests|e2e-kubelet-etc-hosts)-.*)$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "false"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
@@ -610,6 +611,21 @@ teapot_admission_controller_configmap_deletion_protection_enabled: "false"
 teapot_admission_controller_configmap_deletion_protection_enabled: "true"
 {{end}}
 
+# Enable and configure Pod Security Policy rules implemented in admission-controller.
+teapot_admission_controller_pod_security_policy_enabled: "true"
+
+# comma separated list of service accounts that are allowed to use privileged
+# pod security policy rules. Format: `<namespace>_<service-account-name>`
+{{ if eq .Cluster.Environment "e2e" }}
+teapot_admission_controller_pod_security_policy_privileged_service_accounts: "psp-privileged-zalando_privileged-sa,psp-privileged-deployment-zalando_privileged-sa"
+{{ else }}
+teapot_admission_controller_pod_security_policy_privileged_service_accounts: ""
+{{ end }}
+teapot_admission_controller_pod_security_policy_privileged_allow_privilege_escalation: "false"
+
+# Optionally disable PodSecurityPolicy. Make sure `teapot_admission_controller_pod_security_policy_enabled` is true if this is disabled, otherwise there are no Pod security Policy enforcement in the cluster.
+pod_security_policy_enabled: "false"
+
 # Prevent the use of a particular AZ as much as possible
 blocked_availability_zone: ""
 
@@ -626,11 +642,7 @@ etcd_instance_type: "t3.medium"
 
 etcd_scalyr_key: ""
 
-{{if eq .Cluster.Channel "dev"}}
-etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.9-amd64-main-27" "861068367966"}}
-{{else}}
 etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.9-amd64-main-24" "861068367966"}}
-{{end}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"

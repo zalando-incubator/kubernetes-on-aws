@@ -61,8 +61,8 @@ spec:
         args:
         - "--config.file=/prometheus/prometheus.yaml"
         - "--storage.tsdb.path=/prometheus/"
-        - "--storage.tsdb.retention.size={{ .ConfigItems.prometheus_retention_size }}"
-        - "--storage.tsdb.retention.time={{ .ConfigItems.prometheus_retention_time }}"
+        - "--storage.tsdb.retention.size={{ .Cluster.ConfigItems.prometheus_retention_size }}"
+        - "--storage.tsdb.retention.time={{ .Cluster.ConfigItems.prometheus_retention_time }}"
         - "--storage.tsdb.wal-compression"
         - "--storage.tsdb.min-block-duration=30m"
 {{if eq .Cluster.ConfigItems.network_monitoring_separate_prometheus "true"}}
@@ -74,11 +74,11 @@ spec:
           protocol: TCP
         resources:
           limits:
-            cpu: {{.ConfigItems.prometheus_cpu}}
-            memory: {{.ConfigItems.prometheus_mem}}
+            cpu: {{.Cluster.ConfigItems.prometheus_cpu}}
+            memory: {{.Cluster.ConfigItems.prometheus_mem}}
           requests:
-            cpu: {{.ConfigItems.prometheus_cpu}}
-            memory: {{.ConfigItems.prometheus_mem}}
+            cpu: {{.Cluster.ConfigItems.prometheus_cpu}}
+            memory: {{.Cluster.ConfigItems.prometheus_mem}}
         readinessProbe:
           httpGet:
             path: /-/ready
@@ -91,7 +91,7 @@ spec:
         volumeMounts:
         - name: prometheus-storage-volume
           mountPath: /prometheus
-{{- if ne .ConfigItems.prometheus_remote_write "disabled" }}
+{{- if ne .Cluster.ConfigItems.prometheus_remote_write "disabled" }}
         - name: prometheus-credentials
           mountPath: /meta/credentials
 {{- end }}
@@ -102,7 +102,7 @@ spec:
         configMap:
           defaultMode: 420
           name: prometheus-conf
-{{- if ne .ConfigItems.prometheus_remote_write "disabled" }}
+{{- if ne .Cluster.ConfigItems.prometheus_remote_write "disabled" }}
       - name: prometheus-credentials
         secret:
           secretName: prometheus-credentials
@@ -120,4 +120,4 @@ spec:
       - "ReadWriteOnce"
       resources:
         requests:
-          storage: {{.ConfigItems.prometheus_storage_size}}
+          storage: {{.Cluster.ConfigItems.prometheus_storage_size}}
