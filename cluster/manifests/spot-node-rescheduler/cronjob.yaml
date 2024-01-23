@@ -1,4 +1,4 @@
-{{ if eq .ConfigItems.spot_node_rescheduler "true" }}
+{{ if eq .Cluster.ConfigItems.spot_node_rescheduler "true" }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -27,9 +27,9 @@ spec:
             image: container-registry.zalando.net/teapot/spot-node-rescheduler:main-6
             resources:
               limits:
-                cpu: "{{ .ConfigItems.spot_node_rescheduler_cpu }}"
-                memory: "{{ .ConfigItems.spot_node_rescheduler_memory }}"
+                cpu: "{{ .Cluster.ConfigItems.spot_node_rescheduler_cpu }}"
+                memory: "{{ .Cluster.ConfigItems.spot_node_rescheduler_memory }}"
               requests:
-                cpu: "{{ .ConfigItems.spot_node_rescheduler_cpu }}"
-                memory: "{{ .ConfigItems.spot_node_rescheduler_memory }}"
+                cpu: "{{ .Cluster.ConfigItems.spot_node_rescheduler_cpu }}"
+                memory: "{{ .Cluster.ConfigItems.spot_node_rescheduler_memory }}"
 {{ end }}

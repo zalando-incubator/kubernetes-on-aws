@@ -6,10 +6,10 @@ metadata:
   labels:
     application: gateway-operator
     component: fabric-gateway-controller
-    version: "{{ .ConfigItems.fabric_gateway_controller_version }}"
-    mode: "{{ .ConfigItems.fabric_gateway_controller_mode }}"
+    version: "{{ .Cluster.ConfigItems.fabric_gateway_controller_version }}"
+    mode: "{{ .Cluster.ConfigItems.fabric_gateway_controller_mode }}"
 spec:
-{{ if eq .ConfigItems.fabric_gateway_controller_mode "disabled" }}
+{{ if eq .Cluster.ConfigItems.fabric_gateway_controller_mode "disabled" }}
   replicas: 0
 {{ else }}
   replicas: 1
@@ -25,8 +25,8 @@ spec:
         deployment: fabric-gateway-controller
         application: gateway-operator
         component: fabric-gateway-controller
-        version: "{{ .ConfigItems.fabric_gateway_controller_version }}"
-        mode: "{{ .ConfigItems.fabric_gateway_controller_mode }}"
+        version: "{{ .Cluster.ConfigItems.fabric_gateway_controller_version }}"
+        mode: "{{ .Cluster.ConfigItems.fabric_gateway_controller_mode }}"
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "controller", "parser": "keyValue"}]
@@ -39,19 +39,19 @@ spec:
       serviceAccountName: fabric-gateway-controller
       containers:
         - name: controller
-          image: container-registry.zalando.net/gwproxy/fabric-gateway:{{ .ConfigItems.fabric_gateway_controller_version }}
+          image: container-registry.zalando.net/gwproxy/fabric-gateway:{{ .Cluster.ConfigItems.fabric_gateway_controller_version }}
           args:
             - -update-fabric-gateway-status=true
             - -versioned-hosts-base-domain={{ .Values.hosted_zone }}
-            - -log-level={{ .ConfigItems.fabric_gateway_controller_log_level }}
-            - -ssl-policy={{ .ConfigItems.fabric_gateway_controller_ssl_policy }}
-            {{ if eq .ConfigItems.fabric_gateway_controller_allow_all_filters "true" }}
+            - -log-level={{ .Cluster.ConfigItems.fabric_gateway_controller_log_level }}
+            - -ssl-policy={{ .Cluster.ConfigItems.fabric_gateway_controller_ssl_policy }}
+            {{ if eq .Cluster.ConfigItems.fabric_gateway_controller_allow_all_filters "true" }}
             - -allow-all-filters=true
             {{ end }}
           resources:
             requests:
-              cpu: {{ .ConfigItems.fabric_gateway_controller_cpu }}
-              memory: {{ .ConfigItems.fabric_gateway_controller_memory }}
+              cpu: {{ .Cluster.ConfigItems.fabric_gateway_controller_cpu }}
+              memory: {{ .Cluster.ConfigItems.fabric_gateway_controller_memory }}
             limits:
-              cpu: {{ .ConfigItems.fabric_gateway_controller_cpu }}
-              memory: {{ .ConfigItems.fabric_gateway_controller_memory }}
+              cpu: {{ .Cluster.ConfigItems.fabric_gateway_controller_cpu }}
+              memory: {{ .Cluster.ConfigItems.fabric_gateway_controller_memory }}
