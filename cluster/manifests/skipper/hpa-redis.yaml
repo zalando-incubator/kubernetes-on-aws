@@ -10,23 +10,23 @@ spec:
     apiVersion: apps/v1
     kind: StatefulSet
     name: skipper-ingress-redis
-  minReplicas: {{ .ConfigItems.skipper_ingress_redis_min_replicas }}
-  maxReplicas: {{ .ConfigItems.skipper_ingress_redis_max_replicas }}
+  minReplicas: {{ .Cluster.ConfigItems.skipper_ingress_redis_min_replicas }}
+  maxReplicas: {{ .Cluster.ConfigItems.skipper_ingress_redis_max_replicas }}
   metrics:
   - type: Resource
     resource:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: {{ .ConfigItems.skipper_ingress_redis_target_average_utilization_cpu }}
+        averageUtilization: {{ .Cluster.ConfigItems.skipper_ingress_redis_target_average_utilization_cpu }}
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: {{ .ConfigItems.skipper_ingress_redis_target_average_utilization_memory }}
-{{ if .ConfigItems.skipper_ingress_redis_cluster_scaling_schedules }}
-  {{ range split .ConfigItems.skipper_ingress_redis_cluster_scaling_schedules "," }}
+        averageUtilization: {{ .Cluster.ConfigItems.skipper_ingress_redis_target_average_utilization_memory }}
+{{ if .Cluster.ConfigItems.skipper_ingress_redis_cluster_scaling_schedules }}
+  {{ range split .Cluster.ConfigItems.skipper_ingress_redis_cluster_scaling_schedules "," }}
   {{ $name_target := split . "=" }}
   - type: Object
     object:
