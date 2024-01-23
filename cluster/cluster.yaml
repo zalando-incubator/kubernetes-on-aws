@@ -881,9 +881,11 @@ Resources:
                   - !GetAtt DeploymentSecretKey.Arn
 {{- else }}
                 Resource: "*"
+{{- if and (eq .Cluster.ConfigItems.deployment_secret_decrypt_any "false") (ne .Cluster.Environment "e2e") }}
                 Condition:
                   StringLike:
-                    "kms:RequestAlias": "alias/{{.Cluster.LocalID}}-deployment-secret"
+                    "kms:RequestAlias": "alias/deployment-secret"
+{{- end }}
 {{- end }}
               - Action:
                   - 'sts:AssumeRole'
