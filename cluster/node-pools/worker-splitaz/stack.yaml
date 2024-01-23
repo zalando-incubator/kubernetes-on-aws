@@ -135,7 +135,7 @@ Resources:
 {{ end }}
   LaunchTemplate:
     Properties:
-      LaunchTemplateName: '{{ $data.Cluster.LocalID }}-{{ $data.NodePool.Name }}'
+      LaunchTemplateName: '{{ .Cluster.LocalID }}-{{ .NodePool.Name }}'
       LaunchTemplateData:
 {{- if eq .Cluster.ConfigItems.kuberuntu_distro_worker "jammy" }}
         TagSpecifications:
@@ -149,8 +149,8 @@ Resources:
         BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
-            DeleteOnTermination: {{$data.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
-            VolumeSize: {{$data.NodePool.ConfigItems.ebs_root_volume_size}}
+            DeleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination }}
+            VolumeSize: {{ .NodePool.ConfigItems.ebs_root_volume_size }}
             VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
@@ -166,11 +166,11 @@ Resources:
         - !Ref 'AWS::Region'
         - MachineImage
         InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
-{{- if and $data.NodePool.IsSpot (eq (len $data.NodePool.InstanceTypes) 1) }}
+{{- if and .NodePool.IsSpot (eq (len .NodePool.InstanceTypes) 1) }}
         InstanceMarketOptions:
           MarketType: spot
 {{ end }}
-        UserData: "{{ .UserData }}"
+        UserData: "{{ .Values.UserData }}"
     Type: 'AWS::EC2::LaunchTemplate'
 {{ end }}
 
