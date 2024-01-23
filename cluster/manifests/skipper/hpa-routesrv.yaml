@@ -11,23 +11,23 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: skipper-ingress-routesrv
-  minReplicas: {{ .ConfigItems.skipper_routesrv_min_replicas }}
-  maxReplicas: {{ .ConfigItems.skipper_routesrv_max_replicas }}
+  minReplicas: {{ .Cluster.ConfigItems.skipper_routesrv_min_replicas }}
+  maxReplicas: {{ .Cluster.ConfigItems.skipper_routesrv_max_replicas }}
   metrics:
   - type: Resource
     resource:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: {{ .ConfigItems.skipper_routesrv_target_average_utilization_cpu }}
+        averageUtilization: {{ .Cluster.ConfigItems.skipper_routesrv_target_average_utilization_cpu }}
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: {{ .ConfigItems.skipper_routesrv_target_average_utilization_memory }}
-{{ if .ConfigItems.skipper_ingress_routesrv_scaling_schedules }}
-  {{ range split .ConfigItems.skipper_ingress_routesrv_scaling_schedules "," }}
+        averageUtilization: {{ .Cluster.ConfigItems.skipper_routesrv_target_average_utilization_memory }}
+{{ if .Cluster.ConfigItems.skipper_ingress_routesrv_scaling_schedules }}
+  {{ range split .Cluster.ConfigItems.skipper_ingress_routesrv_scaling_schedules "," }}
   {{ $name_target := split . "=" }}
   - type: Object
     object:
