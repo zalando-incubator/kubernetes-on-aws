@@ -43,14 +43,14 @@ spec:
         - --aws-region=eu-central-1
         - --aws-region=eu-west-1
         - --skipper-backends-annotation=zalando.org/backend-weights
-        {{ if eq .Environment "production" }}
+        {{ if eq .Cluster.Environment "production" }}
         - --zmon-kariosdb-endpoint={{.Cluster.ConfigItems.zmon_kairosdb_url}}
         {{ end }}
         {{- if ne .Cluster.ConfigItems.nakadi_url "" }}
         - --nakadi-endpoint={{.Cluster.ConfigItems.nakadi_url}}
         {{- end }}
         volumeMounts:
-        {{- if or (eq .Environment "production") (ne .Cluster.ConfigItems.nakadi_url "") }}
+        {{- if or (eq .Cluster.Environment "production") (ne .Cluster.ConfigItems.nakadi_url "") }}
         - name: credentials
           mountPath: /meta/credentials
           readOnly: true
@@ -63,7 +63,7 @@ spec:
             cpu: 10m
             memory: 4Gi
       volumes:
-      {{- if or (eq .Environment "production") (ne .Cluster.ConfigItems.nakadi_url "") }}
+      {{- if or (eq .Cluster.Environment "production") (ne .Cluster.ConfigItems.nakadi_url "") }}
       - name: credentials
         secret:
           secretName: "kube-metrics-adapter"

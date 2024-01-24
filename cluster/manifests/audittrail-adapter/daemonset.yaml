@@ -36,12 +36,12 @@ spec:
         image: container-registry.zalando.net/teapot/audittrail-adapter:master-51
         env:
           - name: AWS_REGION
-            value: {{.Cluster.Region}}
+            value: "{{ .Cluster.Region }}"
         args:
-        - --cluster-id={{ .ID }}
+        - --cluster-id={{ .Cluster.ID }}
         - --cluster-alias={{ .Cluster.Alias }}
         - --audittrail-url={{ .Cluster.ConfigItems.audittrail_url }}
-        - --s3-fallback-bucket-name=zalando-audittrail-{{accountID .InfrastructureAccount}}-{{.LocalID}}
+        - --s3-fallback-bucket-name=zalando-audittrail-{{ accountID .Cluster.InfrastructureAccount }}-{{ .Cluster.LocalID }}
         - --nakadi-url={{ .Cluster.ConfigItems.audittrail_nakadi_url }}
         - --address=:8889
         - --metrics-address=:7980

@@ -1,4 +1,4 @@
-{{ if eq .Environment "production" }}
+{{ if eq .Cluster.Environment "production" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,16 +45,16 @@ spec:
         image: "container-registry.zalando.net/teapot/emergency-access-service:master-88"
         args:
         - --insecure-http
-        - --community={{ .Owner }}
-        - --cluster-id={{ .ID }}
+        - --community={{ .Cluster.Owner }}
+        - --cluster-id={{ .Cluster.ID }}
         - --teams-api-url=https://teams.auth.zalando.com
         # TODO(mlarsen): Rename this flag to tokeninfo-url to reflect that it's
         # not the OAuth2 token URL.
         - --token-url=https://info.services.auth.zalando.com/oauth2/tokeninfo
         # enable audittrail reporting
         - --audittrail-url=https://audittrail.cloud.zalando.com
-        - --environment={{ .Environment }}
-        - --s3-bucket-name=zalando-audittrail-{{accountID .InfrastructureAccount}}-{{.LocalID}}
+        - --environment={{ .Cluster.Environment }}
+        - --s3-bucket-name=zalando-audittrail-{{accountID .Cluster.InfrastructureAccount}}-{{ .Cluster.LocalID }}
         env:
         - name: KUBERNETES_SERVICE_HOST
           value: "127.0.0.1"
@@ -70,7 +70,7 @@ spec:
               name: emergency-access-service-secrets
               key: opsgenie-api-key
         - name: AWS_REGION
-          value: {{.Region}}
+          value: "{{ .Cluster.Region }}"
         - name: OPENTRACING_LIGHTSTEP_ACCESS_TOKEN
           valueFrom:
             secretKeyRef:
