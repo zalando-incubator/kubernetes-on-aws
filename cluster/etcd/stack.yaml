@@ -59,7 +59,7 @@ Resources:
                   ETCD_TRUSTED_CA_FILE=/etc/etcd/ssl/ca.cert
                   ETCD_LOG_LEVEL=info
                   HOSTED_ZONE="{{.Values.hosted_zone}}"
-                  S3_CERTS_BUCKET="{{ .S3GeneratedFilesPath }}"
+                  S3_CERTS_BUCKET="{{ .Values.S3GeneratedFilesPath }}"
                   AWS_DEFAULT_REGION="{{ .Cluster.Region }}"
             runcmd:
               - [ cfn-signal, --success, 'true', --stack, ${AWS::StackName}, --resource, AppServer, --region, ${AWS::Region} ]
