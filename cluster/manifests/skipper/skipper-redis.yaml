@@ -23,11 +23,11 @@ spec:
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
-{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+{{- if eq .Cluster.ConfigItems.skipper_topology_spread_enabled "true" }}
         zalando.org/topology-spread-timeout: 7m
 {{- end }}
     spec:
-{{- if eq .ConfigItems.skipper_topology_spread_enabled "true" }}
+{{- if eq .Cluster.ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -80,7 +80,7 @@ spec:
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
-{{ if eq .ConfigItems.enable_dedicate_nodepool_skipper_redis "true"}}
+{{ if eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper_redis "true"}}
       nodeSelector:
         dedicated: skipper-ingress-redis
       tolerations:

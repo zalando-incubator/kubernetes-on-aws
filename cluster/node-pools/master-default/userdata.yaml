@@ -120,14 +120,14 @@ write_files:
           - --allow-privileged=true
           - --service-cluster-ip-range=10.5.0.0/16
           - --secure-port=443
-          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,PodSecurityPolicy,Priority,NodeRestriction{{if eq .Cluster.ConfigItems.event_rate_limit_enable "true"}},EventRateLimit{{end}}
+          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,{{ if eq .Cluster.ConfigItems.pod_security_policy_enabled "true" }}PodSecurityPolicy,{{end}}Priority,NodeRestriction{{if eq .Cluster.ConfigItems.event_rate_limit_enable "true"}},EventRateLimit{{end}}
           {{- if eq .Cluster.ConfigItems.event_rate_limit_enable "true"}}
           # This file specifies the EventRateLimit admission plugin's configuration
           - --admission-control-config-file=/etc/kubernetes/config/admission-config.yaml
           {{- end }}
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config=policy/v1beta1=true,authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true,autoscaling/v2beta2={{ .Cluster.ConfigItems.autoscaling_v2beta2_enabled }},autoscaling/v2beta1={{ .Cluster.ConfigItems.autoscaling_v2beta1_enabled }},batch/v1beta1={{ .Cluster.ConfigItems.batch_v1beta1_enabled }}
+          - --runtime-config={{ if eq .Cluster.ConfigItems.pod_security_policy_enabled "true" }}policy/v1beta1=true,{{end}}authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true,autoscaling/v2beta2={{ .Cluster.ConfigItems.autoscaling_v2beta2_enabled }},autoscaling/v2beta1={{ .Cluster.ConfigItems.autoscaling_v2beta1_enabled }},batch/v1beta1={{ .Cluster.ConfigItems.batch_v1beta1_enabled }}
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
@@ -205,7 +205,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-185
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-187
           name: admission-controller
           lifecycle:
             preStop:
@@ -443,7 +443,7 @@ write_files:
           - |
             s: JWTPayloadAllKV("iss", "kubernetes/serviceaccount")
               -> enableAccessLog()
-              -> {{ if eq .ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }};
+              -> {{ if eq .Cluster.ConfigItems.allow_external_service_accounts "true" }}"https://127.0.0.1:443"{{ else }}status(401) -> <shunt>{{ end }};
             h: Path("/kube-system/readyz")
               -> setPath("/readyz")
               -> disableAccessLog()
@@ -749,7 +749,7 @@ write_files:
         # don't audit events from the system:apiserver user
         - level: None
           users: ["system:apiserver"]
-        {{ if eq .ConfigItems.audit_pod_events "true" }}
+        {{ if eq .Cluster.ConfigItems.audit_pod_events "true" }}
         # audit pod events
         - level: Request
           omitStages:
