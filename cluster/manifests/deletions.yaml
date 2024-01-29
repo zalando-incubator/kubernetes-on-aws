@@ -277,3 +277,8 @@ post_apply:
 - kind: PodSecurityPolicy
   name: restricted
 {{- end }}
+{{- if eq .Cluster.ConfigItems.audittrail_nakadi_url "" }}
+- name: audittrail-adapter-nakadi
+  kind: PlatformCredentialsSet
+  namespace: kube-system
+{{- end }}
