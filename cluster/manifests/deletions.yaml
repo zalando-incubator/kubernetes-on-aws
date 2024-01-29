@@ -164,45 +164,17 @@ post_apply:
   namespace: kubenurse
   kind: Service
 {{- end }}
-
 - name: karpenter-logging-config
   kind: ConfigMap
   namespace: kube-system
-{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "false" }}
-- name: karpenter
-  namespace: kube-system
-  kind: Deployment
-- name: karpenter
-  namespace: kube-system
-  kind: PodDisruptionBudget
-- name: karpenter
-  namespace: kube-system
-  kind: ServiceAccount
-- name: karpenter-admin
+- name: karpenter-webhook
   kind: ClusterRole
-- name: karpenter-core
-  kind: ClusterRole
-- name: karpenter-core
+- name: karpenter-webhook
   kind: ClusterRoleBinding
 - name: karpenter-webhook
   kind: ClusterRole
 - name: karpenter-webhook
   kind: ClusterRoleBinding
-- name: karpenter
-  namespace: kube-system
-  kind: Role
-- name: karpenter-dns
-  namespace: kube-system
-  kind: Role
-- name: karpenter
-  namespace: kube-system
-  kind: RoleBinding
-- name: karpenter-dns
-  namespace: kube-system
-  kind: RoleBinding
-- name: karpenter
-  namespace: kube-system
-  kind: Service
 - name: provisioners.karpenter.sh
   kind: CustomResourceDefinition
 - name: awsnodetemplates.karpenter.k8s.aws
@@ -226,6 +198,53 @@ post_apply:
   kind: ValidatingWebhookConfiguration
 - name: validation.webhook.karpenter.sh
   kind: ValidatingWebhookConfiguration
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "false" }}
+- name: karpenter
+  namespace: kube-system
+  kind: Deployment
+- name: nodepools.karpenter.sh
+  kind: CustomResourceDefinition
+- name: ec2nodeclasses.karpenter.k8s.aws
+  kind: CustomResourceDefinition
+- name: nodeclaims.karpenter.sh
+  kind: CustomResourceDefinition
+- name: karpenter
+  namespace: kube-system
+  kind: PodDisruptionBudget
+- name: karpenter
+  namespace: kube-system
+  kind: ServiceAccount
+- name: karpenter-admin
+  kind: ClusterRole
+- name: karpenter-core
+  kind: ClusterRole
+- name: karpenter-core
+  kind: ClusterRoleBinding
+- name: karpenter
+  kind: ClusterRole
+- name : karpenter
+  kind: ClusterRoleBinding
+- name: karpenter
+  namespace: kube-system
+  kind: Role
+- name: karpenter-dns
+  namespace: kube-system
+  kind: Role
+- name: karpenter-lease
+  namespace: kube-system
+  kind: Role
+- name: karpenter
+  namespace: kube-system
+  kind: RoleBinding
+- name: karpenter-dns
+  namespace: kube-system
+  kind: RoleBinding
+- name: karpenter-lease
+  namespace: kube-system
+  kind: RoleBinding
+- name: karpenter
+  namespace: kube-system
+  kind: Service
 - name: karpenter-vpa
   namespace: kube-system
   kind: VerticalPodAutoscaler

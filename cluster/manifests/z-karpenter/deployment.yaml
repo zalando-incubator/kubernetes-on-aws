@@ -1,5 +1,6 @@
 {{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
 ---
+# Source: karpenter/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -10,6 +11,7 @@ metadata:
     component: karpenter
 spec:
   replicas: 2
+  revisionHistoryLimit: 10
   strategy:
     rollingUpdate:
       maxUnavailable: 1
@@ -29,50 +31,75 @@ spec:
         prometheus.io/scheme: "http"
         prometheus.io/scrape: "true"
     spec:
-      dnsConfig:
-        options:
-        - name: ndots
-          value: "1"
       dnsPolicy: Default
       serviceAccountName: karpenter
-      securityContext:
-        fsGroup: 1000
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       containers:
         - name: controller
-          image: "container-registry.zalando.net/teapot/karpenter:v0.31.3-main-16.custom"
+          securityContext:
+            runAsUser: 65536
+            runAsGroup: 65536
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          image: "container-registry.zalando.net/teapot/karpenter:v0.33.1-main-17.custom"
+          imagePullPolicy: IfNotPresent
           env:
+            - name: ASSUME_ROLE_DURATION
+              value: 15m
             - name: AWS_REGION
               value: "{{ .Cluster.Region }}"
-            - name: KUBERNETES_MIN_VERSION
-              value: "1.22.0-0"
+            - name: BATCH_IDLE_DURATION
+              value: 1s
+            - name: BATCH_MAX_DURATION
+              value: 10s
+            - name: CLUSTER_ENDPOINT
+              value: https://kubernetes.default.svc.cluster.local.
+            - name: CLUSTER_NAME
+              value: "{{.Cluster.ID}}"
+            - name: ENABLE_PROFILING
+              value: 'false'
+            - name: FEATURE_GATES
+              value: Drift=false
+            - name: HEALTH_PROBE_PORT
+              value: '8081'
+            - name: INTERRUPTION_QUEUE
+              value: "{{.Cluster.LocalID}}-karpenter-interruption-queue"
+            - name: ISOLATED_VPC
+              value: "false"
             - name: KARPENTER_SERVICE
               value: karpenter
-            - name: WEBHOOK_PORT
-              value: "8443"
-            - name: METRICS_PORT
-              value: "8000"
-            - name: HEALTH_PROBE_PORT
-              value: "8081"
-            - name: SYSTEM_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+            - name: KUBERNETES_MIN_VERSION
+              value: 1.22.0-0
+            - name: LOG_LEVEL
+              value: info
             - name: MEMORY_LIMIT
               valueFrom:
                 resourceFieldRef:
                   containerName: controller
-                  divisor: "0"
+                  divisor: '0'
                   resource: limits.memory
+            - name: METRICS_PORT
+              value: '8000'
+            - name: RESERVED_ENIS
+              value: '0'
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: VM_MEMORY_OVERHEAD_PERCENT
+              value: '0.075'
           ports:
             - name: http-metrics
               containerPort: 8000
               protocol: TCP
             - name: http
               containerPort: 8081
-              protocol: TCP
-            - name: https-webhook
-              containerPort: 8443
               protocol: TCP
           livenessProbe:
             initialDelaySeconds: 30
@@ -81,6 +108,7 @@ spec:
               path: /healthz
               port: http
           readinessProbe:
+            initialDelaySeconds: 5
             timeoutSeconds: 30
             httpGet:
               path: /readyz

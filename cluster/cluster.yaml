@@ -570,12 +570,12 @@ Resources:
               - 'sts:AssumeRoleWithWebIdentity'
             Condition:
               StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:aud": "sts.amazonaws.com",
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:karpenter",
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:aud": "sts.amazonaws.com"
+                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:karpenter"
         Version: 2012-10-17
       Path: /
       Policies:
-        - ManagedPolicyName: !Sub "KarpenterControllerPolicy-{{.Cluster.ID}}"
+        - PolicyName: "KarpenterControllerPolicy-{{ .Cluster.ID | awsValidID }}"
           # The PolicyDocument must be in JSON string format because we use a StringEquals condition that uses an interpolated
           # value in one of its key parameters which isn't natively supported by CloudFormation
           PolicyDocument: !Sub |
@@ -734,7 +734,7 @@ Resources:
                 {
                   "Sid": "AllowPassingInstanceRole",
                   "Effect": "Allow",
-                  "Resource": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/KarpenterNodeRole-{{.Cluster.ID}}",
+                  "Resource": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-worker",
                   "Action": "iam:PassRole",
                   "Condition": {
                     "StringEquals": {
@@ -803,7 +803,7 @@ Resources:
                   "Effect": "Allow",
                   "Resource": "*",
                   "Action": "iam:GetInstanceProfile"
-                },
+                }
               ]
             }
       RoleName: "{{.Cluster.LocalID}}-app-karpenter"
