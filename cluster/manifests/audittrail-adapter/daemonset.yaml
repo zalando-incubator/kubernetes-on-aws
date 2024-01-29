@@ -49,7 +49,7 @@ spec:
         {{- if eq .Cluster.ConfigItems.audittrail_adapter_drop_audittrail_api_read_only "true" }}
         - --audittrail-drop-read-only
         {{- end }}
-        {{- if not .Cluster.ConfigItems.audittrail_url }}
+        {{- if not (or .Cluster.ConfigItems.audittrail_url .Cluster.ConfigItems.audittrail_nakadi_url) }}
         - --metrics-only
         {{- end }}
         {{- range $label := split .Cluster.ConfigItems.auditlog_metric_dimensions  "," }}
