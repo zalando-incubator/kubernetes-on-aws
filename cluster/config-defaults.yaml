@@ -60,13 +60,14 @@ nlb_switch: "exec"
 # skipper ingress settings
 skipper_ingress_target_average_utilization_cpu: "60"
 skipper_ingress_target_average_utilization_memory: "80"
-skipper_ingress_max_replicas: "50"
 skipper_ingress_hpa_scale_down_wait: "600"
 skipper_ingress_hpa_scale_up_max_perc: "100"
 {{if eq .Cluster.Environment "production"}}
 skipper_ingress_min_replicas: "3"
+skipper_ingress_max_replicas: "300"
 {{else}}
 skipper_ingress_min_replicas: "2"
+skipper_ingress_max_replicas: "50"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
@@ -230,7 +231,7 @@ skipper_max_tcp_listener_concurrency: "-1"
 skipper_max_tcp_listener_queue: "-1"
 
 # opentracing
-skipper_ingress_opentracing_excluded_proxy_tags: "skipper.route"
+skipper_ingress_opentracing_excluded_proxy_tags: ""
 skipper_ingress_opentracing_backend_name_tag: "true"
 skipper_opentracing_disable_filter_spans: "true"
 # lightstep
@@ -316,7 +317,7 @@ skipper_open_policy_agent_styra_token: ""
 #   - production: runs the controller
 #
 fabric_gateway_controller_mode: "disabled"
-fabric_gateway_controller_version: "master-231"
+fabric_gateway_controller_version: "master-234"
 fabric_gateway_controller_cpu: "50m"
 fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_crd_v1_enabled: "false"
@@ -374,7 +375,7 @@ journald_reader_cpu: "1m"
 journald_reader_memory: "30Mi"
 
 # Logging settings
-logging_s3_bucket: "zalando-logging-{{.InfrastructureAccount | getAWSAccountID}}-{{.Region}}"
+logging_s3_bucket: "zalando-logging-{{ .Cluster.InfrastructureAccount | getAWSAccountID}}-{{ .Cluster.Region }}"
 scalyr_team_token: ""
 log_destination_infra: "scalyr/stups"
 log_destination_both: "scalyr/main+stups"
@@ -491,6 +492,11 @@ teapot_admission_controller_max_ephemeral_storage_request: "5Gi"
 teapot_admission_controller_application_min_creation_time: "2019-06-03T12:00:00Z"
 teapot_admission_controller_ndots: "2"
 teapot_admission_controller_inject_environment_variables: "true"
+{{ if eq .Cluster.Environment "test" }}
+teapot_admission_controller_inject_node_options_environment_variable: "true"
+{{ else }}
+teapot_admission_controller_inject_node_options_environment_variable: "false"
+{{ end }}
 teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
@@ -554,7 +560,7 @@ teapot_admission_controller_namespace_delete_protection_enabled: "false"
 teapot_admission_controller_resolve_vanity_images: "true"
 
 {{if eq .Cluster.Environment "e2e"}}
-teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota|limitrange)-.*)$"
+teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota|limitrange|sysctl|node-tests|e2e-kubelet-etc-hosts)-.*)$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "false"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
@@ -610,6 +616,21 @@ teapot_admission_controller_configmap_deletion_protection_enabled: "false"
 teapot_admission_controller_configmap_deletion_protection_enabled: "true"
 {{end}}
 
+# Enable and configure Pod Security Policy rules implemented in admission-controller.
+teapot_admission_controller_pod_security_policy_enabled: "true"
+
+# comma separated list of service accounts that are allowed to use privileged
+# pod security policy rules. Format: `<namespace>_<service-account-name>`
+{{ if eq .Cluster.Environment "e2e" }}
+teapot_admission_controller_pod_security_policy_privileged_service_accounts: "psp-privileged-zalando_privileged-sa,psp-privileged-deployment-zalando_privileged-sa"
+{{ else }}
+teapot_admission_controller_pod_security_policy_privileged_service_accounts: ""
+{{ end }}
+teapot_admission_controller_pod_security_policy_privileged_allow_privilege_escalation: "false"
+
+# Optionally disable PodSecurityPolicy. Make sure `teapot_admission_controller_pod_security_policy_enabled` is true if this is disabled, otherwise there are no Pod security Policy enforcement in the cluster.
+pod_security_policy_enabled: "false"
+
 # Prevent the use of a particular AZ as much as possible
 blocked_availability_zone: ""
 
@@ -625,9 +646,8 @@ etcd_instance_type: "t3.medium"
 {{end}}
 
 etcd_scalyr_key: ""
-etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.9-amd64-main-24" "861068367966"}}
 
-dynamodb_service_link_enabled: "false"
+etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.9-amd64-main-24" "861068367966"}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -670,6 +690,7 @@ audittrail_url: "https://audittrail.cloud.zalando.com"
 {{else}}
 audittrail_url: ""
 {{end}}
+audittrail_nakadi_url: ""
 audittrail_root_account_role: ""
 
 audittrail_adapter_cpu: "50m"
@@ -876,11 +897,20 @@ stackset_routegroup_support_enabled: "true"
 stackset_ingress_source_switch_ttl: "5m"
 
 # enable/disable configmap support for stackset
+{{if eq .Cluster.Environment "e2e"}}
+stackset_configmap_support_enabled: "true"
+{{else}}
 stackset_configmap_support_enabled: "false"
+{{end}}
 
 # enable/disable traffic segment support for stackset
+{{if eq .Cluster.Environment "e2e"}}
+stackset_enable_traffic_segments: "true"
+stackset_annotated_traffic_segments: "true"
+{{else}}
 stackset_enable_traffic_segments: "false"
 stackset_annotated_traffic_segments: "false"
+{{end}}
 
 # Enable/Disable profiling for Kubernetes components
 enable_control_plane_profiling: "false"
@@ -1012,3 +1042,4 @@ cronjob_time_zone_enabled: "true"
 # or not. When set to a value != "true" the key will be removed from the stack.
 # TODO: remove after migrating out of all cluster stacks.
 deployment_secret_key_managed: "true"
+deployment_secret_decrypt_any: "true"

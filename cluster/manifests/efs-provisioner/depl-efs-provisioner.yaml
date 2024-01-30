@@ -1,4 +1,4 @@
-{{ if index .ConfigItems "efs_id" }}
+{{ if index .Cluster.ConfigItems "efs_id" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -56,6 +56,6 @@ spec:
       volumes:
         - name: pv-volume
           nfs:
-            server: "{{ .ConfigItems.efs_id }}.efs.{{ .Region }}.amazonaws.com"
+            server: "{{ .Cluster.ConfigItems.efs_id }}.efs.{{ .Cluster.Region }}.amazonaws.com"
             path: /
 {{ end }}

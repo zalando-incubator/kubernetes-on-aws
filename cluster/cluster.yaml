@@ -714,7 +714,7 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
       RoleName: "{{.Cluster.LocalID}}-deployment"
     Type: 'AWS::IAM::Role'
-{{- if eq .Cluster.ConfigItems.deployment_secret_key_managed "true" }}
+{{- if and (eq .Cluster.ConfigItems.deployment_secret_key_managed "true") (ne .Cluster.Environment "e2e") }}
   DeploymentSecretKey:
     Properties:
       Description: Key used by deployment pipeline for secret encryption/decryption
@@ -876,14 +876,16 @@ Resources:
               - Action:
                   - kms:Decrypt
                 Effect: Allow
-{{- if eq .Cluster.ConfigItems.deployment_secret_key_managed "true" }}
+{{- if and (eq .Cluster.ConfigItems.deployment_secret_key_managed "true") (ne .Cluster.Environment "e2e") }}
                 Resource:
                   - !GetAtt DeploymentSecretKey.Arn
 {{- else }}
                 Resource: "*"
+{{- if and (eq .Cluster.ConfigItems.deployment_secret_decrypt_any "false") (ne .Cluster.Environment "e2e") }}
                 Condition:
                   StringLike:
                     "kms:RequestAlias": "alias/deployment-secret"
+{{- end }}
 {{- end }}
               - Action:
                   - 'sts:AssumeRole'
@@ -1979,13 +1981,6 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
     Type: 'AWS::IAM::Role'
-{{- if eq .Cluster.ConfigItems.dynamodb_service_link_enabled "true" }}
-  ServiceLinkedRoleAutoScalingDynamoDB:
-    Properties:
-      AWSServiceName: "dynamodb.application-autoscaling.amazonaws.com"
-      Description: "AWS service role for application autoscaling DynamoDB"
-    Type: "AWS::IAM::ServiceLinkedRole"
-{{- end }}
   RemoteFilesEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:

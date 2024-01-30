@@ -29,7 +29,6 @@ clusters:
     zmon_worker_replicas: '0'
     node_pool_feature_enabled: "true"
     enable_rbac: "true"
-    dynamodb_service_link_enabled: "false"
     skipper_ingress_refuse_payload: "refused-pattern-1[cf724afc]refused-pattern-2"
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
@@ -44,8 +43,6 @@ clusters:
     stackset_ingress_source_switch_ttl: "1m"
     teapot_admission_controller_daemonset_reserved_cpu: "518m"
     karpenter_pools_enabled: "true"
-    stackset_enable_traffic_segments: "true"
-    stackset_annotated_traffic_segments: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}

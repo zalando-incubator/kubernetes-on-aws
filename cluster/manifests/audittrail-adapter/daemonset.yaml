@@ -33,31 +33,39 @@ spec:
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: container-registry.zalando.net/teapot/audittrail-adapter:master-49
+        image: container-registry.zalando.net/teapot/audittrail-adapter:master-52
         env:
           - name: AWS_REGION
-            value: {{.Cluster.Region}}
+            value: "{{ .Cluster.Region }}"
         args:
-        - --cluster-id={{ .ID }}
+        - --cluster-id={{ .Cluster.ID }}
         - --cluster-alias={{ .Cluster.Alias }}
+        - --nakadi-url={{ .Cluster.ConfigItems.audittrail_nakadi_url }}
         - --audittrail-url={{ .Cluster.ConfigItems.audittrail_url }}
-        - --s3-fallback-bucket-name=zalando-audittrail-{{accountID .InfrastructureAccount}}-{{.LocalID}}
+        - --s3-fallback-bucket-name=zalando-audittrail-{{accountID .Cluster.InfrastructureAccount}}-{{ .Cluster.LocalID }}
         - --address=:8889
         - --metrics-address=:7980
         - --audittrail-timeout={{ .Cluster.ConfigItems.audittrail_adapter_timeout }}
         {{- if eq .Cluster.ConfigItems.audittrail_adapter_drop_audittrail_api_read_only "true" }}
         - --audittrail-drop-read-only
         {{- end }}
-        {{- if not .Cluster.ConfigItems.audittrail_url }}
+        {{- if not (or .Cluster.ConfigItems.audittrail_url .Cluster.ConfigItems.audittrail_nakadi_url) }}
         - --metrics-only
         {{- end }}
         {{- range $label := split .Cluster.ConfigItems.auditlog_metric_dimensions  "," }}
         - --metric-labels={{ $label }}
         {{- end }}
-        {{- if .Cluster.ConfigItems.audittrail_url }}
+        {{- if or .Cluster.ConfigItems.audittrail_url .Cluster.ConfigItems.audittrail_nakadi_url }}
         volumeMounts:
-        - name: platform-iam-credentials
-          mountPath: /meta/credentials
+        {{- end }}
+        {{- if .Cluster.ConfigItems.audittrail_url }}
+        - name: platform-iam-credentials-audittrail
+          mountPath: /meta/credentials/audittrail
+          readOnly: true
+        {{- end }}
+        {{- if .Cluster.ConfigItems.audittrail_nakadi_url }}
+        - name: platform-iam-credentials-nakadi
+          mountPath: /meta/credentials/nakadi
           readOnly: true
         {{- end }}
         resources:
@@ -71,9 +79,16 @@ spec:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 1000
-      {{- if .Cluster.ConfigItems.audittrail_url }}
+      {{- if or .Cluster.ConfigItems.audittrail_url .Cluster.ConfigItems.audittrail_nakadi_url }}
       volumes:
-      - name: platform-iam-credentials
+      {{- end }}
+      {{- if .Cluster.ConfigItems.audittrail_url }}
+      - name: platform-iam-credentials-audittrail
         secret:
           secretName: audittrail-adapter
+      {{- end }}
+      {{- if .Cluster.ConfigItems.audittrail_nakadi_url }}
+      - name: platform-iam-credentials-nakadi
+        secret:
+          secretName: audittrail-adapter-nakadi
       {{- end }}

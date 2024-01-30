@@ -1,4 +1,4 @@
-# {{ if ne .Environment "production" }}
+# {{ if ne .Cluster.Environment "production" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -52,7 +52,7 @@ data:
         jmespath: "contains(metadata.name, '-pr-')"
         ttl: "{{ .Cluster.ConfigItems.kube_janitor_default_pr_ttl }}"
 
-      {{ if eq .ConfigItems.kube_janitor_cleanup_pr_resources "true" }}
+      {{ if eq .Cluster.ConfigItems.kube_janitor_cleanup_pr_resources "true" }}
       - id: cleanup-resources-from-pull-requests
         # Delete non-owned resources matching .*-pr-[0-9] after configured period.
         # Note that jmespath does not support regexps, see https://github.com/jmespath/jmespath.jep/issues/23
@@ -64,7 +64,7 @@ data:
           - services
           - ingresses
           - routegroups
-          {{ if eq .ConfigItems.fabric_gateway_crd_v1_enabled "true" }}- fabricgateways{{ end }}
+          {{ if eq .Cluster.ConfigItems.fabric_gateway_crd_v1_enabled "true" }}- fabricgateways{{ end }}
           - platformcredentialssets
         jmespath: >-
           (metadata.ownerReferences == null) &&
