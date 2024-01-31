@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -406,7 +406,7 @@ var _ = describe("Image Policy Tests (StatefulSet)", func() {
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(MatchRegexp("Timeout while waiting for pods with label application=%s", appLabel))
+		Expect(err.Error()).To(MatchRegexp(`timed out while waiting for at least 1 pods to be running and ready \(matched 0\)`))
 	})
 })
 

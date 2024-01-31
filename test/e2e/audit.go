@@ -19,7 +19,7 @@ import (
 	admissionapi "k8s.io/pod-security-admission/api"
 
 	jsonpatch "github.com/evanphx/json-patch"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 )
 
 var (
