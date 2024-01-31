@@ -455,9 +455,6 @@ horizontal_pod_downscale_stabilization: "5m0s"
 autoscaling_v2beta1_enabled: "false"
 autoscaling_v2beta2_enabled: "false"
 
-# enable/disable legacy api versions prior to v1.25
-batch_v1beta1_enabled: "false"
-
 # Vertical pod autoscaler version for controlling roll-out, can be "current" or "legacy"
 # current => v0.11.0-internal.17
 # legacy => v0.6.1-internal.16
@@ -492,6 +489,11 @@ teapot_admission_controller_max_ephemeral_storage_request: "5Gi"
 teapot_admission_controller_application_min_creation_time: "2019-06-03T12:00:00Z"
 teapot_admission_controller_ndots: "2"
 teapot_admission_controller_inject_environment_variables: "true"
+{{ if eq .Cluster.Environment "test" }}
+teapot_admission_controller_inject_node_options_environment_variable: "true"
+{{ else }}
+teapot_admission_controller_inject_node_options_environment_variable: "false"
+{{ end }}
 teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
@@ -623,9 +625,6 @@ teapot_admission_controller_pod_security_policy_privileged_service_accounts: ""
 {{ end }}
 teapot_admission_controller_pod_security_policy_privileged_allow_privilege_escalation: "false"
 
-# Optionally disable PodSecurityPolicy. Make sure `teapot_admission_controller_pod_security_policy_enabled` is true if this is disabled, otherwise there are no Pod security Policy enforcement in the cluster.
-pod_security_policy_enabled: "false"
-
 # Prevent the use of a particular AZ as much as possible
 blocked_availability_zone: ""
 
@@ -668,6 +667,10 @@ kuberuntu_image_v1_24_focal_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernet
 kuberuntu_image_v1_24_focal_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.24.17-arm64-master-283" "861068367966" }}
 kuberuntu_image_v1_24_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.24.17-amd64-master-297" "861068367966" }}
 kuberuntu_image_v1_24_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.24.17-arm64-master-297" "861068367966" }}
+kuberuntu_image_v1_25_focal_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.25.16-amd64-master-304" "861068367966" }}
+kuberuntu_image_v1_25_focal_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.25.16-arm64-master-304" "861068367966" }}
+kuberuntu_image_v1_25_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.25.16-amd64-master-304" "861068367966" }}
+kuberuntu_image_v1_25_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.25.16-arm64-master-304" "861068367966" }}
 
 # Which distro from the previous config items should be used. Valid options are `focal` and `jammy`. Can be set for each node pool.
 {{if eq .Cluster.Environment "test"}}
@@ -831,10 +834,6 @@ enable_topology_aware_hints: "false"
 enable_hpa_scale_to_zero: "true"
 # Enable FeatureGate HPAContainerMetrics
 enable_hpa_container_metrics: "true"
-
-# Enable FeatureGate EphemeralContainers (Alpha)
-# https://kubernetes.io/docs/tasks/debug-application-cluster/debug-running-pod/
-enable_ephemeral_containers: "false"
 
 # enable encryption of secrets in etcd
 # this flag can be switched between true and false

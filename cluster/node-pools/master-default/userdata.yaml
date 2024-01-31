@@ -30,9 +30,6 @@ write_files:
 {{- end }}
       featureGates:
         SizeMemoryBackedVolumes: {{ .Cluster.ConfigItems.enable_size_memory_backed_volumes }}
-{{- if eq .Cluster.ConfigItems.enable_ephemeral_containers "true" }}
-        EphemeralContainers: true
-{{- end }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
 {{- if ne .Cluster.ConfigItems.serialize_image_pulls "true" }}
@@ -120,14 +117,14 @@ write_files:
           - --allow-privileged=true
           - --service-cluster-ip-range=10.5.0.0/16
           - --secure-port=443
-          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,{{ if eq .Cluster.ConfigItems.pod_security_policy_enabled "true" }}PodSecurityPolicy,{{end}}Priority,NodeRestriction{{if eq .Cluster.ConfigItems.event_rate_limit_enable "true"}},EventRateLimit{{end}}
+          - --enable-admission-plugins=NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ExtendedResourceToleration,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota,StorageObjectInUseProtection,Priority,NodeRestriction{{if eq .Cluster.ConfigItems.event_rate_limit_enable "true"}},EventRateLimit{{end}}
           {{- if eq .Cluster.ConfigItems.event_rate_limit_enable "true"}}
           # This file specifies the EventRateLimit admission plugin's configuration
           - --admission-control-config-file=/etc/kubernetes/config/admission-config.yaml
           {{- end }}
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config={{ if eq .Cluster.ConfigItems.pod_security_policy_enabled "true" }}policy/v1beta1=true,{{end}}authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true,autoscaling/v2beta2={{ .Cluster.ConfigItems.autoscaling_v2beta2_enabled }},autoscaling/v2beta1={{ .Cluster.ConfigItems.autoscaling_v2beta1_enabled }},batch/v1beta1={{ .Cluster.ConfigItems.batch_v1beta1_enabled }}
+          - --runtime-config=authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true,autoscaling/v2beta2={{ .Cluster.ConfigItems.autoscaling_v2beta2_enabled }},autoscaling/v2beta1={{ .Cluster.ConfigItems.autoscaling_v2beta1_enabled }}
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
@@ -143,7 +140,7 @@ write_files:
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
 {{- end }}
-          - --feature-gates=HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},EphemeralContainers={{ .Cluster.ConfigItems.enable_ephemeral_containers }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }},TopologyAwareHints={{ .Cluster.ConfigItems.enable_topology_aware_hints }},MinDomainsInPodTopologySpread={{ .Cluster.ConfigItems.min_domains_in_pod_topology_spread_enabled }},CronJobTimeZone={{.Cluster.ConfigItems.cronjob_time_zone_enabled}}
+          - --feature-gates=HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }},TopologyAwareHints={{ .Cluster.ConfigItems.enable_topology_aware_hints }},MinDomainsInPodTopologySpread={{ .Cluster.ConfigItems.min_domains_in_pod_topology_spread_enabled }},CronJobTimeZone={{.Cluster.ConfigItems.cronjob_time_zone_enabled}}
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
@@ -205,7 +202,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-188
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-189
           name: admission-controller
           lifecycle:
             preStop:
