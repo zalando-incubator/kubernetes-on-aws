@@ -2,7 +2,7 @@
 
 BINARY       ?= kubernetes-on-aws-e2e
 VERSION      ?= $(shell git describe --tags --always --dirty)
-KUBE_VERSION ?= v1.24.17
+KUBE_VERSION ?= v1.25.15
 IMAGE        ?= pierone.stups.zalan.do/teapot/$(BINARY)
 TAG          ?= $(VERSION)
 DOCKERFILE   ?= Dockerfile
@@ -27,7 +27,7 @@ generate-code: fix-go-modules $(GO_BINDATA)
 	make generated_files -C "$(MOD_PATH)/kubernetes"
 
 deps: generate-code
-	go get github.com/onsi/ginkgo/ginkgo@v1.8.0
+	go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.6
 
 e2e.test: generate-code
 	go test -v -c -o e2e.test
