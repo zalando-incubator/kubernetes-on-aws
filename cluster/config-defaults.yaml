@@ -489,6 +489,11 @@ teapot_admission_controller_max_ephemeral_storage_request: "5Gi"
 teapot_admission_controller_application_min_creation_time: "2019-06-03T12:00:00Z"
 teapot_admission_controller_ndots: "2"
 teapot_admission_controller_inject_environment_variables: "true"
+{{ if eq .Cluster.Environment "test" }}
+teapot_admission_controller_inject_node_options_environment_variable: "true"
+{{ else }}
+teapot_admission_controller_inject_node_options_environment_variable: "false"
+{{ end }}
 teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
