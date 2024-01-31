@@ -492,6 +492,11 @@ teapot_admission_controller_max_ephemeral_storage_request: "5Gi"
 teapot_admission_controller_application_min_creation_time: "2019-06-03T12:00:00Z"
 teapot_admission_controller_ndots: "2"
 teapot_admission_controller_inject_environment_variables: "true"
+{{ if eq .Cluster.Environment "test" }}
+teapot_admission_controller_inject_node_options_environment_variable: "true"
+{{ else }}
+teapot_admission_controller_inject_node_options_environment_variable: "false"
+{{ end }}
 teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
@@ -1032,9 +1037,3 @@ min_domains_in_pod_topology_spread_enabled: "true"
 # enable CronJobTimeZone
 # https://v1-24.docs.kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#time-zones
 cronjob_time_zone_enabled: "true"
-
-# flag to control if the deployment secret key is managed by the cluster stack
-# or not. When set to a value != "true" the key will be removed from the stack.
-# TODO: remove after migrating out of all cluster stacks.
-deployment_secret_key_managed: "true"
-deployment_secret_decrypt_any: "true"
