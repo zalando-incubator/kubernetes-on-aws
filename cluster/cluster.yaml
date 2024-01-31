@@ -714,63 +714,6 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
       RoleName: "{{.Cluster.LocalID}}-deployment"
     Type: 'AWS::IAM::Role'
-{{- if and (eq .Cluster.ConfigItems.deployment_secret_key_managed "true") (ne .Cluster.Environment "e2e") }}
-  DeploymentSecretKey:
-    Properties:
-      Description: Key used by deployment pipeline for secret encryption/decryption
-      EnableKeyRotation: false
-      Enabled: true
-      KeyPolicy:
-        Id: "{{.Cluster.LocalID}}-deployment-key"
-        Statement:
-          - Action:
-              - 'kms:ReEncrypt*'
-              - 'kms:Create*'
-              - 'kms:Describe*'
-              - 'kms:Enable*'
-              - 'kms:Encrypt'
-              - 'kms:Decrypt'
-              - 'kms:List*'
-              - 'kms:Put*'
-              - 'kms:Update*'
-              - 'kms:Revoke*'
-              - 'kms:Disable*'
-              - 'kms:Get*'
-              - 'kms:Delete*'
-              - 'kms:ScheduleKeyDeletion'
-              - 'kms:CancelKeyDeletion'
-              - 'kms:TagResource'
-              - 'kms:UntagResource'
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Resource: '*'
-            Sid: Allow access for Key Administrators
-          - Action:
-              - 'kms:Decrypt'
-            Effect: Allow
-            # Avoid circular dependencies because CF still can't do this properly
-            Principal: "*"
-            Condition:
-              ArnEquals:
-                aws:PrincipalArn:
-                  - !GetAtt DeploymentIAMRole.Arn
-                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
-            Resource: '*'
-            Sid: Allow access for deployment system to decrypt the keys
-        Version: 2012-10-17
-      KeyUsage: ENCRYPT_DECRYPT
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-  DeploymentSecretKeyAlias:
-    Properties:
-      AliasName: "alias/{{.Cluster.LocalID}}-deployment-secret"
-      TargetKeyId: !Ref DeploymentSecretKey
-    Type: 'AWS::KMS::Alias'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-{{- end }}
   DeploymentServiceBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
@@ -876,17 +819,10 @@ Resources:
               - Action:
                   - kms:Decrypt
                 Effect: Allow
-{{- if and (eq .Cluster.ConfigItems.deployment_secret_key_managed "true") (ne .Cluster.Environment "e2e") }}
-                Resource:
-                  - !GetAtt DeploymentSecretKey.Arn
-{{- else }}
                 Resource: "*"
-{{- if and (eq .Cluster.ConfigItems.deployment_secret_decrypt_any "false") (ne .Cluster.Environment "e2e") }}
                 Condition:
                   StringLike:
                     "kms:RequestAlias": "alias/deployment-secret"
-{{- end }}
-{{- end }}
               - Action:
                   - 'sts:AssumeRole'
                 Effect: Allow
