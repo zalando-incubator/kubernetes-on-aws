@@ -175,12 +175,6 @@ post_apply:
   kind: ClusterRole
 - name: karpenter-webhook
   kind: ClusterRoleBinding
-- name: provisioners.karpenter.sh
-  kind: CustomResourceDefinition
-- name: awsnodetemplates.karpenter.k8s.aws
-  kind: CustomResourceDefinition
-- name: machines.karpenter.sh
-  kind: CustomResourceDefinition
 - name: karpenter-global-settings
   kind: ConfigMap
   namespace: kube-system
@@ -199,6 +193,12 @@ post_apply:
 - name: validation.webhook.karpenter.sh
   kind: ValidatingWebhookConfiguration
 {{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "false" }}
+- name: provisioners.karpenter.sh
+  kind: CustomResourceDefinition
+- name: awsnodetemplates.karpenter.k8s.aws
+  kind: CustomResourceDefinition
+- name: machines.karpenter.sh
+  kind: CustomResourceDefinition
 - name: karpenter
   namespace: kube-system
   kind: Deployment
