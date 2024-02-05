@@ -49,6 +49,11 @@ spec:
       operator: "NotIn"
       values:
         - "metal"
+    # exclude instance-types with slow SSD
+    - key: "node.kubernetes.io/instance-type"
+      operator: "NotIn"
+      values:
+        - "c5d.large"
 {{- else }}
     - key: "node.kubernetes.io/instance-type"
       operator: In
