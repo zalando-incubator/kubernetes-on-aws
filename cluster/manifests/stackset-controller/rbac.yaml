@@ -110,6 +110,17 @@ rules:
   - create
   - update
 {{- end }}
+{{- if eq .Cluster.ConfigItems.stackset_secret_support_enabled "true" }}
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - create
+  - update
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
