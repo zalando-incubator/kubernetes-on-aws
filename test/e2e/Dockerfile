@@ -1,7 +1,7 @@
 # builder image
 FROM golang:1.21 as builder
 
-RUN CGO_ENABLED=0 go install github.com/onsi/ginkgo/ginkgo@v1.16.5
+RUN CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.6
 
 # final image
 # TODO get rid of python dependencies
