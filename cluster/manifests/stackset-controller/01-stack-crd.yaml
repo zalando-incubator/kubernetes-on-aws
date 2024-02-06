@@ -349,7 +349,7 @@ spec:
                 - maxReplicas
                 - metrics
                 type: object
-{{- if eq .Cluster.ConfigItems.stackset_configmap_support_enabled "true" }}
+{{- if or (eq .Cluster.ConfigItems.stackset_configmap_support_enabled "true") (eq .Cluster.ConfigItems.stackset_secret_support_enabled "true") }}
               configurationResources:
                 description: ConfigurationResources describes the ConfigMaps that
                   will be created. Later Secrets and PlatformCredentialSets will also
@@ -358,14 +358,26 @@ spec:
                   description: ConfigurationResourcesSpec makes it possible to defined
                     the config resources to be created
                   properties:
+{{- if eq .Cluster.ConfigItems.stackset_configmap_support_enabled "true" }}
                     configMapRef:
-                      description: ConfigMap to be versioned for Stack
+                      description: ConfigMap to be owned by Stack
                       properties:
                         name:
                           description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                             TODO: Add other useful fields. apiVersion, kind, uid?'
                           type: string
                       type: object
+{{ end }}
+{{- if eq .Cluster.ConfigItems.stackset_secret_support_enabled "true" }}
+                    secretRef:
+                      description: Secret to be owned by Stack
+                      properties:
+                        name:
+                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          type: string
+                      type: object
+{{ end }}
                   type: object
                 type: array
 {{ end }}
