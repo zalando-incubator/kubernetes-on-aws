@@ -138,6 +138,11 @@ spec:
           operator: "NotIn"
           values:
             - "metal"
+        # exclude instance-types with slow SSD
+        - key: "node.kubernetes.io/instance-type"
+          operator: "NotIn"
+          values:
+            - "c5d.large"
 #{{ else }}
         - key: "node.kubernetes.io/instance-type"
           operator: In
@@ -167,15 +172,15 @@ spec:
       # Karpenter provides the ability to specify a few additional Kubelet args.
       # These are all optional and provide support for additional customization and use cases.
       kubelet:
-        clusterDNS: ["10.0.1.100"]
+        clusterDNS: [ "10.0.1.100" ]
+        cpuCFSQuota: false
+        maxPods: { { nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) } }
         systemReserved:
           cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
           memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
         kubeReserved:
           cpu: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_cpu }}"
           memory: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_memory }}"
-        maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
-        cpuCFSQuota: false
   # Disruption section which describes the ways in which Karpenter can disrupt and replace Nodes
   # Configuration in this section constrains how aggressive Karpenter can be with performing operations
   # like rolling Nodes due to them hitting their maximum lifetime (expiry) or scaling down nodes to reduce cluster cost
