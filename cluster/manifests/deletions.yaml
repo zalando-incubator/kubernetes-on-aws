@@ -164,6 +164,9 @@ post_apply:
   namespace: kubenurse
   kind: Service
 {{- end }}
+# for karpenter >=v0.33.0 webhooks and settings configmaps have been removed
+# https://karpenter.sh/v0.32/upgrading/v1beta1-migration/#webhook-support-deprecated-in-favor-of-cel
+# https://karpenter.sh/v0.32/upgrading/v1beta1-migration/#global-settings
 - name: karpenter-logging-config
   kind: ConfigMap
   namespace: kube-system
@@ -222,7 +225,7 @@ post_apply:
   kind: ClusterRoleBinding
 - name: karpenter
   kind: ClusterRole
-- name : karpenter
+- name: karpenter
   kind: ClusterRoleBinding
 - name: karpenter
   namespace: kube-system
