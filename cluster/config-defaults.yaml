@@ -317,7 +317,7 @@ skipper_open_policy_agent_styra_token: ""
 #   - production: runs the controller
 #
 fabric_gateway_controller_mode: "disabled"
-fabric_gateway_controller_version: "master-234"
+fabric_gateway_controller_version: "master-237"
 fabric_gateway_controller_cpu: "50m"
 fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_crd_v1_enabled: "false"
@@ -841,6 +841,9 @@ enable_hpa_container_metrics: "true"
 # https://kubernetes.io/docs/tasks/debug-application-cluster/debug-running-pod/
 enable_ephemeral_containers: "false"
 
+# Enable FeatureGate MaxUnavailableStatefulSet
+max_unavailable_statefulset_enabled: "false"
+
 # enable encryption of secrets in etcd
 # this flag can be switched between true and false
 # to ensure all secrets are encrypted/decrypted all secrets need to be rewritten after masters have been rolled
@@ -903,12 +906,14 @@ stackset_configmap_support_enabled: "true"
 stackset_configmap_support_enabled: "false"
 {{end}}
 
+# enable/disable secret support for stackset
+stackset_secret_support_enabled: "false"
+
 # enable/disable traffic segment support for stackset
+stackset_enable_traffic_segments: "false"
 {{if eq .Cluster.Environment "e2e"}}
-stackset_enable_traffic_segments: "true"
 stackset_annotated_traffic_segments: "true"
 {{else}}
-stackset_enable_traffic_segments: "false"
 stackset_annotated_traffic_segments: "false"
 {{end}}
 
