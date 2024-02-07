@@ -1,167 +1,211 @@
-{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
+#{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
 ---
-apiVersion: karpenter.sh/v1alpha5
-kind: Provisioner
+apiVersion: karpenter.k8s.aws/v1beta1
+kind: EC2NodeClass
 metadata:
-  name: "{{.NodePool.Name}}"
-spec:
-  kubeletConfiguration:
-    maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
-    systemReserved:
-      cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
-      memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
-    kubeReserved:
-      cpu: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_cpu }}"
-      memory: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_memory }}"
-  {{- if index .NodePool.ConfigItems "scaling_priority"}}
-  weight: {{.NodePool.ConfigItems.scaling_priority}}
-  {{- end}}
-  consolidation:
-    {{- if index .NodePool.ConfigItems "consolidation" }}
-    enabled: {{ .NodePool.ConfigItems.consolidation }}
-    {{- else }}
-    enabled: true
-    {{- end }}
-  requirements:
-{{- if and (eq (len .NodePool.InstanceTypes) 1) (eq (index .NodePool.InstanceTypes 0) "default-for-karpenter") }}
-    - key: "karpenter.k8s.aws/instance-family"
-      operator: In
-      values:
-        - "c5"
-        - "m5"
-        - "r5"
-        - "c5d"
-        - "m5d"
-        - "r5d"
-        - "c5n"
-        - "m5n"
-        - "r5n"
-        - "c6i"
-        - "m6i"
-        - "r6i"
-        - "c6id"
-        - "m6id"
-        - "r6id"
-        - "c6in"
-        - "m6in"
-        - "r6in"
-    - key: "karpenter.k8s.aws/instance-size"
-      operator: "NotIn"
-      values:
-        - "metal"
-    # exclude instance-types with slow SSD
-    - key: "node.kubernetes.io/instance-type"
-      operator: "NotIn"
-      values:
-        - "c5d.large"
-{{- else }}
-    - key: "node.kubernetes.io/instance-type"
-      operator: In
-      values:
-      {{- range $type := .NodePool.InstanceTypes }}
-      - "{{ $type }}"
-      {{- end }}
-{{- end }}
-    - key: "karpenter.sh/capacity-type"
-      operator: In
-      values:
-        - "spot"
-        - "on-demand"
-    - key: "kubernetes.io/arch"
-      operator: In
-      values: ["arm64", "amd64"]
-    - key: "topology.kubernetes.io/zone"
-      operator: In
-      values:
-{{- $azs := .Values.availability_zones }}
-{{- if index .NodePool.ConfigItems "availability_zones"}}
-        {{    $azs = split .NodePool.ConfigItems.availability_zones "," }}
-{{- end}}
-{{- range $az :=  $azs }}
-      - "{{ $az }}"
-{{- end }}
-{{- $taints := .NodePool.Taints}}
-{{- if $taints }}
-  taints:
-  {{- range $taints }}
-    {{- $taint := . }}
-      - key: {{$taint.Key}}
-        effect: {{$taint.Effect}}
-        {{- if $taint.Value }}
-        value: {{$taint.Value }}
-        {{- end }}
-  {{- end}}
-{{- end}}
-
-  startupTaints:
-  - key: zalando.org/node-not-ready
-    effect: NoSchedule
-
-  labels:
-    # these labels are normally set by kubelet on start-up, but because
-    # karpenter already creates the node object ahead of the instance start, we
-    # need to set them here as well.
-    lifecycle-status: ready
-    node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
-    node.kubernetes.io/role: worker
-    node.kubernetes.io/profile: "{{ .NodePool.Profile }}"
-    cluster-lifecycle-controller.zalan.do/replacement-strategy: none
-{{- if index .NodePool.ConfigItems "labels"}}
-  {{- range split .NodePool.ConfigItems.labels ","}}
-    {{- $label := split . "="}}
-    {{index $label 0}}: {{index $label 1}}
-  {{- end}}
-{{- end}}
-
-  # ttlSecondsAfterEmpty: 30
-  providerRef:
-    name: {{ .NodePool.Name }}
----
-apiVersion: karpenter.k8s.aws/v1alpha1
-kind: AWSNodeTemplate
-metadata:
-  name: {{ .NodePool.Name }}
+  name: "{{ .NodePool.Name }}"
 spec:
   amiFamily: Custom
-  amiSelector:
-    aws-ids: "{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_25_" .NodePool.ConfigItems.kuberuntu_distro_worker "_amd64")  }},{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_25_" .NodePool.ConfigItems.kuberuntu_distro_worker "_arm64") }}"
+  amiSelectorTerms:
+    # Select on any AMI that has any of the following IDs
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_25_" .NodePool.ConfigItems.kuberuntu_distro_worker "_amd64") }}
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_25_" .NodePool.ConfigItems.kuberuntu_distro_worker "_arm64") }}
   metadataOptions:
+    httpEndpoint: enabled
+    httpProtocolIPv6: disabled
+    httpPutResponseHopLimit: 2
     httpTokens: optional
-  subnetSelector:
-    kubernetes.io/role/karpenter: "enabled"
-  securityGroupSelector:
-    karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
+  subnetSelectorTerms:
+    - tags:
+        kubernetes.io/role/karpenter: "enabled"
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
+  associatePublicIPAddress: true
+  instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
   blockDeviceMappings:
     - deviceName: /dev/sda1
       ebs:
-        deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
+        deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination }}
         volumeSize: {{ .NodePool.ConfigItems.ebs_root_volume_size }}Gi
         volumeType: gp3
-  networkInterfaces:
-    - associatePublicIPAddress: true
-      deviceIndex: 0
-  userData: |
-{{ .Values.UserData | indent 4 }}
+  # If you enable this option, the Amazon EC2 console displays monitoring graphs with a 1-minute period for the instances that Karpenter launches.
+  detailedMonitoring: false
   tags:
     Name: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
+    InfrastructureComponent: 'true'
+    application: kubernetes
+    component: shared-resource
+    environment: "{{ .Cluster.Environment }}"
     node.kubernetes.io/role: worker
     node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
     zalando.org/pod-max-pids: "{{ .NodePool.ConfigItems.pod_max_pids }}"
     'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}': owned
-{{- if and (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true") (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
+#{{ if and (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true") (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
     zalando.org/ingress-enabled: "true"
-# only node pools without taints should be attached to Ingress Load balancer
-{{- else if and (not (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true")) (or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule")) }}
+  # only node pools without taints should be attached to Ingress Load balancer
+#{{ else if and (not (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true")) (or (not (index .NodePool.ConfigItems "taints")) (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule")) }}
     zalando.org/ingress-enabled: "true"
-{{- end }}
-
-{{- if $taints }}
-  {{- range $taints }}
-    {{- $taint := . }}
-    {{- if eq $taint.Key "dedicated"}}
+#{{ end }}
+#{{ $taints := .NodePool.Taints }}
+#{{ if $taints }}
+#  {{ range $taints }}
+#    {{ $taint := . }}
+#    {{ if eq $taint.Key "dedicated"}}
     dedicated: "{{ $taint.Value}}"
-    {{- end}}
-  {{- end}}
-{{- end}}
+#    {{ end}}
+#  {{ end}}
+#{{ end}}
+  userData: |
+{{.UserData | indent 4}}
+---
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: "{{.NodePool.Name}}"
+spec:
+  # Template section that describes how to template out NodeClaim resources that Karpenter will provision
+  # Karpenter will consider this template to be the minimum requirements needed to provision a Node using this NodePool
+  # It will overlay this NodePool with Pods that need to schedule to further constrain the NodeClaims
+  # Karpenter will provision to launch new Nodes for the cluster
+  template:
+    metadata:
+      # Labels are arbitrary key-values that are applied to all nodes
+      labels:
+        lifecycle-status: ready
+        node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
+        node.kubernetes.io/role: worker
+        node.kubernetes.io/profile: "{{ .NodePool.Profile }}"
+        cluster-lifecycle-controller.zalan.do/replacement-strategy: none
+#{{  if index .NodePool.ConfigItems "labels" }}
+#  {{  range split .NodePool.ConfigItems.labels ","}}
+#        {{$label := split . "=" }}
+        "{{index $label 0}}": "{{index $label 1}}"
+#  {{  end }}
+#{{  end }}
+      # Annotations are arbitrary key-values that are applied to all nodes
+#{{  if and (index .NodePool.ConfigItems "consolidation") (eq .NodePool.ConfigItems.consolidation "false") }}
+      annotations:
+        karpenter.sh/do-not-disrupt: "true"
+#{{  end }}
+    spec:
+      # References the Cloud Provider's NodeClass resource, see your cloud provider specific documentation
+      nodeClassRef:
+        name: {{ .NodePool.Name }}
+#{{ $taints := .NodePool.Taints }}
+#{{  if $taints }}
+      taints:
+#  {{  range $taints }}
+#      {{ $taint := . }}
+        - key: {{$taint.Key}}
+          effect: {{$taint.Effect}}
+#      {{  if $taint.Value }}
+          value: {{$taint.Value }}
+#      {{  end }}
+#  {{  end }}
+#{{  end }}
+      startupTaints:
+        - key: zalando.org/node-not-ready
+          effect: NoSchedule
+      # Requirements that constrain the parameters of provisioned nodes.
+      # These requirements are combined with pod.spec.topologySpreadConstraints, pod.spec.affinity.nodeAffinity, pod.spec.affinity.podAffinity, and pod.spec.nodeSelector rules.
+      # Operators { In, NotIn, Exists, DoesNotExist, Gt, and Lt } are supported.
+      # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#operators
+      requirements:
+#{{ if and (eq (len .NodePool.InstanceTypes) 1) (eq (index .NodePool.InstanceTypes 0) "default-for-karpenter") }}
+        - key: "karpenter.k8s.aws/instance-family"
+          operator: In
+          values:
+            - "c5"
+            - "m5"
+            - "r5"
+            - "c5d"
+            - "m5d"
+            - "r5d"
+            - "c5n"
+            - "m5n"
+            - "r5n"
+            - "c6i"
+            - "m6i"
+            - "r6i"
+            - "c6id"
+            - "m6id"
+            - "r6id"
+            - "c6in"
+            - "m6in"
+            - "r6in"
+        - key: "karpenter.k8s.aws/instance-size"
+          operator: "NotIn"
+          values:
+            - "metal"
+        # exclude instance-types with slow SSD
+        - key: "node.kubernetes.io/instance-type"
+          operator: "NotIn"
+          values:
+            - "c5d.large"
+#{{ else }}
+        - key: "node.kubernetes.io/instance-type"
+          operator: In
+          values:
+#      {{ range $type := .NodePool.InstanceTypes }}
+          - "{{ $type }}"
+#      {{ end }}
+#{{ end }}
+        - key: "karpenter.sh/capacity-type"
+          operator: In
+          values:
+            - "spot"
+            - "on-demand"
+        - key: "kubernetes.io/arch"
+          operator: In
+          values: ["arm64", "amd64"]
+        - key: "topology.kubernetes.io/zone"
+          operator: In
+          values:
+#{{ $azs := .Values.availability_zones }}
+#{{ if index .NodePool.ConfigItems "availability_zones"}}
+#        {{    $azs = split .NodePool.ConfigItems.availability_zones "," }}
+#{{ end}}
+#{{ range $az :=  $azs }}
+          - "{{ $az }}"
+#{{ end }}
+      # Karpenter provides the ability to specify a few additional Kubelet args.
+      # These are all optional and provide support for additional customization and use cases.
+      kubelet:
+        clusterDNS: [ "10.0.1.100" ]
+        cpuCFSQuota: false
+        maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
+        systemReserved:
+          cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
+          memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
+        kubeReserved:
+          cpu: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_cpu }}"
+          memory: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_memory }}"
+  # Disruption section which describes the ways in which Karpenter can disrupt and replace Nodes
+  # Configuration in this section constrains how aggressive Karpenter can be with performing operations
+  # like rolling Nodes due to them hitting their maximum lifetime (expiry) or scaling down nodes to reduce cluster cost
+  disruption:
+    # Describes which types of Nodes Karpenter should consider for consolidation
+    # If using 'WhenUnderutilized', Karpenter will consider all nodes for consolidation and attempt to remove or replace Nodes when it discovers that the Node is underutilized and could be changed to reduce cost
+    # If using `WhenEmpty`, Karpenter will only consider nodes for consolidation that contain no workload pods
+#{{  if and (index .NodePool.ConfigItems "consolidation") (eq .NodePool.ConfigItems.consolidation "false") }}
+    consolidationPolicy: WhenEmpty
+    # The amount of time Karpenter should wait after discovering a consolidation decision
+    # This value can currently only be set when the consolidationPolicy is 'WhenEmpty'
+    # You can choose to disable consolidation entirely by setting the string value 'Never' here
+    consolidateAfter: 10m
+#{{  else }}
+    consolidationPolicy: WhenUnderutilized
+#{{  end }}
+    # The amount of time a Node can live on the cluster before being removed
+    # Avoiding long-running Nodes helps to reduce security vulnerabilities as well as to reduce the chance of issues that can plague Nodes with long uptimes such as file fragmentation or memory leaks from system processes
+    # You can choose to disable expiration entirely by setting the string value 'Never' here
+    expireAfter: Never
+  # Priority given to the NodePool when the scheduler considers which NodePool
+  # to select. Higher weights indicate higher priority when comparing NodePools.
+  # Specifying no weight is equivalent to specifying a weight of 0.
+#  {{ if index .NodePool.ConfigItems "scaling_priority"}}
+  weight: {{.NodePool.ConfigItems.scaling_priority}}
+#  {{ end}}
 
-{{- end }}
+#{{ end }}

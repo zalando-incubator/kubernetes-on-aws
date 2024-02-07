@@ -1,0 +1,61 @@
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true" }}
+---
+# Source: karpenter/templates/05-clusterrole-core.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: karpenter-core
+  labels:
+    application: kubernetes
+    component: karpenter
+rules:
+  # Read
+  - apiGroups: ["karpenter.sh"]
+    resources: ["nodepools", "nodepools/status", "nodeclaims", "nodeclaims/status"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "nodes", "persistentvolumes", "persistentvolumeclaims", "replicationcontrollers", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses", "csinodes"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["apps"]
+    resources: ["daemonsets", "deployments", "replicasets", "statefulsets"]
+    verbs: ["list", "watch"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch"]
+  # Write
+  - apiGroups: ["karpenter.sh"]
+    resources: ["nodeclaims", "nodeclaims/status"]
+    verbs: ["create", "delete", "update", "patch"]
+  - apiGroups: ["karpenter.sh"]
+    resources: ["nodepools", "nodepools/status"]
+    verbs: ["update", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["create", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/eviction"]
+    verbs: ["create"]
+---
+# Source: karpenter/templates/05-clusterrole-core.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: karpenter-core
+  labels:
+    application: kubernetes
+    component: karpenter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: karpenter-core
+subjects:
+  - kind: ServiceAccount
+    name: karpenter
+    namespace: kube-system
+{{end}}
