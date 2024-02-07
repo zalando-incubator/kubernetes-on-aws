@@ -1,4 +1,4 @@
-{{ $version := "v1.4.27" }}
+{{ $version := "v1.4.31" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,6 +39,9 @@ spec:
 {{- end }}
 {{- if eq .Cluster.ConfigItems.stackset_configmap_support_enabled "true" }}
         - "--enable-configmap-support"
+{{- end }}
+{{- if eq .Cluster.ConfigItems.stackset_secret_support_enabled "true" }}
+        - "--enable-secret-support"
 {{- end }}
 {{- if eq .Cluster.ConfigItems.stackset_enable_traffic_segments "true" }}
         - "--enable-traffic-segments"
