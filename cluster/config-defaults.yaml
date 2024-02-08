@@ -939,6 +939,13 @@ deployment_service_tokeninfo_url: ""
 deployment_service_lightstep_token: ""
 deployment_service_ml_experiments_enabled: "true"
 deployment_service_cf_auto_expand_enabled: "false"
+deployment_service_cf_update_source_branch_changes: "true"
+{{- if eq .Cluster.Environment "test" }}
+# disable CF update of source branch changes in test to avoid updating CF stacks
+# on any PR.
+deployment_service_cf_update_source_branch_changes: "false"
+{{- end }}
+
 
 # Will be dropped after the migration
 deployment_service_enabled: "true"
