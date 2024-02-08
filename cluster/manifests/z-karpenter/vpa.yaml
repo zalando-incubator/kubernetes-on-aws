@@ -19,6 +19,13 @@ spec:
     containerPolicies:
       - containerName: controller
         minAllowed:
-          memory: {{.Cluster.ConfigItems.karpenter_controller_memory}}
-          cpu: {{.Cluster.ConfigItems.karpenter_controller_cpu}}
+          memory: .Cluster.ConfigItems.karpenter_controller_memory
+          cpu: .Cluster.ConfigItems.karpenter_controller_cpu
+        maxAllowed:
+        {{ range $NodePool := .Cluster.NodePools}}
+        {{ if eq $NodePool.Name "default-master" }}
+          memory: {{ scaleQuantity (instanceTypeMemory (index .InstanceTypes 0)) 0.016 }}
+          cpu: {{ scaleQuantity (instanceTypeCPU (index .InstanceTypes 0)) 0.027 }}
+        {{ end }}
+        {{ end }}
 {{end}}
