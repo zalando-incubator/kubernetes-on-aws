@@ -24,6 +24,8 @@ spec:
         maxAllowed:
         {{ range $NodePool := .Cluster.NodePools}}
         {{ if eq $NodePool.Name "default-master" }}
+          # Scaling is relative to r6g.large (smallest master node)
+          # 0.016 -> ~250Mi memory, 0.027 -> ~50m CPU
           memory: {{ scaleQuantity (instanceTypeMemory (index .InstanceTypes 0)) 0.016 }}
           cpu: {{ scaleQuantity (instanceTypeCPU (index .InstanceTypes 0)) 0.027 }}
         {{ end }}
