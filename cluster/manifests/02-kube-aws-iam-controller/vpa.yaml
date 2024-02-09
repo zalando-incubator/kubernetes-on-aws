@@ -18,7 +18,7 @@ spec:
     - containerName: kube-aws-iam-controller
       maxAllowed:
         {{ range $NodePool := .Cluster.NodePools }}
-        {{ if eq $NodePool.name "default-master" }}
+        {{ if eq $NodePool.Name "default-master" }}
         # Scaling is relative to r6g.large (smallest master node)
         # 0.014 -> 25m CPU, 0.003 -> 50Mi memory
         cpu: {{ scaleQuantity ( instanceTypeCPU ( index .InstanceTypes 0 )) 0.014 }}
