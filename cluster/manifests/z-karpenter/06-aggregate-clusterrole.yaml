@@ -1,0 +1,19 @@
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
+---
+# Source: karpenter/templates/aggregate-04-clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: karpenter-admin
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-poweruser: "true"
+    application: kubernetes
+    component: karpenter
+rules:
+  - apiGroups: ["karpenter.sh"]
+    resources: ["nodepools", "nodepools/status", "nodeclaims", "nodeclaims/status"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+  - apiGroups: ["karpenter.k8s.aws"]
+    resources: ["ec2nodeclasses"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+{{ end }}

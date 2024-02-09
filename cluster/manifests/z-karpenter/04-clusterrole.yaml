@@ -1,0 +1,37 @@
+{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true" }}
+---
+# Source: karpenter/templates/04-clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: karpenter
+  labels:
+    application: kubernetes
+    component: karpenter
+rules:
+  # Read
+  - apiGroups: [ "karpenter.k8s.aws" ]
+    resources: [ "ec2nodeclasses" ]
+    verbs: [ "get", "list", "watch" ]
+  # Write
+  - apiGroups: [ "karpenter.k8s.aws" ]
+    resources: [ "ec2nodeclasses", "ec2nodeclasses/status" ]
+    verbs: [ "patch", "update" ]
+---
+# Source: karpenter/templates/04-clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: karpenter
+  labels:
+    application: kubernetes
+    component: karpenter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: karpenter
+subjects:
+  - kind: ServiceAccount
+    name: karpenter
+    namespace: kube-system
+{{ end }}
