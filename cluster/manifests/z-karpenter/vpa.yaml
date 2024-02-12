@@ -19,6 +19,15 @@ spec:
     containerPolicies:
       - containerName: controller
         minAllowed:
-          memory: {{.Cluster.ConfigItems.karpenter_controller_memory}}
-          cpu: {{.Cluster.ConfigItems.karpenter_controller_cpu}}
+          memory: {{ .Cluster.ConfigItems.karpenter_controller_memory }}
+          cpu: {{ .Cluster.ConfigItems.karpenter_controller_cpu }}
+        maxAllowed:
+        {{ range $NodePool := .Cluster.NodePools}}
+        {{ if eq $NodePool.Name "default-master" }}
+          # Scaling is relative to r6g.large (smallest master node)
+          # 0.016 -> ~250Mi memory, 0.027 -> ~50m CPU
+          memory: {{ scaleQuantity (instanceTypeMemoryQuantity (index .InstanceTypes 0)) 0.016 }}
+          cpu: {{ scaleQuantity (instanceTypeCPUQuantity (index .InstanceTypes 0)) 0.027 }}
+        {{ end }}
+        {{ end }}
 {{end}}
