@@ -893,18 +893,13 @@ stackset_routegroup_support_enabled: "true"
 # E.g. switching from RouteGroup to Ingress or vice versa.
 stackset_ingress_source_switch_ttl: "5m"
 
-# enable/disable configmap support for stackset
-{{if eq .Cluster.Environment "e2e"}}
-stackset_configmap_support_enabled: "true"
-{{else}}
+# enable/disable versioned configuration resources support for stackset
+{{if eq .Cluster.Environment "production"}}
 stackset_configmap_support_enabled: "false"
-{{end}}
-
-# enable/disable secret support for stackset
-{{if eq .Cluster.Environment "e2e"}}
-stackset_secret_support_enabled: "true"
-{{else}}
 stackset_secret_support_enabled: "false"
+{{else}}
+stackset_configmap_support_enabled: "true"
+stackset_secret_support_enabled: "true"
 {{end}}
 
 # enable/disable traffic segment support for stackset
