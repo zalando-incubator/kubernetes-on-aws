@@ -67,8 +67,8 @@ spec:
             - name: sys
               mountPath: /sys
               readOnly: true
-            - name: docker
-              mountPath: /opt/podruntime/docker
+            - name: containerd
+              mountPath: /opt/podruntime/containerd
               readOnly: true
             - name: kmsg
               mountPath: /dev/kmsg
@@ -91,7 +91,7 @@ spec:
             - --no-collector.wifi
             - --no-collector.hwmon
             - --no-collector.btrfs
-            - --collector.filesystem.mount-points-exclude=^/(dev|proc|run|sys|host|var/lib/lxcfs|opt/podruntime/docker/.+|opt/podruntime/kubelet/.+)($|/)
+            - --collector.filesystem.mount-points-exclude=^/(dev|proc|run|sys|host|var/lib/lxcfs|opt/podruntime/containerd/.+|opt/podruntime/kubelet/.+)($|/)
             - --collector.netdev.device-exclude=^veth.*$
             - --collector.netclass.ignored-devices=^veth.*$
           name: prometheus-node-exporter
@@ -147,9 +147,9 @@ spec:
         - name: sys
           hostPath:
             path: /sys
-        - name: docker
+        - name: containerd
           hostPath:
-            path: /opt/podruntime/docker
+            path: /opt/podruntime/containerd
         - name: kmsg
           hostPath:
             path: /dev/kmsg
