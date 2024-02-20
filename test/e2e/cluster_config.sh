@@ -57,7 +57,8 @@ clusters:
     min_size: 1
     max_size: 2
   - discount_strategy: none
-    instance_types: ["m5.xlarge"]
+    instance_types:
+    - "m6i.xlarge"
     name: default-worker-splitaz
     profile: worker-splitaz
     min_size: 0
@@ -65,7 +66,8 @@ clusters:
     config_items:
       cpu_manager_policy: static
   - discount_strategy: none
-    instance_types: ["m5.xlarge"]
+    instance_types:
+    - "m6i.xlarge"
     config_items:
       availability_zones: "eu-central-1a"
       scaling_priority: "-100"
@@ -74,13 +76,15 @@ clusters:
     min_size: 0
     max_size: 21
   - discount_strategy: none
-    instance_types: ["m5d.xlarge"]
+    instance_types:
+    - "m6id.xlarge"
     name: worker-instance-storage
     profile: worker-splitaz
     min_size: 0
     max_size: 21
   - discount_strategy: none
-    instance_types: ["m5.xlarge"]
+    instance_types:
+    - "m6i.xlarge"
     name: worker-combined
     profile: worker-combined
     config_items:
@@ -89,7 +93,17 @@ clusters:
     min_size: 0
     max_size: 21
   - discount_strategy: spot
-    instance_types: ["c5.large", "c5a.large", "m5a.large", "m5.large", "t3.large"]
+    instance_types:
+    - "c7g.large"
+    - "c6g.large"
+    - "c6i.large"
+    - "c6a.large"
+    - "c5.large"
+    - "m5.large"
+    - "m6i.large"
+    - "m6a.large"
+    - "m6g.large"
+    - "m7g.large"
     min_size: 0
     max_size: 9
     profile: worker-splitaz
@@ -98,7 +112,17 @@ clusters:
       labels: dedicated=skipper-ingress
       taints: dedicated=skipper-ingress:NoSchedule
   - discount_strategy: spot
-    instance_types: ["m5a.large", "m5.large", "m5.xlarge", "m5a.xlarge", "t3.large", "t3.xlarge", "c5a.large", "c5a.xlarge"]
+    instance_types:
+    - "m6a.large"
+    - "m6i.large"
+    - "m5.large"
+    - "m5.xlarge"
+    - "m6a.xlarge"
+    - "m6i.xlarge"
+    - "c6i.large"
+    - "c6i.xlarge"
+    - "c6a.large"
+    - "c6a.xlarge"
     min_size: 0
     max_size: 3
     profile: worker-splitaz
@@ -140,7 +164,8 @@ clusters:
       taints: nvidia.com/gpu=present:NoSchedule
       scaling_priority: "-200"
   - discount_strategy: none
-    instance_types: ["m5.xlarge"]
+    instance_types:
+    - "m6i.xlarge"
     min_size: 0
     max_size: 3
     profile: worker-splitaz
@@ -158,7 +183,8 @@ clusters:
       labels: dedicated=worker-karpenter
       taints: dedicated=worker-karpenter:NoSchedule
   - discount_strategy: none
-    instance_types: ["m6g.large"]
+    instance_types:
+    - "m6g.large"
     min_size: 0
     max_size: 3
     profile: worker-splitaz
