@@ -14,6 +14,11 @@ data:
       - record: job:skipper_code_by_host:sum
         expr: sum(rate(skipper_serve_host_count{application="skipper-ingress"}[1m])) by (code)
 
+    - name: skipper max custom gauge lifo/fifo by version
+      rules:
+      - record: job:skipper_fifo_by_key:max
+        expr: max by (version) (skipper_custom_gauges{key =~ "^[fl]ifo[.].+[.]active$"} > 0)
+
     - name: skipper sum custom gauge by key
       rules:
       - record: job:skipper_custom_gauge_by_key:sum
