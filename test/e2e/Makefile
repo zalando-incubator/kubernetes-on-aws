@@ -2,7 +2,7 @@
 
 BINARY       ?= kubernetes-on-aws-e2e
 VERSION      ?= $(shell git describe --tags --always --dirty)
-KUBE_VERSION ?= v1.25.15
+KUBE_VERSION ?= v1.26.13
 IMAGE        ?= pierone.stups.zalan.do/teapot/$(BINARY)
 TAG          ?= $(VERSION)
 DOCKERFILE   ?= Dockerfile
@@ -23,13 +23,10 @@ $(GO_BINDATA):
 fix-go-modules:	$(MOD_PATH)
 	MOD_PATH=$(MOD_PATH) KUBE_VERSION=$(KUBE_VERSION) ./setup_modules.sh
 
-generate-code: fix-go-modules $(GO_BINDATA)
-	make generated_files -C "$(MOD_PATH)/kubernetes"
+deps:
+	CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.4.0
 
-deps: generate-code
-	go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.6
-
-e2e.test: generate-code
+e2e.test: fix-go-modules $(GO_BINDATA)
 	go test -v -c -o e2e.test
 
 stackset-e2e:
@@ -37,13 +34,13 @@ stackset-e2e:
 
 build: e2e.test stackset-e2e
 
-build/linux/amd64/e2e.test: generate-code
+build/linux/amd64/e2e.test:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -v -c -o $@
 
 build/linux/amd64/stackset-e2e:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -modfile stackset/go.mod -c -o $@ github.com/zalando-incubator/stackset-controller/cmd/e2e
 
-build/linux/arm64/e2e.test: generate-code
+build/linux/arm64/e2e.test:
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go test -v -c -o $@
 
 build/linux/arm64/stackset-e2e:
