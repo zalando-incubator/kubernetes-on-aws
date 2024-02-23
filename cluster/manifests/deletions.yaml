@@ -298,3 +298,18 @@ post_apply:
   kind: PlatformCredentialsSet
   namespace: kube-system
 {{- end }}
+{{- if ne .Cluster.ConfigItems.aws_cloud_controller_manager_enabled "true" }}
+- name: aws-cloud-controller-manager
+  kind: DaemonSet
+  namespace: kube-system
+- name: cloud-controller-manager
+  kind: ServiceAccount
+  namespace: kube-system
+- name: system:cloud-controller-manager
+  kind: ClusterRole
+- name: cloud-controller-manager:apiserver-authentication-reader
+  namespace: kube-system
+  kind: RoleBinding
+- name: system:cloud-controller-manager
+  kind: ClusterRoleBinding
+{{- end }}

@@ -124,7 +124,7 @@ write_files:
           {{- end }}
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config=authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true,autoscaling/v2beta2={{ .Cluster.ConfigItems.autoscaling_v2beta2_enabled }},autoscaling/v2beta1={{ .Cluster.ConfigItems.autoscaling_v2beta1_enabled }}
+          - --runtime-config=authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --cloud-provider=aws
@@ -667,7 +667,7 @@ write_files:
           args:
           - --kubeconfig=/etc/kubernetes/scheduler-kubeconfig
           - --leader-elect=true
-          - --feature-gates=NonPreemptingPriority=true,MinDomainsInPodTopologySpread={{ .Cluster.ConfigItems.min_domains_in_pod_topology_spread_enabled }}
+          - --feature-gates=MinDomainsInPodTopologySpread={{ .Cluster.ConfigItems.min_domains_in_pod_topology_spread_enabled }}
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           resources:
             requests:
