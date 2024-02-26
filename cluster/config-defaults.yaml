@@ -64,9 +64,11 @@ skipper_ingress_hpa_scale_up_max_perc: "100"
 {{if eq .Cluster.Environment "production"}}
 skipper_ingress_min_replicas: "3"
 skipper_ingress_max_replicas: "300"
+skipper_ingress_passive_health_check_options: ""
 {{else}}
 skipper_ingress_min_replicas: "2"
 skipper_ingress_max_replicas: "50"
+skipper_ingress_passive_health_check_options: "period=10s,min-requests=10,max-drop-probability=0.9"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
