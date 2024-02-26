@@ -1,0 +1,53 @@
+{{- if eq .Cluster.ConfigItems.aws_cloud_controller_manager_enabled "true" }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: aws-cloud-controller-manager
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: aws-cloud-controller-manager
+spec:
+  selector:
+    matchLabels:
+      daemonset: aws-cloud-controller-manager
+  template:
+    metadata:
+      labels:
+        daemonset: aws-cloud-controller-manager
+        application: kubernetes
+        component: aws-cloud-controller-manager
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+    spec:
+      containers:
+      - args:
+        - --v=2
+        - --cloud-provider=aws
+        - --use-service-account-credentials=true
+        - --configure-cloud-routes=false
+        image: container-registry.zalando.net/teapot/aws-cloud-controller-manager-internal:v1.26.1-master-108
+        name: aws-cloud-controller-manager
+        resources:
+          requests:
+            cpu: "{{ .Cluster.ConfigItems.aws_cloud_controller_manager_cpu }}"
+            memory: "{{ .Cluster.ConfigItems.aws_cloud_controller_manager_memory }}"
+          limits:
+            cpu: "{{ .Cluster.ConfigItems.aws_cloud_controller_manager_cpu }}"
+            memory: "{{ .Cluster.ConfigItems.aws_cloud_controller_manager_memory }}"
+      nodeSelector:
+        # node-role.kubernetes.io/control-plane: ""
+        node.kubernetes.io/role: master
+      serviceAccountName: cloud-controller-manager
+      tolerations:
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        value: "true"
+      # - effect: NoSchedule
+      #   key: node-role.kubernetes.io/control-plane
+      - key: node.kubernetes.io/role
+        value: master
+        effect: NoSchedule
+  updateStrategy:
+    type: RollingUpdate
+{{- end }}
