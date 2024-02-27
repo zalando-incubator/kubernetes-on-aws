@@ -64,9 +64,11 @@ skipper_ingress_hpa_scale_up_max_perc: "100"
 {{if eq .Cluster.Environment "production"}}
 skipper_ingress_min_replicas: "3"
 skipper_ingress_max_replicas: "300"
+skipper_ingress_passive_health_check_options: ""
 {{else}}
 skipper_ingress_min_replicas: "2"
 skipper_ingress_max_replicas: "50"
+skipper_ingress_passive_health_check_options: "period=10s,min-requests=10,max-drop-probability=0.9"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
@@ -365,6 +367,10 @@ kube_proxy_verbose_level: "2"
 # flannel settings
 flannel_cpu: "25m"
 flannel_memory: "100Mi"
+
+# nvidia device plugin
+nvidia_device_plugin_cpu: "10m"
+nvidia_device_plugin_memory: "50Mi"
 
 # static egress controller settings
 static_egress_controller_enabled: "true"
@@ -1010,7 +1016,11 @@ apiserver_memory_limit_percent: "80"
 apiserver_max_requests_inflight: "400"
 
 # specify if control plane nodes should rely on ASG Lifecycle Hook or not
+{{- if eq .Cluster.Environment "production" }}
 control_plane_asg_lifecycle_hook: "true"
+{{- else }}
+control_plane_asg_lifecycle_hook: "false"
+{{- end }}
 
 # enable graceful shutdown on the control_plane nodes
 control_plane_graceful_shutdown: "true"
