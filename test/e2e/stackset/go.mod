@@ -4,7 +4,7 @@ go 1.22
 
 toolchain go1.22.0
 
-require github.com/zalando-incubator/stackset-controller v1.4.41
+require github.com/zalando-incubator/stackset-controller v1.4.44
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
