@@ -124,7 +124,6 @@ Resources:
     Properties:
       LaunchTemplateName: '{{.Cluster.LocalID}}-{{ .NodePool.Name }}'
       LaunchTemplateData:
-{{- if eq .Cluster.ConfigItems.kuberuntu_distro_worker "jammy" }}
         TagSpecifications:
         - ResourceType: "volume"
           Tags:
@@ -140,7 +139,6 @@ Resources:
             Value: "shared-resource"
           - Key: Name
             Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
-{{- end }}
         BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
