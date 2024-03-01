@@ -174,7 +174,11 @@ spec:
       kubelet:
         clusterDNS: [ "10.0.1.100" ]
         cpuCFSQuota: false
+# {{ if ne .Cluster.ConfigItems.karpenter_max_pods_per_node "" }}
+        maxPods: {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
+# {{ else }}
         maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
+# {{ end }}
         systemReserved:
           cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
           memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
