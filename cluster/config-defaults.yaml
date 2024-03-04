@@ -437,6 +437,12 @@ kubernetes_lifecycle_metrics_mem_min: "120Mi"
 kube_node_ready_controller_cpu: "50m"
 kube_node_ready_controller_memory: "200Mi"
 
+# Enable deployment of aws-cloud-controller-manager
+aws_cloud_controller_manager_enabled: "true"
+aws_cloud_controller_manager_cpu: "125m"
+aws_cloud_controller_manager_memory: "512Mi"
+
+
 # Kubernetes Downscaler (for non-production clusters)
 {{if eq .Cluster.Environment "test"}}
 downscaler_default_uptime: "Mon-Fri 07:30-20:30 Europe/Berlin"
@@ -456,12 +462,6 @@ downscaler_enabled: "false"
 horizontal_pod_autoscaler_sync_period: "30s"
 horizontal_pod_autoscaler_tolerance: "0.1"
 horizontal_pod_downscale_stabilization: "5m0s"
-
-# enable/disable legacy autoscaling APIs
-# Note StackSet controller still depends on autoscaling/v2beta2 in clusters
-# using horizontalPodAutoscaler field.
-autoscaling_v2beta1_enabled: "false"
-autoscaling_v2beta2_enabled: "false"
 
 # Vertical pod autoscaler version for controlling roll-out, can be "current" or "legacy"
 # current => v0.11.0-internal.17
@@ -565,7 +565,7 @@ teapot_admission_controller_namespace_delete_protection_enabled: "false"
 teapot_admission_controller_resolve_vanity_images: "true"
 
 {{if eq .Cluster.Environment "e2e"}}
-teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota|limitrange|sysctl|node-tests|e2e-kubelet-etc-hosts)-.*)$"
+teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota|limitrange|sysctl|node-tests|e2e-kubelet-etc-hosts|csiinlinevolumes)-.*)$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "false"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
@@ -671,14 +671,14 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_24_focal_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.24.17-amd64-master-283" "861068367966" }}
-kuberuntu_image_v1_24_focal_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.24.17-arm64-master-283" "861068367966" }}
-kuberuntu_image_v1_24_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.24.17-amd64-master-297" "861068367966" }}
-kuberuntu_image_v1_24_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.24.17-arm64-master-297" "861068367966" }}
 kuberuntu_image_v1_25_focal_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.25.16-amd64-master-305" "861068367966" }}
 kuberuntu_image_v1_25_focal_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.25.16-arm64-master-305" "861068367966" }}
 kuberuntu_image_v1_25_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.25.16-amd64-master-305" "861068367966" }}
 kuberuntu_image_v1_25_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.25.16-arm64-master-305" "861068367966" }}
+kuberuntu_image_v1_26_focal_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.26.14-amd64-master-314" "861068367966" }}
+kuberuntu_image_v1_26_focal_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.26.14-arm64-master-314" "861068367966" }}
+kuberuntu_image_v1_26_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.26.14-amd64-master-314" "861068367966" }}
+kuberuntu_image_v1_26_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.26.14-arm64-master-314" "861068367966" }}
 
 # Which distro from the previous config items should be used. Valid options are `focal` and `jammy`. Can be set for each node pool.
 {{if eq .Cluster.Environment "test"}}
