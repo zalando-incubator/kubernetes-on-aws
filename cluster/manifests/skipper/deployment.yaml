@@ -39,6 +39,8 @@ metadata:
 spec:
 {{ if index . "replicas" }}
   replicas: {{ .replicas }}
+{{ else if eq .Cluster.ConfigItems.skipper_ingress_test_single_pod "true" }}
+  replicas: 0
 {{ end }}
   strategy:
     rollingUpdate:
