@@ -25,7 +25,6 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/framework/config"
-	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 	testutil "k8s.io/kubernetes/test/utils"
 	"k8s.io/utils/ptr"
 
@@ -705,11 +704,11 @@ func waitForResponseReturnResponse(req *http.Request, timeout time.Duration, exp
 
 		resp, err := client.Do(req)
 		if err != nil {
-			e2elog.Logf("%s localtimeout", req.URL.String())
+			framework.Logf("%s localtimeout", req.URL.String())
 			time.Sleep(localTimeout)
 			continue
 		}
-		//e2elog.Logf("%s , header Foo: '%s', status code: %d", req.URL.String(), req.Header.Get("Foo"), resp.StatusCode)
+		//framework.Logf("%s , header Foo: '%s', status code: %d", req.URL.String(), req.Header.Get("Foo"), resp.StatusCode)
 		if expectedCode(resp.StatusCode) {
 			return resp, nil
 		}
@@ -729,7 +728,7 @@ func waitForReplicas(deploymentName, namespace string, kubeClient kubernetes.Int
 			framework.Failf("Failed to get replication controller %s: %v", deployment, err)
 		}
 		replicas := int(deployment.Status.ReadyReplicas)
-		e2elog.Logf("waiting for %d replicas (current: %d)", desiredReplicas, replicas)
+		framework.Logf("waiting for %d replicas (current: %d)", desiredReplicas, replicas)
 		return replicas == desiredReplicas, nil // Expected number of replicas found. Exit.
 	})
 	if err != nil {
