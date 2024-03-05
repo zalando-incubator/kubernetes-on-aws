@@ -46,6 +46,12 @@ kube_aws_ingress_controller_nlb_cross_zone: "true"
 kube_aws_ingress_controller_cert_polling_interval: "2m"
 # sets the default LB type: "network" or "application" are valid choices (overwritten by nlb_switch)
 kube_aws_ingress_default_lb_type: "application"
+# cert filter
+{{if eq .Cluster.Environment "production"}}
+kube_aws_ingress_controller_cert_filter_tag: ""
+{{else}}
+kube_aws_ingress_controller_cert_filter_tag: "kubernetes=enabled"
+{{end}}
 
 # ALB to NLB switch
 # "pre":
