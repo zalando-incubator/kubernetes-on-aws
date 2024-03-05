@@ -4,6 +4,20 @@ pre_apply:
   namespace: kube-system
   kind: Deployment
 
+# TODO: remove after rollout
+- kind: CronJob
+  name: secret-combiner
+  namespace: kube-system
+- kind: RoleBinding
+  name: secret-combiner
+  namespace: kube-system
+- kind: Role
+  name: secret-combiner
+  namespace: kube-system
+- kind: ServiceAccount
+  name: secret-combiner
+  namespace: kube-system
+
 # everything defined under here will be deleted after applying the manifests
 post_apply:
 - name: cronjob-monitor
@@ -75,7 +89,6 @@ post_apply:
 {{ end }}
 
 {{- if ne .Cluster.ConfigItems.skipper_oauth2_ui_login "true" }}
-# hostname-credentials-controller
 - kind: CronJob
   name: hostname-credentials-controller
   namespace: kube-system
@@ -91,20 +104,6 @@ post_apply:
   labels:
     application: skipper-ingress
     component: hostname-credentials
-
-# secret-combiner
-- kind: CronJob
-  name: secret-combiner
-  namespace: kube-system
-- kind: RoleBinding
-  name: secret-combiner
-  namespace: kube-system
-- kind: Role
-  name: secret-combiner
-  namespace: kube-system
-- kind: ServiceAccount
-  name: secret-combiner
-  namespace: kube-system
 - kind: Secret
   name: hostname-credentials
   namespace: kube-system

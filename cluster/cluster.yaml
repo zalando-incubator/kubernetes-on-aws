@@ -1141,6 +1141,9 @@ Resources:
               - Action: 'acm:DescribeCertificate'
                 Effect: Allow
                 Resource: '*'
+              - Action: 'acm:ListTagsForCertificate'
+                Effect: Allow
+                Resource: '*'
               - Action: 'autoscaling:DescribeAutoScalingGroups'
                 Effect: Allow
                 Resource: '*'
@@ -1189,6 +1192,9 @@ Resources:
               - Action: 'iam:ListServerCertificates'
                 Effect: Allow
                 Resource: '*'
+              - Action: 'iam:ListServerCertificateTags'
+                Effect: Allow
+                Resource: '*'
               - Action: 'waf-regional:ListWebACLs'
                 Effect: Allow
                 Resource: '*'
@@ -1224,7 +1230,7 @@ Resources:
       RoleName: "{{.Cluster.LocalID}}-app-ingr-ctrl"
     Type: 'AWS::IAM::Role'
 {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
-  # Note: this is not strictly specific to Open Policy Agent and can be extend 
+  # Note: this is not strictly specific to Open Policy Agent and can be extend
   # if Skipper Ingress needs to access other AWS resources
   SkipperIngressIAMRole:
     Properties:
