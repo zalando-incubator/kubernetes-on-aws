@@ -81,9 +81,7 @@ spec:
               parent-resource-hash: 71556441059f2d033fb06b1e73df03598c7ecaa6
 {{- end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
-{{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
       serviceAccountName: skipper-ingress
-{{ end }}
       terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
       dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true
@@ -150,30 +148,11 @@ spec:
           - "skipper"
           - "-validate-query={{ .Cluster.ConfigItems.skipper_validate_query }}"
           - "-validate-query-log={{ .Cluster.ConfigItems.skipper_validate_query_log }}"
-{{ if eq .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes"
           - "-normalize-host"
-{{ else }}
-          - "-kubernetes"
-          - "-kubernetes-in-cluster"
-          - "-kubernetes-path-mode=path-prefix"
-          - "-kubernetes-backend-traffic-algorithm={{ .Cluster.ConfigItems.skipper_ingress_backend_traffic_algorithm }}"
-          - "-kubernetes-default-lb-algorithm={{ .Cluster.ConfigItems.skipper_ingress_default_lb_algorithm }}"
-          - "-kubernetes-disable-catchall-routes={{ .Cluster.ConfigItems.skipper_ingress_disable_catchall_routes }}"
-          - "-enable-kubernetes-endpointslices={{ .Cluster.ConfigItems.skipper_endpointslices_enabled }}"
-{{ end }}
           - "-address=:9999"
           - "-wait-first-route-load"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
-{{ if and (ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec") (eq .Cluster.ConfigItems.enable_skipper_eastwest "true")}}
-          - "-enable-kubernetes-east-west"
-          - "-kubernetes-east-west-domain=.ingress.cluster.local"
-{{ end }}
-{{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
-          - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
-          - "-reverse-source-predicate"
-{{ end }}
           - "-proxy-preserve-host"
           - "-compress-encodings={{ .Cluster.ConfigItems.skipper_compress_encodings }}"
           - "-serve-host-metrics"
@@ -198,9 +177,6 @@ spec:
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
           - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
-{{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
-          - "-default-filters-dir=/etc/config/default-filters"
-{{ end }}
           - "-max-audit-body=0"
 {{ if eq .Cluster.ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
           - "-enable-swarm"
@@ -209,13 +185,7 @@ spec:
           - "-swarm-redis-read-timeout={{ .Cluster.ConfigItems.skipper_redis_read_timeout }}"
           - "-swarm-redis-write-timeout={{ .Cluster.ConfigItems.skipper_redis_write_timeout }}"
           - "-cluster-ratelimit-max-group-shards={{ .Cluster.ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
-{{ if eq .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-swarm-redis-remote=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/redis/shards"
-{{ else }}
-          - "-kubernetes-redis-service-namespace=kube-system"
-          - "-kubernetes-redis-service-name=skipper-ingress-redis"
-          - "-kubernetes-redis-service-port=6379"
-{{ end }}
 {{ end }}
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
           - >-
@@ -253,15 +223,6 @@ spec:
           - "-read-timeout-server={{ .Cluster.ConfigItems.skipper_read_timeout_server }}"
           - "-write-timeout-server={{ .Cluster.ConfigItems.skipper_write_timeout_server }}"
           - "-disabled-filters={{ .Cluster.ConfigItems.skipper_disabled_filters }}"
-{{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
-          - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
-          - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
-  {{ if .Cluster.ConfigItems.skipper_edit_route_placeholders }}
-          {{ range $placeholder := split .Cluster.ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
-          - '-edit-route={{ $placeholder }}'
-          {{ end }}
-  {{ end }}
-{{ end }}
           - "-suppress-route-update-logs={{ .Cluster.ConfigItems.skipper_suppress_route_update_logs }}"
 {{ if eq .Cluster.ConfigItems.skipper_enable_tcp_queue "true" }}
           - "-enable-tcp-queue"
@@ -378,10 +339,6 @@ spec:
           - name: routes
             mountPath: /etc/routes
 {{ end }}
-{{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
-          - name: filters
-            mountPath: /etc/config/default-filters
-{{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_lua_scripts_enabled "true" }}
           - name: lua
             mountPath: /etc/skipper/lua
@@ -407,12 +364,6 @@ spec:
         - name: routes
           configMap:
             name: sandbox-tokeninfo-bridge-conf
-{{ end }}
-{{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
-        - name: filters
-          configMap:
-            name: skipper-default-filters
-            optional: true
 {{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_lua_scripts_enabled "true" }}
         - name: lua
@@ -443,7 +394,6 @@ spec:
 {{ end }}
 {{ end }}
 
-{{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "false" }}
 {{ $version := index (split $internal_version "-") 0 }}
 ---
 apiVersion: apps/v1
@@ -495,7 +445,7 @@ spec:
               parent-resource-hash: abd943226b6885f66785592be28bdf303863fbac
 {{- end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
-      serviceAccountName: skipper-ingress
+      serviceAccountName: skipper-ingress-routesrv
       terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
 {{- if eq .Cluster.ConfigItems.skipper_routesrv_node_affinity_enabled "true" }}
       affinity:
@@ -612,4 +562,3 @@ spec:
           configMap:
             name: skipper-default-filters
             optional: true
-{{ end }}

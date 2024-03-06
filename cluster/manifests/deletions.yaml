@@ -79,15 +79,6 @@ post_apply:
   kind: Deployment
 {{ end }}
 
-{{ if eq .Cluster.ConfigItems.skipper_routesrv_enabled "false" }}
-- name: skipper-ingress-routesrv
-  namespace: kube-system
-  kind: Deployment
-- name: skipper-ingress-routesrv
-  namespace: kube-system
-  kind: Service
-{{ end }}
-
 {{- if ne .Cluster.ConfigItems.skipper_oauth2_ui_login "true" }}
 - kind: CronJob
   name: hostname-credentials-controller
@@ -297,3 +288,14 @@ post_apply:
   kind: PlatformCredentialsSet
   namespace: kube-system
 {{- end }}
+
+# TODO(sszuecs) cleanup skipper-ingress roles after successful change
+# - name: skipper-ingress
+#   kind: ClusterRole
+#   namespace: kube-system
+# - name: skipper-ingress
+#   kind: ClusterRoleBinding
+#   namespace: kube-system
+# - name: skipper-ingress-routesrv-privileged-psp
+#   kind: RoleBinding
+#   namespace: kube-system

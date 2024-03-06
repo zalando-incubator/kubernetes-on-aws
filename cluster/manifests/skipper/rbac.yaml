@@ -5,12 +5,26 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
+    component: ingress
 {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
   # Note: if the role extends beyond OPA use, this condition can be removed
   annotations:
     iam.amazonaws.com/role: "{{ .Cluster.LocalID }}-app-skipper-ingress"
 {{ end }}
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: skipper-ingress-routesrv
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    component: routesrv
+---
+# TODO(sszuecs) after successful rollout we can delete all permissions
+# (not the ClusterRole -> we need PSP for hostnetwork), because
+# component=ingress does not need kubernetes RBAC permissions to
+# apiserver
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -23,9 +37,6 @@ rules:
   verbs:
   - get
   - list
-- apiGroups: ["extensions"]
-  resources: ["ingresses", ]
-  verbs: ["get", "list"]
 - apiGroups: [""]
   resources: ["namespaces", "services", "endpoints", "pods"]
   verbs: ["get", "list"]
@@ -45,6 +56,37 @@ rules:
   - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: skipper-ingress-routesrv
+rules:
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+- apiGroups: [""]
+  resources: ["namespaces", "services", "endpoints", "pods"]
+  verbs: ["get", "list"]
+- apiGroups:
+    - discovery.k8s.io
+  resources:
+    - endpointslices
+  verbs:
+    - get
+    - list
+- apiGroups:
+  - zalando.org
+  resources:
+  - routegroups
+  verbs:
+  - get
+  - list
+---
+# TODO(sszuecs) after successful rollout we can delete this
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: skipper-ingress
@@ -55,6 +97,19 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: skipper-ingress
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: skipper-ingress-routesrv
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: skipper-ingress-routesrv
+subjects:
+- kind: ServiceAccount
+  name: skipper-ingress-routesrv
   namespace: kube-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -69,4 +124,19 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: skipper-ingress
+  namespace: kube-system
+---
+# TODO(sszuecs) after successful rollout we can delete this
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: skipper-ingress-routesrv-privileged-psp
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: privileged-psp
+subjects:
+- kind: ServiceAccount
+  name: skipper-ingress-routesrv
   namespace: kube-system
