@@ -145,9 +145,9 @@ spec:
                 description: List of hostnames for the RouteGroup
                 items:
                   pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
-                  minItems: 1 # original CRD allows empty hosts but we explicitly want it specified in our infrastructure
                   type: string
                 type: array
+                minItems: 1
               routes:
                 description: Routes describe how a matching HTTP request is handled
                   and where it is forwarded to
@@ -218,6 +218,9 @@ spec:
                 type: array
             required:
             - backends
+            # {{ if eq .Cluster.ConfigItems.skipper_ingress_routegroup_crd_require_hosts "true" }}
+            - hosts
+            # {{ end }}
             type: object
           status:
             properties:
