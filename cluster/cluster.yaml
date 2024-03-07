@@ -551,14 +551,14 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-autoscaler"
     Type: 'AWS::IAM::Role'
-{{- if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
-  KarpenterNodeInstanceProfile:
+  KarpenterNodeInstanceProfile: # instance profile for worker nodes spawn by karpenter controller
     Type: "AWS::IAM::InstanceProfile"
     Properties:
       InstanceProfileName: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
       Path: "/"
       Roles:
         - !Ref WorkerIAMRole
+{{- if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
   KarpenterIAMRole: # role for the karpenter controller
     Properties:
       AssumeRolePolicyDocument:
