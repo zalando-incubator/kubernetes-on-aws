@@ -1,35 +1,8 @@
 # everything defined under here will be deleted before applying the manifests
-pre_apply:
-- name: cronjob-monitor
-  namespace: kube-system
-  kind: Deployment
-
-# TODO: remove after rollout
-- kind: CronJob
-  name: secret-combiner
-  namespace: kube-system
-- kind: RoleBinding
-  name: secret-combiner
-  namespace: kube-system
-- kind: Role
-  name: secret-combiner
-  namespace: kube-system
-- kind: ServiceAccount
-  name: secret-combiner
-  namespace: kube-system
+pre_apply: []
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
-- name: cronjob-monitor
-  namespace: kube-system
-  kind: VerticalPodAutoscaler
-- name: cronjob-monitor
-  kind: ClusterRole
-- name: cronjob-monitor
-  kind: ClusterRoleBinding
-- name: cronjob-monitor
-  namespace: kube-system
-  kind: ServiceAccount
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
@@ -312,3 +285,10 @@ post_apply:
 - name: system:cloud-controller-manager
   kind: ClusterRoleBinding
 {{- end }}
+# TODO(sszuecs) cleanup skipper-ingress roles after successful change
+# - name: skipper-ingress
+#   kind: ClusterRole
+#   namespace: kube-system
+# - name: skipper-ingress
+#   kind: ClusterRoleBinding
+#   namespace: kube-system
