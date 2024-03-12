@@ -406,7 +406,7 @@ var _ = describe("Image Policy Tests (StatefulSet)", func() {
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(MatchRegexp(`timed out while waiting for at least 1 pods to be running and ready \(matched 0\)`))
+		Expect(err.Error()).To(MatchRegexp(`expected at least 1 pods, only got 0`))
 	})
 })
 
