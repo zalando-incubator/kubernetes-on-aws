@@ -28,6 +28,10 @@ cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
 cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
 
 # karpenter settings
+# DO NOT SET TO FALSE IF THE CLUSTER HAS KARPENTER POOLS OR NODES. REFER TO TEAPOT DOCS  FOR HOW TO ROLLBACK KARPENTER
+# https://teapot.docs.zalando.net/howtos/karpenter-operations/
+karpenter_pools_enabled: "false"
+
 karpenter_controller_cpu: "25m"
 karpenter_controller_memory: "256Mi"
 # set log level of karpenter: error|debug
@@ -1004,8 +1008,6 @@ config_provider_service: "false"
 
 # enable SizeMemoryBackedVolumes feature flag
 enable_size_memory_backed_volumes: "true"
-
-karpenter_pools_enabled: "false"
 
 # enable StatefulSetAutoDeletePVC feature flag
 # https://kubernetes.io/blog/2021/12/16/kubernetes-1-23-statefulset-pvc-auto-deletion/
