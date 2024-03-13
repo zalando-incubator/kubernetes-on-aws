@@ -76,14 +76,13 @@ skipper_ingress_hpa_scale_up_max_perc: "100"
 {{if eq .Cluster.Environment "production"}}
 skipper_ingress_min_replicas: "3"
 skipper_ingress_max_replicas: "300"
-skipper_ingress_passive_health_check_options: ""
 {{else}}
 skipper_ingress_min_replicas: "2"
 skipper_ingress_max_replicas: "50"
-skipper_ingress_passive_health_check_options: "period=10s,min-requests=10,max-drop-probability=0.9"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
+skipper_ingress_health_check_options: "period=10s,min-requests=10,max-drop-probability=0.9"
 
 # Enables deployment of canary version
 skipper_ingress_canary_enabled: "true"
@@ -335,7 +334,7 @@ skipper_open_policy_agent_styra_token: ""
 #   - production: runs the controller
 #
 fabric_gateway_controller_mode: "disabled"
-fabric_gateway_controller_version: "master-240"
+fabric_gateway_controller_version: "master-243"
 fabric_gateway_controller_cpu: "50m"
 fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_crd_v1_enabled: "false"
@@ -924,10 +923,6 @@ stackset_routegroup_support_enabled: "true"
 # one.
 # E.g. switching from RouteGroup to Ingress or vice versa.
 stackset_ingress_source_switch_ttl: "5m"
-
-# enable/disable versioned configuration resources support for stackset
-stackset_configmap_support_enabled: "true"
-stackset_secret_support_enabled: "true"
 
 # enable/disable traffic segment support for stackset
 stackset_enable_traffic_segments: "false"
