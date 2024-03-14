@@ -71,7 +71,7 @@ var _ = describe("Admission controller tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		//pods are not returned here
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(cs, ns, labelSelector, int(replicas), 1*time.Minute)
+		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, ns, labelSelector, int(replicas), 1*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
 
 		pods, err := cs.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector.String()})
@@ -127,7 +127,7 @@ var _ = describe("Admission controller tests", func() {
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = e2epod.WaitForPodSuccessInNamespaceSlow(cs, podName, ns)
+		err = e2epod.WaitForPodSuccessInNamespaceSlow(context.TODO(), cs, podName, ns)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

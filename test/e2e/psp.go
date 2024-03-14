@@ -111,7 +111,7 @@ var _ = describe("PSP use", func() {
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 	})
 
 	It("Should create a POD that use privileged PSP via deployment [PSP] [Zalando]", func() {
@@ -166,7 +166,7 @@ var _ = describe("PSP use", func() {
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Got rs: %s, from deployment: %s", rs.Name, deploy.Name))
 
-		pods, err := e2epod.PodsCreatedByLabel(f.ClientSet, ns, rs.Name, replicas, labelSelector)
+		pods, err := e2epod.PodsCreatedByLabel(context.TODO(), f.ClientSet, ns, rs.Name, replicas, labelSelector)
 		Expect(err).NotTo(HaveOccurred())
 		By(fmt.Sprintf("Ensuring each pod is running for rs: %s, pod: %s", rs.Name, pods.Items[0].Name))
 		// Wait for the pods to enter the running state. Waiting loops until the pods
@@ -175,7 +175,7 @@ var _ = describe("PSP use", func() {
 			if pod.DeletionTimestamp != nil {
 				continue
 			}
-			err = e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace)
+			err = e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace)
 			Expect(err).NotTo(HaveOccurred())
 		}
 	})
