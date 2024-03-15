@@ -76,9 +76,11 @@ skipper_ingress_hpa_scale_up_max_perc: "100"
 {{if eq .Cluster.Environment "production"}}
 skipper_ingress_min_replicas: "3"
 skipper_ingress_max_replicas: "300"
+skipper_ingress_health_check_main_fleet: "false"
 {{else}}
 skipper_ingress_min_replicas: "2"
 skipper_ingress_max_replicas: "50"
+skipper_ingress_health_check_main_fleet: "true"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
@@ -898,7 +900,7 @@ stackset_controller_mem_max: "4Gi"
 
 # EBS settings for the root volume
 ebs_master_root_volume_size: "50"
-ebs_root_volume_size: "50"
+ebs_root_volume_size: "100"
 ebs_root_volume_delete_on_termination: "true"
 
 # Priority class used for critical system pods

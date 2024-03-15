@@ -301,7 +301,7 @@ spec:
 {{ if .Cluster.ConfigItems.skipper_ingress_inline_routes }}
           - "-inline-routes={{ .Cluster.ConfigItems.skipper_ingress_inline_routes }}"
 {{ end }}
-{{ if and (.Cluster.ConfigItems.skipper_ingress_health_check_options) (eq .name "skipper-ingress-canary") }}
+{{ if and (.Cluster.ConfigItems.skipper_ingress_health_check_options) (or (eq .name "skipper-ingress-canary") (eq .Cluster.ConfigItems.skipper_ingress_health_check_main_fleet "true")) }}
           - "-passive-health-check={{ .Cluster.ConfigItems.skipper_ingress_health_check_options }}"
 {{ end }}
 {{ if .Cluster.ConfigItems.skipper_ingress_refuse_payload }}
