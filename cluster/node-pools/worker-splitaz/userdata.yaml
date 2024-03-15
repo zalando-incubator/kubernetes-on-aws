@@ -54,7 +54,7 @@ write_files:
       current-context: kubelet-context
 
   - owner: root:root
-    path: /etc/kubernetes/config/kubelet.yaml
+    path: /etc/kubernetes/config/kubelet.yaml.template
     content: |
       # https://github.com/kubernetes/kubernetes/blob/v1.13.6/staging/src/k8s.io/kubelet/config/v1beta1/types.go
       apiVersion: kubelet.config.k8s.io/v1beta1
@@ -107,6 +107,9 @@ write_files:
           cacheAuthorizedTTL: "5m"
           cacheUnauthorizedTTL: "30s"
       protectKernelDefaults: true
+      # variables are replaced on instance start-up.
+      providerID: __PROVIDER_ID__
+      clusterDNS: [__CLUSTER_DNS__]
 
 {{- if and .Cluster.ConfigItems.vm_dirty_background_bytes .Cluster.ConfigItems.vm_dirty_bytes }}
   - owner: root:root

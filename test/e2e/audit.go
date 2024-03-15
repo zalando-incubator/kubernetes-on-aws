@@ -57,14 +57,14 @@ var _ = describe("Audit", func() {
 		}
 		updatePod := func(pod *apiv1.Pod) {}
 
-		e2epod.NewPodClient(f).CreateSync(pod)
+		e2epod.NewPodClient(f).CreateSync(context.TODO(), pod)
 
-		e2epod.NewPodClient(f).Update(pod.Name, updatePod)
+		e2epod.NewPodClient(f).Update(context.TODO(), pod.Name, updatePod)
 
 		_, err := e2epod.NewPodClient(f).Patch(context.TODO(), pod.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
 		framework.ExpectNoError(err, "failed to patch pod")
 
-		e2epod.NewPodClient(f).DeleteSync(pod.Name, metav1.DeleteOptions{}, e2epod.DefaultPodDeletionTimeout)
+		e2epod.NewPodClient(f).DeleteSync(context.TODO(), pod.Name, metav1.DeleteOptions{}, e2epod.DefaultPodDeletionTimeout)
 
 		expectEvents(f, []utils.AuditEvent{
 			{
