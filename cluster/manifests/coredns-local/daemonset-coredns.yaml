@@ -209,10 +209,33 @@ spec:
       hostNetwork: true
       dnsPolicy: Default
       tolerations:
-      - operator: Exists
+      - key: node.kubernetes.io/role
+        value: master
         effect: NoSchedule
-      - operator: Exists
-        effect: NoExecute
+      - key: node.kubernetes.io/not-ready
+        operator: Exists
+      - key: dedicated
+        operator: Exists
+      - key: aws.amazon.com/spot
+        operator: Exists
+      - key: zalando.org/node-not-ready
+        operator: Exists
+        effect: NoSchedule
+      - key: nvidia.com/gpu
+        value: present
+        effect: NoSchedule
+      # these are tolerated in the unlikely case an already scheduled daemonset
+      # pod is deleted and needs to be rescheduled on a to be terminated node.
+      - key: decommission-pending
+        operator: Exists
+      - key: karpenter.sh/disruption
+        operator: Exists
+      - key: DeletionCandidateOfClusterAutoscaler
+        operator: Exists
+      - key: ToBeDeletedByClusterAutoscaler
+        operator: Exists
+      - key: BeingDeletedByClusterAutoscaler
+        operator: Exists
       volumes:
       - name: config-volume
         configMap:
