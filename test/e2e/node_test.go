@@ -7,7 +7,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2eevents "k8s.io/kubernetes/test/e2e/framework/events"
@@ -35,7 +34,7 @@ var _ = describe("Node tests", func() {
 		By("Creating a test pod")
 		pausePod, err := cs.CoreV1().Pods(namespace).Create(context.Background(), pausePod, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create a test pod")
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pausePod.Name, pausePod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pausePod.Name, pausePod.Namespace))
 
 		pausePod, err = cs.CoreV1().Pods(namespace).Get(context.Background(), pausePod.Name, metav1.GetOptions{})
 		framework.ExpectNoError(err, "Could not fetch the test pod")
@@ -100,11 +99,11 @@ var _ = describe("Node tests", func() {
 		framework.ExpectNoError(err, "Could not create a termination trigger pod")
 
 		By("Ensuring that pods are deleted from the node")
-		framework.ExpectNoError(e2epod.WaitForPodToDisappear(f.ClientSet, pausePod.Namespace, pausePod.Name, labels.Everything(), framework.Poll, framework.PodDeleteTimeout))
+		framework.ExpectNoError(e2epod.WaitForPodNotFoundInNamespace(context.TODO(), f.ClientSet, pausePod.Name, pausePod.Namespace, framework.PodDeleteTimeout))
 
 		By("Ensuring that the ForceTerminatedSpot event is posted for affected pods")
 		eventSelector := fmt.Sprintf("involvedObject.uid=%s,reason=ForceTerminatedSpot", pausePod.UID)
-		framework.ExpectNoError(e2eevents.WaitTimeoutForEvent(f.ClientSet, pausePod.Namespace, eventSelector, "Deleted for spot termination", 30*time.Second))
+		framework.ExpectNoError(e2eevents.WaitTimeoutForEvent(context.TODO(), f.ClientSet, pausePod.Namespace, eventSelector, "Deleted for spot termination", 30*time.Second))
 
 		By("Ensuring that the node is unschedulable")
 		node, err = cs.CoreV1().Nodes().Get(context.Background(), nodeName, metav1.GetOptions{})
@@ -148,7 +147,7 @@ var _ = describe("Node tests", func() {
 
 		kubeletRestartPod, err := cs.CoreV1().Pods(ns).Create(context.Background(), kubeletRestartPodTemplate, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create a kubelet restart pod")
-		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(f.ClientSet, kubeletRestartPod.Name, kubeletRestartPod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(context.TODO(), f.ClientSet, kubeletRestartPod.Name, kubeletRestartPod.Namespace))
 
 		// Wait for a bit to give everything time to either fail completely or recover
 		time.Sleep(1 * time.Minute)
@@ -176,7 +175,7 @@ var _ = describe("Node tests", func() {
 		}
 		testPod, err := cs.CoreV1().Pods(ns).Create(context.Background(), testPodTemplate, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create a test pod")
-		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(f.ClientSet, testPod.Name, testPod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(context.TODO(), f.ClientSet, testPod.Name, testPod.Namespace))
 	})
 	It("Should handle node restart [Slow] [Zalando]", func() {
 		ns := f.Namespace.Name
@@ -215,8 +214,8 @@ var _ = describe("Node tests", func() {
 		framework.ExpectNoError(err, "Could not create a test pod")
 
 		By("Ensuring that node and its respective pods are terminated")
-		framework.ExpectNoError(e2epod.WaitForPodToDisappear(f.ClientSet, privilegedPod.Namespace, privilegedPod.Name, labels.Everything(), framework.Poll, framework.PodDeleteTimeout))
-		framework.ExpectNoError(e2epod.WaitForPodToDisappear(f.ClientSet, pod.Namespace, pod.Name, labels.Everything(), framework.Poll, framework.PodDeleteTimeout))
+		framework.ExpectNoError(e2epod.WaitForPodNotFoundInNamespace(context.TODO(), f.ClientSet, privilegedPod.Name, privilegedPod.Namespace, framework.PodDeleteTimeout))
+		framework.ExpectNoError(e2epod.WaitForPodNotFoundInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace, framework.PodDeleteTimeout))
 
 		_, err = cs.CoreV1().Nodes().Get(context.Background(), nodeName, metav1.GetOptions{})
 		framework.ExpectError(err, "Could not fetch the node")
