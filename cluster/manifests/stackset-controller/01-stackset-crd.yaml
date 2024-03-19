@@ -604,6 +604,20 @@ spec:
                           description: ConfigurationResourcesSpec makes it possible
                             to defined the config resources to be created
                           properties:
+{{- if eq .Cluster.ConfigItems.stackset_inline_configmap_support_enabled "true" }}
+                            configMap:
+                              description: ConfigMap to be owned by Stack
+                              properties:
+                                data:
+                                  additionalProperties:
+                                    type: string
+                                  description: Data of the ConfigMap
+                                  type: object
+                                name:
+                                  description: Name of the ConfigMap
+                                  type: string
+                              type: object
+{{ end }}
                             configMapRef:
                               description: ConfigMap to be owned by Stack
                               properties:
