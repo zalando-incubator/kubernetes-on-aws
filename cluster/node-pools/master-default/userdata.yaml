@@ -29,6 +29,7 @@ write_files:
       cpuCFSQuota: false
 {{- end }}
       featureGates:
+        InPlacePodVerticalScaling: {{ .Cluster.ConfigItems.enable_in_place_pod_vertical_scaling }}
         SizeMemoryBackedVolumes: {{ .Cluster.ConfigItems.enable_size_memory_backed_volumes }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) 8 }}
@@ -141,7 +142,7 @@ write_files:
           - "--oidc-username-prefix=okta:"
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
-          - --feature-gates=HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }},TopologyAwareHints={{ .Cluster.ConfigItems.enable_topology_aware_hints }},MinDomainsInPodTopologySpread={{ .Cluster.ConfigItems.min_domains_in_pod_topology_spread_enabled }},MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}},KMSv1=true
+          - --feature-gates=HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }},TopologyAwareHints={{ .Cluster.ConfigItems.enable_topology_aware_hints }},MinDomainsInPodTopologySpread={{ .Cluster.ConfigItems.min_domains_in_pod_topology_spread_enabled }},MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}},KMSv1=true,InPlacePodVerticalScaling={{.Cluster.ConfigItems.enable_in_place_pod_vertical_scaling}}
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
@@ -668,7 +669,7 @@ write_files:
           args:
           - --config=/etc/kubernetes/config/scheduler-config.yaml
           - --leader-elect=true
-          - --feature-gates=MinDomainsInPodTopologySpread={{ .Cluster.ConfigItems.min_domains_in_pod_topology_spread_enabled }}
+          - --feature-gates=MinDomainsInPodTopologySpread={{ .Cluster.ConfigItems.min_domains_in_pod_topology_spread_enabled }},InPlacePodVerticalScaling={{.Cluster.ConfigItems.enable_in_place_pod_vertical_scaling}}
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           resources:
             requests:
