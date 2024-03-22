@@ -74,7 +74,7 @@ var _ = describe("RouteGroup ALB creation", func() {
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
 		By("Creating a routegroup with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
@@ -147,7 +147,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
 		By("Creating a routegroup with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
@@ -219,7 +219,7 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
 		By("Creating a routegroup with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
@@ -348,7 +348,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
 		By("Creating a routegroup with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
@@ -425,7 +425,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
 		By("Creating a routegroup with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
@@ -566,8 +566,8 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 		Expect(err).NotTo(HaveOccurred())
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod2, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod2.Name, pod2.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod2.Name, pod2.Namespace))
 
 		// RouteGroup
 		By("Creating a routegroup with name " + serviceName + "-" + serviceName2 + " in namespace " + ns + " with hostname " + hostName)
@@ -687,7 +687,7 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
 		By("Creating a routegroup with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
@@ -736,7 +736,7 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
 		By("Creating a routegroup with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)

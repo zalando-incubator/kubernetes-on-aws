@@ -79,7 +79,7 @@ var _ = describe("Ingress ALB creation", func() {
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// Ingress
 		By("Creating an ingress with name " + serviceName + " in namespace " + ns + " with hostname " + hostName)
@@ -93,7 +93,7 @@ var _ = describe("Ingress ALB creation", func() {
 		}()
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, 10*time.Minute)
+		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, 10*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
 		ingress, err := cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		Expect(err).NotTo(HaveOccurred())
@@ -156,7 +156,7 @@ var __ = describe("Ingress tests simple", func() {
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
+		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
@@ -371,7 +371,7 @@ var ___ = describe("Ingress tests paths", func() {
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
+		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
@@ -529,7 +529,7 @@ var ____ = describe("Ingress tests custom routes", func() {
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
+		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
@@ -667,7 +667,7 @@ var _____ = describe("Ingress tests paths", func() {
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
+		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
@@ -841,7 +841,7 @@ var ______ = describe("Ingress tests custom routes", func() {
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
+		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
@@ -974,7 +974,7 @@ var _______ = describe("Ingress tests simple NLB", func() {
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, waitTime)
+		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})

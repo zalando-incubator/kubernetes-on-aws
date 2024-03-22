@@ -2,7 +2,7 @@
 
 BINARY       ?= kubernetes-on-aws-e2e
 VERSION      ?= $(shell git describe --tags --always --dirty)
-KUBE_VERSION ?= v1.26.13
+KUBE_VERSION ?= v1.27.11
 IMAGE        ?= pierone.stups.zalan.do/teapot/$(BINARY)
 TAG          ?= $(VERSION)
 DOCKERFILE   ?= Dockerfile
@@ -24,7 +24,7 @@ fix-go-modules:	$(MOD_PATH)
 	MOD_PATH=$(MOD_PATH) KUBE_VERSION=$(KUBE_VERSION) ./setup_modules.sh
 
 deps:
-	CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.4.0
+	CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.9.1
 
 e2e.test: fix-go-modules $(GO_BINDATA)
 	go test -v -c -o e2e.test
