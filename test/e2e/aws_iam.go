@@ -70,7 +70,7 @@ var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
 		_, err = zcs.ZalandoV1().AWSIAMRoles(ns).Create(context.TODO(), rs, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 	})
 
 	It("Should NOT get AWS IAM credentials [AWS-IAM] [Zalando]", func() {
@@ -81,7 +81,7 @@ var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		framework.ExpectNoError(e2epod.WaitForPodTerminatedInNamespace(f.ClientSet, pod.Name, "", pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodTerminatedInNamespace(context.TODO(), f.ClientSet, pod.Name, "", pod.Namespace))
 
 		p, err := cs.CoreV1().Pods(ns).Get(context.TODO(), pod.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())

@@ -212,7 +212,7 @@ func (tc *CustomMetricTestCase) Run() {
 		ingressCreate, err := tc.kubeClient.NetworkingV1().Ingresses(ns).Create(context.TODO(), tc.ingress, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = tc.jig.WaitForIngressAddress(tc.kubeClient, ns, ingressCreate.Name, 10*time.Minute)
+		_, err = tc.jig.WaitForIngressAddress(context.TODO(), tc.kubeClient, ns, ingressCreate.Name, 10*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
 
 	}
