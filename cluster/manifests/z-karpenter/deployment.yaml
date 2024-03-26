@@ -33,7 +33,10 @@ spec:
     spec:
       dnsPolicy: Default
       serviceAccountName: karpenter
+      securityContext:
+        fsGroup: 65536
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
+      dnsPolicy: ClusterFirst
       containers:
         - name: controller
           securityContext:
@@ -47,53 +50,53 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
-          image: "container-registry.zalando.net/teapot/karpenter:v0.34.1-main-18.custom"
+          image: "container-registry.zalando.net/teapot/karpenter:0.35.2-main-19.custom"
           imagePullPolicy: IfNotPresent
           env:
-            - name: ASSUME_ROLE_DURATION
-              value: 15m
+            - name: KUBERNETES_MIN_VERSION
+              value: 1.22.0-0
             - name: AWS_REGION
               value: "{{ .Cluster.Region }}"
-            - name: BATCH_IDLE_DURATION
-              value: 1s
-            - name: BATCH_MAX_DURATION
-              value: 10s
             - name: CLUSTER_ENDPOINT
               value: https://kubernetes.default.svc.cluster.local.
-            - name: CLUSTER_NAME
-              value: "{{.Cluster.ID}}"
             - name: ENABLE_PROFILING
               value: 'false'
-            - name: FEATURE_GATES
-              value: Drift=false
-            - name: HEALTH_PROBE_PORT
-              value: '8081'
             - name: INTERRUPTION_QUEUE
               value: "{{.Cluster.LocalID}}-karpenter-interruption-queue"
             - name: ISOLATED_VPC
               value: "false"
             - name: KARPENTER_SERVICE
               value: karpenter
-            - name: KUBERNETES_MIN_VERSION
-              value: 1.22.0-0
             - name: LOG_LEVEL
               value: {{ .Cluster.ConfigItems.karpenter_log_level }}
-            - name: MEMORY_LIMIT
-              valueFrom:
-                resourceFieldRef:
-                  containerName: controller
-                  divisor: '0'
-                  resource: limits.memory
             - name: METRICS_PORT
-              value: '8000'
-            - name: RESERVED_ENIS
-              value: '0'
+              value: "8000"
+            - name: HEALTH_PROBE_PORT
+              value: "8081"
             - name: SYSTEM_NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: MEMORY_LIMIT
+              valueFrom:
+                resourceFieldRef:
+                  containerName: controller
+                  divisor: "0"
+                  resource: limits.memory
+            - name: FEATURE_GATES
+              value: "Drift=false,SpotToSpotConsolidation=true"
+            - name: BATCH_MAX_DURATION
+              value: "10s"
+            - name: BATCH_IDLE_DURATION
+              value: "1s"
+            - name: ASSUME_ROLE_DURATION
+              value: "15m"
+            - name: CLUSTER_NAME
+              value: "{{.Cluster.ID}}"
             - name: VM_MEMORY_OVERHEAD_PERCENT
-              value: '0.075'
+              value: "0.075"
+            - name: RESERVED_ENIS
+              value: "0"
           ports:
             - name: http-metrics
               containerPort: 8000
