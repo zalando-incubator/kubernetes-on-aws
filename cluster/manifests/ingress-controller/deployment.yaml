@@ -17,7 +17,8 @@ spec:
     metadata:
       labels:
         application: kube-ingress-aws-controller
-        version: "{{ $version }}"
+        # version: "{{ $version }}"
+        version: "pr-674-4"
       annotations:
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
         prometheus.io/path: /metrics
@@ -32,7 +33,8 @@ spec:
       serviceAccountName: kube-ingress-aws-controller
       containers:
         - name: controller
-          image: container-registry.zalando.net/teapot/kube-ingress-aws-controller:{{ $version }}
+          # image: container-registry.zalando.net/teapot/kube-ingress-aws-controller:{{ $version }}
+          image: container-registry-test.zalando.net/teapot/kube-ingress-aws-controller:pr-674-3
           args:
             - --target-access-mode=HostPort
             - --stack-termination-protection
