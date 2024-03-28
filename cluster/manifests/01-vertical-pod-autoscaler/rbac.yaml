@@ -42,8 +42,6 @@ rules:
       - list
       - watch
       - create
-      - update
-      - patch
   - apiGroups:
       - "poc.autoscaling.k8s.io"
     resources:
@@ -52,7 +50,6 @@ rules:
       - get
       - list
       - watch
-      - patch
   - apiGroups:
       - "autoscaling.k8s.io"
     resources:
@@ -61,6 +58,18 @@ rules:
       - get
       - list
       - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:vpa-status-actor
+rules:
+  - apiGroups:
+      - "autoscaling.k8s.io"
+    resources:
+      - verticalpodautoscalers/status
+    verbs:
+      - get
       - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -110,17 +119,12 @@ metadata:
     component: vpa
 rules:
   - apiGroups:
+      - "apps"
       - "extensions"
     resources:
       - replicasets
     verbs:
       - get
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-    verbs:
-      - delete
   - apiGroups:
       - ""
     resources:
@@ -166,6 +170,19 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  name: system:vpa-status-actor
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:vpa-status-actor
+subjects:
+  - kind: ServiceAccount
+    name: vpa-recommender
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
   name: system:vpa-checkpoint-actor
   labels:
     application: kubernetes
@@ -187,6 +204,13 @@ metadata:
     application: kubernetes
     component: vpa
 rules:
+  - apiGroups:
+    - '*'
+    resources:
+    - '*/scale'
+    verbs:
+    - get
+    - watch
   - apiGroups:
       - ""
     resources:
@@ -241,7 +265,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: system:vpa-evictionter-binding
+  name: system:vpa-evictioner-binding
   labels:
     application: kubernetes
     component: vpa
@@ -253,6 +277,15 @@ subjects:
   - kind: ServiceAccount
     name: vpa-updater
     namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vpa-admission-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: vpa-admission-controller
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -271,15 +304,6 @@ metadata:
   labels:
     application: kubernetes
     component: vpa-updater
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: vpa-admission-controller
-  namespace: kube-system
-  labels:
-    application: kubernetes
-    component: vpa-admission-controller
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -375,6 +399,6 @@ roleRef:
   kind: ClusterRole
   name: system:vpa-status-reader
 subjects:
-- kind: ServiceAccount
-  name: vpa-updater
-  namespace: kube-system
+  - kind: ServiceAccount
+    name: vpa-updater
+    namespace: kube-system

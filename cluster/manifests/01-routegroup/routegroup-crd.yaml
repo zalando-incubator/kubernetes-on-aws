@@ -1,5 +1,4 @@
 # This is an adjusted copy of https://github.com/szuecs/routegroup-client/blob/master/zalando.org_routegroups.yaml
----
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -133,7 +132,8 @@ spec:
               hosts:
                 description: List of hostnames for the RouteGroup
                 items:
-                  pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+                  maxLength: 255
+                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                   type: string
                 minItems: 1
                 type: array
@@ -217,7 +217,8 @@ spec:
                         The values in this list must match the host name(s) used for
                         the RouteGroup in order to terminate TLS for the host(s).
                       items:
-                        pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+                        maxLength: 255
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                         type: string
                       minItems: 1
                       type: array
