@@ -1008,6 +1008,41 @@ enable_size_memory_backed_volumes: "true"
 # https://kubernetes.io/blog/2021/12/16/kubernetes-1-23-statefulset-pvc-auto-deletion/
 enable_statefulset_autodelete_pvc: "true"
 
+# Allow configuring ingress rules on the Worker security group. This is used for
+# cases where a service needs a Service Type Load Balancer with an NLB and
+# require the port and optional CIDR range to be added to the worker node
+# Security groups.
+# The format is [<protocol>:]<cidr>:<port>[-<port>],
+# Example:
+#
+# "10.0.0.0/8:4180-4181,0.0.0.0/0:4190,udp:0.0.0.0/0:53" would result in the ingress ranges:
+#
+#
+# [
+#
+#   {
+#     CIDR: "10.0.0.0/8",
+#     FromPort: 4180,
+#     ToPort: 4181,
+#     Protocol: "tcp",
+#   },
+#   {
+#     CIDR: "0.0.0.0/0",
+#     FromPort: 4190,
+#     ToPort: 4190,
+#     Protocol: "tcp",
+#   },
+#   {
+#     CIDR: "0.0.0.0/0",
+#     FromPort: 53,
+#     ToPort: 53,
+#     Protocol: "udp",
+#   },
+# ]
+#
+# Source for the template function: sgIngressRanges: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/42695865a251fef58e22ce612d6549e75fa5d103/provisioner/template.go#L336-L417
+open_sg_ingress_ranges: ""
+
 # Each subdomain can reach a max of 63 bytes on Route53
 # This custom value sets the subdomain max allowed length taking into consideration the 'cname-' prefix added by external-dns
 subdomain_max_length: "57"
