@@ -277,7 +277,14 @@ if [ "$loadtest_e2e" = true ]; then
 fi
 
 if [ "$decommission_cluster" = true ]; then
-    existing_tags="$(aws --region "$REGION" cloudformation describe-stacks --stack-name "${LOCAL_ID}" --query "Stacks[0].Tags" | jq --sort-keys -c '[.[] | {key: .Key, value: .Value}] | from_entries')"
+    describe_stack="$(aws --region "$REGION" cloudformation describe-stacks --stack-name "${LOCAL_ID}" --query "Stacks[0].Tags" 2>&1)"
+
+    if [[ "$describe_stack" == *"${LOCAL_ID} does not exist"* ]]; then
+      echo "Stack was already cleaned up"
+      exit 0
+    fi
+
+    existing_tags="$(echo "$describe_stack" | jq --sort-keys -c '[.[] | {key: .Key, value: .Value}] | from_entries')"
     updated_tags="$(printf "%s" "$existing_tags" | jq --sort-keys -c '.["decommission-requested"] = "true"')"
     if [[ "$existing_tags" != "$updated_tags" ]]; then
         aws --region "$REGION" cloudformation update-stack --stack-name "${LOCAL_ID}" \
