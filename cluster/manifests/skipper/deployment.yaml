@@ -1,5 +1,5 @@
 {{ $internal_version := "v0.21.40-868" }}
-{{ $canary_internal_version := "v0.21.40-868" }}
+{{ $canary_internal_version := "v0.21.48-876" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -133,6 +133,11 @@ spec:
             secretKeyRef:
               name: skipper-ingress
               key: datadome-api-key
+        - name: KASADA_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: skipper-ingress
+              key: kasada-api-key
 {{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
         - name: STYRA_TOKEN

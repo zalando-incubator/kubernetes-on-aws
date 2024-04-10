@@ -1,4 +1,4 @@
-{{ $version := "v1.4.56" }}
+{{ $version := "v1.4.61" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,12 +39,7 @@ spec:
 {{- end }}
         - "--enable-configmap-support"
         - "--enable-secret-support"
-{{- if eq .Cluster.ConfigItems.stackset_enable_traffic_segments "true" }}
         - "--enable-traffic-segments"
-{{- end }}
-{{- if eq .Cluster.ConfigItems.stackset_annotated_traffic_segments "true" }}
-        - "--annotated-traffic-segments"
-{{- end }}
 {{if eq .Cluster.Environment "e2e"}}
         - "--sync-ingress-annotation=example.org/i-haz-synchronize"
         - "--sync-ingress-annotation=teapot.org/the-best"
