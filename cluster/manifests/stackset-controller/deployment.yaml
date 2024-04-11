@@ -40,6 +40,9 @@ spec:
         - "--enable-configmap-support"
         - "--enable-secret-support"
         - "--enable-traffic-segments"
+{{- if eq .Cluster.ConfigItems.stackset_pcs_support_enabled "true" }}
+        - "--enable-pcs-support"
+{{- end }}
 {{if eq .Cluster.Environment "e2e"}}
         - "--sync-ingress-annotation=example.org/i-haz-synchronize"
         - "--sync-ingress-annotation=teapot.org/the-best"
