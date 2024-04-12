@@ -124,6 +124,48 @@ subjects:
     kind: User
     name: zalando-iam:zalando:service:k8sapi-local_deployment-service-executor
 ---
+{{- if eq .Cluster.ConfigItems.deployment_service_executor_cdp_permissions "true" }}
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "deployment-service-executor-cdpdeploymenttasks"
+  labels:
+    application: "deployment-service"
+    component: "controller"
+rules:
+- apiGroups:
+  - deployment.zalando.org
+  resources:
+  - cdpdeploymenttasks
+  - cdpdeploymenttasks/status
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+  - deletecollection
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+  name: "deployment-service-executor-cdpdeploymenttasks"
+  labels:
+    application: "deployment-service"
+    component: "controller"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: deployment-service-executor-cdpdeploymenttasks
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: zalando-iam:zalando:service:k8sapi-local_deployment-service-executor
+---
+{{- end }}
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
