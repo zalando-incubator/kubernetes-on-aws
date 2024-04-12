@@ -626,9 +626,8 @@ spec:
                         - metrics
                         type: object
                       configurationResources:
-                        description: ConfigurationResources describes the ConfigMaps
-                          that will be created. Later Secrets and PlatformCredentialSets
-                          will also be defined on ConfigurationResources
+                        description: ConfigurationResources describes the ConfigMaps,
+                          Secrets, and/or PlatformCredentialsSet that will be created.
                         items:
                           description: ConfigurationResourcesSpec makes it possible
                             to defined the config resources to be created
@@ -648,10 +647,21 @@ spec:
                                   type: string
                               type: object
                             # {{ end }}
+                            configMapRef:
+                              description: ConfigMapRef is a reference to a ConfigMap
+                                to be owned by Stack
+                              properties:
+                                name:
+                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                    TODO: Add other useful fields. apiVersion, kind,
+                                    uid?'
+                                  type: string
+                              type: object
+                              x-kubernetes-map-type: atomic
                             # {{ if eq .Cluster.ConfigItems.stackset_pcs_support_enabled "true" }}
                             platformCredentialsSet:
-                              description: PlatformCredentialsSet to be created and owned
-                                by Stack
+                              description: PlatformCredentialsSet to be created and
+                                owned by Stack
                               properties:
                                 name:
                                   type: string
@@ -668,17 +678,6 @@ spec:
                                   type: object
                               type: object
                             # {{ end }}
-                            configMapRef:
-                              description: ConfigMapRef is a reference to a ConfigMap
-                                to be owned by Stack
-                              properties:
-                                name:
-                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                    TODO: Add other useful fields. apiVersion, kind,
-                                    uid?'
-                                  type: string
-                              type: object
-                              x-kubernetes-map-type: atomic
                             secretRef:
                               description: SecretRef is a reference to a Secret to
                                 be owned by Stack
