@@ -684,14 +684,14 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_26_focal_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.26.14-amd64-master-317" "861068367966" }}
-kuberuntu_image_v1_26_focal_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.26.14-arm64-master-317" "861068367966" }}
-kuberuntu_image_v1_26_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.26.14-amd64-master-317" "861068367966" }}
-kuberuntu_image_v1_26_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.26.14-arm64-master-317" "861068367966" }}
 kuberuntu_image_v1_27_focal_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.27.12-amd64-master-321" "861068367966" }}
 kuberuntu_image_v1_27_focal_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.27.12-arm64-master-321" "861068367966" }}
 kuberuntu_image_v1_27_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.27.12-amd64-master-321" "861068367966" }}
 kuberuntu_image_v1_27_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.27.12-arm64-master-321" "861068367966" }}
+kuberuntu_image_v1_28_focal_amd64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.28.8-amd64-master-321" "861068367966" }}
+kuberuntu_image_v1_28_focal_arm64: {{ amiID "zalando-ubuntu-focal-20.04-kubernetes-production-v1.28.8-arm64-master-321" "861068367966" }}
+kuberuntu_image_v1_28_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.28.8-amd64-master-321" "861068367966" }}
+kuberuntu_image_v1_28_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.28.8-arm64-master-321" "861068367966" }}
 
 # Which distro from the previous config items should be used. Valid options are `focal` and `jammy`. Can be set for each node pool.
 {{if eq .Cluster.Environment "test"}}
@@ -923,10 +923,12 @@ stackset_ingress_source_switch_ttl: "5m"
 # enable/disable inline configmap support for stackset
 stackset_inline_configmap_support_enabled: "false"
 
+# enable/disable platformCredentialsSet support for stackset
+stackset_pcs_support_enabled: "false"
+
 # Enable/Disable profiling for Kubernetes components
 enable_control_plane_profiling: "false"
 
-okta_auth_enabled: "true"
 okta_auth_issuer_url: ""
 okta_auth_client_id: "kubernetes.cluster.{{.Cluster.Alias}}"
 
