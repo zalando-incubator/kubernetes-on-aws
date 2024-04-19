@@ -6,6 +6,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -14,6 +15,7 @@ import (
 	admissionapi "k8s.io/pod-security-admission/api"
 
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 )
 
@@ -42,14 +44,14 @@ var _ = describe("Node tests", func() {
 		return pausePod
 	}
 
-	It("Should react to spot termination notices [Slow] [Zalando] [Spot]", func() {
+	f.It("Should react to spot termination notices [Zalando] [Spot]", f.WithSlow(), func(ctx context.Context) {
 		ns := f.Namespace.Name
 
 		pausePod := createTestPod(ns, "node-tests")
 
 		nodeName := pausePod.Spec.NodeName
 		By("Ensuring that the node is schedulable initially")
-		node, err := cs.CoreV1().Nodes().Get(context.Background(), nodeName, metav1.GetOptions{})
+		node, err := cs.CoreV1().Nodes().Get(ctx, nodeName, metav1.GetOptions{})
 		framework.ExpectNoError(err, "Could not fetch the node")
 		Expect(node.Spec.Unschedulable).To(BeFalse())
 
@@ -95,23 +97,23 @@ var _ = describe("Node tests", func() {
 				RestartPolicy: corev1.RestartPolicyNever,
 			},
 		}
-		_, err = cs.CoreV1().Pods(ns).Create(context.Background(), terminationTriggerPodTemplate, metav1.CreateOptions{})
+		_, err = cs.CoreV1().Pods(ns).Create(ctx, terminationTriggerPodTemplate, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create a termination trigger pod")
 
 		By("Ensuring that pods are deleted from the node")
-		framework.ExpectNoError(e2epod.WaitForPodNotFoundInNamespace(context.TODO(), f.ClientSet, pausePod.Name, pausePod.Namespace, framework.PodDeleteTimeout))
+		framework.ExpectNoError(e2epod.WaitForPodNotFoundInNamespace(ctx, f.ClientSet, pausePod.Name, pausePod.Namespace, framework.PodDeleteTimeout))
 
 		By("Ensuring that the ForceTerminatedSpot event is posted for affected pods")
 		eventSelector := fmt.Sprintf("involvedObject.uid=%s,reason=ForceTerminatedSpot", pausePod.UID)
-		framework.ExpectNoError(e2eevents.WaitTimeoutForEvent(context.TODO(), f.ClientSet, pausePod.Namespace, eventSelector, "Deleted for spot termination", 30*time.Second))
+		framework.ExpectNoError(e2eevents.WaitTimeoutForEvent(ctx, f.ClientSet, pausePod.Namespace, eventSelector, "Deleted for spot termination", 30*time.Second))
 
 		By("Ensuring that the node is unschedulable")
-		node, err = cs.CoreV1().Nodes().Get(context.Background(), nodeName, metav1.GetOptions{})
+		node, err = cs.CoreV1().Nodes().Get(ctx, nodeName, metav1.GetOptions{})
 		framework.ExpectNoError(err, "Could not fetch the node")
 		Expect(node.Spec.Unschedulable).To(BeTrue())
 	})
 
-	It("Should handle kubelet restarts successfully [Slow] [Zalando]", func() {
+	f.It("Should handle kubelet restarts successfully [Zalando]", f.WithSlow(), func(ctx context.Context) {
 		ns := f.Namespace.Name
 
 		pausePod := createTestPod(ns, "node-tests")
@@ -145,9 +147,9 @@ var _ = describe("Node tests", func() {
 			},
 		}
 
-		kubeletRestartPod, err := cs.CoreV1().Pods(ns).Create(context.Background(), kubeletRestartPodTemplate, metav1.CreateOptions{})
+		kubeletRestartPod, err := cs.CoreV1().Pods(ns).Create(ctx, kubeletRestartPodTemplate, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create a kubelet restart pod")
-		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(context.TODO(), f.ClientSet, kubeletRestartPod.Name, kubeletRestartPod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(ctx, f.ClientSet, kubeletRestartPod.Name, kubeletRestartPod.Namespace))
 
 		// Wait for a bit to give everything time to either fail completely or recover
 		time.Sleep(1 * time.Minute)
@@ -173,11 +175,11 @@ var _ = describe("Node tests", func() {
 				RestartPolicy: corev1.RestartPolicyNever,
 			},
 		}
-		testPod, err := cs.CoreV1().Pods(ns).Create(context.Background(), testPodTemplate, metav1.CreateOptions{})
+		testPod, err := cs.CoreV1().Pods(ns).Create(ctx, testPodTemplate, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create a test pod")
-		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(context.TODO(), f.ClientSet, testPod.Name, testPod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(ctx, f.ClientSet, testPod.Name, testPod.Namespace))
 	})
-	It("Should handle node restart [Slow] [Zalando]", func() {
+	f.It("Should handle node restart [Zalando]", f.WithSlow(), func(ctx context.Context) {
 		ns := f.Namespace.Name
 
 		pod := createTestPod(ns, "node-reboot-tests")
@@ -210,14 +212,14 @@ var _ = describe("Node tests", func() {
 			},
 		}
 
-		privilegedPod, err := cs.CoreV1().Pods(ns).Create(context.Background(), privilegedPodTemplate, metav1.CreateOptions{})
+		privilegedPod, err := cs.CoreV1().Pods(ns).Create(ctx, privilegedPodTemplate, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create a test pod")
 
 		By("Ensuring that node and its respective pods are terminated")
-		framework.ExpectNoError(e2epod.WaitForPodNotFoundInNamespace(context.TODO(), f.ClientSet, privilegedPod.Name, privilegedPod.Namespace, framework.PodDeleteTimeout))
-		framework.ExpectNoError(e2epod.WaitForPodNotFoundInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace, framework.PodDeleteTimeout))
+		framework.ExpectNoError(e2epod.WaitForPodNotFoundInNamespace(ctx, f.ClientSet, privilegedPod.Name, privilegedPod.Namespace, framework.PodDeleteTimeout))
+		framework.ExpectNoError(e2epod.WaitForPodNotFoundInNamespace(ctx, f.ClientSet, pod.Name, pod.Namespace, framework.PodDeleteTimeout))
 
-		_, err = cs.CoreV1().Nodes().Get(context.Background(), nodeName, metav1.GetOptions{})
-		framework.ExpectError(err, "Could not fetch the node")
+		_, err = cs.CoreV1().Nodes().Get(ctx, nodeName, metav1.GetOptions{})
+		gomega.Expect(apierrors.IsNotFound(err)).To(gomega.BeTrue(), "node should not be found")
 	})
 })
