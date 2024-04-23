@@ -1,4 +1,4 @@
-{{ $internal_version := "v0.21.48-876" }}
+{{ $internal_version := "v0.21.54-882" }}
 {{ $canary_internal_version := "v0.21.54-882" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
@@ -253,6 +253,7 @@ spec:
           - "-idle-timeout-server={{ .Cluster.ConfigItems.skipper_idle_timeout_server }}"
           - "-read-timeout-server={{ .Cluster.ConfigItems.skipper_read_timeout_server }}"
           - "-write-timeout-server={{ .Cluster.ConfigItems.skipper_write_timeout_server }}"
+          - "-lua-sources={{ .Cluster.ConfigItems.skipper_lua_sources }}"
           - "-disabled-filters={{ .Cluster.ConfigItems.skipper_disabled_filters }}"
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
@@ -304,7 +305,7 @@ spec:
 {{ if .Cluster.ConfigItems.skipper_ingress_inline_routes }}
           - "-inline-routes={{ .Cluster.ConfigItems.skipper_ingress_inline_routes }}"
 {{ end }}
-{{ if and (.Cluster.ConfigItems.skipper_ingress_health_check_options) (or (eq .name "skipper-ingress-canary") (eq .Cluster.ConfigItems.skipper_ingress_health_check_main_fleet "true")) }}
+{{ if .Cluster.ConfigItems.skipper_ingress_health_check_options }}
           - "-passive-health-check={{ .Cluster.ConfigItems.skipper_ingress_health_check_options }}"
 {{ end }}
 {{ if .Cluster.ConfigItems.skipper_ingress_refuse_payload }}
