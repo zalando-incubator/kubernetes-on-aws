@@ -48,7 +48,7 @@ var _ = describe("GPU job processing", func() {
 		pod := createVectorPod(nameprefix, ns, labels)
 		_, err := cs.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create POD %s", pod.Name)
-		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(ctx, f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespaceTimeout(ctx, f.ClientSet, pod.Name, pod.Namespace, 15*time.Minute))
 		for {
 			p, err := cs.CoreV1().Pods(ns).Get(ctx, pod.Name, metav1.GetOptions{})
 			if err != nil {
