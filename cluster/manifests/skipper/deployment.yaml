@@ -1,5 +1,5 @@
 {{ $internal_version := "v0.21.54-882" }}
-{{ $canary_internal_version := "v0.21.54-882" }}
+{{ $canary_internal_version := "v0.21.62-890" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -305,7 +305,7 @@ spec:
 {{ if .Cluster.ConfigItems.skipper_ingress_inline_routes }}
           - "-inline-routes={{ .Cluster.ConfigItems.skipper_ingress_inline_routes }}"
 {{ end }}
-{{ if and (.Cluster.ConfigItems.skipper_ingress_health_check_options) (or (eq .name "skipper-ingress-canary") (eq .Cluster.ConfigItems.skipper_ingress_health_check_main_fleet "true")) }}
+{{ if .Cluster.ConfigItems.skipper_ingress_health_check_options }}
           - "-passive-health-check={{ .Cluster.ConfigItems.skipper_ingress_health_check_options }}"
 {{ end }}
 {{ if .Cluster.ConfigItems.skipper_ingress_refuse_payload }}
