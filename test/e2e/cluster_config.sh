@@ -43,6 +43,7 @@ clusters:
     stackset_ingress_source_switch_ttl: "1m"
     teapot_admission_controller_daemonset_reserved_cpu: "518m"
     karpenter_pools_enabled: "true"
+    okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
