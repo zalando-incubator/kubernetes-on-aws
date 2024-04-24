@@ -72,11 +72,9 @@ skipper_ingress_hpa_scale_up_max_perc: "100"
 {{if eq .Cluster.Environment "production"}}
 skipper_ingress_min_replicas: "3"
 skipper_ingress_max_replicas: "300"
-skipper_ingress_health_check_main_fleet: "false"
 {{else}}
 skipper_ingress_min_replicas: "2"
 skipper_ingress_max_replicas: "50"
-skipper_ingress_health_check_main_fleet: "true"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
@@ -335,7 +333,7 @@ skipper_open_policy_agent_styra_token: ""
 #   - production: runs the controller
 #
 fabric_gateway_controller_mode: "disabled"
-fabric_gateway_controller_version: "master-247"
+fabric_gateway_controller_version: "master-250"
 fabric_gateway_controller_cpu: "50m"
 fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_crd_v1_enabled: "false"
@@ -695,13 +693,8 @@ kuberuntu_image_v1_28_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernet
 kuberuntu_image_v1_28_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.28.8-arm64-master-321" "861068367966" }}
 
 # Which distro from the previous config items should be used. Valid options are `focal` and `jammy`. Can be set for each node pool.
-{{if eq .Cluster.Environment "test"}}
 kuberuntu_distro_master: "jammy"
 kuberuntu_distro_worker: "jammy"
-{{else}}
-kuberuntu_distro_master: "jammy"
-kuberuntu_distro_worker: "focal"
-{{end}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -921,7 +914,7 @@ stackset_routegroup_support_enabled: "true"
 stackset_inline_configmap_support_enabled: "false"
 
 # enable/disable platformCredentialsSet support for stackset
-stackset_pcs_support_enabled: "false"
+stackset_pcs_support_enabled: "true"
 
 # Enable/Disable profiling for Kubernetes components
 enable_control_plane_profiling: "false"

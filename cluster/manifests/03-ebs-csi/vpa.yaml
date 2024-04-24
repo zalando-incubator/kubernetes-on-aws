@@ -15,12 +15,16 @@ spec:
     updateMode: Auto
   resourcePolicy:
     containerPolicies:
+    - containerName: ebs-plugin
+      mode: "Off"
+    - containerName: liveness-probe
+      mode: "Off"
     - containerName: csi-provisioner
     {{ range $NodePool := .Cluster.NodePools }}
     {{ if eq $NodePool.Name "default-master" }}
     # Scaling is relative to r6g.large (smallest master node)
-    # 0.006 -> ~90Mi memory, 0.031 -> ~55m CPU
-    {{ $scaledCPU := scaleQuantity ( instanceTypeCPUQuantity ( index .InstanceTypes 0 )) 0.031 }}
+    # 0.006 -> ~90Mi memory, 0.0061 -> ~11m CPU (per container)
+    {{ $scaledCPU := scaleQuantity ( instanceTypeCPUQuantity ( index .InstanceTypes 0 )) 0.0061 }}
     {{ $scaledMemory := scaleQuantity ( instanceTypeMemoryQuantity ( index .InstanceTypes 0 )) 0.006 }}
       maxAllowed:
         cpu: {{ $scaledCPU }}
