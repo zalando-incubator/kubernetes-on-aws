@@ -37,7 +37,7 @@ var _ = describe("GPU job processing", func() {
 		cs = f.ClientSet
 	})
 
-	It("Should run a job on a gpu node [Slow] [Zalando] [GPU]", func() {
+	f.It("Should run a job on a gpu node [Zalando] [GPU]", f.WithSlow(), func(ctx context.Context) {
 		ns := f.Namespace.Name
 		nameprefix := "gpu-test-"
 		labels := map[string]string{
@@ -46,11 +46,11 @@ var _ = describe("GPU job processing", func() {
 
 		By("Creating a vector pod which runs on a GPU node")
 		pod := createVectorPod(nameprefix, ns, labels)
-		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
+		_, err := cs.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create POD %s", pod.Name)
-		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespaceTimeout(context.TODO(), f.ClientSet, pod.Name, pod.Namespace, 15*time.Minute))
+		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespaceTimeout(ctx, f.ClientSet, pod.Name, pod.Namespace, 15*time.Minute))
 		for {
-			p, err := cs.CoreV1().Pods(ns).Get(context.TODO(), pod.Name, metav1.GetOptions{})
+			p, err := cs.CoreV1().Pods(ns).Get(ctx, pod.Name, metav1.GetOptions{})
 			if err != nil {
 				framework.ExpectNoError(err, "Could not get POD %s", pod.Name)
 				return
