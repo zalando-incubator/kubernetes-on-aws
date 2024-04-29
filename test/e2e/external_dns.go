@@ -41,7 +41,7 @@ var _ = describe("External DNS creation", func() {
 		cs = f.ClientSet
 	})
 
-	It("Should create DNS entry [Slow] [Zalando]", func() {
+	f.It("Should create DNS entry [Zalando]", f.WithSlow(), func(ctx context.Context) {
 		// TODO: use the ServiceTestJig here
 		serviceName := "external-dns-test"
 		nameprefix := serviceName + "-"
@@ -54,14 +54,14 @@ var _ = describe("External DNS creation", func() {
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		defer func() {
-			err := cs.CoreV1().Services(ns).Delete(context.TODO(), serviceName, metav1.DeleteOptions{})
+			err := cs.CoreV1().Services(ns).Delete(ctx, serviceName, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
 		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
 		service := createServiceTypeLoadbalancer(serviceName, hostName, labels, port)
 
-		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
+		_, err := cs.CoreV1().Services(ns).Create(ctx, service, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Submitting the pod to kubernetes")
@@ -70,14 +70,14 @@ var _ = describe("External DNS creation", func() {
 		defer func() {
 			By("deleting the pod")
 			defer GinkgoRecover()
-			err2 := cs.CoreV1().Pods(ns).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
+			err2 := cs.CoreV1().Pods(ns).Delete(ctx, pod.Name, metav1.DeleteOptions{})
 			Expect(err2).NotTo(HaveOccurred())
 		}()
 
-		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
+		_, err = cs.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(ctx, f.ClientSet, pod.Name, pod.Namespace))
 
 		timeout := 10 * time.Minute
 		// wait for DNS and for pod to be reachable.
