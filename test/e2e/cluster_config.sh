@@ -18,6 +18,7 @@ clusters:
     etcd_client_ca_cert: "${ETCD_CLIENT_CA_CERT}"
     etcd_client_ca_key: "${ETCD_CLIENT_CA_KEY}"
     etcd_scalyr_key: "${ETCD_SCALYR_KEY}"
+    etcd_dns_record_prefixes: "etcd-server.etcd"
     docker_meta_url: https://docker-meta.stups-test.zalan.do
     vpa_enabled: "true"
     lightstep_token: "${LIGHTSTEP_TOKEN}"
