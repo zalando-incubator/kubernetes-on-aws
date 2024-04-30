@@ -1,4 +1,4 @@
-# {{ $version := "v0.15.13" }}
+# {{ $version := "v0.15.15" }}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -42,6 +42,7 @@ spec:
             # {{ if eq .Cluster.ConfigItems.kube_aws_ingress_controller_nlb_cross_zone "true" }}
             - --nlb-cross-zone
             # {{ end }}
+            - --nlb-zone-affinity={{ .Cluster.ConfigItems.kube_aws_ingress_controller_nlb_zone_affinity }}
             - --cluster-local-domain=cluster.local
             - --deny-internal-domains
             - --additional-stack-tags=InfrastructureComponent=true
