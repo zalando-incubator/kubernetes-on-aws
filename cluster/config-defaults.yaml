@@ -47,6 +47,7 @@ kube_aws_ingress_controller_deregistration_delay_timeout: "10s"
 # This opens skipper-ingress ports 9998 and 9999 on all worker nodes
 kube_aws_ingress_controller_nlb_enabled: "true"
 kube_aws_ingress_controller_nlb_cross_zone: "true"
+kube_aws_ingress_controller_nlb_zone_affinity: "any_availability_zone"
 kube_aws_ingress_controller_cert_polling_interval: "2m"
 # sets the default LB type: "network" or "application" are valid choices (overwritten by nlb_switch)
 kube_aws_ingress_default_lb_type: "application"
@@ -653,6 +654,9 @@ blocked_availability_zone: ""
 
 # etcd cluster
 etcd_stack_name: "etcd-cluster-etcd"
+# comma separated list of DNS record prefixes which will be prefixed to the
+# hosted zone of the account. We allow multiple prefixes for the purpose of
+# migration.
 etcd_dns_record_prefixes: "etcd-server.{{.Cluster.Region}}"
 
 {{if eq .Cluster.Environment "production"}}
