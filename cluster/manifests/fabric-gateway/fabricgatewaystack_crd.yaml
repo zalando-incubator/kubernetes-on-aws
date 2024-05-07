@@ -5,16 +5,16 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
-  name: fabricgateways.zalando.org
+  name: fabricgatewaystacks.zalando.org
 spec:
   group: zalando.org
   names:
-    kind: FabricGateway
-    listKind: FabricGatewayList
-    plural: fabricgateways
+    kind: FabricGatewayStack
+    listKind: FabricGatewayStackList
+    plural: fabricgatewaystacks
     shortNames:
-    - fg
-    singular: fabricgateway
+    - fgs
+    singular: fabricgatewaystack
   preserveUnknownFields: false
   scope: Namespaced
   versions:
@@ -436,6 +436,9 @@ spec:
                   matches a value between two slashes in a HTTP path
                 minProperties: 1
                 type: object
+              version:
+                description: The version of FabricGateway for providing safe changes
+                type: string
               x-external-service-provider:
                 description: |-
                   Makes the specified StackSet from the same namespace available on the
@@ -453,9 +456,6 @@ spec:
                     description: |-
                       The name of the StackSet resource in the same namespace which
                       should be handling requests coming through FabricGateway
-                    type: string
-                  version:
-                    description: The version of FabricGateway for providing safe changes
                     type: string
                 required:
                 - hosts
@@ -584,40 +584,14 @@ spec:
               Status is the current state of the FabricGateway.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
-              num_owned_ingress:
-                description: |-
-                  Number of ingresses which this FabricGateway object owns.
-                  Deprecated: up-to-date fabric-gateway-controller creates RouteGroups instead of ingresses
-                type: integer
-              observedGeneration:
-                description: |-
-                  Represents the .metadata.generation that the condition was set based upon.
-                  For instance, if .metadata.generation is currently 12, but the .status.observedGeneration is 9, the condition is out of date
-                  with respect to the current state of the instance.
-                format: int64
-                type: integer
-              owned_ingress_names:
-                description: |-
-                  Names of ingresses which this FabricGateway object owns. All of them reside in the same
-                  namespace as FabricGateway does.
-                  Deprecated: up-to-date fabric-gateway-controller creates RouteGroups instead of ingresses
-                items:
-                  type: string
-                type: array
-              owned_routegroup_names:
-                description: |-
-                  Names of RouteGroups which this FabricGateway object owns. All of them reside in the same
-                  namespace as FabricGateway does
-                items:
-                  type: string
-                type: array
               problems:
-                description: |-
-                  The problems fabric-gateway-controller has encountered while creating the object related to
-                  this FabricGateway resource
                 items:
                   type: string
                 type: array
+              stackFound:
+                type: string
+            required:
+            - stackFound
             type: object
         required:
         - spec
