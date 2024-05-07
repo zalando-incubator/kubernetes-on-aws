@@ -26,7 +26,7 @@ spec:
       serviceAccountName: flannel
       initContainers:
       - name: ensure-apiserver
-        image: container-registry.zalando.net/teapot/ensure-apiserver:master-5
+        image: container-registry.zalando.net/teapot/ensure-apiserver:master-6
         resources:
           requests:
             cpu: 1m
@@ -37,7 +37,7 @@ spec:
             memory: 50Mi
       containers:
       - name: delayed-install-cni
-        image: container-registry.zalando.net/teapot/flannel-awaiter:master-11
+        image: container-registry.zalando.net/teapot/flannel-awaiter:master-12
         command:
         - /await
         stdin: true
@@ -57,7 +57,7 @@ spec:
           failureThreshold: 30
           periodSeconds: 10
       - name: kube-flannel
-        image: container-registry.zalando.net/teapot/flannel:v0.24.4-master-22
+        image: container-registry.zalando.net/teapot/flannel:v0.25.1-master-23
         command:
         - /opt/bin/flanneld
         args:
@@ -100,7 +100,7 @@ spec:
         - /tc-flannel.sh
         command:
         - /bin/bash
-        image: container-registry.zalando.net/teapot/flannel-tc:master-6
+        image: container-registry.zalando.net/teapot/flannel-tc:master-10
         name: flannel-tc
         resources:
           requests:
