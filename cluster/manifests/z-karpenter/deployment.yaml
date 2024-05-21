@@ -50,7 +50,7 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
-          image: "container-registry.zalando.net/teapot/karpenter:0.36.1-main-22"
+          image: "container-registry.zalando.net/teapot/karpenter:0.36.1-main-23.patched"
           imagePullPolicy: IfNotPresent
           env:
             - name: KUBERNETES_MIN_VERSION
@@ -97,6 +97,9 @@ spec:
               value: "0.075"
             - name: RESERVED_ENIS
               value: "0"
+            {{ $pod_cidr_size := "15" }}
+            - name: MAX_NODE_CLAIMS
+              value: "{{ nodeCIDRMaxNodesPodCIDR (parseInt64 $pod_cidr_size) (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}"
           ports:
             - name: http-metrics
               containerPort: 8000
@@ -129,7 +132,7 @@ spec:
             - weight: 50
               preference:
                 matchExpressions:
-                - key: karpenter.sh/provisioner-name
+                - key: karpenter.sh/nodepool
                   operator: DoesNotExist
             - weight: 100
               preference:
