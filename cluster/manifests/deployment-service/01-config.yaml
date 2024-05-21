@@ -14,7 +14,7 @@ data:
   oidc-provider-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:oidc-provider/{{.Cluster.LocalID}}.{{.Cluster.Alias}}.zalan.do"
   oidc-subject-key: "{{.Cluster.LocalID}}.{{.Cluster.Alias}}.zalan.do:sub"
   s3-bucket-name: "zalando-deployment-service-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
-  status-service-url: "https://deployment-status-service.{{.Values.hosted_zone}}"
+  status-service-url: "https://deployment-status-svc-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"
   deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
 {{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
   ml-experiment-deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-deployment-service-ml-experiment-deployment"
