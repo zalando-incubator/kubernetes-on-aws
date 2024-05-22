@@ -27,7 +27,7 @@ COPY --from=builder /go/bin/ginkgo /usr/local/bin/ginkgo
 
 # copy CLM
 COPY --from=container-registry-test.zalando.net/teapot/cluster-lifecycle-manager:pr-769-2 /clm /usr/bin/clm
-COPY --from=container-registry-test.zalando.net/teapot/cluster-lifecycle-manager:pr-769-2 /aws-account-creator /usr/bin/aws-account-creator
+COPY --from=container-registry.zalando.net/teapot/aws-account-creator:latest /aws-account-creator /usr/bin/aws-account-creator
 
 ADD . /workdir
 
