@@ -1,19 +1,27 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: zalando.org/v1
+kind: RouteGroup
 metadata:
-  name: "deployment-service-status-service"
-  namespace: "kube-system"
+  name: deployment-service-status-service
+  namespace: kube-system
   labels:
-    application: "deployment-service"
-    component: "status-service"
+    application: deployment-service
+    component: status-service
 spec:
-  rules:
-    - host: "deployment-status-svc-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"
-      http:
-        paths:
-          - backend:
-              service:
-                name: "deployment-service-status-service"
-                port:
-                  name: http
-            pathType: ImplementationSpecific
+  hosts:
+    - deployment-status-svc-{{ .Cluster.Alias }}.{{ .Values.hosted_zone }}
+  backends:
+    - name: deployment-service-status-service
+      type: service
+      serviceName: deployment-service-status-service
+      servicePort: 80
+    - name: shunt
+      type: shunt
+  defaultBackends:
+    - backendName: deployment-service-status-service
+  routes:
+    - pathSubtree: /
+    - path: /healthz
+      filters:
+        - status(403)
+      backends:
+        - backendName: shunt
