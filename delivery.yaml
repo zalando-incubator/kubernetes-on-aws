@@ -31,6 +31,9 @@ pipeline:
         echo "Running go mod tidy modified go.mod and/or go.sum"
         exit 1
       fi
+      for patch in patches/*.patch; do
+        cd e2e_modules/kubernetes && git apply "../../$patch" && cd -
+      done
 
       IMAGE=container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e
       IMAGE=$IMAGE VERSION=$CDP_BUILD_VERSION make build.push.multiarch
