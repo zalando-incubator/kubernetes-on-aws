@@ -85,7 +85,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: container-registry.zalando.net/teapot/skipper-internal:{{ .internal_version }}
+        image: container-registry-test.zalando.net/teapot/skipper-internal-test:v1717150285
         terminationMessagePolicy: FallbackToLogsOnError
         ports:
         - name: ingress-port
@@ -149,6 +149,7 @@ spec:
         args:
           - "run.sh"
           - "skipper"
+          - "-enable-prometheus-start-label"
           - "-validate-query={{ .Cluster.ConfigItems.skipper_validate_query }}"
           - "-validate-query-log={{ .Cluster.ConfigItems.skipper_validate_query_log }}"
 {{ if eq .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
