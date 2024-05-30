@@ -28,12 +28,11 @@ spec:
       serviceAccountName: emergency-access-service
       containers:
       - name: apiserver-proxy
-        image: container-registry.zalando.net/teapot/etcd-proxy:master-10
-        command:
-        - /bin/sh
+        image: container-registry.zalando.net/teapot/etcd-proxy:master-11
         args:
-        - -c
-        - "exec /etcd-proxy --listen-address 127.0.0.1:333 $KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT"
+        - "--listen-address"
+        - "127.0.0.1:333"
+        - "$(KUBERNETES_SERVICE_HOST):$(KUBERNETES_SERVICE_PORT)"
         resources:
           requests:
             cpu: 25m
