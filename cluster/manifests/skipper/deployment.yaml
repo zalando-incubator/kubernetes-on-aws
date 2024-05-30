@@ -537,8 +537,7 @@ spec:
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
 {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}
-          # TODO: dynamically get the subnet range (or figure out if these are known internal addresses?)
-          - "-whitelisted-healthcheck-cidr=2a05:d014:09c0:bf00:0:0:0:0/64,2a05:d014:09c0:bf01:0:0:0:0/64,2a05:d014:09c0:bf02:0:0:0:0/64"
+          - "-whitelisted-healthcheck-cidr={{ .Values.subnet_ipv6_cidrs }}"
 {{- end }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
