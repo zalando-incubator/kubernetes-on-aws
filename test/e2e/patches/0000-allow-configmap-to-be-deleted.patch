@@ -1,0 +1,14 @@
+diff --git a/test/e2e/storage/empty_dir_wrapper.go b/test/e2e/storage/empty_dir_wrapper.go
+index ff6fcb30..1eda636f 100644
+--- a/test/e2e/storage/empty_dir_wrapper.go
++++ b/test/e2e/storage/empty_dir_wrapper.go
+@@ -91,6 +91,9 @@ var _ = utils.SIGDescribe("EmptyDir wrapper volumes", func() {
+ 			ObjectMeta: metav1.ObjectMeta{
+ 				Namespace: f.Namespace.Name,
+ 				Name:      name,
++				Annotations: map[string]string{
++					"admission.zalando.org/configmap-prevent-deletion-if-in-use": "false",
++				},
+ 			},
+ 			BinaryData: map[string][]byte{
+ 				"data-1": []byte("value-1\n"),
