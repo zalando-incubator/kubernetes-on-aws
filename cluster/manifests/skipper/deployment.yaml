@@ -1,5 +1,5 @@
 {{ $internal_version := "v0.21.99-931" }}
-{{ $canary_internal_version := "v0.21.99-931" }}
+{{ $canary_internal_version := "v0.21.101-934" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -360,9 +360,9 @@ spec:
             - /bin/sh
             - -ce
             # Check all sub processes in the container and fail if one of them fails.
-            # wget will exit with non-zero status code if the HTTP code is no 2xx.
+            # curl will exit with non-zero status code if the HTTP code is no 2xx.
             # production tokeninfo, sandbox tokeninfo, bridge
-            - "wget -T 1 -q -O /dev/null http://127.0.0.1:9021/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9121/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9000/healthz"
+            - "curl --max-time 1 -fs -o /dev/null http://127.0.0.1:9021/health; curl --max-time 1 -fs -o /dev/null http://127.0.0.1:9121/health; curl --max-time 1 -fs -o /dev/null http://127.0.0.1:9000/healthz"
           initialDelaySeconds: {{ .Cluster.ConfigItems.skipper_liveness_init_delay_seconds }}
           periodSeconds: 10
           timeoutSeconds: 5
