@@ -4,11 +4,9 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.15.0
   name: fabricgateways.zalando.org
 spec:
-  preserveUnknownFields: false
   group: zalando.org
   names:
     kind: FabricGateway
@@ -17,6 +15,7 @@ spec:
     shortNames:
     - fg
     singular: fabricgateway
+  preserveUnknownFields: false
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -28,103 +27,103 @@ spec:
       openAPIV3Schema:
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
           spec:
-            description: 'Spec is the desired state of the FabricGateway. More info:
-              https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'''
+            description: |-
+              Spec is the desired state of the FabricGateway.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
             properties:
               paths:
                 additionalProperties:
                   additionalProperties:
                     properties:
                       x-fabric-additional-filters:
-                        description: This field is used to add custom Skipper filters
-                          to this route, see https://opensource.zalando.com/skipper/reference/filters
-                          to find out more. Please try to avoid using this option
-                          unless you do understand what are you doing.
+                        description: |-
+                          This field is used to add custom Skipper filters to this route, see
+                          https://opensource.zalando.com/skipper/reference/filters to find out more.
+                          Please try to avoid using this option unless you do understand what are you doing.
                         properties:
                           append:
-                            description: The list of Skipper filters. All filters
-                              specified in this field would be appended after filters
-                              created by default. Every filter should comply to the
-                              eskip syntax, see https://pkg.go.dev/github.com/zalando/skipper/eskip
+                            description: |-
+                              The list of Skipper filters. All filters specified in this field would be appended after
+                              filters created by default. Every filter should comply to the eskip syntax, see
+                              https://pkg.go.dev/github.com/zalando/skipper/eskip
                             items:
                               type: string
                             type: array
                           prepend:
-                            description: The list of Skipper filters. All filters
-                              specified in this field would be prepended before filters
-                              created by default. Every filter should comply to the
-                              eskip syntax, see https://pkg.go.dev/github.com/zalando/skipper/eskip
+                            description: |-
+                              The list of Skipper filters. All filters specified in this field would be prepended before
+                              filters created by default. Every filter should comply to the eskip syntax, see
+                              https://pkg.go.dev/github.com/zalando/skipper/eskip
                             items:
                               type: string
                             type: array
                         type: object
                       x-fabric-custom-routes:
-                        description: Additional routes for the same method and path
-                          to be used instead of the main route when some additional
-                          conditions apply. Properties of custom route are not inherited
-                          from the main route by default
+                        description: |-
+                          Additional routes for the same method and path to be used
+                          instead of the main route when some additional conditions apply.
+                          Properties of custom route are not inherited from the main route by default
                         items:
-                          description: The additional route which is generated for
-                            the same method and path but is applied only to requests
-                            that match the rules specified in x-fabric-match.
+                          description: |-
+                            The additional route which is generated for the same method and path but is applied
+                            only to requests that match the rules specified in x-fabric-match.
                           properties:
                             x-fabric-additional-filters:
-                              description: This field is used to add custom Skipper
-                                filters to this route, see https://opensource.zalando.com/skipper/reference/filters
-                                to find out more. Please try to avoid using this option
-                                unless you do understand what are you doing.
+                              description: |-
+                                This field is used to add custom Skipper filters to this route, see
+                                https://opensource.zalando.com/skipper/reference/filters to find out more.
+                                Please try to avoid using this option unless you do understand what are you doing.
                               properties:
                                 append:
-                                  description: The list of Skipper filters. All filters
-                                    specified in this field would be appended after
-                                    filters created by default. Every filter should
-                                    comply to the eskip syntax, see https://pkg.go.dev/github.com/zalando/skipper/eskip
+                                  description: |-
+                                    The list of Skipper filters. All filters specified in this field would be appended after
+                                    filters created by default. Every filter should comply to the eskip syntax, see
+                                    https://pkg.go.dev/github.com/zalando/skipper/eskip
                                   items:
                                     type: string
                                   type: array
                                 prepend:
-                                  description: The list of Skipper filters. All filters
-                                    specified in this field would be prepended before
-                                    filters created by default. Every filter should
-                                    comply to the eskip syntax, see https://pkg.go.dev/github.com/zalando/skipper/eskip
+                                  description: |-
+                                    The list of Skipper filters. All filters specified in this field would be prepended before
+                                    filters created by default. Every filter should comply to the eskip syntax, see
+                                    https://pkg.go.dev/github.com/zalando/skipper/eskip
                                   items:
                                     type: string
                                   type: array
                               type: object
                             x-fabric-employee-access:
-                              description: The `user-list` should only be populated
-                                if `type` is set to `allow_list`. If `type` is not
-                                present, it will be defaulted to `scoped_access`
+                              description: |-
+                                The `user-list` should only be populated if `type` is set to `allow_list`.
+                                If `type` is not present, it will be defaulted to `scoped_access`
                               properties:
                                 type:
-                                  description: If `allow_list` is selected, then the
-                                    `user-list` property must be populated, otherwise
-                                    it is ignored. If allow_all is selected, any token
-                                    which is Employee realm will be able to access
-                                    the endpoint in spite of any scope restrictions.
-                                    If `deny_all` is selected, then any employee realm
-                                    token will be rejected even if there are no scope
-                                    restrictions beyond `uid`. If the employee access
-                                    route config object is not present, the employee
-                                    access configuration is inherited from any globally
-                                    defined employee access config. If no employee
-                                    access configuration is configured then employee
-                                    access will work as per normal scope rules; i.e.
-                                    employees will have access to routes which aren't
-                                    scope protected. This can be overridden on a per
-                                    route basis.
+                                  description: |-
+                                    If `allow_list` is selected, then the `user-list` property must be populated, otherwise it
+                                    is ignored. If allow_all is selected, any token which is Employee realm will be able to
+                                    access the endpoint in spite of any scope restrictions. If `deny_all` is selected, then any
+                                    employee realm token will be rejected even if there are no scope restrictions beyond `uid`.
+                                    If the employee access route config object is not present, the employee access configuration
+                                    is inherited from any globally defined employee access config.
+                                    If no employee access configuration is configured then employee access will work as per normal scope
+                                    rules; i.e. employees will have access to routes which aren't scope protected. This can be overridden
+                                    on a per route basis.
                                   enum:
                                   - allow_list
                                   - allow_all
@@ -144,9 +143,9 @@ spec:
                                 headers:
                                   additionalProperties:
                                     type: string
-                                  description: HTTP headers and its values from requests
-                                    which are used to find out whether specific request
-                                    should be processed by this route.
+                                  description: |-
+                                    HTTP headers and its values from requests which are used to find out whether
+                                    specific request should be processed by this route.
                                   minProperties: 1
                                   type: object
                               required:
@@ -163,16 +162,15 @@ spec:
                               description: Limits the rate of client requests.
                               properties:
                                 default-rate:
-                                  description: Non user specific value to apply to
-                                    the route. If a client makes more requests than
-                                    this value within the defined period, then they
-                                    will start getting HTTP 429 responses.
+                                  description: |-
+                                    Non user specific value to apply to the route. If a client makes more requests than this
+                                    value within the defined period, then they will start getting HTTP 429 responses.
                                   minimum: 1
                                   type: integer
                                 period:
-                                  description: Time period for number of requests
-                                    being counted. Valid values are 'hour', 'minute'
-                                    and 'second', defaults to 'minute' if omitted.
+                                  description: |-
+                                    Time period for number of requests being counted.
+                                    Valid values are 'hour', 'minute' and 'second', defaults to 'minute' if omitted.
                                   enum:
                                   - second
                                   - minute
@@ -189,38 +187,36 @@ spec:
                               - default-rate
                               type: object
                             x-fabric-request-ratelimits:
-                              description: The list of request rate limits used to
-                                limit amount of requests from the single client to
-                                avoid underlying service overload
+                              description: |-
+                                The list of request rate limits used to limit amount of
+                                requests from the single client to avoid underlying service overload
                               items:
-                                description: FabricGatewayRequestRateLimit is used
-                                  to limit requests per specified period for particular
-                                  users creating high load on the service. This rate
-                                  limit works independently of the x-fabric-ratelimits
-                                  but returns the same HTTP 429 response as x-fabric-ratelimits.
+                                description: |-
+                                  FabricGatewayRequestRateLimit is used to limit requests per specified period for
+                                  particular users creating high load on the service. This rate limit works independently
+                                  of the x-fabric-ratelimits but returns the same HTTP 429 response as x-fabric-ratelimits.
                                 properties:
                                   headers:
-                                    description: HTTP headers from request which are
-                                      used to identify a specific user which should
-                                      be rate limited. Limit applies per unique non-empty
-                                      combination of configured header values.
+                                    description: |-
+                                      HTTP headers from request which are used to identify a specific user which should
+                                      be rate limited. Limit applies per unique non-empty combination
+                                      of configured header values.
                                     items:
                                       type: string
                                     type: array
                                   period:
-                                    description: Time period for number of requests
-                                      being counted. Valid values are 'hour', 'minute'
-                                      and 'second', defaults to 'minute' if omitted.
+                                    description: |-
+                                      Time period for number of requests being counted.
+                                      Valid values are 'hour', 'minute' and 'second', defaults to 'minute' if omitted.
                                     enum:
                                     - second
                                     - minute
                                     - hour
                                     type: string
                                   rate:
-                                    description: User specific value to apply to the
-                                      route. If the particular user makes more requests
-                                      that value within the defined period, then this
-                                      user will start getting HTTP 429 responses.
+                                    description: |-
+                                      User specific value to apply to the route. If the particular user makes more requests that
+                                      value within the defined period, then this user will start getting HTTP 429 responses.
                                     minimum: 1
                                     type: integer
                                 required:
@@ -229,10 +225,10 @@ spec:
                                 type: object
                               type: array
                             x-fabric-static-response:
-                              description: This property is used to configure a static,
-                                hard-coded response for a route. The request does
-                                not reach the backend, the response is returned immediately
-                                from skipper.
+                              description: |-
+                                This property is used to configure a static,
+                                hard-coded response for a route. The request does not reach
+                                the backend, the response is returned immediately from skipper.
                               properties:
                                 body:
                                   description: The body of the static response.
@@ -240,9 +236,9 @@ spec:
                                 headers:
                                   additionalProperties:
                                     type: string
-                                  description: The headers which should be present
-                                    in the static response. This is an object whose
-                                    values are all Strings.
+                                  description: |-
+                                    The headers which should be present in the static response.
+                                    This is an object whose values are all Strings.
                                   type: object
                                 status:
                                   description: The status code to use in the static
@@ -254,22 +250,17 @@ spec:
                               - status
                               type: object
                             x-fabric-whitelist:
-                              description: UID of a service which will be allowed
-                                access to the API if it matches all other authorization
-                                requirements. If there is a whitelist present, then
-                                ONLY services which are referenced in the whitelist
-                                will be able to access the API even if they match
-                                all other authorization requirements. If the whitelist
-                                is empty, then no service tokens can access via the
-                                gateway
+                              description: |-
+                                UID of a service which will be allowed access to the API if it matches all other authorization
+                                requirements. If there is a whitelist present, then ONLY services which are referenced in the whitelist
+                                will be able to access the API even if they match all other authorization requirements. If the whitelist
+                                is empty, then no service tokens can access via the gateway
                               properties:
                                 service-list:
-                                  description: UID of a service which will be allowed
-                                    access to the API if it matches all other authorization
-                                    requirements. If there is a whitelist present,
-                                    then ONLY services which are referenced in the
-                                    whitelist will be able to access the API even
-                                    if they match all other authorization requirements
+                                  description: |-
+                                    UID of a service which will be allowed access to the API if it matches all other authorization
+                                    requirements. If there is a whitelist present, then ONLY services which are referenced in the whitelist
+                                    will be able to access the API even if they match all other authorization requirements
                                   items:
                                     type: string
                                   type: array
@@ -288,25 +279,21 @@ spec:
                           type: object
                         type: array
                       x-fabric-employee-access:
-                        description: The `user-list` should only be populated if `type`
-                          is set to `allow_list`. If `type` is not present, it will
-                          be defaulted to `scoped_access`
+                        description: |-
+                          The `user-list` should only be populated if `type` is set to `allow_list`.
+                          If `type` is not present, it will be defaulted to `scoped_access`
                         properties:
                           type:
-                            description: If `allow_list` is selected, then the `user-list`
-                              property must be populated, otherwise it is ignored.
-                              If allow_all is selected, any token which is Employee
-                              realm will be able to access the endpoint in spite of
-                              any scope restrictions. If `deny_all` is selected, then
-                              any employee realm token will be rejected even if there
-                              are no scope restrictions beyond `uid`. If the employee
-                              access route config object is not present, the employee
-                              access configuration is inherited from any globally
-                              defined employee access config. If no employee access
-                              configuration is configured then employee access will
-                              work as per normal scope rules; i.e. employees will
-                              have access to routes which aren't scope protected.
-                              This can be overridden on a per route basis.
+                            description: |-
+                              If `allow_list` is selected, then the `user-list` property must be populated, otherwise it
+                              is ignored. If allow_all is selected, any token which is Employee realm will be able to
+                              access the endpoint in spite of any scope restrictions. If `deny_all` is selected, then any
+                              employee realm token will be rejected even if there are no scope restrictions beyond `uid`.
+                              If the employee access route config object is not present, the employee access configuration
+                              is inherited from any globally defined employee access config.
+                              If no employee access configuration is configured then employee access will work as per normal scope
+                              rules; i.e. employees will have access to routes which aren't scope protected. This can be overridden
+                              on a per route basis.
                             enum:
                             - allow_list
                             - allow_all
@@ -330,16 +317,15 @@ spec:
                         description: Limits the rate of client requests.
                         properties:
                           default-rate:
-                            description: Non user specific value to apply to the route.
-                              If a client makes more requests than this value within
-                              the defined period, then they will start getting HTTP
-                              429 responses.
+                            description: |-
+                              Non user specific value to apply to the route. If a client makes more requests than this
+                              value within the defined period, then they will start getting HTTP 429 responses.
                             minimum: 1
                             type: integer
                           period:
-                            description: Time period for number of requests being
-                              counted. Valid values are 'hour', 'minute' and 'second',
-                              defaults to 'minute' if omitted.
+                            description: |-
+                              Time period for number of requests being counted.
+                              Valid values are 'hour', 'minute' and 'second', defaults to 'minute' if omitted.
                             enum:
                             - second
                             - minute
@@ -355,38 +341,36 @@ spec:
                         - default-rate
                         type: object
                       x-fabric-request-ratelimits:
-                        description: The list of request rate limits used to limit
-                          amount of requests from the single client to avoid underlying
-                          service overload
+                        description: |-
+                          The list of request rate limits used to limit amount of
+                          requests from the single client to avoid underlying service overload
                         items:
-                          description: FabricGatewayRequestRateLimit is used to limit
-                            requests per specified period for particular users creating
-                            high load on the service. This rate limit works independently
-                            of the x-fabric-ratelimits but returns the same HTTP 429
-                            response as x-fabric-ratelimits.
+                          description: |-
+                            FabricGatewayRequestRateLimit is used to limit requests per specified period for
+                            particular users creating high load on the service. This rate limit works independently
+                            of the x-fabric-ratelimits but returns the same HTTP 429 response as x-fabric-ratelimits.
                           properties:
                             headers:
-                              description: HTTP headers from request which are used
-                                to identify a specific user which should be rate limited.
-                                Limit applies per unique non-empty combination of
-                                configured header values.
+                              description: |-
+                                HTTP headers from request which are used to identify a specific user which should
+                                be rate limited. Limit applies per unique non-empty combination
+                                of configured header values.
                               items:
                                 type: string
                               type: array
                             period:
-                              description: Time period for number of requests being
-                                counted. Valid values are 'hour', 'minute' and 'second',
-                                defaults to 'minute' if omitted.
+                              description: |-
+                                Time period for number of requests being counted.
+                                Valid values are 'hour', 'minute' and 'second', defaults to 'minute' if omitted.
                               enum:
                               - second
                               - minute
                               - hour
                               type: string
                             rate:
-                              description: User specific value to apply to the route.
-                                If the particular user makes more requests that value
-                                within the defined period, then this user will start
-                                getting HTTP 429 responses.
+                              description: |-
+                                User specific value to apply to the route. If the particular user makes more requests that
+                                value within the defined period, then this user will start getting HTTP 429 responses.
                               minimum: 1
                               type: integer
                           required:
@@ -395,7 +379,8 @@ spec:
                           type: object
                         type: array
                       x-fabric-static-response:
-                        description: This property is used to configure a static,
+                        description: |-
+                          This property is used to configure a static,
                           hard-coded response for a route. The request does not reach
                           the backend, the response is returned immediately from skipper.
                         properties:
@@ -405,9 +390,9 @@ spec:
                           headers:
                             additionalProperties:
                               type: string
-                            description: The headers which should be present in the
-                              static response. This is an object whose values are
-                              all Strings.
+                            description: |-
+                              The headers which should be present in the static response.
+                              This is an object whose values are all Strings.
                             type: object
                           status:
                             description: The status code to use in the static response.
@@ -418,21 +403,17 @@ spec:
                         - status
                         type: object
                       x-fabric-whitelist:
-                        description: UID of a service which will be allowed access
-                          to the API if it matches all other authorization requirements.
-                          If there is a whitelist present, then ONLY services which
-                          are referenced in the whitelist will be able to access the
-                          API even if they match all other authorization requirements.
-                          If the whitelist is empty, then no service tokens can access
-                          via the gateway
+                        description: |-
+                          UID of a service which will be allowed access to the API if it matches all other authorization
+                          requirements. If there is a whitelist present, then ONLY services which are referenced in the whitelist
+                          will be able to access the API even if they match all other authorization requirements. If the whitelist
+                          is empty, then no service tokens can access via the gateway
                         properties:
                           service-list:
-                            description: UID of a service which will be allowed access
-                              to the API if it matches all other authorization requirements.
-                              If there is a whitelist present, then ONLY services
-                              which are referenced in the whitelist will be able to
-                              access the API even if they match all other authorization
-                              requirements
+                            description: |-
+                              UID of a service which will be allowed access to the API if it matches all other authorization
+                              requirements. If there is a whitelist present, then ONLY services which are referenced in the whitelist
+                              will be able to access the API even if they match all other authorization requirements
                             items:
                               type: string
                             type: array
@@ -456,29 +437,34 @@ spec:
                 minProperties: 1
                 type: object
               x-external-service-provider:
-                description: Makes the specified StackSet from the same namespace
-                  available on the specified host names. The spec.externalIngress
-                  field in the corresponding StackSet should be set together with
-                  this field
+                description: |-
+                  Makes the specified StackSet from the same namespace available on the
+                  specified host names. The spec.externalIngress field in the
+                  corresponding StackSet should be set together with this field
                 properties:
                   hosts:
                     description: Host names which FabricGateway should make StackSet
                       available on
                     items:
+                      maxLength: 255
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                       type: string
                     minItems: 1
                     type: array
+                    x-kubernetes-list-type: set
                   stackSetName:
-                    description: The name of the StackSet resource in the same namespace
-                      which should be handling requests coming through FabricGateway
+                    description: |-
+                      The name of the StackSet resource in the same namespace which
+                      should be handling requests coming through FabricGateway
                     type: string
                 required:
                 - hosts
                 - stackSetName
                 type: object
               x-fabric-admins:
-                description: UID of a user which will have open access to the full
-                  API. This will exclude this uid from any rate limits or authorization
+                description: |-
+                  UID of a user which will have open access to the full API.
+                  This will exclude this uid from any rate limits or authorization
                 items:
                   type: string
                 minItems: 0
@@ -493,26 +479,27 @@ spec:
                     minimum: 0
                     type: integer
                   encoding:
-                    description: Specify the encoding to compress. This must match
-                      the Content-Type of the response payload for compression to
-                      happen
+                    description: |-
+                      Specify the encoding to compress.
+                      This must match the Content-Type of the response payload for compression to happen
                     type: string
                 required:
                 - compressionFactor
                 - encoding
                 type: object
               x-fabric-cors-support:
-                description: 'This section configures Cross-Origin Resource Sharing
+                description: |-
+                  This section configures Cross-Origin Resource Sharing
                   (CORS) support in the gateway. When this is configured: 1. An HTTP
                   OPTIONS endpoint will be created for each path, fulfilling the preflight
                   requirement for CORS. 2. Each route defined in this gateway will
                   return the `access-control-allow-origin` header for origins configured
-                  here.'
+                  here.
                 properties:
                   allowedHeaders:
-                    description: List of headers which are allowed to be used as part
-                      of CORS requests. Typically you should list Authorization, Content-Type,
-                      and X-Flow-Id at a minimum.
+                    description: |-
+                      List of headers which are allowed to be used as part of CORS requests.
+                      Typically you should list Authorization, Content-Type, and X-Flow-Id at a minimum.
                     items:
                       type: string
                     minItems: 1
@@ -527,23 +514,21 @@ spec:
                 - allowedHeaders
                 type: object
               x-fabric-employee-access:
-                description: The `user-list` should only be populated if `type` is
-                  set to `allow_list`. If `type` is not present, it will be defaulted
-                  to `scoped_access`
+                description: |-
+                  The `user-list` should only be populated if `type` is set to `allow_list`.
+                  If `type` is not present, it will be defaulted to `scoped_access`
                 properties:
                   type:
-                    description: If `allow_list` is selected, then the `user-list`
-                      property must be populated, otherwise it is ignored. If allow_all
-                      is selected, any token which is Employee realm will be able
-                      to access the endpoint in spite of any scope restrictions. If
-                      `deny_all` is selected, then any employee realm token will be
-                      rejected even if there are no scope restrictions beyond `uid`.
-                      If the employee access route config object is not present, the
-                      employee access configuration is inherited from any globally
-                      defined employee access config. If no employee access configuration
-                      is configured then employee access will work as per normal scope
-                      rules; i.e. employees will have access to routes which aren't
-                      scope protected. This can be overridden on a per route basis.
+                    description: |-
+                      If `allow_list` is selected, then the `user-list` property must be populated, otherwise it
+                      is ignored. If allow_all is selected, any token which is Employee realm will be able to
+                      access the endpoint in spite of any scope restrictions. If `deny_all` is selected, then any
+                      employee realm token will be rejected even if there are no scope restrictions beyond `uid`.
+                      If the employee access route config object is not present, the employee access configuration
+                      is inherited from any globally defined employee access config.
+                      If no employee access configuration is configured then employee access will work as per normal scope
+                      rules; i.e. employees will have access to routes which aren't scope protected. This can be overridden
+                      on a per route basis.
                     enum:
                     - allow_list
                     - allow_all
@@ -563,17 +548,18 @@ spec:
                   properties:
                     host:
                       description: This is the public host name for the service
+                      maxLength: 255
                       pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                       type: string
                     serviceName:
-                      description: This is the name of the K8s service which Skipper
-                        should target when forwarding requests. Name should comply
-                        to RFC 1035, see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
+                      description: |-
+                        This is the name of the K8s service which Skipper should target when forwarding requests.
+                        Name should comply to RFC 1035, see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
                       pattern: ^[a-z][-a-z0-9]{0,61}[a-z0-9]$
                       type: string
                     servicePort:
-                      description: The port to use for the service. Must be the name
-                        of a named port defined in your k8s service. Defaults to "http".
+                      description: |-
+                        The port to use for the service. Must be the name of a named port defined in your k8s service. Defaults to "http".
                         See https://kubernetes.io/docs/concepts/services-networking/service/#multi-port-services
                       pattern: ^[a-z][-a-z0-9]*[^-]$
                       type: string
@@ -583,12 +569,11 @@ spec:
                   type: object
                 type: array
               x-fabric-whitelist:
-                description: UID of a service which will be allowed access to the
-                  API if it matches all other authorization requirements. If there
-                  is a whitelist present, then ONLY services which are referenced
-                  in the whitelist will be able to access the API even if they match
-                  all other authorization requirements. If the whitelist is empty,
-                  then no service tokens can access via the gateway
+                description: |-
+                  UID of a service which will be allowed access to the API if it matches all other authorization
+                  requirements. If there is a whitelist present, then ONLY services which are referenced in the whitelist
+                  will be able to access the API even if they match all other authorization requirements. If the whitelist
+                  is empty, then no service tokens can access via the gateway
                 items:
                   type: string
                 type: array
@@ -596,39 +581,41 @@ spec:
             - paths
             type: object
           status:
-            description: 'Status is the current state of the FabricGateway. More info:
-              https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+            description: |-
+              Status is the current state of the FabricGateway.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
               num_owned_ingress:
-                description: 'Number of ingresses which this FabricGateway object
-                  owns. Deprecated: up-to-date fabric-gateway-controller creates RouteGroups
-                  instead of ingresses'
+                description: |-
+                  Number of ingresses which this FabricGateway object owns.
+                  Deprecated: up-to-date fabric-gateway-controller creates RouteGroups instead of ingresses
                 type: integer
               observedGeneration:
-                description: Represents the .metadata.generation that the condition
-                  was set based upon. For instance, if .metadata.generation is currently
-                  12, but the .status.observedGeneration is 9, the condition is out
-                  of date with respect to the current state of the instance.
+                description: |-
+                  Represents the .metadata.generation that the condition was set based upon.
+                  For instance, if .metadata.generation is currently 12, but the .status.observedGeneration is 9, the condition is out of date
+                  with respect to the current state of the instance.
                 format: int64
                 type: integer
               owned_ingress_names:
-                description: 'Names of ingresses which this FabricGateway object owns.
-                  All of them reside in the same namespace as FabricGateway does.
-                  Deprecated: up-to-date fabric-gateway-controller creates RouteGroups
-                  instead of ingresses'
+                description: |-
+                  Names of ingresses which this FabricGateway object owns. All of them reside in the same
+                  namespace as FabricGateway does.
+                  Deprecated: up-to-date fabric-gateway-controller creates RouteGroups instead of ingresses
                 items:
                   type: string
                 type: array
               owned_routegroup_names:
-                description: Names of RouteGroups which this FabricGateway object
-                  owns. All of them reside in the same namespace as FabricGateway
-                  does
+                description: |-
+                  Names of RouteGroups which this FabricGateway object owns. All of them reside in the same
+                  namespace as FabricGateway does
                 items:
                   type: string
                 type: array
               problems:
-                description: The problems fabric-gateway-controller has encountered
-                  while creating the object related to this FabricGateway resource
+                description: |-
+                  The problems fabric-gateway-controller has encountered while creating the object related to
+                  this FabricGateway resource
                 items:
                   type: string
                 type: array
@@ -640,11 +627,5 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 
 # {{ end }}
