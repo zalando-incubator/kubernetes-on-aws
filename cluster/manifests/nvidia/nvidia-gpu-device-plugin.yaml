@@ -74,6 +74,7 @@ spec:
         volumeMounts:
         - name: device-plugin
           mountPath: /var/lib/kubelet/device-plugins
+{{- if eq .Cluster.ConfigItems.nvidia_dcgm_exporter_enabled "true" }}
       - name: dcgm-exporter
         image: container-registry.zalando.net/teapot/nvidia-dcgm-exporter:v3.3.6-3.4.2-ubuntu22.04-master-11
         args:
@@ -94,6 +95,7 @@ spec:
           runAsUser: 0
           capabilities:
             add: ["SYS_ADMIN"]
+{{- end}}
         volumeMounts:
         - name: pod-gpu-resources
           mountPath: /var/lib/kubelet/pod-resources
