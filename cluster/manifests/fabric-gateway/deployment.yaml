@@ -1,3 +1,4 @@
+# {{ $version := "master-255" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +7,7 @@ metadata:
   labels:
     application: gateway-operator
     component: fabric-gateway-controller
-    version: "{{ .Cluster.ConfigItems.fabric_gateway_controller_version }}"
+    version: "{{ $version }}"
     mode: "{{ .Cluster.ConfigItems.fabric_gateway_controller_mode }}"
 spec:
 {{ if eq .Cluster.ConfigItems.fabric_gateway_controller_mode "disabled" }}
@@ -25,7 +26,7 @@ spec:
         deployment: fabric-gateway-controller
         application: gateway-operator
         component: fabric-gateway-controller
-        version: "{{ .Cluster.ConfigItems.fabric_gateway_controller_version }}"
+        version: "{{ $version }}"
         mode: "{{ .Cluster.ConfigItems.fabric_gateway_controller_mode }}"
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
@@ -39,7 +40,7 @@ spec:
       serviceAccountName: fabric-gateway-controller
       containers:
         - name: controller
-          image: container-registry.zalando.net/gwproxy/fabric-gateway:{{ .Cluster.ConfigItems.fabric_gateway_controller_version }}
+          image: container-registry.zalando.net/gwproxy/fabric-gateway:{{ $version }}
           args:
             - -update-fabric-gateway-status=true
             - -versioned-hosts-base-domain={{ .Values.hosted_zone }}
