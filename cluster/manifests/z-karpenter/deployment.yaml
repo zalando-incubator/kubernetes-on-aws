@@ -50,7 +50,11 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
+          {{if eq .Cluster.ConfigItems.karpenter_version "current"}}
           image: "container-registry.zalando.net/teapot/karpenter:0.37.0-main-26.patched"
+          {{else if eq .Cluster.ConfigItems.karpenter_version "legacy"}}
+          image: "container-registry.zalando.net/teapot/karpenter:0.36.2-main-25.patched"
+          {{end}}
           imagePullPolicy: IfNotPresent
           env:
             - name: KUBERNETES_MIN_VERSION
