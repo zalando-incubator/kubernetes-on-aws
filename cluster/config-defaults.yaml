@@ -38,6 +38,11 @@ karpenter_controller_memory: "256Mi"
 karpenter_log_level: "error"
 # restrict the maximum number of pods for karpenter nodes
 karpenter_max_pods_per_node: "32"
+#
+# Karpenter version for controlling roll-out, can be "current" or "legacy"
+# current => 0.37.0-main-26.patched
+# legacy => 0.36.2-main-25.patched
+karpenter_version: "current"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -79,7 +84,7 @@ skipper_ingress_max_replicas: "50"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
-skipper_ingress_health_check_options: "period=10s,min-requests=10,max-drop-probability=0.9"
+skipper_ingress_health_check_options: "period=10s,min-requests=10,min-drop-probability=0.05,max-drop-probability=0.9,max-unhealthy-endpoints-ratio=0.9"
 
 # Enables deployment of canary version
 skipper_ingress_canary_enabled: "true"
@@ -387,6 +392,7 @@ nvidia_device_plugin_cpu: "10m"
 nvidia_device_plugin_memory: "50Mi"
 
 # nvidia dcgm exporter
+nvidia_dcgm_exporter_enabled: "false"
 nvidia_dcgm_exporter_cpu: "10m"
 nvidia_dcgm_exporter_memory: "200Mi"
 
