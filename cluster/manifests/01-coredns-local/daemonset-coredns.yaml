@@ -27,7 +27,7 @@ spec:
     spec:
       initContainers:
       - name: ensure-apiserver
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/ensure-apiserver:master-6
 {{- else }}
         image: container-registry.zalando.net/teapot/ensure-apiserver:master-6
@@ -61,7 +61,7 @@ spec:
             command:
             - dig
             - "+short"
-{{- if and (eq .Cluster.ConfigItems.eks "true") (eq .Cluster.ConfigItems.eks_ip_family "ipv4") }}
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv4") }}
             - "@127.0.0.1"
 {{- else }}
             - "::1"
@@ -101,7 +101,7 @@ spec:
 {{ end }}
 {{ if eq .Cluster.ConfigItems.dns_cache "dnsmasq" }}
       - name: dnsmasq
-        {{- if eq .Cluster.ConfigItems.eks "true" }}
+        {{- if eq .Cluster.Provider "zalando-eks" }}
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-dns-dnsmasq-nanny:1.17.4-master-15
         {{- else }}
         image: container-registry.zalando.net/teapot/k8s-dns-dnsmasq-nanny:1.17.4-master-15
@@ -147,7 +147,7 @@ spec:
             cpu: {{.Cluster.ConfigItems.dns_dnsmasq_cpu}}
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_mem}}
       - name: sidecar
-        {{- if eq .Cluster.ConfigItems.eks "true" }}
+        {{- if eq .Cluster.Provider "zalando-eks" }}
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-dns-sidecar:1.17.4-master-15
         {{- else }}
         image: container-registry.zalando.net/teapot/k8s-dns-sidecar:1.17.4-master-15
@@ -181,7 +181,7 @@ spec:
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_mem}}
 {{ end }}
       - name: coredns
-        {{- if eq .Cluster.ConfigItems.eks "true" }}
+        {{- if eq .Cluster.Provider "zalando-eks" }}
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/coredns:1.11.3-master-24
         {{- else }}
         image: container-registry.zalando.net/teapot/coredns:1.11.3-master-24

@@ -7,7 +7,7 @@ metadata:
     application: "deployment-service"
     component: "controller"
   annotations:
-    {{- if eq .Cluster.ConfigItems.eks "true" }}
+    {{- if eq .Cluster.Provider "zalando-eks" }}
     eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/{{.Cluster.LocalID}}-deployment-service-controller"
     {{- else }}
     iam.amazonaws.com/role: "{{.Cluster.LocalID}}-deployment-service-controller"

@@ -113,7 +113,7 @@ spec:
       # Operators { In, NotIn, Exists, DoesNotExist, Gt, and Lt } are supported.
       # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#operators
       requirements:
-#{{ if and (eq .Cluster.ConfigItems.eks "true") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+#{{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
         - key: karpenter.k8s.aws/instance-hypervisor
           operator: In
           values:
@@ -190,7 +190,7 @@ spec:
       kubelet:
         clusterDNS: [ "10.0.1.100" ]
         cpuCFSQuota: false
-#{{ if eq .Cluster.ConfigItems.eks "true" }}
+#{{ if eq .Cluster.Provider "zalando-eks" }}
         # TODO: Uses lower limit for simplicity need to support dynamic value based
         # on instance type.
         maxPods: 10

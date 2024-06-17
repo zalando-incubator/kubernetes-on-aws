@@ -5,7 +5,7 @@ Metadata:
     InfrastructureComponent: "true"
     application: "kubernetes"
 Resources:
-{{ if eq .Cluster.ConfigItems.eks "true" }}
+{{ if eq .Cluster.Provider "zalando-eks" }}
   EKSClusterRole:
     Type: AWS::IAM::Role
     Properties:
@@ -645,7 +645,7 @@ Resources:
                   - !Ref MasterIAMRole
         Version: 2012-10-17
       Path: /
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
         - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
@@ -739,7 +739,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -810,7 +810,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1232,7 +1232,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1334,7 +1334,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1392,7 +1392,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1433,7 +1433,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1594,7 +1594,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1647,7 +1647,7 @@ Resources:
           {
             "Version": "2012-10-17",
             "Statement": [
-{{- if ne .Cluster.ConfigItems.eks "true" }}
+{{- if ne .Cluster.Provider "zalando-eks" }}
               {
                 "Action": [
                   "sts:AssumeRole"
@@ -1676,7 +1676,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -1771,7 +1771,7 @@ Resources:
             Version: 2012-10-17
           PolicyName: root
     Type: 'AWS::IAM::Role'
-{{- if ne .Cluster.ConfigItems.eks "true" }}
+{{- if ne .Cluster.Provider "zalando-eks" }}
   CloudControllerManagerIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1924,7 +1924,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -2205,7 +2205,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -2264,7 +2264,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -2315,7 +2315,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -2567,7 +2567,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -2608,7 +2608,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -2659,7 +2659,7 @@ Resources:
               }
             ]
           }
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
@@ -2750,7 +2750,7 @@ Resources:
             - "kms:*"
             - "tag:TagResources"
             Resource: "*"
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
           - Sid: "Allow EKSClusterRole access to describe the key"
             Effect: "Allow"
             Principal:
@@ -2773,7 +2773,7 @@ Resources:
             - "kms:Encrypt"
             - "kms:Decrypt"
 {{- end }}
-{{- if ne .Cluster.ConfigItems.eks "true" }}
+{{- if ne .Cluster.Provider "zalando-eks" }}
   MasterFilesEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:
@@ -2850,7 +2850,7 @@ Resources:
             Action:
             - "kms:Decrypt"
 Outputs:
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
   EKSControlPlaneEndpoint:
     Export:
       Name: "{{.Cluster.ID}}:eks-control-plane-endpoint"

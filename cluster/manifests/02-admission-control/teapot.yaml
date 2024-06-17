@@ -7,7 +7,7 @@ metadata:
     component: teapot-admission-controller
 webhooks:
   - name: pod-admitter.teapot.zalan.do
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
     # avoid admission-control applying to the admission-controller components (🐔🥚)
     objectSelector:
       matchExpressions:
@@ -19,7 +19,7 @@ webhooks:
           values: ["kube-proxy"]
 {{- end }}
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -39,7 +39,7 @@ webhooks:
         resources: ["pods", "pods/ephemeralcontainers"]
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables "true" }}
   - name: pod-binding-admitter.teapot.zalan.do
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
     # avoid admission-control applying to the admission-controller components (🐔🥚)
     objectSelector:
       matchExpressions:
@@ -51,7 +51,7 @@ webhooks:
           values: ["kube-proxy"]
 {{- end }}
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -71,7 +71,7 @@ webhooks:
 {{- end }}
   - name: storageclass-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -89,7 +89,7 @@ webhooks:
         apiVersions: ["v1", "v1beta1"]
         resources: ["storageclasses"]
   - name: node-admitter.teapot.zalan.do
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
     # avoid admission-control applying to seed node where the admission-controller components run (🐔🥚)
     objectSelector:
       matchExpressions:
@@ -98,7 +98,7 @@ webhooks:
           values: ["cluster-seed"]
 {{- end }}
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -118,7 +118,7 @@ webhooks:
         resources: ["nodes"]
   - name: configmap-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -138,7 +138,7 @@ webhooks:
         resources: ["configmaps"]
   - name: cronjob-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -157,7 +157,7 @@ webhooks:
         resources: ["cronjobs"]
   - name: job-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -176,7 +176,7 @@ webhooks:
         apiVersions: ["v1"]
         resources: ["jobs"]
   - name: deployment-admitter.teapot.zalan.do
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
     # avoid admission-control applying to the admission-controller components (🐔🥚)
     objectSelector:
       matchExpressions:
@@ -185,7 +185,7 @@ webhooks:
           values: ["admission-controller"]
 {{- end }}
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -205,7 +205,7 @@ webhooks:
         resources: ["deployments"]
   - name: statefulset-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -225,7 +225,7 @@ webhooks:
         resources: ["statefulsets"]
   - name: crd-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -245,7 +245,7 @@ webhooks:
         resources: ["customresourcedefinitions"]
   - name: stack-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -264,7 +264,7 @@ webhooks:
         resources: ["stacks"]
   - name: stackset-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -283,7 +283,7 @@ webhooks:
         resources: ["stacksets"]
   - name: hpa-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -302,7 +302,7 @@ webhooks:
         apiVersions: ["v2"]
         resources: ["horizontalpodautoscalers"]
   - name: serviceaccount-admitter.teapot.zalan.do
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
     # avoid admission-control applying to the admission-controller components (🐔🥚)
     objectSelector:
       matchExpressions:
@@ -311,7 +311,7 @@ webhooks:
           values: ["admission-controller", "aws-node", "coredns"]
 {{- end }}
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -331,7 +331,7 @@ webhooks:
         resources: ["serviceaccounts"]
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_check_daemonset_resources "true" }}
   - name: daemonset-admitter.teapot.zalan.do
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
     # avoid admission-control applying to the admission-controller components (🐔🥚)
     objectSelector:
       matchExpressions:
@@ -343,7 +343,7 @@ webhooks:
           values: ["kube-proxy"]
 {{- end }}
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -364,7 +364,7 @@ webhooks:
 {{- end }}
   - name: priorityclass-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -384,7 +384,7 @@ webhooks:
         resources: ["priorityclasses"]
   - name: postgresql-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -404,7 +404,7 @@ webhooks:
         resources: ["postgresqls"]
   - name: namespace-admitter.teapot.zalan.do
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"
@@ -423,7 +423,7 @@ webhooks:
         apiVersions: ["v1"]
         resources: ["namespaces"]
   - name: service-admitter.teapot.zalan.do
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
     # avoid admission-control applying to the admission-controller components (🐔🥚)
     objectSelector:
       matchExpressions:
@@ -432,7 +432,7 @@ webhooks:
           values: ["admission-controller"]
 {{- end }}
     clientConfig:
-      {{- if eq .Cluster.ConfigItems.eks "true"}}
+      {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "admission-controller"
         namespace: "kube-system"

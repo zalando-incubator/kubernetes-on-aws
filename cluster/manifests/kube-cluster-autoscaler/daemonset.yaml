@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
 kind: Deployment
 {{- else}}
 kind: DaemonSet
@@ -14,7 +14,7 @@ spec:
   selector:
     matchLabels:
       daemonset: kube-cluster-autoscaler
-{{- if ne .Cluster.ConfigItems.eks "true"}}
+{{- if ne .Cluster.Provider "zalando-eks"}}
   updateStrategy:
     type: RollingUpdate
 {{- end}}
@@ -37,7 +37,7 @@ spec:
       serviceAccountName: cluster-autoscaler
       dnsPolicy: Default
       tolerations:
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
       - key: dedicated
         value: cluster-seed
 {{- else}}
@@ -83,7 +83,7 @@ spec:
         env:
           - name: AWS_REGION
             value: "{{ .Cluster.Region }}"
-{{- if ne .Cluster.ConfigItems.eks "true"}}
+{{- if ne .Cluster.Provider "zalando-eks"}}
       nodeSelector:
         node.kubernetes.io/role: master
 {{- end}}

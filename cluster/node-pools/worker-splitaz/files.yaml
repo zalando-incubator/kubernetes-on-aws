@@ -2,7 +2,7 @@ files:
   - path: /etc/kubernetes/.local-id
     data: "{{ .Cluster.LocalID | base64 }}"
     permissions: 0400
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
   - path: /etc/kubernetes/ssl/ca.pem
     data: {{.Cluster.ConfigItems.eks_certficate_authority_data}}
     permissions: 0400

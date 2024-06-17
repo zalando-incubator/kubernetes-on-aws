@@ -34,7 +34,7 @@ write_files:
       clusters:
       - name: local
         cluster:
-        {{- if eq .Cluster.ConfigItems.eks "true" }}
+        {{- if eq .Cluster.Provider "zalando-eks" }}
           server: {{.Cluster.ConfigItems.eks_endpoint}}
           certificate-authority-data: "{{.Cluster.ConfigItems.eks_certficate_authority_data}}"
         {{- else }}
@@ -50,7 +50,7 @@ write_files:
                - eks
                - get-token
                - --cluster-name
-               - '{{- if eq .Cluster.ConfigItems.eks "true" }}{{.Cluster.ID | eksID}}{{else}}{{.Cluster.ID}}{{end}}'
+               - '{{- if eq .Cluster.Provider "zalando-eks" }}{{.Cluster.ID | eksID}}{{else}}{{.Cluster.ID}}{{end}}'
       contexts:
       - context:
           cluster: local
@@ -71,7 +71,7 @@ write_files:
       imageGCLowThresholdPercent: {{.Cluster.ConfigItems.kubelet_image_gc_low_threshold}}
       clusterDomain: cluster.local
       cpuCFSQuota: false
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
       hairpinMode: hairpin-veth
 {{- end }}
       featureGates:
@@ -79,12 +79,12 @@ write_files:
 {{- if eq .NodePool.ConfigItems.exec_probe_timeout_enabled "false" }}
         ExecProbeTimeout: false
 {{- end }}
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
         RotateKubeletServerCertificate: true
 {{- end }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}
-{{- if eq .Cluster.ConfigItems.eks "true" }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
       # TODO: Uses lower limit for simplicity need to support dynamic value
       # based on instance type.
       maxPods: 14
@@ -96,7 +96,7 @@ write_files:
 {{- end }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
       serverTLSBootstrap: true
 {{- else }}
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
@@ -151,7 +151,7 @@ write_files:
       {{- end}}
 {{- end}}
 
-{{- if ne .Cluster.ConfigItems.eks "true" }}
+{{- if ne .Cluster.Provider "zalando-eks" }}
   - owner: root:root
     path: /etc/kubernetes/cni/net.d/10-flannel.conflist
     content: |

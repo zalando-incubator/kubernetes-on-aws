@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
 kind: Deployment
 {{- else}}
 kind: DaemonSet
@@ -14,7 +14,7 @@ spec:
   selector:
     matchLabels:
       daemonset: kube-node-ready-controller
-{{- if ne .Cluster.ConfigItems.eks "true"}}
+{{- if ne .Cluster.Provider "zalando-eks"}}
   updateStrategy:
     type: RollingUpdate
 {{- end}}
@@ -41,7 +41,7 @@ spec:
       - key: node.kubernetes.io/role
         value: master
         effect: NoSchedule
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
       - key: dedicated
         value: cluster-seed
         effect: NoSchedule
@@ -53,7 +53,7 @@ spec:
           requests:
             cpu: {{.Cluster.ConfigItems.kube_node_ready_controller_cpu}}
             memory: {{.Cluster.ConfigItems.kube_node_ready_controller_memory}}
-{{- if ne .Cluster.ConfigItems.eks "true"}}
+{{- if ne .Cluster.Provider "zalando-eks"}}
       nodeSelector:
         node.kubernetes.io/role: master
 {{- end}}
