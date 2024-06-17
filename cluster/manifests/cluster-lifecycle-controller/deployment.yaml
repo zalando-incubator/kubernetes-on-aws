@@ -33,7 +33,7 @@ spec:
         effect: NoSchedule
       - key: node.kubernetes.io/not-ready
         operator: Exists
-{{- if eq .Cluster.ConfigItems.eks "true"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
       - operator: Exists
         effect: NoSchedule
 {{- end}}
@@ -59,7 +59,7 @@ spec:
         env:
         - name: AWS_REGION
           value: "{{ .Cluster.Region }}"
-{{- if ne .Cluster.ConfigItems.eks "true" }}
+{{- if ne .Cluster.Provider "zalando-eks" }}
       nodeSelector:
         node.kubernetes.io/role: master
 {{- end }}
