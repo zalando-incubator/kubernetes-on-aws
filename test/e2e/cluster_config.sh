@@ -185,6 +185,15 @@ clusters:
       labels: dedicated=worker-karpenter
       taints: dedicated=worker-karpenter:NoSchedule
   - discount_strategy: none
+    instance_types: ["default-for-karpenter"]
+    min_size: 0
+    max_size: 0
+    profile: worker-karpenter
+    name: worker-karpenter-dns-test
+    config_items:
+      labels: dedicated=dns-test
+      taints: dedicated=dns-test:NoSchedule
+  - discount_strategy: none
     instance_types:
     - "m6g.large"
     min_size: 0

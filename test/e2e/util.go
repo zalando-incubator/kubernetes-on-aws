@@ -946,6 +946,64 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 		},
 	}
 }
+
+func createDNSCheckPod(nameprefix, namespace string, labels map[string]string) *v1.Pod {
+	pod := &v1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nameprefix + string(uuid.NewUUID()),
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Spec: v1.PodSpec{
+			RestartPolicy: v1.RestartPolicyNever,
+			NodeSelector: map[string]string{
+				"dedicated": "dns-test",
+			},
+			Tolerations: []corev1.Toleration{
+				{
+					Effect: corev1.TaintEffectNoSchedule,
+					Key:    "dedicated",
+					Value:  "dns-test",
+				},
+			},
+		},
+	}
+
+	for i, host := range []string{
+		"www.google.com",
+		"www.zalando.com",
+		"www.amazon.com",
+		"www.zalando.de",
+		"www.zalando.dk",
+		"www.zalando.se",
+		"www.zalando.no",
+		"www.zalando.fi",
+	} {
+		pod.Spec.Containers = append(pod.Spec.Containers, v1.Container{
+			Name:  fmt.Sprintf("dns-%d", i),
+			Image: "container-registry.zalando.net/teapot/dns-checker:main-1",
+			Args:  []string{"-host=" + host},
+			Resources: corev1.ResourceRequirements{
+				Limits: map[corev1.ResourceName]resource.Quantity{
+					corev1.ResourceCPU:    resource.MustParse("1m"),
+					corev1.ResourceMemory: resource.MustParse("50Mi"),
+				},
+			},
+			SecurityContext: &corev1.SecurityContext{
+				Capabilities: &corev1.Capabilities{
+					Drop: []corev1.Capability{"ALL"},
+				},
+			},
+		})
+	}
+
+	return pod
+}
+
 func deleteDeployment(cs kubernetes.Interface, ns string, deployment *appsv1.Deployment) {
 	By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 	defer GinkgoRecover()
@@ -1033,7 +1091,7 @@ func getPodLogs(c kubernetes.Interface, namespace, podName, containerName string
 	if err != nil {
 		return "", err
 	}
-	if err == nil && strings.Contains(string(logs), "Internal Error") {
+	if strings.Contains(string(logs), "Internal Error") {
 		return "", fmt.Errorf("Fetched log contains \"Internal Error\": %q", string(logs))
 	}
 	return string(logs), err
