@@ -867,6 +867,7 @@ write_files:
       kind: KubeSchedulerConfiguration
       clientConnection:
         kubeconfig: /etc/kubernetes/scheduler-kubeconfig
+{{- if eq .Cluster.ConfigItems.enable_scheduler_profiles "true" }}
       profiles:
         - schedulerName: default-scheduler
           pluginConfig:
@@ -877,6 +878,7 @@ write_files:
                     topologyKey: topology.kubernetes.io/zone
                     whenUnsatisfiable: ScheduleAnyway
                 defaultingType: List
+{{- end}}
 
 {{ if eq .Cluster.ConfigItems.event_rate_limit_enable "true"}}
   # Enabling EventRateLimit admission plugin
