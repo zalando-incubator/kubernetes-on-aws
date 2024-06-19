@@ -6,27 +6,13 @@ KUBE_VERSION ?= v1.29.4
 IMAGE        ?= pierone.stups.zalan.do/teapot/$(BINARY)
 TAG          ?= $(VERSION)
 DOCKERFILE   ?= Dockerfile
-MOD_DIR      ?= e2e_modules
-MOD_PATH     ?= ./$(MOD_DIR)
-GO_BINDATA   = ./build/go-bindata
 
 default: build
-
-# In case the $MOD_DIR doesn't exist, creat it at $MOD_PATH
-$(MOD_PATH):
-	mkdir -p $(MOD_PATH)
-
-$(GO_BINDATA):
-	mkdir -p build
-	GOBIN=$(shell pwd)/build go install github.com/jteeuwen/go-bindata/go-bindata
-
-fix-go-modules:	$(MOD_PATH)
-	MOD_PATH=$(MOD_PATH) KUBE_VERSION=$(KUBE_VERSION) ./setup_modules.sh
 
 deps:
 	CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0
 
-e2e.test: fix-go-modules $(GO_BINDATA)
+e2e.test: go.mod
 	go test -v -c -o e2e.test
 
 stackset-e2e:
@@ -34,13 +20,13 @@ stackset-e2e:
 
 build: e2e.test stackset-e2e
 
-build/linux/amd64/e2e.test:
+build/linux/amd64/e2e.test: go.mod
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -v -c -o $@
 
 build/linux/amd64/stackset-e2e:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -modfile stackset/go.mod -c -o $@ github.com/zalando-incubator/stackset-controller/cmd/e2e
 
-build/linux/arm64/e2e.test:
+build/linux/arm64/e2e.test: go.mod
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go test -v -c -o $@
 
 build/linux/arm64/stackset-e2e:
@@ -63,5 +49,4 @@ build.push.multiarch: build.linux.amd64 #build.linux.arm64
 clean:
 	rm -rf e2e.test
 	rm -rf stackset-e2e
-	rm -rf $(MOD_PATH)
 	rm -rf build
