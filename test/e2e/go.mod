@@ -24,7 +24,7 @@ require (
 	k8s.io/apimachinery v0.30.2
 	k8s.io/apiserver v0.30.2
 	k8s.io/client-go v0.30.2
-	k8s.io/kubernetes v0.0.0-00010101000000-000000000000
+	k8s.io/kubernetes v1.30.2
 	k8s.io/pod-security-admission v0.0.0
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
 )
@@ -199,7 +199,7 @@ require (
 	k8s.io/kube-scheduler v0.0.0 // indirect
 	k8s.io/kubectl v0.0.0 // indirect
 	k8s.io/kubelet v0.30.2 // indirect
-	k8s.io/legacy-cloud-providers v0.0.0 // indirect
+	k8s.io/legacy-cloud-providers v0.30.2 // indirect
 	k8s.io/metrics v0.30.2 // indirect
 	k8s.io/mount-utils v0.30.2 // indirect
 	k8s.io/sample-apiserver v0.0.0 // indirect
@@ -235,8 +235,6 @@ replace (
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.30.2
 	k8s.io/kubectl => k8s.io/kubectl v0.30.2
 	k8s.io/kubelet => k8s.io/kubelet v0.30.2
-	k8s.io/kubernetes => ./e2e_modules/kubernetes
-	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.30.2
 	k8s.io/metrics => k8s.io/metrics v0.30.2
 	k8s.io/mount-utils => k8s.io/mount-utils v0.30.2
 	k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.30.2
