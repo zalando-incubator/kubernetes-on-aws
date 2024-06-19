@@ -6,18 +6,13 @@ KUBE_VERSION ?= v1.30.2
 IMAGE        ?= pierone.stups.zalan.do/teapot/$(BINARY)
 TAG          ?= $(VERSION)
 DOCKERFILE   ?= Dockerfile
-GO_BINDATA   = ./build/go-bindata
 
 default: build
-
-$(GO_BINDATA):
-	mkdir -p build
-	GOBIN=$(shell pwd)/build go install github.com/jteeuwen/go-bindata/go-bindata
 
 deps:
 	CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.15.0
 
-e2e.test: $(GO_BINDATA)
+e2e.test: go.mod
 	go test -v -c -o e2e.test
 
 stackset-e2e:
@@ -25,13 +20,13 @@ stackset-e2e:
 
 build: e2e.test stackset-e2e
 
-build/linux/amd64/e2e.test:
+build/linux/amd64/e2e.test: go.mod
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -v -c -o $@
 
 build/linux/amd64/stackset-e2e:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -modfile stackset/go.mod -c -o $@ github.com/zalando-incubator/stackset-controller/cmd/e2e
 
-build/linux/arm64/e2e.test:
+build/linux/arm64/e2e.test: go.mod
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go test -v -c -o $@
 
 build/linux/arm64/stackset-e2e:
