@@ -1,5 +1,5 @@
 # builder image
-FROM golang:1.21 as builder
+FROM golang:1.22 as builder
 
 RUN CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0
 
