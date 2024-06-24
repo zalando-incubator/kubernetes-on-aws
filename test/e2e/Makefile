@@ -2,7 +2,7 @@
 
 BINARY       ?= kubernetes-on-aws-e2e
 VERSION      ?= $(shell git describe --tags --always --dirty)
-KUBE_VERSION ?= v1.29.4
+KUBE_VERSION ?= v1.30.2
 IMAGE        ?= pierone.stups.zalan.do/teapot/$(BINARY)
 TAG          ?= $(VERSION)
 DOCKERFILE   ?= Dockerfile
@@ -10,7 +10,7 @@ DOCKERFILE   ?= Dockerfile
 default: build
 
 deps:
-	CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.13.0
+	CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.15.0
 
 e2e.test: go.mod
 	go test -v -c -o e2e.test
