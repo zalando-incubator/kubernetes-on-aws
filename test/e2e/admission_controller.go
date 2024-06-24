@@ -127,7 +127,7 @@ var _ = describe("Admission controller tests", func() {
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = e2epod.WaitForPodSuccessInNamespaceSlow(context.TODO(), cs, podName, ns)
+		err = e2epod.WaitForPodSuccessInNamespaceTimeout(context.TODO(), cs, podName, ns, 15*time.Minute)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
