@@ -19,6 +19,8 @@ spec:
         application: kube-ingress-aws-controller
         version: "{{ $version }}"
       annotations:
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "controller", "parser": "keyValue"}]
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
         prometheus.io/path: /metrics
         prometheus.io/port: "7979"
