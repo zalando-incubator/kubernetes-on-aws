@@ -115,7 +115,7 @@ spec:
               mountPath: /host
               readOnly: true
 {{- if eq .Cluster.ConfigItems.journald_reader_enabled "true" }}
-        - image: container-registry.zalando.net/teapot/journald-reader:master-15
+        - image: container-registry.zalando.net/teapot/journald-reader:master-19
           name: journald-reader
           env:
             - name: JOURNALD_READER_CHECKPOINT_FILE
@@ -134,6 +134,9 @@ spec:
               readOnly: true
             - mountPath: /journald-reader-state
               name: journald-reader-state
+            - mountPath: /usr
+              name: usr
+              readOnly: true
 {{- end }}
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
@@ -147,6 +150,9 @@ spec:
         - name: sys
           hostPath:
             path: /sys
+        - name: usr
+          hostPath:
+            path: /usr
         - name: containerd
           hostPath:
             path: /opt/podruntime/containerd
