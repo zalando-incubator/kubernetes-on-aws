@@ -38,6 +38,11 @@ karpenter_controller_memory: "256Mi"
 karpenter_log_level: "error"
 # restrict the maximum number of pods for karpenter nodes
 karpenter_max_pods_per_node: "32"
+#
+# Karpenter version for controlling roll-out, can be "current" or "legacy"
+# current => 0.37.0-main-26.patched
+# legacy => 0.36.2-main-25.patched
+karpenter_version: "current"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -79,7 +84,7 @@ skipper_ingress_max_replicas: "50"
 {{end}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
-skipper_ingress_health_check_options: "period=10s,min-requests=10,max-drop-probability=0.9"
+skipper_ingress_health_check_options: "period=10s,min-requests=10,min-drop-probability=0.05,max-drop-probability=0.9,max-unhealthy-endpoints-ratio=0.9"
 
 # Enables deployment of canary version
 skipper_ingress_canary_enabled: "true"
@@ -107,6 +112,8 @@ skipper_validate_query: "true"
 skipper_validate_query_log: "false"
 
 skipper_default_filters: 'disableAccessLog(2,3,404,429) -> fifo(2000,20,"1s")'
+# skipper_default_filters_authentication defines filters that implement default request authentication
+skipper_default_filters_authentication: ''
 skipper_default_filters_append: 'stateBagToTag("auth-user", "client.uid")'
 skipper_disabled_filters: "static,bearerinjector"
 skipper_lua_sources: "file"
@@ -116,6 +123,9 @@ skipper_ingress_refuse_payload: ""
 skipper_endpointslices_enabled: "true"
 
 skipper_compress_encodings: "gzip,deflate,br"
+
+# Adds "start" label to each prometheus counter with the value of counter creation timestamp as unix nanoseconds
+skipper_prometheus_start_label_enabled: "true"
 
 # skipper profiling settings, 0 keeps default, <0 disable, >0 enable with value
 # https://pkg.go.dev/runtime@master#SetBlockProfileRate
@@ -334,7 +344,6 @@ skipper_open_policy_agent_styra_token: ""
 #   - production: runs the controller
 #
 fabric_gateway_controller_mode: "disabled"
-fabric_gateway_controller_version: "master-251"
 fabric_gateway_controller_cpu: "50m"
 fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_crd_v1_enabled: "false"
@@ -354,7 +363,7 @@ event_rate_limit_config_burst: "1000"
 cadvisor_cpu: "150m"
 cadvisor_memory: "150Mi"
 cadvisor_profiling_enabled: "false"
-cadvisor_enabled: "true"
+cadvisor_enabled: "false"
 
 # settings for enabling the kubelet-summary-metrics proxy and prometheus metric
 # collection.
@@ -388,6 +397,7 @@ nvidia_device_plugin_cpu: "10m"
 nvidia_device_plugin_memory: "50Mi"
 
 # nvidia dcgm exporter
+nvidia_dcgm_exporter_enabled: "false"
 nvidia_dcgm_exporter_cpu: "10m"
 nvidia_dcgm_exporter_memory: "200Mi"
 
@@ -604,10 +614,8 @@ teapot_admission_controller_topology_spread_timeout: 7m
 
 # Enable and configure runtime-policy annotation
 {{if eq .Cluster.Environment "production"}}
-teapot_admission_controller_runtime_policy_enabled: "false"
 teapot_admission_controller_runtime_policy_default: "require-on-demand"
 {{else}}
-teapot_admission_controller_runtime_policy_enabled: "true"
 teapot_admission_controller_runtime_policy_default: "allow-spot"
 {{end}}
 # Enforce a certain policy (<empty>|allow-spot|require-on-demand) for a cluster,
@@ -655,6 +663,11 @@ teapot_admission_controller_pod_security_policy_privileged_service_accounts: ""
 {{ end }}
 teapot_admission_controller_pod_security_policy_privileged_allow_privilege_escalation: "false"
 
+# comma separated list of restricted or privileged capabilities that are allowed
+# to be used by pods.
+teapot_admission_controller_pod_security_policy_additional_restricted_capabilities: ""
+teapot_admission_controller_pod_security_policy_privileged_capabilities: ""
+
 # Prevent the use of a particular AZ as much as possible
 blocked_availability_zone: ""
 
@@ -699,6 +712,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
 kuberuntu_image_v1_29_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.29.4-amd64-master-328" "861068367966" }}
 kuberuntu_image_v1_29_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.29.4-arm64-master-328" "861068367966" }}
+kuberuntu_image_v1_30_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.30.2-amd64-master-337" "861068367966" }}
+kuberuntu_image_v1_30_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.30.2-arm64-master-337" "861068367966" }}
 
 # Which distro from the previous config items should be used. Valid options are only `jammy` for now. Can be set for each node pool.
 kuberuntu_distro_master: "jammy"
@@ -809,7 +824,7 @@ custom_dns_zone: "" # zone name e.g. example.org
 custom_dns_zone_nameservers: "" # space separated list of nameserver IP addresses
 
 # prefix prepended to ownership TXT records for external-dns
-external_dns_ownership_prefix: ""
+external_dns_ownership_prefix: "_external-dns."
 # domains that should be included by ExternalDNS ("" includes all hosted zones in the account. Separate multiple domains with a comma)
 external_dns_domain_filter: ""
 # domains that should be ignored by ExternalDNS
@@ -871,6 +886,9 @@ max_unavailable_statefulset_enabled: "false"
 # this flag can be switched between true and false
 # to ensure all secrets are encrypted/decrypted all secrets need to be rewritten after masters have been rolled
 enable_encryption: "true"
+
+# enable non-default profiles for the default scheduler
+enable_scheduler_profiles: "true"
 
 # default ttl for kube janitor for resources build from PRs
 kube_janitor_default_pr_ttl: "1w"  # 1 week
@@ -953,6 +971,7 @@ deployment_service_ml_experiments_enabled: "true"
 deployment_service_cf_auto_expand_enabled: "false"
 deployment_service_cf_update_source_branch_changes: "true"
 deployment_service_executor_cdp_permissions: "false"
+deployment_service_skip_mustache_rendering: "false"
 {{- if eq .Cluster.Environment "test" }}
 # disable CF update of source branch changes in test to avoid updating CF stacks
 # on any PR.

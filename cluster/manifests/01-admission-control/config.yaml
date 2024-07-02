@@ -106,6 +106,30 @@ data:
   pod.pod-security-policy.privileged-service-accounts.{{ $sa }}: ""
 {{- end}}
 
+  pod.pod-security-policy.allowed-restricted-capabilities.AUDIT_WRITE: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.CHOWN: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.DAC_OVERRIDE: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.FOWNER: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.FSETID: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.KILL: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.MKNOD: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.NET_BIND_SERVICE: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.NET_RAW: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SETFCAP: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SETGID: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SETPCAP: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SETUID: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SYS_CHROOT: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SYS_NICE: ""
+{{- range $cap := split .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_additional_restricted_capabilities "," }}
+  pod.pod-security-policy.allowed-restricted-capabilities.{{ $cap }}: ""
+{{- end}}
+
+{{- range $cap := split .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_privileged_capabilities "," }}
+  pod.pod-security-policy.allowed-privileged-capabilities.{{ $cap }}: ""
+{{- end}}
+
+
 {{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
   pod.pod-security-policy.allowed-unsafe-sysctls.{{ $sysctl }}: ""
 {{- end}}
@@ -155,7 +179,6 @@ data:
 {{- end}}
   pod.node-lifecycle.provider.master: "zalando"
 
-  pod.runtime-policy.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_runtime_policy_enabled }}"
   pod.runtime-policy.default: "{{ .Cluster.ConfigItems.teapot_admission_controller_runtime_policy_default }}"
   pod.runtime-policy.enforced: "{{ .Cluster.ConfigItems.teapot_admission_controller_runtime_policy_enforced }}"
   pod.runtime-policy.spot-hard-assignment: "{{ .Cluster.ConfigItems.teapot_admission_controller_runtime_policy_spot_hard_assignment }}"

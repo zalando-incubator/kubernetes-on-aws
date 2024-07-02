@@ -1,5 +1,5 @@
-{{ $internal_version := "v0.21.99-931" }}
-{{ $canary_internal_version := "v0.21.99-931" }}
+{{ $internal_version := "v0.21.124-947" }}
+{{ $canary_internal_version := "v0.21.133-957" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -190,15 +190,14 @@ spec:
           - "-enable-ratelimits"
           - "-experimental-upgrade"
           - "-metrics-exp-decay-sample"
-          - "-lb-healthcheck-interval=3s"
           - "-metrics-flavour=prometheus"
+          - "-enable-prometheus-start-label={{ .Cluster.ConfigItems.skipper_prometheus_start_label_enabled }}"
           - "-enable-connection-metrics"
           - "-enable-route-lifo-metrics"
           - "-enable-route-fifo-metrics"
           - "-enable-api-usage-monitoring"
           - "-api-usage-monitoring-realm-keys=https://identity.zalando.com/realm"
           - "-api-usage-monitoring-client-keys=https://identity.zalando.com/managed-id,sub"
-          - "-api-usage-monitoring-default-client-tracking-pattern=services[.].*"
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-default-filters-dir=/etc/config/default-filters"
 {{ end }}
@@ -257,6 +256,7 @@ spec:
           - "-disabled-filters={{ .Cluster.ConfigItems.skipper_disabled_filters }}"
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
+          - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
   {{ if .Cluster.ConfigItems.skipper_edit_route_placeholders }}
           {{ range $placeholder := split .Cluster.ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
@@ -360,9 +360,9 @@ spec:
             - /bin/sh
             - -ce
             # Check all sub processes in the container and fail if one of them fails.
-            # wget will exit with non-zero status code if the HTTP code is no 2xx.
+            # curl will exit with non-zero status code if the HTTP code is no 2xx.
             # production tokeninfo, sandbox tokeninfo, bridge
-            - "wget -T 1 -q -O /dev/null http://127.0.0.1:9021/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9121/health; wget -T 1 -q -O /dev/null http://127.0.0.1:9000/healthz"
+            - "curl --max-time 1 -fs -o /dev/null http://127.0.0.1:9021/health; curl --max-time 1 -fs -o /dev/null http://127.0.0.1:9121/health; curl --max-time 1 -fs -o /dev/null http://127.0.0.1:9000/healthz"
           initialDelaySeconds: {{ .Cluster.ConfigItems.skipper_liveness_init_delay_seconds }}
           periodSeconds: 10
           timeoutSeconds: 5
@@ -479,7 +479,7 @@ spec:
           [{"container": "routesrv", "parser": "keyValue"}]
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_local }}"
         prometheus.io/path: /metrics
-        prometheus.io/port: "9990"
+        prometheus.io/port: "9911"
         prometheus.io/scrape: "true"
 {{- if eq .Cluster.ConfigItems.skipper_topology_spread_enabled "true" }}
         zalando.org/topology-spread-timeout: 7m
@@ -542,6 +542,7 @@ spec:
           - "-reverse-source-predicate"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
+          - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
 {{ if eq .Cluster.ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
           - "-enable-swarm"

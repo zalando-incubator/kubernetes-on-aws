@@ -203,7 +203,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-206
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-211
           name: admission-controller
           lifecycle:
             preStop:
@@ -271,7 +271,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-134
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-135
           name: webhook
           ports:
           - containerPort: 8081
@@ -666,7 +666,7 @@ write_files:
         - name: kube-scheduler
           image: nonexistent.zalan.do/teapot/{{if eq .Cluster.ConfigItems.kubernetes_scheduler_image "zalando" }}kube-scheduler-internal{{else}}kube-scheduler{{end}}:fixed
           args:
-          - --kubeconfig=/etc/kubernetes/scheduler-kubeconfig
+          - --config=/etc/kubernetes/config/scheduler-config.yaml
           - --leader-elect=true
           - --feature-gates=MinDomainsInPodTopologySpread={{ .Cluster.ConfigItems.min_domains_in_pod_topology_spread_enabled }}
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
@@ -689,6 +689,9 @@ write_files:
           - mountPath: /etc/kubernetes/ssl
             name: ssl-certs-kubernetes
             readOnly: true
+          - mountPath: /etc/kubernetes/config
+            name: kubernetes-configs
+            readOnly: true
         volumes:
         - hostPath:
             path: /etc/kubernetes/ssl
@@ -697,6 +700,9 @@ write_files:
             path: /etc/kubernetes/scheduler-kubeconfig
             type: File
           name: kubeconfig
+        - hostPath:
+            path: /etc/kubernetes/config
+          name: kubernetes-configs
 
   - owner: root:root
     path: /etc/kubernetes/config/tokenfile.csv
@@ -852,6 +858,27 @@ write_files:
       {{- if eq .Cluster.ConfigItems.enable_encryption "true" }}
           - identity: {}
       {{- end }}
+
+  - owner: root:root
+    path: /etc/kubernetes/config/scheduler-config.yaml
+    permissions: '0400'
+    content: |
+      apiVersion: kubescheduler.config.k8s.io/v1
+      kind: KubeSchedulerConfiguration
+      clientConnection:
+        kubeconfig: /etc/kubernetes/scheduler-kubeconfig
+{{- if eq .Cluster.ConfigItems.enable_scheduler_profiles "true" }}
+      profiles:
+        - schedulerName: default-scheduler
+          pluginConfig:
+            - name: PodTopologySpread
+              args:
+                defaultConstraints:
+                  - maxSkew: 1
+                    topologyKey: topology.kubernetes.io/zone
+                    whenUnsatisfiable: ScheduleAnyway
+                defaultingType: List
+{{- end}}
 
 {{ if eq .Cluster.ConfigItems.event_rate_limit_enable "true"}}
   # Enabling EventRateLimit admission plugin

@@ -27,7 +27,10 @@ spec:
       hostNetwork: true
       containers:
       - name: kube-aws-iam-controller
-        image: container-registry.zalando.net/teapot/kube-aws-iam-controller:v0.3.0-4-g21debb6
+        image: container-registry.zalando.net/teapot/kube-aws-iam-controller:v0.3.0-14-g121e661
+        env:
+        - name: AWS_DEFAULT_REGION
+          value: "{{.Cluster.Region}}"
         args:
         - --debug
         - "--assume-role={{.Cluster.LocalID}}-worker"

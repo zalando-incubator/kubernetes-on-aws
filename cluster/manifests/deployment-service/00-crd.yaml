@@ -108,6 +108,10 @@ spec:
           status:
             description: CDPDeploymentTaskStatus is the status part of the CDPDeploymentTask.
             properties:
+              cleanupScheduledAt:
+                description: The timestamp when the resource cleanup has been scheduled.
+                format: date-time
+                type: string
               finishedAt:
                 description: The timestamp when this deployment task has finished.
                 format: date-time
@@ -134,7 +138,6 @@ spec:
                    Expired: deployment task hasn't finished before the timeout.
                    CleanupScheduled: resource cleanup was requested and the worker is waiting for the cleanup timeout given.
                    WaitingForCleanup: deployment task has finished, the controller is waiting for the cleanup to be finished.
-                   CleanupSucceeded: deployment task has finished, the cleanup has been successful.
                    CleanupFailed: deployment task has finished, the cleanup has failed.
                 enum:
                 - Created
@@ -146,7 +149,6 @@ spec:
                 - Expired
                 - CleanupScheduled
                 - WaitingForCleanup
-                - CleanupSucceeded
                 - CleanupFailed
                 type: string
               resources:
@@ -194,6 +196,8 @@ spec:
                       - WaitingForDeployment
                       - ExecutingDeployment
                       - DeploymentExecuted
+                      - CleanedUp
+                      - CleanupFailed
                       type: string
                   required:
                   - name
