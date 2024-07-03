@@ -1,5 +1,5 @@
 {{ $internal_version := "v0.21.124-947" }}
-{{ $canary_internal_version := "v0.21.133-957" }}
+{{ $canary_internal_version := "v0.21.139-963" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -256,6 +256,7 @@ spec:
           - "-disabled-filters={{ .Cluster.ConfigItems.skipper_disabled_filters }}"
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
+          - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
   {{ if .Cluster.ConfigItems.skipper_edit_route_placeholders }}
           {{ range $placeholder := split .Cluster.ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
@@ -541,6 +542,7 @@ spec:
           - "-reverse-source-predicate"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
+          - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
 {{ if eq .Cluster.ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
           - "-enable-swarm"
