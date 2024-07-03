@@ -8,13 +8,8 @@ metadata:
     application: gateway-operator
     component: fabric-gateway-controller
     version: "{{ $version }}"
-    mode: "{{ .Cluster.ConfigItems.fabric_gateway_controller_mode }}"
 spec:
-{{ if eq .Cluster.ConfigItems.fabric_gateway_controller_mode "disabled" }}
-  replicas: 0
-{{ else }}
   replicas: 1
-{{ end }}
   strategy:
     type: Recreate
   selector:
@@ -27,7 +22,6 @@ spec:
         application: gateway-operator
         component: fabric-gateway-controller
         version: "{{ $version }}"
-        mode: "{{ .Cluster.ConfigItems.fabric_gateway_controller_mode }}"
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "controller", "parser": "keyValue"}]
