@@ -9,8 +9,8 @@ metadata:
 spec:
   selector:
     component: coredns
-{{- if ne .Cluster.Provider "zalando-eks"}}
-# TODO: what to do with eks service range?
+{{- if or (ne .Cluster.Provider "zalando-eks") (ne .Cluster.ConfigItems.eks_ip_family "ipv6")}}
+  # Only set ip for ipv4 clusters
   clusterIP: 10.5.0.11
 {{- end}}
   ports:
