@@ -14,10 +14,8 @@ metadata:
     component: ingress
 spec:
   type: ClusterIP
-{{- if ne .Cluster.Provider "zalando-eks"}}
-# TODO: how to do internal-ingress?
-# function to derive IP from range?
-# Can be hardcoded for ipv4, must be dynamic for ipv6
+{{- if or (ne .Cluster.Provider "zalando-eks") (ne .Cluster.ConfigItems.eks_ip_family "ipv6")}}
+  # Only set ip for ipv4 clusters
   clusterIP: 10.5.99.99
 {{- end}}
   ports:
