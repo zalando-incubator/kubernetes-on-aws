@@ -57,6 +57,9 @@ Resources:
       RoleArn: !GetAtt EKSClusterRole.Arn
       KubernetesNetworkConfig:
         IpFamily: "{{.Cluster.ConfigItems.eks_ip_family}}"
+        {{- if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}
+        ServiceIpv4Cidr: "10.5.0.0/16"
+        {{- end }}
       AccessConfig:
         AuthenticationMode: API
         #BootstrapClusterCreatorAdminPermissions: false
