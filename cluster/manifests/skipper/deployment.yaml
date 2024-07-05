@@ -166,10 +166,6 @@ spec:
           - "-address=:9999"
           - "-wait-first-route-load"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
-{{ if and (ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec") (eq .Cluster.ConfigItems.enable_skipper_eastwest "true")}}
-          - "-enable-kubernetes-east-west"
-          - "-kubernetes-east-west-domain=.ingress.cluster.local"
-{{ end }}
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
@@ -533,10 +529,6 @@ spec:
           - "-enable-kubernetes-endpointslices={{ .Cluster.ConfigItems.skipper_endpointslices_enabled }}"
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
-{{ if eq .Cluster.ConfigItems.enable_skipper_eastwest "true"}}
-          - "-enable-kubernetes-east-west"
-          - "-kubernetes-east-west-domain=.ingress.cluster.local"
-{{ end }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
           - "-reverse-source-predicate"
