@@ -185,7 +185,7 @@ Resources:
     Type: "AWS::EKS::AccessEntry"
     Properties:
       ClusterName: !Ref EKSCluster
-      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/zalando-iam"
+      PrincipalArn: !GetAtt EKSZalandoIAMIAMRole.Arn
       Username: "zalando-iam:zalando:service:{{`{{SessionName}}`}}"
       Type: "STANDARD"
   # TODO: IAM POLICY
@@ -255,6 +255,71 @@ Resources:
 {{- else }}
       - !Ref EKSCNIIPv6Policy
 {{- end }}
+  EKSZalandoIAMProxyIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-zalando-iam-aws-proxy"
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": [
+                    "ec2.amazonaws.com"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRole"
+                ]
+              },
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:zalando-iam-aws-proxy"
+                  }
+                }
+              }
+            ]
+          }
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+            - Action: "sts:AssumeRole"
+              Effect: Allow
+              Resource: "*"
+            - Action: "sts:SetSourceIdentity"
+              Effect: Allow
+              Resource: "*"
+          Version: 2012-10-17
+        PolicyName: root
+  EKSZalandoIAMIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-zalando-iam"
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - 'sts:AssumeRole'
+              - 'sts:SetSourceIdentity'
+        Version: '2012-10-17'
   EKSOIDCProvider:
     Type: AWS::IAM::OIDCProvider
     Properties:

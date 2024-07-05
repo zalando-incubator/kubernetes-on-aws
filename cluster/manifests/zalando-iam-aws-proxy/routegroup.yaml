@@ -1,0 +1,26 @@
+# {{ if eq .Cluster.Provider "zalando-eks" }}
+apiVersion: zalando.org/v1
+kind: RouteGroup
+metadata:
+  name: zalando-iam-aws-proxy
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: zalando-iam-aws-proxy
+spec:
+  hosts:
+    - {{.Cluster.LocalID}}-zalando-iam-aws-proxy.{{ .Values.hosted_zone }}
+  backends:
+    - name: zalando-iam-aws-proxy
+      type: service
+      serviceName: zalando-iam-aws-proxy
+      servicePort: 80
+  defaultBackends:
+    - backendName: zalando-iam-aws-proxy
+  routes:
+    - pathSubtree: /
+      predicates:
+        - HeaderRegexp("Authorization", "^Bearer .+")
+      filters:
+        - oauthTokeninfoAnyKV("realm", "/services")
+# {{ end }}

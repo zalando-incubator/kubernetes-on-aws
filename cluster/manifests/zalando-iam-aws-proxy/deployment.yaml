@@ -1,0 +1,117 @@
+# {{ if eq .Cluster.Provider "zalando-eks" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zalando-iam-aws-proxy
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: zalando-iam-aws-proxy
+spec:
+  selector:
+    matchLabels:
+      deployment: zalando-iam-aws-proxy
+  template:
+    metadata:
+      labels:
+        application: kubernetes
+        component: zalando-iam-aws-proxy
+        deployment: zalando-iam-aws-proxy
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+    spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      serviceAccountName: zalando-iam-aws-proxy
+      containers:
+      - name: proxy
+        image: mikkeloscar/zalando-iam-aws-proxy:1
+        args:
+        - "--apiserver-url=https://kubernetes.default.svc.cluster.local"
+        - "--ca-file-path=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        - "--cluster-id={{.Cluster.ID | eksID}}"
+        - "--role-arn=arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/{{.Cluster.LocalID}}-zalando-iam"
+        - "--tokeninfo-url=https://identity.zalando.com=http://:9021/oauth2/tokeninfo"
+        # {{- if ne .Cluster.Environment "production"}}
+        - "--tokeninfo-url=https://sandbox.identity.zalando.com=http://:9022/oauth2/tokeninfo"
+        # {{- end}}
+        resources:
+          limits:
+            cpu: "{{.Cluster.ConfigItems.eks_zalando_iam_aws_proxy_cpu}}"
+            memory: "{{.Cluster.ConfigItems.eks_zalando_iam_aws_proxy_memory}}"
+          requests:
+            cpu: "{{.Cluster.ConfigItems.eks_zalando_iam_aws_proxy_cpu}}"
+            memory: "{{.Cluster.ConfigItems.eks_zalando_iam_aws_proxy_memory}}"
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 20
+      - name: tokeninfo
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-113
+        env:
+        - name: OPENID_PROVIDER_CONFIGURATION_URL
+          value: https://identity.zalando.com/.well-known/openid-configuration
+        - name: BUSINESS_PARTNERS
+          value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
+        ports:
+        - containerPort: 9021
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 20
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9021
+          periodSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9021
+          periodSeconds: 3
+          failureThreshold: 2
+        resources:
+          limits:
+            cpu: 50m
+            memory: 100Mi
+      # {{- if ne .Cluster.Environment "production"}}
+      - name: tokeninfo-sandbox
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-113
+        env:
+        - name: OPENID_PROVIDER_CONFIGURATION_URL
+          value: https://sandbox.identity.zalando.com/.well-known/openid-configuration
+        - name: ISSUER
+          value: "https://sandbox.identity.zalando.com"
+        - name: LISTEN_ADDRESS
+          value: ":9022"
+        - name: METRICS_LISTEN_ADDRESS
+          value: ":9023"
+        - name: BUSINESS_PARTNERS
+          value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
+        ports:
+        - containerPort: 9022
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 20
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9022
+          periodSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9022
+          periodSeconds: 3
+          failureThreshold: 2
+        resources:
+          limits:
+            cpu: 50m
+            memory: 100Mi
+      # {{- end}}
+# {{ end }}

@@ -1,0 +1,18 @@
+# {{ if eq .Cluster.Provider "zalando-eks" }}
+kind: Service
+apiVersion: v1
+metadata:
+  name: zalando-iam-aws-proxy
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: zalando-iam-aws-proxy
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    deployment: zalando-iam-aws-proxy
+# {{ end }}
