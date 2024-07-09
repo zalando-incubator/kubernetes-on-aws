@@ -141,9 +141,14 @@ if [ "$create_cluster" = true ]; then
         --registry=head_cluster.yaml \
         --manage-etcd-stack
 
+    # rotate nodes with old daemonset pods and update strategy onDelete
+    # This is important to ensure we e2e test against e.g. latest coredns daemonset
+    ./check-daemonset-updated
+
     # Wait for the resources to be ready after the update
     # TODO: make a feature of CLM --wait-for-kube-system
     ./wait-for-update.py --timeout 1200
+
 fi
 
 if [ "$e2e" = true ]; then
