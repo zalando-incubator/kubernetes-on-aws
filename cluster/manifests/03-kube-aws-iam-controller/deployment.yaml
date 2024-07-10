@@ -33,7 +33,9 @@ spec:
           value: "{{.Cluster.Region}}"
         args:
         - --debug
+        # {{if ne .Cluster.Provider "zalando-eks"}}
         - "--assume-role={{.Cluster.LocalID}}-worker"
+        # {{end}}
         resources:
           limits:
             cpu: "{{.Cluster.ConfigItems.kube_aws_iam_controller_cpu}}"
