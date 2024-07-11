@@ -97,6 +97,21 @@ spec:
           status:
             description: CDPResourceCleanupTaskStatus is the status part of the CDPResourceCleanupTask.
             properties:
+              phase:
+                default: Created
+                description: |-
+                  Phase reflects the current lifecycle phase of the resource cleanup task. The following values
+                  are currently available:
+                   Created: cleanup task was submitted to the cluster, the controller will clean up the resources described in it.
+                   Started: cleanup task was picked up by the controller and is in progress.
+                   Succeeded: cleanup task has finished successfully.
+                   Failed: cleanup task has finished with an error.
+                enum:
+                - Created
+                - Started
+                - Succeeded
+                - Failed
+                type: string
               resources:
                 description: Status of resources in the cleanup task.
                 items:
@@ -151,6 +166,7 @@ spec:
                   type: object
                 type: array
             required:
+            - phase
             - resources
             type: object
         required:
