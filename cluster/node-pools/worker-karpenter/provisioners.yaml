@@ -190,11 +190,7 @@ spec:
       kubelet:
         clusterDNS: [ "10.0.1.100" ]
         cpuCFSQuota: false
-#{{ if eq .Cluster.Provider "zalando-eks" }}
-        # TODO: Uses lower limit for simplicity need to support dynamic value based
-        # on instance type.
-        maxPods: 10
-#{{ else }}
+#{{ if ne .Cluster.Provider "zalando-eks" }}
 # {{ if ne .Cluster.ConfigItems.karpenter_max_pods_per_node "" }}
         maxPods: {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
 # {{ else }}
