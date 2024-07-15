@@ -23,6 +23,7 @@ spec:
         - HeaderRegexp("Authorization", "^Bearer .+")
       filters:
         - oauthTokeninfoAnyKV("realm", "/employees", "realm", "/services")
+        - enableAccessLog()
 
     # {{ if .Cluster.ConfigItems.prometheus_ui_users }}
     #   {{ $uidKVs := "" }}
@@ -34,4 +35,5 @@ spec:
       filters:
         - oauthGrant()
         - oauthTokeninfoAnyKV({{ $uidKVs }})
+        - enableAccessLog()
     # {{ end }}
