@@ -9,6 +9,7 @@ metadata:
 spec:
   hosts:
     - system-prometheus.{{ .Values.hosted_zone }}
+    - system-prometheus-{{ .Cluster.Alias }}.{{ .Values.hosted_zone }}
   backends:
     - name: prometheus
       type: service
@@ -22,6 +23,7 @@ spec:
         - HeaderRegexp("Authorization", "^Bearer .+")
       filters:
         - oauthTokeninfoAnyKV("realm", "/employees", "realm", "/services")
+        - enableAccessLog()
 
     # {{ if .Cluster.ConfigItems.prometheus_ui_users }}
     #   {{ $uidKVs := "" }}
@@ -33,4 +35,5 @@ spec:
       filters:
         - oauthGrant()
         - oauthTokeninfoAnyKV({{ $uidKVs }})
+        - enableAccessLog()
     # {{ end }}
