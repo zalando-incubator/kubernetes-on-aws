@@ -203,12 +203,12 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-209
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-211
           name: admission-controller
           lifecycle:
             preStop:
-              exec:
-                command: ["/bin/sh", "-c",  " sleep 60"]
+              sleep:
+                seconds: 60
           readinessProbe:
             httpGet:
               scheme: HTTPS
@@ -252,8 +252,8 @@ write_files:
             - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
           lifecycle:
             preStop:
-              exec:
-                command: ["/bin/sh", "-c",  " sleep 60"]
+              sleep:
+                seconds: 60
           readinessProbe:
             httpGet:
               scheme: HTTPS
@@ -271,14 +271,14 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-134
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-135
           name: webhook
           ports:
           - containerPort: 8081
           lifecycle:
             preStop:
-              exec:
-                command: ["/bin/sh", "-c",  " sleep 60"]
+              sleep:
+                seconds: 60
           livenessProbe:
             httpGet:
               path: /healthcheck
@@ -354,14 +354,14 @@ write_files:
           - mountPath: /etc/kubernetes/k8s-authnz-webhook-kubeconfig
             name: k8s-authnz-webhook-kubeconfig
             readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-100
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-113
           name: tokeninfo
           ports:
             - containerPort: 9021
           lifecycle:
             preStop:
-              exec:
-                command: ["/bin/sh", "-c",  " sleep 60"]
+              sleep:
+                seconds: 60
           livenessProbe:
             httpGet:
               path: /health
@@ -385,13 +385,13 @@ write_files:
               value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ if ne .Cluster.Environment "production" }}
         - name: tokeninfo-sandbox
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-100
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-113
           ports:
           - containerPort: 9022
           lifecycle:
             preStop:
-              exec:
-                command: ["/bin/sh", "-c",  " sleep 60"]
+              sleep:
+                seconds: 60
           livenessProbe:
             httpGet:
               path: /health
@@ -528,7 +528,7 @@ write_files:
             runAsNonRoot: true
             runAsUser: 1000
         - name: aws-encryption-provider
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/aws-encryption-provider:2d868b88c45572a5986dfe2820add60c8f858f06-main-2.custom
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/aws-encryption-provider:87537492279066f5ddc94bf0cf3667f38f3f6328-main-3.custom
           command:
           - /aws-encryption-provider
           - --key=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:key/{{ .Values.ClusterStackOutputs.EtcdEncryptionKey }}
@@ -540,8 +540,8 @@ write_files:
             protocol: TCP
           lifecycle:
             preStop:
-              exec:
-                command: ["/bin/sh", "-c",  " sleep 60"]
+              sleep:
+                seconds: 60
           readinessProbe:
             httpGet:
               path: /healthz

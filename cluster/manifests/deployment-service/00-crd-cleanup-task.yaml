@@ -1,0 +1,184 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: cdpresourcecleanuptasks.deployment.zalando.org
+spec:
+  group: deployment.zalando.org
+  names:
+    kind: CDPResourceCleanupTask
+    listKind: CDPResourceCleanupTaskList
+    plural: cdpresourcecleanuptasks
+    singular: cdpresourcecleanuptask
+  scope: Cluster
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: CDPResourceCleanupTask represents a task that cleans up resources.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CDPResourceCleanupTaskSpec is the spec part of the CDPResourceCleanupTask.
+            properties:
+              resources:
+                description: List of resources to clean up.
+                items:
+                  properties:
+                    cloudFormation:
+                      properties:
+                        region:
+                          type: string
+                        stackID:
+                          type: string
+                        stackResources:
+                          items:
+                            properties:
+                              logicalID:
+                                type: string
+                              type:
+                                type: string
+                            required:
+                            - logicalID
+                            - type
+                            type: object
+                          type: array
+                      required:
+                      - region
+                      - stackID
+                      type: object
+                    kubernetes:
+                      properties:
+                        apiVersion:
+                          type: string
+                        kind:
+                          type: string
+                        namespace:
+                          type: string
+                      required:
+                      - apiVersion
+                      - kind
+                      type: object
+                    name:
+                      type: string
+                    phase:
+                      enum:
+                      - WaitingForDeployment
+                      - ExecutingDeployment
+                      - DeploymentExecuted
+                      - CleanedUp
+                      - CleanupFailed
+                      type: string
+                  required:
+                  - name
+                  - phase
+                  type: object
+                type: array
+            required:
+            - resources
+            type: object
+          status:
+            description: CDPResourceCleanupTaskStatus is the status part of the CDPResourceCleanupTask.
+            properties:
+              finishedAt:
+                description: |-
+                  The timestamp when this resource cleanup task has finished.
+                  The main purpose is to be able to determine age of finished tasks and clean them up.
+                format: date-time
+                type: string
+              phase:
+                default: Created
+                description: |-
+                  Phase reflects the current lifecycle phase of the resource cleanup task. The following values
+                  are currently available:
+                   Created: cleanup task was submitted to the cluster, the controller will clean up the resources described in it.
+                   Started: cleanup task was picked up by the controller and is in progress.
+                   Succeeded: cleanup task has finished successfully.
+                   Failed: cleanup task has finished with an error.
+                enum:
+                - Created
+                - Started
+                - Succeeded
+                - Failed
+                type: string
+              resources:
+                description: Status of resources in the cleanup task.
+                items:
+                  properties:
+                    cloudFormation:
+                      properties:
+                        region:
+                          type: string
+                        stackID:
+                          type: string
+                        stackResources:
+                          items:
+                            properties:
+                              logicalID:
+                                type: string
+                              type:
+                                type: string
+                            required:
+                            - logicalID
+                            - type
+                            type: object
+                          type: array
+                      required:
+                      - region
+                      - stackID
+                      type: object
+                    kubernetes:
+                      properties:
+                        apiVersion:
+                          type: string
+                        kind:
+                          type: string
+                        namespace:
+                          type: string
+                      required:
+                      - apiVersion
+                      - kind
+                      type: object
+                    name:
+                      type: string
+                    phase:
+                      enum:
+                      - WaitingForDeployment
+                      - ExecutingDeployment
+                      - DeploymentExecuted
+                      - CleanedUp
+                      - CleanupFailed
+                      type: string
+                  required:
+                  - name
+                  - phase
+                  type: object
+                type: array
+            required:
+            - phase
+            - resources
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

@@ -1,5 +1,5 @@
-{{ $internal_version := "v0.21.108-941" }}
-{{ $canary_internal_version := "v0.21.124-947" }}
+{{ $internal_version := "v0.21.161-981" }}
+{{ $canary_internal_version := "v0.21.161-981" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -166,10 +166,6 @@ spec:
           - "-address=:9999"
           - "-wait-first-route-load"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
-{{ if and (ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec") (eq .Cluster.ConfigItems.enable_skipper_eastwest "true")}}
-          - "-enable-kubernetes-east-west"
-          - "-kubernetes-east-west-domain=.ingress.cluster.local"
-{{ end }}
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
@@ -256,6 +252,7 @@ spec:
           - "-disabled-filters={{ .Cluster.ConfigItems.skipper_disabled_filters }}"
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
+          - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
   {{ if .Cluster.ConfigItems.skipper_edit_route_placeholders }}
           {{ range $placeholder := split .Cluster.ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
@@ -478,7 +475,7 @@ spec:
           [{"container": "routesrv", "parser": "keyValue"}]
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_local }}"
         prometheus.io/path: /metrics
-        prometheus.io/port: "9990"
+        prometheus.io/port: "9911"
         prometheus.io/scrape: "true"
 {{- if eq .Cluster.ConfigItems.skipper_topology_spread_enabled "true" }}
         zalando.org/topology-spread-timeout: 7m
@@ -536,15 +533,12 @@ spec:
           # TODO: dynamically get the subnet range (or figure out if these are known internal addresses?)
           - "-whitelisted-healthcheck-cidr=2a05:d014:09c0:bf00:0:0:0:0/64,2a05:d014:09c0:bf01:0:0:0:0/64,2a05:d014:09c0:bf02:0:0:0:0/64"
 {{- end }}
-{{ if eq .Cluster.ConfigItems.enable_skipper_eastwest "true"}}
-          - "-enable-kubernetes-east-west"
-          - "-kubernetes-east-west-domain=.ingress.cluster.local"
-{{ end }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
           - "-reverse-source-predicate"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
+          - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
 {{ if eq .Cluster.ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
           - "-enable-swarm"
