@@ -43,12 +43,12 @@ spec:
         stdin: true
         resources:
           requests:
-            cpu: 25m
-            memory: 50Mi
+            cpu: "{{ .Cluster.ConfigItems.flannel_awaiter_cpu }}"
+            memory: "{{ .Cluster.ConfigItems.flannel_awaiter_memory }}"
             ephemeral-storage: 256Mi
           limits:
-            cpu: 25m
-            memory: 50Mi
+            cpu: "{{ .Cluster.ConfigItems.flannel_awaiter_cpu }}"
+            memory: "{{ .Cluster.ConfigItems.flannel_awaiter_memory }}"
         startupProbe:
           exec:
             command:
@@ -57,7 +57,7 @@ spec:
           failureThreshold: 30
           periodSeconds: 10
       - name: kube-flannel
-        image: container-registry.zalando.net/teapot/flannel:v0.25.4-master-27
+        image: container-registry.zalando.net/teapot/flannel:v0.25.5-master-28
         command:
         - /opt/bin/flanneld
         args:
