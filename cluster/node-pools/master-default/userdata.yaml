@@ -354,7 +354,7 @@ write_files:
           - mountPath: /etc/kubernetes/k8s-authnz-webhook-kubeconfig
             name: k8s-authnz-webhook-kubeconfig
             readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-100
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-113
           name: tokeninfo
           ports:
             - containerPort: 9021
@@ -385,7 +385,7 @@ write_files:
               value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ if ne .Cluster.Environment "production" }}
         - name: tokeninfo-sandbox
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-100
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-113
           ports:
           - containerPort: 9022
           lifecycle:
@@ -528,7 +528,7 @@ write_files:
             runAsNonRoot: true
             runAsUser: 1000
         - name: aws-encryption-provider
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/aws-encryption-provider:2d868b88c45572a5986dfe2820add60c8f858f06-main-2.custom
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/aws-encryption-provider:87537492279066f5ddc94bf0cf3667f38f3f6328-main-3.custom
           command:
           - /aws-encryption-provider
           - --key=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:key/{{ .Values.ClusterStackOutputs.EtcdEncryptionKey }}
