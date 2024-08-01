@@ -54,12 +54,16 @@ clusters:
   lifecycle_status: ${2}
   local_id: ${LOCAL_ID}
   node_pools:
-  - discount_strategy: none
-    instance_types: ["m6g.large"]
-    name: default-master
-    profile: master-default
-    min_size: 1
-    max_size: 2
+  - config_items:
+      labels: dedicated=cluster-seed
+      taints: dedicated=cluster-seed:NoSchedule
+    discount_strategy: none
+    instance_types:
+    - "m6i.xlarge"
+    max_size: 99
+    min_size: 2
+    name: seed-worker
+    profile: worker-combined
   - discount_strategy: none
     instance_types:
     - "m6i.2xlarge"
@@ -196,7 +200,7 @@ clusters:
     config_items:
       labels: dedicated=worker-arm64
       taints: dedicated=worker-arm64:NoSchedule
-  provider: zalando-aws
+  provider: zalando-eks
   region: ${REGION}
   owner: '${OWNER}'
 EOF

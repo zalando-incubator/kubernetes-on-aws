@@ -36,7 +36,7 @@ case "$COMMAND" in
         exit 1
 esac
 
-E2E_SKIP_CLUSTER_UPDATE="${E2E_SKIP_CLUSTER_UPDATE:-"false"}"
+E2E_SKIP_CLUSTER_UPDATE="${E2E_SKIP_CLUSTER_UPDATE:-"true"}"
 
 # variables set for making it possible to run script locally
 CDP_BUILD_VERSION="${CDP_BUILD_VERSION:-"local-1"}"
@@ -80,7 +80,7 @@ if [ "$create_cluster" = true ]; then
     echo "Creating cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
 
     # TODO drop later
-    export MASTER_PROFILE="master"
+    # export MASTER_PROFILE="master"
     export WORKER_PROFILE="worker"
 
     # if E2E_SKIP_CLUSTER_UPDATE is true, don't create a cluster from base first
@@ -128,7 +128,7 @@ if [ "$create_cluster" = true ]; then
     if [ -f base_cluster.yaml ]; then
       ./copy-certificates.py base_cluster.yaml head_cluster.yaml
     else
-      aws-account-creator refresh-certificates --registry-file head_cluster.yaml --create-ca
+      aws-account-creator refresh-certificates --registry-file head_cluster.yaml --create-ca --provider zalando-eks
     fi
 
     # Update cluster
