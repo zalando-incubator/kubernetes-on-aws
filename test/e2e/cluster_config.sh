@@ -69,7 +69,7 @@ clusters:
     - "m6i.2xlarge"
     name: default-worker-splitaz
     profile: worker-splitaz
-    min_size: 0
+    min_size: 3
     max_size: 21
     config_items:
       cpu_manager_policy: static
