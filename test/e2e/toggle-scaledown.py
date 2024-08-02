@@ -9,7 +9,7 @@ def toggle_scaledown(enabled):
     cmd_output = ""
     try:
         cmd_output = subprocess.check_output(
-            ["kubectl", "get", "daemonset", "-o", "json", "-n", "kube-system", "kube-cluster-autoscaler"],
+            ["kubectl", "get", "deployment", "-o", "json", "-n", "kube-system", "kube-cluster-autoscaler"], # TODO: change to daemonset for legacy clusters
             stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         # This happens when a cluster has been cleaned up, so we should handle it gracefully
@@ -35,7 +35,7 @@ def toggle_scaledown(enabled):
                     [
                         "kubectl",
                         "patch",
-                        "daemonset",
+                        "deployment", # TODO: change to daemonset for legacy clusters
                         "-n",
                         "kube-system",
                         "kube-cluster-autoscaler",
