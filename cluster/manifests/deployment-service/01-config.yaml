@@ -11,8 +11,14 @@ data:
   create-namespaces: "true"
   aws-available: "true"
   worker-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-worker"
+{{- if eq .Cluster.Provider "zalando-eks" }}
+  {{ $eks_oidc_issuer := index (split .Cluster.ConfigItems.eks_oidc_issuer_url "//") 1 }}
+  oidc-provider-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:oidc-provider/{{$eks_oidc_issuer}}"
+  oidc-subject-key: "{{$eks_oidc_issuer}}:sub"
+{{- else }}
   oidc-provider-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:oidc-provider/{{.Cluster.LocalID}}.{{.Cluster.Alias}}.zalan.do"
   oidc-subject-key: "{{.Cluster.LocalID}}.{{.Cluster.Alias}}.zalan.do:sub"
+{{- end }}
   s3-bucket-name: "zalando-deployment-service-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
   status-service-url: "https://deployment-status-svc-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"
   deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
