@@ -33,7 +33,9 @@ spec:
           value: "{{.Cluster.Region}}"
         args:
         - --debug
+{{- if ne .Cluster.Provider "zalando-eks" }}
         - "--assume-role={{.Cluster.LocalID}}-worker"
+{{- end }}
         resources:
           limits:
             cpu: "{{.Cluster.ConfigItems.kube_aws_iam_controller_cpu}}"
@@ -41,11 +43,11 @@ spec:
           requests:
             cpu: "{{.Cluster.ConfigItems.kube_aws_iam_controller_cpu}}"
             memory: "{{.Cluster.ConfigItems.kube_aws_iam_controller_mem}}"
+{{- if ne .Cluster.Provider "zalando-eks" }}
       tolerations:
       - key: node.kubernetes.io/role
         value: master
         effect: NoSchedule
-{{- if ne .Cluster.Provider "zalando-eks" }}
       nodeSelector:
         node.kubernetes.io/role: master
 {{- end }}
