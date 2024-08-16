@@ -2707,6 +2707,7 @@ Resources:
           shellProfile:
             linux: 'bash'
 
+{{- if eq .Cluster.Region "eu-central-1"}}
   SessionManagerSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
     Properties:
@@ -2740,6 +2741,7 @@ Resources:
                 Resource:
                   - !GetAtt SessionManagerLogGroup.Arn
       RoleName: "SessionManagerSubscriptionFilterRole"
+{{- end }}
 
   AWSNodeDecommissionerIAMRole:
     Type: 'AWS::IAM::Role'
