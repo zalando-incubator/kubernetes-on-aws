@@ -11,6 +11,7 @@ clusters:
     zmon_root_account_role: ${ZMON_ROOT_ACCOUNT_ROLE}
     experimental_new_etcd_stack: "true"
     audittrail_root_account_role: ${AUDITTRAIL_ROOT_ACCOUNT_ROLE}
+    session_manager_destination_arn: ${SESSION_MANAGER_DESTINATION_ARN}
     apiserver_etcd_prefix: /registry-${LOCAL_ID}
     apiserver_business_partner_ids: ${APISERVER_BUSINESS_PARTNER_IDS}
     etcd_s3_backup_bucket: zalando-kubernetes-etcd-${AWS_ACCOUNT}-${REGION}
