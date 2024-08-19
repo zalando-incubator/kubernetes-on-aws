@@ -482,6 +482,13 @@ Resources:
                 - "ssmmessages:OpenDataChannel"
                 Effect: Allow
                 Resource: "*"
+              - Action:
+                - "logs:CreateLogStream"
+                - "logs:PutLogEvents"
+                - "logs:DescribeLogGroups"
+                - "logs:DescribeLogStreams"
+                Effect: Allow
+                Resource: "*"
 {{ if eq .Cluster.Environment "e2e" }}
 # Add extra permissions to worker IAM role to test that if a pod manages to get
 # the WorkerIAMRole assigned it can list a specific s3 bucket.
@@ -1417,6 +1424,13 @@ Resources:
                 - "ssmmessages:OpenDataChannel"
                 Effect: Allow
                 Resource: "*"
+              - Action:
+                - "logs:CreateLogStream"
+                - "logs:PutLogEvents"
+                - "logs:DescribeLogGroups"
+                - "logs:DescribeLogStreams"
+                Effect: Allow
+                Resource: "*"
             Version: 2012-10-17
           PolicyName: root
     Type: 'AWS::IAM::Role'
@@ -2106,6 +2120,68 @@ Resources:
               - !Sub
                 - "${BucketArn}/*"
                 - BucketArn: !GetAtt AuditTrailBucket.Arn
+{{- end }}
+
+  SessionManagerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: "SessionManagerLogGroup-{{accountID .Cluster.InfrastructureAccount}}"
+      RetentionInDays: 30
+
+  SessionManagerPreferencesDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      UpdateMethod: NewVersion
+      Name: SSM-SessionManagerRunShell
+      DocumentFormat: YAML
+      DocumentType: Session
+      Content:
+        schemaVersion: '1.0'
+        description: Document to hold regional settings for Session Manager
+        sessionType: Standard_Stream
+        inputs:
+          cloudWatchLogGroupName: !Ref SessionManagerLogGroup
+          cloudWatchEncryptionEnabled: false
+          cloudWatchStreamingEnabled: true
+          runAsEnabled: false
+          idleSessionTimeout: '20'
+          shellProfile:
+            linux: 'bash'
+
+{{- if eq .Cluster.Region "eu-central-1"}}
+  SessionManagerSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      LogGroupName: !Ref SessionManagerLogGroup
+      RoleArn: !GetAtt SessionManagerSubscriptionFilterRole.Arn
+      FilterName: "SessionManagerSubscriptionFilter-{{accountID .Cluster.InfrastructureAccount}}"
+      FilterPattern: ""
+      DestinationArn: "{{.Cluster.ConfigItems.session_manager_destination_arn}}"
+
+  SessionManagerSubscriptionFilterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - logs.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:PutLogEvents"
+                Resource:
+                  - !GetAtt SessionManagerLogGroup.Arn
+      RoleName: "SessionManagerSubscriptionFilterRole"
 {{- end }}
 
   AWSNodeDecommissionerIAMRole:
