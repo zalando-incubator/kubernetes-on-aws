@@ -2691,7 +2691,11 @@ Resources:
     Type: AWS::SSM::Document
     Properties:
       UpdateMethod: NewVersion
-      Name: SSM-SessionManagerRunShell
+{{ if eq .Cluster.Environment "e2e" }} # test for valid cloudformation in e2e tests, but do not set account level preferences
+      Name: "SSM-SessionManagerRunShell-{{.Cluster.LocalID}}"
+{{ else }}
+      Name: "SSM-SessionManagerRunShell"
+{{- end }}
       DocumentFormat: YAML
       DocumentType: Session
       Content:
