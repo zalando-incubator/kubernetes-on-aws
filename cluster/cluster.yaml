@@ -2132,7 +2132,7 @@ Resources:
     Type: AWS::SSM::Document
     Properties:
       UpdateMethod: NewVersion
-      Name: SSM-SessionManagerRunShell
+      Name: !ImportValue "SessionManagerDocumentName"
       DocumentFormat: YAML
       DocumentType: Session
       Content:
@@ -2467,3 +2467,7 @@ Outputs:
     Export:
       Name: '{{ .Cluster.ID}}:etcd-encryption-key'
     Value: !Ref EtcdEncryptionKey
+  SessionManagerPreferencesDocument:
+    Export:
+      Name: 'SessionManagerDocumentName'
+    Value: !Ref SessionManagerPreferencesDocument
