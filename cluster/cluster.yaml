@@ -2690,6 +2690,9 @@ Resources:
   SessionManagerPreferencesDocument:
     Type: AWS::SSM::Document
     Properties:
+      Tags:
+        - Key: InfrastructureComponent
+          Value: "false"
       UpdateMethod: NewVersion
 {{ if eq .Cluster.Environment "e2e" }} # test for valid cloudformation in e2e tests, but do not set account level preferences
       Name: "SSM-SessionManagerRunShell-{{.Cluster.LocalID}}"
