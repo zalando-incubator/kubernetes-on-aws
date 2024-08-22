@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    application: skipper-ingress
+    component: pod-deletion-cost-controller
+  name: pod-deletion-cost-controller
+  namespace: kube-system
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      deployment: pod-deletion-cost-controller
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        application: skipper-ingress
+        component: pod-deletion-cost-controller
+        deployment: pod-deletion-cost-controller
+    spec:
+      containers:
+      - args:
+        - /pod-deletion-cost-controller
+        - -address=:8080
+        - -log-level=INFO
+        image: container-registry.zalando.net/gwproxy/pod-deletion-cost-controller:main-18
+        name: skipper-ingress-pod-deletion-cost-controller
+        ports:
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 1
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 3
+        resources:
+          limits:
+            cpu: "50m"
+            memory: 100Mi
+          requests:
+            cpu: "50m"
+            memory: 100Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 5000
