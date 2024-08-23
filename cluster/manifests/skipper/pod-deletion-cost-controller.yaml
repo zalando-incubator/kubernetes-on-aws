@@ -13,10 +13,7 @@ spec:
     matchLabels:
       deployment: pod-deletion-cost-controller
   strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-    type: RollingUpdate
+    type: Recreate
   template:
     metadata:
       labels:
@@ -24,13 +21,14 @@ spec:
         component: pod-deletion-cost-controller
         deployment: pod-deletion-cost-controller
     spec:
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
+      serviceAccountName: pod-deletion-cost-controller
       containers:
       - args:
-        - /pod-deletion-cost-controller
         - -address=:8080
         - -log-level=INFO
         image: container-registry.zalando.net/gwproxy/pod-deletion-cost-controller:main-18
-        name: skipper-ingress-pod-deletion-cost-controller
+        name: pod-deletion-cost-controller
         ports:
         - containerPort: 8080
           name: metrics
