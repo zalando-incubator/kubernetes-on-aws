@@ -935,7 +935,7 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 			Containers: []v1.Container{
 				{
 					Name:  "cuda-vector-add",
-					Image: "k8s.gcr.io/cuda-vector-add:v0.1",
+					Image: "registry.k8s.io/cuda-vector-add:v0.1",
 					Resources: corev1.ResourceRequirements{
 						Limits: v1.ResourceList{
 							NVIDIAGPUResourceName: *resource.NewQuantity(1, resource.DecimalSI),
