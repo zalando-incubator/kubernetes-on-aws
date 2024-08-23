@@ -2125,7 +2125,7 @@ Resources:
   SessionManagerLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: "SessionManagerLogGroup-{{accountID .Cluster.InfrastructureAccount}}"
+      LogGroupName: "SessionManager-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
       RetentionInDays: 30
 
   SessionManagerPreferencesDocument:
@@ -2135,7 +2135,11 @@ Resources:
         - Key: InfrastructureComponent
           Value: "false"
       UpdateMethod: NewVersion
-      Name: SSM-SessionManagerRunShell
+{{ if eq .Cluster.Environment "e2e" }} # test for valid cloudformation in e2e tests, but do not set account level preferences
+      Name: "SSM-SessionManagerRunShell-{{.Cluster.LocalID}}"
+{{ else }}
+      Name: "SSM-SessionManagerRunShell"
+{{- end }}
       DocumentFormat: YAML
       DocumentType: Session
       Content:
@@ -2157,7 +2161,7 @@ Resources:
     Properties:
       LogGroupName: !Ref SessionManagerLogGroup
       RoleArn: !GetAtt SessionManagerSubscriptionFilterRole.Arn
-      FilterName: "SessionManagerSubscriptionFilter-{{accountID .Cluster.InfrastructureAccount}}"
+      FilterName: "SessionManager-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
       FilterPattern: ""
       DestinationArn: "{{.Cluster.ConfigItems.session_manager_destination_arn}}"
 
@@ -2184,7 +2188,7 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource:
                   - !GetAtt SessionManagerLogGroup.Arn
-      RoleName: "SessionManagerSubscriptionFilterRole"
+      RoleName: "SessionManager-{{.Cluster.LocalID}}"
 {{- end }}
 
   AWSNodeDecommissionerIAMRole:
