@@ -46,7 +46,7 @@ clusters:
     teapot_admission_controller_daemonset_reserved_cpu: "518m"
     karpenter_pools_enabled: "true"
     okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
-    teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
+    teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$,^image-policy-test"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
