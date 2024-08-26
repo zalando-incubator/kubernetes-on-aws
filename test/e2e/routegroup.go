@@ -391,7 +391,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
 		}, false)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp).NotTo(BeNil())
-		Expect(resp.StatusCode).To(Eqal(http.StatusTooManyRequests))
+		Expect(resp.StatusCode).To(Equal(http.StatusTooManyRequests))
 	})
 
 	It("Should create blue-green routes [RouteGroup] [Zalando]", func() {
