@@ -269,14 +269,14 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 
 		// response for / is from our backend
 		By("checking the response code of a request without required request header, we can check if predicate match works correctly")
-		req, err := http.NewRequest("GET", "https://"+hostName+"/backend", nil)
+		req, _ := http.NewRequest("GET", "https://"+hostName+"/backend", nil)
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, isNotFound, false)
 		Expect(err).NotTo(HaveOccurred())
 		resp.Body.Close()
 
 		// checking backend route with predicates and filters
 		By("checking the response status code for a request to /backend without correct headers we should get 404")
-		err = waitForResponse("https://"+hostName+"/backend", "https", 10*time.Minute, isNotFound, false)
+		waitForResponse("https://"+hostName+"/backend", "https", 10*time.Minute, isNotFound, false)
 		By("checking the response for a request to /backend with the right header we know if we got the correct route")
 		req, err = http.NewRequest("GET", "https://"+hostName+"/backend", nil)
 		Expect(err).NotTo(HaveOccurred())
@@ -390,7 +390,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
 			return code == http.StatusTooManyRequests
 		}, false)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(s).To(Equal(expectedResponse))
+		Expect(resp).To(Equal(expectedResponse))
 	})
 
 	It("Should create blue-green routes [RouteGroup] [Zalando]", func() {
@@ -571,7 +571,7 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 
 		// RouteGroup
 		By("Creating a routegroup with name " + serviceName + "-" + serviceName2 + " in namespace " + ns + " with hostname " + hostName)
-		rg := createRouteGroupWithBackends(serviceName+"-"+serviceName2, hostName, ns, labels, nil, port,
+		rg := createRouteGroupWithBackends(serviceName+"-"+serviceName2, hostName, ns, labels, nil,
 			[]rgv1.RouteGroupBackend{
 				{
 					Name:        expectedResponse,
