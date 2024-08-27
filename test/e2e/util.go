@@ -52,8 +52,6 @@ var (
 	pollLongTimeout = 5 * time.Minute
 )
 
-// type wait.ConditionWithContextFunc func(context.Context) (done bool, err error)
-// PollUntilContextTimeout(ctx, interval, timeout time.Duration, immediate bool, condition wait.ConditionWithContextFunc)
 func waitForRouteGroup(cs rgclient.ZalandoInterface, name, ns string, d time.Duration) (string, error) {
 	var addr string
 	err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, d, false, func(context.Context) (done bool, err error) {
