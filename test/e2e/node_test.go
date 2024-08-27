@@ -15,7 +15,6 @@ import (
 	admissionapi "k8s.io/pod-security-admission/api"
 
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 )
 
@@ -220,6 +219,6 @@ var _ = describe("Node tests", func() {
 		framework.ExpectNoError(e2epod.WaitForPodNotFoundInNamespace(ctx, f.ClientSet, pod.Name, pod.Namespace, framework.PodDeleteTimeout))
 
 		_, err = cs.CoreV1().Nodes().Get(ctx, nodeName, metav1.GetOptions{})
-		gomega.Expect(apierrors.IsNotFound(err)).To(gomega.BeTrue(), "node should not be found")
+		Expect(apierrors.IsNotFound(err)).To(BeTrue(), "node should not be found")
 	})
 })
