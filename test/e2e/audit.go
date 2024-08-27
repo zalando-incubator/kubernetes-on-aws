@@ -52,7 +52,7 @@ var _ = describe("Audit", func() {
 			Spec: apiv1.PodSpec{
 				Containers: []apiv1.Container{{
 					Name:  "pause",
-					Image: "container-registry.zalando.net/teapot/pause:3.4.1-master-18",
+					Image: "container-registry.zalando.net/teapot/pause:3.7-master-21",
 					// Drop all capabilities, run as non-root, and use the default seccomp profile.
 					// This is required as pods created are assumed to be restricted by default since k8s v1.31.
 					SecurityContext: &apiv1.SecurityContext{

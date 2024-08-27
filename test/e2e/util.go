@@ -43,7 +43,7 @@ import (
 
 const (
 	awsCliImage  = "container-registry.zalando.net/teapot/awscli:master-2"
-	pauseImage   = "container-registry.zalando.net/teapot/pause:3.4.1-master-18"
+	pauseImage   = "container-registry.zalando.net/teapot/pause:3.7-master-21"
 	appLabelName = "application"
 )
 
