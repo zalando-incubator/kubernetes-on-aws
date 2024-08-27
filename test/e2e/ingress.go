@@ -478,7 +478,7 @@ var ___ = describe("Ingress tests paths", func() {
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s without change from the other path", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
 		beurl = "https://" + hostName + bepath
-		bereq, err = http.NewRequest("GET", beurl, nil)
+		bereq, _ = http.NewRequest("GET", beurl, nil)
 		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -601,7 +601,7 @@ var ____ = describe("Ingress tests custom routes", func() {
 		reqRedirectURL := resp.Header.Get("Location")
 		By(fmt.Sprintf("Testing for ingress %s/%s rediretc Location we want to get a 200 for URL %s", ingressUpdate.Namespace, ingressUpdate.Name, reqRedirectURL))
 		Expect(redirectDestinationURL).To(Equal(reqRedirectURL))
-		redirectreq, err := http.NewRequest("GET", reqRedirectURL, nil)
+		redirectreq, _ := http.NewRequest("GET", reqRedirectURL, nil)
 		resp, err = getAndWaitResponse(rt, redirectreq, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -780,7 +780,7 @@ var _____ = describe("Ingress tests paths", func() {
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s without change from the other path", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
 		beurl = "https://" + hostName + bepath
-		bereq, err = http.NewRequest("GET", beurl, nil)
+		bereq, _ = http.NewRequest("GET", beurl, nil)
 		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -790,7 +790,7 @@ var _____ = describe("Ingress tests paths", func() {
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s/path/prefix/match and pathType Prefix", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
 		beurl = "https://" + hostName + bepath2 + "/path/prefix/match"
-		bereq, err = http.NewRequest("GET", beurl, nil)
+		bereq, _ = http.NewRequest("GET", beurl, nil)
 		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
@@ -913,7 +913,7 @@ var ______ = describe("Ingress tests custom routes", func() {
 		reqRedirectURL := resp.Header.Get("Location")
 		By(fmt.Sprintf("Testing for ingress %s/%s rediretc Location we want to get a 200 for URL %s", ingressUpdate.Namespace, ingressUpdate.Name, reqRedirectURL))
 		Expect(redirectDestinationURL).To(Equal(reqRedirectURL))
-		redirectreq, err := http.NewRequest("GET", reqRedirectURL, nil)
+		redirectreq, _ := http.NewRequest("GET", reqRedirectURL, nil)
 		resp, err = getAndWaitResponse(rt, redirectreq, 10*time.Second, http.StatusOK)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
