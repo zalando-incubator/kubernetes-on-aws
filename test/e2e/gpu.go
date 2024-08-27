@@ -61,7 +61,7 @@ var _ = describe("GPU job processing", func() {
 			}
 			n := p.Status.ContainerStatuses[0].State.Terminated.ExitCode
 			if n != 0 {
-				framework.ExpectNoError(fmt.Errorf("Expected POD %s to terminate with exit code 0", pod.Name))
+				framework.ExpectNoError(fmt.Errorf("expected POD %s to terminate with exit code 0", pod.Name))
 				return
 			}
 			logs, err := getPodLogs(cs, ns, pod.Name, "cuda-vector-add", false)
