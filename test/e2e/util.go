@@ -52,11 +52,11 @@ var (
 	pollLongTimeout = 5 * time.Minute
 )
 
-// type ConditionFunc func() (done bool, err error)
-// Poll(interval, timeout time.Duration, condition ConditionFunc)
+// type wait.ConditionWithContextFunc func(context.Context) (done bool, err error)
+// PollUntilContextTimeout(ctx, interval, timeout time.Duration, immediate bool, condition wait.ConditionWithContextFunc)
 func waitForRouteGroup(cs rgclient.ZalandoInterface, name, ns string, d time.Duration) (string, error) {
 	var addr string
-	err := wait.Poll(10*time.Second, d, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, d, false, func(context.Context) (done bool, err error) {
 		rg, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), name, metav1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return true, err
@@ -719,7 +719,7 @@ func waitForResponseReturnResponse(req *http.Request, timeout time.Duration, exp
 
 func waitForReplicas(deploymentName, namespace string, kubeClient clientset.Interface, timeout time.Duration, desiredReplicas int) {
 	interval := 20 * time.Second
-	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), interval, timeout, true, func(context.Context) (bool, error) {
 		deployment, err := kubeClient.AppsV1().Deployments(namespace).Get(context.TODO(), deploymentName, metav1.GetOptions{})
 		if err != nil {
 			framework.Failf("Failed to get replication controller %s: %v", deployment, err)
