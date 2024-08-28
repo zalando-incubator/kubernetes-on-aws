@@ -48,16 +48,16 @@ const (
 	compliantImage8 = "container-registry.zalando.net/teapot/skipper:v0.21.7"
 
 	// these are non-compliant because of expired base image
-	nonCompliantImage1  = "container-registry.zalando.net/teapot/skipper:v0.19.0"
-	nonCompliantImage2  = "container-registry.zalando.net/teapot/skipper:v0.19.1"
-	nonCompliantImage3  = "container-registry.zalando.net/teapot/skipper:v0.19.2"
-	nonCompliantImage4  = "container-registry.zalando.net/teapot/skipper:v0.19.3"
-	nonCompliantImage5  = "container-registry.zalando.net/teapot/skipper:v0.19.4"
-	nonCompliantImage6  = "container-registry.zalando.net/teapot/skipper:v0.19.5"
-	nonCompliantImage7  = "container-registry.zalando.net/teapot/skipper:v0.19.6"
-	nonCompliantImage8  = "container-registry.zalando.net/teapot/skipper:v0.19.7"
-	nonCompliantImage9  = "container-registry.zalando.net/teapot/skipper:v0.19.8"
-	nonCompliantImage10 = "container-registry.zalando.net/teapot/skipper:v0.19.9"
+	nonCompliantImage1  = "container-registry.zalando.net/teapot/skipper:v0.16.0"
+	nonCompliantImage2  = "container-registry.zalando.net/teapot/skipper:v0.16.1"
+	nonCompliantImage3  = "container-registry.zalando.net/teapot/skipper:v0.16.2"
+	nonCompliantImage4  = "container-registry.zalando.net/teapot/skipper:v0.16.3"
+	nonCompliantImage5  = "container-registry.zalando.net/teapot/skipper:v0.16.4"
+	nonCompliantImage6  = "container-registry.zalando.net/teapot/skipper:v0.16.5"
+	nonCompliantImage7  = "container-registry.zalando.net/teapot/skipper:v0.16.6"
+	nonCompliantImage8  = "container-registry.zalando.net/teapot/skipper:v0.16.7"
+	nonCompliantImage9  = "container-registry.zalando.net/teapot/skipper:v0.16.8"
+	nonCompliantImage10 = "container-registry.zalando.net/teapot/skipper:v0.16.9"
 	waitForPodTimeout   = 5 * time.Minute
 )
 
