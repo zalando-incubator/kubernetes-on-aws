@@ -19,7 +19,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -56,13 +55,12 @@ var _ = describe("Admission controller tests", func() {
 
 	It("Admission controller should inject platform environment variables [Zalando]", func() {
 		nameprefix := "deployment-info-test"
-		podname := fmt.Sprintf("deployment-info-test-pod")
 		var replicas int32 = 1
 		ns := f.Namespace.Name
 
 		By("Creating deployment " + nameprefix + " in namespace " + ns)
 
-		deployment := createDeploymentWithDeploymentInfo(nameprefix+"-", ns, podname, replicas)
+		deployment := createDeploymentWithDeploymentInfo(nameprefix+"-", ns, replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		labelSelector, err := metav1.LabelSelectorAsSelector(deployment.Spec.Selector)
@@ -175,7 +173,7 @@ func createInvalidOwnerPod(namespace, podname string) *v1.Pod {
 	}
 }
 
-func createDeploymentWithDeploymentInfo(nameprefix, namespace, podname string, replicas int32) *appsv1.Deployment {
+func createDeploymentWithDeploymentInfo(nameprefix, namespace string, replicas int32) *appsv1.Deployment {
 	zero := int64(0)
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{

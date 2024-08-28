@@ -411,9 +411,7 @@ func verifyResponse(status int, body []byte, test testItem) {
 }
 
 var _ = describe("Authorization tests [Authorization] [RBAC] [Zalando]", func() {
-	should := fmt.Sprintf(
-		"should validate permissions for [Authorization] [RBAC] [Zalando]",
-	)
+	should := "should validate permissions for [Authorization] [RBAC] [Zalando]"
 	It(should, func() {
 		conf, err := framework.LoadConfig()
 		Expect(err).NotTo(HaveOccurred()) // BDD = Because :DDD

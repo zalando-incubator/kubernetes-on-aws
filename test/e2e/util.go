@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -21,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
+
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/framework/config"
@@ -34,7 +33,6 @@ import (
 	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	zv1 "github.com/zalando-incubator/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -50,7 +48,6 @@ const (
 )
 
 var (
-	errTimeout      = errors.New("Timeout")
 	poll            = 2 * time.Second
 	pollLongTimeout = 5 * time.Minute
 )
@@ -71,7 +68,7 @@ func waitForRouteGroup(cs rgclient.ZalandoInterface, name, ns string, d time.Dur
 		return false, nil
 	})
 	if err != nil {
-		return "", fmt.Errorf("Failed to get active load balancer for Routegroup %s/%s: %w", name, ns, err)
+		return "", fmt.Errorf("failed to get active load balancer for Routegroup %s/%s: %w", name, ns, err)
 	}
 
 	return addr, err
@@ -110,7 +107,7 @@ func createRouteGroup(name, hostname, namespace string, labels, annotations map[
 	}
 }
 
-func createRouteGroupWithBackends(name, hostname, namespace string, labels, annotations map[string]string, port int, backends []rgv1.RouteGroupBackend, routes ...rgv1.RouteGroupRouteSpec) *rgv1.RouteGroup {
+func createRouteGroupWithBackends(name, hostname, namespace string, labels, annotations map[string]string, backends []rgv1.RouteGroupBackend, routes ...rgv1.RouteGroupRouteSpec) *rgv1.RouteGroup {
 	return &rgv1.RouteGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name + string(uuid.NewUUID()),
@@ -271,10 +268,10 @@ func createSkipperPod(nameprefix, namespace, route string, labels map[string]str
 	}
 }
 
-func createSkipperPodSpec(route string, port int32) corev1.PodSpec {
-	return corev1.PodSpec{
+func createSkipperPodSpec(route string, port int32) v1.PodSpec {
+	return v1.PodSpec{
 		TerminationGracePeriodSeconds: ptr.To(int64(0)),
-		Containers: []corev1.Container{
+		Containers: []v1.Container{
 			{
 				Name:  "skipper",
 				Image: "container-registry.zalando.net/teapot/skipper:v0.16.154",
@@ -285,20 +282,20 @@ func createSkipperPodSpec(route string, port int32) corev1.PodSpec {
 					"-address",
 					fmt.Sprintf(":%d", port),
 				},
-				Ports: []corev1.ContainerPort{
+				Ports: []v1.ContainerPort{
 					{
 						Name:          "http",
 						ContainerPort: port,
 					},
 				},
-				Resources: corev1.ResourceRequirements{
-					Limits: map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceCPU:    resource.MustParse("100m"),
-						corev1.ResourceMemory: resource.MustParse("250Mi"),
+				Resources: v1.ResourceRequirements{
+					Limits: map[v1.ResourceName]resource.Quantity{
+						v1.ResourceCPU:    resource.MustParse("100m"),
+						v1.ResourceMemory: resource.MustParse("250Mi"),
 					},
-					Requests: map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceCPU:    resource.MustParse("100m"),
-						corev1.ResourceMemory: resource.MustParse("250Mi"),
+					Requests: map[v1.ResourceName]resource.Quantity{
+						v1.ResourceCPU:    resource.MustParse("100m"),
+						v1.ResourceMemory: resource.MustParse("250Mi"),
 					},
 				},
 			},
@@ -423,7 +420,7 @@ func createSkipperBackendDeployment(nameprefix, namespace, route string, label m
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{MatchLabels: label},
-			Template: corev1.PodTemplateSpec{
+			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: label,
 				},
@@ -438,13 +435,13 @@ func pauseContainer() v1.Container {
 		Name:  "pause",
 		Image: pauseImage,
 		Resources: v1.ResourceRequirements{
-			Limits: map[corev1.ResourceName]resource.Quantity{
-				corev1.ResourceCPU:    resource.MustParse("1m"),
-				corev1.ResourceMemory: resource.MustParse("50Mi"),
+			Limits: map[v1.ResourceName]resource.Quantity{
+				v1.ResourceCPU:    resource.MustParse("1m"),
+				v1.ResourceMemory: resource.MustParse("50Mi"),
 			},
-			Requests: map[corev1.ResourceName]resource.Quantity{
-				corev1.ResourceCPU:    resource.MustParse("1m"),
-				corev1.ResourceMemory: resource.MustParse("50Mi"),
+			Requests: map[v1.ResourceName]resource.Quantity{
+				v1.ResourceCPU:    resource.MustParse("1m"),
+				v1.ResourceMemory: resource.MustParse("50Mi"),
 			},
 		},
 	}
@@ -462,20 +459,20 @@ func nodeTestPod(namespace string, poolName string, name string) *v1.Pod {
 			},
 		},
 		Spec: v1.PodSpec{
-			Tolerations: []corev1.Toleration{
+			Tolerations: []v1.Toleration{
 				{
 					Key:      "dedicated",
-					Operator: corev1.TolerationOpEqual,
+					Operator: v1.TolerationOpEqual,
 					Value:    poolName,
-					Effect:   corev1.TaintEffectNoSchedule,
+					Effect:   v1.TaintEffectNoSchedule,
 				},
 			},
 			NodeSelector: map[string]string{
 				"dedicated": poolName,
 			},
-			Affinity: &corev1.Affinity{
-				PodAntiAffinity: &corev1.PodAntiAffinity{
-					RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+			Affinity: &v1.Affinity{
+				PodAntiAffinity: &v1.PodAntiAffinity{
+					RequiredDuringSchedulingIgnoredDuringExecution: []v1.PodAffinityTerm{
 						{
 							LabelSelector: &metav1.LabelSelector{
 								MatchLabels: map[string]string{
@@ -491,16 +488,16 @@ func nodeTestPod(namespace string, poolName string, name string) *v1.Pod {
 	}
 }
 
-func nodeNameAffinity(nodeName string) *corev1.Affinity {
-	return &corev1.Affinity{
-		NodeAffinity: &corev1.NodeAffinity{
-			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-				NodeSelectorTerms: []corev1.NodeSelectorTerm{
+func nodeNameAffinity(nodeName string) *v1.Affinity {
+	return &v1.Affinity{
+		NodeAffinity: &v1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
+				NodeSelectorTerms: []v1.NodeSelectorTerm{
 					{
-						MatchFields: []corev1.NodeSelectorRequirement{
+						MatchFields: []v1.NodeSelectorRequirement{
 							{
 								Key:      "metadata.name",
-								Operator: corev1.NodeSelectorOpIn,
+								Operator: v1.NodeSelectorOpIn,
 								Values:   []string{nodeName},
 							},
 						},
@@ -720,7 +717,7 @@ func waitForResponseReturnResponse(req *http.Request, timeout time.Duration, exp
 	return nil, fmt.Errorf("%s was not reachable after %s", req.URL.String(), timeout)
 }
 
-func waitForReplicas(deploymentName, namespace string, kubeClient kubernetes.Interface, timeout time.Duration, desiredReplicas int) {
+func waitForReplicas(deploymentName, namespace string, kubeClient clientset.Interface, timeout time.Duration, desiredReplicas int) {
 	interval := 20 * time.Second
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
 		deployment, err := kubeClient.AppsV1().Deployments(namespace).Get(context.TODO(), deploymentName, metav1.GetOptions{})
@@ -889,24 +886,24 @@ func createVegetaDeployment(hostPath string, rate int) *appsv1.Deployment {
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},
-			Template: corev1.PodTemplateSpec{
+			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: labels,
 				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
 						{
 							Name:    name,
 							Image:   "container-registry.zalando.net/teapot/vegeta:v12.8.4-main-4",
 							Command: []string{"sh", "-c"},
 							Args:    []string{cmd},
-							Resources: corev1.ResourceRequirements{
-								Limits: map[corev1.ResourceName]resource.Quantity{
-									corev1.ResourceMemory: resource.MustParse("100Mi"),
+							Resources: v1.ResourceRequirements{
+								Limits: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceMemory: resource.MustParse("100Mi"),
 								},
-								Requests: map[corev1.ResourceName]resource.Quantity{
-									corev1.ResourceCPU:    resource.MustParse("100m"),
-									corev1.ResourceMemory: resource.MustParse("100Mi"),
+								Requests: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceCPU:    resource.MustParse("100m"),
+									v1.ResourceMemory: resource.MustParse("100Mi"),
 								},
 							},
 						},
@@ -917,7 +914,7 @@ func createVegetaDeployment(hostPath string, rate int) *appsv1.Deployment {
 	}
 }
 
-const NVIDIAGPUResourceName corev1.ResourceName = "nvidia.com/gpu"
+const NVIDIAGPUResourceName v1.ResourceName = "nvidia.com/gpu"
 
 func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1.Pod {
 	return &v1.Pod{
@@ -936,7 +933,7 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 				{
 					Name:  "cuda-vector-add",
 					Image: "registry.k8s.io/cuda-vector-add:v0.1",
-					Resources: corev1.ResourceRequirements{
+					Resources: v1.ResourceRequirements{
 						Limits: v1.ResourceList{
 							NVIDIAGPUResourceName: *resource.NewQuantity(1, resource.DecimalSI),
 						},
@@ -946,7 +943,7 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 		},
 	}
 }
-func deleteDeployment(cs kubernetes.Interface, ns string, deployment *appsv1.Deployment) {
+func deleteDeployment(cs clientset.Interface, ns string, deployment *appsv1.Deployment) {
 	By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 	defer GinkgoRecover()
 	err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
@@ -1021,7 +1018,7 @@ func getBody(resp *http.Response) (string, error) {
 	return buf.String(), nil
 }
 
-func getPodLogs(c kubernetes.Interface, namespace, podName, containerName string, previous bool) (string, error) {
+func getPodLogs(c clientset.Interface, namespace, podName, containerName string, previous bool) (string, error) {
 	logs, err := c.CoreV1().RESTClient().Get().
 		Resource("pods").
 		Namespace(namespace).
@@ -1033,8 +1030,8 @@ func getPodLogs(c kubernetes.Interface, namespace, podName, containerName string
 	if err != nil {
 		return "", err
 	}
-	if err == nil && strings.Contains(string(logs), "Internal Error") {
-		return "", fmt.Errorf("Fetched log contains \"Internal Error\": %q", string(logs))
+	if strings.Contains(string(logs), "Internal Error") {
+		return "", fmt.Errorf("fetched log contains \"Internal Error\": %q", string(logs))
 	}
 	return string(logs), err
 }
