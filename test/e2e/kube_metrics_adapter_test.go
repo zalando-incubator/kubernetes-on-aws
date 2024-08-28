@@ -176,7 +176,6 @@ type CustomMetricTestCase struct {
 	rgClient        rgclient.Interface
 	jig             *ingress.TestJig
 	deployment      *appsv1.Deployment
-	pod             *corev1.Pod
 	initialReplicas int
 	scaledReplicas  int
 	ingress         *netv1.Ingress
