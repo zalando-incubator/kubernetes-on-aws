@@ -37,14 +37,14 @@ import (
 )
 
 const (
-	compliantImage1 = "container-registry.zalando.net/teapot/skipper:v0.19.0" // these are several compliant images
-	compliantImage2 = "container-registry.zalando.net/teapot/skipper:v0.19.1"
-	compliantImage3 = "container-registry.zalando.net/teapot/skipper:v0.19.2"
-	compliantImage4 = "container-registry.zalando.net/teapot/skipper:v0.19.3"
-	compliantImage5 = "container-registry.zalando.net/teapot/skipper:v0.19.4"
-	compliantImage6 = "container-registry.zalando.net/teapot/skipper:v0.19.5"
-	compliantImage7 = "container-registry.zalando.net/teapot/skipper:v0.19.6"
-	compliantImage8 = "container-registry.zalando.net/teapot/skipper:v0.19.7"
+	compliantImage1 = "container-registry.zalando.net/teapot/skipper:v0.21.0" // these are several compliant images
+	compliantImage2 = "container-registry.zalando.net/teapot/skipper:v0.21.1"
+	compliantImage3 = "container-registry.zalando.net/teapot/skipper:v0.21.2"
+	compliantImage4 = "container-registry.zalando.net/teapot/skipper:v0.21.3"
+	compliantImage5 = "container-registry.zalando.net/teapot/skipper:v0.21.4"
+	compliantImage6 = "container-registry.zalando.net/teapot/skipper:v0.21.5"
+	compliantImage7 = "container-registry.zalando.net/teapot/skipper:v0.21.6"
+	compliantImage8 = "container-registry.zalando.net/teapot/skipper:v0.21.7"
 
 	// these are non-compliant because of expired base image
 	nonCompliantImage1  = "registry.opensource.zalan.do/teapot/skipper:v0.14.0"
