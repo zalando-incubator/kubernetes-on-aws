@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -941,7 +940,7 @@ var _ = describe("Authorization tests [Authorization] [RBAC] [Zalando]", func() 
 				rsp, err := client.Do(req)
 				Expect(err).NotTo(HaveOccurred())
 
-				body, err := ioutil.ReadAll(rsp.Body)
+				body, err := io.ReadAll(rsp.Body)
 				Expect(err).NotTo(HaveOccurred())
 
 				verifyResponse(rsp.StatusCode, body, subtest)
