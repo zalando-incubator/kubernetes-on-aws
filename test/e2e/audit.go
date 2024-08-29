@@ -44,7 +44,6 @@ var _ = describe("Audit", func() {
 	})
 
 	It("Should audit API calls to create, update, patch, delete pods. [Audit] [Zalando]", func() {
-		runAsNonRoot := true
 		pod := &apiv1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "audit-pod",
@@ -53,17 +52,6 @@ var _ = describe("Audit", func() {
 				Containers: []apiv1.Container{{
 					Name:  "pause",
 					Image: "container-registry.zalando.net/teapot/pause:3.7-master-21",
-					// Drop all capabilities, run as non-root, and use the default seccomp profile.
-					// This is required as pods created are assumed to be restricted by default since k8s v1.31.
-					SecurityContext: &apiv1.SecurityContext{
-						Capabilities: &apiv1.Capabilities{
-							Drop: []apiv1.Capability{"ALL"},
-						},
-						RunAsNonRoot: &runAsNonRoot,
-						SeccompProfile: &apiv1.SeccompProfile{
-							Type: "RuntimeDefault",
-						},
-					},
 				}},
 			},
 		}
