@@ -2125,7 +2125,7 @@ Resources:
   SessionManagerLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: "SessionManager-{{.Cluster.LocalID}}"
+      LogGroupName: "SessionManager-{{.Cluster.Alias}}"
       RetentionInDays: 30
 
   SessionManagerPreferencesDocument:
@@ -2148,7 +2148,7 @@ Resources:
     Properties:
       LogGroupName: !Ref SessionManagerLogGroup
       RoleArn: !GetAtt SessionManagerSubscriptionFilterRole.Arn
-      FilterName: "SessionManager-{{.Cluster.LocalID}}"
+      FilterName: "SessionManager-{{.Cluster.Alias}}"
       FilterPattern: ""
       DestinationArn: "{{.Cluster.ConfigItems.session_manager_destination_arn}}"
 
@@ -2175,7 +2175,7 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource:
                   - !GetAtt SessionManagerLogGroup.Arn
-      RoleName: "SessionManager-{{.Cluster.LocalID}}"
+      RoleName: "SessionManager-{{.Cluster.Alias}}"
 {{- end }}
 
   AWSNodeDecommissionerIAMRole:
