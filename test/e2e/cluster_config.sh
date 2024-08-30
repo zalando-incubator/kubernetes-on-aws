@@ -62,7 +62,7 @@ clusters:
     max_size: 2
   - discount_strategy: none
     instance_types:
-    - "m6i.xlarge"
+    - "m6i.2xlarge"
     name: default-worker-splitaz
     profile: worker-splitaz
     min_size: 0
