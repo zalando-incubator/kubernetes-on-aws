@@ -542,7 +542,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 		framework.ExpectNoError(err)
 
 		// POD
-		By("Creating 2 PODs with prefix " + nameprefix + " and " + nameprefix + " in namespace " + ns)
+		By("Creating 2 PODs with prefix " + nameprefix + " and " + nameprefix2 + " in namespace " + ns)
 		expectedResponse := "blue"
 		pod := createSkipperPod(
 			nameprefix,
@@ -654,8 +654,8 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 		// +/- 5 for 80/20
 		res201 := cnt[201] > 75 && cnt[201] < 85
 		res202 := cnt[202] > 15 && cnt[202] < 25
-		Expect(res201).To(BeTrue())
-		Expect(res202).To(BeTrue())
+		Expect(res201).To(BeTrue(), "201 count should be between 75 and 85, got %d", cnt[201])
+		Expect(res202).To(BeTrue(), "202 count should be between 15 and 25, got %d", cnt[202])
 	})
 
 	It("Should create NLB routegroup [RouteGroup] [Zalando]", func() {
