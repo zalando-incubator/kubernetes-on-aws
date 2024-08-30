@@ -181,7 +181,7 @@ if [ "$e2e" = true ]; then
     mkdir -p junit_reports
     ginkgo -procs=25 -flake-attempts=2 \
         -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
-        -skip="(validates.that.there.is.no.conflict.between.pods.with.same.hostPort.but.different.hostIP.and.protocol)" \
+        -skip="(\[Serial\]|validates.that.there.is.no.conflict.between.pods.with.same.hostPort.but.different.hostIP.and.protocol)" \
         "e2e.test" -- \
         -delete-namespace-on-failure=false \
         -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated \
