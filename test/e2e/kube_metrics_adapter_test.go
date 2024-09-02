@@ -8,7 +8,6 @@ import (
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	rgclient "github.com/szuecs/routegroup-client"
 	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -44,14 +43,14 @@ var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metri
 
 		// setup RouteGroup clientset
 		config, err := framework.LoadConfig()
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		config.QPS = f.Options.ClientQPS
 		config.Burst = f.Options.ClientBurst
 		if f.Options.GroupVersion != nil {
 			config.GroupVersion = f.Options.GroupVersion
 		}
 		rgcs, err = rgclient.NewClientset(config)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 
 	It("should scale down with Custom Metric of type Pod from kube-metrics-adapter [CustomMetricsAutoscaling] [Zalando]", func() {
@@ -176,7 +175,6 @@ type CustomMetricTestCase struct {
 	rgClient        rgclient.Interface
 	jig             *ingress.TestJig
 	deployment      *appsv1.Deployment
-	pod             *corev1.Pod
 	initialReplicas int
 	scaledReplicas  int
 	ingress         *netv1.Ingress
@@ -191,13 +189,13 @@ func (tc *CustomMetricTestCase) Run() {
 
 	// Create a MetricsExporter deployment
 	_, err := tc.kubeClient.AppsV1().Deployments(ns).Create(context.TODO(), tc.deployment, metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	framework.ExpectNoError(err)
 	// Wait for the deployment to run
 	waitForReplicas(tc.deployment.ObjectMeta.Name, tc.framework.Namespace.ObjectMeta.Name, tc.kubeClient, 15*time.Minute, tc.initialReplicas)
 
 	for _, deployment := range tc.auxDeployments {
 		_, err := tc.kubeClient.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		// Wait for the deployment to run
 		waitForReplicas(deployment.ObjectMeta.Name, tc.framework.Namespace.ObjectMeta.Name, tc.kubeClient, 15*time.Minute, int(*(deployment.Spec.Replicas)))
 	}
@@ -206,14 +204,14 @@ func (tc *CustomMetricTestCase) Run() {
 	if tc.ingress != nil {
 		// Create a Service for the Ingress
 		_, err = tc.kubeClient.CoreV1().Services(ns).Create(context.TODO(), tc.service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// Create an Ingress since RPS based scaling relies on it
 		ingressCreate, err := tc.kubeClient.NetworkingV1().Ingresses(ns).Create(context.TODO(), tc.ingress, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = tc.jig.WaitForIngressAddress(context.TODO(), tc.kubeClient, ns, ingressCreate.Name, 10*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 	}
 
@@ -221,19 +219,19 @@ func (tc *CustomMetricTestCase) Run() {
 	if tc.routegroup != nil {
 		// Create a Service for the RouteGroup
 		_, err = tc.kubeClient.CoreV1().Services(ns).Create(context.TODO(), tc.service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// Create a RouteGroup since RPS based scaling relies on it
 		rgCreate, err := tc.rgClient.ZalandoV1().RouteGroups(ns).Create(context.TODO(), tc.routegroup, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = waitForRouteGroup(tc.rgClient, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	}
 
 	// Autoscale the deployment
 	_, err = tc.kubeClient.AutoscalingV2().HorizontalPodAutoscalers(ns).Create(context.TODO(), tc.hpa, metav1.CreateOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	framework.ExpectNoError(err)
 
 	waitForReplicas(tc.deployment.ObjectMeta.Name, tc.framework.Namespace.ObjectMeta.Name, tc.kubeClient, 15*time.Minute, tc.scaledReplicas)
 }

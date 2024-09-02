@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	"k8s.io/kubernetes/test/e2e/framework"
 )
@@ -411,12 +409,10 @@ func verifyResponse(status int, body []byte, test testItem) {
 }
 
 var _ = describe("Authorization tests [Authorization] [RBAC] [Zalando]", func() {
-	should := fmt.Sprintf(
-		"should validate permissions for [Authorization] [RBAC] [Zalando]",
-	)
+	should := "should validate permissions for [Authorization] [RBAC] [Zalando]"
 	It(should, func() {
 		conf, err := framework.LoadConfig()
-		Expect(err).NotTo(HaveOccurred()) // BDD = Because :DDD
+		framework.ExpectNoError(err) // BDD = Because :DDD
 
 		host := conf.Host
 		client := http.DefaultClient
@@ -939,12 +935,12 @@ var _ = describe("Authorization tests [Authorization] [RBAC] [Zalando]", func() 
 				By(subtest.String())
 
 				req, err := makeReq(subtest.subjectReview())
-				Expect(err).NotTo(HaveOccurred())
+				framework.ExpectNoError(err)
 				rsp, err := client.Do(req)
-				Expect(err).NotTo(HaveOccurred())
+				framework.ExpectNoError(err)
 
-				body, err := ioutil.ReadAll(rsp.Body)
-				Expect(err).NotTo(HaveOccurred())
+				body, err := io.ReadAll(rsp.Body)
+				framework.ExpectNoError(err)
 
 				verifyResponse(rsp.StatusCode, body, subtest)
 			}

@@ -64,7 +64,7 @@ var _ = describe("Ingress ALB creation", func() {
 			Expect(err2).NotTo(HaveOccurred())
 		}()
 		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// POD
 		By("Creating a POD with prefix " + nameprefix + " in namespace " + ns)
@@ -78,7 +78,7 @@ var _ = describe("Ingress ALB creation", func() {
 		}()
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// Ingress
@@ -92,27 +92,27 @@ var _ = describe("Ingress ALB creation", func() {
 			Expect(err2).NotTo(HaveOccurred())
 		}()
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, 10*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		ingress, err := cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("ALB endpoint from ingress status: %s", ingress.Status.LoadBalancer.Ingress[0].Hostname))
 
 		//  skipper http -> https redirect
 		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "http", 10*time.Minute, isRedirect, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// ALB ready
 		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "https", 10*time.Minute, isNotFound, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// DNS ready
 		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", 10*time.Minute, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 })
 
@@ -145,37 +145,37 @@ var __ = describe("Ingress tests simple", func() {
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), depl, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, nil, port)
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// skipper http -> https redirect
 		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// ALB ready
 		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// DNS ready
 		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", waitTime, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// Test that we get content from the default ingress
 		By("By checking the content of the reply we see that the ingress stack works")
@@ -185,11 +185,11 @@ var __ = describe("Ingress tests simple", func() {
 		}()
 		url := "https://" + hostName + "/"
 		req, err := http.NewRequest("GET", url, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err := rt.RoundTrip(req)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		// Start actual ingress tests
@@ -208,13 +208,13 @@ var __ = describe("Ingress tests simple", func() {
 			port,
 		)
 		ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with the right content for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		// Test ingress Predicates with Method("PUT")
@@ -232,10 +232,10 @@ var __ = describe("Ingress tests simple", func() {
 			port,
 		)
 		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the next request", ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 
 		// Test ingress Filters
@@ -255,62 +255,62 @@ var __ = describe("Ingress tests simple", func() {
 			port,
 		)
 		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with %s header set to %s for the next request", ingressUpdate.Namespace, ingressUpdate.Name, headerKey, headerVal))
 		time.Sleep(10 * time.Second) // wait for routing change propagation
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		Expect(resp.Header.Get(headerKey)).To(Equal(headerVal))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		// Test additional hostname
 		additionalHostname := fmt.Sprintf("foo-%d.%s", time.Now().UTC().Unix(), E2EHostedZone())
 		addHostIng := addHostIngress(updatedIng, additionalHostname)
 		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), addHostIng, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By("Waiting for new DNS hostname to be resolvable " + additionalHostname)
 		err = waitForResponse(additionalHostname, "https", waitTime, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("Testing the old hostname %s for ingress %s/%s we make sure old routes are working", hostName, ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 		By(fmt.Sprintf("Testing the new hostname %s for ingress %s/%s we make sure old routes are working", additionalHostname, ingressUpdate.Namespace, ingressUpdate.Name))
 		url = "https://" + additionalHostname + "/"
 		req, err = http.NewRequest("GET", url, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		// Test changed path
 		newPath := "/foo"
 		changePathIng := changePathIngress(updatedIng, newPath)
 		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), changePathIng, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the old request, because of the path route", ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 		pathURL := "https://" + hostName + newPath
 		pathReq, err := http.NewRequest("GET", pathURL, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 for a new request to the path route", ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, pathReq, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 	})
 })
@@ -350,47 +350,47 @@ var ___ = describe("Ingress tests paths", func() {
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), depl, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By("Creating a 2nd deployment with " + serviceName2 + " in namespace " + ns)
 		depl2 := createSkipperBackendDeployment(serviceName2, ns, route2, labels2, int32(targetPort), replicas)
 		_, err = cs.AppsV1().Deployments(ns).Create(context.TODO(), depl2, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating service " + serviceName2 + " in namespace " + ns)
 		service2 := createServiceTypeClusterIP(serviceName2, labels2, port, targetPort)
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service2, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
 		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, nil, port)
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// skipper http -> https redirect
 		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// ALB ready
 		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// DNS ready
 		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", waitTime, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// Test that we get content from the default ingress
 		By("By checking the content of the reply we see that the ingress stack works")
@@ -400,11 +400,11 @@ var ___ = describe("Ingress tests paths", func() {
 		}()
 		url := "https://" + hostName + "/"
 		req, err := http.NewRequest("GET", url, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err := rt.RoundTrip(req)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		// Start actual ingress tests
@@ -421,35 +421,35 @@ var ___ = describe("Ingress tests paths", func() {
 			port,
 		)
 		ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		// wait 20 seconds to ensure the ingress change is applied by
 		// all skippers
 		time.Sleep(20 * time.Second)
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path /", ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
 		beurl := "https://" + hostName + bepath
 		bereq, err := http.NewRequest("GET", beurl, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		// Test ingress with 2 paths
 		bepath2 := "/bar"
 		beurl2 := "https://" + hostName + bepath2
 		bereq2, err := http.NewRequest("GET", beurl2, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
 		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusNotFound)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
 		updatedIng = addPathIngressV1(updatedIng,
@@ -465,25 +465,25 @@ var ___ = describe("Ingress tests paths", func() {
 			},
 		)
 		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		// wait 20 seconds to ensure the ingress change is applied by
 		// all skippers
 		time.Sleep(20 * time.Second)
 		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent2))
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s without change from the other path", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
 		beurl = "https://" + hostName + bepath
-		bereq, err = http.NewRequest("GET", beurl, nil)
+		bereq, _ = http.NewRequest("GET", beurl, nil)
 		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 	})
 })
@@ -517,38 +517,38 @@ var ____ = describe("Ingress tests custom routes", func() {
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), depl, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
 		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, nil, port)
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// skipper http -> https redirect
 		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// ALB ready
 		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// DNS ready
 		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", waitTime, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// Test that we get content from the default ingress
 		By("By checking the content of the reply we see that the ingress stack works")
@@ -558,11 +558,11 @@ var ____ = describe("Ingress tests custom routes", func() {
 		}()
 		url := "https://" + hostName + "/"
 		req, err := http.NewRequest("GET", url, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err := rt.RoundTrip(req)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		// Start actual ingress tests
@@ -586,27 +586,27 @@ var ____ = describe("Ingress tests custom routes", func() {
 			port,
 		)
 		ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		// wait 20 seconds to ensure the ingress change is applied by
 		// all skippers
 		time.Sleep(20 * time.Second)
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 307 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, redirectPath))
 		req, err = http.NewRequest("GET", redirectURL, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusTemporaryRedirect)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusTemporaryRedirect))
 
 		reqRedirectURL := resp.Header.Get("Location")
 		By(fmt.Sprintf("Testing for ingress %s/%s rediretc Location we want to get a 200 for URL %s", ingressUpdate.Namespace, ingressUpdate.Name, reqRedirectURL))
 		Expect(redirectDestinationURL).To(Equal(reqRedirectURL))
-		redirectreq, err := http.NewRequest("GET", reqRedirectURL, nil)
+		redirectreq, _ := http.NewRequest("GET", reqRedirectURL, nil)
 		resp, err = getAndWaitResponse(rt, redirectreq, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 	})
 })
@@ -646,47 +646,47 @@ var _____ = describe("Ingress tests paths", func() {
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), depl, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By("Creating a 2nd deployment with " + serviceName2 + " in namespace " + ns)
 		depl2 := createSkipperBackendDeployment(serviceName2, ns, route2, labels2, int32(targetPort), replicas)
 		_, err = cs.AppsV1().Deployments(ns).Create(context.TODO(), depl2, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating service " + serviceName2 + " in namespace " + ns)
 		service2 := createServiceTypeClusterIP(serviceName2, labels2, port, targetPort)
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service2, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
 		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, nil, port)
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// skipper http -> https redirect
 		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// ALB ready
 		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// DNS ready
 		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", waitTime, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// Test that we get content from the default ingress
 		By("By checking the content of the reply we see that the ingress stack works")
@@ -696,11 +696,11 @@ var _____ = describe("Ingress tests paths", func() {
 		}()
 		url := "https://" + hostName + "/"
 		req, err := http.NewRequest("GET", url, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err := rt.RoundTrip(req)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		// Start actual ingress tests
@@ -717,41 +717,41 @@ var _____ = describe("Ingress tests paths", func() {
 			port,
 		)
 		ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		// wait 20 seconds to ensure the ingress change is applied by
 		// all skippers
 		time.Sleep(20 * time.Second)
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path /", ingressUpdate.Namespace, ingressUpdate.Name))
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for pathType: Exact and path %s/bar", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
 		req.URL.Path = req.URL.Path + "/bar"
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for pathType: Exact and matching path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
 		beurl := "https://" + hostName + bepath
 		bereq, err := http.NewRequest("GET", beurl, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		// Test ingress with 2 paths
 		bepath2 := "/bar"
 		beurl2 := "https://" + hostName + bepath2
 		bereq2, err := http.NewRequest("GET", beurl2, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 404 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
 		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusNotFound)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
 		updatedIng = addPathIngressV1(updatedIng,
@@ -767,35 +767,35 @@ var _____ = describe("Ingress tests paths", func() {
 			},
 		)
 		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		// wait 20 seconds to ensure the ingress change is applied by
 		// all skippers
 		time.Sleep(20 * time.Second)
 		resp, err = getAndWaitResponse(rt, bereq2, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent2))
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s without change from the other path", ingressUpdate.Namespace, ingressUpdate.Name, bepath))
 		beurl = "https://" + hostName + bepath
-		bereq, err = http.NewRequest("GET", beurl, nil)
+		bereq, _ = http.NewRequest("GET", beurl, nil)
 		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 200 for path %s/path/prefix/match and pathType Prefix", ingressUpdate.Namespace, ingressUpdate.Name, bepath2))
 		beurl = "https://" + hostName + bepath2 + "/path/prefix/match"
-		bereq, err = http.NewRequest("GET", beurl, nil)
+		bereq, _ = http.NewRequest("GET", beurl, nil)
 		resp, err = getAndWaitResponse(rt, bereq, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent2))
 	})
 })
@@ -829,38 +829,38 @@ var ______ = describe("Ingress tests custom routes", func() {
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), depl, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating ingress " + serviceName + " in namespace " + ns + "with hostname " + hostName)
 		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, nil, port)
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// skipper http -> https redirect
 		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// ALB ready
 		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// DNS ready
 		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", waitTime, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// Test that we get content from the default ingress
 		By("By checking the content of the reply we see that the ingress stack works")
@@ -870,11 +870,11 @@ var ______ = describe("Ingress tests custom routes", func() {
 		}()
 		url := "https://" + hostName + "/"
 		req, err := http.NewRequest("GET", url, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err := rt.RoundTrip(req)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		// Start actual ingress tests
@@ -898,27 +898,27 @@ var ______ = describe("Ingress tests custom routes", func() {
 			port,
 		)
 		ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		// wait 20 seconds to ensure the ingress change is applied by
 		// all skippers
 		time.Sleep(20 * time.Second)
 
 		By(fmt.Sprintf("Testing for ingress %s/%s we want to get a 307 for path %s", ingressUpdate.Namespace, ingressUpdate.Name, redirectPath))
 		req, err = http.NewRequest("GET", redirectURL, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusTemporaryRedirect)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusTemporaryRedirect))
 
 		reqRedirectURL := resp.Header.Get("Location")
 		By(fmt.Sprintf("Testing for ingress %s/%s rediretc Location we want to get a 200 for URL %s", ingressUpdate.Namespace, ingressUpdate.Name, reqRedirectURL))
 		Expect(redirectDestinationURL).To(Equal(reqRedirectURL))
-		redirectreq, err := http.NewRequest("GET", reqRedirectURL, nil)
+		redirectreq, _ := http.NewRequest("GET", reqRedirectURL, nil)
 		resp, err = getAndWaitResponse(rt, redirectreq, 10*time.Second, http.StatusOK)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err = getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 	})
 })
@@ -963,37 +963,37 @@ var _______ = describe("Ingress tests simple NLB", func() {
 		By("Creating a deployment with " + serviceName + " in namespace " + ns)
 		depl := createSkipperBackendDeployment(serviceName, ns, route, labels, int32(targetPort), replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), depl, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, annotations, port)
 		ingressCreate, err := cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		addr, err := jig.WaitForIngressAddress(context.TODO(), cs, ns, ingressCreate.Name, waitTime)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// skipper http -> https redirect
 		By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "http", waitTime, isRedirect, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// NLB ready
 		By("Waiting for NLB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
 		err = waitForResponse(addr, "https", waitTime, isNotFound, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// DNS ready
 		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", waitTime, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// Test that we get content from the default ingress
 		By("By checking the content of the reply we see that the ingress stack works")
@@ -1003,27 +1003,27 @@ var _______ = describe("Ingress tests simple NLB", func() {
 		}()
 		url := "https://" + hostName + "/"
 		req, err := http.NewRequest("GET", url, nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err := rt.RoundTrip(req)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
 		By("Checking request X-Forwarded-* headers")
 		req, err = http.NewRequest("GET", "https://"+hostName+"/", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = waitForResponseReturnResponse(req, 10*time.Second, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.Header.Get("Request-X-Forwarded-For")).NotTo(Equal(""))
 		Expect(resp.Header.Get("Request-X-Forwarded-Port")).To(Equal("443"))
 		Expect(resp.Header.Get("Request-X-Forwarded-Proto")).To(Equal("https"))
 
 		By("Checking request with trailing dot in the hostname is normalized")
 		req, err = http.NewRequest("GET", "https://"+hostName+"./", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = waitForResponseReturnResponse(req, 10*time.Second, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.Header.Get("Request-Host")).To(Equal(hostName))
 	})
 })
