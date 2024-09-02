@@ -55,14 +55,14 @@ var _ = describe("External DNS creation", func() {
 		By("Creating service " + serviceName + " in namespace " + ns)
 		defer func() {
 			err := cs.CoreV1().Services(ns).Delete(ctx, serviceName, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
 		service := createServiceTypeLoadbalancer(serviceName, hostName, labels, port)
 
 		_, err := cs.CoreV1().Services(ns).Create(ctx, service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Submitting the pod to kubernetes")
 		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
@@ -75,7 +75,7 @@ var _ = describe("External DNS creation", func() {
 		}()
 
 		_, err = cs.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(ctx, f.ClientSet, pod.Name, pod.Namespace))
 
@@ -83,6 +83,6 @@ var _ = describe("External DNS creation", func() {
 		// wait for DNS and for pod to be reachable.
 		By("Waiting up to " + timeout.String() + " for " + hostName + " to be reachable")
 		err = waitForSuccessfulResponse(hostName, timeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 })
