@@ -28,7 +28,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	rgclient "github.com/szuecs/routegroup-client"
 	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	zv1 "github.com/zalando-incubator/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
@@ -43,7 +42,7 @@ import (
 
 const (
 	awsCliImage  = "container-registry.zalando.net/teapot/awscli:master-2"
-	pauseImage   = "container-registry.zalando.net/teapot/pause:3.4.1-master-18"
+	pauseImage   = "container-registry.zalando.net/teapot/pause:3.7-master-21"
 	appLabelName = "application"
 )
 
@@ -945,7 +944,7 @@ func deleteDeployment(cs clientset.Interface, ns string, deployment *appsv1.Depl
 	By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 	defer GinkgoRecover()
 	err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	framework.ExpectNoError(err)
 }
 
 func createHTTPRoundTripper() (http.RoundTripper, chan<- struct{}) {

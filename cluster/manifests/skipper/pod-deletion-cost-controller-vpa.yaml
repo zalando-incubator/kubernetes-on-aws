@@ -1,0 +1,21 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: pod-deletion-cost-controller-vpa
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    component: pod-deletion-cost-controller
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: pod-deletion-cost-controller
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: pod-deletion-cost-controller
+      minAllowed:
+        memory: "{{ .Cluster.ConfigItems.skipper_pod_deletion_cost_controller_memory_min }}"
+        cpu: "{{ .Cluster.ConfigItems.skipper_pod_deletion_cost_controller_cpu_min }}"

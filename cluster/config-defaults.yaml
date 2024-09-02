@@ -218,8 +218,14 @@ skipper_routesrv_log_level: "INFO"
 # skipper-ingress component pod-deletion-cost-controller
 skipper_pod_deletion_cost_controller_memory: 200Mi
 skipper_pod_deletion_cost_controller_cpu: 50m
+# vpa min values
+skipper_pod_deletion_cost_controller_memory_min: 128Mi
+skipper_pod_deletion_cost_controller_cpu_min: 25m
 # klog style -v=0
 skipper_pod_deletion_cost_controller_log_v: "0"
+# pod informer sync config
+skipper_pod_deletion_cost_controller_poll_interval: "10s"
+skipper_pod_deletion_cost_controller_poll_timeout: "10s"
 
 # polarsignals - only enabled for testing teapot
 polarsignals_enabled: "false"
@@ -595,7 +601,7 @@ teapot_admission_controller_namespace_delete_protection_enabled: "false"
 teapot_admission_controller_resolve_vanity_images: "true"
 
 {{if eq .Cluster.Environment "e2e"}}
-teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota|limitrange|sysctl|node-tests|e2e-kubelet-etc-hosts|csiinlinevolumes)-.*)$"
+teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota|limitrange|sysctl|node-tests|e2e-kubelet-etc-hosts|csiinlinevolumes|job|dns)-.*)$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "false"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
@@ -712,6 +718,9 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
 kuberuntu_image_v1_30_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.30.2-amd64-master-341" "861068367966" }}
 kuberuntu_image_v1_30_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.30.2-arm64-master-341" "861068367966" }}
+
+kuberuntu_image_v1_31_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.0-amd64-master-347" "861068367966" }}
+kuberuntu_image_v1_31_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.0-arm64-master-347" "861068367966" }}
 
 # Which distro from the previous config items should be used. Valid options are only `jammy` for now. Can be set for each node pool.
 kuberuntu_distro_master: "jammy"
@@ -874,8 +883,6 @@ enable_topology_aware_hints: "false"
 
 # Enable FeatureGate HPAScaleToZero
 enable_hpa_scale_to_zero: "true"
-# Enable FeatureGate HPAContainerMetrics
-enable_hpa_container_metrics: "true"
 
 # Enable FeatureGate MaxUnavailableStatefulSet
 max_unavailable_statefulset_enabled: "false"
@@ -1099,7 +1106,3 @@ control_plane_graceful_shutdown: "true"
 #  fs.aio-max-nr = 8388608
 #  fs.inotify.max_user_watches = 100000
 sysctl_settings: ""
-
-# enables/disables the minDomains field for pod topology spread.
-min_domains_in_pod_topology_spread_enabled: "true"
-
