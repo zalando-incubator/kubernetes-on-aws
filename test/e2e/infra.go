@@ -28,7 +28,7 @@ var _ = describe("Infrastructure tests", func() {
 	It("Mirror pods should be created for the main Kubernetes components [Zalando]", func() {
 		for _, application := range []string{"kube-apiserver", "kube-controller-manager", "kube-scheduler"} {
 			pods, err := podsForApplication(cs, application)
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 			Expect(filterMirrorPods(pods)).NotTo(BeEmpty())
 		}
 	})
@@ -37,10 +37,10 @@ var _ = describe("Infrastructure tests", func() {
 		// When modifying this list, don't forget to modify cluster/manifests/e2e-resources/pool-reserve.yaml
 		for _, pool := range []string{"default-worker-splitaz", "worker-combined", "worker-limit-az", "worker-instance-storage"} {
 			deploy, err := cs.AppsV1().Deployments("default").Get(context.Background(), fmt.Sprintf("pool-reserve-%s", pool), metav1.GetOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 
 			err = deployment.WaitForDeploymentComplete(cs, deploy)
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}
 	})
 
