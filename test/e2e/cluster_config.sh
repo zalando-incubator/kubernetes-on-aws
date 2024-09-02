@@ -11,6 +11,7 @@ clusters:
     zmon_root_account_role: ${ZMON_ROOT_ACCOUNT_ROLE}
     experimental_new_etcd_stack: "true"
     audittrail_root_account_role: ${AUDITTRAIL_ROOT_ACCOUNT_ROLE}
+    session_manager_destination_arn: ${SESSION_MANAGER_DESTINATION_ARN}
     apiserver_etcd_prefix: /registry-${LOCAL_ID}
     apiserver_business_partner_ids: ${APISERVER_BUSINESS_PARTNER_IDS}
     etcd_s3_backup_bucket: zalando-kubernetes-etcd-${AWS_ACCOUNT}-${REGION}
@@ -45,6 +46,7 @@ clusters:
     teapot_admission_controller_daemonset_reserved_cpu: "518m"
     karpenter_pools_enabled: "true"
     okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
+    teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
