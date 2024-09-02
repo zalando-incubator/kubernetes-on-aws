@@ -2130,6 +2130,8 @@ Resources:
 
   SessionManagerPreferencesDocument:
     Type: AWS::SSM::Document
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       Tags:
         - Key: InfrastructureComponent
@@ -2146,14 +2148,6 @@ Resources:
         schemaVersion: '1.0'
         description: Document to hold regional settings for Session Manager
         sessionType: Standard_Stream
-        inputs:
-          cloudWatchLogGroupName: !Ref SessionManagerLogGroup
-          cloudWatchEncryptionEnabled: false
-          cloudWatchStreamingEnabled: true
-          runAsEnabled: false
-          idleSessionTimeout: '20'
-          shellProfile:
-            linux: 'bash'
 
 {{- if eq .Cluster.Region "eu-central-1"}}
   SessionManagerSubscriptionFilter:
