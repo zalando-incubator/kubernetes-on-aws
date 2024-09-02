@@ -26,6 +26,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/kubernetes"
@@ -34,6 +35,7 @@ import (
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 	"k8s.io/kubernetes/test/e2e/framework/statefulset"
 	admissionapi "k8s.io/pod-security-admission/api"
+	"k8s.io/utils/ptr"
 )
 
 const (
@@ -472,7 +474,7 @@ var _ = describe("Image Policy Tests (Job)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, 1)
+		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, ptr.To(batchv1.JobReasonCompletionsReached), 1)
 	})
 
 	It("Should not create Job using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
@@ -493,7 +495,7 @@ var _ = describe("Image Policy Tests (Job)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, 1)
+		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, ptr.To(batchv1.JobReasonCompletionsReached), 1)
 	})
 })
 
@@ -524,7 +526,7 @@ var _ = describe("Image Policy Tests (Job) (when disabled)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, 1)
+		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, ptr.To(batchv1.JobReasonCompletionsReached), 1)
 	})
 })
 
@@ -558,7 +560,7 @@ var _ = describe("ECR Registry Pull", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, 1)
+		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, ptr.To(batchv1.JobReasonCompletionsReached), 1)
 	})
 
 	It("Should run a Job using a vanity image from the staging registry [ECR] [Zalando]", func() {
@@ -582,6 +584,6 @@ var _ = describe("ECR Registry Pull", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, 1)
+		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, ptr.To(batchv1.JobReasonCompletionsReached), 1)
 	})
 })
