@@ -121,7 +121,7 @@ func expectEvents(f *framework.Framework, expectedEvents []utils.AuditEvent) {
 	// to find all expected events. However, we're waiting for 5 minutes to avoid flakes.
 	pollingInterval := 30 * time.Second
 	pollingTimeout := 5 * time.Minute
-	err := wait.Poll(pollingInterval, pollingTimeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), pollingInterval, pollingTimeout, false, func(context.Context) (bool, error) {
 		// Fetch the log stream.
 		stream, err := f.ClientSet.CoreV1().RESTClient().Get().AbsPath("/logs/kube-audit.log").Stream(context.TODO())
 		if err != nil {

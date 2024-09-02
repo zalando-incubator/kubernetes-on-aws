@@ -27,7 +27,9 @@ spec:
       - args:
         - -address=:8080
         - -v={{ .Cluster.ConfigItems.skipper_pod_deletion_cost_controller_log_v }}
-        image: container-registry.zalando.net/gwproxy/pod-deletion-cost-controller:main-20
+        - -poll-interval={{ .Cluster.ConfigItems.skipper_pod_deletion_cost_controller_poll_interval }}
+        - -poll-timeout={{ .Cluster.ConfigItems.skipper_pod_deletion_cost_controller_poll_timeout }}
+        image: container-registry.zalando.net/gwproxy/pod-deletion-cost-controller:main-23
         name: pod-deletion-cost-controller
         ports:
         - containerPort: 8080

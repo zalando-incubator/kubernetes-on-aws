@@ -164,36 +164,13 @@ if [ "$e2e" = true ]; then
     # * statefulset tests
     # * custom 'zalando' tests
     #
-    # Disable DNS tests covering DNS names of format: <name>.<namespace>.svc which
-    # we don't support with the ndots:2 configuration:
-    #
-    # * "should resolve DNS of partial qualified names for the cluster [DNS] [Conformance]"
-    #   https://github.com/kubernetes/kubernetes/blob/66049e3b21efe110454d67df4fa62b08ea79a19b/test/e2e/network/dns.go#L71-L98
-    #
-    # * "should resolve DNS of partial qualified names for services [LinuxOnly]"
-    #   https://github.com/kubernetes/kubernetes/blob/06ad960bfd03b39c8310aaf92d1e7c12ce618213/test/e2e/network/dns.go#L181-L234
-
     # Disable Tests for setups which we don't support
     #
-    # These are disabled because they assume nodePorts are reachable via the public
-    # IP of the node, we don't currently support that.
-    #
-    # * "[Fail] [sig-network] Services [It] should be able to change the type from ExternalName to NodePort [Conformance]"
-    #   https://github.com/kubernetes/kubernetes/blob/224be7bdce5a9dd0c2fd0d46b83865648e2fe0ba/test/e2e/network/service.go#L1037
-    # * "[Fail] [sig-network] Services [It] should be able to create a functioning NodePort service [Conformance]"
-    #   https://github.com/kubernetes/kubernetes/blob/224be7bdce5a9dd0c2fd0d46b83865648e2fe0ba/test/e2e/network/service.go#L551
-    # * "[Fail] [sig-network] Services [It] should have session affinity work for NodePort service [LinuxOnly] [Conformance]"
-    #   https://github.com/kubernetes/kubernetes/blob/v1.19.2/test/e2e/network/service.go#L1813
-    # * "[Fail] [sig-network] Services [It] should have session affinity timeout work for NodePort service [LinuxOnly] [Conformance]"
-    #   https://github.com/kubernetes/kubernetes/blob/v1.19.2/test/e2e/network/service.go#L2522
-    # * "[Fail] [sig-network] Services [It] should be able to switch session affinity for NodePort service [LinuxOnly] [Conformance]"
-    #   https://github.com/kubernetes/kubernetes/blob/v1.19.2/test/e2e/network/service.go#L2538
-    #
-    # These are disabled because the hostPort are not supported in our
-    # clusters yet. Currently there's no need to support them and
+    # These are disabled because hostPort is not supported in our
+    # clusters yet. Currently there's no need to support it and
     # portMapping is not enabled in the Flannel CNI configmap.
     # * "[Fail] [sig-network] HostPort [It] validates that there is no conflict between pods with same hostPort but different hostIP and protocol [LinuxOnly] [Conformance]"
-    #   https://github.com/kubernetes/kubernetes/blob/v1.21.5/test/e2e/network/hostport.go#L61
+    #   https://github.com/kubernetes/kubernetes/blob/v1.31.0/test/e2e/network/hostport.go#L63
     set +e
 
     # TODO(linki): re-introduce the broken DNS record test after ExternalDNS handles it better
@@ -204,7 +181,7 @@ if [ "$e2e" = true ]; then
     mkdir -p junit_reports
     ginkgo -procs=25 -flake-attempts=2 \
         -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
-        -skip="(should.resolve.DNS.of.partial.qualified.names.for.the.cluster|should.resolve.DNS.of.partial.qualified.names.for.services|should.be.able.to.change.the.type.from.ExternalName.to.NodePort|should.be.able.to.create.a.functioning.NodePort.service|should.have.session.affinity.work.for.NodePort.service|should.have.session.affinity.timeout.work.for.NodePort.service|should.be.able.to.switch.session.affinity.for.NodePort.service|validates.that.there.is.no.conflict.between.pods.with.same.hostPort.but.different.hostIP.and.protocol|\[Serial\]|Should.create.gradual.traffic.routes|Should.create.blue-green.routes)" \
+        -skip="(\[Serial\]|validates.that.there.is.no.conflict.between.pods.with.same.hostPort.but.different.hostIP.and.protocol)" \
         "e2e.test" -- \
         -delete-namespace-on-failure=false \
         -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated \

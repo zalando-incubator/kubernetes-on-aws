@@ -62,18 +62,18 @@ var _ = describe("Admission controller tests", func() {
 
 		deployment := createDeploymentWithDeploymentInfo(nameprefix+"-", ns, replicas)
 		_, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), deployment, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		labelSelector, err := metav1.LabelSelectorAsSelector(deployment.Spec.Selector)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		err = waitForDeploymentWithCondition(cs, ns, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		//pods are not returned here
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, ns, labelSelector, int(replicas), 1*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		pods, err := cs.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector.String()})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(len(pods.Items)).To(Equal(1))
 
 		pod := pods.Items[0]
@@ -82,12 +82,12 @@ var _ = describe("Admission controller tests", func() {
 
 		// Check the injected node zone
 		node, err := cs.CoreV1().Nodes().Get(context.TODO(), pod.Spec.NodeName, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		nodeZone := node.Labels["topology.kubernetes.io/zone"]
 		Expect(pod.Annotations).To(HaveKeyWithValue("topology.kubernetes.io/zone", nodeZone))
 
 		envarValues, err := fetchEnvarValues(cs, ns, pod.Name)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// Check the environment variable values
 
@@ -123,10 +123,10 @@ var _ = describe("Admission controller tests", func() {
 		By("Creating pod " + podName + " in namespace " + ns)
 		pod := createInvalidOwnerPod(ns, podName)
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		err = e2epod.WaitForPodSuccessInNamespaceTimeout(context.TODO(), cs, podName, ns, 15*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 })
 
