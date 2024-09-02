@@ -175,8 +175,11 @@ if [ "$e2e" = true ]; then
 
     # TODO(linki): re-introduce the broken DNS record test after ExternalDNS handles it better
     #
-    # # introduce a broken DNS record to mess with ExternalDNS
-    # cat broken-dns-record.yaml | kubectl apply -f -
+    # This is still broken in external-dns:v0.14.2-master-40
+    # InvalidChangeBatch: FATAL problem: DomainLabelEmpty (Domain label is empty) encountered with '_external-dns..teapot-e2e.zalan.do'
+    #
+    # introduce a broken DNS record to mess with ExternalDNS
+    # kubectl apply -f broken-dns-record.yaml
 
     mkdir -p junit_reports
     ginkgo -procs=25 -flake-attempts=2 \

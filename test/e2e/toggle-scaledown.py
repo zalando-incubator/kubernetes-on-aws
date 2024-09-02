@@ -5,11 +5,19 @@ import subprocess
 
 
 def toggle_scaledown(enabled):
-    current = json.loads(
-        subprocess.check_output(
-            ["kubectl", "get", "daemonset", "-o", "json", "-n", "kube-system", "kube-cluster-autoscaler"]
-        ).decode("utf-8")
-    )
+    # Try to retrieve daemonset/kube-cluster-autoscalerfrom the e2e cluster
+    cmd_output = ""
+    try:
+        cmd_output = subprocess.check_output(
+            ["kubectl", "get", "daemonset", "-o", "json", "-n", "kube-system", "kube-cluster-autoscaler"],
+            stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        # This happens when a cluster has been cleaned up, so we should handle it gracefully
+        if "no such host" in e.output.decode("utf-8"):
+            print("Failed to reach the API server, is the cluster running?")
+        raise e
+    
+    current = json.loads(cmd_output.decode("utf-8"))
     for i, container in enumerate(current["spec"]["template"]["spec"]["containers"]):
         if container["name"] == "cluster-autoscaler":
             command = container["command"]
@@ -46,8 +54,12 @@ def main():
     args = parser.parse_args()
 
     enabled = args.action == "enable"
-    toggle_scaledown(enabled)
-
+    
+    try:
+        toggle_scaledown(enabled)
+    except subprocess.CalledProcessError as e:
+        print("Failed to toggle scale-down.")
+        exit(1)
 
 if __name__ == "__main__":
     main()
