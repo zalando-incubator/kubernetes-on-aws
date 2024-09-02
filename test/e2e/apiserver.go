@@ -79,20 +79,20 @@ var _ = describe("Image Policy Tests (Deployment)", func() {
 
 		deployment := createImagePolicyWebhookTestDeployment(namePrefix, namespace, compliantImage1, appLabel, int32(replicas))
 		_, err := cs.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a Deployment: %s", deployment.Name))
 			defer GinkgoRecover()
 			err := cs.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		err = waitForDeploymentWithCondition(cs, namespace, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 
 	It("Should not create Deployment using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
@@ -105,17 +105,17 @@ var _ = describe("Image Policy Tests (Deployment)", func() {
 
 		deployment := createImagePolicyWebhookTestDeployment(namePrefix, namespace, nonCompliantImage1, podName, int32(replicas))
 		_, err := cs.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a Deployment: %s", deployment.Name))
 			defer GinkgoRecover()
 			err := cs.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		err = waitForDeploymentWithCondition(cs, namespace, deployment.Name, "FailedCreate", appsv1.DeploymentReplicaFailure)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 })
 
@@ -138,20 +138,20 @@ var _ = describe("Image Policy Tests (Deployment) (when disabled)", func() {
 
 		deployment := createImagePolicyWebhookTestDeployment(namePrefix, namespace, nonCompliantImage2, appLabel, int32(replicas))
 		_, err := cs.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a Deployment: %s", deployment.Name))
 			defer GinkgoRecover()
 			err := cs.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		err = waitForDeploymentWithCondition(cs, namespace, deployment.Name, "MinimumReplicasAvailable", appsv1.DeploymentAvailable)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 })
 
@@ -173,17 +173,17 @@ var _ = describe("Image Policy Tests (Pods)", func() {
 
 		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage2, appLabel)
 		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a pod: %s", pod.Name))
 			defer GinkgoRecover()
 			err := cs.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 
 	It("Should not create pod with non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
@@ -217,17 +217,17 @@ var _ = describe("Image Policy Tests (Pods) (when disabled)", func() {
 
 		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, nonCompliantImage4, appLabel)
 		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a pod: %s", pod.Name))
 			defer GinkgoRecover()
 			err := cs.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 })
 
@@ -249,30 +249,30 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 
 		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage3, appLabel)
 		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a pod: %s", pod.Name))
 			defer GinkgoRecover()
 			err := cs.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Updating pod " + namePrefix + " in namespace " + namespace)
 
 		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		pod.Spec.Containers[0].Image = compliantImage4
 
 		_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 
 	It("Should not update pod with non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
@@ -284,20 +284,20 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 
 		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage5, appLabel)
 		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a pod: %s", pod.Name))
 			defer GinkgoRecover()
 			err := cs.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Updating pod " + namePrefix + " in namespace " + namespace)
 
@@ -326,30 +326,30 @@ var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func()
 
 		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage6, appLabel)
 		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a pod: %s", pod.Name))
 			defer GinkgoRecover()
 			err := cs.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("Updating pod " + namePrefix + " in namespace " + namespace)
 
 		pod.Spec.Containers[0].Image = nonCompliantImage6
 
 		_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 })
 
@@ -372,19 +372,19 @@ var _ = describe("Image Policy Tests (StatefulSet)", func() {
 
 		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, compliantImage7, appLabel, int32(replicas))
 		_, err := cs.AppsV1().StatefulSets(namespace).Create(context.TODO(), statefulSet, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a StatefulSet: %s", statefulSet.Name))
 			defer GinkgoRecover()
 			err := cs.AppsV1().StatefulSets(namespace).Delete(context.TODO(), statefulSet.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		statefulset.WaitForRunningAndReady(context.TODO(), cs, int32(replicas), statefulSet)
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 
 	It("Should not create StatefulSet using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
@@ -397,13 +397,13 @@ var _ = describe("Image Policy Tests (StatefulSet)", func() {
 
 		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, nonCompliantImage7, appLabel, int32(replicas))
 		_, err := cs.AppsV1().StatefulSets(namespace).Create(context.TODO(), statefulSet, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a StatefulSet: %s", statefulSet.Name))
 			defer GinkgoRecover()
 			err := cs.AppsV1().StatefulSets(namespace).Delete(context.TODO(), statefulSet.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
@@ -431,19 +431,19 @@ var _ = describe("Image Policy Tests (StatefulSet) (when disabled)", func() {
 
 		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, nonCompliantImage8, appLabel, int32(replicas))
 		_, err := cs.AppsV1().StatefulSets(namespace).Create(context.TODO(), statefulSet, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a StatefulSet: %s", statefulSet.Name))
 			defer GinkgoRecover()
 			err := cs.AppsV1().StatefulSets(namespace).Delete(context.TODO(), statefulSet.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		statefulset.WaitForRunningAndReady(context.TODO(), cs, int32(replicas), statefulSet)
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), replicas, waitForPodTimeout)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 })
 
@@ -465,13 +465,13 @@ var _ = describe("Image Policy Tests (Job)", func() {
 
 		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, compliantImage8, appLabel)
 		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
 			defer GinkgoRecover()
 			err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, ptr.To(batchv1.JobReasonCompletionsReached), 1)
@@ -486,13 +486,13 @@ var _ = describe("Image Policy Tests (Job)", func() {
 
 		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, nonCompliantImage9, appLabel)
 		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
 			defer GinkgoRecover()
 			err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, ptr.To(batchv1.JobReasonCompletionsReached), 1)
@@ -517,13 +517,13 @@ var _ = describe("Image Policy Tests (Job) (when disabled)", func() {
 
 		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, nonCompliantImage10, appLabel)
 		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
 			defer GinkgoRecover()
 			err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, ptr.To(batchv1.JobReasonCompletionsReached), 1)
@@ -551,13 +551,13 @@ var _ = describe("ECR Registry Pull", func() {
 
 		jobObj := createTestJob(namePrefix, "ecr-image-pull-test", namespace, ecrStagingImage, appLabel, args)
 		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
 			defer GinkgoRecover()
 			err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, ptr.To(batchv1.JobReasonCompletionsReached), 1)
@@ -575,13 +575,13 @@ var _ = describe("ECR Registry Pull", func() {
 
 		jobObj := createTestJob(namePrefix, "ecr-image-pull-test", namespace, vanityStagingImage, appLabel, args)
 		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		defer func() {
 			By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
 			defer GinkgoRecover()
 			err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, ptr.To(batchv1.JobReasonCompletionsReached), 1)
