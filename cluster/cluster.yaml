@@ -2684,29 +2684,28 @@ Resources:
   SessionManagerLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: "SessionManager-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
+      LogGroupName: "SessionManager-{{.Cluster.Alias}}"
       RetentionInDays: 30
 
   SessionManagerPreferencesDocument:
     Type: AWS::SSM::Document
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
     Properties:
-      Tags:
-        - Key: InfrastructureComponent
-          Value: "false"
       UpdateMethod: NewVersion
-{{ if eq .Cluster.Environment "e2e" }} # test for valid cloudformation in e2e tests, but do not set account level preferences
-      Name: "SSM-SessionManagerRunShell-{{.Cluster.LocalID}}"
-{{ else }}
-      Name: "SSM-SessionManagerRunShell"
-{{- end }}
+      Name: "SSM-SessionManager-{{.Cluster.Alias}}"
       DocumentFormat: YAML
       DocumentType: Session
       Content:
         schemaVersion: '1.0'
-        description: Document to hold regional settings for Session Manager
+        description: Document to hold settings for Kubernetes EC2 SSM sessions
         sessionType: Standard_Stream
+        inputs:
+          cloudWatchLogGroupName: !Ref SessionManagerLogGroup
+          cloudWatchEncryptionEnabled: false
+          cloudWatchStreamingEnabled: true
+          runAsEnabled: false
+          idleSessionTimeout: '20'
+          shellProfile:
+            linux: 'bash'
 
 {{- if eq .Cluster.Region "eu-central-1"}}
   SessionManagerSubscriptionFilter:
@@ -2714,7 +2713,7 @@ Resources:
     Properties:
       LogGroupName: !Ref SessionManagerLogGroup
       RoleArn: !GetAtt SessionManagerSubscriptionFilterRole.Arn
-      FilterName: "SessionManager-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
+      FilterName: "SessionManager-{{.Cluster.Alias}}"
       FilterPattern: ""
       DestinationArn: "{{.Cluster.ConfigItems.session_manager_destination_arn}}"
 
@@ -2741,7 +2740,7 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource:
                   - !GetAtt SessionManagerLogGroup.Arn
-      RoleName: "SessionManager-{{.Cluster.LocalID}}"
+      RoleName: "SessionManager-{{.Cluster.Alias}}"
 {{- end }}
 
   AWSNodeDecommissionerIAMRole:
