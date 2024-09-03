@@ -50,12 +50,12 @@ var _ = describe("PSP use", func() {
 				Name: ns,
 			},
 		}, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// create SA
 		saObj := createServiceAccount(ns, privilegedSA)
 		_, err = cs.CoreV1().ServiceAccounts(ns).Create(context.TODO(), saObj, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		label := map[string]string{
 			"app": "psp",
@@ -69,7 +69,7 @@ var _ = describe("PSP use", func() {
 			defer GinkgoRecover()
 
 			err = cs.CoreV1().Namespaces().Delete(context.TODO(), ns, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		Expect(err).To(HaveOccurred())
@@ -82,12 +82,12 @@ var _ = describe("PSP use", func() {
 				Name: ns,
 			},
 		}, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// create SA
 		saObj := createServiceAccount(ns, privilegedSA)
 		_, err = cs.CoreV1().ServiceAccounts(ns).Create(context.TODO(), saObj, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		label := map[string]string{
 			"app": "psp",
@@ -102,14 +102,14 @@ var _ = describe("PSP use", func() {
 			By(msg)
 			defer GinkgoRecover()
 			err := cs.CoreV1().Pods(ns).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 
 			err = cs.CoreV1().Namespaces().Delete(context.TODO(), ns, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 	})
@@ -121,12 +121,12 @@ var _ = describe("PSP use", func() {
 				Name: ns,
 			},
 		}, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// create SA
 		saObj := createServiceAccount(ns, privilegedSA)
 		_, err = cs.CoreV1().ServiceAccounts(ns).Create(context.TODO(), saObj, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		label := map[string]string{
 			"app": "psp",
@@ -145,29 +145,29 @@ var _ = describe("PSP use", func() {
 			By(fmt.Sprintf("Delete a deployment that creates a privileged POD as %s", privilegedSA))
 			defer GinkgoRecover()
 			err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), d.Name, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 
 			err = cs.CoreV1().Namespaces().Delete(context.TODO(), ns, metav1.DeleteOptions{})
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}()
 
 		deploy, err := cs.AppsV1().Deployments(ns).Create(context.TODO(), d, metav1.CreateOptions{})
 
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// Wait for it to be updated to revision 1
 		err = deploymentframework.WaitForDeploymentRevisionAndImage(cs, ns, deploy.Name, "1", d.Spec.Template.Spec.Containers[0].Image)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		err = deploymentframework.WaitForDeploymentComplete(cs, deploy)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		deployment, err := cs.AppsV1().Deployments(ns).Get(context.TODO(), deploy.Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		rs, err := deploymentutil.GetNewReplicaSet(deployment, cs)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("Got rs: %s, from deployment: %s", rs.Name, deploy.Name))
 
 		pods, err := e2epod.PodsCreatedByLabel(context.TODO(), f.ClientSet, ns, rs.Name, replicas, labelSelector)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("Ensuring each pod is running for rs: %s, pod: %s", rs.Name, pods.Items[0].Name))
 		// Wait for the pods to enter the running state. Waiting loops until the pods
 		// are running so non-running pods cause a timeout for this test.
@@ -176,7 +176,7 @@ var _ = describe("PSP use", func() {
 				continue
 			}
 			err = e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace)
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 		}
 	})
 })
