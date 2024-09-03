@@ -91,7 +91,7 @@ var _ = describe("Thing under test, func() {
 		}()
             // creates the Ingress Object
 		_, err := cs.CoreV1().Foo(ns).Create(foo)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 })
 ```
@@ -118,7 +118,7 @@ var _ = describe("Thing under test, func() {
   	Expect(err2).NotTo(HaveOccurred())
   }()
   _, err = cs.CoreV1().Pods(ns).Create(pod)
-  Expect(err).NotTo(HaveOccurred())
+  framework.ExpectNoError(err)
   framework.ExpectNoError(f.WaitForPodRunning(pod.Name))
 ```
 
@@ -142,7 +142,7 @@ var _ = describe("Thing under test, func() {
   	Expect(err2).NotTo(HaveOccurred())
   }()
   _, err := cs.CoreV1().Services(ns).Create(service)
-  Expect(err).NotTo(HaveOccurred())
+  framework.ExpectNoError(err)
 ```
 
 ### Create a Ingress and wait for external components to be created
@@ -168,11 +168,11 @@ Create Kubernetes ingress object:
   	Expect(err2).NotTo(HaveOccurred())
   }()
   ingressCreate, err := cs.NetworkingV1beta1().Ingresses(ns).Create(ing)
-  Expect(err).NotTo(HaveOccurred())
+  framework.ExpectNoError(err)
   addr, err := jig.WaitForIngressAddress(cs, ns, ingressCreate.Name, 3*time.Minute)
-  Expect(err).NotTo(HaveOccurred())
+  framework.ExpectNoError(err)
   ingress, err := cs.NetworkingV1beta1().Ingresses(ns).Get(ing.Name, metav1.GetOptions{ResourceVersion: "0"})
-  Expect(err).NotTo(HaveOccurred())
+  framework.ExpectNoError(err)
   By(fmt.Sprintf("ALB endpoint from ingress status: %s", ingress.Status.LoadBalancer.Ingress[0].Hostname))
 ```
 
@@ -182,15 +182,15 @@ Follow up code, that waits for creations to be happen:
   // skipper http -> https redirect
   By("Waiting for skipper route to default redirect from http to https, to see that our ingress-controller and skipper works")
   err = waitForResponse(addr, "http", 2*time.Minute, 301, true)
-  Expect(err).NotTo(HaveOccurred())
+  framework.ExpectNoError(err)
   // ALB ready
   By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our ingress-controller and skipper works")
   err = waitForResponse(addr, "https", 2*time.Minute, 200, true) // insecure=true
-  Expect(err).NotTo(HaveOccurred())
+  framework.ExpectNoError(err)
   // DNS ready
   By("Waiting for DNS to see that mate and skipper route to service and pod works")
   err = waitForResponse(hostName, "https", 2*time.Minute, 200, false)
-  Expect(err).NotTo(HaveOccurred())
+  framework.ExpectNoError(err)
 ```
 
 ### FAQ

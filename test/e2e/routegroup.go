@@ -39,14 +39,14 @@ var _ = describe("RouteGroup ALB creation", func() {
 	BeforeEach(func() {
 		By("Creating an rgclient Clientset")
 		config, err := framework.LoadConfig()
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		config.QPS = f.Options.ClientQPS
 		config.Burst = f.Options.ClientBurst
 		if f.Options.GroupVersion != nil {
 			config.GroupVersion = f.Options.GroupVersion
 		}
 		cs, err = rgclient.NewClientset(config)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 
 	It("Should create valid https and http ALB endpoint [RouteGroup] [Zalando]", func() {
@@ -65,7 +65,7 @@ var _ = describe("RouteGroup ALB creation", func() {
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// POD
 		By("Creating a POD with prefix " + nameprefix + " in namespace " + ns)
@@ -73,7 +73,7 @@ var _ = describe("RouteGroup ALB creation", func() {
 		pod := createSkipperPod(nameprefix, ns, fmt.Sprintf(`r0: * -> inlineContent("%s") -> <shunt>`, expectedResponse), labels, targetPort)
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
@@ -82,36 +82,36 @@ var _ = describe("RouteGroup ALB creation", func() {
 			PathSubtree: "/",
 		})
 		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		addr, err := waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
 		//  skipper http -> https redirect
 		By("Waiting for skipper route to default redirect from http to https, to see that our routegroup-controller and skipper works")
 		err = waitForResponse(addr, "http", 10*time.Minute, isRedirect, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// ALB ready
 		By("Waiting for ALB to create endpoint " + addr + " and skipper route, to see that our routegroup-controller and skipper works")
 		err = waitForResponse(addr, "https", 10*time.Minute, isNotFound, true)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// DNS ready
 		By("Waiting for DNS to see that external-dns and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", 10*time.Minute, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// response is from our backend
 		By("checking the response body we know, if we got the response from our backend")
 		req, err := http.NewRequest("GET", "https://"+hostName+"/", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(expectedResponse))
 	})
 
@@ -131,7 +131,7 @@ var _ = describe("RouteGroup ALB creation", func() {
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// POD
 		By("Creating a POD with prefix " + nameprefix + " in namespace " + ns)
@@ -146,7 +146,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 			targetPort)
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
@@ -157,30 +157,30 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 			Predicates:  []string{`Header("Foo", "bar")`},
 		})
 		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
 		// DNS ready
 		By("Waiting for ALB, DNS and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", 10*time.Minute, isNotFound, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// checking backend route with predicates
 		By("checking the response for a request to /backend we know if we got the correct route")
 		err = waitForResponse("https://"+hostName+"/backend", "https", 10*time.Minute, isNotFound, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By("checking the response for a request with headers to /backend we know if we got the correct route")
 		req, err := http.NewRequest("GET", "https://"+hostName+"/backend", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		req.Header.Set("Foo", "bar")
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(expectedResponse))
 	})
 
@@ -200,7 +200,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// POD
 		By("Creating a POD with prefix " + nameprefix + " in namespace " + ns)
@@ -218,7 +218,7 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 			targetPort)
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
@@ -255,65 +255,65 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 			},
 		})
 		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
 		// DNS ready
 		By("Waiting for ALB, DNS and skipper route to service and pod works")
 		err = waitForResponse(hostName+"/", "https", 10*time.Minute, isNotFound, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// response for / is from our backend
 		By("checking the response code of a request without required request header, we can check if predicate match works correctly")
-		req, err := http.NewRequest("GET", "https://"+hostName+"/backend", nil)
+		req, _ := http.NewRequest("GET", "https://"+hostName+"/backend", nil)
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, isNotFound, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp.Body.Close()
 
 		// checking backend route with predicates and filters
 		By("checking the response status code for a request to /backend without correct headers we should get 404")
-		err = waitForResponse("https://"+hostName+"/backend", "https", 10*time.Minute, isNotFound, false)
+		waitForResponse("https://"+hostName+"/backend", "https", 10*time.Minute, isNotFound, false)
 		By("checking the response for a request to /backend with the right header we know if we got the correct route")
 		req, err = http.NewRequest("GET", "https://"+hostName+"/backend", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		req.Header.Set("Foo", "bar")
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, func(code int) bool {
 			return code == http.StatusCreated
 		}, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(expectedResponse))
 
 		By("checking /no-match1 unexpected method should lead to 404")
 		err = waitForResponse("https://"+hostName+"/no-match1", "https", 10*time.Minute, isNotFound, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("checking /no-match2 unexpected predicate should lead to 404")
 		err = waitForResponse("https://"+hostName+"/no-match2", "https", 10*time.Minute, isNotFound, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		By("checking /multi-methods matches correctly")
 		req, err = http.NewRequest("GET", "https://"+hostName+"/multi-methods", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp.Body.Close()
 		req, err = http.NewRequest("HEAD", "https://"+hostName+"/multi-methods", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp.Body.Close()
 
 		By("checking /router-response matches correctly and response with shunted route")
 		err = waitForResponse("https://"+hostName+"/router-response", "https", 10*time.Minute, func(code int) bool {
 			return code == http.StatusTeapot
 		}, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 
 	It("Should create routes with ratelimit filters and shunt backend [Ratelimits] [RouteGroup] [Zalando]", func() {
@@ -332,7 +332,7 @@ rBackend4: Path("/router-response") -> inlineContent("NOT OK") -> <shunt>;
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// POD
 		By("Creating a POD with prefix " + nameprefix + " in namespace " + ns)
@@ -347,7 +347,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
 			targetPort)
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
@@ -361,36 +361,37 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
 			},
 		})
 		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
 		// DNS ready
 		By("Waiting for ALB, DNS and skipper route to service and pod works")
 		err = waitForResponse(hostName+"/", "https", 5*time.Minute, isNotFound, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// checking backend route with predicates and filters
 		By("checking the response for a request to /backend with the right header we know if we got the correct route")
 		req, err := http.NewRequest("GET", "https://"+hostName+"/backend", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = waitForResponseReturnResponse(req, 5*time.Minute, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal(expectedResponse))
 
 		By("checking the response is for a request to /backend with the right header we know if we got the correct route but get ratelimited")
 		req, err = http.NewRequest("GET", "https://"+hostName+"/backend", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = waitForResponseReturnResponse(req, 5*time.Minute, func(code int) bool {
 			return code == http.StatusTooManyRequests
 		}, false)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(s).To(Equal(expectedResponse))
+		framework.ExpectNoError(err)
+		Expect(resp).NotTo(BeNil())
+		Expect(resp.StatusCode).To(Equal(http.StatusTooManyRequests))
 	})
 
 	It("Should create blue-green routes [RouteGroup] [Zalando]", func() {
@@ -409,7 +410,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// POD
 		By("Creating a POD with prefix " + nameprefix + " in namespace " + ns)
@@ -424,7 +425,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 			targetPort)
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
@@ -460,38 +461,38 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 			},
 		})
 		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
 		// DNS ready
 		By("Waiting for ALB, DNS and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", 10*time.Minute, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// response for / is from our backend
 		By("checking the response body we know, if we got the response from our backend")
 		req, err := http.NewRequest("GET", "https://"+hostName+"/", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, func(code int) bool {
 			return code == 200
 		}, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Equal("OK"))
 
 		// checking blue-green routes are ~50/50 match
 		By("checking the response for a request to /blue-green we know if we got the correct route")
 		req, err = http.NewRequest("GET", "https://"+hostName+"/blue-green", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, func(code int) bool {
 			return code > 200 && code < 203
 		}, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Or(Equal(201), Equal(202)))
 		resp.Body.Close()
 
@@ -503,7 +504,7 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 			resp, err = waitForResponseReturnResponse(req, 10*time.Minute, func(code int) bool {
 				return code > 200 && code < 203
 			}, false)
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 			resp.Body.Close()
 			cnt[resp.StatusCode]++
 		}
@@ -536,12 +537,12 @@ rBackend: Path("/backend") -> inlineContent("%s") -> <shunt>;`,
 		By("Creating service2 " + serviceName2 + " in namespace " + ns)
 		service2 := createServiceTypeClusterIP(serviceName2, labels2, port, targetPort)
 		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service2, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// POD
-		By("Creating 2 PODs with prefix " + nameprefix + " and " + nameprefix + " in namespace " + ns)
+		By("Creating 2 PODs with prefix " + nameprefix + " and " + nameprefix2 + " in namespace " + ns)
 		expectedResponse := "blue"
 		pod := createSkipperPod(
 			nameprefix,
@@ -563,15 +564,15 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 			targetPort)
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod2, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod2.Name, pod2.Namespace))
 
 		// RouteGroup
 		By("Creating a routegroup with name " + serviceName + "-" + serviceName2 + " in namespace " + ns + " with hostname " + hostName)
-		rg := createRouteGroupWithBackends(serviceName+"-"+serviceName2, hostName, ns, labels, nil, port,
+		rg := createRouteGroupWithBackends(serviceName+"-"+serviceName2, hostName, ns, labels, nil,
 			[]rgv1.RouteGroupBackend{
 				{
 					Name:        expectedResponse,
@@ -614,30 +615,30 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 				},
 			})
 		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
 		// DNS and backend to /blue-green ready
 		By("Waiting for ALB, DNS and skipper route to service and pod works")
 		req, err := http.NewRequest("GET", "https://"+hostName+"/blue-green", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		resp, err = waitForResponseReturnResponse(req, 10*time.Minute, func(code int) bool {
 			return code > 200 && code < 203
 		}, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Or(Equal(201), Equal(202)))
 		s, err := getBody(resp)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(s).To(Or(Equal("blue"), Equal("green")))
 
 		// checking blue-green routes are ~80/20 match
 		By("checking the response for a request to /blue-green we know if we got the correct weights for our backends")
 		req, err = http.NewRequest("GET", "https://"+hostName+"/blue-green", nil)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		cnt := map[int]int{
 			201: 0,
 			202: 0,
@@ -646,15 +647,15 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 			resp, err = waitForResponseReturnResponse(req, 10*time.Minute, func(code int) bool {
 				return code > 200 && code < 203
 			}, false)
-			Expect(err).NotTo(HaveOccurred())
+			framework.ExpectNoError(err)
 			resp.Body.Close()
 			cnt[resp.StatusCode]++
 		}
 		// +/- 5 for 80/20
 		res201 := cnt[201] > 75 && cnt[201] < 85
 		res202 := cnt[202] > 15 && cnt[202] < 25
-		Expect(res201).To(BeTrue())
-		Expect(res202).To(BeTrue())
+		Expect(res201).To(BeTrue(), "201 count should be between 75 and 85, got %d", cnt[201])
+		Expect(res202).To(BeTrue(), "202 count should be between 15 and 25, got %d", cnt[202])
 	})
 
 	It("Should create NLB routegroup [RouteGroup] [Zalando]", func() {
@@ -674,7 +675,7 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// POD
 		By("Creating a POD with prefix " + nameprefix + " in namespace " + ns)
@@ -686,7 +687,7 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 			targetPort)
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
@@ -695,17 +696,17 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 			PathSubtree: "/",
 		})
 		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("NLB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
 		// DNS ready
 		By("Waiting for NLB, DNS and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", 10*time.Minute, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 
 	It("Should create ALB routegroup with 2 hostnames [RouteGroup] [Zalando]", func() {
@@ -723,7 +724,7 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 		By("Creating service " + serviceName + " in namespace " + ns)
 		service := createServiceTypeClusterIP(serviceName, labels, port, targetPort)
 		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// POD
 		By("Creating a POD with prefix " + nameprefix + " in namespace " + ns)
@@ -735,7 +736,7 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 			targetPort)
 
 		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 
 		// RouteGroup
@@ -745,19 +746,19 @@ rBackend: Path("/blue-green") -> status(202) -> inlineContent("%s") -> <shunt>;`
 		})
 		rg.Spec.Hosts = append(rg.Spec.Hosts, hostName2) // add second hostname
 		rgCreate, err := cs.ZalandoV1().RouteGroups(ns).Create(context.TODO(), rg, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		_, err = waitForRouteGroup(cs, rgCreate.Name, rgCreate.Namespace, 10*time.Minute)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		rgGot, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), rg.Name, metav1.GetOptions{ResourceVersion: "0"})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		By(fmt.Sprintf("ALB endpoint from routegroup status: %s", rgGot.Status.LoadBalancer.RouteGroup[0].Hostname))
 
 		// DNS ready for both endpoints
 		By("Waiting for ALB, DNS and skipper route to service and pod works")
 		err = waitForResponse(hostName, "https", 10*time.Minute, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		err = waitForResponse(hostName2, "https", 10*time.Minute, isSuccess, false)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 
 })
