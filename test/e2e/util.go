@@ -28,7 +28,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	rgclient "github.com/szuecs/routegroup-client"
 	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	zv1 "github.com/zalando-incubator/kube-aws-iam-controller/pkg/apis/zalando.org/v1"
@@ -52,11 +51,9 @@ var (
 	pollLongTimeout = 5 * time.Minute
 )
 
-// type ConditionFunc func() (done bool, err error)
-// Poll(interval, timeout time.Duration, condition ConditionFunc)
 func waitForRouteGroup(cs rgclient.ZalandoInterface, name, ns string, d time.Duration) (string, error) {
 	var addr string
-	err := wait.Poll(10*time.Second, d, func() (done bool, err error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), 10*time.Second, d, false, func(context.Context) (done bool, err error) {
 		rg, err := cs.ZalandoV1().RouteGroups(ns).Get(context.TODO(), name, metav1.GetOptions{ResourceVersion: "0"})
 		if err != nil {
 			return true, err
@@ -719,7 +716,7 @@ func waitForResponseReturnResponse(req *http.Request, timeout time.Duration, exp
 
 func waitForReplicas(deploymentName, namespace string, kubeClient clientset.Interface, timeout time.Duration, desiredReplicas int) {
 	interval := 20 * time.Second
-	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), interval, timeout, true, func(context.Context) (bool, error) {
 		deployment, err := kubeClient.AppsV1().Deployments(namespace).Get(context.TODO(), deploymentName, metav1.GetOptions{})
 		if err != nil {
 			framework.Failf("Failed to get replication controller %s: %v", deployment, err)
@@ -947,7 +944,7 @@ func deleteDeployment(cs clientset.Interface, ns string, deployment *appsv1.Depl
 	By(fmt.Sprintf("Delete a compliant deployment: %s", deployment.Name))
 	defer GinkgoRecover()
 	err := cs.AppsV1().Deployments(ns).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	framework.ExpectNoError(err)
 }
 
 func createHTTPRoundTripper() (http.RoundTripper, chan<- struct{}) {

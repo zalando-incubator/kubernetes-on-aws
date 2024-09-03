@@ -39,14 +39,14 @@ var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
 
 		By("Creating an awsiamrole client")
 		config, err := framework.LoadConfig()
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		config.QPS = f.Options.ClientQPS
 		config.Burst = f.Options.ClientBurst
 		if f.Options.GroupVersion != nil {
 			config.GroupVersion = f.Options.GroupVersion
 		}
 		zcs, err = awsiamrole.NewForConfig(config)
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 	})
 
 	It("Should get AWS IAM credentials [AWS-IAM] [Zalando]", func() {
@@ -56,7 +56,7 @@ var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
 		By("Creating a awscli POD in namespace " + ns)
 		pod := createAWSIAMPod("aws-iam-", ns, E2ES3AWSIAMBucket())
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		// AWSIAMRole
 		By("Creating AWSIAMRole " + awsIAMRoleRS + " in namespace " + ns)
@@ -68,7 +68,7 @@ var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
 			Expect(err2).NotTo(HaveOccurred())
 		}()
 		_, err = zcs.ZalandoV1().AWSIAMRoles(ns).Create(context.TODO(), rs, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 	})
@@ -79,12 +79,12 @@ var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
 		By("Creating a awscli POD in namespace " + ns)
 		pod := createAWSCLIPod("aws-iam-", ns, []string{"s3", "ls", fmt.Sprintf("s3://%s", E2ES3AWSIAMBucket())})
 		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 
 		framework.ExpectNoError(e2epod.WaitForPodTerminatedInNamespace(context.TODO(), f.ClientSet, pod.Name, "", pod.Namespace))
 
 		p, err := cs.CoreV1().Pods(ns).Get(context.TODO(), pod.Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		framework.ExpectNoError(err)
 		Expect(p.Status.ContainerStatuses).NotTo(BeEmpty(), "No container statuses found")
 		Expect(p.Status.ContainerStatuses[0].State.Terminated).NotTo(BeNil(), "Expected to find a terminated container")
 		Expect(p.Status.ContainerStatuses[0].State.Terminated.ExitCode).To(BeEquivalentTo(255), "Expected the container to exit with an error status code")
