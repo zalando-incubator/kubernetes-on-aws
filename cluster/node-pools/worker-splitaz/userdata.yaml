@@ -94,6 +94,8 @@ write_files:
 {{- if ne .Cluster.ConfigItems.serialize_image_pulls "true" }}
       serializeImagePulls: false
 {{- end }}
+      registryPullQPS: {{ .Cluster.ConfigItems.kubelet_registry_pull_qps }}
+      registryBurst: {{ .Cluster.ConfigItems.kubelet_registry_burst }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
 {{- if eq .Cluster.Provider "zalando-eks"}}
