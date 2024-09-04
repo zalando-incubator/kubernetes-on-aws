@@ -18,32 +18,38 @@ import (
 	"fmt"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	e2eservice "k8s.io/kubernetes/test/e2e/framework/service"
 	admissionapi "k8s.io/pod-security-admission/api"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 const (
 	externalDNSAnnotation = "external-dns.alpha.kubernetes.io/hostname"
+	serviceName           = "external-dns-test"
+	timeout               = 10 * time.Minute
 )
 
 var _ = describe("External DNS creation", func() {
 	f := framework.NewDefaultFramework("external-dns")
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
-	var cs kubernetes.Interface
+	var (
+		cs  kubernetes.Interface
+		jig *e2eservice.TestJig
+	)
 
 	BeforeEach(func() {
 		cs = f.ClientSet
+		jig = e2eservice.NewTestJig(cs, f.Namespace.Name, serviceName)
 	})
 
 	f.It("Should create DNS entry [Zalando]", f.WithSlow(), func(ctx context.Context) {
-		// TODO: use the ServiceTestJig here
-		serviceName := "external-dns-test"
 		nameprefix := serviceName + "-"
 		ns := f.Namespace.Name
 		labels := map[string]string{
@@ -55,14 +61,27 @@ var _ = describe("External DNS creation", func() {
 		By("Creating service " + serviceName + " in namespace " + ns)
 		defer func() {
 			err := cs.CoreV1().Services(ns).Delete(ctx, serviceName, metav1.DeleteOptions{})
-			framework.ExpectNoError(err)
+			framework.ExpectNoError(err, "failed to delete service: %s in namespace: %s", serviceName, ns)
 		}()
 
 		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
-		service := createServiceTypeLoadbalancer(serviceName, hostName, labels, port)
-
-		_, err := cs.CoreV1().Services(ns).Create(ctx, service, metav1.CreateOptions{})
-		framework.ExpectNoError(err)
+		_, err := jig.CreateLoadBalancerService(ctx, timeout, func(svc *v1.Service) {
+			svc.ObjectMeta = metav1.ObjectMeta{
+				Name: serviceName,
+				Annotations: map[string]string{
+					externalDNSAnnotation: hostName,
+				},
+			}
+			svc.Spec.Type = v1.ServiceTypeLoadBalancer
+			svc.Spec.Selector = labels
+			svc.Spec.Ports = []v1.ServicePort{
+				{
+					Port:       int32(port),
+					TargetPort: intstr.FromInt(port),
+				},
+			}
+		})
+		framework.ExpectNoError(err, "failed to create service: %s in namespace: %s", serviceName, ns)
 
 		By("Submitting the pod to kubernetes")
 		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, "OK")
@@ -71,18 +90,18 @@ var _ = describe("External DNS creation", func() {
 			By("deleting the pod")
 			defer GinkgoRecover()
 			err2 := cs.CoreV1().Pods(ns).Delete(ctx, pod.Name, metav1.DeleteOptions{})
-			Expect(err2).NotTo(HaveOccurred())
+			framework.ExpectNoError(err2, "failed to delete pod: %s in namespace: %s", pod.Name, ns)
 		}()
 
 		_, err = cs.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
-		framework.ExpectNoError(err)
+		framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", pod.Name, ns)
 
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(ctx, f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(ctx, f.ClientSet, pod.Name, pod.Namespace),
+			"failed to wait for pod: %s in namespace: %s", pod.Name, ns)
 
-		timeout := 10 * time.Minute
 		// wait for DNS and for pod to be reachable.
 		By("Waiting up to " + timeout.String() + " for " + hostName + " to be reachable")
 		err = waitForSuccessfulResponse(hostName, timeout)
-		framework.ExpectNoError(err)
+		framework.ExpectNoError(err, "failed to wait for %s to be reachable", hostName)
 	})
 })
