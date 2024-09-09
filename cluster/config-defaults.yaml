@@ -226,6 +226,9 @@ skipper_pod_deletion_cost_controller_log_v: "0"
 # pod informer sync config
 skipper_pod_deletion_cost_controller_poll_interval: "10s"
 skipper_pod_deletion_cost_controller_poll_timeout: "10s"
+# enable re-sync
+skipper_pod_deletion_cost_controller_resync_enable: "false"
+skipper_pod_deletion_cost_controller_resync_interval: "1h"
 
 # polarsignals - only enabled for testing teapot
 polarsignals_enabled: "false"
@@ -786,6 +789,22 @@ ebs_csi_controller_sidecar_cpu: "10m"
 
 # pull images in parallel
 serialize_image_pulls: "false"
+
+# rate of image pull in the kubelet, see
+# see https://github.com/kubernetes/kubernetes/blob/v1.30.0/staging/src/k8s.io/kubelet/config/v1beta1/types.go#L200-L212
+#
+# registryPullQPS is the limit of registry pulls per second.
+# The value must not be a negative number.
+# Setting it to 0 means no limit.
+# Default: 5
+kubelet_registry_pull_qps : "20"
+
+# registryBurst is the maximum size of bursty pulls, temporarily allows
+# pulls to burst to this number, while still not exceeding registryPullQPS.
+# The value must not be a negative number.
+# Only used if registryPullQPS is greater than 0.
+# Default: 10
+kubelet_registry_burst: "40"
 
 # Version of the scheduler or controller-manager used by the master nodes.
 # Supported values:
