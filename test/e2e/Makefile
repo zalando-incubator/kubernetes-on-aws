@@ -2,7 +2,7 @@
 
 BINARY       ?= kubernetes-on-aws-e2e
 VERSION      ?= $(shell git describe --tags --always --dirty)
-KUBE_VERSION ?= v1.30.2
+KUBE_VERSION ?= v1.31.0
 IMAGE        ?= pierone.stups.zalan.do/teapot/$(BINARY)
 SOURCES      = $(shell find . -name '*.go')
 TAG          ?= $(VERSION)

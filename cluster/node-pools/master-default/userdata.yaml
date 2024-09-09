@@ -17,7 +17,7 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/config/kubelet.yaml.template
     content: |
-      # https://github.com/kubernetes/kubernetes/blob/v1.13.6/staging/src/k8s.io/kubelet/config/v1beta1/types.go
+      # https://github.com/kubernetes/kubernetes/blob/v1.30.0/staging/src/k8s.io/kubelet/config/v1beta1/types.go
       apiVersion: kubelet.config.k8s.io/v1beta1
       kind: KubeletConfiguration
       cgroupDriver: systemd
@@ -35,6 +35,8 @@ write_files:
 {{- if ne .Cluster.ConfigItems.serialize_image_pulls "true" }}
       serializeImagePulls: false
 {{- end }}
+      registryPullQPS: {{ .Cluster.ConfigItems.kubelet_registry_pull_qps }}
+      registryBurst: {{ .Cluster.ConfigItems.kubelet_registry_burst }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
@@ -130,7 +132,6 @@ write_files:
           - --runtime-config=authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
-          - --cloud-provider=external
           - --authorization-mode=Node,Webhook,RBAC
           - --authorization-webhook-config-file=/etc/kubernetes/config/authz.yaml
           - --authorization-webhook-version=v1
@@ -141,7 +142,7 @@ write_files:
           - "--oidc-username-prefix=okta:"
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
-          - --feature-gates=HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},HPAContainerMetrics={{ .Cluster.ConfigItems.enable_hpa_container_metrics }},StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }},TopologyAwareHints={{ .Cluster.ConfigItems.enable_topology_aware_hints }},MinDomainsInPodTopologySpread={{ .Cluster.ConfigItems.min_domains_in_pod_topology_spread_enabled }},MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}},KMSv1=true
+          - --feature-gates=HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }},TopologyAwareHints={{ .Cluster.ConfigItems.enable_topology_aware_hints }},MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}},KMSv1=true
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
@@ -152,6 +153,8 @@ write_files:
           - --audit-log-path=/var/log/kube-audit.log
           - --audit-log-maxage=0
           - --audit-log-maxbackup=0
+          # we need this since the /logs/kube-audit.log endpoint is off by default since v1.31
+          - --enable-logs-handler
           {{ else }}
           - --audit-webhook-config-file=/etc/kubernetes/config/audit.yaml
           - --audit-webhook-mode=batch
@@ -668,7 +671,6 @@ write_files:
           args:
           - --config=/etc/kubernetes/config/scheduler-config.yaml
           - --leader-elect=true
-          - --feature-gates=MinDomainsInPodTopologySpread={{ .Cluster.ConfigItems.min_domains_in_pod_topology_spread_enabled }}
           - --profiling={{ .Cluster.ConfigItems.enable_control_plane_profiling }}
           resources:
             requests:
