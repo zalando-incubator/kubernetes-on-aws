@@ -14,7 +14,7 @@ deps:
 	CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.15.0
 
 e2e.test: go.mod $(SOURCES)
-	go test -v -c -o e2e.test
+	go test -v -c -o e2e.test -x
 
 stackset-e2e:
 	CGO_ENABLED=0 go test -modfile stackset/go.mod -c -o stackset-e2e github.com/zalando-incubator/stackset-controller/cmd/e2e
@@ -25,13 +25,13 @@ check-daemonset-updated: go.mod daemonset-updated/main.go
 build: e2e.test stackset-e2e check-daemonset-updated
 
 build/linux/amd64/e2e.test: go.mod $(SOURCES)
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -v -c -o $@
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -v -c -o $@ -x
 
 build/linux/amd64/stackset-e2e:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -modfile stackset/go.mod -c -o $@ github.com/zalando-incubator/stackset-controller/cmd/e2e
 
 build/linux/arm64/e2e.test: go.mod $(SOURCES)
-	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go test -v -c -o $@
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go test -v -c -o $@ -x
 
 build/linux/arm64/stackset-e2e:
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go test -modfile stackset/go.mod -c -o $@ github.com/zalando-incubator/stackset-controller/cmd/e2e
