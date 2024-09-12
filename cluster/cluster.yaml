@@ -188,6 +188,17 @@ Resources:
       PrincipalArn: !GetAtt EKSZalandoIAMIAMRole.Arn
       Username: "zalando-iam:zalando:service:{{`{{SessionName}}`}}"
       Type: "STANDARD"
+  EKSAccessEntryAdministratorAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
+      Username: !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/Administrator/{{`{{SessionName}}`}}"
+      Type: "STANDARD"
   # TODO: IAM POLICY
   EKSCNIIPv6Policy:
     Type: AWS::IAM::ManagedPolicy
