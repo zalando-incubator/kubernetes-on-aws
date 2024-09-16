@@ -1,5 +1,5 @@
 # builder image
-FROM golang:1.22 as builder
+FROM golang:1.22 AS builder
 
 RUN CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.15.0
 
@@ -10,14 +10,9 @@ FROM container-registry.zalando.net/library/python-3.12-slim:latest
 
 ARG TARGETARCH
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  bc \
-  curl \
-  git \
-  jq \
-  pwgen \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qq bc curl git jq pwgen \
   && rm -rf /var/lib/apt/lists/* \
-  && pip3 install awscli --no-cache-dir
+  && pip3 install awscli --no-cache-dir -q
 
 ARG KUBE_VERSION
 ADD https://storage.googleapis.com/kubernetes-release/release/$KUBE_VERSION/bin/linux/$TARGETARCH/kubectl /usr/bin/kubectl
@@ -31,9 +26,9 @@ COPY --from=container-registry.zalando.net/teapot/aws-account-creator:latest /aw
 
 ADD . /workdir
 
-ENV KUBECTL_PATH /usr/bin/kubectl
-ENV KUBERNETES_PROVIDER skeleton
-ENV KUBERNETES_CONFORMANCE_TEST Y
+ENV KUBECTL_PATH=/usr/bin/kubectl
+ENV KUBERNETES_PROVIDER=skeleton
+ENV KUBERNETES_CONFORMANCE_TEST=Y
 
 WORKDIR /workdir/test/e2e
 
