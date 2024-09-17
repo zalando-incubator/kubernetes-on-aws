@@ -303,3 +303,37 @@ post_apply:
 - name: deployment-service-status-service
   kind: Ingress
   namespace: kube-system
+
+{{ if ne .Cluster.ConfigItems.k8s_dashboard_enabled "true" }}
+- name: kubernetes-dashboard
+  namespace: kube-system
+  kind: Deployment
+- name: kubernetes-dashboard
+  namespace: kube-system
+  kind: Service
+- name: dashboard-metrics-scraper
+  namespace: kube-system
+  kind: Service
+- name: dashboard-metrics-scraper
+  namespace: kube-system
+  kind: Deployment
+- name: kubernetes-dashboard
+  namespace: kube-system
+  kind: Role
+- name: kubernetes-dashboard
+  namespace: kube-system
+  kind: RoleBinding
+- name: kubernetes-dashboard
+  kind: ClusterRole
+- name: kubernetes-dashboard-internal
+  kind: ClusterRoleBinding
+- name: kubernetes-dashboard-readonly
+  kind: ClusterRoleBinding
+- name: dashboard-metrics-scraper-vpa
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
+# clean this up in another step after the above resources have been cleaned-up
+# - name: kubernetes-dashboard
+#   namespace: kube-system
+#   kind: ServiceAccount
+{{ end }}
