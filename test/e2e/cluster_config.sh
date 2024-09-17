@@ -45,7 +45,6 @@ clusters:
     stackset_ingress_source_switch_ttl: "1m"
     teapot_admission_controller_daemonset_reserved_cpu: "518m"
     karpenter_pools_enabled: "true"
-    okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
     teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
   criticality_level: 1
   environment: e2e
@@ -199,4 +198,5 @@ clusters:
   provider: zalando-aws
   region: ${REGION}
   owner: '${OWNER}'
+  account_name: teapot-e2e
 EOF
