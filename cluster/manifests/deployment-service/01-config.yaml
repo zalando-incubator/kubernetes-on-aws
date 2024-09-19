@@ -16,8 +16,8 @@ data:
   oidc-provider-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:oidc-provider/{{$eks_oidc_issuer}}"
   oidc-subject-key: "{{$eks_oidc_issuer}}:sub"
 {{- else }}
-  oidc-provider-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:oidc-provider/{{.Cluster.LocalID}}.{{.Cluster.Alias}}.zalan.do"
-  oidc-subject-key: "{{.Cluster.LocalID}}.{{.Cluster.Alias}}.zalan.do:sub"
+  oidc-provider-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+  oidc-subject-key: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}:sub"
 {{- end }}
   s3-bucket-name: "zalando-deployment-service-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
   status-service-url: "https://deployment-status-svc-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"
