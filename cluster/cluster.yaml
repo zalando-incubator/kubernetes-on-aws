@@ -1626,7 +1626,13 @@ Resources:
               - Action: 'elasticloadbalancingv2:*'
                 Effect: Allow
                 Resource: '*'
+              - Action: 'ec2:DescribeAccountAttributes'
+                Effect: Allow
+                Resource: '*'
               - Action: 'ec2:DescribeInstances'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeInternetGateways'
                 Effect: Allow
                 Resource: '*'
               - Action: 'ec2:DescribeSubnets'
@@ -1641,6 +1647,12 @@ Resources:
               - Action: 'ec2:DescribeVpcs'
                 Effect: Allow
                 Resource: '*'
+              - Action: 'iam:CreateServiceLinkedRole'
+                Effect: Allow
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    "iam:AWSServiceName": "elasticloadbalancing.amazonaws.com"
               - Action: 'iam:GetServerCertificate'
                 Effect: Allow
                 Resource: '*'
