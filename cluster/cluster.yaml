@@ -128,7 +128,7 @@ Resources:
         IpFamily: "{{.Cluster.ConfigItems.eks_ip_family}}"
       AccessConfig:
         AuthenticationMode: API
-        #BootstrapClusterCreatorAdminPermissions: false
+        BootstrapClusterCreatorAdminPermissions: false
       EncryptionConfig:
         - Provider:
             KeyArn: !GetAtt EtcdEncryptionKey.Arn # TODO: maybe use another key for EKS?
@@ -181,6 +181,17 @@ Resources:
       ClusterName: !Ref EKSCluster
       PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-worker"
       Type: "EC2_LINUX"
+  EKSAccessEntryClusterLifecycleManagerAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
+      Username: !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/cluster-lifecycle-manager-entrypoint/{{`{{SessionName}}`}}"
+      Type: "STANDARD"
   EKSAccessEntryZalandoIAMAuth:
     Type: "AWS::EKS::AccessEntry"
     Properties:
