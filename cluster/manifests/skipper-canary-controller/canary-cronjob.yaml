@@ -1,0 +1,49 @@
+# {{ if eq .Cluster.ConfigItems.skipper_canary_controller_enabled "true" }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: skipper-canary-conrtroller
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    component: canary
+spec:
+  # schedule: "0 9-19 * * *" # every hour from 9 to 17 -> migrate to this when we are sure everything is ok
+  schedule: "*/30 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            application: skipper-ingress
+            component: canary
+        spec:
+          serviceAccountName: skipper-canary-controller
+          # Make sure the job run only once
+          restartPolicy: Never
+          concurrencyPolicy: Forbid
+          backoffLimit: 0
+          containers:
+          - name: skipper-canary-controller
+            terminationMessagePolicy: FallbackToLogsOnError
+            image: container-registry.zalando.net/gwproxy/skipper-canary-controller:main-20
+            env:
+            - name: _PLATFORM_OBSERVABILITY_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: skipper-ingress
+                  key: lightstep-token
+            - name: LIGHTSTEP_DEBUG
+              value: "true"
+            args:
+              - "--dry-mode=true"
+              - "--prometheus-url=http://prometheus.kube-system.svc.cluster.local"
+              - "--log-level=debug"
+              - "--run-once=true"
+              - "--use-mem-query"
+              - "--use-status-query"
+            resources:
+              limits:
+                memory: "128Mi"
+                cpu: "500m"
+# {{ end }}
