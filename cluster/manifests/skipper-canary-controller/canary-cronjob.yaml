@@ -1,4 +1,5 @@
 # {{ if eq .Cluster.ConfigItems.skipper_canary_controller_enabled "true" }}
+# {{ $image := container-registry.zalando.net/gwproxy/skipper-canary-controller:main-21 }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -25,7 +26,7 @@ spec:
           containers:
           - name: skipper-canary-controller
             terminationMessagePolicy: FallbackToLogsOnError
-            image: container-registry.zalando.net/gwproxy/skipper-canary-controller:main-20
+            image: "{{ $image }}"
             env:
             - name: _PLATFORM_OBSERVABILITY_ACCESS_TOKEN
               valueFrom:
