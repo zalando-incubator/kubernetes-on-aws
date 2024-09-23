@@ -12,6 +12,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2eevents "k8s.io/kubernetes/test/e2e/framework/events"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	imageutils "k8s.io/kubernetes/test/utils/image"
 	admissionapi "k8s.io/pod-security-admission/api"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -130,7 +131,7 @@ var _ = describe("Node tests", func() {
 				Containers: []corev1.Container{
 					{
 						Name:  "restart-kubelet",
-						Image: framework.BusyBoxImage,
+						Image: imageutils.GetE2EImage(imageutils.BusyBox),
 						Command: []string{
 							"/bin/sh",
 							"-c",
@@ -165,7 +166,7 @@ var _ = describe("Node tests", func() {
 				Containers: []corev1.Container{
 					{
 						Name:  "test",
-						Image: framework.BusyBoxImage,
+						Image: imageutils.GetE2EImage(imageutils.BusyBox),
 						Command: []string{
 							"/bin/true",
 						},
@@ -198,7 +199,7 @@ var _ = describe("Node tests", func() {
 				Containers: []corev1.Container{
 					{
 						Name:    "privileged",
-						Image:   framework.BusyBoxImage,
+						Image:   imageutils.GetE2EImage(imageutils.BusyBox),
 						Command: []string{"sh", "-c"},
 						Args:    []string{"echo 1 > /proc/sys/kernel/sysrq; echo b > /proc/sysrq-trigger"},
 						SecurityContext: &corev1.SecurityContext{
