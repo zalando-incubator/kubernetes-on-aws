@@ -1,4 +1,5 @@
-# {{ $version := "master-289" }}
+# {{ $image := "container-registry.zalando.net/gwproxy/fabric-gateway:master-289" }}
+# {{ $version := index (split $image ":") 1 }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -38,7 +39,7 @@ spec:
       serviceAccountName: fabric-gateway-controller
       containers:
         - name: controller
-          image: container-registry.zalando.net/gwproxy/fabric-gateway:{{ $version }}
+          image: "{{ $image }}"
           args:
             - -update-fabric-gateway-status=true
             - -versioned-hosts-base-domain={{ .Values.hosted_zone }}
