@@ -12,6 +12,7 @@ spec:
   schedule: "*/30 * * * *"
   jobTemplate:
     spec:
+      backoffLimit: 0
       template:
         metadata:
           labels:
@@ -21,8 +22,6 @@ spec:
           serviceAccountName: skipper-canary-controller
           # Make sure the job run only once
           restartPolicy: Never
-          concurrencyPolicy: Forbid
-          backoffLimit: 0
           containers:
           - name: skipper-canary-controller
             terminationMessagePolicy: FallbackToLogsOnError
