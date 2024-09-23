@@ -32,6 +32,20 @@ spec:
                 secretKeyRef:
                   name: skipper-ingress
                   key: lightstep-token
+            - name: _PLATFORM_OBSERVABILITY_COLLECTOR_SCHEME
+              value: "{{ .Cluster.ConfigItems.observability_collector_scheme }}"
+            - name: _PLATFORM_OBSERVABILITY_COLLECTOR_PORT
+              value: "{{ .Cluster.ConfigItems.observability_collector_port }}"
+            - name: _PLATFORM_OBSERVABILITY_COLLECTOR_ENDPOINT
+              value: "{{ .Cluster.ConfigItems.observability_collector_endpoint }}"
+            - name: _PLATFORM_OBSERVABILITY_METRICS_ENDPOINT
+              value: "{{ .Cluster.ConfigItems.observability_metrics_endpoint }}"
+            - name: _PLATFORM_OBSERVABILITY_METRICS_PORT
+              value:  "{{ .Cluster.ConfigItems.observability_metrics_port }}"
+            - name: _PLATFORM_ACCOUNT
+              value: "{{ .Cluster.Alias }}"
+            - name: _PLATFORM_OBSERVABILITY_COMMON_ATTRIBUTE_CLOUD__ACCOUNT__ID
+              value: "{{ .Cluster.Alias }}"
             - name: LIGHTSTEP_DEBUG
               value: "true"
             args:
