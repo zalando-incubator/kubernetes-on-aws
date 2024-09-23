@@ -51,7 +51,7 @@ var _ = describe("Audit", func() {
 			Spec: apiv1.PodSpec{
 				Containers: []apiv1.Container{{
 					Name:  "pause",
-					Image: "container-registry.zalando.net/teapot/pause:3.4.1-master-18",
+					Image: "container-registry.zalando.net/teapot/pause:3.7-master-21",
 				}},
 			},
 		}
