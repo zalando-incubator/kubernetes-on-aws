@@ -36,15 +36,6 @@ spec:
             value: "1"
       serviceAccountName: cluster-autoscaler
       dnsPolicy: Default
-      tolerations:
-{{- if eq .Cluster.Provider "zalando-eks"}}
-      - key: dedicated
-        value: cluster-seed
-{{- else}}
-      - key: node.kubernetes.io/role
-        value: master
-{{- end}}
-        effect: NoSchedule
       containers:
       - name: cluster-autoscaler
         image: container-registry.zalando.net/teapot/kube-cluster-autoscaler:v1.18.2-internal.48
@@ -83,7 +74,18 @@ spec:
         env:
           - name: AWS_REGION
             value: "{{ .Cluster.Region }}"
-{{- if ne .Cluster.Provider "zalando-eks"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      nodeSelector:
+        dedicated: cluster-seed
+      tolerations:
+      - key: dedicated
+        value: cluster-seed
+        effect: NoSchedule
+{{- else}}
       nodeSelector:
         node.kubernetes.io/role: master
+      tolerations:
+      - key: node.kubernetes.io/role
+        value: master
+        effect: NoSchedule
 {{- end}}

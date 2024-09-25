@@ -22,14 +22,21 @@ spec:
     spec:
       serviceAccountName: ebs-csi-controller-sa
       priorityClassName: system-cluster-critical
-{{- if ne .Cluster.Provider "zalando-eks" }}
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      nodeSelector:
+        dedicated: cluster-seed
+      tolerations:
+      - key: dedicated
+        value: cluster-seed
+        effect: NoSchedule
+{{- else}}
       nodeSelector:
         node.kubernetes.io/role: master
-{{- end }}
       tolerations:
-        - key: node.kubernetes.io/role
-          value: master
-          effect: NoSchedule
+      - key: node.kubernetes.io/role
+        value: master
+        effect: NoSchedule
+{{- end}}
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
