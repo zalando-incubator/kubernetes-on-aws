@@ -37,15 +37,6 @@ spec:
       serviceAccountName: kube-node-ready-controller
       priorityClassName: system-cluster-critical
       dnsPolicy: Default
-      tolerations:
-      - key: node.kubernetes.io/role
-        value: master
-        effect: NoSchedule
-{{- if eq .Cluster.Provider "zalando-eks"}}
-      - key: dedicated
-        value: cluster-seed
-        effect: NoSchedule
-{{- end}}
       containers:
       - name: controller
         image: container-registry.zalando.net/teapot/kube-node-ready-controller:master-28
@@ -53,7 +44,18 @@ spec:
           requests:
             cpu: {{.Cluster.ConfigItems.kube_node_ready_controller_cpu}}
             memory: {{.Cluster.ConfigItems.kube_node_ready_controller_memory}}
-{{- if ne .Cluster.Provider "zalando-eks"}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      nodeSelector:
+        dedicated: cluster-seed
+      tolerations:
+      - key: dedicated
+        value: cluster-seed
+        effect: NoSchedule
+{{- else}}
       nodeSelector:
         node.kubernetes.io/role: master
+      tolerations:
+      - key: node.kubernetes.io/role
+        value: master
+        effect: NoSchedule
 {{- end}}

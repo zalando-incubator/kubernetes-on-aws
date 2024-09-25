@@ -43,11 +43,18 @@ spec:
           requests:
             cpu: "{{.Cluster.ConfigItems.kube_aws_iam_controller_cpu}}"
             memory: "{{.Cluster.ConfigItems.kube_aws_iam_controller_mem}}"
-{{- if ne .Cluster.Provider "zalando-eks" }}
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      nodeSelector:
+        dedicated: cluster-seed
+      tolerations:
+      - key: dedicated
+        value: cluster-seed
+        effect: NoSchedule
+{{- else}}
+      nodeSelector:
+        node.kubernetes.io/role: master
       tolerations:
       - key: node.kubernetes.io/role
         value: master
         effect: NoSchedule
-      nodeSelector:
-        node.kubernetes.io/role: master
-{{- end }}
+{{- end}}
