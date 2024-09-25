@@ -20,6 +20,8 @@ spec:
         application: skipper-ingress
         component: pod-deletion-cost-controller
         deployment: pod-deletion-cost-controller
+      annotations:
+        logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
     spec:
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: pod-deletion-cost-controller
@@ -29,12 +31,13 @@ spec:
         - -v={{ .Cluster.ConfigItems.skipper_pod_deletion_cost_controller_log_v }}
         - -poll-interval={{ .Cluster.ConfigItems.skipper_pod_deletion_cost_controller_poll_interval }}
         - -poll-timeout={{ .Cluster.ConfigItems.skipper_pod_deletion_cost_controller_poll_timeout }}
-{{ if eq .Cluster.ConfigItems.skipper_pod_deletion_cost_controller_resync_enable "true" }}
+        # {{ if eq .Cluster.ConfigItems.skipper_pod_deletion_cost_controller_resync_enable "true" }}
         - -resync
         - -resync-interval={{ .Cluster.ConfigItems.skipper_pod_deletion_cost_controller_resync_interval }}
-{{ end }}
-        image: container-registry.zalando.net/gwproxy/pod-deletion-cost-controller:main-27
+        # {{ end }}
+        image: container-registry.zalando.net/gwproxy/pod-deletion-cost-controller:main-28
         name: pod-deletion-cost-controller
+        terminationMessagePolicy: FallbackToLogsOnError
         ports:
         - containerPort: 8080
           name: metrics

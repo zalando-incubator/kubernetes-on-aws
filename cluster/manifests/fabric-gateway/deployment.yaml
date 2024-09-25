@@ -1,4 +1,4 @@
-# {{ $image := "container-registry.zalando.net/gwproxy/fabric-gateway:master-289" }}
+# {{ $image := "container-registry.zalando.net/gwproxy/fabric-gateway:master-290" }}
 # {{ $version := index (split $image ":") 1 }}
 apiVersion: apps/v1
 kind: Deployment
@@ -30,7 +30,7 @@ spec:
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "controller", "parser": "keyValue"}]
-        logging/destination: "{{ .Cluster.ConfigItems.log_destination_infra }}"
+        logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
         prometheus.io/path: /metrics
         prometheus.io/port: "7979"
         prometheus.io/scrape: "true"

@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: skipper-canary-conrtroller
+  name: skipper-canary-controller
   namespace: kube-system
   labels:
     application: skipper-ingress
@@ -18,6 +18,10 @@ spec:
           labels:
             application: skipper-ingress
             component: canary
+          annotations:
+            kubernetes-log-watcher/scalyr-parser: |
+              [{"container": "controller", "parser": "keyValue"}]
+            logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
         spec:
           serviceAccountName: skipper-canary-controller
           # Make sure the job run only once
@@ -25,13 +29,31 @@ spec:
           containers:
           - name: skipper-canary-controller
             terminationMessagePolicy: FallbackToLogsOnError
-            image: container-registry.zalando.net/gwproxy/skipper-canary-controller:main-20
+            image: container-registry.zalando.net/gwproxy/skipper-canary-controller:main-22
             env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: _PLATFORM_OBSERVABILITY_ACCESS_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: skipper-ingress
                   key: lightstep-token
+            - name: _PLATFORM_OBSERVABILITY_COLLECTOR_SCHEME
+              value: "{{ .Cluster.ConfigItems.observability_collector_scheme }}"
+            - name: _PLATFORM_OBSERVABILITY_COLLECTOR_PORT
+              value: "{{ .Cluster.ConfigItems.observability_collector_port }}"
+            - name: _PLATFORM_OBSERVABILITY_COLLECTOR_ENDPOINT
+              value: "{{ .Cluster.ConfigItems.observability_collector_endpoint }}"
+            - name: _PLATFORM_OBSERVABILITY_METRICS_ENDPOINT
+              value: "{{ .Cluster.ConfigItems.observability_metrics_endpoint }}"
+            - name: _PLATFORM_OBSERVABILITY_METRICS_PORT
+              value:  "{{ .Cluster.ConfigItems.observability_metrics_port }}"
+            - name: _PLATFORM_ACCOUNT
+              value: "{{ .Cluster.Alias }}"
+            - name: _PLATFORM_OBSERVABILITY_COMMON_ATTRIBUTE_CLOUD__ACCOUNT__ID
+              value: "{{ .Cluster.Alias }}"
             - name: LIGHTSTEP_DEBUG
               value: "true"
             args:
