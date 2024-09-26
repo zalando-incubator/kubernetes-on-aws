@@ -205,12 +205,12 @@ spec:
     # Describes which types of Nodes Karpenter should consider for consolidation
     # If using 'WhenUnderutilized', Karpenter will consider all nodes for consolidation and attempt to remove or replace Nodes when it discovers that the Node is underutilized and could be changed to reduce cost
     # If using `WhenEmpty`, Karpenter will only consider nodes for consolidation that contain no workload pods
-#{{  if and (index .NodePool.ConfigItems "consolidation") (eq .NodePool.ConfigItems.consolidation "false") }}
+#{{  if and (index .NodePool.ConfigItems "consolidation_policy") (eq .NodePool.ConfigItems.consolidation_policy "WhenEmpty") }}
     consolidationPolicy: WhenEmpty
     # The amount of time Karpenter should wait after discovering a consolidation decision
     # This value can currently only be set when the consolidationPolicy is 'WhenEmpty'
     # You can choose to disable consolidation entirely by setting the string value 'Never' here
-    consolidateAfter: 10m
+    consolidateAfter: {{ or (index .NodePool.ConfigItems "consolidate_after") "10m" }}
 #{{  else }}
     consolidationPolicy: WhenUnderutilized
 #{{  end }}
