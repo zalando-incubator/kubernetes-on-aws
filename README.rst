@@ -31,7 +31,7 @@ Features
 * Kubernetes DNS with node-local dnsmasq as daemonset and CoreDNS resolver for cluster.local domain running in the same pod.
 * Route53 DNS integration via `External DNS`_
 * AWS IAM integration via kube2iam_, `AWS OIDC IAM`_
-* Standard components are installed: dashboard, node exporter, kube-state-metrics, see also `cluster/manifests`_ directory
+* Standard components are installed: node exporter, kube-state-metrics, see also `cluster/manifests`_ directory
 * Webhook authentication and authorization (roles "ReadOnly", "PowerUser", "Manual", "Emergency", "Administrator")
 * Emergency Access via internal emergency-access-service, that grant roles "Manual" and "Emergency" with 4 eyes principle and audit logging
 * Log shipping via Scalyr
