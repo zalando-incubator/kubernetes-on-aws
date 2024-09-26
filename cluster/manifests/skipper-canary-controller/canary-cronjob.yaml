@@ -18,6 +18,10 @@ spec:
           labels:
             application: skipper-ingress
             component: canary
+          annotations:
+            kubernetes-log-watcher/scalyr-parser: |
+              [{"container": "controller", "parser": "keyValue"}]
+            logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
         spec:
           serviceAccountName: skipper-canary-controller
           # Make sure the job run only once
@@ -25,8 +29,12 @@ spec:
           containers:
           - name: skipper-canary-controller
             terminationMessagePolicy: FallbackToLogsOnError
-            image: container-registry.zalando.net/gwproxy/skipper-canary-controller:main-22
+            image: container-registry.zalando.net/gwproxy/skipper-canary-controller:main-23
             env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: _PLATFORM_OBSERVABILITY_ACCESS_TOKEN
               valueFrom:
                 secretKeyRef:
