@@ -162,6 +162,7 @@ Resources:
       # TODO: vanity domain name? (certificate issue)
       #
       #
+{{- if eq .Cluster.ConfigItems.eks_okta_identity_provider "true" }}
   EKSIdentityProvider:
     Type: AWS::EKS::IdentityProviderConfig
     Properties:
@@ -175,6 +176,7 @@ Resources:
         GroupsClaim: "groups"
         GroupsPrefix: "okta:"
       Type: "oidc"
+{{- end }}
   EKSAccessEntryNodeAuth:
     Type: "AWS::EKS::AccessEntry"
     Properties:
