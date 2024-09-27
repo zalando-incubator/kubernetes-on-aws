@@ -1,7 +1,7 @@
-{{/* image-updater-bot detects *image variables so use __ suffux to disable it for main image */}}
+{{/* image-updater-bot detects *image variables so use print to disable it for main image */}}
 
-{{ $main_image__ := "container-registry.zalando.net/teapot/skipper-internal:v0.21.198-1017" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.21.198-1017" }}
+{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.21.198-1017" }}
+{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.21.208-1027" }}
 
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
@@ -9,7 +9,7 @@
 
 {{ template "skipper-ingress" dict
   "name" "skipper-ingress"
-  "image" $main_image__
+  "image" $main_image
 
   "Cluster" .Cluster
   "Values" .Values
@@ -447,7 +447,7 @@ spec:
 {{ end }}
 
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "false" }}
-{{ $main_version := index (split (index (split $main_image__ ":") 1) "-") 0 }}
+{{ $main_version := index (split (index (split $main_image ":") 1) "-") 0 }}
 ---
 apiVersion: apps/v1
 kind: Deployment
