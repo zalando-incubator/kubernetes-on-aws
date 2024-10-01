@@ -212,6 +212,11 @@ Resources:
       PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
       Username: !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/Administrator/{{`{{SessionName}}`}}"
       Type: "STANDARD"
+  EKSAddonPodIdentityAgent:
+    Type: AWS::EKS::Addon
+    Properties:
+      AddonName: eks-pod-identity-agent
+      ClusterName: !Ref EKSCluster
   # TODO: IAM POLICY
   EKSCNIIPv6Policy:
     Type: AWS::IAM::ManagedPolicy
@@ -237,9 +242,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: "{{.Cluster.LocalID}}-aws-node"
-      AssumeRolePolicyDocument: !Sub
-        - |
-          {
+      AssumeRolePolicyDocument: {
             "Version": "2012-10-17",
             "Statement": [
               {
@@ -254,24 +257,18 @@ Resources:
                 ]
               },
               {
+                "Sid": "AllowEksAuthToAssumeRoleForPodIdentity",
                 "Effect": "Allow",
                 "Principal": {
-                  "Federated": [
-                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
-                  ]
+                    "Service": "pods.eks.amazonaws.com"
                 },
                 "Action": [
-                  "sts:AssumeRoleWithWebIdentity"
-                ],
-                "Condition": {
-                  "StringEquals": {
-                    "${OIDC}:sub": "system:serviceaccount:kube-system:aws-node"
-                  }
-                }
+                    "sts:AssumeRole",
+                    "sts:TagSession"
+                ]
               }
             ]
           }
-        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
       Path: /
       ManagedPolicyArns:
 {{- if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}
@@ -279,6 +276,13 @@ Resources:
 {{- else }}
       - !Ref EKSCNIIPv6Policy
 {{- end }}
+  EKSAWSNodePodIdentity:
+    Type: "AWS::EKS::PodIdentityAssociation"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      Namespace: kube-system
+      RoleArn: !GetAtt EKSAWSNodeIAMRole.Arn
+      ServiceAccount: aws-node
   EKSZalandoIAMProxyIAMRole:
     Type: AWS::IAM::Role
     Properties:
