@@ -188,6 +188,7 @@ if [ "$e2e" = true ]; then
         "e2e.test" -- \
         -delete-namespace-on-failure=false \
         -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated \
+        -allowed-not-ready-nodes=-1 \
         -report-dir=junit_reports
     TEST_RESULT="$?"
 
