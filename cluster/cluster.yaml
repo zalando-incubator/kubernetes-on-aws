@@ -2125,6 +2125,7 @@ Resources:
                 - BucketArn: !GetAtt AuditTrailBucket.Arn
 {{- end }}
 
+{{- if index .Cluster.ConfigItems "session_manager_destination_arn" }}
   SessionManagerLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -2184,6 +2185,7 @@ Resources:
                 Resource:
                   - !GetAtt SessionManagerLogGroup.Arn
       RoleName: "SessionManager-{{.Cluster.Alias}}"
+{{- end }}
 
   AWSNodeDecommissionerIAMRole:
     Type: 'AWS::IAM::Role'
