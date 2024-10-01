@@ -5,7 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/instance: aws-vpc-cni
     app.kubernetes.io/name: aws-node
-    app.kubernetes.io/version: v1.15.1
+    app.kubernetes.io/version: v1.18.1
     k8s-app: aws-node
     application: kubernetes
     component: aws-node
@@ -84,10 +84,12 @@ spec:
           value: "false"
         - name: ENABLE_PREFIX_DELEGATION
           value: "{{ if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}{{.Cluster.ConfigItems.aws_vpc_cni_prefix_delegation}}{{else}}true{{end}}"
+        - name: ENABLE_SUBNET_DISCOVERY
+          value: "true"
         - name: NETWORK_POLICY_ENFORCING_MODE
           value: standard
         - name: VPC_CNI_VERSION
-          value: v1.17.1
+          value: v1.18.1
         - name: VPC_ID
           value: "{{ .Cluster.ConfigItems.vpc_id }}"
         - name: WARM_ENI_TARGET
@@ -104,7 +106,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni:v1.17.1-eksbuild.1
+        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni:v1.18.1-eksbuild.3
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -171,7 +173,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: spec.nodeName
-        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon/aws-network-policy-agent:v1.1.0-eksbuild.1
+        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon/aws-network-policy-agent:v1.1.1-eksbuild.2
         imagePullPolicy: IfNotPresent
         name: aws-eks-nodeagent
         resources:
@@ -201,7 +203,7 @@ spec:
           value: "false"
         - name: ENABLE_IPv6
           value: "{{ if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}false{{else}}true{{end}}"
-        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni-init:v1.17.1-eksbuild.1
+        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni-init:v1.18.1-eksbuild.3
         imagePullPolicy: IfNotPresent
         name: aws-vpc-cni-init
         resources:
