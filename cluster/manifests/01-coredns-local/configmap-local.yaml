@@ -71,7 +71,11 @@ data:
 {{ end }}
         template IN A {
             match "^.*[.]ingress[.]cluster[.]local"
+            {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}
+            answer "{{"{{"}} .Name {{"}}"}} 60 IN AAAA {{ addressNFromIPv6CIDR .Cluster.ConfigItems.service_ipv6_cidr 50 }}"
+            {{- else}}
             answer "{{"{{"}} .Name {{"}}"}} 60 IN A 10.5.99.99"
+            {{- end}}
             fallthrough
         }
         template IN AAAA {
@@ -83,7 +87,7 @@ data:
 
     # Defines that this server is authority for reverse
     # lookups for these ranges.
-    cluster.local:9254 10.2.0.0/15:9254 10.5.0.0/16:9254 {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ range $src := split .Cluster.ConfigItems.tracing_coredns_global_traces_endpoint  "," }}{{ $src }}:9254 {{ end }} {{ end }} {
+    cluster.local:9254 {{if eq .Cluster.Provider "zalando-eks"}}in-addr.arpa:9254 ip6.arpa:9254{{else}}10.2.0.0/15:9254 10.5.0.0/16:9254{{end}} {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ range $src := split .Cluster.ConfigItems.tracing_coredns_global_traces_endpoint  "," }}{{ $src }}:9254 {{ end }} {{ end }} {
         errors
         {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}
           {{- with $cluster := .Cluster }}
@@ -94,6 +98,9 @@ data:
         {{ end }}
         kubernetes {
             pods insecure
+            {{- if eq .Cluster.Provider "zalando-eks"}}
+            fallthrough in-addr.arpa ip6.arpa
+            {{- end}}
         }
         cache 30
 {{ if eq .Cluster.ConfigItems.coredns_log_svc_names "true"}}
