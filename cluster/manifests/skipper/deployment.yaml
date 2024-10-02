@@ -1,6 +1,6 @@
 {{/* image-updater-bot detects *image variables so use print to disable it for main image */}}
 
-{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.21.208-1027" }}
+{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.21.211-1033" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.21.211-1033" }}
 
 
@@ -254,6 +254,8 @@ spec:
           - "-idle-timeout-server={{ .Cluster.ConfigItems.skipper_idle_timeout_server }}"
           - "-read-timeout-server={{ .Cluster.ConfigItems.skipper_read_timeout_server }}"
           - "-write-timeout-server={{ .Cluster.ConfigItems.skipper_write_timeout_server }}"
+          - "-keepalive-server={{ .Cluster.ConfigItems.skipper_keepalive_server }}"
+          - "-keepalive-requests-server={{ .Cluster.ConfigItems.skipper_keepalive_requests_server }}"
           - "-lua-sources={{ .Cluster.ConfigItems.skipper_lua_sources }}"
           - "-disabled-filters={{ .Cluster.ConfigItems.skipper_disabled_filters }}"
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
