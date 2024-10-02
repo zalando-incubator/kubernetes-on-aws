@@ -1,8 +1,8 @@
 module github.com/zalando-incubator/kubernetes-on-aws/test/e2e/stackset
 
-go 1.22
+go 1.23
 
-toolchain go1.22.8
+toolchain go1.23.2
 
 require github.com/zalando-incubator/stackset-controller v1.4.86
 
