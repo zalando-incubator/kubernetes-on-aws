@@ -767,6 +767,14 @@ write_files:
             - group: "" # core
               resources: ["pods"]
         {{ end }}
+{{- if eq .Cluster.ConfigItems.audit_kube_controller_manager_node_changes "true"}}
+        - level: Request
+          users: ["system:kube-controller-manager"]
+          verbs: ["patch", "update"]
+          resources:
+            - group: "" # core
+              resources: ["nodes"]
+{{- end}}
         # don't audit any kube-controller-manager events
         - level: None
           users: ["system:kube-controller-manager"]
