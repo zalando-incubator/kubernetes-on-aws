@@ -1,5 +1,5 @@
-{{ $image   := "container-registry.zalando.net/teapot/deployment-status-service" }}
-{{ $version := "master-224" }}
+# {{ $image   := "container-registry.zalando.net/teapot/deployment-status-service:master-224" }}
+# {{ $version := index (split $image ":") 1 }}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -25,12 +25,12 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "9090"
         prometheus.io/scrape: "true"
-        config/hash: {{"01-config.yaml" | manifestHash}}
+        config/hash: '{{"01-config.yaml" | manifestHash}}'
     spec:
       serviceAccountName: "deployment-service-status-service"
       containers:
         - name: "deployment-service-status-service"
-          image: "{{$image}}:{{$version}}"
+          image: "{{ $image }}"
           args:
             - --readonly-principal=realm=/services,uid=stups_deployment-service
             - --readonly-principal=realm=/services,uid=k8sapi-local_deployment-service
@@ -61,7 +61,7 @@ spec:
             - name: _PLATFORM_OPENTRACING_TAG_APPLICATION
               value: deployment-service
             - name: _PLATFORM_OPENTRACING_TAG_ARTIFACT
-              value: "{{$image}}:{{$version}}"
+              value: "{{ $image }}"
             - name: _PLATFORM_OPENTRACING_TAG_ZONE
               valueFrom:
                 fieldRef:
