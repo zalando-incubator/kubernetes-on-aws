@@ -1,6 +1,6 @@
 # {{ if ne .Cluster.Environment "production" }}
-# {{ $internal_version := "23.7.0-main-2" }}
-# {{ $version := index (split $internal_version "-") 0 }}
+# {{ $image := "container-registry.zalando.net/teapot/kube-janitor:23.7.0-main-2" }}
+# {{ $version := index (split (index (split $image ":") 1) "-") 0 }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,7 +34,7 @@ spec:
       containers:
         - name: janitor
           # see https://github.com/hjacobs/kube-janitor/releases
-          image: container-registry.zalando.net/teapot/kube-janitor:{{ $internal_version }}
+          image: "{{ $image }}"
           args:
             # run every minute
             - --interval=60
