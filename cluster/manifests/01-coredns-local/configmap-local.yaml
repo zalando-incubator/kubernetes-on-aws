@@ -71,8 +71,8 @@ data:
 {{ end }}
         template IN A {
             match "^.*[.]ingress[.]cluster[.]local"
-            {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}
-            answer "{{"{{"}} .Name {{"}}"}} 60 IN AAAA {{ addressNFromIPv6CIDR .Cluster.ConfigItems.service_ipv6_cidr 50 }}"
+            {{- if eq .Cluster.Provider "zalando-eks" }}
+            answer "{{"{{"}} .Name {{"}}"}} 60 IN AAAA {{ nthAddressFromCIDR .Cluster.ConfigItems.service_cidr 50 }}"
             {{- else}}
             answer "{{"{{"}} .Name {{"}}"}} 60 IN A 10.5.99.99"
             {{- end}}

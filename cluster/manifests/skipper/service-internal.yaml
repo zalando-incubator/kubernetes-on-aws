@@ -14,8 +14,8 @@ metadata:
     component: ingress
 spec:
   type: ClusterIP
-{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
-  clusterIP: {{ addressNFromIPv6CIDR .Cluster.ConfigItems.service_ipv6_cidr 50 }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
+  clusterIP: {{ nthAddressFromCIDR .Cluster.ConfigItems.service_cidr 50 }}
 {{- else}}
   clusterIP: 10.5.99.99
 {{- end}}
