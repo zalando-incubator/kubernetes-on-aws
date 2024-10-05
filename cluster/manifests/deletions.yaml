@@ -347,3 +347,18 @@ post_apply:
   kind: ServiceAccount
   namespace: kube-system
 {{- end}}
+{{ if ne .Cluster.ConfigItems.parca_agent_enabled "true" }}
+- name: parca-agent
+  kind: ClusterRole
+- name: parca-agent
+  kind: ClusterRoleBinding
+- name: parca-agent
+  kind: ServiceAccount
+  namespace: kube-system
+- name: parca-agent
+  kind: Secret
+  namespace: kube-system
+- name: parca-agent
+  kind: DaemonSet
+  namespace: kube-system
+{{ end }}

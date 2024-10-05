@@ -112,6 +112,9 @@ data:
   pod.pod-security-policy.privileged-service-accounts.kube-system_aws-efa-k8s-device-plugin: ""
 {{- end }}
   pod.pod-security-policy.privileged-service-accounts.visibility_logging-agent: ""
+{{- if eq .Cluster.ConfigItems.parca_agent_enabled "true" }}
+  pod.pod-security-policy.privileged-service-accounts.kube-system_parca-agent: ""
+{{- end }}
 {{- range $sa := split .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_privileged_service_accounts "," }}
   pod.pod-security-policy.privileged-service-accounts.{{ $sa }}: ""
 {{- end}}

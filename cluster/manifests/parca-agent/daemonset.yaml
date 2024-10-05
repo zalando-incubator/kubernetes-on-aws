@@ -1,0 +1,120 @@
+{{- if eq .Cluster.ConfigItems.parca_agent_enabled "true" }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    application: kubernetes
+    component: parca-agent
+  name: parca-agent
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      daemonset: parca-agent
+  template:
+    metadata:
+      annotations:
+        secret/hash: {{"secret.yaml" | manifestHash}}
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7071"
+        prometheus.io/scrape: "true"
+      labels:
+        application: kubernetes
+        component: parca-agent
+        daemonset: parca-agent
+    spec:
+      containers:
+        - args:
+            - /bin/parca-agent
+            - --log-level=info
+            - --node=$(NODE_NAME)
+            - --http-address=:7071
+            - --remote-store-address=grpc.polarsignals.com:443
+            - --remote-store-bearer-token-file=/var/parca-agent/token
+            - --debuginfo-strip
+            - --debuginfo-temp-dir=/tmp
+            - --debuginfo-upload-cache-duration=5m
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          image: ghcr.io/parca-dev/parca-agent:v0.35.1
+          name: parca-agent
+          ports:
+            - containerPort: 7071
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+          resources:
+            limits:
+              cpu: "{{ .Cluster.ConfigItems.parca_agent_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.parca_agent_memory }}"
+            requests:
+              cpu: "{{ .Cluster.ConfigItems.parca_agent_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.parca_agent_memory }}"
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /run
+              name: run
+            - mountPath: /boot
+              name: boot
+              readOnly: true
+            - mountPath: /lib/modules
+              name: modules
+            - mountPath: /sys/kernel/debug
+              name: debugfs
+            - mountPath: /sys/fs/cgroup
+              name: cgroup
+            - mountPath: /sys/fs/bpf
+              name: bpffs
+            - mountPath: /var/run/dbus/system_bus_socket
+              name: dbus-system
+            - mountPath: /var/parca-agent
+              name: token
+      hostPID: true
+      nodeSelector:
+        kubernetes.io/os: linux
+{{- if eq .Cluster.ConfigItems.parca_agent_node_selector_restricted "true" }}
+        node-feature.zalando.org/parca-agent: enabled
+{{- end }}
+      serviceAccountName: parca-agent
+      tolerations:
+        - effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+      volumes:
+        - emptyDir: {}
+          name: tmp
+        - hostPath:
+            path: /run
+          name: run
+        - hostPath:
+            path: /boot
+          name: boot
+        - hostPath:
+            path: /sys/fs/cgroup
+          name: cgroup
+        - hostPath:
+            path: /lib/modules
+          name: modules
+        - hostPath:
+            path: /sys/fs/bpf
+          name: bpffs
+        - hostPath:
+            path: /sys/kernel/debug
+          name: debugfs
+        - hostPath:
+            path: /var/run/dbus/system_bus_socket
+          name: dbus-system
+        - secret:
+            secretName: parca-agent
+          name: token
+{{- end }}
