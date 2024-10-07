@@ -50,6 +50,34 @@ export LOCAL_ID="${LOCAL_ID:-"e2e-${CDP_BUILD_VERSION}"}"
 export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
+export CLUSTER_PROVIDER="${CLUSTER_PROVIDER:-"zalando-aws"}"
+
+if [ "$CLUSTER_PROVIDER" == "zalando-aws" ]; then
+    # create kubeconfig
+    cat >kubeconfig <<EOF
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: ${API_SERVER_URL}
+  name: e2e-cluster
+contexts:
+- context:
+    cluster: e2e-cluster
+    namespace: default
+    user: e2e-bot
+  name: e2e-cluster
+current-context: e2e-cluster
+preferences: {}
+users:
+- name: e2e-bot
+  user:
+    token: ${CLUSTER_ADMIN_TOKEN}
+EOF
+
+    KUBECONFIG="$(pwd)/kubeconfig"
+    export KUBECONFIG="$KUBECONFIG"
+fi
 
 if [ "$create_cluster" = true ]; then
     echo "Creating cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
@@ -88,9 +116,11 @@ if [ "$create_cluster" = true ]; then
             --registry=base_cluster.yaml \
             --manage-etcd-stack
 
-        aws eks --region "${REGION}" update-kubeconfig --name "${LOCAL_ID}" --kubeconfig kubeconfig
-        KUBECONFIG="$(pwd)/kubeconfig"
-        export KUBECONFIG="$KUBECONFIG"
+        if [ "$CLUSTER_PROVIDER" == "zalando-eks" ]; then
+            aws eks --region "${REGION}" update-kubeconfig --name "${LOCAL_ID}" --kubeconfig kubeconfig
+            KUBECONFIG="$(pwd)/kubeconfig"
+            export KUBECONFIG="$KUBECONFIG"
+        fi
 
         # Wait for the resources to be ready
         ./wait-for-update.py --timeout 1200
@@ -107,7 +137,7 @@ if [ "$create_cluster" = true ]; then
     if [ -f base_cluster.yaml ]; then
       ./copy-certificates.py base_cluster.yaml head_cluster.yaml
     else
-      aws-account-creator refresh-certificates --registry-file head_cluster.yaml --create-ca --provider zalando-eks
+      aws-account-creator refresh-certificates --registry-file head_cluster.yaml --create-ca --provider "${CLUSTER_PROVIDER}"
     fi
 
     # Update cluster
@@ -134,37 +164,16 @@ if [ "$create_cluster" = true ]; then
 
 fi
 
-aws eks --region "${REGION}" update-kubeconfig --name "${LOCAL_ID}" --kubeconfig kubeconfig
-
-# # create kubeconfig
-# cat >kubeconfig <<EOF
-# apiVersion: v1
-# kind: Config
-# clusters:
-# - cluster:
-#     server: ${API_SERVER_URL}
-#   name: e2e-cluster
-# contexts:
-# - context:
-#     cluster: e2e-cluster
-#     namespace: default
-#     user: e2e-bot
-#   name: e2e-cluster
-# current-context: e2e-cluster
-# preferences: {}
-# users:
-# - name: e2e-bot
-#   user:
-#     token: ${CLUSTER_ADMIN_TOKEN}
-# EOF
-
-KUBECONFIG="$(pwd)/kubeconfig"
-export KUBECONFIG="$KUBECONFIG"
+if [ "$CLUSTER_PROVIDER" == "zalando-eks" ]; then
+    aws eks --region "${REGION}" update-kubeconfig --name "${LOCAL_ID}" --kubeconfig kubeconfig
+    KUBECONFIG="$(pwd)/kubeconfig"
+    export KUBECONFIG="$KUBECONFIG"
+fi
 
 if [ "$e2e" = true ]; then
     echo "Running e2e against cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
-    # disable cluster downscaling before running e2e
-    ./toggle-scaledown.py disable
+    # # disable cluster downscaling before running e2e
+    # ./toggle-scaledown.py disable
 
     export S3_AWS_IAM_BUCKET="zalando-e2e-test-${AWS_ACCOUNT}-${LOCAL_ID}"
     export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
@@ -190,11 +199,29 @@ if [ "$e2e" = true ]; then
     #
     # introduce a broken DNS record to mess with ExternalDNS
     # kubectl apply -f broken-dns-record.yaml
+    SKIPPED_TESTS=(
+        "\[Serial\]"
+        "validates.that.there.is.no.conflict.between.pods.with.same.hostPort.but.different.hostIP.and.protocol"
+        "Should.create.gradual.traffic.routes"
+    )
+
+    if [ "$CLUSTER_PROVIDER" == "zalando-eks" ]; then
+        # tests are skipped for eks because they test part of the control plane which is part of EKS
+        SKIPPED_TESTS+=(
+            "Mirror pods should be created for the main Kubernetes components \[Zalando\]"
+            "should validate permissions for \[Authorization\] \[RBAC\] \[Zalando\]" # TODO: temporary disabled because feature is missing
+            "Should audit API calls to create, update, patch, delete pods. \[Audit\] \[Zalando\]"
+            "Should NOT get AWS IAM credentials \[AWS-IAM\] \[Zalando\]" # TODO: check
+            "Should react to spot termination notices \[Zalando\] \[Spot\]" # TODO: check
+            "Should handle node restart \[Zalando\]" # TODO: check
+            "Should create DNS entry \[Zalando\]" # TODO: check
+        )
+    fi
 
     mkdir -p junit_reports
     ginkgo -procs=25 -flake-attempts=2 \
         -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
-        -skip="(\[Serial\]|validates.that.there.is.no.conflict.between.pods.with.same.hostPort.but.different.hostIP.and.protocol|Should.create.gradual.traffic.routes)" \
+        -skip="($(IFS="|" ; echo "${SKIPPED_TESTS[*]}"))" \
         "e2e.test" -- \
         -delete-namespace-on-failure=false \
         -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated \

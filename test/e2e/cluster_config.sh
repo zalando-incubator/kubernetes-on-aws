@@ -47,6 +47,7 @@ clusters:
     karpenter_pools_enabled: "true"
     okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
     teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
+    eks_okta_identity_provider: "false" # disabled to speed up EKS cluster creation for e2e.
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
@@ -54,7 +55,9 @@ clusters:
   lifecycle_status: ${2}
   local_id: ${LOCAL_ID}
   node_pools:
-  - config_items:
+  $(if [ "${CLUSTER_PROVIDER}" == "zalando-eks" ]; then
+cat <<EOFF
+- config_items:
       labels: dedicated=cluster-seed
       taints: dedicated=cluster-seed:NoSchedule
     discount_strategy: none
@@ -64,6 +67,17 @@ clusters:
     min_size: 2
     name: seed-worker
     profile: worker-combined
+EOFF
+else
+cat <<EOFF
+- discount_strategy: none
+    instance_types: ["m6g.large"]
+    name: default-master
+    profile: master-default
+    min_size: 1
+    max_size: 2
+EOFF
+  fi)
   - discount_strategy: none
     instance_types:
     - "m6i.2xlarge"
@@ -200,7 +214,7 @@ clusters:
     config_items:
       labels: dedicated=worker-arm64
       taints: dedicated=worker-arm64:NoSchedule
-  provider: zalando-eks
+  provider: ${CLUSTER_PROVIDER}
   region: ${REGION}
   owner: '${OWNER}'
 EOF
