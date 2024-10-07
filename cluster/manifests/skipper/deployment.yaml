@@ -182,7 +182,7 @@ spec:
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"{{ join .cluster_internal_cidrs `\",\"` }}\")"
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"{{ .cluster_internal_cidrs | join `\",\"` }}\")"
           - "-reverse-source-predicate"
 {{ end }}
           - "-proxy-preserve-host"
@@ -314,7 +314,7 @@ spec:
 {{ end }}
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
-          - "-forwarded-headers-exclude-cidrs={{ join .cluster_internal_cidrs "," }}"
+          - "-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}"
 {{ end }}
 {{ if .Cluster.ConfigItems.skipper_ingress_inline_routes }}
           - "-inline-routes={{ .Cluster.ConfigItems.skipper_ingress_inline_routes }}"
@@ -552,7 +552,7 @@ spec:
           - "-whitelisted-healthcheck-cidr={{ .Values.subnet_ipv6_cidrs }}"
 {{- end }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"{{ join $cluster_internal_cidrs `\",\"` }}\")"
+          - "-kubernetes-east-west-range-predicates=ClientIP(\"{{ $cluster_internal_cidrs | join `\",\"` }}\")"
           - "-reverse-source-predicate"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
@@ -575,7 +575,7 @@ spec:
 {{ end }}
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
-          - "-forwarded-headers-exclude-cidrs={{ join $cluster_internal_cidrs "," }}"
+          - "-forwarded-headers-exclude-cidrs={{ $cluster_internal_cidrs | join "," }}"
 {{ end }}
           - >-
             -opentracing=lightstep
