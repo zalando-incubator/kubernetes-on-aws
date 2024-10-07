@@ -51,31 +51,6 @@ export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
 
-# create kubeconfig
-cat >kubeconfig <<EOF
-apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    server: ${API_SERVER_URL}
-  name: e2e-cluster
-contexts:
-- context:
-    cluster: e2e-cluster
-    namespace: default
-    user: e2e-bot
-  name: e2e-cluster
-current-context: e2e-cluster
-preferences: {}
-users:
-- name: e2e-bot
-  user:
-    token: ${CLUSTER_ADMIN_TOKEN}
-EOF
-
-KUBECONFIG="$(pwd)/kubeconfig"
-export KUBECONFIG="$KUBECONFIG"
-
 if [ "$create_cluster" = true ]; then
     echo "Creating cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
 
@@ -113,6 +88,10 @@ if [ "$create_cluster" = true ]; then
             --registry=base_cluster.yaml \
             --manage-etcd-stack
 
+        aws eks --region "${REGION}" update-kubeconfig --name "${LOCAL_ID}" --kubeconfig kubeconfig
+        KUBECONFIG="$(pwd)/kubeconfig"
+        export KUBECONFIG="$KUBECONFIG"
+
         # Wait for the resources to be ready
         ./wait-for-update.py --timeout 1200
 
@@ -141,6 +120,10 @@ if [ "$create_cluster" = true ]; then
         --registry=head_cluster.yaml \
         --manage-etcd-stack
 
+    aws eks --region "${REGION}" update-kubeconfig --name "${LOCAL_ID}" --kubeconfig kubeconfig
+    KUBECONFIG="$(pwd)/kubeconfig"
+    export KUBECONFIG="$KUBECONFIG"
+
     # rotate nodes with old daemonset pods and update strategy onDelete
     # This is important to ensure we e2e test against e.g. latest coredns daemonset
     ./check-daemonset-updated
@@ -153,6 +136,33 @@ if [ "$create_cluster" = true ]; then
     echo "provision and start load test"
     ./start-load-test.sh --zone "$HOSTED_ZONE" --target "$(date +%s)" -v --timeout 900 --wait 30
 fi
+
+aws eks --region "${REGION}" update-kubeconfig --name "${LOCAL_ID}" --kubeconfig kubeconfig
+
+# # create kubeconfig
+# cat >kubeconfig <<EOF
+# apiVersion: v1
+# kind: Config
+# clusters:
+# - cluster:
+#     server: ${API_SERVER_URL}
+#   name: e2e-cluster
+# contexts:
+# - context:
+#     cluster: e2e-cluster
+#     namespace: default
+#     user: e2e-bot
+#   name: e2e-cluster
+# current-context: e2e-cluster
+# preferences: {}
+# users:
+# - name: e2e-bot
+#   user:
+#     token: ${CLUSTER_ADMIN_TOKEN}
+# EOF
+
+KUBECONFIG="$(pwd)/kubeconfig"
+export KUBECONFIG="$KUBECONFIG"
 
 if [ "$e2e" = true ]; then
     echo "Running e2e against cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
