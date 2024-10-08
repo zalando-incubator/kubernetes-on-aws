@@ -1,4 +1,5 @@
-{{ $version := "master-33" }}
+# {{ $image := "container-registry.zalando.net/teapot/kube-node-ready:master-34" }}
+# {{ $version := index (split $image ":") 1 }}
 
 apiVersion: apps/v1
 kind: DaemonSet
@@ -41,7 +42,7 @@ spec:
         effect: NoExecute
       containers:
       - name: kube-node-ready
-        image: container-registry.zalando.net/teapot/kube-node-ready:{{$version}}
+        image: "{{ $image }}"
         args:
         - --lifecycle-hook=kube-node-ready-lifecycle-hook
         resources:

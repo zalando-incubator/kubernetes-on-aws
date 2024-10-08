@@ -1,4 +1,5 @@
-# {{ $version := "v0.15.21" }}
+# {{ $image := "container-registry.zalando.net/teapot/kube-ingress-aws-controller:v0.15.27" }}
+# {{ $version := index (split $image ":") 1 }}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -34,7 +35,7 @@ spec:
       serviceAccountName: kube-ingress-aws-controller
       containers:
         - name: controller
-          image: container-registry.zalando.net/teapot/kube-ingress-aws-controller:{{ $version }}
+          image: "{{ $image }}"
           args:
             - --target-access-mode=HostPort
             - --stack-termination-protection
