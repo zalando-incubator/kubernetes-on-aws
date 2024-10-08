@@ -6,12 +6,12 @@
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
 
-{{ $cluster_internal_cidrs := stringSlice "10.2.0.0/15" .Values.vpc_ipv4_cidr }}
+{{ $cluster_internal_cidrs := list "10.2.0.0/15" .Values.vpc_ipv4_cidr }}
 {{ if eq .Cluster.Provider "zalando-eks" }}
 {{ if eq .Cluster.ConfigItems.eks_ip_family "ipv6" }}
-{{ $cluster_internal_cidrs := .Values.vpc_ipv6_cidrs }}
+{{ $cluster_internal_cidrs = .Values.vpc_ipv6_cidrs }}
 {{ else }}
-{{ $cluster_internal_cidrs := stringSlice .Values.vpc_ipv4_cidr }}
+{{ $cluster_internal_cidrs = list .Values.vpc_ipv4_cidr }}
 {{ end }}
 {{ end }}
 
