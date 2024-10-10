@@ -172,8 +172,6 @@ fi
 
 if [ "$e2e" = true ]; then
     echo "Running e2e against cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
-    # # disable cluster downscaling before running e2e
-    # ./toggle-scaledown.py disable
 
     export S3_AWS_IAM_BUCKET="zalando-e2e-test-${AWS_ACCOUNT}-${LOCAL_ID}"
     export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
@@ -249,9 +247,6 @@ if [ "$e2e" = true ]; then
           --quiet \
           junit_reports/ "s3://$RESULT_BUCKET/$TARGET_DIR/"
     fi
-
-    # enable cluster downscaling after running e2e
-    ./toggle-scaledown.py enable
 
     exit "$TEST_RESULT"
 fi
