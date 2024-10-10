@@ -206,15 +206,13 @@ if [ "$e2e" = true ]; then
     )
 
     if [ "$CLUSTER_PROVIDER" == "zalando-eks" ]; then
-        # tests are skipped for eks because they test part of the control plane which is part of EKS
+        # some tests are skipped for eks because they test part of the control plane which is part of EKS
         SKIPPED_TESTS+=(
             "Mirror pods should be created for the main Kubernetes components \[Zalando\]"
             "Should audit API calls to create, update, patch, delete pods. \[Audit\] \[Zalando\]"
             "should validate permissions for \[Authorization\] \[RBAC\] \[Zalando\]" # TODO: temporary disabled because feature is missing
-            #"Should NOT get AWS IAM credentials \[AWS-IAM\] \[Zalando\]" # TODO: check
-            #"Should react to spot termination notices \[Zalando\] \[Spot\]" # TODO: check
-            #"Should handle node restart \[Zalando\]" # TODO: check
-            #"Should create DNS entry \[Zalando\]" # TODO: check
+            "Should NOT get AWS IAM credentials \[AWS-IAM\] \[Zalando\]" # TODO: check why this doesn't work
+            "Should create DNS entry \[Zalando\]" # TODO: broken because type: LoadBalancer doesn't work
         )
     fi
 
