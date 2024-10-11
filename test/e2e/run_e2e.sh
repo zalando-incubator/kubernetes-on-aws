@@ -36,7 +36,7 @@ case "$COMMAND" in
         exit 1
 esac
 
-E2E_SKIP_CLUSTER_UPDATE="${E2E_SKIP_CLUSTER_UPDATE:-"true"}"
+E2E_SKIP_CLUSTER_UPDATE="${E2E_SKIP_CLUSTER_UPDATE:-"false"}"
 
 # variables set for making it possible to run script locally
 CDP_BUILD_VERSION="${CDP_BUILD_VERSION:-"local-1"}"
