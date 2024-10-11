@@ -101,6 +101,9 @@ data:
   pod.pod-security-policy.privileged-service-accounts.kube-system_etcd-backup: ""
   pod.pod-security-policy.privileged-service-accounts.kube-system_coredns: ""
   pod.pod-security-policy.privileged-service-accounts.kube-system_efs-provisioner: ""
+{{- if eq .Cluster.ConfigItems.s3_csi_driver "true" }}
+  pod.pod-security-policy.privileged-service-accounts.kube-system_s3-csi-driver: ""
+{{- end }}
   pod.pod-security-policy.privileged-service-accounts.visibility_logging-agent: ""
 {{- range $sa := split .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_privileged_service_accounts "," }}
   pod.pod-security-policy.privileged-service-accounts.{{ $sa }}: ""
