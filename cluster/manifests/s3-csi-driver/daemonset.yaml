@@ -1,0 +1,180 @@
+{{- if eq .Cluster.ConfigItems.s3_csi_driver "true" }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    application: kubernetes
+    component: aws-mountpoint-s3-csi-driver
+    app.kubernetes.io/name: aws-mountpoint-s3-csi-driver
+  name: s3-csi-node
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      daemonset: s3-csi-node
+  template:
+    metadata:
+      labels:
+        daemonset: s3-csi-node
+        application: kubernetes
+        component: aws-mountpoint-s3-csi-driver
+    spec:
+      priorityClassName: system-node-critical
+      serviceAccountName: s3-csi-driver
+      nodeSelector:
+        node.kubernetes.io/role: worker
+{{- if eq .Cluster.ConfigItems.s3_csi_driver_node_selector_restricted "true" }}
+        s3-csi-driver: enabled
+{{- end }}
+      tolerations:
+      - operator: Exists
+      containers:
+      - args:
+        - --endpoint=$(CSI_ENDPOINT)
+        - --logtostderr
+        - --v=4
+        env:
+        - name: CSI_ENDPOINT
+          value: unix:/csi/csi.sock
+        - name: PTMX_PATH
+          value: /host/dev/ptmx
+        - name: MOUNT_S3_PATH
+          value: /opt/mountpoint-s3-csi/bin/mount-s3
+        - name: AWS_DEFAULT_REGION
+          value: "{{ .Cluster.Region }}"
+        - name: CSI_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: HOST_PLUGIN_DIR
+          value: /opt/podruntime/kubelet/plugins/s3.csi.aws.com/
+        image: container-registry.zalando.net/teapot/aws-mountpoint-s3-csi-driver:v1.9.0-master-21
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: 1m
+            memory: 50Mi
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /healthz
+            port: healthz
+          initialDelaySeconds: 10
+          periodSeconds: 2
+          timeoutSeconds: 3
+        name: s3-plugin
+        ports:
+        - containerPort: 9810
+          name: healthz
+          protocol: TCP
+        securityContext:
+          privileged: false
+        volumeMounts:
+        - mountPath: /opt/podruntime/kubelet
+          name: kubelet-dir
+        - mountPath: /csi
+          name: plugin-dir
+        - mountPath: /run/systemd/private
+          name: systemd-bus
+        - mountPath: /host/dev
+          name: host-dev
+        - mountPath: /host/proc/mounts
+          name: proc-mounts
+      - args:
+        - --csi-address=$(ADDRESS)
+        - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+        env:
+        - name: ADDRESS
+          value: /csi/csi.sock
+        - name: DRIVER_REG_SOCK_PATH
+          value: /opt/podruntime/kubelet/plugins/s3.csi.aws.com/csi.sock
+        - name: KUBE_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        image: container-registry.zalando.net/teapot/node-driver-registrar:v2.12.0-eks-1-31-4-master-20
+        imagePullPolicy: IfNotPresent
+        name: node-driver-registrar
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: 1m
+            memory: 50Mi
+        volumeMounts:
+        - mountPath: /csi
+          name: plugin-dir
+        - mountPath: /registration
+          name: registration-dir
+      - args:
+        - --csi-address=/csi/csi.sock
+        - --health-port=9810
+        image: container-registry.zalando.net/teapot/livenessprobe:v2.14.0-eks-1-31-4-master-21
+        imagePullPolicy: IfNotPresent
+        name: liveness-probe
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: 1m
+            memory: 50Mi
+        volumeMounts:
+        - mountPath: /csi
+          name: plugin-dir
+      initContainers:
+      - command:
+        - /bin/install-mp
+        env:
+        - name: MOUNTPOINT_INSTALL_DIR
+          value: /target
+        image: container-registry.zalando.net/teapot/aws-mountpoint-s3-csi-driver:v1.9.0-master-21
+        imagePullPolicy: IfNotPresent
+        name: install-mountpoint
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+            ephemeral-storage: 256Mi
+          limits:
+            cpu: 1m
+            memory: 50Mi
+        volumeMounts:
+        - mountPath: /target
+          name: mp-install
+      volumes:
+      - hostPath:
+          path: /dev/
+          type: Directory
+        name: host-dev
+      - hostPath:
+          path: /opt/mountpoint-s3-csi/bin
+          type: DirectoryOrCreate
+        name: mp-install
+      - hostPath:
+          path: /proc/mounts
+          type: File
+        name: proc-mounts
+      - hostPath:
+          path: /run/systemd/private
+          type: Socket
+        name: systemd-bus
+      - hostPath:
+          path: /opt/podruntime/kubelet
+          type: Directory
+        name: kubelet-dir
+      - hostPath:
+          path: /opt/podruntime/kubelet/plugins_registry/
+          type: Directory
+        name: registration-dir
+      - hostPath:
+          path: /opt/podruntime/kubelet/plugins/s3.csi.aws.com/
+          type: DirectoryOrCreate
+        name: plugin-dir
+{{- end }}
