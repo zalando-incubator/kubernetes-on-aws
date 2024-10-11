@@ -254,6 +254,11 @@ if [ "$stackset_e2e" = true ]; then
 fi
 
 if [ "$loadtest_e2e" = true ]; then
+    if [ "$E2E_SKIP_CLUSTER_UPDATE" == "true" ]; then
+        echo "Skipping loadtest-e2e because E2E_SKIP_CLUSTER_UPDATE is true"
+        exit 0
+    fi
+
   >&2 echo "collect loadtest e2e data"
   prometheus=$(kubectl -n loadtest-e2e get ing prometheus -o json | jq -r '.spec.rules[0].host')
 
