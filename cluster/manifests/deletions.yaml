@@ -307,3 +307,13 @@ post_apply:
 - name: skipper-canary-conrtroller
   kind: CronJob
   namespace: kube-system
+{{- if ne .Cluster.ConfigItems.s3_csi_driver "true" }}
+- name: s3.csi.aws.com
+  kind: CSIDriver
+- name: s3-csi-driver
+  kind: ServiceAccount
+  namespace: kube-system
+- name: s3-csi-node
+  kind: DaemonSet
+  namespace: kube-system
+{{- end }}
