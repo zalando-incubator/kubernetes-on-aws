@@ -112,6 +112,18 @@ spec:
       # Operators { In, NotIn, Exists, DoesNotExist, Gt, and Lt } are supported.
       # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#operators
       requirements:
+#{{ if $taints }}
+#  {{ range $taints }}
+#    {{ $taint := . }}
+#    {{ if eq $taint.Key "dedicated"}}
+        - key: dedicated
+          operator: In
+          values:
+            - "{{ $taint.Value}}"
+#    {{ end}}
+#  {{ end}}
+#{{ end}}
+
 #{{ if and (eq (len .NodePool.InstanceTypes) 1) (eq (index .NodePool.InstanceTypes 0) "default-for-karpenter") }}
         - key: "karpenter.k8s.aws/instance-family"
           operator: In
