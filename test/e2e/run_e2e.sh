@@ -205,7 +205,6 @@ if [ "$e2e" = true ]; then
             "Mirror pods should be created for the main Kubernetes components \[Zalando\]"
             "Should audit API calls to create, update, patch, delete pods. \[Audit\] \[Zalando\]"
             "should validate permissions for \[Authorization\] \[RBAC\] \[Zalando\]" # TODO: temporary disabled because feature is missing
-            "Should NOT get AWS IAM credentials \[AWS-IAM\] \[Zalando\]" # TODO: check why this doesn't work
             "Should create DNS entry \[Zalando\]" # TODO: broken because type: LoadBalancer doesn't work
         )
     fi
