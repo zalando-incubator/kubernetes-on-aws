@@ -1,5 +1,9 @@
 apiVersion: apps/v1
+{{- if eq .Cluster.Provider "zalando-eks"}}
+kind: Deployment
+{{- else}}
 kind: DaemonSet
+{{- end}}
 metadata:
   name: kube-node-ready-controller
   namespace: kube-system
@@ -10,8 +14,10 @@ spec:
   selector:
     matchLabels:
       daemonset: kube-node-ready-controller
+{{- if ne .Cluster.Provider "zalando-eks"}}
   updateStrategy:
     type: RollingUpdate
+{{- end}}
   template:
     metadata:
       labels:
@@ -29,11 +35,8 @@ spec:
           - name: ndots
             value: "1"
       serviceAccountName: kube-node-ready-controller
+      priorityClassName: system-cluster-critical
       dnsPolicy: Default
-      tolerations:
-      - key: node.kubernetes.io/role
-        value: master
-        effect: NoSchedule
       containers:
       - name: controller
         image: container-registry.zalando.net/teapot/kube-node-ready-controller:master-29
@@ -41,5 +44,18 @@ spec:
           requests:
             cpu: {{.Cluster.ConfigItems.kube_node_ready_controller_cpu}}
             memory: {{.Cluster.ConfigItems.kube_node_ready_controller_memory}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      nodeSelector:
+        dedicated: cluster-seed
+      tolerations:
+      - key: dedicated
+        value: cluster-seed
+        effect: NoSchedule
+{{- else}}
       nodeSelector:
         node.kubernetes.io/role: master
+      tolerations:
+      - key: node.kubernetes.io/role
+        value: master
+        effect: NoSchedule
+{{- end}}

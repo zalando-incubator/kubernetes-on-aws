@@ -10,7 +10,11 @@ metadata:
     component: ingress
 spec:
   type: ClusterIP
+{{- if eq .Cluster.Provider "zalando-eks" }}
+  clusterIP: {{ nthAddressFromCIDR .Cluster.ConfigItems.service_cidr 50 }}
+{{- else}}
   clusterIP: 10.5.99.99
+{{- end}}
   ports:
     - port: 80
       targetPort: 9999
