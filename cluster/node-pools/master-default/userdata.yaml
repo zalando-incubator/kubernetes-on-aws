@@ -599,7 +599,11 @@ write_files:
           effect: NoSchedule
         containers:
         - name: kube-controller-manager
-          image: nonexistent.zalan.do/teapot/{{if eq .Cluster.ConfigItems.kubernetes_controller_manager_image "zalando" }}kube-controller-manager-internal{{else}}kube-controller-manager{{end}}:fixed
+{{- if eq .Cluster.ConfigItems.kubernetes_controller_manager_image "zalando" }}
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/kube-controller-manager-internal:v1.31.1-master-131
+{{- else }}
+          image: nonexistent.zalan.do/teapot/kube-controller-manager:fixed
+{{- end }}
           args:
           - --kubeconfig=/etc/kubernetes/controller-manager-kubeconfig
           - --leader-elect=true
