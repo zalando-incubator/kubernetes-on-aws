@@ -30,10 +30,11 @@ spec:
       serviceAccountName: kube-static-egress-controller
       containers:
       - name: controller
-        image: container-registry.zalando.net/teapot/kube-static-egress-controller:v0.3.1-master-50
+        image: container-registry.zalando.net/teapot/kube-static-egress-controller:v0.3.2-master-51
         args:
         - "--provider=aws"
         - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
+        - "--cf-template-bucket=cluster-lifecycle-manager-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.Region}}"
 {{- range $subnet := stupsNATSubnets .Values.vpc_ipv4_cidr }}
         - "--aws-nat-cidr-block={{ $subnet }}"
 {{- end }}
