@@ -49,8 +49,13 @@ data:
       name: "5.10.in-addr.arpa."
       forward-addr: 127.0.0.1@9254 # coredns
   Corefile: |
+{{$coredns_port := "9254"}}
+{{if eq .Cluster.ConfigItems.dns_cache "coredns"}}
+{{$coredns_port = "53"}}
+{{end}}
+
 {{ if and .Cluster.ConfigItems.custom_dns_zone .Cluster.ConfigItems.custom_dns_zone_nameservers }}
-    {{ .Cluster.ConfigItems.custom_dns_zone }}:9254 {
+    {{ .Cluster.ConfigItems.custom_dns_zone }}:{{$coredns_port}} {
         errors
 {{ if ne .Cluster.ConfigItems.coredns_max_upstream_concurrency "0" }}
         forward . {{ .Cluster.ConfigItems.custom_dns_zone_nameservers }} {
@@ -65,7 +70,7 @@ data:
     }
 {{ end }}
 
-    ingress.cluster.local:9254 {
+    ingress.cluster.local:{{$coredns_port}} {
 {{ if eq .Cluster.ConfigItems.skipper_eastwest_dns_log_enabled "true"}}
         log
 {{ end }}
@@ -83,7 +88,7 @@ data:
 
     # Defines that this server is authority for reverse
     # lookups for these ranges.
-    cluster.local:9254 10.2.0.0/15:9254 10.5.0.0/16:9254 {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ range $src := split .Cluster.ConfigItems.tracing_coredns_global_traces_endpoint  "," }}{{ $src }}:9254 {{ end }} {{ end }} {
+    cluster.local:{{$coredns_port}} 10.2.0.0/15:{{$coredns_port}} 10.5.0.0/16:{{$coredns_port}} {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ range $src := split .Cluster.ConfigItems.tracing_coredns_global_traces_endpoint  "," }}{{ $src }}:{{$coredns_port}} {{ end }} {{ end }} {
         errors
         {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}
           {{- with $cluster := .Cluster }}
@@ -103,7 +108,7 @@ data:
         ready :9155
     }
 
-    .:9254 {
+    .:{{$coredns_port}} {
 {{ if eq .Cluster.ConfigItems.coredns_log_forward "true"}}
         log
 {{ end }}

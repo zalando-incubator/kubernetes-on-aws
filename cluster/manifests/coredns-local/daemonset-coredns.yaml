@@ -174,10 +174,10 @@ spec:
         - name: config-volume
           mountPath: /etc/coredns
         ports:
-        - containerPort: 9254
+        - containerPort: {{if eq .Cluster.ConfigItems.dns_cache "coredns"}}53{{else}}9254{{end}}
           name: dns
           protocol: UDP
-        - containerPort: 9254
+        - containerPort: {{if eq .Cluster.ConfigItems.dns_cache "coredns"}}53{{else}}9254{{end}}
           name: dns-tcp
           protocol: TCP
         livenessProbe:
