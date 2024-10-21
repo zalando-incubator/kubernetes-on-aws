@@ -2190,28 +2190,63 @@ Resources:
     Type: 'AWS::IAM::Role'
   ZmonIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - !Sub 'arn:aws:iam::${AWS::AccountId}:role/'
-                  - !Ref WorkerIAMRole
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: '{{.Cluster.ConfigItems.zmon_root_account_role}}'
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": ["ec2.amazonaws.com"]
+                }
+              },
+              {
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::${AWS::AccountId}:role/${WorkerIAMRole}"
+                }
+              },
+              {{/* TODO: Remove all of the above when ZMON is fully migrated to OIDC */}}
+              {
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "{{.Cluster.ConfigItems.zmon_root_account_role}}"
+                }
+              },
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:aud": "sts.amazonaws.com",
+                    "${OIDC}:sub": [
+                      "system:serviceaccount:visibility:zmon-appliance-scheduler",
+                      "system:serviceaccount:visibility:zmon-appliance-aws-agent",
+                      "system:serviceaccount:visibility:zmon"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
       Path: /
       Policies:
         - PolicyDocument:
