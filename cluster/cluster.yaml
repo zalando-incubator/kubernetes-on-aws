@@ -2246,7 +2246,11 @@ Resources:
               }
             ]
           }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
