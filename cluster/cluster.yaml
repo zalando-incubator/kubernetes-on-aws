@@ -556,7 +556,7 @@ Resources:
                 Resource: '*'
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-app-autoscaler"
+      RoleName: "cluster-autoscaler-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
   KarpenterNodeInstanceProfile: # instance profile for worker nodes spawn by karpenter controller
     Type: "AWS::IAM::InstanceProfile"
@@ -813,7 +813,7 @@ Resources:
                 }
               ]
             }
-      RoleName: "{{.Cluster.LocalID}}-app-karpenter"
+      RoleName: "karpenter-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
   KarpenterInterruptionQueue:
     Type: AWS::SQS::Queue
@@ -1120,7 +1120,7 @@ Resources:
                 Resource: '*'
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-app-external-dns"
+      RoleName: "external-dns-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
   IngressControllerIAMRole:
     Properties:
@@ -1234,7 +1234,7 @@ Resources:
                 Resource: '*'
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-app-ingr-ctrl"
+      RoleName: "ingress-controller-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
 {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
   # Note: this is not strictly specific to Open Policy Agent and can be extend
@@ -1263,7 +1263,7 @@ Resources:
                   - "{{ .Cluster.ConfigItems.skipper_open_policy_agent_bucket_arn }}/*"
             Version: 2012-10-17
           PolicyName: read-opa-bundles
-      RoleName: "{{.Cluster.LocalID}}-app-skipper-ingress"
+      RoleName: "skipper-ingress-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
 {{ end }}
   ClusterLifecycleControllerIAMRole:
@@ -1318,7 +1318,7 @@ Resources:
             Resource: '*'
           Version: 2012-10-17
         PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-cluster-lifecycle-controller"
+      RoleName: "cluster-lifecycle-controller-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
   KubeReadyIAMRole:
     Properties:
@@ -1356,7 +1356,7 @@ Resources:
                 Resource: '*'
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-kube-node-ready"
+      RoleName: "kube-node-ready-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
   MasterIAMRole:
     Properties:
@@ -1515,7 +1515,7 @@ Resources:
             - "*"
           Version: 2012-10-17
         PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-cloud-controller-manager"
+      RoleName: "cloud-controller-manager-{{ .Cluster.Alias }}"
     Type: "AWS::IAM::Role"
   ETCDS3BackupIAMRole:
     Properties:
@@ -1558,7 +1558,7 @@ Resources:
                     arn:aws:s3:::{{.Cluster.ConfigItems.etcd_s3_backup_bucket}}/*
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-etcd-backup"
+      RoleName: "etcd-backup-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
   StaticEgressControllerIAMRole:
     Properties:
@@ -1648,7 +1648,7 @@ Resources:
                 Resource: "arn:aws:s3:::cluster-lifecycle-manager-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.Region}}/*"
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-static-egress-controller"
+      RoleName: "static-egress-controller-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
   ZmonIAMRole:
     Properties:
@@ -1930,7 +1930,7 @@ Resources:
                 Resource: '*'
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-kube-metrics-adapter"
+      RoleName: "kube-metrics-adapter-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
 
   EBSCSIControllerIAMRole:
@@ -2031,7 +2031,7 @@ Resources:
                     ec2:ResourceTag/ebs.csi.aws.com/cluster: 'true'
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-ebs-csi-controller"
+      RoleName: "ebs-csi-controller-{{.Cluster.Alias}}"
     Type: 'AWS::IAM::Role'
 
   {{ if eq .Cluster.Environment "e2e" }}
@@ -2231,7 +2231,7 @@ Resources:
   AWSNodeDecommissionerIAMRole:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: "{{.Cluster.LocalID}}-aws-node-decommissioner"
+      RoleName: "aws-node-decommissioner-{{ .Cluster.Alias }}"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -2286,7 +2286,7 @@ Resources:
                     - BucketArn: !GetAtt AuditTrailBucket.Arn
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-emergency-access-service"
+      RoleName: "emergency-access-service-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
   AudittrailAdapterIAMRole:
     Properties:
@@ -2320,7 +2320,7 @@ Resources:
                     - BucketArn: !GetAtt AuditTrailBucket.Arn
             Version: 2012-10-17
           PolicyName: root
-      RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
+      RoleName: "audittrail-adapter-{{ .Cluster.Alias }}"
     Type: 'AWS::IAM::Role'
   RemoteFilesEncryptionKey:
     Type: "AWS::KMS::Key"
