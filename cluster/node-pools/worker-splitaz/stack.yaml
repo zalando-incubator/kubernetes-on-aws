@@ -125,6 +125,7 @@ Resources:
       VPCZoneIdentifier:
         - "{{ index $data.Values.subnets $az }}"
     Type: 'AWS::AutoScaling::AutoScalingGroup'
+# {{ if eq $data.Cluster.ConfigItems.kube_node_ready_enabled "true" }}
   AutoscalingLifecycleHook{{$azID}}:
     Properties:
       AutoScalingGroupName: !Ref AutoScalingGroup{{$azID}}
@@ -133,6 +134,7 @@ Resources:
       HeartbeatTimeout: '600'
       LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
     Type: 'AWS::AutoScaling::LifecycleHook'
+# {{ end }}
 {{ end }}
 {{ end }}
 {{ end }}
