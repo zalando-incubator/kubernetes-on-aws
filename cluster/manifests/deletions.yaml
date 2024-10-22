@@ -309,3 +309,14 @@ post_apply:
   kind: DaemonSet
   namespace: kube-system
 {{- end }}
+{{- if ne .Cluster.ConfigItems.kube_node_ready_enabled "true" }}
+- name: kube-node-ready
+  kind: DaemonSet
+  namespace: kube-system
+- name: kube-node-ready
+  kind: ServiceAccount
+  namespace: kube-system
+- name: kube-node-ready
+  kind: Service
+  namespace: kube-system
+{{- end }}
