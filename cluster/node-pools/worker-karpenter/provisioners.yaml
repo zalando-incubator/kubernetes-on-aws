@@ -164,6 +164,18 @@ spec:
             - "c7in"
             - "m7in"
             - "r7in"
+#{{ else if (gt (len .NodePool.InstanceTypes) 0) }}
+        - key: "node.kubernetes.io/instance-type"
+          operator: In
+          values:
+#      {{ range $type := .NodePool.InstanceTypes }}
+          - "{{ $type }}"
+#      {{ end }}
+#{{ end }}
+
+# safety guards to prevent the use of unwanted instance types in case the user has not specified any specific instance types
+#{{ if or (eq .NodePool.KarpenterInstanceTypeStrategy "default-for-karpenter") (eq .NodePool.KarpenterInstanceTypeStrategy "not-specified") }}
+        # exclude unwanted sizes
         - key: "karpenter.k8s.aws/instance-size"
           operator: "NotIn"
           values:
@@ -175,14 +187,19 @@ spec:
             - "c5d.large"
             - "m5d.large"
             - "r5d.large"
-#{{ else }}
-        - key: "node.kubernetes.io/instance-type"
-          operator: In
+#{{end}}
+
+#{{ if (index .NodePool.ConfigItems "requirements") }}
+#    {{ range $requirement := .NodePool.KarpenterRequirements }}
+        - key: "{{ $requirement.Key }}"
+          operator: "{{ $requirement.Operator }}"
           values:
-#      {{ range $type := .NodePool.InstanceTypes }}
-          - "{{ $type }}"
-#      {{ end }}
+#         {{ range $value := $requirement.Values }}
+            - "{{ $value}}"
+#         {{ end }}
+#    {{ end }}
 #{{ end }}
+        # other configuration
         - key: "karpenter.sh/capacity-type"
           operator: In
           values:
