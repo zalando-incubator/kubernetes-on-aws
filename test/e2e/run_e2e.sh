@@ -125,11 +125,15 @@ if [ "$create_cluster" = true ]; then
     "./cluster_config.sh" "${CDP_HEAD_COMMIT_ID}" "ready" > head_cluster.yaml
 
     # either copy the certificates from the already created cluster or regenerate them from scratch
-    if [ -f base_cluster.yaml ]; then
-      ./copy-certificates.py base_cluster.yaml head_cluster.yaml
-    else
-      aws-account-creator refresh-certificates --registry-file head_cluster.yaml --create-ca
-    fi
+    # NOTE: while migrating to region-based etcd, ensure certiciates are refreshed
+    # if [ -f base_cluster.yaml ]; then
+    #   ./copy-certificates.py base_cluster.yaml head_cluster.yaml
+    # else
+    aws-account-creator refresh-certificates --registry-file head_cluster.yaml --create-ca
+    # fi
+
+    echo "head_cluster.yaml:"
+    cat head_cluster.yaml
 
     # Update cluster
     echo "Updating cluster ${CLUSTER_ID}: ${API_SERVER_URL}"
