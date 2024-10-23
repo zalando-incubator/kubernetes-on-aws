@@ -320,3 +320,17 @@ post_apply:
   kind: Service
   namespace: kube-system
 {{- end }}
+
+# {{ if ne .Cluster.ConfigItems.ingresses_validation "enabled" }}
+- kind: ValidatingAdmissionPolicyBinding
+  name: ingress-host-policy-binding.teapot.zalan.do
+- kind: ValidatingAdmissionPolicy
+  name: ingress-host-policy.teapot.zalan.do
+# {{ end }}
+
+# {{ if ne .Cluster.ConfigItems.routegroups_validation "enabled" }}
+- kind: ValidatingAdmissionPolicyBinding
+  name: routegroup-host-policy-binding.teapot.zalan.do
+- kind: ValidatingAdmissionPolicy
+  name: routegroup-host-policy.teapot.zalan.do
+# {{ end }}
