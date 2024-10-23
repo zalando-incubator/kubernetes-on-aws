@@ -51,7 +51,7 @@ spec:
                 - ALL
             readOnlyRootFilesystem: true
           {{if eq .Cluster.ConfigItems.karpenter_version "current"}}
-          image: "container-registry.zalando.net/teapot/karpenter:0.37.0-main-26.patched"
+          image: "container-registry.zalando.net/teapot/karpenter:0.37.0-main-27.patched"
           {{else if eq .Cluster.ConfigItems.karpenter_version "legacy"}}
           image: "container-registry.zalando.net/teapot/karpenter:0.36.2-main-25.patched"
           {{end}}
@@ -164,4 +164,9 @@ spec:
         - key: node.kubernetes.io/role
           value: master
           effect: NoSchedule
+{{- if eq .Cluster.Provider "zalando-eks"}}
+        - key: dedicated
+          value: cluster-seed
+          effect: NoSchedule
+{{- end}}
 {{ end }}

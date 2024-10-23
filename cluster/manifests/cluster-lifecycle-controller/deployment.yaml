@@ -27,12 +27,6 @@ spec:
           - name: ndots
             value: "1"
       serviceAccountName: cluster-lifecycle-controller
-      tolerations:
-      - key: node.kubernetes.io/role
-        value: master
-        effect: NoSchedule
-      - key: node.kubernetes.io/not-ready
-        operator: Exists
       containers:
       - name: cluster-lifecycle-controller
         image: container-registry.zalando.net/teapot/cluster-lifecycle-controller:master-43
@@ -55,5 +49,22 @@ spec:
         env:
         - name: AWS_REGION
           value: "{{ .Cluster.Region }}"
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      nodeSelector:
+        dedicated: cluster-seed
+      tolerations:
+      - key: dedicated
+        value: cluster-seed
+        effect: NoSchedule
+      - key: node.kubernetes.io/not-ready
+        operator: Exists
+{{- else}}
       nodeSelector:
         node.kubernetes.io/role: master
+      tolerations:
+      - key: node.kubernetes.io/role
+        value: master
+        effect: NoSchedule
+      - key: node.kubernetes.io/not-ready
+        operator: Exists
+{{- end}}

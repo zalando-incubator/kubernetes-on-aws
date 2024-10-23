@@ -22,6 +22,9 @@ spec:
     - tags:
         karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
   associatePublicIPAddress: true
+  {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+  ipv6AddressCount: 1
+  {{- end }}
   instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
   blockDeviceMappings:
     - deviceName: /dev/sda1
@@ -112,6 +115,12 @@ spec:
       # Operators { In, NotIn, Exists, DoesNotExist, Gt, and Lt } are supported.
       # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#operators
       requirements:
+#{{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+        - key: karpenter.k8s.aws/instance-hypervisor
+          operator: In
+          values:
+            - nitro
+#{{ end }}
 #{{ if $taints }}
 #  {{ range $taints }}
 #    {{ $taint := . }}
@@ -214,11 +223,13 @@ spec:
       kubelet:
         clusterDNS: [ "10.0.1.100" ]
         cpuCFSQuota: false
+#{{ if ne .Cluster.Provider "zalando-eks" }}
 # {{ if ne .Cluster.ConfigItems.karpenter_max_pods_per_node "" }}
         maxPods: {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
 # {{ else }}
         maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
 # {{ end }}
+#{{ end }}
         systemReserved:
           cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
           memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"

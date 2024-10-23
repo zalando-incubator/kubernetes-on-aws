@@ -34,7 +34,12 @@ write_files:
       clusters:
       - name: local
         cluster:
+        {{- if eq .Cluster.Provider "zalando-eks" }}
+          server: {{.Cluster.ConfigItems.eks_endpoint}}
+          certificate-authority-data: "{{.Cluster.ConfigItems.eks_certificate_authority_data}}"
+        {{- else }}
           server: {{ .Cluster.APIServerURL }}
+        {{- end}}
       users:
       - name: kubelet
         user:
@@ -45,7 +50,7 @@ write_files:
                - eks
                - get-token
                - --cluster-name
-               - "{{.Cluster.ID}}"
+               - '{{- if eq .Cluster.Provider "zalando-eks" }}{{.Cluster.ID | eksID}}{{else}}{{.Cluster.ID}}{{end}}'
       contexts:
       - context:
           cluster: local
@@ -66,14 +71,26 @@ write_files:
       imageGCLowThresholdPercent: {{.Cluster.ConfigItems.kubelet_image_gc_low_threshold}}
       clusterDomain: cluster.local
       cpuCFSQuota: false
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      hairpinMode: hairpin-veth
+{{- end }}
       featureGates:
         SizeMemoryBackedVolumes: {{ .Cluster.ConfigItems.enable_size_memory_backed_volumes }}
 {{- if eq .NodePool.ConfigItems.exec_probe_timeout_enabled "false" }}
         ExecProbeTimeout: false
 {{- end }}
+{{- if eq .Cluster.Provider "zalando-eks"}}
+        RotateKubeletServerCertificate: true
+{{- end }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
+      # replaced with dynamic value based on instance type during instance
+      # start-up.
+      maxPods: __MAX_PODS__
+{{- else }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
+{{- end }}
 {{- if ne .Cluster.ConfigItems.serialize_image_pulls "true" }}
       serializeImagePulls: false
 {{- end }}
@@ -81,8 +98,12 @@ write_files:
       registryBurst: {{ .Cluster.ConfigItems.kubelet_registry_burst }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      serverTLSBootstrap: true
+{{- else }}
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
       tlsPrivateKeyFile: "/etc/kubernetes/ssl/worker-key.pem"
+{{- end }}
       eventRecordQPS: 50
       eventBurst: 50
       kubeAPIQPS: 50
@@ -132,6 +153,7 @@ write_files:
       {{- end}}
 {{- end}}
 
+{{- if ne .Cluster.Provider "zalando-eks" }}
   - owner: root:root
     path: /etc/kubernetes/cni/net.d/10-flannel.conflist
     content: |
@@ -148,3 +170,4 @@ write_files:
           }
         ]
       }
+{{- end}}

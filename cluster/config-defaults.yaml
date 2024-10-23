@@ -733,8 +733,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_31_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.0-amd64-master-347" "861068367966" }}
-kuberuntu_image_v1_31_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.0-arm64-master-347" "861068367966" }}
+kuberuntu_image_v1_31_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.1-amd64-master-357" "861068367966" }}
+kuberuntu_image_v1_31_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.1-arm64-master-357" "861068367966" }}
 
 # Which distro from the previous config items should be used. Valid options are only `jammy` for now. Can be set for each node pool.
 kuberuntu_distro_master: "jammy"
@@ -1150,8 +1150,19 @@ control_plane_graceful_shutdown: "true"
 #  fs.inotify.max_user_watches = 100000
 sysctl_settings: ""
 
-
-
 # scheduling_controls
 teapot_admission_controller_scheduling_controls_enabled: "false"
 teapot_admission_controller_scheduling_controls_default_architecture: "amd64"
+
+eks: "false"
+eks_control_plane_logging: "false"
+eks_ip_family: "ipv4"
+# prefix delegation can only be configured for ipv4. For ipv6 it can only be
+# true.
+aws_vpc_cni_prefix_delegation: "true"
+eks_zalando_iam_aws_proxy_cpu: "100m"
+eks_zalando_iam_aws_proxy_memory: "512Mi"
+eks_zalando_iam_aws_proxy_hpa_max_replicas: "10"
+eks_zalando_iam_aws_proxy_hpa_cpu_target: "80"
+eks_zalando_iam_aws_proxy_hpa_memory_target: "80"
+eks_okta_identity_provider: "true"
