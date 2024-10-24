@@ -1,0 +1,93 @@
+# {{ $hosted_zone_parent_domain := slice (split .Values.hosted_zone ".") 1 | join "." }}
+
+# {{ if eq .Cluster.ConfigItems.ingresses_validation "enabled" }}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: ingress-host-policy.teapot.zalan.do
+  annotations:
+    kubernetes.io/description: |
+      Validates that Ingress hosts from {{ $hosted_zone_parent_domain }} domain are in {{ .Values.hosted_zone }} domain.
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["networking.k8s.io"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["ingresses"]
+  matchConditions:
+    # exclude owned resources, e.g. created by StackSet and FabricGateway controllers.
+    - name: exclude-owned-resources
+      expression: |
+        !has(object.metadata.ownerReferences)
+  validations:
+    - expression: |
+        object.spec.rules
+          .map(r, r.host)
+          .filter(h, h.endsWith(".{{ $hosted_zone_parent_domain }}"))
+          .all(h, h.endsWith(".{{ .Values.hosted_zone }}"))
+      reason: Invalid
+      # show the first invalid host in the error message
+      messageExpression: |
+        "Ingress host must be in {{ .Values.hosted_zone }} domain but " +
+        object.spec.rules
+          .map(r, r.host)
+          .filter(h, h.endsWith(".{{ $hosted_zone_parent_domain }}"))
+          .filter(h, !h.endsWith(".{{ .Values.hosted_zone }}"))[0] +
+        " found"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: ingress-host-policy-binding.teapot.zalan.do
+spec:
+  policyName: ingress-host-policy.teapot.zalan.do
+  validationActions: [Deny]
+# {{ end }}
+
+# {{ if eq .Cluster.ConfigItems.routegroups_validation "enabled" }}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: routegroup-host-policy.teapot.zalan.do
+  annotations:
+    kubernetes.io/description: |
+      Validates that RouteGroup hosts from {{ $hosted_zone_parent_domain }} domain are in {{ .Values.hosted_zone }} domain.
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["zalando.org"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["routegroups"]
+  matchConditions:
+    # exclude owned resources, e.g. created by StackSet and FabricGateway controllers.
+    - name: exclude-owned-resources
+      expression: |
+        !has(object.metadata.ownerReferences)
+  validations:
+    - expression: |
+        object.spec.hosts
+          .filter(h, h.endsWith(".{{ $hosted_zone_parent_domain }}"))
+          .all(h, h.endsWith(".{{ .Values.hosted_zone }}"))
+      reason: Invalid
+      # show the first invalid host in the error message
+      messageExpression: |
+        "RouteGroup host must be in {{ .Values.hosted_zone }} domain but " +
+        object.spec.hosts
+          .filter(h, h.endsWith(".{{ $hosted_zone_parent_domain }}"))
+          .filter(h, !h.endsWith(".{{ .Values.hosted_zone }}"))[0] +
+        " found"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: routegroup-host-policy-binding.teapot.zalan.do
+spec:
+  policyName: routegroup-host-policy.teapot.zalan.do
+  validationActions: [Deny]
+# {{ end }}
