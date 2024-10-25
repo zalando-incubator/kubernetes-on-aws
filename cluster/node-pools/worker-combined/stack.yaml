@@ -174,6 +174,7 @@ Resources:
       Roles:
       - !ImportValue '{{ .Cluster.ID }}:worker-iam-role'
     Type: 'AWS::IAM::InstanceProfile'
+# {{ if eq .Cluster.ConfigItems.kube_node_ready_enabled "true" }}
   AutoscalingLifecycleHook:
     Properties:
       AutoScalingGroupName: !Ref AutoScalingGroup
@@ -182,3 +183,4 @@ Resources:
       HeartbeatTimeout: '600'
       LifecycleTransition: 'autoscaling:EC2_INSTANCE_LAUNCHING'
     Type: 'AWS::AutoScaling::LifecycleHook'
+# {{ end }}
