@@ -1,0 +1,21 @@
+{{ if eq .Cluster.ConfigItems.role_sync_controller_enabled "true" }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: role-sync-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: role-sync-controller
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: role-sync-controller
+            image: container-registry.zalando.net/teapot/role-sync-controller:main-1
+{{ end }}
