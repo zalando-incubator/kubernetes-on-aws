@@ -65,7 +65,11 @@ spec:
             # {{ end }}
           env:
             - name: CUSTOM_FILTERS
+              # {{ if eq .Cluster.Provider "zalando-eks" }}
+              value: "tag:kubernetes.io/cluster/{{ .Cluster.ID | eksID }}=owned tag:node.kubernetes.io/role=worker tag:zalando.org/ingress-enabled=true"
+              # {{ else }}
               value: "tag:kubernetes.io/cluster/{{ .Cluster.ID }}=owned tag:node.kubernetes.io/role=worker tag:zalando.org/ingress-enabled=true"
+              # {{ end }}
             - name: AWS_REGION
               value: "{{ .Cluster.Region }}"
           resources:

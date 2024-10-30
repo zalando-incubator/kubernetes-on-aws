@@ -5,6 +5,9 @@ Metadata:
     InfrastructureComponent: "true"
     application: "kubernetes"
     component: "shared-resource"
+# {{ if eq .Cluster.Provider "zalando-eks" }}
+    "kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned"
+# {{ end }}
 
 Mappings:
   Images:

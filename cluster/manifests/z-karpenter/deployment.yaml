@@ -96,7 +96,11 @@ spec:
             - name: ASSUME_ROLE_DURATION
               value: "15m"
             - name: CLUSTER_NAME
+            # {{ if eq .Cluster.Provider "zalando-eks"}}
+              value: "{{.Cluster.ID | eksID }}"
+            # {{ else}}
               value: "{{.Cluster.ID}}"
+            # {{ end}}
             - name: VM_MEMORY_OVERHEAD_PERCENT
               value: "0.075"
             - name: RESERVED_ENIS

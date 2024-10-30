@@ -5,6 +5,10 @@ Metadata:
     InfrastructureComponent: "true"
     application: "kubernetes"
     cluster-provider: "{{ .Cluster.Provider }}"
+# {{ if eq .Cluster.Provider "zalando-eks" }}
+    "kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned"
+# {{ end }}
+
 Resources:
 {{ if eq .Cluster.Provider "zalando-eks" }}
   EKSClusterRole:
@@ -1020,7 +1024,11 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
+                      {{- if eq .Cluster.Provider "zalando-eks" }}
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned"
+                      {{- else }}
                       "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned"
+                      {{- end }}
                     },
                     "StringLike": {
                       "aws:RequestTag/karpenter.sh/nodepool": "*"
@@ -1041,7 +1049,11 @@ Resources:
                   "Action": "ec2:CreateTags",
                   "Condition": {
                     "StringEquals": {
+                      {{- if eq .Cluster.Provider "zalando-eks" }}
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned",
+                      {{- else }}
                       "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      {{- end }}
                       "ec2:CreateAction": [
                         "RunInstances",
                         "CreateFleet",
@@ -1060,7 +1072,11 @@ Resources:
                   "Action": "ec2:CreateTags",
                   "Condition": {
                     "StringEquals": {
+                      {{- if eq .Cluster.Provider "zalando-eks" }}
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned"
+                      {{- else }}
                       "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned"
+                      {{- end }}
                     },
                     "StringLike": {
                       "aws:ResourceTag/karpenter.sh/nodepool": "*"
@@ -1086,7 +1102,11 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
+                      {{- if eq .Cluster.Provider "zalando-eks" }}
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned"
+                      {{- else }}
                       "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned"
+                      {{- end }}
                     },
                     "StringLike": {
                       "aws:ResourceTag/karpenter.sh/nodepool": "*"
@@ -1156,7 +1176,11 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
+                      {{- if eq .Cluster.Provider "zalando-eks" }}
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned",
+                      {{- else }}
                       "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      {{- end }}
                       "aws:RequestTag/topology.kubernetes.io/region": "${AWS::Region}"
                     },
                     "StringLike": {
@@ -1173,9 +1197,14 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
+                      {{- if eq .Cluster.Provider "zalando-eks" }}
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned",
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned",
+                      {{- else }}
                       "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
-                      "aws:ResourceTag/topology.kubernetes.io/region": "${AWS::Region}",
                       "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      {{- end }}
+                      "aws:ResourceTag/topology.kubernetes.io/region": "${AWS::Region}",
                       "aws:RequestTag/topology.kubernetes.io/region": "${AWS::Region}"
                     },
                     "StringLike": {
@@ -1195,7 +1224,11 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
+                      {{- if eq .Cluster.Provider "zalando-eks" }}
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned",
+                      {{- else }}
                       "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      {{- end }}
                       "aws:ResourceTag/topology.kubernetes.io/region": "${AWS::Region}"
                     },
                     "StringLike": {
