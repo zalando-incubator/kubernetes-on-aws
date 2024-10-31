@@ -5,9 +5,7 @@ Metadata:
     InfrastructureComponent: "true"
     application: "kubernetes"
     cluster-provider: "{{ .Cluster.Provider }}"
-# {{ if eq .Cluster.Provider "zalando-eks" }}
-    "kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned"
-# {{ end }}
+    "kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
 
 Resources:
 {{ if eq .Cluster.Provider "zalando-eks" }}
@@ -31,18 +29,11 @@ Resources:
   EKSControlPlaneSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      # GroupDescription: "{{ .Cluster.Alias }}-eks-control-plane"
       GroupDescription: "{{ .Cluster.Alias }}-control-plane"
-      # TODO:
-      # SecurityGroupIngress:
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
   EKSWorkerSecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
-      # GroupDescription: "{{ .Cluster.ID }}-eks-worker-sg"
       GroupDescription: "{{ .Cluster.ID }}-worker-sg"
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
@@ -103,8 +94,6 @@ Resources:
           IpProtocol: udp
           ToPort: 53
       Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
         - Key: 'karpenter.sh/discovery'
           Value: '{{ .Cluster.ID }}/WorkerNodeSecurityGroup'
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
@@ -126,7 +115,7 @@ Resources:
   EKSCluster:
     Type: AWS::EKS::Cluster
     Properties:
-      Name: "{{.Cluster.ID | eksID}}"
+      Name: "{{.Cluster.Name}}"
       Version: "1.31"
       RoleArn: !GetAtt EKSClusterRole.Arn
       KubernetesNetworkConfig:
@@ -387,9 +376,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterLoadBalancerNLB:
@@ -407,8 +393,6 @@ Resources:
   {{ end }}
   {{ end }}
       Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
         - Key: "component"
           Value: "kube-apiserver"
       Type: network
@@ -425,8 +409,6 @@ Resources:
       Port: 8443
       Protocol: TLS
       Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
         - Key: "component"
           Value: "kube-apiserver"
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
@@ -502,9 +484,6 @@ Resources:
           FromPort: 53
           IpProtocol: udp
           ToPort: 53
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
   MasterSecurityGroupIngressFromFlannelToMaster:
@@ -513,9 +492,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: udp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromMasterFlannelToMaster:
@@ -524,9 +500,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: udp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromMaster:
@@ -535,9 +508,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 443
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromWorker:
@@ -546,9 +516,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 443
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromWorkerToMasterKubeletAndKubeProxy:
@@ -557,9 +524,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 10250 # Kubelet
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromWorkerToNodeMonitor:
@@ -569,9 +533,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromWorkerToSkipperMetrics:
     Properties:
@@ -580,9 +541,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroup:
     Properties:
@@ -647,8 +605,6 @@ Resources:
           IpProtocol: udp
           ToPort: 53
       Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
         - Key: 'karpenter.sh/discovery'
           Value: '{{ .Cluster.ID }}/WorkerNodeSecurityGroup'
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
@@ -659,9 +615,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: udp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromMasterToKubelet:
@@ -670,9 +623,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToFlannel:
@@ -681,9 +631,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: udp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToWorkerKubeletAndKubeProxy:
@@ -692,9 +639,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 10250 # Kubelet
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToWorkerSkipperMetrics:
@@ -703,9 +647,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 9911
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToWorkerSkipperTokeninfoMetrics:
@@ -714,9 +655,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 9022
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToNodeMonitor:
@@ -726,9 +664,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
     Type: 'AWS::EC2::SecurityGroupIngress'
   EFSSecurityGroupIngressFromWorkerSecurityGroup:
     Properties:
@@ -736,17 +671,11 @@ Resources:
       GroupId: !Ref EFSWorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 2049
     Type: 'AWS::EC2::SecurityGroupIngress'
   EFSWorkerSecurityGroup:
     Properties:
       GroupDescription: worker to EFS sg
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
 
@@ -778,8 +707,6 @@ Resources:
           IpProtocol: tcp
           ToPort: 443
       Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
         - Key: 'kubernetes:application'
           Value: kube-ingress-aws-controller
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
@@ -1024,11 +951,7 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
-                      {{- if eq .Cluster.Provider "zalando-eks" }}
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned"
-                      {{- else }}
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned"
-                      {{- end }}
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
                     },
                     "StringLike": {
                       "aws:RequestTag/karpenter.sh/nodepool": "*"
@@ -1049,11 +972,7 @@ Resources:
                   "Action": "ec2:CreateTags",
                   "Condition": {
                     "StringEquals": {
-                      {{- if eq .Cluster.Provider "zalando-eks" }}
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned",
-                      {{- else }}
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
-                      {{- end }}
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned",
                       "ec2:CreateAction": [
                         "RunInstances",
                         "CreateFleet",
@@ -1072,11 +991,7 @@ Resources:
                   "Action": "ec2:CreateTags",
                   "Condition": {
                     "StringEquals": {
-                      {{- if eq .Cluster.Provider "zalando-eks" }}
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned"
-                      {{- else }}
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned"
-                      {{- end }}
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
                     },
                     "StringLike": {
                       "aws:ResourceTag/karpenter.sh/nodepool": "*"
@@ -1102,11 +1017,7 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
-                      {{- if eq .Cluster.Provider "zalando-eks" }}
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned"
-                      {{- else }}
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned"
-                      {{- end }}
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
                     },
                     "StringLike": {
                       "aws:ResourceTag/karpenter.sh/nodepool": "*"
@@ -1176,11 +1087,7 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
-                      {{- if eq .Cluster.Provider "zalando-eks" }}
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned",
-                      {{- else }}
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
-                      {{- end }}
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned",
                       "aws:RequestTag/topology.kubernetes.io/region": "${AWS::Region}"
                     },
                     "StringLike": {
@@ -1197,13 +1104,8 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
-                      {{- if eq .Cluster.Provider "zalando-eks" }}
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned",
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned",
-                      {{- else }}
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
-                      {{- end }}
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned",
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned",
                       "aws:ResourceTag/topology.kubernetes.io/region": "${AWS::Region}",
                       "aws:RequestTag/topology.kubernetes.io/region": "${AWS::Region}"
                     },
@@ -1224,11 +1126,7 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
-                      {{- if eq .Cluster.Provider "zalando-eks" }}
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID | eksID}}": "owned",
-                      {{- else }}
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
-                      {{- end }}
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned",
                       "aws:ResourceTag/topology.kubernetes.io/region": "${AWS::Region}"
                     },
                     "StringLike": {
