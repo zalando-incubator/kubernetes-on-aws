@@ -252,3 +252,19 @@ webhooks:
         apiGroups: [""]
         apiVersions: ["v1"]
         resources: ["services"]
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_enable_generic_webhook "true" }}
+  - name: generic-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/generic"
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    matchPolicy: Equivalent
+    rules:
+      - operations: [ "*" ]
+        apiGroups: ["*"]
+        apiVersions: ["*"]
+        resources: ["*/*"]
+        scope: "*"
+{{- end }}
