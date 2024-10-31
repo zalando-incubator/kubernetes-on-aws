@@ -1194,7 +1194,11 @@ teapot_admission_controller_scheduling_controls_enabled: "false"
 teapot_admission_controller_scheduling_controls_default_architecture: "amd64"
 
 # role-sync-controller configs
+{{ if eq .Cluster.Environment "e2e" }}
+role_sync_controller_enabled: "true"
+{{ else }}
 role_sync_controller_enabled: "false"
+{{ end }}
 
 eks: "false"
 eks_control_plane_logging: "false"
