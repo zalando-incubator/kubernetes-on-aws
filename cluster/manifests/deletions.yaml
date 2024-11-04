@@ -415,3 +415,11 @@ post_apply:
   kind: ServiceAccount
   namespace: kube-system
 {{- end}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
+{{- if ne .Cluster.ConfigItems.aws_vpc_cni_custom_networking "true"}}
+- kind: ENIConfig
+  labels:
+    application: kubernetes
+    component: aws-node
+{{- end }}
+{{- end }}
