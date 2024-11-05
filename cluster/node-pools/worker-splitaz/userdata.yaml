@@ -38,7 +38,11 @@ write_files:
           server: {{.Cluster.ConfigItems.eks_endpoint}}
           certificate-authority-data: "{{.Cluster.ConfigItems.eks_certificate_authority_data}}"
         {{- else }}
+{{- if eq .Cluster.ConfigItems.control_plane_load_balancer_internal "active" }}
+          server: "https://{{.Cluster.LocalID}}-internal.{{.Values.hosted_zone}}"
+{{- else }}
           server: {{ .Cluster.APIServerURL }}
+{{- end }}
         {{- end}}
       users:
       - name: kubelet

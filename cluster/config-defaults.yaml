@@ -1136,6 +1136,18 @@ control_plane_asg_lifecycle_hook: "false"
 # enable graceful shutdown on the control_plane nodes
 control_plane_graceful_shutdown: "true"
 
+# Optionally enable an internal load balancer for the control plane nodes
+# additionally to the public load balancer.
+#
+# Possible values:
+# none - Load Balancer is not created
+# pre - Load Balancer is created but not attached to control plane nodes
+# serving - Load Balancer is created and attached to control plane nodes.
+# active - Load Balancer is being actively used by worker nodes.
+#
+# For rolling back it needs to be done in multiple stages: active -> serving -> pre -> none
+control_plane_load_balancer_internal: "none"
+
 # This allows setting custom sysctl settings. The config-item is intended to be
 # used on node-pools rather being set globally.
 #
