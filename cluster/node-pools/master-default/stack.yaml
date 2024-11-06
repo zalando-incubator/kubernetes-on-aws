@@ -44,6 +44,9 @@ Resources:
 {{ end }}
       TargetGroupARNs:
       - !ImportValue '{{ .Cluster.ID }}:master-load-balancer-nlb-target-group'
+{{- if or (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "serving") (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "active") }}
+      - !ImportValue '{{ .Cluster.ID }}:control-plane-internal-lb-target-group'
+{{- end}}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
   LaunchTemplate:
     Properties:
