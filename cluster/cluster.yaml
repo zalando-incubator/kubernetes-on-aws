@@ -187,6 +187,8 @@ Resources:
       ClusterName: !Ref EKSCluster
       PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
       Username: !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/cluster-lifecycle-manager-entrypoint/{{`{{SessionName}}`}}"
+      KubernetesGroups:
+      - zalando:administrator
       Type: "STANDARD"
   EKSAccessEntryZalandoIAMAuth:
     Type: "AWS::EKS::AccessEntry"
@@ -205,6 +207,8 @@ Resources:
       ClusterName: !Ref EKSCluster
       PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
       Username: !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/Administrator/{{`{{SessionName}}`}}"
+      KubernetesGroups:
+      - zalando:administrator
       Type: "STANDARD"
   EKSAddonPodIdentityAgent:
     Type: AWS::EKS::Addon
