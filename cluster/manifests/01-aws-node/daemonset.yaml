@@ -87,7 +87,7 @@ spec:
         - name: ENABLE_SUBNET_DISCOVERY
           value: "true"
         - name: NETWORK_POLICY_ENFORCING_MODE
-          value: standard
+          value: "{{.Cluster.ConfigItems.aws_vpc_cni_network_policy_enforcing_mode}}"
         - name: VPC_CNI_VERSION
           value: v1.18.1
         - name: VPC_ID
@@ -161,7 +161,7 @@ spec:
           name: xtables-lock
       - args:
         - --enable-ipv6={{ if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}false{{else}}true{{end}}
-        - --enable-network-policy=false
+        - --enable-network-policy={{.Cluster.ConfigItems.aws_vpc_cni_enable_network_policy}}
         - --enable-cloudwatch-logs=false
         - --enable-policy-event-logs=false
         - --metrics-bind-addr=:8162

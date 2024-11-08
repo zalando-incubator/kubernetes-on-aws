@@ -1,0 +1,12 @@
+{{- if eq .Cluster.Provider "zalando-eks" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: amazon-vpc-cni
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: aws-node
+data:
+  enable-network-policy-controller: "{{.Cluster.ConfigItems.aws_vpc_cni_enable_network_policy}}"
+{{- end }}
