@@ -1170,7 +1170,24 @@ control_plane_load_balancer_internal: "none"
 #  fs.inotify.max_user_watches = 100000
 sysctl_settings: ""
 
+# kube-janitor configuration
+{{if eq .Cluster.Environment "production"}}
+# This makes kube-janitor opt-in for production clusters
 
+# IMPORTANT:
+# Please note that before enabling kube-janitor for a production cluster, you
+# must ensure that no existing resources should be annotated with a TTL.
+# This can happen in the case where a test deployment is deployed to production
+# as is. Currently, it's a no-op since kube-janitor doesn't run in production.
+# 
+# This is needed until we can implement namespace prefix matching to reduce
+# the scope of kube-janitor to a set of namespace names that aren't known
+# at the time of enaling kube-janitor. Once the feature is in place, it would
+# be easier to limit the scope.
+kube_janitor_enabled: "false"
+{{else}}
+kube_janitor_enabled: "true"
+{{end}}
 
 # scheduling_controls
 teapot_admission_controller_scheduling_controls_enabled: "false"
