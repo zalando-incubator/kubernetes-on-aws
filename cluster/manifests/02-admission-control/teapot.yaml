@@ -493,7 +493,8 @@ webhooks:
       {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
-    failurePolicy: Fail
+    # TODO: Switch back to Fail once we have solved the chicken and egg problem
+    failurePolicy: Ignore # Fail
     sideEffects: "NoneOnDryRun"
     matchPolicy: Equivalent
     namespaceSelector:
