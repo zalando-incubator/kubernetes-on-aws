@@ -10,6 +10,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/test/e2e/framework"
 )
 
@@ -408,12 +410,34 @@ func verifyResponse(status int, body []byte, test testItem) {
 	}
 }
 
+func getLocalConfig() (*rest.Config, error) {
+	// Get the kubeconfig file to get client configuration
+	// we set this in run-e2e.sh script with aws eks update-kubeconfig command
+	kubeconfigPath := "/workdir/test/e2e/kubeconfig"
+
+	// use the current context in kubeconfig
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
 var _ = describe("Authorization tests [Authorization] [RBAC] [Zalando]", func() {
+	var conf *rest.Config
+	var err error
+
+	BeforeEach(func() {
+		conf, err = framework.LoadConfig()
+		framework.ExpectNoError(err, "failed to load config with UserAgent") // BDD = Because :DDD
+
+		// get the local config for the tests
+		conf, err = getLocalConfig()
+		framework.ExpectNoError(err, "failed to get local config")
+	})
 	should := "should validate permissions for [Authorization] [RBAC] [Zalando]"
 	It(should, func() {
-		conf, err := framework.LoadConfig()
-		framework.ExpectNoError(err) // BDD = Because :DDD
-
 		host := conf.Host
 		client := http.DefaultClient
 		makeReq := newReqBuilder(host+accessReviewURL, conf.BearerToken)
