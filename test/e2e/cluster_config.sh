@@ -48,6 +48,7 @@ clusters:
     okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
     teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
     eks_okta_identity_provider: "false" # disabled to speed up EKS cluster creation for e2e.
+    eks_ip_family: "ipv6"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
