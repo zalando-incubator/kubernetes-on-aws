@@ -53,12 +53,15 @@ func (t *testCase) run(ctx context.Context, cs kubernetes.Interface) error {
 	}
 
 	// Create the SubjectAccessReview objects in the cluster
-	err = createSubjectAccessReviews(ctx, cs, sars)
+	createdSars, err := createSubjectAccessReviews(ctx, cs, sars)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Implement the logic to determine the final result based on the results of individual SubjectAccessReview objects
+	// Evaluate the output based on the created SubjectAccessReview objects
+	// and set the final result in the testcase output
+	t.evaluateOutput(createdSars)
+
 	return nil
 }
 
@@ -70,17 +73,53 @@ func generateSubjectAccessReviews(data testcaseData) ([]authv1.SubjectAccessRevi
 }
 
 // createSubjectAccessReviews creates provided SubjectAccessReview objects in the cluster
-func createSubjectAccessReviews(ctx context.Context, cs kubernetes.Interface, sars []authv1.SubjectAccessReview) error {
+func createSubjectAccessReviews(ctx context.Context, cs kubernetes.Interface, sars []authv1.SubjectAccessReview) ([]authv1.SubjectAccessReview, error) {
+	createdSars := make([]authv1.SubjectAccessReview, 0)
+
 	for _, sar := range sars {
-		_, err := createSubjectAccessReview(ctx, cs, sar)
+		createdSar, err := createSubjectAccessReview(ctx, cs, sar)
 		if err != nil {
-			return err
+			return createdSars, err
 		}
+		createdSars = append(createdSars, *createdSar)
 	}
-	return nil
+	return createdSars, nil
 }
 
 // createSubjectAccessReview creates a SubjectAccessReview object in the cluster
 func createSubjectAccessReview(ctx context.Context, cs kubernetes.Interface, sar authv1.SubjectAccessReview) (*authv1.SubjectAccessReview, error) {
 	return cs.AuthorizationV1().SubjectAccessReviews().Create(ctx, &sar, metav1.CreateOptions{})
+}
+
+func (t *testCase) evaluateOutput(createdSars []authv1.SubjectAccessReview) {
+	tcOutput := testcaseOutput{}
+
+	// Iterate over all the SubjectAccessReviews created and determine the final result
+	// We don't break the loop if we have denied access from one SubjectAccessReview,
+	// we continue to check all of them and collect all reasons.
+	for _, sar := range createdSars {
+		// We skip the SubjectAccessReviews that are allowed
+		if sar.Status.Allowed {
+			continue
+		}
+		// If any of the SubjectAccessReviews have denied access, the final result is denied
+		if sar.Status.Denied {
+			tcOutput.denied = true
+			tcOutput.reason = append(tcOutput.reason, sar.Status.Reason)
+			continue
+		}
+		// Undecided access is also considered as denied
+		if !sar.Status.Allowed && !sar.Status.Denied {
+			tcOutput.denied = true
+			tcOutput.reason = append(tcOutput.reason, sar.Status.Reason)
+			continue
+		}
+	}
+
+	// If none of the SubjectAccessReviews have denied access, the final result is allowed
+	if !tcOutput.denied {
+		tcOutput.allowed = true
+	}
+
+	t.output = tcOutput
 }
