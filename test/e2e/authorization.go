@@ -1,19 +1,88 @@
 package e2e
 
 import (
+	"context"
+
 	g "github.com/onsi/ginkgo/v2"
+	gomega "github.com/onsi/gomega"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/kubernetes/test/e2e/framework"
 )
 
-var _ = g.Describe("Authorisation [RBAC] [Zalando]", func() {
+var (
+	allGroups = [][]string{
+		[]string{"FooBar"},
+		[]string{"ReadOnly"},
+		[]string{"PowerUser"},
+		[]string{"Emergency"},
+		[]string{"Manual"},
+		[]string{"system:serviceaccounts:kube-system"},
+		[]string{"CollaboratorEmergency"},
+		[]string{"CollaboratorManual"},
+		[]string{"Collaborator24x7"},
+		[]string{"CollaboratorPowerUser"},
+		[]string{"Administrator"},
+	}
+)
 
+var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
+	var cs kubernetes.Interface
+
+	f := framework.NewDefaultFramework("authorization")
+
+	// Initialise the clientset before each test
+	g.BeforeEach(func() {
+		cs = f.ClientSet
+	})
+
+	// Test cases for all groups of users
 	g.Context("For all groups", func() {
+		var tc testCase
+		g.BeforeEach(func() {
+			tc.data.groups = allGroups
+			tc.data.users = []string{"test-user"}
+		})
 		g.When("the verb is impersonate", func() {
-			g.It("should deny access for users", func() {})
-			g.It("should deny access for service accounts", func() {})
+			g.BeforeEach(func() {
+				tc.data.verbs = []string{"impersonate"}
+			})
+
+			g.It("should deny access for users and groups", func() {
+				// This is safe to do since the BeforeEach block
+				// will clear these values for other specs.
+				// https://onsi.github.io/ginkgo/#organizing-specs-with-container-nodes
+				tc.data.resources = []string{"users", "groups"}
+				tc.run(context.TODO(), cs)
+				output := tc.output
+				gomega.Expect(output.denied).To(gomega.BeTrue())
+
+			})
+			g.It("should deny access for service accounts", func() {
+				tc.data.resources = []string{"serviceaccounts"}
+				tc.data.namespaces = []string{"", "teapot", "kube-system"}
+				tc.run(context.TODO(), cs)
+				output := tc.output
+				gomega.Expect(output.denied).To(gomega.BeTrue())
+			})
 		})
 		g.When("the verb is escalate", func() {
-			g.It("should deny access for cluster roles", func() {})
-			g.It("should deny access for roles in all namespaces", func() {})
+			g.BeforeEach(func() {
+				tc.data.verbs = []string{"escalate"}
+			})
+
+			g.It("should deny access for cluster roles", func() {
+				tc.data.resources = []string{"rbac.authorization.k8s.io/clusterrole"}
+				tc.run(context.TODO(), cs)
+				output := tc.output
+				gomega.Expect(output.denied).To(gomega.BeTrue())
+			})
+			g.It("should deny access for roles in all namespaces", func() {
+				tc.data.resources = []string{"rbac.authorization.k8s.io/role"}
+				tc.data.namespaces = []string{"", "teapot", "kube-system"}
+				tc.run(context.TODO(), cs)
+				output := tc.output
+				gomega.Expect(output.denied).To(gomega.BeTrue())
+			})
 		})
 	})
 
