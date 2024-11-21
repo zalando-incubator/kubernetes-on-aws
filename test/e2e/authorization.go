@@ -52,17 +52,14 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 				// will clear these values for other specs.
 				// https://onsi.github.io/ginkgo/#organizing-specs-with-container-nodes
 				tc.data.resources = []string{"users", "groups"}
-				tc.run(context.TODO(), cs)
-				output := tc.output
-				gomega.Expect(output.denied).To(gomega.BeTrue())
-
+				tc.run(context.TODO(), cs, false)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 			g.It("should deny access for service accounts", func() {
 				tc.data.resources = []string{"serviceaccounts"}
 				tc.data.namespaces = []string{"", "teapot", "kube-system"}
-				tc.run(context.TODO(), cs)
-				output := tc.output
-				gomega.Expect(output.denied).To(gomega.BeTrue())
+				tc.run(context.TODO(), cs, false)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 		})
 		g.When("the verb is escalate", func() {
@@ -72,16 +69,14 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 
 			g.It("should deny access for cluster roles", func() {
 				tc.data.resources = []string{"rbac.authorization.k8s.io/clusterrole"}
-				tc.run(context.TODO(), cs)
-				output := tc.output
-				gomega.Expect(output.denied).To(gomega.BeTrue())
+				tc.run(context.TODO(), cs, false)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 			g.It("should deny access for roles in all namespaces", func() {
 				tc.data.resources = []string{"rbac.authorization.k8s.io/role"}
 				tc.data.namespaces = []string{"", "teapot", "kube-system"}
-				tc.run(context.TODO(), cs)
-				output := tc.output
-				gomega.Expect(output.denied).To(gomega.BeTrue())
+				tc.run(context.TODO(), cs, false)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 		})
 	})
@@ -99,9 +94,8 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 			g.It("should deny access in all namespaces", func() {
 				tc.data.verbs = []string{"get", "list", "watch", "create", "update", "delete", "patch"}
 				tc.data.namespaces = []string{"", "teapot", "kube-system"}
-				tc.run(context.TODO(), cs)
-				output := tc.output
-				gomega.Expect(output.denied).To(gomega.BeTrue())
+				tc.run(context.TODO(), cs, false)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 		})
 		g.When("the resource is not a Secret resource", func() {
@@ -122,16 +116,13 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 			})
 			g.It("should allow read access in all namespaces", func() {
 				tc.data.verbs = []string{"get", "list", "watch"}
-				tc.run(context.TODO(), cs)
-				output := tc.output
-				gomega.Expect(output.allowed).To(gomega.BeTrue(),
-					"Reason: %v", output.reason)
+				tc.run(context.TODO(), cs, true)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 			g.It("should deny write access in all namespaces", func() {
 				tc.data.verbs = []string{"create", "update", "delete", "patch"}
-				tc.run(context.TODO(), cs)
-				output := tc.output
-				gomega.Expect(output.denied).To(gomega.BeTrue())
+				tc.run(context.TODO(), cs, false)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 		})
 		g.When("the resource is a global resource", func() {
@@ -145,16 +136,13 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 				}
 				g.It("should allow read access", func() {
 					tc.data.verbs = []string{"get", "list", "watch"}
-					tc.run(context.TODO(), cs)
-					output := tc.output
-					gomega.Expect(output.allowed).To(gomega.BeTrue(),
-						"Reason: %v", output.reason)
+					tc.run(context.TODO(), cs, true)
+					gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 				})
 				g.It("should deny write access", func() {
 					tc.data.verbs = []string{"create", "update", "delete", "patch"}
-					tc.run(context.TODO(), cs)
-					output := tc.output
-					gomega.Expect(output.denied).To(gomega.BeTrue())
+					tc.run(context.TODO(), cs, false)
+					gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 				})
 			})
 		})
@@ -175,43 +163,37 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 			tc.data.resources = []string{"secrets"}
 			tc.data.namespaces = []string{"kube-system", "visibility"}
 			tc.data.verbs = []string{"get", "list", "watch"}
-			tc.run(context.TODO(), cs)
-			output := tc.output
-			gomega.Expect(output.denied).To(gomega.BeTrue())
+			tc.run(context.TODO(), cs, false)
+			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 		})
 
 		g.It("should deny write access to Nodes", func() {
 			tc.data.resources = []string{"nodes"}
 			tc.data.verbs = []string{"create", "update", "delete", "patch"}
-			tc.run(context.TODO(), cs)
-			output := tc.output
-			gomega.Expect(output.denied).To(gomega.BeTrue())
+			tc.run(context.TODO(), cs, false)
+			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 		})
 
 		g.It("should deny write access to DaemonSets", func() {
 			tc.data.resources = []string{"apps/daemonsets"}
 			tc.data.verbs = []string{"create", "update", "delete", "patch"}
-			tc.run(context.TODO(), cs)
-			output := tc.output
-			gomega.Expect(output.denied).To(gomega.BeTrue())
+			tc.run(context.TODO(), cs, false)
+			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 		})
 
-		// TODO: Double check if the original test case is correct
 		g.It("should allow deleting CRDs", func() {
 			tc.data.resources = []string{"apiextensions.k8s.io/customresourcedefinitions"}
 			tc.data.verbs = []string{"delete"}
-			tc.run(context.TODO(), cs)
-			output := tc.output
-			gomega.Expect(output.allowed).To(gomega.BeTrue())
+			tc.run(context.TODO(), cs, true)
+			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 		})
 
 		g.It("should deny deleting kube-system or visibility namespaces", func() {
 			tc.data.resources = []string{"namespaces"}
 			tc.data.namespaces = []string{"kube-system", "visibility"}
 			tc.data.verbs = []string{"delete"}
-			tc.run(context.TODO(), cs)
-			output := tc.output
-			gomega.Expect(output.denied).To(gomega.BeTrue())
+			tc.run(context.TODO(), cs, false)
+			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 		})
 
 		g.When("the resource is a namespaced resource", func() {
@@ -231,16 +213,13 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 			})
 			g.It("should deny write access in kube-system and visibility namespaces", func() {
 				tc.data.namespaces = []string{"kube-system", "visibility"}
-				tc.run(context.TODO(), cs)
-				output := tc.output
-				gomega.Expect(output.denied).To(gomega.BeTrue())
+				tc.run(context.TODO(), cs, false)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 			g.It("should allow write access in namespaces other than kube-system and visibility", func() {
 				tc.data.namespaces = []string{"", "teapot"}
-				tc.run(context.TODO(), cs)
-				output := tc.output
-				gomega.Expect(output.allowed).To(gomega.BeTrue(),
-					"Reason: %v", output.reason)
+				tc.run(context.TODO(), cs, true)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 		})
 		g.When("the resource is a global resource", func() {
@@ -249,9 +228,8 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 			})
 			g.It("should deny write access to Nodes", func() {
 				tc.data.resources = []string{"nodes"}
-				tc.run(context.TODO(), cs)
-				output := tc.output
-				gomega.Expect(output.denied).To(gomega.BeTrue())
+				tc.run(context.TODO(), cs, false)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 			g.It("should allow write access to resources other than Nodes", func() {
 				tc.data.resources = []string{
@@ -259,10 +237,8 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 					"storage.k8s.io/storageclasses",
 					"apiextensions.k8s.io/customresourcedefinitions",
 				}
-				tc.run(context.TODO(), cs)
-				output := tc.output
-				gomega.Expect(output.allowed).To(gomega.BeTrue(),
-					"Reason: %v", output.reason)
+				tc.run(context.TODO(), cs, true)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 		})
 	})

@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	authv1 "k8s.io/api/authorization/v1"
@@ -41,12 +42,24 @@ type testcaseData struct {
 // and we need to determine the "final" result and expose that as the testcase output.
 type testcaseOutput struct {
 	// the final result based on results of individual SubjectAccessReview objects
-	allowed, denied bool
-	// the set of reasons from individual SubjectAccessReview objects
-	reason []string
+	passed bool
+	// the set of SARs that failed expectation in the test. This is an empty slice if the test passed.
+	// It contains pretty printed SAR objects for debugging, when a test fails. It will
+	// contain all the SAR objects that didn't match expectation.
+	failingSARs []string
 }
 
-func (t *testCase) run(ctx context.Context, cs kubernetes.Interface) error {
+// String returns a pretty printed string of the testcase output. This is used
+// to help debug the RBAC test cases.
+func (o *testcaseOutput) String() string {
+	outputStr := ""
+	for _, sar := range o.failingSARs {
+		outputStr += sar
+	}
+	return outputStr
+}
+
+func (t *testCase) run(ctx context.Context, cs kubernetes.Interface, allowExpected bool) error {
 	// Generate the list of SubjectAccessReview objects based on the testcase data
 	sars := t.generateSubjectAccessReviews()
 
@@ -58,7 +71,7 @@ func (t *testCase) run(ctx context.Context, cs kubernetes.Interface) error {
 
 	// Evaluate the output based on the created SubjectAccessReview objects
 	// and set the final result in the testcase output
-	t.evaluateOutput(createdSars)
+	t.evaluateOutput(createdSars, allowExpected)
 
 	return nil
 }
@@ -309,40 +322,51 @@ func createSubjectAccessReview(ctx context.Context, cs kubernetes.Interface, sar
 }
 
 // evaluateOutput evaluates the output based on the created SubjectAccessReview objects
-func (t *testCase) evaluateOutput(createdSars []authv1.SubjectAccessReview) {
-	tcOutput := testcaseOutput{}
-	// TODO: Test should only pass if all SubjectAccessReviews have expected
-	// value. Need to rethink this composition logic.
-	// For example if we have 3 SubjectAccessReviews and the expecataion is 'deny',
-	// then ALL 3 of them should have a 'denied: true' in response. In this implementation
-	// even if 1 of them was denied, the test would pass even if the other 2 were allowed.
+// allowExpected is a boolean that determines if the expected result is 'allow' or 'deny'.
+func (t *testCase) evaluateOutput(createdSars []authv1.SubjectAccessReview, allowExpected bool) {
 
-	// Iterate over all the SubjectAccessReviews created and determine the final result
-	// We don't break the loop if we have denied access from one SubjectAccessReview,
-	// we continue to check all of them and collect all reasons.
+	//TODO: check if it's safe to override the output object of the testcase like this
+
+	// Iterate over all the SubjectAccessReviews created and check for expecated result.
+	// We don't break the loop if a result doesn't match expectation since we want to
+	// capture all the failing SubjectAccessReviews for debugging.
 	for _, sar := range createdSars {
-		// We skip the SubjectAccessReviews that are allowed
-		if sar.Status.Allowed {
-			continue
+		// if the expected result is 'allow' and the SAR is denied, we add it to the failingSARs
+		if allowExpected && !sar.Status.Allowed {
+			t.output.failingSARs = append(t.output.failingSARs, prettyPrintSAR(sar))
 		}
-		// If any of the SubjectAccessReviews have denied access, the final result is denied
-		if sar.Status.Denied {
-			tcOutput.denied = true
-			tcOutput.reason = append(tcOutput.reason, sar.Status.Reason)
-			continue
-		}
-		// Undecided access is also considered as denied
-		if !sar.Status.Allowed && !sar.Status.Denied {
-			tcOutput.denied = true
-			tcOutput.reason = append(tcOutput.reason, sar.Status.Reason)
-			continue
+		// if the expected result is 'deny' and the SAR is allowed, we add it to the failingSARs
+		if !allowExpected && sar.Status.Allowed {
+			t.output.failingSARs = append(t.output.failingSARs, prettyPrintSAR(sar))
 		}
 	}
 
-	// If none of the SubjectAccessReviews have denied access, the final result is allowed
-	if !tcOutput.denied {
-		tcOutput.allowed = true
+	// if the failingSARs is empty, it means the test passed
+	if len(t.output.failingSARs) == 0 {
+		t.output.passed = true
 	}
+}
 
-	t.output = tcOutput
+// prettyPrintSAR pretty prints the SubjectAccessReview object. This is used
+// to help debug the RBAC test cases.
+func prettyPrintSAR(sar authv1.SubjectAccessReview) string {
+	str := "SubjectAccessReviewSpec:"
+	str += "\n  Namespace: " + sar.Spec.ResourceAttributes.Namespace
+	str += "\n  Verb: " + sar.Spec.ResourceAttributes.Verb
+	str += "\n  APIGroup: " + sar.Spec.ResourceAttributes.Group
+	str += "\n  Resource: " + sar.Spec.ResourceAttributes.Resource
+	str += "\n  Subresource: " + sar.Spec.ResourceAttributes.Subresource
+	str += "\n  Name: " + sar.Spec.ResourceAttributes.Name
+	if sar.Spec.NonResourceAttributes != nil {
+		str += "\n  NonResourcePath: " + sar.Spec.NonResourceAttributes.Path
+		str += "\n  NonResourceVerb: " + sar.Spec.NonResourceAttributes.Verb
+	}
+	str += "\n  User: " + sar.Spec.User
+	str += "\n  Groups: " + strings.Join(sar.Spec.Groups, ",")
+	str += "\nSubjectAccessReviewStatus:"
+	str += "\n  Allowed: " + strconv.FormatBool(sar.Status.Allowed)
+	str += "\n  Denied: " + strconv.FormatBool(sar.Status.Denied)
+	str += "\n  Reason: " + sar.Status.Reason
+	str += "\n"
+	return str
 }
