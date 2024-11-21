@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"strings"
 
 	authv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -149,8 +150,21 @@ func (t *testCase) expandResourceAttributes() []authv1.ResourceAttributes {
 		for _, resource := range t.data.resources {
 			for _, ra := range ras {
 				copy := ra
-				// TODO: handle group/resource/subresource combination
-				copy.Resource = resource
+				// split the resource string to get the group, resource and subresource
+				parts := strings.Split(resource, "/")
+				if len(parts) > 1 {
+					switch len(parts) {
+					case 2:
+						copy.Group = parts[0]
+						copy.Resource = parts[1]
+					case 3:
+						copy.Group = parts[0]
+						copy.Resource = parts[1]
+						copy.Subresource = parts[2]
+					}
+				} else {
+					copy.Resource = parts[0]
+				}
 				resourceExpansions = append(resourceExpansions, copy)
 			}
 		}
