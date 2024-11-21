@@ -82,38 +82,34 @@ func (t *testCase) generateSubjectAccessReviews() []authv1.SubjectAccessReview {
 	// Initialize the list of SubjectAccessReview objects
 	sars := make([]authv1.SubjectAccessReview, 0)
 
-	// expand the testcase data to generate a list of ResourceAttributes
+	// expand the testcaseData to generate a list of ResourceAttributes
 	resourceAttributes := t.expandResourceAttributes()
 
-	// expand the testcase data to generate a list of NonResourceAttributes
-	// nonResourceAttributes := t.expandNonResourceAttributes()
+	// expand the testcaseData to generate a list of NonResourceAttributes
+	nonResourceAttributes := t.expandNonResourceAttributes()
 
-	// expand the testcase data to generate a list of SubjectAccessReview objects
-	// based on the ResourceAttributes and NonResourceAttributes
-	for _, ra := range resourceAttributes {
-		for _, user := range t.data.users {
-			for _, group := range t.data.groups {
-				sar := authv1.SubjectAccessReview{
-					Spec: authv1.SubjectAccessReviewSpec{
-						ResourceAttributes: &ra,
-						User:               user,
-						Groups:             group,
-					},
-				}
-				sars = append(sars, sar)
-			}
+	// expand users and groups
+	userGroupExpansions := t.expandUsersAndGroups()
+
+	// expand the ResourceAttributes, NonResourceAttributes and UserGroupExpansions
+	// to generate a list of SubjectAccessReviewSpec objects
+	sarSpecs := t.expandSubjectAccessReviewSpecs(resourceAttributes, nonResourceAttributes, userGroupExpansions)
+
+	// create the SubjectAccessReview objects based on the SubjectAccessReviewSpec objects
+	for _, sarSpec := range sarSpecs {
+		sar := authv1.SubjectAccessReview{
+			Spec: sarSpec,
 		}
+		sars = append(sars, sar)
 	}
 	return sars
 }
 
-// expandResourceAttributes expands the testcase data to generate a list of ResourceAttributes
+// expandResourceAttributes expands the testcaseData to generate a list of ResourceAttributes
 func (t *testCase) expandResourceAttributes() []authv1.ResourceAttributes {
 	// This will hold the expanded ResourceAttributes
 	ras := make([]authv1.ResourceAttributes, 0)
 
-	// TODO: Convert this logic in a function similar to the way it is implemented
-	// today to avoid code duplication
 	nsExpansions := make([]authv1.ResourceAttributes, 0)
 	// expand on namespaces
 	if len(t.data.namespaces) > 0 {
@@ -267,7 +263,7 @@ func (t *testCase) expandResourceAttributes() []authv1.ResourceAttributes {
 	return ras
 }
 
-// expandNonResourceAttributes expands the testcase data to generate a list of NonResourceAttributes
+// expandNonResourceAttributes expands the testcaseData to generate a list of NonResourceAttributes
 func (t *testCase) expandNonResourceAttributes() []authv1.NonResourceAttributes {
 	// This will hold the expanded NonResourceAttributes
 	nras := make([]authv1.NonResourceAttributes, 0)
@@ -289,10 +285,17 @@ func (t *testCase) expandNonResourceAttributes() []authv1.NonResourceAttributes 
 	verbExpansions := make([]authv1.NonResourceAttributes, 0)
 	if len(t.data.nonResourceVerbs) > 0 {
 		for _, verb := range t.data.nonResourceVerbs {
-			for _, nra := range nras {
-				copy := nra
-				copy.Verb = verb
-				verbExpansions = append(verbExpansions, copy)
+			if len(nras) > 0 {
+				for _, nra := range nras {
+					copy := nra
+					copy.Verb = verb
+					verbExpansions = append(verbExpansions, copy)
+				}
+			} else {
+				nra := authv1.NonResourceAttributes{
+					Verb: verb,
+				}
+				verbExpansions = append(verbExpansions, nra)
 			}
 		}
 		// we update the expanded list with verb expansions
@@ -300,6 +303,93 @@ func (t *testCase) expandNonResourceAttributes() []authv1.NonResourceAttributes 
 	}
 
 	return nras
+}
+
+// expandUsersAndGroups expands the users and groups in the testcaseData to generate a list of SubjectAccessReviewSpecs
+func (t *testCase) expandUsersAndGroups() []authv1.SubjectAccessReviewSpec {
+	// This will hold the expanded SubjectAccessReviewSpec
+	sars := make([]authv1.SubjectAccessReviewSpec, 0)
+
+	// expand on users
+	userExpansions := make([]authv1.SubjectAccessReviewSpec, 0)
+	if len(t.data.users) > 0 {
+		for _, user := range t.data.users {
+			sar := authv1.SubjectAccessReviewSpec{
+				User: user,
+			}
+			userExpansions = append(userExpansions, sar)
+		}
+		// we update the expanded list with user expansions
+		sars = userExpansions
+	}
+
+	// expand on groups
+	groupExpansions := make([]authv1.SubjectAccessReviewSpec, 0)
+	if len(t.data.groups) > 0 {
+		for _, group := range t.data.groups {
+			// If an expansion already took place, we need to copy the
+			// existing objects and change the groups
+			if len(sars) > 0 {
+				for _, sar := range sars {
+					copy := sar
+					copy.Groups = group
+					groupExpansions = append(groupExpansions, copy)
+				}
+			} else {
+				// If no expansion has taken place, we need to create a new object
+				sar := authv1.SubjectAccessReviewSpec{
+					Groups: group,
+				}
+				groupExpansions = append(groupExpansions, sar)
+			}
+		}
+		// we update the expanded list with group expansions
+		sars = groupExpansions
+	}
+
+	return sars
+}
+
+// expandSubjectAccessReviewSpecs takes the expanded ResourceAttributes, NonResourceAttributes and
+// UserGroupExpansions and generates a list of SubjectAccessReviewSpec objects
+func (t *testCase) expandSubjectAccessReviewSpecs(ras []authv1.ResourceAttributes, nras []authv1.NonResourceAttributes, userGroupExpansions []authv1.SubjectAccessReviewSpec) []authv1.SubjectAccessReviewSpec {
+	sars := make([]authv1.SubjectAccessReviewSpec, 0)
+
+	// expand on ResourceAttributes if they are defined
+	rasExpansions := make([]authv1.SubjectAccessReviewSpec, 0)
+	if len(ras) > 0 {
+		for _, ra := range ras {
+			for _, ug := range userGroupExpansions {
+				sar := authv1.SubjectAccessReviewSpec{
+					ResourceAttributes: &ra,
+					User:               ug.User,
+					Groups:             ug.Groups,
+				}
+				rasExpansions = append(rasExpansions, sar)
+			}
+		}
+		// we update the expanded list with ResourceAttributes expansions
+		sars = rasExpansions
+	}
+
+	// expand on NonResourceAttributes if they are defined
+	nrasExpansions := make([]authv1.SubjectAccessReviewSpec, 0)
+	if len(nras) > 0 {
+		for _, nra := range nras {
+			for _, ug := range userGroupExpansions {
+				sar := authv1.SubjectAccessReviewSpec{
+					NonResourceAttributes: &nra,
+					User:                  ug.User,
+					Groups:                ug.Groups,
+				}
+				nrasExpansions = append(nrasExpansions, sar)
+			}
+		}
+		// we update the expanded list with NonResourceAttributes expansions
+		sars = nrasExpansions
+	}
+
+	return sars
 }
 
 // createSubjectAccessReviews creates provided SubjectAccessReview objects in the cluster
@@ -324,8 +414,6 @@ func createSubjectAccessReview(ctx context.Context, cs kubernetes.Interface, sar
 // evaluateOutput evaluates the output based on the created SubjectAccessReview objects
 // allowExpected is a boolean that determines if the expected result is 'allow' or 'deny'.
 func (t *testCase) evaluateOutput(createdSars []authv1.SubjectAccessReview, allowExpected bool) {
-
-	//TODO: check if it's safe to override the output object of the testcase like this
 
 	// Iterate over all the SubjectAccessReviews created and check for expecated result.
 	// We don't break the loop if a result doesn't match expectation since we want to
