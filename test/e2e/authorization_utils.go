@@ -118,12 +118,22 @@ func (t *testCase) expandResourceAttributes() []authv1.ResourceAttributes {
 	verbExpansions := make([]authv1.ResourceAttributes, 0)
 	if len(t.data.verbs) > 0 {
 		for _, verb := range t.data.verbs {
-			for _, ra := range ras {
-				// copy the ResourceAttributes object to avoid modifying the original object
-				// and make it safe to user in the next iterations
-				copy := ra
-				copy.Verb = verb
-				verbExpansions = append(verbExpansions, copy)
+			// If an expansion already take place, we need to copy and
+			// change the existing objects
+			if len(ras) > 0 {
+				for _, ra := range ras {
+					// copy the ResourceAttributes object to avoid modifying the original object
+					// and make it safe to user in the next iterations
+					copy := ra
+					copy.Verb = verb
+					verbExpansions = append(verbExpansions, copy)
+				}
+			} else {
+				// If no expansion has taken place, we need to create a new object
+				ra := authv1.ResourceAttributes{
+					Verb: verb,
+				}
+				verbExpansions = append(verbExpansions, ra)
 			}
 		}
 		// we update the expanded list with verb expansions
@@ -134,10 +144,17 @@ func (t *testCase) expandResourceAttributes() []authv1.ResourceAttributes {
 	apiGroupExpansions := make([]authv1.ResourceAttributes, 0)
 	if len(t.data.apiGroups) > 0 {
 		for _, apiGroup := range t.data.apiGroups {
-			for _, ra := range ras {
-				copy := ra
-				copy.Group = apiGroup
-				apiGroupExpansions = append(apiGroupExpansions, copy)
+			if len(ras) > 0 {
+				for _, ra := range ras {
+					copy := ra
+					copy.Group = apiGroup
+					apiGroupExpansions = append(apiGroupExpansions, copy)
+				}
+			} else {
+				ra := authv1.ResourceAttributes{
+					Group: apiGroup,
+				}
+				apiGroupExpansions = append(apiGroupExpansions, ra)
 			}
 		}
 		// we update the expanded list with apiGroup expansions
@@ -148,24 +165,44 @@ func (t *testCase) expandResourceAttributes() []authv1.ResourceAttributes {
 	resourceExpansions := make([]authv1.ResourceAttributes, 0)
 	if len(t.data.resources) > 0 {
 		for _, resource := range t.data.resources {
-			for _, ra := range ras {
-				copy := ra
+			if len(ras) > 0 {
+				for _, ra := range ras {
+					copy := ra
+					// split the resource string to get the group, resource and subresource
+					parts := strings.Split(resource, "/")
+					if len(parts) > 1 {
+						switch len(parts) {
+						case 2:
+							copy.Group = parts[0]
+							copy.Resource = parts[1]
+						case 3:
+							copy.Group = parts[0]
+							copy.Resource = parts[1]
+							copy.Subresource = parts[2]
+						}
+					} else {
+						copy.Resource = parts[0]
+					}
+					resourceExpansions = append(resourceExpansions, copy)
+				}
+			} else {
+				ra := authv1.ResourceAttributes{}
 				// split the resource string to get the group, resource and subresource
 				parts := strings.Split(resource, "/")
 				if len(parts) > 1 {
 					switch len(parts) {
 					case 2:
-						copy.Group = parts[0]
-						copy.Resource = parts[1]
+						ra.Group = parts[0]
+						ra.Resource = parts[1]
 					case 3:
-						copy.Group = parts[0]
-						copy.Resource = parts[1]
-						copy.Subresource = parts[2]
+						ra.Group = parts[0]
+						ra.Resource = parts[1]
+						ra.Subresource = parts[2]
 					}
 				} else {
-					copy.Resource = parts[0]
+					ra.Resource = parts[0]
 				}
-				resourceExpansions = append(resourceExpansions, copy)
+				resourceExpansions = append(resourceExpansions, ra)
 			}
 		}
 		// we update the expanded list with resource expansions
@@ -176,10 +213,17 @@ func (t *testCase) expandResourceAttributes() []authv1.ResourceAttributes {
 	subresourceExpansions := make([]authv1.ResourceAttributes, 0)
 	if len(t.data.subresources) > 0 {
 		for _, subresource := range t.data.subresources {
-			for _, ra := range ras {
-				copy := ra
-				copy.Subresource = subresource
-				subresourceExpansions = append(subresourceExpansions, copy)
+			if len(ras) > 0 {
+				for _, ra := range ras {
+					copy := ra
+					copy.Subresource = subresource
+					subresourceExpansions = append(subresourceExpansions, copy)
+				}
+			} else {
+				ra := authv1.ResourceAttributes{
+					Subresource: subresource,
+				}
+				subresourceExpansions = append(subresourceExpansions, ra)
 			}
 		}
 		// we update the expanded list with subresource expansions
@@ -190,10 +234,17 @@ func (t *testCase) expandResourceAttributes() []authv1.ResourceAttributes {
 	nameExpansions := make([]authv1.ResourceAttributes, 0)
 	if len(t.data.names) > 0 {
 		for _, name := range t.data.names {
-			for _, ra := range ras {
-				copy := ra
-				copy.Name = name
-				nameExpansions = append(nameExpansions, copy)
+			if len(ras) > 0 {
+				for _, ra := range ras {
+					copy := ra
+					copy.Name = name
+					nameExpansions = append(nameExpansions, copy)
+				}
+			} else {
+				ra := authv1.ResourceAttributes{
+					Name: name,
+				}
+				nameExpansions = append(nameExpansions, ra)
 			}
 		}
 		// we update the expanded list with name expansions
