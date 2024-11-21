@@ -149,6 +149,7 @@ func (t *testCase) expandResourceAttributes() []authv1.ResourceAttributes {
 		for _, resource := range t.data.resources {
 			for _, ra := range ras {
 				copy := ra
+				// TODO: handle group/resource/subresource combination
 				copy.Resource = resource
 				resourceExpansions = append(resourceExpansions, copy)
 			}
