@@ -11,17 +11,17 @@ import (
 
 var (
 	allGroups = [][]string{
-		[]string{"FooBar"},
-		[]string{"ReadOnly"},
-		[]string{"PowerUser"},
-		[]string{"Emergency"},
-		[]string{"Manual"},
-		[]string{"system:serviceaccounts:kube-system"},
-		[]string{"CollaboratorEmergency"},
-		[]string{"CollaboratorManual"},
-		[]string{"Collaborator24x7"},
-		[]string{"CollaboratorPowerUser"},
-		[]string{"Administrator"},
+		{"FooBar"},
+		{"ReadOnly"},
+		{"PowerUser"},
+		{"Emergency"},
+		{"Manual"},
+		{"system:serviceaccounts:kube-system"},
+		{"CollaboratorEmergency"},
+		{"CollaboratorManual"},
+		{"Collaborator24x7"},
+		{"CollaboratorPowerUser"},
+		{"Administrator"},
 	}
 )
 
@@ -141,7 +141,6 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 					"nodes",
 					"rbac.authorization.k8s.io/clusterroles",
 					"storage.k8s.io/storageclasses",
-					"policy/podsecuritypolicies",
 					"apiextensions.k8s.io/customresourcedefinitions",
 				}
 				g.It("should allow read access", func() {
@@ -162,20 +161,109 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 	})
 
 	g.Context("For PowerUser, Manual and Emergency groups", func() {
+		var tc testCase
+		g.BeforeEach(func() {
+			tc.data.groups = [][]string{
+				{"PowerUser"},
+				{"Manual"},
+				{"Emergency"},
+			}
+			tc.data.users = []string{"test-user"}
+		})
 
-		g.It("should deny read access to Secrets in kube-system and visibility namespaces", func() {})
-		g.It("should deny write access to Nodes", func() {})
-		g.It("should deny write access to DaemonSets", func() {})
-		g.It("should deny deleting CRDs", func() {})
-		g.It("should deny deleting kube-system or visibility namespaces", func() {})
+		g.It("should deny read access to Secrets in kube-system and visibility namespaces", func() {
+			tc.data.resources = []string{"secrets"}
+			tc.data.namespaces = []string{"kube-system", "visibility"}
+			tc.data.verbs = []string{"get", "list", "watch"}
+			tc.run(context.TODO(), cs)
+			output := tc.output
+			gomega.Expect(output.denied).To(gomega.BeTrue())
+		})
+
+		g.It("should deny write access to Nodes", func() {
+			tc.data.resources = []string{"nodes"}
+			tc.data.verbs = []string{"create", "update", "delete", "patch"}
+			tc.run(context.TODO(), cs)
+			output := tc.output
+			gomega.Expect(output.denied).To(gomega.BeTrue())
+		})
+
+		g.It("should deny write access to DaemonSets", func() {
+			tc.data.resources = []string{"apps/daemonsets"}
+			tc.data.verbs = []string{"create", "update", "delete", "patch"}
+			tc.run(context.TODO(), cs)
+			output := tc.output
+			gomega.Expect(output.denied).To(gomega.BeTrue())
+		})
+
+		// TODO: Double check if the original test case is correct
+		g.It("should allow deleting CRDs", func() {
+			tc.data.resources = []string{"apiextensions.k8s.io/customresourcedefinitions"}
+			tc.data.verbs = []string{"delete"}
+			tc.run(context.TODO(), cs)
+			output := tc.output
+			gomega.Expect(output.allowed).To(gomega.BeTrue())
+		})
+
+		g.It("should deny deleting kube-system or visibility namespaces", func() {
+			tc.data.resources = []string{"namespaces"}
+			tc.data.namespaces = []string{"kube-system", "visibility"}
+			tc.data.verbs = []string{"delete"}
+			tc.run(context.TODO(), cs)
+			output := tc.output
+			gomega.Expect(output.denied).To(gomega.BeTrue())
+		})
 
 		g.When("the resource is a namespaced resource", func() {
-			g.It("should deny write access in kube-system and visibility namespaces", func() {})
-			g.It("should allow write access in namespaces other than kube-system and visibility", func() {})
+			g.BeforeEach(func() {
+				tc.data.resources = []string{
+					"pods",
+					"apps/deployments",
+					"apps/statefulsets",
+					"apps/deployments/scale",
+					"apps/statefulsets/scale",
+					"services",
+					"persistentvolumes",
+					"persistentvolumeclaims",
+					"configmaps",
+				}
+				tc.data.verbs = []string{"create", "update", "delete", "patch"}
+			})
+			g.It("should deny write access in kube-system and visibility namespaces", func() {
+				tc.data.namespaces = []string{"kube-system", "visibility"}
+				tc.run(context.TODO(), cs)
+				output := tc.output
+				gomega.Expect(output.denied).To(gomega.BeTrue())
+			})
+			g.It("should allow write access in namespaces other than kube-system and visibility", func() {
+				tc.data.namespaces = []string{"", "teapot"}
+				tc.run(context.TODO(), cs)
+				output := tc.output
+				gomega.Expect(output.allowed).To(gomega.BeTrue(),
+					"Reason: %v", output.reason)
+			})
 		})
 		g.When("the resource is a global resource", func() {
-			g.It("should deny access to Nodes", func() {})
-			g.It("should allow access to resources other than Nodes", func() {})
+			g.BeforeEach(func() {
+				tc.data.verbs = []string{"create", "update", "delete", "patch"}
+			})
+			g.It("should deny write access to Nodes", func() {
+				tc.data.resources = []string{"nodes"}
+				tc.run(context.TODO(), cs)
+				output := tc.output
+				gomega.Expect(output.denied).To(gomega.BeTrue())
+			})
+			g.It("should allow write access to resources other than Nodes", func() {
+				tc.data.resources = []string{
+					"namespaces",
+					"storage.k8s.io/storageclasses",
+					"apiextensions.k8s.io/customresourcedefinitions",
+				}
+				tc.run(context.TODO(), cs)
+				output := tc.output
+				gomega.Expect(output.allowed).To(gomega.BeTrue(),
+					"Reason: %v", output.reason)
+			})
 		})
 	})
 

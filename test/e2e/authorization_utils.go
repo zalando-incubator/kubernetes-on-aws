@@ -311,6 +311,11 @@ func createSubjectAccessReview(ctx context.Context, cs kubernetes.Interface, sar
 // evaluateOutput evaluates the output based on the created SubjectAccessReview objects
 func (t *testCase) evaluateOutput(createdSars []authv1.SubjectAccessReview) {
 	tcOutput := testcaseOutput{}
+	// TODO: Test should only pass if all SubjectAccessReviews have expected
+	// value. Need to rethink this composition logic.
+	// For example if we have 3 SubjectAccessReviews and the expecataion is 'deny',
+	// then ALL 3 of them should have a 'denied: true' in response. In this implementation
+	// even if 1 of them was denied, the test would pass even if the other 2 were allowed.
 
 	// Iterate over all the SubjectAccessReviews created and determine the final result
 	// We don't break the loop if we have denied access from one SubjectAccessReview,
