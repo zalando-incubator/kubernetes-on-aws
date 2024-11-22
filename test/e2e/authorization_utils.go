@@ -438,23 +438,50 @@ func (t *testCase) evaluateOutput(createdSars []authv1.SubjectAccessReview, allo
 // prettyPrintSAR pretty prints the SubjectAccessReview object. This is used
 // to help debug the RBAC test cases.
 func prettyPrintSAR(sar authv1.SubjectAccessReview) string {
-	str := "SubjectAccessReviewSpec:"
-	str += "\n  Namespace: " + sar.Spec.ResourceAttributes.Namespace
-	str += "\n  Verb: " + sar.Spec.ResourceAttributes.Verb
-	str += "\n  APIGroup: " + sar.Spec.ResourceAttributes.Group
-	str += "\n  Resource: " + sar.Spec.ResourceAttributes.Resource
-	str += "\n  Subresource: " + sar.Spec.ResourceAttributes.Subresource
-	str += "\n  Name: " + sar.Spec.ResourceAttributes.Name
-	if sar.Spec.NonResourceAttributes != nil {
-		str += "\n  NonResourcePath: " + sar.Spec.NonResourceAttributes.Path
-		str += "\n  NonResourceVerb: " + sar.Spec.NonResourceAttributes.Verb
+
+	str := "\nSubjectAccessReviewSpec:"
+	// we print the field values conditionally since some fields might be empty
+	// this helps in making the output more readable
+	if ns := sar.Spec.ResourceAttributes.Namespace; ns != "" {
+		str += "\n  Namespace: " + ns
 	}
-	str += "\n  User: " + sar.Spec.User
-	str += "\n  Groups: " + strings.Join(sar.Spec.Groups, ",")
+	if verb := sar.Spec.ResourceAttributes.Verb; verb != "" {
+		str += "\n  Verb: " + verb
+	}
+	if group := sar.Spec.ResourceAttributes.Group; group != "" {
+		str += "\n  APIGroup: " + group
+	}
+	if resource := sar.Spec.ResourceAttributes.Resource; resource != "" {
+		str += "\n  Resource: " + resource
+	}
+	if subresource := sar.Spec.ResourceAttributes.Subresource; subresource != "" {
+		str += "\n  Subresource: " + subresource
+	}
+	if name := sar.Spec.ResourceAttributes.Name; name != "" {
+		str += "\n  Name: " + name
+	}
+	if sar.Spec.NonResourceAttributes != nil {
+		if verb := sar.Spec.NonResourceAttributes.Verb; verb != "" {
+			str += "\n  NonResourceVerb: " + verb
+		}
+		if path := sar.Spec.NonResourceAttributes.Path; path != "" {
+			str += "\n  NonResourcePath: " + path
+		}
+	}
+	if user := sar.Spec.User; user != "" {
+		str += "\n  User: " + user
+	}
+	if groups := sar.Spec.Groups; len(groups) > 0 {
+		str += "\n  Groups: " + strings.Join(groups, ",")
+	}
 	str += "\nSubjectAccessReviewStatus:"
+	// these fields are always present in the SubjectAccessReviewStatus
 	str += "\n  Allowed: " + strconv.FormatBool(sar.Status.Allowed)
 	str += "\n  Denied: " + strconv.FormatBool(sar.Status.Denied)
-	str += "\n  Reason: " + sar.Status.Reason
+
+	if reason := sar.Status.Reason; reason != "" {
+		str += "\n  Reason: " + reason
+	}
 	str += "\n"
 	return str
 }
