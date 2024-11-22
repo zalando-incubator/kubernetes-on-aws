@@ -475,7 +475,7 @@ spec:
       labels:
         deployment: skipper-ingress-routesrv
         application: skipper-ingress
-        version: "{{ $main_version }}"
+        version: registry.opensource.zalan.do/teapot/skipper-test:pr-8-21
         component: routesrv
       annotations:
         config/hash: {{"secret.yaml" | manifestHash}}
@@ -536,6 +536,7 @@ spec:
           - "-kubernetes-default-lb-algorithm={{ .Cluster.ConfigItems.skipper_ingress_default_lb_algorithm }}"
           - "-kubernetes-disable-catchall-routes={{ .Cluster.ConfigItems.skipper_ingress_disable_catchall_routes }}"
           - "-enable-kubernetes-endpointslices={{ .Cluster.ConfigItems.skipper_endpointslices_enabled }}"
+          - "-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}"
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
