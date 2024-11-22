@@ -247,6 +247,8 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 		var tc testCase
 		g.BeforeEach(func() {
 			tc.data.groups = [][]string{
+				// Collaborator groups can escalate privileges to their respective groups
+				// so, we need to include the respective group in the list as well.
 				{"CollaboratorPowerUser", "PowerUser"},
 				{"CollaboratorManual", "Manual"},
 				{"CollaboratorEmergency", "Emergency"},
