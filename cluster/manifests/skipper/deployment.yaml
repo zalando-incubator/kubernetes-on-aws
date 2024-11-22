@@ -174,6 +174,7 @@ spec:
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
           - "-reverse-source-predicate"
+          - '-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}'
 {{ end }}
           - "-proxy-preserve-host"
           - "-compress-encodings={{ .Cluster.ConfigItems.skipper_compress_encodings }}"
@@ -519,7 +520,7 @@ spec:
 {{- end }}
       containers:
       - name: routesrv
-        image: container-registry.zalando.net/teapot/skipper:{{ $main_version }}
+        image: container-registry-test.zalando.net/teapot/skipper-test:pr-8-22
         terminationMessagePolicy: FallbackToLogsOnError
         ports:
         - name: ingress-port
@@ -536,6 +537,7 @@ spec:
           - "-kubernetes-default-lb-algorithm={{ .Cluster.ConfigItems.skipper_ingress_default_lb_algorithm }}"
           - "-kubernetes-disable-catchall-routes={{ .Cluster.ConfigItems.skipper_ingress_disable_catchall_routes }}"
           - "-enable-kubernetes-endpointslices={{ .Cluster.ConfigItems.skipper_endpointslices_enabled }}"
+          - '-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}'
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
