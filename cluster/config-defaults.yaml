@@ -1194,7 +1194,12 @@ teapot_admission_controller_scheduling_controls_enabled: "false"
 teapot_admission_controller_scheduling_controls_default_architecture: "amd64"
 
 # role-sync-controller configs
+# Enabled by default only on Zalando EKS clusters
+{{ if eq .Cluster.Provider "zalando-eks" }}
+role_sync_controller_enabled: "true"
+{{ else }}
 role_sync_controller_enabled: "false"
+{{ end }}
 
 # EKS specific configuration
 eks_control_plane_logging: "false"
