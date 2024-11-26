@@ -23,6 +23,41 @@ var (
 		{"CollaboratorPowerUser"},
 		{"Administrator"},
 	}
+
+	// "secrets" are not included as they have their own set of test cases.
+	namespacedResources = []string{
+		"pods",
+		"apps/deployments",
+		"apps/statefulsets",
+		"apps/deployments/scale",
+		"apps/statefulsets/scale",
+		"services",
+		"persistentvolumeclaims",
+		"configmaps",
+	}
+
+	// "nodes" are not included as they have their own set of test cases.
+	globalResources = []string{
+		"namespaces",
+		"rbac.authorization.k8s.io/clusterroles",
+		"storage.k8s.io/storageclasses",
+		"apiextensions.k8s.io/customresourcedefinitions",
+	}
+	// a slice of "get", "list", "watch" verbs
+	readOperations = []string{"get", "list", "watch"}
+
+	// a slice of "create", "update", "delete", "patch" verbs
+	writeOperations = []string{"create", "update", "delete", "patch"}
+
+	// a slice of all operations
+	allOperations = append(readOperations, writeOperations...)
+
+	// a slice representing all namespaces with respect to the test cases
+	// "default" is the default namespace
+	// "teapot" is a random namespace
+	// "visibility" is a namespace where collaborators will have access
+	// "kube-system" is a namespace where only administrators will have access
+	allNamespaces = []string{"default", "teapot", "visibility", "kube-system"}
 )
 
 var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
@@ -30,12 +65,10 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 
 	f := framework.NewDefaultFramework("authorization")
 
-	// Initialise the clientset before each test
 	g.BeforeEach(func() {
 		cs = f.ClientSet
 	})
 
-	// Test cases for all groups of users
 	g.Context("For all groups", func() {
 		var tc testCase
 		g.BeforeEach(func() {
@@ -57,7 +90,7 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 			})
 			g.It("should deny access for service accounts", func() {
 				tc.data.resources = []string{"serviceaccounts"}
-				tc.data.namespaces = []string{"", "teapot", "kube-system"}
+				tc.data.namespaces = allNamespaces
 				tc.run(context.TODO(), cs, false)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
@@ -74,7 +107,7 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 			})
 			g.It("should deny access for roles in all namespaces", func() {
 				tc.data.resources = []string{"rbac.authorization.k8s.io/role"}
-				tc.data.namespaces = []string{"", "teapot", "kube-system"}
+				tc.data.namespaces = allNamespaces
 				tc.run(context.TODO(), cs, false)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
@@ -92,55 +125,38 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 				tc.data.resources = []string{"secrets"}
 			})
 			g.It("should deny access in all namespaces", func() {
-				tc.data.verbs = []string{"get", "list", "watch", "create", "update", "delete", "patch"}
-				tc.data.namespaces = []string{"", "teapot", "kube-system"}
+				tc.data.verbs = allOperations
+				tc.data.namespaces = allNamespaces
 				tc.run(context.TODO(), cs, false)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 		})
 		g.When("the resource is not a Secret resource", func() {
 			g.BeforeEach(func() {
-				tc.data.resources = []string{
-					"pods",
-					"apps/deployments",
-					"apps/daemonsets",
-					"apps/statefulsets",
-					"apps/deployments/scale",
-					"apps/statefulsets/scale",
-					"services",
-					"persistentvolumes",
-					"persistentvolumeclaims",
-					"configmaps",
-				}
-				tc.data.namespaces = []string{"", "teapot", "kube-system"}
+				tc.data.resources = namespacedResources
+				tc.data.namespaces = allNamespaces
 			})
 			g.It("should allow read access in all namespaces", func() {
-				tc.data.verbs = []string{"get", "list", "watch"}
+				tc.data.verbs = readOperations
 				tc.run(context.TODO(), cs, true)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 			g.It("should deny write access in all namespaces", func() {
-				tc.data.verbs = []string{"create", "update", "delete", "patch"}
+				tc.data.verbs = writeOperations
 				tc.run(context.TODO(), cs, false)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 		})
 		g.When("the resource is a global resource", func() {
 			g.BeforeEach(func() {
-				tc.data.resources = []string{
-					"namespaces",
-					"nodes",
-					"rbac.authorization.k8s.io/clusterroles",
-					"storage.k8s.io/storageclasses",
-					"apiextensions.k8s.io/customresourcedefinitions",
-				}
+				tc.data.resources = append(globalResources, "nodes")
 				g.It("should allow read access", func() {
-					tc.data.verbs = []string{"get", "list", "watch"}
+					tc.data.verbs = readOperations
 					tc.run(context.TODO(), cs, true)
 					gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 				})
 				g.It("should deny write access", func() {
-					tc.data.verbs = []string{"create", "update", "delete", "patch"}
+					tc.data.verbs = writeOperations
 					tc.run(context.TODO(), cs, false)
 					gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 				})
@@ -162,21 +178,29 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 		g.It("should deny read access to Secrets in kube-system and visibility namespaces", func() {
 			tc.data.resources = []string{"secrets"}
 			tc.data.namespaces = []string{"kube-system", "visibility"}
-			tc.data.verbs = []string{"get", "list", "watch"}
+			tc.data.verbs = readOperations
 			tc.run(context.TODO(), cs, false)
+			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
+		})
+
+		g.It("should allow read access to Secrets in namespaces other than kube-system and visibility", func() {
+			tc.data.resources = []string{"secrets"}
+			tc.data.namespaces = []string{"default", "teapot"}
+			tc.data.verbs = readOperations
+			tc.run(context.TODO(), cs, true)
 			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 		})
 
 		g.It("should deny write access to Nodes", func() {
 			tc.data.resources = []string{"nodes"}
-			tc.data.verbs = []string{"create", "update", "delete", "patch"}
+			tc.data.verbs = writeOperations
 			tc.run(context.TODO(), cs, false)
 			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 		})
 
 		g.It("should deny write access to DaemonSets", func() {
 			tc.data.resources = []string{"apps/daemonsets"}
-			tc.data.verbs = []string{"create", "update", "delete", "patch"}
+			tc.data.verbs = writeOperations
 			tc.run(context.TODO(), cs, false)
 			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 		})
@@ -198,27 +222,19 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 
 		g.When("the resource is a namespaced resource", func() {
 			g.BeforeEach(func() {
-				tc.data.resources = []string{
-					"pods",
-					"apps/deployments",
-					"apps/statefulsets",
-					"apps/deployments/scale",
-					"apps/statefulsets/scale",
-					"services",
-					"persistentvolumes",
-					"persistentvolumeclaims",
-					"configmaps",
-				}
-				tc.data.verbs = []string{"create", "update", "delete", "patch"}
+				tc.data.resources = namespacedResources
+				tc.data.verbs = writeOperations
 			})
-			// These should be covered by the admission-controller tests.
-			// They're written here for completeness.
-			g.It("should deny write access in kube-system and visibility namespaces", func() {})
-			g.It("should allow write access in namespaces other than kube-system and visibility", func() {})
+			g.It("should deny write access in kube-system and visibility namespaces", func() {
+				g.Skip("handled by admission-controller")
+			})
+			g.It("should allow write access in namespaces other than kube-system and visibility", func() {
+				g.Skip("handled by admission-controller")
+			})
 		})
 		g.When("the resource is a global resource", func() {
 			g.BeforeEach(func() {
-				tc.data.verbs = []string{"create", "update", "delete", "patch"}
+				tc.data.verbs = writeOperations
 			})
 			g.It("should deny write access to Nodes", func() {
 				tc.data.resources = []string{"nodes"}
@@ -226,11 +242,7 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 			g.It("should allow write access to resources other than Nodes", func() {
-				tc.data.resources = []string{
-					"namespaces",
-					"storage.k8s.io/storageclasses",
-					"apiextensions.k8s.io/customresourcedefinitions",
-				}
+				tc.data.resources = globalResources
 				tc.run(context.TODO(), cs, true)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
@@ -253,7 +265,7 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 		g.When("the resource is a Secret", func() {
 			g.BeforeEach(func() {
 				tc.data.resources = []string{"secrets"}
-				tc.data.verbs = []string{"get", "list", "watch"}
+				tc.data.verbs = readOperations
 			})
 
 			g.It("should allow read access to visibility namespace", func() {
@@ -270,13 +282,13 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 
 		g.It("should deny write access to Nodes", func() {
 			tc.data.resources = []string{"nodes"}
-			tc.data.verbs = []string{"create", "update", "delete", "patch"}
+			tc.data.verbs = writeOperations
 			tc.run(context.TODO(), cs, false)
 			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 		})
 		g.It("should allow write access to DaemonSets", func() {
 			tc.data.resources = []string{"apps/daemonsets"}
-			tc.data.verbs = []string{"create", "update", "delete", "patch"}
+			tc.data.verbs = writeOperations
 			tc.data.namespaces = []string{"visibility"}
 			tc.run(context.TODO(), cs, true)
 			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
@@ -288,31 +300,19 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 		})
 		g.It("should deny deletion of kube-system or visibility namespaces", func() {
-			tc.data.resources = []string{"namespaces"}
-			tc.data.names = []string{"kube-system", "visibility"}
-			tc.data.verbs = []string{"delete"}
-			tc.run(context.TODO(), cs, false)
-			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
+			g.Skip("handled by admission-controller")
 		})
 
 		g.When("the resource is a namespaced resource", func() {
 			g.BeforeEach(func() {
-				tc.data.resources = []string{
-					"pods",
-					"apps/deployments",
-					"apps/statefulsets",
-					"services",
-					"persistentvolumes",
-					"persistentvolumeclaims",
-					"configmaps",
-				}
-				tc.data.verbs = []string{"create", "update", "delete", "patch"}
+				tc.data.resources = namespacedResources
+				tc.data.verbs = writeOperations
 			})
-			// This should be covered by the admission-controller tests.
-			// It's written here for completeness.
-			g.It("should deny write access in kube-system namespace", func() {})
+			g.It("should deny write access in kube-system namespace", func() {
+				g.Skip("handled by admission-controller")
+			})
 			g.It("should allow write access in namespaces other than kube-system", func() {
-				tc.data.namespaces = []string{"", "teapot"}
+				tc.data.namespaces = []string{"default", "teapot"}
 				tc.run(context.TODO(), cs, true)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
@@ -320,7 +320,7 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 
 		g.When("the resource is a global resource", func() {
 			g.BeforeEach(func() {
-				tc.data.verbs = []string{"create", "update", "delete", "patch"}
+				tc.data.verbs = writeOperations
 			})
 			g.It("should deny access to Nodes", func() {
 				tc.data.resources = []string{"nodes"}
@@ -328,11 +328,7 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
 			g.It("should allow access to resources other than Nodes", func() {
-				tc.data.resources = []string{
-					"namespaces",
-					"storage.k8s.io/storageclasses",
-					"apiextensions.k8s.io/customresourcedefinitions",
-				}
+				tc.data.resources = globalResources
 				tc.run(context.TODO(), cs, true)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
@@ -378,21 +374,9 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 			// g.It("should allow to create Pods", func() {})
 		})
 
-		g.When("the default service account is in default namespace", func() {
+		g.When("the service account is the default service account", func() {
 			g.BeforeEach(func() {
-				tc.data.users = []string{"system:serviceaccount:default:default"}
-			})
-			g.It("should deny to list StatefulSets", func() {
-				tc.data.resources = []string{"apps/statefulsets"}
-				tc.data.verbs = []string{"list"}
-				tc.run(context.TODO(), cs, false)
-				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
-			})
-		})
-
-		g.When("the default service account is in non-default namespace", func() {
-			g.BeforeEach(func() {
-				tc.data.users = []string{"system:serviceaccount:non-default:default"}
+				tc.data.users = []string{"system:serviceaccount:default:default", "system:serviceaccount:non-default:default"}
 			})
 			g.It("should deny to list StatefulSets", func() {
 				tc.data.resources = []string{"apps/statefulsets"}
@@ -467,11 +451,16 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 		g.When("the user is k8sapi_credentials-provider", func() {
 			g.BeforeEach(func() {
 				tc.data.users = []string{"zalando-iam:zalando:service:k8sapi_credentials-provider"}
-			})
-			g.It("should allow to get Secrets in kube-system namespace", func() {
 				tc.data.resources = []string{"secrets"}
 				tc.data.namespaces = []string{"kube-system"}
-				tc.data.verbs = []string{"get"}
+			})
+			g.It("should not allow to delete secrets in kube-system namespace", func() {
+				tc.data.verbs = []string{"delete"}
+				tc.run(context.TODO(), cs, false)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
+			})
+			g.It("should allow all non-delete operations on secrets in kube-system namespace", func() {
+				tc.data.verbs = []string{"get", "list", "watch", "create", "update", "patch"}
 				tc.run(context.TODO(), cs, true)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
@@ -511,8 +500,8 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 				g.BeforeEach(func() {
 					tc.data.resources = []string{"secrets"}
 				})
-				g.It("should allow read access", func() {
-					tc.data.verbs = []string{"get", "list", "watch"}
+				g.It("should allow read and write access", func() {
+					tc.data.verbs = allOperations
 					tc.run(context.TODO(), cs, true)
 					gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 				})
@@ -520,20 +509,14 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 
 			g.When("the resource is not a Secret", func() {
 				g.BeforeEach(func() {
-					tc.data.resources = []string{"pods"}
+					tc.data.resources = namespacedResources
 				})
-				g.It("should allow read access", func() {
-					tc.data.verbs = []string{"get", "list", "watch"}
-					tc.run(context.TODO(), cs, true)
-					gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
-				})
-				g.It("should allow write access", func() {
-					tc.data.verbs = []string{"create", "update", "delete", "patch"}
+				g.It("should allow read and write access", func() {
+					tc.data.verbs = allOperations
 					tc.run(context.TODO(), cs, true)
 					gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 				})
 			})
-
 		})
 
 		g.When("namespace is not kube-system", func() {
@@ -552,17 +535,17 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 					tc.data.resources = []string{"secrets"}
 				})
 				g.It("should allow read access", func() {
-					tc.data.verbs = []string{"get", "list", "watch"}
+					tc.data.verbs = readOperations
 					tc.run(context.TODO(), cs, true)
 					gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 				})
 			})
 			g.When("the resource is not a Secret", func() {
 				g.BeforeEach(func() {
-					tc.data.resources = []string{"pods, apps/daemonsets"}
+					tc.data.resources = namespacedResources
 				})
 				g.It("should allow write access", func() {
-					tc.data.verbs = []string{"create", "update", "delete", "patch"}
+					tc.data.verbs = writeOperations
 					tc.run(context.TODO(), cs, true)
 					gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 				})
