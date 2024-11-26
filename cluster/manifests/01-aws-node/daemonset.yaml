@@ -5,7 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/instance: aws-vpc-cni
     app.kubernetes.io/name: aws-node
-    app.kubernetes.io/version: v1.18.1
+    app.kubernetes.io/version: v1.19.0
     k8s-app: aws-node
     application: kubernetes
     component: aws-node
@@ -42,6 +42,8 @@ spec:
                 operator: NotIn
                 values:
                 - fargate
+                - hybrid
+                - auto
       containers:
       - env:
         - name: ADDITIONAL_ENI_TAGS
@@ -89,7 +91,7 @@ spec:
         - name: NETWORK_POLICY_ENFORCING_MODE
           value: "{{.Cluster.ConfigItems.aws_vpc_cni_network_policy_enforcing_mode}}"
         - name: VPC_CNI_VERSION
-          value: v1.18.1
+          value: v1.19.0
         - name: VPC_ID
           value: "{{ .Cluster.ConfigItems.vpc_id }}"
         - name: WARM_ENI_TARGET
@@ -106,7 +108,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni:v1.18.1-eksbuild.3
+        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni:v1.19.0-eksbuild.1
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -164,6 +166,7 @@ spec:
         - --enable-network-policy={{.Cluster.ConfigItems.aws_vpc_cni_enable_network_policy}}
         - --enable-cloudwatch-logs=false
         - --enable-policy-event-logs=false
+        - --log-file=/var/log/aws-routed-eni/network-policy-agent.log
         - --metrics-bind-addr=:8162
         - --health-probe-bind-addr=:8163
         - --conntrack-cache-cleanup-period=300
@@ -173,7 +176,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: spec.nodeName
-        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon/aws-network-policy-agent:v1.1.1-eksbuild.2
+        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon/aws-network-policy-agent:v1.1.5-eksbuild.1
         imagePullPolicy: IfNotPresent
         name: aws-eks-nodeagent
         resources:
@@ -203,7 +206,7 @@ spec:
           value: "false"
         - name: ENABLE_IPv6
           value: "{{ if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}false{{else}}true{{end}}"
-        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni-init:v1.18.1-eksbuild.3
+        image: 602401143452.dkr.ecr.eu-central-1.amazonaws.com/amazon-k8s-cni-init:v1.19.0-eksbuild.1
         imagePullPolicy: IfNotPresent
         name: aws-vpc-cni-init
         resources:
@@ -248,7 +251,7 @@ spec:
         name: run-dir
       - hostPath:
           path: /run/xtables.lock
-          type: ""
+          type: FileOrCreate
         name: xtables-lock
   updateStrategy:
     rollingUpdate:
