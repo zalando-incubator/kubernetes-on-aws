@@ -330,7 +330,7 @@ func podMetricDeployment(name string, replicas int32, containers []CustomMetricC
 func podContainerSpec(name string) corev1.Container {
 	return corev1.Container{
 		Name:  name,
-		Image: "container-registry.zalando.net/teapot/sample-custom-metrics-autoscaling:master-15",
+		Image: "container-registry.zalando.net/teapot/sample-custom-metrics-autoscaling:main-5",
 		Ports: []corev1.ContainerPort{{ContainerPort: 8000, Protocol: "TCP"}},
 		Resources: corev1.ResourceRequirements{
 			Limits: map[corev1.ResourceName]resource.Quantity{
@@ -347,7 +347,7 @@ func podContainerSpec(name string) corev1.Container {
 func podMetricContainerSpec(container CustomMetricContainerSpec) corev1.Container {
 	return corev1.Container{
 		Name:  container.Name,
-		Image: "container-registry.zalando.net/teapot/sample-custom-metrics-autoscaling:master-15",
+		Image: "container-registry.zalando.net/teapot/sample-custom-metrics-autoscaling:main-5",
 		Ports: []corev1.ContainerPort{{ContainerPort: 8000, Protocol: "TCP"}},
 		Resources: corev1.ResourceRequirements{
 			Limits: map[corev1.ResourceName]resource.Quantity{
@@ -358,20 +358,10 @@ func podMetricContainerSpec(container CustomMetricContainerSpec) corev1.Containe
 				corev1.ResourceMemory: resource.MustParse("300Mi"),
 			},
 		},
-		Env: []corev1.EnvVar{
-			{
-				Name:  metricNameToEnv(container.MetricName),
-				Value: strconv.FormatInt(container.MetricValue, 10),
-			},
+		Args: []string{
+			"-fake-queue-length", strconv.FormatInt(container.MetricValue, 10),
 		},
 	}
-}
-
-// metricNameToEnv converts a metric name like "queue-count" to an env var like "QUEUE_COUNT"
-func metricNameToEnv(metric string) string {
-	nodashes := strings.Replace(metric, "-", "_", 1)
-	allcaps := strings.ToUpper(nodashes)
-	return allcaps
 }
 
 func simplePodMetricHPA(deploymentName string, metricName string, metricTarget int64) *autoscaling.HorizontalPodAutoscaler {
@@ -401,7 +391,7 @@ func podMetricHPA(deploymentName string, metricTargets map[string]int64) *autosc
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "custom-metrics-pods-hpa",
 			Annotations: map[string]string{
-				strings.Join([]string{"metric-config.pods", metricName, "json-path/json-key"}, "."): "$.queue_count",
+				strings.Join([]string{"metric-config.pods", metricName, "json-path/json-key"}, "."): "$.queue.length",
 				strings.Join([]string{"metric-config.pods", metricName, "json-path/path"}, "."):     "/metrics",
 				strings.Join([]string{"metric-config.pods", metricName, "json-path/port"}, "."):     "8000",
 			},
