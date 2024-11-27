@@ -213,11 +213,7 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 		})
 
 		g.It("should deny deleting kube-system or visibility namespaces", func() {
-			tc.data.resources = []string{"namespaces"}
-			tc.data.namespaces = []string{"kube-system", "visibility"}
-			tc.data.verbs = []string{"delete"}
-			tc.run(context.TODO(), cs, false)
-			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
+			g.Skip("handled by admission-controller")
 		})
 
 		g.When("the resource is a namespaced resource", func() {
