@@ -1041,7 +1041,6 @@ Resources:
                   - "{{.Cluster.ConfigItems.deployment_service_api_role_arn}}"
 {{- end }}
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
-                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
   DeploymentControllerRole:
     Type: AWS::IAM::Role
@@ -2218,6 +2217,19 @@ Resources:
               - !Sub
                 - "${BucketArn}/*"
                 - BucketArn: !GetAtt AuditTrailBucket.Arn
+          - Action: "s3:*"
+            Effect: Deny
+            Resource:
+              - !Sub "arn:aws:s3:::${AuditTrailBucket}/*"
+              - !Sub "arn:aws:s3:::${AuditTrailBucket}"
+            Principal: "*"
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn:
+                  - !GetAtt EmergencyAccessServiceIAMRole.Arn
+                  - !GetAtt AudittrailAdapterIAMRole.Arn
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
 
 {{- if .Cluster.ConfigItems.audittrail_root_account_role }}
           # Central access
@@ -2420,7 +2432,6 @@ Resources:
             Principal:
               AWS:
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
             Action:
             - "kms:*"
@@ -2458,7 +2469,6 @@ Resources:
             Effect: "Allow"
             Principal:
               AWS:
-              - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
               - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
             Action:
             - "kms:*"
@@ -2496,7 +2506,6 @@ Resources:
             Principal:
               AWS:
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
             Action:
             - "kms:*"
@@ -2533,7 +2542,6 @@ Resources:
             Principal:
               AWS:
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
                 - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
             Action:
             - "kms:*"

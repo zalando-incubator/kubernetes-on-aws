@@ -206,6 +206,55 @@ Resources:
             Status: Enabled
       VersioningConfiguration:
         Status: Suspended
+{{- if eq .Cluster.ConfigItems.etcd_backup_bucket_policy "true" }}
+  EtcdBackupBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref EtcdBackupBucket
+      PolicyDocument:
+        Statement:
+          # In-cluster access
+          - Action:
+              - s3:ListBucket
+            Effect: Allow
+            Principal:
+              AWS:
+              - "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-etcd-backup"
+            Resource:
+              - !GetAtt EtcdBackupBucket.Arn
+          - Action:
+              - s3:PutObject
+            Effect: Allow
+            Principal:
+              AWS:
+              - "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-etcd-backup"
+            Resource:
+              - !Sub
+                - "${BucketArn}/*"
+                - BucketArn: !GetAtt EtcdBackupBucket.Arn
+          - Action:
+            - s3:ListObjects
+            - s3:PutObject
+            Effect: Allow
+            Principal:
+              AWS:
+              - "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-etcd-backup"
+            Resource:
+              - !Sub
+                - "${BucketArn}/*"
+                - BucketArn: !GetAtt EtcdBackupBucket.Arn
+          - Action: "s3:*"
+            Effect: Deny
+            Resource:
+              - !Sub "arn:aws:s3:::${EtcdBackupBucket}/*"
+              - !Sub "arn:aws:s3:::${EtcdBackupBucket}"
+            Principal: "*"
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn:
+                  - "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-etcd-backup"
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
+{{- end }}
   EtcdRole:
     Type: AWS::IAM::Role
     Properties:
