@@ -52,6 +52,78 @@ Resources:
           Value: owned
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
+{{- if or (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "pre") (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "serving") (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "active") }}
+  ControlPlaneInternalLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: "{{.Cluster.LocalID}}-nlb-internal"
+      LoadBalancerAttributes:
+        - Key: load_balancing.cross_zone.enabled
+          Value: true
+      Scheme: internal
+      Subnets:
+  {{ with $values := .Values }}
+  {{ range $az := $values.availability_zones }}
+        - "{{ index $values.lb_subnets $az }}"
+  {{ end }}
+  {{ end }}
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+        - Key: "component"
+          Value: "kube-apiserver"
+      Type: network
+  ControlPlaneInternalLBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPort: 8443
+      HealthCheckProtocol: HTTPS
+      HealthCheckPath: "/readyz"
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Name: "{{.Cluster.LocalID}}-nlb-internal"
+      Port: 8443
+      Protocol: TLS
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+        - Key: "component"
+          Value: "kube-apiserver"
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 60
+        - Key: preserve_client_ip.enabled
+          Value: "false"
+  ControlPlaneInternalLBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      AlpnPolicy:
+        - {{ if eq .Cluster.ConfigItems.experimental_nlb_alpn_h2_enabled "true" }}HTTP2Preferred{{else}}None{{end}}
+      SslPolicy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+      Certificates:
+        - CertificateArn: "{{.Values.load_balancer_certificate}}"
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref ControlPlaneInternalLBTargetGroup
+      LoadBalancerArn: !Ref ControlPlaneInternalLB
+      Port: 443
+      Protocol: TLS
+  ControlPlaneInternalLBVersionDomain:
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt
+          - ControlPlaneInternalLB
+          - DNSName
+        HostedZoneId: !GetAtt
+          - ControlPlaneInternalLB
+          - CanonicalHostedZoneID
+      HostedZoneName: "{{.Values.hosted_zone}}."
+      Name: "{{.Cluster.LocalID}}-internal.{{.Values.hosted_zone}}."
+      Type: A
+    Type: 'AWS::Route53::RecordSet'
+{{- end  }}
   MasterLoadBalancerNLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -2503,6 +2575,12 @@ Outputs:
     Export:
       Name: '{{.Cluster.ID}}:master-load-balancer-nlb-target-group'
     Value: !Ref MasterLoadBalancerNLBTargetGroup
+{{- if or (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "pre") (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "serving") (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "active") }}
+  ControlPlaneInternalLBTargetGroup:
+    Export:
+      Name: '{{.Cluster.ID}}:control-plane-internal-lb-target-group'
+    Value: !Ref ControlPlaneInternalLBTargetGroup
+{{- end }}
   MasterSecurityGroup:
     Export:
       Name: '{{.Cluster.ID}}:master-security-group'

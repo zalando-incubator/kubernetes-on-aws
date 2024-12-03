@@ -34,7 +34,11 @@ write_files:
       clusters:
       - name: local
         cluster:
+{{- if eq .Cluster.ConfigItems.control_plane_load_balancer_internal "active" }}
+          server: "https://{{.Cluster.LocalID}}-internal.{{.Values.hosted_zone}}"
+{{- else }}
           server: {{ .Cluster.APIServerURL }}
+{{- end }}
       users:
       - name: kubelet
         user:
