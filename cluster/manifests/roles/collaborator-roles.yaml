@@ -14,6 +14,16 @@ rules:
   - update
   - patch
   - delete
+{{ if eq .Cluster.ConfigItems.role_sync_controller_enabled "true" }}
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+{{ end }}
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
