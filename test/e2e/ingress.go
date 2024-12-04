@@ -283,7 +283,7 @@ var __ = describe("Ingress tests simple", func() {
 		)
 		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		framework.ExpectNoError(err)
-		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with %s header set to %s for the next request", ingressUpdate.Namespace, ingressUpdate.Name, headerKey, headerVal))
+		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with opaAuthorizeRequest %s policy", ingressUpdate.Namespace, ingressUpdate.Name, opaPolicyName))
 		time.Sleep(10 * time.Second) // wait for routing change propagation
 
 		req.Header.Set("Authorization", "Basic valid_token")
