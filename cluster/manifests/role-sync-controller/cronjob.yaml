@@ -26,5 +26,18 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: role-sync-controller
-            image: container-registry.zalando.net/teapot/role-sync-controller:main-1
+            image: container-registry.zalando.net/teapot/role-sync-controller:main-2
+            args:
+              - --subject-group=PowerUser
+              - --subject-group=Manual
+              - --subject-group=Emergency
+              - --subject-group=okta:common/engineer
+              - --subject-serviceaccount=default/cdp
+              - --subject-user=zalando-iam:zalando:service:k8sapi-local_deployment-service-executor
+              {{- if eq .Cluster.Environment "test"}}
+              - --subject-group=CollaboratorPowerUser
+              {{- end}}
+              {{- if eq .Cluster.Provider "zalando-eks"}}
+              - --subject-serviceaccount=kube-system/deployment-service-controller
+              {{- end}}
 {{ end }}
