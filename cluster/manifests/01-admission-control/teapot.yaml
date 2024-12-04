@@ -267,3 +267,41 @@ webhooks:
         apiVersions: ["v1"]
         resources: ["rolebindings", "clusterrolebindings"]
 {{- end }}
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_enable_generic_webhook "true" }}
+  - name: generic-namespaced-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/generic"
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    matchPolicy: Equivalent
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [ "kube-system", "visibility", "kubenurse" ]
+    rules:
+      - operations: [ "*" ]
+        apiGroups: ["*"]
+        apiVersions: ["*"]
+        resources: ["*/*"]
+        scope: "Namespaced"
+  - name: generic-cluster-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/generic"
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    matchPolicy: Equivalent
+    objectSelector:
+      matchLabels:
+        admission.zalando.org/infrastructure-component: "true"
+    rules:
+      - operations: [ "*" ]
+        apiGroups: ["*"]
+        apiVersions: ["*"]
+        resources: ["*/*"]
+        scope: "Cluster"
+{{- end }}
