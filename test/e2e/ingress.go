@@ -266,6 +266,35 @@ var __ = describe("Ingress tests simple", func() {
 		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
+		// Test opaAuthorizeRequest filter in ingress
+		path = "/"
+		opaPolicyName := "styra-smoketest"
+		updatedIng = updateIngress(ingressCreate.ObjectMeta.Name,
+			ingressCreate.ObjectMeta.Namespace,
+			hostName,
+			serviceName,
+			path,
+			netv1.PathTypeImplementationSpecific,
+			ingressCreate.ObjectMeta.Labels,
+			map[string]string{
+				"zalando.org/skipper-filter": fmt.Sprintf(`opaAuthorizeRequest("%s")`, opaPolicyName),
+			},
+			port,
+		)
+		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		framework.ExpectNoError(err)
+		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with %s header set to %s for the next request", ingressUpdate.Namespace, ingressUpdate.Name, headerKey, headerVal))
+		time.Sleep(10 * time.Second) // wait for routing change propagation
+
+		req.Header.Set("Authorization", "Basic valid_token")
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
+		framework.ExpectNoError(err)
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		Expect(resp.Header.Get(headerKey)).To(Equal(headerVal))
+		s, err = getBody(resp)
+		framework.ExpectNoError(err)
+		Expect(s).To(Equal(backendContent))
+
 		// Test additional hostname
 		additionalHostname := fmt.Sprintf("foo-%d.%s", time.Now().UTC().Unix(), E2EHostedZone())
 		addHostIng := addHostIngress(updatedIng, additionalHostname)
