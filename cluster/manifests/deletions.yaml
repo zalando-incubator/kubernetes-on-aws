@@ -330,3 +330,21 @@ post_apply:
   kind: ServiceAccount
   namespace: kube-system
 {{- end }}
+{{- if ne .Cluster.ConfigItems.kube_janitor_enabled "true" }}
+- name: kube-janitor
+  kind: Deployment
+  namespace: kube-system
+- name: kube-janitor
+  kind: ConfigMap
+  namespace: kube-system
+- name: kube-janitor
+  kind: VerticalPodAutoscaler
+  namespace: kube-system
+- name: kube-janitor
+  kind: ServiceAccount
+  namespace: kube-system
+- name: kube-janitor
+  kind: ClusterRole
+- name: kube-janitor
+  kind: ClusterRoleBinding
+{{- end }}
