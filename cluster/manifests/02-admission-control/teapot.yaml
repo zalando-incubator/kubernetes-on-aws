@@ -490,6 +490,37 @@ webhooks:
         resources: ["rolebindings", "clusterrolebindings"]
 {{- end }}
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_enable_write_protection_webhook "true" }}
+  - name: pod-exec-admitter.teapot.zalan.do
+    clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/pod/exec"
+      {{- else }}
+      url: "https://localhost:8085/pod/exec"
+      {{- end }}
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    matchPolicy: Equivalent
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: [ "kube-system", "visibility", "kubenurse" ]
+    rules:
+      - operations: [ "CONNECT" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods/exec"]
+        scope: "Namespaced"
+    matchConditions:
+      - name: 'exclude-privileged-groups'
+        expression: 'request.userInfo.groups.all(g, !(g in ["okta:common/administrator", "zalando:administrator"]))'
+      - name: 'exclude-postgres-admins'
+        expression: 'request.userInfo.groups.all(g, !(g in ["okta:common/postgres-admin"]))'
   - name: namespaced-deny-admitter.teapot.zalan.do
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
