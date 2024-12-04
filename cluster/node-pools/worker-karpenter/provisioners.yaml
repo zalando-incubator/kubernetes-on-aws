@@ -124,7 +124,7 @@ spec:
 #  {{ end}}
 #{{ end}}
 
-#{{ if and (eq (len .NodePool.InstanceTypes) 1) (eq (index .NodePool.InstanceTypes 0) "default-for-karpenter") }}
+#{{ if (eq .NodePool.KarpenterInstanceTypeStrategy "default-for-karpenter" )  }}
         - key: "karpenter.k8s.aws/instance-family"
           operator: In
           values:
@@ -155,7 +155,7 @@ spec:
             - "c7in"
             - "m7in"
             - "r7in"
-#{{ else if (gt (len .NodePool.InstanceTypes) 0) }}
+#{{ else if (eq .NodePool.KarpenterInstanceTypeStrategy "custom" ) }}
         - key: "node.kubernetes.io/instance-type"
           operator: In
           values:
@@ -165,7 +165,7 @@ spec:
 #{{ end }}
 
 # safety guards to prevent the use of unwanted instance types in case the user has not specified any specific instance types
-#{{ if or (eq .NodePool.KarpenterInstanceTypeStrategy "default-for-karpenter") (eq .NodePool.KarpenterInstanceTypeStrategy "not-specified") }}
+#{{ if ne .NodePool.KarpenterInstanceTypeStrategy "custom" }}
         # exclude unwanted sizes
         - key: "karpenter.k8s.aws/instance-size"
           operator: "NotIn"
