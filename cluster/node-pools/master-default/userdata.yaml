@@ -4,7 +4,7 @@ write_files:
     path: /etc/kubernetes/secrets.env
     content: |
       NODEPOOL_TAINTS=node.kubernetes.io/role=master:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
-      NODE_LABELS=master=true,node.kubernetes.io/exclude-from-external-load-balancers,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,lifecycle-status=ready{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}{{if eq .Cluster.ConfigItems.control_plane_asg_lifecycle_hook "true" }},asg-lifecycle-hook=true{{end}}
+      NODE_LABELS=master=true,node.kubernetes.io/exclude-from-external-load-balancers,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,lifecycle-status=ready{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=master
 
@@ -206,7 +206,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-224
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-227
           name: admission-controller
           lifecycle:
             preStop:
