@@ -267,10 +267,34 @@ webhooks:
         apiVersions: ["v1"]
         resources: ["rolebindings", "clusterrolebindings"]
 {{- end }}
-{{- if eq .Cluster.ConfigItems.teapot_admission_controller_enable_generic_webhook "true" }}
-  - name: generic-namespaced-admitter.teapot.zalan.do
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_enable_write_protection_webhook "true" }}
+  - name: pod-exec-admitter.teapot.zalan.do
     clientConfig:
-      url: "https://localhost:8085/generic"
+      url: "https://localhost:8085/pod/exec"
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    matchPolicy: Equivalent
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: [ "kube-system", "visibility", "kubenurse" ]
+    rules:
+      - operations: [ "CONNECT" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods/exec"]
+        scope: "Namespaced"
+    matchConditions:
+      - name: 'exclude-privileged-groups'
+        expression: 'request.userInfo.groups.all(g, !(g in ["okta:common/administrator", "zalando:administrator"]))'
+      - name: 'exclude-postgres-admins'
+        expression: 'request.userInfo.groups.all(g, !(g in ["okta:common/postgres-admin"]))'
+  - name: namespaced-deny-admitter.teapot.zalan.do
+    clientConfig:
+      url: "https://localhost:8085/deny"
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -287,9 +311,16 @@ webhooks:
         apiVersions: ["*"]
         resources: ["*/*"]
         scope: "Namespaced"
-  - name: generic-cluster-admitter.teapot.zalan.do
+    matchConditions:
+      - name: 'exclude-privileged-groups'
+        expression: 'request.userInfo.groups.all(g, !(g in ["system:masters", "system:nodes", "system:serviceaccounts:kube-system", "okta:common/administrator", "zalando:administrator"]))'
+      - name: 'exclude-privileged-usernames'
+        expression: '!(request.userInfo.username in ["system:kube-controller-manager", "system:kube-scheduler", "zalando-iam:zalando:service:k8sapi_credentials-provider"])'
+      - name: 'exclude-eks-components'
+        expression: '!request.userInfo.username.startsWith("eks:")'
+  - name: global-deny-admitter.teapot.zalan.do
     clientConfig:
-      url: "https://localhost:8085/generic"
+      url: "https://localhost:8085/deny"
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -304,4 +335,11 @@ webhooks:
         apiVersions: ["*"]
         resources: ["*/*"]
         scope: "Cluster"
+    matchConditions:
+      - name: 'exclude-privileged-groups'
+        expression: 'request.userInfo.groups.all(g, !(g in ["system:masters", "system:nodes", "system:serviceaccounts:kube-system", "okta:common/administrator", "zalando:administrator"]))'
+      - name: 'exclude-privileged-usernames'
+        expression: '!(request.userInfo.username in ["system:kube-controller-manager", "system:kube-scheduler", "zalando-iam:zalando:service:k8sapi_credentials-provider"])'
+      - name: 'exclude-eks-components'
+        expression: '!request.userInfo.username.startsWith("eks:")'
 {{- end }}
