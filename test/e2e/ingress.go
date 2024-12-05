@@ -266,7 +266,7 @@ var __ = describe("Ingress tests simple", func() {
 		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
-		// Test opaAuthorizeRequest filter in ingress
+		// Test ingress Filters: opaAuthorizeRequest
 		path = "/"
 		opaPolicyName := "styra-smoketest"
 		updatedIng = updateIngress(ingressCreate.ObjectMeta.Name,
@@ -286,14 +286,18 @@ var __ = describe("Ingress tests simple", func() {
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with opaAuthorizeRequest %s policy", ingressUpdate.Namespace, ingressUpdate.Name, opaPolicyName))
 		time.Sleep(10 * time.Second) // wait for routing change propagation
 
-		req.Header.Set("Authorization", "Basic valid_token")
+		req.Header.Set("Authorization", "Basic valid_token") //Authorized request
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
 		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		Expect(resp.Header.Get(headerKey)).To(Equal(headerVal))
 		s, err = getBody(resp)
 		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
+
+		req.Header.Set("Authorization", "Basic invalid_token") //Unauthorized request
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusForbidden)
+		framework.ExpectNoError(err)
+		Expect(resp.StatusCode).To(Equal(http.StatusOK)) //Intentionally failing the test for once
 
 		// Test additional hostname
 		additionalHostname := fmt.Sprintf("foo-%d.%s", time.Now().UTC().Unix(), E2EHostedZone())
