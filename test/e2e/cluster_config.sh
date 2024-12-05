@@ -50,6 +50,8 @@ clusters:
     skipper_open_policy_agent_enabled: "true"
     skipper_open_policy_agent_styra_token: "${STYRA_TOKEN}"
     skipper_open_policy_agent_bucket_arn: "arn:aws:s3:::zalando-open-policy-agent-sandbox-bundles"
+    skipper_open_policy_agent_observability_url: "https://open-policy-agent-sandbox-observability.corporate-iam.zalan.do/v1"
+    skipper_open_policy_agent_bundles_url: "https://zalando-open-policy-agent-sandbox-bundles.s3.eu-central-1.amazonaws.com"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
