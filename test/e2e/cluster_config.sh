@@ -47,6 +47,8 @@ clusters:
     karpenter_pools_enabled: "true"
     okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
     teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
+    skipper_open_policy_agent_enabled: "true"
+    skipper_open_policy_agent_styra_token: "${STYRA_TOKEN}"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
