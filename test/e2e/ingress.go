@@ -323,7 +323,7 @@ var ___ = describe("Ingress tests for OPA filters", func() {
 		jig *ingress.TestJig
 	)
 
-	It("Should activate OPA filter without issue [Ingress] [Zalando1]", func() {
+	It("Should activate OPA filter without issue [Ingress] [Zalando]", func() {
 		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test"
