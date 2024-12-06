@@ -435,6 +435,7 @@ var ___ = describe("Ingress tests for OPA filters", func() {
 		Expect(s).To(Equal(backendContent))
 
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 403 with opaAuthorizeRequest %s policy", ingressUpdate.Namespace, ingressUpdate.Name, opaPolicyName))
+		req.Header.Del("Authorization")
 		req.Header.Set("Authorization", "Basic invalid_token") //Unauthorized request
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusForbidden)
 		framework.ExpectNoError(err)
