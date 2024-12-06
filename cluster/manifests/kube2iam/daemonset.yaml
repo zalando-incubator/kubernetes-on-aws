@@ -21,7 +21,7 @@ spec:
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
-{{- if and (eq .Cluster.ConfigItems.kube2iam_worker_only "true") (eq .Cluster.ConfigItems.control_plane_asg_lifecycle_hook "false") }}
+{{- if eq .Cluster.ConfigItems.kube2iam_worker_only "true" }}
       nodeSelector:
         node.kubernetes.io/role: worker
 {{- end }}
