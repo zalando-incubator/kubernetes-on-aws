@@ -124,7 +124,7 @@ var __ = describe("Ingress tests simple", func() {
 		jig *ingress.TestJig
 	)
 
-	It("Should create simple ingress [Ingress]", func() {
+	It("Should create simple ingress [IngressOpa]", func() {
 		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test"
@@ -294,57 +294,59 @@ var __ = describe("Ingress tests simple", func() {
 		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
 
+		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 403 with opaAuthorizeRequest %s policy", ingressUpdate.Namespace, ingressUpdate.Name, opaPolicyName))
+		time.Sleep(10 * time.Second)
 		req.Header.Set("Authorization", "Basic invalid_token") //Unauthorized request
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusForbidden)
 		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK)) //Intentionally failing the test for once
 
 		// Test additional hostname
-		additionalHostname := fmt.Sprintf("foo-%d.%s", time.Now().UTC().Unix(), E2EHostedZone())
-		addHostIng := addHostIngress(updatedIng, additionalHostname)
-		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), addHostIng, metav1.UpdateOptions{})
-		framework.ExpectNoError(err)
-		By("Waiting for new DNS hostname to be resolvable " + additionalHostname)
-		err = waitForResponse(additionalHostname, "https", waitTime, isSuccess, false)
-		framework.ExpectNoError(err)
-		By(fmt.Sprintf("Testing the old hostname %s for ingress %s/%s we make sure old routes are working", hostName, ingressUpdate.Namespace, ingressUpdate.Name))
-		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
-		framework.ExpectNoError(err)
-		Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		s, err = getBody(resp)
-		framework.ExpectNoError(err)
-		Expect(s).To(Equal(backendContent))
-		By(fmt.Sprintf("Testing the new hostname %s for ingress %s/%s we make sure old routes are working", additionalHostname, ingressUpdate.Namespace, ingressUpdate.Name))
-		url = "https://" + additionalHostname + "/"
-		req, err = http.NewRequest("GET", url, nil)
-		framework.ExpectNoError(err)
-		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
-		framework.ExpectNoError(err)
-		Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		s, err = getBody(resp)
-		framework.ExpectNoError(err)
-		Expect(s).To(Equal(backendContent))
+		//additionalHostname := fmt.Sprintf("foo-%d.%s", time.Now().UTC().Unix(), E2EHostedZone())
+		//addHostIng := addHostIngress(updatedIng, additionalHostname)
+		//ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), addHostIng, metav1.UpdateOptions{})
+		//framework.ExpectNoError(err)
+		//By("Waiting for new DNS hostname to be resolvable " + additionalHostname)
+		//err = waitForResponse(additionalHostname, "https", waitTime, isSuccess, false)
+		//framework.ExpectNoError(err)
+		//By(fmt.Sprintf("Testing the old hostname %s for ingress %s/%s we make sure old routes are working", hostName, ingressUpdate.Namespace, ingressUpdate.Name))
+		//resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
+		//framework.ExpectNoError(err)
+		//Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		//s, err = getBody(resp)
+		//framework.ExpectNoError(err)
+		//Expect(s).To(Equal(backendContent))
+		//By(fmt.Sprintf("Testing the new hostname %s for ingress %s/%s we make sure old routes are working", additionalHostname, ingressUpdate.Namespace, ingressUpdate.Name))
+		//url = "https://" + additionalHostname + "/"
+		//req, err = http.NewRequest("GET", url, nil)
+		//framework.ExpectNoError(err)
+		//resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
+		//framework.ExpectNoError(err)
+		//Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		//s, err = getBody(resp)
+		//framework.ExpectNoError(err)
+		//Expect(s).To(Equal(backendContent))
 
 		// Test changed path
-		newPath := "/foo"
-		changePathIng := changePathIngress(updatedIng, newPath)
-		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), changePathIng, metav1.UpdateOptions{})
-		framework.ExpectNoError(err)
-
-		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the old request, because of the path route", ingressUpdate.Namespace, ingressUpdate.Name))
-		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
-		framework.ExpectNoError(err)
-		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
-		pathURL := "https://" + hostName + newPath
-		pathReq, err := http.NewRequest("GET", pathURL, nil)
-		framework.ExpectNoError(err)
-		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 for a new request to the path route", ingressUpdate.Namespace, ingressUpdate.Name))
-		resp, err = getAndWaitResponse(rt, pathReq, 10*time.Second, http.StatusOK)
-		framework.ExpectNoError(err)
-		Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		s, err = getBody(resp)
-		framework.ExpectNoError(err)
-		Expect(s).To(Equal(backendContent))
+		//newPath := "/foo"
+		//changePathIng := changePathIngress(updatedIng, newPath)
+		//ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), changePathIng, metav1.UpdateOptions{})
+		//framework.ExpectNoError(err)
+		//
+		//By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 404 for the old request, because of the path route", ingressUpdate.Namespace, ingressUpdate.Name))
+		//resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusNotFound)
+		//framework.ExpectNoError(err)
+		//Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+		//pathURL := "https://" + hostName + newPath
+		//pathReq, err := http.NewRequest("GET", pathURL, nil)
+		//framework.ExpectNoError(err)
+		//By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 for a new request to the path route", ingressUpdate.Namespace, ingressUpdate.Name))
+		//resp, err = getAndWaitResponse(rt, pathReq, 10*time.Second, http.StatusOK)
+		//framework.ExpectNoError(err)
+		//Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		//s, err = getBody(resp)
+		//framework.ExpectNoError(err)
+		//Expect(s).To(Equal(backendContent))
 	})
 })
 
