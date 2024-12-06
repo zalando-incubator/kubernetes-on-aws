@@ -183,7 +183,7 @@ if [ "$e2e" = true ]; then
 
     mkdir -p junit_reports
     ginkgo -procs=25 -flake-attempts=2 \
-        -focus="(\[IngressOpa\])" \
+        -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
         -skip="(\[Serial\]|validates.that.there.is.no.conflict.between.pods.with.same.hostPort.but.different.hostIP.and.protocol|Should.create.gradual.traffic.routes)" \
         "e2e.test" -- \
         -delete-namespace-on-failure=false \
