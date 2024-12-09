@@ -323,7 +323,7 @@ var ___ = describe("Ingress tests for OPA filters", func() {
 		jig *ingress.TestJig
 	)
 
-	It("Should activate OPA filter without issue [Ingress] [Zalando]", func() {
+	It("Should activate OPA filter without issue [Ingress] [ZalandoIAM]", func() {
 		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test"
@@ -417,15 +417,20 @@ var ___ = describe("Ingress tests for OPA filters", func() {
 			netv1.PathTypeImplementationSpecific,
 			ingressCreate.ObjectMeta.Labels,
 			map[string]string{
-				"zalando.org/skipper-filter": fmt.Sprintf(`opaAuthorizeRequest("%s")`, opaPolicyName),
+				"zalando.org/skipper-filter": `opaAuthorizeRequest("styra-smoketest")`,
 			},
 			port,
 		)
 		ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 		framework.ExpectNoError(err)
 
+		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 403 with opaAuthorizeRequest %s policy", ingressUpdate.Namespace, ingressUpdate.Name, opaPolicyName))
+		time.Sleep(20 * time.Second) // wait for routing change propagation
+		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusForbidden)
+		framework.ExpectNoError(err)
+		Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+
 		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 200 with opaAuthorizeRequest %s policy", ingressUpdate.Namespace, ingressUpdate.Name, opaPolicyName))
-		time.Sleep(10 * time.Second)                         // wait for routing change propagation
 		req.Header.Set("Authorization", "Basic valid_token") //Authorized request
 		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
 		framework.ExpectNoError(err)
@@ -433,13 +438,6 @@ var ___ = describe("Ingress tests for OPA filters", func() {
 		s, err = getBody(resp)
 		framework.ExpectNoError(err)
 		Expect(s).To(Equal(backendContent))
-
-		By(fmt.Sprintf("Waiting for ingress %s/%s we wait to get a 403 with opaAuthorizeRequest %s policy", ingressUpdate.Namespace, ingressUpdate.Name, opaPolicyName))
-		req.Header.Del("Authorization")
-		req.Header.Set("Authorization", "Basic invalid_token") //Unauthorized request
-		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusForbidden)
-		framework.ExpectNoError(err)
-		Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 	})
 })
 
