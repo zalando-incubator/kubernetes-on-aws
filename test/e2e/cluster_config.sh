@@ -49,9 +49,9 @@ clusters:
     teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
     skipper_open_policy_agent_enabled: "true"
     skipper_open_policy_agent_styra_token: "${STYRA_TOKEN}"
-    skipper_open_policy_agent_bucket_arn: "arn:aws:s3:::zalando-open-policy-agent-sandbox-bundles"
-    skipper_open_policy_agent_observability_url: "https://open-policy-agent-sandbox-observability.corporate-iam.zalan.do/v1"
-    skipper_open_policy_agent_bundles_url: "https://zalando-open-policy-agent-sandbox-bundles.s3.eu-central-1.amazonaws.com"
+    skipper_open_policy_agent_bucket_arn: "${SKIPPER_OPA_BUCKET_ARN}"
+    skipper_open_policy_agent_observability_url: "${SKIPPER_OPA_OBSERVABILITY_URL}"
+    skipper_open_policy_agent_bundles_url: "${SKIPPER_OPA_BUNDLES_URL}"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
