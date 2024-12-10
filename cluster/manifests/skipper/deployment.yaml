@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use print to disable it for main image */}}
 
-{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.21.220-1043" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.21.226-1049" }}
+{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.21.224-1047" }}
+{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.21.227-1050" }}
 
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
@@ -173,6 +173,8 @@ spec:
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+          - '-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}'
+          - '-kubernetes-east-west-range-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_predicates }}'
           - "-reverse-source-predicate"
 {{ end }}
           - "-proxy-preserve-host"
@@ -540,6 +542,8 @@ spec:
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+          - '-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}'
+          - '-kubernetes-east-west-range-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_predicates }}'
           - "-reverse-source-predicate"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
