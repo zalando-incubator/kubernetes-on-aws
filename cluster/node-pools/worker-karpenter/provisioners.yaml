@@ -63,7 +63,9 @@ spec:
       memory: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_memory }}"
   tags:
     Name: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
+    # {{ if eq .NodePool.ConfigItems.tag_instance_infrastructure_component "true" }}
     InfrastructureComponent: 'true'
+    # {{ end }}
     application: kubernetes
     component: shared-resource
     environment: "{{ .Cluster.Environment }}"
