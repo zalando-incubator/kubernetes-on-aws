@@ -185,7 +185,9 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 
 		g.It("should allow read access to Secrets in namespaces other than kube-system and visibility", func() {
 			tc.data.resources = []string{"secrets"}
-			tc.data.namespaces = []string{"default", "teapot"}
+			// The namespace must exist for the test case to pass, otherwise access
+			// remains undecided.
+			tc.data.namespaces = []string{"default"}
 			tc.data.verbs = readOperations
 			tc.run(context.TODO(), cs, true)
 			gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
