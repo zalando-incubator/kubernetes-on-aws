@@ -204,6 +204,7 @@ if [ "$e2e" = true ]; then
         SKIPPED_TESTS+=(
             "Mirror pods should be created for the main Kubernetes components \[Zalando\]"
             "Should audit API calls to create, update, patch, delete pods. \[Audit\] \[Zalando\]"
+            "should validate permissions for \[Authorization\] \[RBAC\] \[Zalando\]" # TODO: Remains skipped until we remove the older RBAC setup
         )
     fi
 
