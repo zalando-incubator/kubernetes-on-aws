@@ -159,13 +159,6 @@ if [ "$e2e" = true ]; then
     export S3_AWS_IAM_BUCKET="zalando-e2e-test-${AWS_ACCOUNT}-${LOCAL_ID}"
     export AWS_IAM_ROLE="${LOCAL_ID}-e2e-aws-iam-test"
 
-
-    # update bucket policy to include new ingress role for bundle pulling
-    export SKIPPER_INGRESS_ROLE_ARN="arn:aws:iam::${AWS_ACCOUNT}:role/${LOCAL_ID}-app-skipper-ingress"
-    export OPA_BUNDLES_BUCKET="zalando-open-policy-agent-sandbox-bundles"
-
-    ./update-opa-bundle-s3-policy.sh $OPA_BUNDLES_BUCKET $SKIPPER_INGRESS_ROLE_ARN
-
     # Run e2e tests
     # * conformance tests
     # * statefulset tests
