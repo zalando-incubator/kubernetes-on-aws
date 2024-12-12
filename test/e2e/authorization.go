@@ -2,11 +2,25 @@ package e2e
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/eks"
+	"github.com/aws/aws-sdk-go-v2/service/eks/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	g "github.com/onsi/ginkgo/v2"
 	gomega "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/test/e2e/framework"
+	admissionapi "k8s.io/pod-security-admission/api"
+	"sigs.k8s.io/aws-iam-authenticator/pkg/token"
 )
 
 var (
@@ -551,3 +565,240 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 		})
 	})
 })
+
+var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", func() {
+	var (
+		awsAccountID string
+		eksCluster   *types.Cluster
+	)
+
+	f := framework.NewDefaultFramework("authorization")
+	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
+
+	g.BeforeEach(func() {
+		cfg, err := config.LoadDefaultConfig(context.Background())
+		framework.ExpectNoError(err)
+
+		awsAccountID, err = getAWSAccountID(context.Background(), cfg)
+		framework.ExpectNoError(err)
+
+		eksCluster, err = getEKSCluster(context.Background(), cfg, f.ClientConfig())
+		framework.ExpectNoError(err)
+	})
+
+	g.Context("for namespaced resources", func() {
+		var (
+			systemResource    *corev1.Pod
+			nonSystemResource *corev1.Pod
+		)
+
+		g.BeforeEach(func() {
+			systemResource = examplePod("kube-system")
+			nonSystemResource = examplePod("default")
+		})
+
+		g.Context("as privileged user", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getPrivilegedClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should allow write access in user namespace", func() {
+				_, err := client.CoreV1().Pods("default").Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", nonSystemResource.Name, nonSystemResource.Namespace)
+			})
+
+			g.It("should allow write access in system namespace", func() {
+				_, err := client.CoreV1().Pods("kube-system").Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", systemResource.Name, systemResource.Namespace)
+			})
+		})
+
+		g.Context("as unprivileged user", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getUnprivilegedClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should allow write access in user namespace", func() {
+				_, err := client.CoreV1().Pods("default").Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", nonSystemResource.Name, nonSystemResource.Namespace)
+			})
+
+			g.It("should deny write access in system namespace", func() {
+				_, err := client.CoreV1().Pods("kube-system").Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
+			})
+		})
+	})
+
+	g.Context("for global resources", func() {
+		var (
+			systemResource    *rbacv1.ClusterRole
+			nonSystemResource *rbacv1.ClusterRole
+		)
+
+		g.BeforeEach(func() {
+			var err error
+
+			systemResource, err = createClusterRole(f.ClientSet, true)
+			framework.ExpectNoError(err)
+
+			nonSystemResource, err = createClusterRole(f.ClientSet, false)
+			framework.ExpectNoError(err)
+		})
+
+		g.Context("as privileged user", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getPrivilegedClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should allow write access for non-system resources", func() {
+				err := client.RbacV1().ClusterRoles().Delete(context.Background(), nonSystemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to delete cluster role: %s", nonSystemResource.Name)
+			})
+
+			g.It("should allow write access for system resources", func() {
+				err := client.RbacV1().ClusterRoles().Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to delete cluster role: %s", systemResource.Name)
+			})
+		})
+
+		g.Context("as unprivileged user", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getUnprivilegedClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should allow write access for non-system resources", func() {
+				err := client.RbacV1().ClusterRoles().Delete(context.Background(), nonSystemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to delete cluster role: %s", nonSystemResource.Name)
+			})
+
+			g.It("should deny write access for system resources", func() {
+				err := client.RbacV1().ClusterRoles().Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
+			})
+		})
+	})
+})
+
+func getPrivilegedClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
+	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-privileged-role", awsAccountID, aws.ToString(cluster.Name)))
+}
+
+func getUnprivilegedClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
+	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-unprivileged-role", awsAccountID, aws.ToString(cluster.Name)))
+}
+
+func newClientWithRole(cluster *types.Cluster, assumeRole string) (*kubernetes.Clientset, error) {
+	gen, err := token.NewGenerator(true, false)
+	if err != nil {
+		return nil, err
+	}
+	opts := &token.GetTokenOptions{
+		ClusterID:     aws.ToString(cluster.Name),
+		AssumeRoleARN: assumeRole,
+	}
+	tok, err := gen.GetWithOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+	ca, err := base64.StdEncoding.DecodeString(aws.ToString(cluster.CertificateAuthority.Data))
+	if err != nil {
+		return nil, err
+	}
+	clientset, err := kubernetes.NewForConfig(
+		&rest.Config{
+			Host:        aws.ToString(cluster.Endpoint),
+			BearerToken: tok.Token,
+			TLSClientConfig: rest.TLSClientConfig{
+				CAData: ca,
+			},
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return clientset, nil
+}
+
+func getEKSCluster(ctx context.Context, awsConfig aws.Config, config *rest.Config) (*types.Cluster, error) {
+	client := eks.NewFromConfig(awsConfig)
+
+	listClusters, err := client.ListClusters(ctx, &eks.ListClustersInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, clusterName := range listClusters.Clusters {
+		describeCluster, err := client.DescribeCluster(ctx, &eks.DescribeClusterInput{
+			Name: aws.String(clusterName),
+		})
+		if err != nil {
+			return nil, err
+		}
+		if aws.ToString(describeCluster.Cluster.Endpoint) == config.Host {
+			return describeCluster.Cluster, nil
+		}
+	}
+
+	return nil, fmt.Errorf("cluster not found: %s", config.Host)
+}
+
+func examplePod(namespace string) *corev1.Pod {
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-pod-",
+			Namespace:    namespace,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{
+				Name:  "pause",
+				Image: "container-registry.zalando.net/teapot/pause:3.7-master-21",
+			}},
+		},
+	}
+}
+
+func createClusterRole(client clientset.Interface, isSystemResource bool) (*rbacv1.ClusterRole, error) {
+	clusterRole := &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-cluster-role-",
+			Labels:       map[string]string{},
+		},
+	}
+	if isSystemResource {
+		clusterRole.Labels["admission.zalando.org/infrastructure-component"] = "true"
+	}
+
+	return client.RbacV1().ClusterRoles().Create(context.Background(), clusterRole, metav1.CreateOptions{})
+}
+
+func getAWSAccountID(ctx context.Context, awsConfig aws.Config) (string, error) {
+	client := sts.NewFromConfig(awsConfig)
+
+	callerIdentity, err := client.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return "", err
+	}
+
+	return aws.ToString(callerIdentity.Account), nil
+}

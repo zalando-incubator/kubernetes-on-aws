@@ -215,6 +215,70 @@ Resources:
     Properties:
       AddonName: eks-pod-identity-agent
       ClusterName: !Ref EKSCluster
+  {{ if eq .Cluster.Environment "e2e" }}
+  E2EEKSIAMTestRoleUnprivileged:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          - 'sts:SetSourceIdentity'
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        Version: 2012-10-17
+      Path: /
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-unprivileged-role"
+    Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestAccessEntryUnprivileged:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt E2EEKSIAMTestRoleUnprivileged.Arn
+      Username: !Join
+          - ''
+          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
+            - !Ref E2EEKSIAMTestRoleUnprivileged
+            - '/{{`{{SessionName}}`}}'
+      KubernetesGroups:
+      - zalando:readonly
+      Type: "STANDARD"
+  E2EEKSIAMTestRolePrivileged:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          - 'sts:SetSourceIdentity'
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        Version: 2012-10-17
+      Path: /
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-privileged-role"
+    Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestAccessEntryPrivileged:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt E2EEKSIAMTestRolePrivileged.Arn
+      Username: !Join
+          - ''
+          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
+            - !Ref E2EEKSIAMTestRolePrivileged
+            - '/{{`{{SessionName}}`}}'
+      KubernetesGroups:
+      - zalando:administrator
+      Type: "STANDARD"
+  {{ end }}
   # TODO: IAM POLICY
   EKSCNIIPv6Policy:
     Type: AWS::IAM::ManagedPolicy
