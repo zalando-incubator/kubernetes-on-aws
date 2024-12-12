@@ -417,7 +417,7 @@ var ___ = describe("Ingress tests for OPA filters", func() {
 			netv1.PathTypeImplementationSpecific,
 			ingressCreate.ObjectMeta.Labels,
 			map[string]string{
-				"zalando.org/skipper-filter": `opaAuthorizeRequest("styra-smoketest")`,
+				"zalando.org/skipper-filter": fmt.Sprintf(`opaAuthorizeRequest("%s")`, opaPolicyName),
 			},
 			port,
 		)
