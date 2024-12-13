@@ -15,10 +15,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubelabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/test/e2e/framework"
+	testutil "k8s.io/kubernetes/test/utils"
 	admissionapi "k8s.io/pod-security-admission/api"
 	"sigs.k8s.io/aws-iam-authenticator/pkg/token"
 )
@@ -593,8 +595,8 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 		)
 
 		g.BeforeEach(func() {
-			systemResource = examplePod("kube-system")
-			nonSystemResource = examplePod("default")
+			systemResource = examplePod("kube-system", nil)
+			nonSystemResource = examplePod(f.Namespace.Name, nil)
 		})
 
 		g.Context("as privileged user", func() {
@@ -608,12 +610,12 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 			})
 
 			g.It("should allow write access in user namespace", func() {
-				_, err := client.CoreV1().Pods("default").Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				_, err := client.CoreV1().Pods(nonSystemResource.Namespace).Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{"All"}})
 				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", nonSystemResource.Name, nonSystemResource.Namespace)
 			})
 
 			g.It("should allow write access in system namespace", func() {
-				_, err := client.CoreV1().Pods("kube-system").Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				_, err := client.CoreV1().Pods(systemResource.Namespace).Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{"All"}})
 				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", systemResource.Name, systemResource.Namespace)
 			})
 		})
@@ -629,12 +631,12 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 			})
 
 			g.It("should allow write access in user namespace", func() {
-				_, err := client.CoreV1().Pods("default").Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				_, err := client.CoreV1().Pods(nonSystemResource.Namespace).Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{"All"}})
 				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", nonSystemResource.Name, nonSystemResource.Namespace)
 			})
 
 			g.It("should deny write access in system namespace", func() {
-				_, err := client.CoreV1().Pods("kube-system").Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				_, err := client.CoreV1().Pods(systemResource.Namespace).Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{"All"}})
 				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
 			})
 		})
@@ -649,10 +651,10 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 		g.BeforeEach(func() {
 			var err error
 
-			systemResource, err = createClusterRole(f.ClientSet, true)
+			systemResource, err = createClusterRole(context.Background(), f.ClientSet, map[string]string{"admission.zalando.org/infrastructure-component": "true"})
 			framework.ExpectNoError(err)
 
-			nonSystemResource, err = createClusterRole(f.ClientSet, false)
+			nonSystemResource, err = createClusterRole(context.Background(), f.ClientSet, nil)
 			framework.ExpectNoError(err)
 		})
 
@@ -698,16 +700,123 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 			})
 		})
 	})
+
+	g.Context("exec permission", func() {
+		var (
+			userPod     *corev1.Pod
+			postgresPod *corev1.Pod
+			systemPod   *corev1.Pod
+		)
+
+		g.BeforeEach(func() {
+			var err error
+
+			userPod, err = createPod(context.Background(), f.ClientSet, f.Namespace.Name, map[string]string{"application": "my-app"})
+			framework.ExpectNoError(err)
+
+			postgresPod, err = createPod(context.Background(), f.ClientSet, f.Namespace.Name, map[string]string{"application": "spilo"})
+			framework.ExpectNoError(err)
+
+			systemPod, err = createPod(context.Background(), f.ClientSet, "kube-system", map[string]string{"application": "my-app"})
+			framework.ExpectNoError(err)
+		})
+
+		g.Context("as postgres administrator user", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getPostgresAdministratorClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should allow exec access for user pod", func() {
+				result := client.CoreV1().RESTClient().Post().Namespace(userPod.Namespace).Resource("pods").Name(userPod.Name).SubResource("exec").Do(context.Background())
+				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("Upgrade request required")))
+			})
+
+			g.It("should allow exec access for postgres pods", func() {
+				result := client.CoreV1().RESTClient().Post().Namespace(postgresPod.Namespace).Resource("pods").Name(postgresPod.Name).SubResource("exec").Do(context.Background())
+				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("Upgrade request required")))
+			})
+
+			g.It("should deny exec access for system pod", func() {
+				result := client.CoreV1().RESTClient().Post().Namespace(systemPod.Namespace).Resource("pods").Name(systemPod.Name).SubResource("exec").Do(context.Background())
+				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
+			})
+		})
+
+		g.Context("as privileged user", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getPrivilegedClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should allow exec access for user pod", func() {
+				result := client.CoreV1().RESTClient().Post().Namespace(userPod.Namespace).Resource("pods").Name(userPod.Name).SubResource("exec").Do(context.Background())
+				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("Upgrade request required")))
+			})
+
+			g.It("should allow exec access for postgres pods", func() {
+				result := client.CoreV1().RESTClient().Post().Namespace(postgresPod.Namespace).Resource("pods").Name(postgresPod.Name).SubResource("exec").Do(context.Background())
+				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("Upgrade request required")))
+			})
+
+			g.It("should allow exec access for system pod", func() {
+				result := client.CoreV1().RESTClient().Post().Namespace(systemPod.Namespace).Resource("pods").Name(systemPod.Name).SubResource("exec").Do(context.Background())
+				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("Upgrade request required")))
+			})
+		})
+
+		g.Context("as unprivileged user", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getUnprivilegedClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should allow exec access for user pod", func() {
+				result := client.CoreV1().RESTClient().Post().Namespace(userPod.Namespace).Resource("pods").Name(userPod.Name).SubResource("exec").Do(context.Background())
+				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("Upgrade request required")))
+			})
+
+			g.It("should deny exec access for postgres pods", func() {
+				result := client.CoreV1().RESTClient().Post().Namespace(postgresPod.Namespace).Resource("pods").Name(postgresPod.Name).SubResource("exec").Do(context.Background())
+				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("exec into postgres pods is forbidden")))
+			})
+
+			g.It("should deny exec access for system pod", func() {
+				result := client.CoreV1().RESTClient().Post().Namespace(systemPod.Namespace).Resource("pods").Name(systemPod.Name).SubResource("exec").Do(context.Background())
+				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
+			})
+		})
+	})
 })
 
+// getPrivilegedClient returns a client with the `zalando:administrator` group.
 func getPrivilegedClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
 	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-privileged-role", awsAccountID, aws.ToString(cluster.Name)))
 }
 
+// getUnprivilegedClient returns a client with the `zalando:readonly` group.
 func getUnprivilegedClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
 	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-unprivileged-role", awsAccountID, aws.ToString(cluster.Name)))
 }
 
+// getPostgresAdministratorClient returns a client with the `zalando:postgres-admin` group.
+func getPostgresAdministratorClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
+	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-postgres-administrator-role", awsAccountID, aws.ToString(cluster.Name)))
+}
+
+// newClientWithRole returns a new Kubernetes client with the specified IAM role and its associated AccessEntries.
 func newClientWithRole(cluster *types.Cluster, assumeRole string) (*kubernetes.Clientset, error) {
 	gen, err := token.NewGenerator(true, false)
 	if err != nil {
@@ -740,6 +849,7 @@ func newClientWithRole(cluster *types.Cluster, assumeRole string) (*kubernetes.C
 	return clientset, nil
 }
 
+// getEKSCluster returns the EKS cluster where its Endpoint matches the given config's Host.
 func getEKSCluster(ctx context.Context, awsConfig aws.Config, config *rest.Config) (*types.Cluster, error) {
 	client := eks.NewFromConfig(awsConfig)
 
@@ -763,11 +873,13 @@ func getEKSCluster(ctx context.Context, awsConfig aws.Config, config *rest.Confi
 	return nil, fmt.Errorf("cluster not found: %s", config.Host)
 }
 
-func examplePod(namespace string) *corev1.Pod {
+// examplePod returns an example Pod with the specified namespace and labels.
+func examplePod(namespace string, labels map[string]string) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-pod-",
 			Namespace:    namespace,
+			Labels:       labels,
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{{
@@ -778,20 +890,35 @@ func examplePod(namespace string) *corev1.Pod {
 	}
 }
 
-func createClusterRole(client clientset.Interface, isSystemResource bool) (*rbacv1.ClusterRole, error) {
+// createPod starts a Pod in the specified namespace and with the specific labels.
+func createPod(ctx context.Context, client clientset.Interface, namespace string, labels map[string]string) (*corev1.Pod, error) {
+	pod := examplePod(namespace, labels)
+
+	pod, err := client.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := testutil.WaitForPodsWithLabelRunning(client, pod.Namespace, kubelabels.SelectorFromSet(kubelabels.Set(labels))); err != nil {
+		return nil, err
+	}
+
+	return pod, nil
+}
+
+// createClusterRole creates a ClusterRole with the specified labels.
+func createClusterRole(ctx context.Context, client clientset.Interface, labels map[string]string) (*rbacv1.ClusterRole, error) {
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-cluster-role-",
-			Labels:       map[string]string{},
+			Labels:       labels,
 		},
 	}
-	if isSystemResource {
-		clusterRole.Labels["admission.zalando.org/infrastructure-component"] = "true"
-	}
 
-	return client.RbacV1().ClusterRoles().Create(context.Background(), clusterRole, metav1.CreateOptions{})
+	return client.RbacV1().ClusterRoles().Create(ctx, clusterRole, metav1.CreateOptions{})
 }
 
+// getAWSAccountID returns the current AWS account's ID.
 func getAWSAccountID(ctx context.Context, awsConfig aws.Config) (string, error) {
 	client := sts.NewFromConfig(awsConfig)
 
