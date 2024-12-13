@@ -323,8 +323,6 @@ var ___ = describe("Ingress tests for OPA filters", func() {
 		jig *ingress.TestJig
 	)
 
-	time.Sleep(120 * time.Second) // see weather waiting helps with AWS_ROLE_ARN
-
 	It("Should activate OPA filter without issue [Ingress] [ZalandoIAM]", func() {
 		jig = ingress.NewIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
