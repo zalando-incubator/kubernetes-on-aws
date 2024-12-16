@@ -736,7 +736,7 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("Upgrade request required")))
 			})
 
-			g.It("should allow exec access for postgres pods", func() {
+			g.It("should allow exec access for postgres pod", func() {
 				result := client.CoreV1().RESTClient().Post().Namespace(postgresPod.Namespace).Resource("pods").Name(postgresPod.Name).SubResource("exec").Do(context.Background())
 				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("Upgrade request required")))
 			})
@@ -762,7 +762,7 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("Upgrade request required")))
 			})
 
-			g.It("should allow exec access for postgres pods", func() {
+			g.It("should allow exec access for postgres pod", func() {
 				result := client.CoreV1().RESTClient().Post().Namespace(postgresPod.Namespace).Resource("pods").Name(postgresPod.Name).SubResource("exec").Do(context.Background())
 				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("Upgrade request required")))
 			})
@@ -788,7 +788,7 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("Upgrade request required")))
 			})
 
-			g.It("should deny exec access for postgres pods", func() {
+			g.It("should deny exec access for postgres pod", func() {
 				result := client.CoreV1().RESTClient().Post().Namespace(postgresPod.Namespace).Resource("pods").Name(postgresPod.Name).SubResource("exec").Do(context.Background())
 				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("exec into postgres pods is forbidden")))
 			})
@@ -892,14 +892,12 @@ func examplePod(namespace string, labels map[string]string) *corev1.Pod {
 
 // createPod starts a Pod in the specified namespace and with the specific labels.
 func createPod(ctx context.Context, client clientset.Interface, namespace string, labels map[string]string) (*corev1.Pod, error) {
-	pod := examplePod(namespace, labels)
-
-	pod, err := client.CoreV1().Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	pod, err := client.CoreV1().Pods(namespace).Create(ctx, examplePod(namespace, labels), metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := testutil.WaitForPodsWithLabelRunning(client, pod.Namespace, kubelabels.SelectorFromSet(kubelabels.Set(labels))); err != nil {
+	if err := testutil.WaitForPodsWithLabelRunning(client, namespace, kubelabels.SelectorFromSet(kubelabels.Set(labels))); err != nil {
 		return nil, err
 	}
 
