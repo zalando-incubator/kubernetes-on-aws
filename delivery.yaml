@@ -283,20 +283,20 @@ pipeline:
         - name: APPLICATION
           value: kubernetes
         - name: COMPONENT
-          value: e2e
+          value: e2eopa
     end2end_tests:
       metadata:
-        name: e2e
+        name: e2eopa
         labels:
           application: kubernetes
-          component: e2e
+          component: e2eopa
         annotations:
           zalando.org/runtime-policy: require-on-demand
       spec:
         serviceAccountName: kubernetes-e2e
         restartPolicy: Never
         containers:
-          - name: e2e
+          - name: e2eopa
             image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
             args:
               - create-cluster
@@ -433,17 +433,17 @@ pipeline:
       env: *apply_opa_enabled_env
     end2end_tests:
       metadata:
-        name: e2e
+        name: e2eopa
         labels:
           application: kubernetes
-          component: e2e
+          component: e2eopa
         annotations:
           zalando.org/runtime-policy: require-on-demand
       spec:
         serviceAccountName: kubernetes-e2e
         restartPolicy: Never
         containers:
-          - name: e2e
+          - name: e2eopa
             image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
             args:
               - e2e
