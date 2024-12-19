@@ -1,0 +1,48 @@
+{{ if eq .Cluster.ConfigItems.wiz_enable_runtime_monitoring_daemonset "true"}}
+---
+# Source: wiz-sensor/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: wiz-sensor
+  labels:
+    helm.sh/chart: wiz-sensor-1.0.4760
+    image/tag: v1
+    app.kubernetes.io/name: wiz-sensor
+    app.kubernetes.io/instance: wiz-sensor
+    app.kubernetes.io/version: "1.0.4708"
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["", "apps", "batch"]
+    resources: [
+      "namespaces", "nodes", "daemonsets", "replicasets", "deployments",
+      "jobs", "cronjobs", "statefulsets", "replicationcontrollers", "serviceaccounts",
+    ]
+    verbs: ["get", "list", "watch"]
+---
+# Source: wiz-sensor/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: wiz-sensor
+  labels:
+    
+    helm.sh/chart: wiz-sensor-1.0.4760
+    image/tag: v1
+    app.kubernetes.io/name: wiz-sensor
+    app.kubernetes.io/instance: wiz-sensor
+    app.kubernetes.io/version: "1.0.4708"
+    app.kubernetes.io/managed-by: Helm
+subjects:
+- kind: ServiceAccount
+  name: wiz-sensor
+  namespace: wiz
+roleRef:
+  kind: ClusterRole
+  name: wiz-sensor
+  apiGroup: rbac.authorization.k8s.io
+{{end}}}

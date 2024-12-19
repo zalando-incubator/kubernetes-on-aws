@@ -1,0 +1,79 @@
+{{ if eq .Cluster.ConfigItems.wiz_enable_runtime_monitoring_daemonset "true"}}
+---
+# Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/charts/wiz-broker/templates/wiz-broker-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wiz-connector-agent
+  namespace: "wiz"
+  labels:
+    helm.sh/chart: wiz-broker-2.1.0
+    app.kubernetes.io/name: wiz-broker
+    app.kubernetes.io/instance: wiz-connector
+    app.kubernetes.io/version: "2.5"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wiz-broker
+      app.kubernetes.io/instance: wiz-connector
+  template:
+    metadata:
+      annotations:
+        rollme: "Cd4Gg"
+      labels:
+        helm.sh/chart: wiz-broker-2.1.0
+        app.kubernetes.io/name: wiz-broker
+        app.kubernetes.io/instance: wiz-connector
+        app.kubernetes.io/version: "2.5"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: wiz-broker
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      volumes:
+        - name: connector-data
+          secret:
+            secretName: wiz-connector-connector
+            items:
+              - key: connectorData
+                path: data
+      containers:
+        - name: wiz-broker
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+          image: "wiziopublic.azurecr.io/wiz-app/wiz-broker:2.5"
+          imagePullPolicy: Always
+          volumeMounts:
+          - name: connector-data
+            mountPath: /etc/connectorData
+            readOnly: true
+          args: [
+            /etc/connectorData/data
+          ]
+          env:
+          - name: LOG_LEVEL
+            value: info
+          - name: WIZ_ENV
+            value: 
+          - name: WIZ_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: wiz-api-token
+                key: clientId
+          - name: WIZ_CLIENT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: wiz-api-token
+                key: clientToken
+          - name: TARGET_IP
+            value: kubernetes.default.svc.cluster.local
+          - name: TARGET_PORT
+            value: "443"
+          resources:
+            null
+{{end}}}

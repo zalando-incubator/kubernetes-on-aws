@@ -1,0 +1,167 @@
+{{ if eq .Cluster.ConfigItems.wiz_enable_runtime_monitoring_daemonset "true"}}
+---
+# Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/job-create-connector.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wiz-kubernetes-connector-create-connector
+  namespace: "wiz"
+  labels:
+    helm.sh/chart: wiz-kubernetes-connector-3.1.1
+    app.kubernetes.io/name: wiz-kubernetes-connector
+    app.kubernetes.io/instance: wiz-connector
+    app.kubernetes.io/version: "2.5"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded 
+    rollme.wizApiTokenHash: ce8124bc1b0fbc0cb5cd47338ca0c7d5f5446d79936e443a201d96b192a7bd65
+    rollme.proxyHash: 9aa53d69075371b3fa23ebeea2fd2416ea81fb533499d071ca2d576f17c7c886
+    rollme.brokerHash: 115ba85431eeaf8db3ff2173aee02d16e67df1555d5e1ef74cfa7ac0d812cab2   
+
+spec:
+  ttlSecondsAfterFinished: 60
+  manualSelector: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wiz-kubernetes-connector
+      app.kubernetes.io/instance: wiz-connector
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        
+        helm.sh/chart: wiz-kubernetes-connector-3.1.1
+        app.kubernetes.io/name: wiz-kubernetes-connector
+        app.kubernetes.io/instance: wiz-connector
+        app.kubernetes.io/version: "2.5"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: wiz-auto-modify-connector
+      restartPolicy: "Never"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: wiz-connector-creator
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+          image: "wiziopublic.azurecr.io/wiz-app/wiz-broker:2.5"
+          imagePullPolicy: Always
+          command:
+            - "wiz-broker"
+          args:
+            
+            - create-kubernetes-connector
+            - --api-server-endpoint
+            - "https://kubernetes.default.svc.cluster.local"
+            - --secrets-namespace
+            - "default"
+            - --service-account-token-secret-name
+            - "wiz-cluster-reader-token"
+            - --output-secret-name
+            - "wiz-connector-connector"
+            - --is-on-prem=true
+            - --service-type
+            - "Kubernetes"
+            - --wait=true
+          env:
+          - name: LOG_LEVEL
+            value: info
+          - name: WIZ_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: wiz-api-token
+                key: clientId
+                optional: false
+          - name: WIZ_CLIENT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: wiz-api-token
+                key: clientToken
+                optional: false
+          - name: WIZ_ENV
+            value: 
+          resources:
+            null
+---
+# Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/job-delete-connector.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wiz-kubernetes-connector-delete-connector
+  namespace: "wiz"
+  labels:
+    helm.sh/chart: wiz-kubernetes-connector-3.1.1
+    app.kubernetes.io/name: wiz-kubernetes-connector
+    app.kubernetes.io/instance: wiz-connector
+    app.kubernetes.io/version: "2.5"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    rollme.proxyHash: 9aa53d69075371b3fa23ebeea2fd2416ea81fb533499d071ca2d576f17c7c886
+    rollme.brokerHash: 115ba85431eeaf8db3ff2173aee02d16e67df1555d5e1ef74cfa7ac0d812cab2 
+
+spec:
+  ttlSecondsAfterFinished: 60
+  manualSelector: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wiz-kubernetes-connector
+      app.kubernetes.io/instance: wiz-connector
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        
+        helm.sh/chart: wiz-kubernetes-connector-3.1.1
+        app.kubernetes.io/name: wiz-kubernetes-connector
+        app.kubernetes.io/instance: wiz-connector
+        app.kubernetes.io/version: "2.5"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: wiz-auto-modify-connector
+      restartPolicy: "Never"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: wiz-connector-delete
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+          image: "wiziopublic.azurecr.io/wiz-app/wiz-broker:2.5"
+          imagePullPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args:
+            - >
+              wiz-broker delete-kubernetes-connector 
+              --input-secrets-namespace 
+              "default" 
+              --input-secret-name 
+              "wiz-connector-connector" 
+              || true
+          env:
+          - name: LOG_LEVEL
+            value: info
+          - name: WIZ_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: wiz-api-token
+                key: clientId
+                optional: false
+          - name: WIZ_CLIENT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: wiz-api-token
+                key: clientToken
+                optional: false
+          - name: WIZ_ENV
+            value: ""
+          resources:
+            null
+{{end}}}
