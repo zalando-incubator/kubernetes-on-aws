@@ -136,8 +136,26 @@ write_files:
       {{- end}}
 {{- end}}
 
+  # TODO: Remove this once all nodes are running an AMI compatible with /etc/cni/net.d/10-flannel.conflist
   - owner: root:root
     path: /etc/kubernetes/cni/net.d/10-flannel.conflist
+    content: |
+      {
+        "name": "podnet",
+        "cniVersion": "0.3.1",
+        "plugins": [
+          {
+            "type": "flannel",
+            "delegate": {
+              "isDefaultGateway": true,
+              "hairpinMode": true
+            }
+          }
+        ]
+      }
+
+  - owner: root:root
+    path: /etc/cni/net.d/10-flannel.conflist
     content: |
       {
         "name": "podnet",
