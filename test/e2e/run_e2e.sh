@@ -122,7 +122,7 @@ if [ "$create_cluster" = true ]; then
             --manage-etcd-stack
 
         # Wait for the resources to be ready
-        ./wait-for-update.py --timeout 1200
+        ./wait-for-update.py --timeout 1500
 
         # provision and start load test
         echo "provision and start load test"
