@@ -14,14 +14,15 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 rules:
   - apiGroups: [""]
-    resources: ["pods"]
+    resources: ["pods", "namespaces", "nodes", "replicationcontrollers", "serviceaccounts",]
     verbs: ["get", "list", "watch"]
 
-  - apiGroups: ["", "apps", "batch"]
-    resources: [
-      "namespaces", "nodes", "daemonsets", "replicasets", "deployments",
-      "jobs", "cronjobs", "statefulsets", "replicationcontrollers", "serviceaccounts",
-    ]
+  - apiGroups: ["apps"]
+    resources: ["daemonsets", "replicasets", "deployments", "statefulsets",]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["batch"]
+    resources: ["cronjobs",]
     verbs: ["get", "list", "watch"]
 ---
 # Source: wiz-sensor/templates/clusterrolebinding.yaml
