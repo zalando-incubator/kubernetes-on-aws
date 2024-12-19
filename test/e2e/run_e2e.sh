@@ -48,8 +48,8 @@ RESULT_BUCKET="${RESULT_BUCKET:-""}"
 
 if [ "$OPA_ENABLED" == "true" ]; then
   echo "Running with OPA specific configuration"
-  export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e_opa-${CDP_BUILD_VERSION}"}"
-  export LOCAL_ID="${LOCAL_ID:-"e2e_opa-${CDP_BUILD_VERSION}"}"
+  export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2eopa-${CDP_BUILD_VERSION}"}"
+  export LOCAL_ID="${LOCAL_ID:-"e2eopa-${CDP_BUILD_VERSION}"}"
 else
   export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-${CDP_BUILD_VERSION}"}"
   export LOCAL_ID="${LOCAL_ID:-"e2e-${CDP_BUILD_VERSION}"}"
