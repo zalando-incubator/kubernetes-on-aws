@@ -102,12 +102,6 @@ if [ "$create_cluster" = true ]; then
         git clone "https://$CDP_TARGET_REPOSITORY" "$BASE_CFG_PATH"
         git -C "$BASE_CFG_PATH" reset --hard "${CDP_TARGET_COMMIT_ID}"
 
-#        if [ "$OPA_ENABLED" == "true" ]; then
-#          echo "Removing some cluster features to speed up the creation"
-#          rm -rf "$BASE_CFG_PATH/cluster/manifests/skipper-canary-controller"
-#          rm -rf "$BASE_CFG_PATH/cluster/manifests/prometheus"
-#        fi
-
         # generate cluster.yaml
         # call the cluster_config.sh from base git checkout if possible
         if [ -f "$BASE_CFG_PATH/test/e2e/cluster_config.sh" ]; then
