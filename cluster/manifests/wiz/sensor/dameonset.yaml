@@ -13,6 +13,8 @@ metadata:
     app.kubernetes.io/instance: wiz-sensor
     app.kubernetes.io/version: "1.0.4708"
     app.kubernetes.io/managed-by: Helm
+    application: "wiz"
+    component: "sensor"
   namespace: wiz
 
 spec:
@@ -181,11 +183,11 @@ spec:
           mountPath: /api-endpoint-name/
         resources:
           limits:
-            cpu: 300m
-            memory: 300Mi
+            cpu: {{ .Cluster.ConfigItems.wiz_adapter_cpu }} 
+            memory: {{ .Cluster.ConfigItems.wiz_adapter_memory }} 
           requests:
-            cpu: 300m
-            memory: 300Mi
+            cpu: {{ .Cluster.ConfigItems.wiz_adapter_cpu }}
+            memory: {{ .Cluster.ConfigItems.wiz_adapter_memory }} 
 
       terminationGracePeriodSeconds: 90
       imagePullSecrets:
