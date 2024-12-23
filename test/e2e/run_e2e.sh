@@ -7,7 +7,6 @@ loadtest_e2e=false
 stackset_e2e=false
 decommission_cluster=false
 COMMAND="${1:-"all"}" # all, create-cluster, e2e, stackset-e2e, decommission-cluster
-OPA_ENABLED="${2:-false}"
 
 case "$COMMAND" in
     all)
@@ -45,16 +44,10 @@ CDP_TARGET_REPOSITORY="${CDP_TARGET_REPOSITORY:-"github.com/zalando-incubator/ku
 CDP_TARGET_COMMIT_ID="${CDP_TARGET_COMMIT_ID:-"dev"}"
 CDP_HEAD_COMMIT_ID="${CDP_HEAD_COMMIT_ID:-"$(git describe --tags --always)"}"
 RESULT_BUCKET="${RESULT_BUCKET:-""}"
+FOCUS="${FOCUS:-(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])}"
 
-if [ "$OPA_ENABLED" == "true" ]; then
-  echo "Running with OPA specific configuration"
-  export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-${CDP_BUILD_VERSION}opa"}"
-  export LOCAL_ID="${LOCAL_ID:-"e2e-${CDP_BUILD_VERSION}opa"}"
-else
-  export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-${CDP_BUILD_VERSION}"}"
-  export LOCAL_ID="${LOCAL_ID:-"e2e-${CDP_BUILD_VERSION}"}"
-fi
-
+export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-${CDP_BUILD_VERSION}"}"
+export LOCAL_ID="${LOCAL_ID:-"e2e-${CDP_BUILD_VERSION}"}"
 export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
@@ -188,12 +181,6 @@ if [ "$e2e" = true ]; then
     #
     # introduce a broken DNS record to mess with ExternalDNS
     # kubectl apply -f broken-dns-record.yaml
-
-    if [ "$OPA_ENABLED" == "true" ]; then
-      FOCUS="(\[Opa\])"
-    else
-      FOCUS="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])"
-    fi
 
     mkdir -p junit_reports
     ginkgo -procs=25 -flake-attempts=2 \
