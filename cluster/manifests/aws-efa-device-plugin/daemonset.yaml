@@ -1,0 +1,159 @@
+{{ if eq .Cluster.ConfigItems.aws_efa_device_plugin_enabled "true" }}
+# source: https://github.com/aws/eks-charts/blob/master/stable/aws-efa-k8s-device-plugin/templates/daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: aws-efa-k8s-device-plugin
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: aws-efa-k8s-device-plugin
+spec:
+  selector:
+    matchLabels:
+      daemonset:  aws-efa-k8s-device-plugin
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        daemonset: aws-efa-k8s-device-plugin
+        application: kubernetes
+        component: aws-efa-k8s-device-plugin
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+    spec:
+      serviceAccountName: aws-efa-k8s-device-plugin
+      tolerations:
+      - operator: Exists
+        effect: NoExecute
+      - operator: Exists
+        effect: NoSchedule
+      # Mark this pod as a critical add-on; when enabled, the critical add-on
+      # scheduler reserves resources for critical add-on pods so that they can
+      # be rescheduled after a failure.
+      # See https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
+      priorityClassName: "system-node-critical"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: node.kubernetes.io/instance-type
+                  operator: In
+                  values:
+                    - m5dn.24xlarge
+                    - m5n.24xlarge
+                    - m5zn.12xlarge
+                    - m6a.48xlarge
+                    - m6i.32xlarge
+                    - m6id.32xlarge
+                    - m6idn.32xlarge
+                    - m6in.32xlarge
+                    - m7a.48xlarge
+                    - m7g.16xlarge
+                    - m7gd.16xlarge
+                    - m7i.48xlarge
+                    - c5n.9xlarge
+                    - c5n.18xlarge
+                    - c6a.48xlarge
+                    - c6gn.16xlarge
+                    - c6i.32xlarge
+                    - c6id.32xlarge
+                    - c6in.32xlarge
+                    - c7a.48xlarge
+                    - c7g.16xlarge
+                    - c7gd.16xlarge
+                    - c7gn.16xlarge
+                    - c7i.48xlarge
+                    - r5dn.24xlarge
+                    - r5n.24xlarge
+                    - r6a.48xlarge
+                    - r6i.32xlarge
+                    - r6idn.32xlarge
+                    - r6in.32xlarge
+                    - r6id.32xlarge
+                    - r7a.48xlarge
+                    - r7g.16xlarge
+                    - r7gd.16xlarge
+                    - r7i.48xlarge
+                    - r7iz.32xlarge
+                    - x2idn.32xlarge
+                    - x2iedn.32xlarge
+                    - x2iezn.12xlarge
+                    - i3en.12xlarge
+                    - i3en.24xlarge
+                    - i4g.16xlarge
+                    - i4i.32xlarge
+                    - im4gn.16xlarge
+                    - dl1.24xlarge
+                    - dl2q.24xlarge
+                    - g4dn.8xlarge
+                    - g4dn.12xlarge
+                    - g4dn.16xlarge
+                    - g5.8xlarge
+                    - g5.12xlarge
+                    - g5.16xlarge
+                    - g5.24xlarge
+                    - g5.48xlarge
+                    - g6.8xlarge
+                    - g6.12xlarge
+                    - g6.16xlarge
+                    - g6.24xlarge
+                    - g6.48xlarge
+                    - g6e.8xlarge
+                    - g6e.12xlarge
+                    - g6e.16xlarge
+                    - g6e.24xlarge
+                    - g6e.48xlarge
+                    - gr6.8xlarge
+                    - inf1.24xlarge
+                    - p3dn.24xlarge
+                    - p4d.24xlarge
+                    - p4de.24xlarge
+                    - p5.48xlarge
+                    - p5e.48xlarge
+                    - p5en.48xlarge
+                    - trn1.32xlarge
+                    - trn1n.32xlarge
+                    - trn2.48xlarge
+                    - vt1.24xlarge
+                    - hpc6a.48xlarge
+                    - hpc6id.32xlarge
+                    - hpc7a.12xlarge
+                    - hpc7a.24xlarge
+                    - hpc7a.48xlarge
+                    - hpc7a.96xlarge
+                    - hpc7g.4xlarge
+                    - hpc7g.8xlarge
+                    - hpc7g.16xlarge
+      hostNetwork: true
+      containers:
+        - image: container-registry.zalando.net/teapot/aws-efa-k8s-device-plugin:v0.5.4-main-1
+          name: aws-efa-k8s-device-plugin
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            runAsNonRoot: false
+          resources:
+            requests:
+              cpu: "{{ .Cluster.ConfigItems.aws_efa_device_plugin_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.aws_efa_device_plugin_memory }}"
+            limits:
+              cpu: "{{ .Cluster.ConfigItems.aws_efa_device_plugin_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.aws_efa_device_plugin_memory }}"
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+            - name: infiniband-volume
+              mountPath: /dev/infiniband/
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
+        - name: infiniband-volume
+          hostPath:
+            path: /dev/infiniband/
+{{ end }}
