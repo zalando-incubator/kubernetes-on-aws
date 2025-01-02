@@ -6,13 +6,7 @@ kind: DaemonSet
 metadata:
   name: wiz-sensor
   labels:
-    
     helm.sh/chart: wiz-sensor-1.0.4760
-    image/tag: v1
-    app.kubernetes.io/name: wiz-sensor
-    app.kubernetes.io/instance: wiz-sensor
-    app.kubernetes.io/version: "1.0.4708"
-    app.kubernetes.io/managed-by: Helm
     application: "wiz"
     component: "sensor"
   namespace: wiz
@@ -20,8 +14,8 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: wiz-sensor
-      app.kubernetes.io/instance: wiz-sensor
+      application: "wiz"
+      component: "sensor"
 
   updateStrategy:
     type: RollingUpdate
@@ -75,8 +69,8 @@ spec:
 
       containers:
       - name: wiz-sensor
-        image: wizio.azurecr.io/sensor:v1
-        imagePullPolicy: Always
+        image: container-registry-test.zalando.net/secops-systems/wiz-sensor:latest
+        imagePullPolicy: IfNotPresent
 
         securityContext:
           capabilities:

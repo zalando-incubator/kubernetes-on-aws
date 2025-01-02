@@ -1,21 +1,4 @@
 {{ if eq .Cluster.ConfigItems.wiz_enable_runtime_monitoring_daemonset "true"}}
-# ---
-# # We are using ClusterRole readonly created by default in the cluster instead of creating new one provided by wiz
-# # Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/service-account-cluster-reader.yaml
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: ClusterRole
-# metadata:
-#   name: wiz-cluster-reader
-#   labels:
-#     helm.sh/chart: wiz-kubernetes-connector-3.1.1
-#     app.kubernetes.io/name: wiz-kubernetes-connector
-#     app.kubernetes.io/instance: wiz-connector
-#     app.kubernetes.io/version: "2.5"
-#     app.kubernetes.io/managed-by: Helm
-# rules:
-#   - apiGroups: ["*"]
-#     resources: ["*"]
-#     verbs: ["get", "list", "watch"]
 ---
 # Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/service-account-cluster-reader.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -23,11 +6,9 @@ kind: ClusterRoleBinding
 metadata:
   name: wiz-cluster-reader
   labels:
-    helm.sh/chart: wiz-kubernetes-connector-3.1.1
-    app.kubernetes.io/name: wiz-kubernetes-connector
-    app.kubernetes.io/instance: wiz-connector
-    app.kubernetes.io/version: "2.5"
-    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: wiz-broker-2.1.0
+    application: "wiz"
+    component: "connector"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

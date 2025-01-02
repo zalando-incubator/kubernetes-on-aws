@@ -8,28 +8,22 @@ metadata:
   namespace: "wiz"
   labels:
     helm.sh/chart: wiz-broker-2.1.0
-    app.kubernetes.io/name: wiz-broker
-    app.kubernetes.io/instance: wiz-connector
-    app.kubernetes.io/version: "2.5"
-    app.kubernetes.io/managed-by: Helm
     application: "wiz"
     component: "connector"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: wiz-broker
-      app.kubernetes.io/instance: wiz-connector
+      application: "wiz"
+      component: "connector"
   template:
     metadata:
       annotations:
         rollme: "Cd4Gg"
       labels:
         helm.sh/chart: wiz-broker-2.1.0
-        app.kubernetes.io/name: wiz-broker
-        app.kubernetes.io/instance: wiz-connector
-        app.kubernetes.io/version: "2.5"
-        app.kubernetes.io/managed-by: Helm
+        application: "wiz"
+        component: "connector"
     spec:
       serviceAccountName: wiz-broker
       securityContext:
@@ -48,15 +42,14 @@ spec:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
             runAsUser: 1000
-          image: "wiziopublic.azurecr.io/wiz-app/wiz-broker:2.5"
-          imagePullPolicy: Always
+          image: "container-registry-test.zalando.net/secops-systems/wiz-broker:latest"
+          imagePullPolicy: IfNotPresent
           volumeMounts:
           - name: connector-data
             mountPath: /etc/connectorData
             readOnly: true
-          args: [
-            /etc/connectorData/data
-          ]
+          args:
+            - /etc/connectorData/data
           env:
           - name: LOG_LEVEL
             value: info

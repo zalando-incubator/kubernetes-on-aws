@@ -7,11 +7,7 @@ metadata:
   name: wiz-kubernetes-connector-create-connector
   namespace: "wiz"
   labels:
-    helm.sh/chart: wiz-kubernetes-connector-3.1.1
-    app.kubernetes.io/name: wiz-kubernetes-connector
-    app.kubernetes.io/instance: wiz-connector
-    app.kubernetes.io/version: "2.5"
-    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: wiz-broker-2.1.0
     application: "wiz"
     component: "connector"
   annotations:
@@ -26,8 +22,8 @@ spec:
   manualSelector: true
   selector:
     matchLabels:
-      app.kubernetes.io/name: wiz-kubernetes-connector
-      app.kubernetes.io/instance: wiz-connector
+      application: "wiz"
+      component: "connector"
   backoffLimit: 1
   template:
     metadata:
@@ -50,12 +46,11 @@ spec:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
             runAsUser: 1000
-          image: "wiziopublic.azurecr.io/wiz-app/wiz-broker:2.5"
-          imagePullPolicy: Always
+          image: "container-registry-test.zalando.net/secops-systems/wiz-broker:latest"
+          imagePullPolicy: IfNotPresent
           command:
             - "wiz-broker"
           args:
-            
             - create-kubernetes-connector
             - --api-server-endpoint
             - "https://kubernetes.default.svc.cluster.local"
@@ -96,11 +91,7 @@ metadata:
   name: wiz-kubernetes-connector-delete-connector
   namespace: "wiz"
   labels:
-    helm.sh/chart: wiz-kubernetes-connector-3.1.1
-    app.kubernetes.io/name: wiz-kubernetes-connector
-    app.kubernetes.io/instance: wiz-connector
-    app.kubernetes.io/version: "2.5"
-    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: wiz-broker-2.1.0
     application: "wiz"
     component: "connector"
   annotations:
@@ -114,18 +105,15 @@ spec:
   manualSelector: true
   selector:
     matchLabels:
-      app.kubernetes.io/name: wiz-kubernetes-connector
-      app.kubernetes.io/instance: wiz-connector
+      application: "wiz"
+      component: "connector"
   backoffLimit: 1
   template:
     metadata:
-      labels:
-        
-        helm.sh/chart: wiz-kubernetes-connector-3.1.1
-        app.kubernetes.io/name: wiz-kubernetes-connector
-        app.kubernetes.io/instance: wiz-connector
-        app.kubernetes.io/version: "2.5"
-        app.kubernetes.io/managed-by: Helm
+      labels:  
+        helm.sh/chart: wiz-broker-2.1.0
+        application: "wiz"
+        component: "connector"
     spec:
       serviceAccountName: wiz-auto-modify-connector
       restartPolicy: "Never"
@@ -138,14 +126,14 @@ spec:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
             runAsUser: 1000
-          image: "wiziopublic.azurecr.io/wiz-app/wiz-broker:2.5"
-          imagePullPolicy: Always
+          image: "container-registry-test.zalando.net/secops-systems/wiz-broker:latest"
+          imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-c"]
           args:
             - >
               wiz-broker delete-kubernetes-connector 
               --input-secrets-namespace 
-              "default" 
+              "wiz" 
               --input-secret-name 
               "wiz-connector-connector" 
               || true
