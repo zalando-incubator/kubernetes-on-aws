@@ -24,11 +24,8 @@ spec:
     metadata:
       labels:
         helm.sh/chart: wiz-sensor-1.0.4760
-        image/tag: v1
-        app.kubernetes.io/name: wiz-sensor
-        app.kubernetes.io/instance: wiz-sensor
-        app.kubernetes.io/version: "1.0.4708"
-        app.kubernetes.io/managed-by: Helm
+        application: "wiz"
+        component: "sensor"
       annotations:
         container.apparmor.security.beta.kubernetes.io/wiz-sensor: unconfined
         cluster-autoscaler.kubernetes.io/enable-ds-eviction: "true"
@@ -47,7 +44,7 @@ spec:
                 - key: dedicated
                   operator: NotIn
                   values:
-                  - skipper-ingress
+                  - skipper-ingress # ToDo : Target is to deploy on all worker nodes
 
       hostPID: true
       hostIPC: true
@@ -113,7 +110,7 @@ spec:
         - name: WIZ_RAMFS_STORE
           value: "/tmp/"
         - name: LOG_FILE
-          value: "/wiz-sensor-store/sensor.log"
+          value: "/wiz-sensor-store/sensor.log" # ToDo: after discussing with WIZ we can add annotation logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}" to push logs diretcly scalyr
         - name: MY_NODE_NAME
           valueFrom:
             fieldRef:
