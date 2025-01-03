@@ -10,16 +10,13 @@ metadata:
     application: "wiz"
     component: "sensor"
   namespace: wiz
-
 spec:
   selector:
     matchLabels:
       application: "wiz"
       component: "sensor"
-
   updateStrategy:
     type: RollingUpdate
-
   template:
     metadata:
       labels:
@@ -30,7 +27,6 @@ spec:
         container.apparmor.security.beta.kubernetes.io/wiz-sensor: unconfined
         cluster-autoscaler.kubernetes.io/enable-ds-eviction: "true"
         node-ready.cluster.zalando.org/exclude: "true"
-
     spec:
       serviceAccountName: wiz-sensor
       affinity:
@@ -45,7 +41,6 @@ spec:
                   operator: NotIn
                   values:
                   - skipper-ingress # ToDo : Target is to deploy on all worker nodes
-
       hostPID: true
       hostIPC: true
       tolerations:
@@ -61,14 +56,11 @@ spec:
         - key: nvidia.com/gpu
           value: present
           effect: NoSchedule
-
       restartPolicy: Always
-
       containers:
       - name: wiz-sensor
         image: container-registry-test.zalando.net/secops-systems/wiz-sensor:latest
         imagePullPolicy: IfNotPresent
-
         securityContext:
           capabilities:
             add:
@@ -97,7 +89,6 @@ spec:
             role: "system_r"
             level: "s0"
             type: "spc_t"
-
         env:
         - name: MIN_SENSOR_COMPAT_BUILD_VER
           value: "4142"
@@ -161,7 +152,6 @@ spec:
               containerName: wiz-sensor
               resource: limits.cpu
               divisor: "1m"
-
         volumeMounts:
         - name: sensor-host-cache
           mountPath: /wiz-host-cache/
@@ -180,7 +170,6 @@ spec:
           requests:
             cpu: {{ .Cluster.ConfigItems.wiz_adapter_cpu }}
             memory: {{ .Cluster.ConfigItems.wiz_adapter_memory }} 
-
       terminationGracePeriodSeconds: 90
       imagePullSecrets:
         - name: wiz-sensor-imagepullkey
