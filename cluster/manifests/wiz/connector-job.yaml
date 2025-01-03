@@ -72,7 +72,12 @@ spec:
           - name: WIZ_ENV
             value: 
           resources:
-            null
+            limits:
+              cpu: {{ .Cluster.ConfigItems.wiz_adapter_cpu }} 
+              memory: {{ .Cluster.ConfigItems.wiz_adapter_memory }} 
+            requests:
+              cpu: {{ .Cluster.ConfigItems.wiz_adapter_cpu }}
+              memory: {{ .Cluster.ConfigItems.wiz_adapter_memory }} 
 ---
 # Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/job-delete-connector.yaml
 apiVersion: batch/v1
@@ -139,5 +144,10 @@ spec:
           - name: WIZ_ENV
             value: ""
           resources:
-            null
+            limits:
+              cpu: {{ .Cluster.ConfigItems.wiz_adapter_cpu }} 
+              memory: {{ .Cluster.ConfigItems.wiz_adapter_memory }} 
+            requests:
+              cpu: {{ .Cluster.ConfigItems.wiz_adapter_cpu }}
+              memory: {{ .Cluster.ConfigItems.wiz_adapter_memory }} 
 {{end}}
