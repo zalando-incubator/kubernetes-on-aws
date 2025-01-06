@@ -104,11 +104,8 @@ clusters:
   - discount_strategy: spot
     instance_types:
     - "c7g.large"
-    - "c6g.large"
     - "c6i.large"
     - "c6a.large"
-    - "c5.large"
-    - "m5.large"
     - "m6i.large"
     - "m6a.large"
     - "m6g.large"
@@ -124,8 +121,6 @@ clusters:
     instance_types:
     - "m6a.large"
     - "m6i.large"
-    - "m5.large"
-    - "m5.xlarge"
     - "m6a.xlarge"
     - "m6i.xlarge"
     - "c6i.large"
