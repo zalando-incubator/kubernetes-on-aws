@@ -40,7 +40,15 @@ spec:
           operator: Exists
         - key: aws.amazon.com/spot
           operator: Exists
-        - operator: Exists
+        - key: zalando.org/node-not-ready
+          operator: Exists
+          effect: NoSchedule
+        - key: nvidia.com/gpu
+          value: present
+          effect: NoSchedule
+        - key: dedicated
+          operator: Equal
+          value: skipper-ingress
           effect: NoSchedule
       restartPolicy: Always
       containers:
