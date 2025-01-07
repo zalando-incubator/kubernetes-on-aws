@@ -29,18 +29,8 @@ spec:
         node-ready.cluster.zalando.org/exclude: "true"
     spec:
       serviceAccountName: wiz-sensor
-      affinity:
-        nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: master
-                  operator: DoesNotExist
-              - matchExpressions:
-                - key: dedicated
-                  operator: NotIn
-                  values:
-                  - skipper-ingress # ToDo : Target is to deploy on all worker nodes
+      nodeSelector:
+        node.kubernetes.io/role: worker
       hostPID: true
       hostIPC: true
       tolerations:
