@@ -108,6 +108,9 @@ data:
 {{- if eq .Cluster.ConfigItems.s3_csi_driver "true" }}
   pod.pod-security-policy.privileged-service-accounts.kube-system_s3-csi-driver: ""
 {{- end }}
+{{- if eq .Cluster.ConfigItems.aws_efa_device_plugin_enabled "true" }}
+  pod.pod-security-policy.privileged-service-accounts.kube-system_aws-efa-k8s-device-plugin: ""
+{{- end }}
   pod.pod-security-policy.privileged-service-accounts.visibility_logging-agent: ""
 {{- range $sa := split .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_privileged_service_accounts "," }}
   pod.pod-security-policy.privileged-service-accounts.{{ $sa }}: ""
