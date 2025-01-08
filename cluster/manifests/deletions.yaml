@@ -340,17 +340,23 @@ post_apply:
   kind: ClusterRoleBinding
 {{- end }}
 {{- if ne .Cluster.ConfigItems.wiz_enable_runtime_monitoring_daemonset "true" }}
+- name: wiz-kubernetes-connector-create-connector
+  kind : Job
+  namespace: wiz
+- name: wiz-kubernetes-connector-delete-connector
+  kind : Job
+  namespace: wiz
+- name: wiz-connector-agent
+  kind : Deployment
+  namespace: wiz
+- name: wiz-sensor
+  kind : DaemonSet
+  namespace: wiz
 - name: wiz-sensor
   kind: ServiceAccount
   namespace: wiz
 - name: wiz-sensor-apikey
   kind: Secret
-  namespace: wiz
-# - name: wiz-sensor-imagepullkey
-#   kind : Secret
-#   namespace: wiz
-- name: wiz-sensor
-  kind : DaemonSet
   namespace: wiz
 - name: wiz-sensor
   kind : ClusterRole
@@ -381,15 +387,6 @@ post_apply:
   namespace: wiz
 - name: wiz-auto-modify-connector
   kind : RoleBinding
-  namespace: wiz
-- name: wiz-kubernetes-connector-create-connector
-  kind : Job
-  namespace: wiz
-- name: wiz-kubernetes-connector-delete-connector
-  kind : Job
-  namespace: wiz
-- name: wiz-connector-agent
-  kind : Deployment
   namespace: wiz
 - name: wiz-cluster-reader
   kind : ClusterRoleBinding
