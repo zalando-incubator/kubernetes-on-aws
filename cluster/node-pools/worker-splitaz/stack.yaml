@@ -156,10 +156,12 @@ Resources:
             VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
+          # {{ if eq .Cluster.ConfigItems.associate_public_ip_on_launch "true" }}
           AssociatePublicIpAddress: true
-          {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+          # {{ end }}
+          # {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
           Ipv6AddressCount: 1
-          {{- end}}
+          # {{- end}}
           Groups:
           - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
         EbsOptimized: false
