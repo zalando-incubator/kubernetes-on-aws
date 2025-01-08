@@ -43,7 +43,11 @@ spec:
       containers:
 {{ if eq .Cluster.ConfigItems.dns_cache "unbound" }}
       - name: unbound
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound:1.22.0-master-10
+{{- else }}
         image: container-registry.zalando.net/teapot/unbound:1.22.0-master-10
+{{- end }}
         args:
         - -d
         - -c
@@ -83,11 +87,15 @@ spec:
           readOnly: true
           subPath: unbound.conf
       - name: unbound-telemetry
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound-telemetry:master-5
+{{- else }}
         image: container-registry.zalando.net/teapot/unbound-telemetry:master-5
+{{- end }}
         args:
         - tcp
         # TODO: ipv6
-        - --bind=:9054
+        - --bind=0.0.0.0:9054
         ports:
         - name: metrics
           containerPort: 9054
