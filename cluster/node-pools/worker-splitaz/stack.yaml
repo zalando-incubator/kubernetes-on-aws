@@ -155,7 +155,9 @@ Resources:
             VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
+          # {{ if eq .Cluster.ConfigItems.associate_public_ip_on_launch "true" }}
           AssociatePublicIpAddress: true
+          # {{ end }}
           Groups:
           - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
         EbsOptimized: false
