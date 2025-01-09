@@ -149,7 +149,6 @@ EOFF
       taints: dedicated=node-tests:NoSchedule
   - discount_strategy: spot
     instance_types:
-    - "p3.2xlarge"
     - "g3s.xlarge"
     - "g3.4xlarge"
     - "g4dn.xlarge"
@@ -160,6 +159,9 @@ EOFF
     - "g5.4xlarge"
     - "g5.8xlarge"
     - "g5.16xlarge"
+    - "g6.xlarge"
+    - "g6.2xlarge"
+    - "g6.4xlarge"
     name: worker-gpu
     profile: worker-splitaz
     min_size: 0
