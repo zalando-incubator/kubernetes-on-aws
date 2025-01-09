@@ -21,7 +21,9 @@ spec:
   securityGroupSelectorTerms:
     - tags:
         karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
+  # {{ if eq .Cluster.ConfigItems.associate_public_ip_on_launch "true" }}
   associatePublicIPAddress: true
+  # {{ end }}
   instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
   blockDeviceMappings:
     - deviceName: /dev/sda1
