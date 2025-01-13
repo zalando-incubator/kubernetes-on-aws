@@ -17,7 +17,11 @@ spec:
     httpTokens: optional
   subnetSelectorTerms:
     - tags:
+        # {{ if eq .NodePool.ConfigItems.internal_node_subnets_enabled "true" }}
+        kubernetes.io/role/internal-node: "enabled"
+        # {{ else }}
         kubernetes.io/role/karpenter: "enabled"
+        # {{ end }}
   securityGroupSelectorTerms:
     - tags:
         karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
