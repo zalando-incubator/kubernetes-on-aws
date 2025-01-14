@@ -17,11 +17,15 @@ spec:
     httpTokens: optional
   subnetSelectorTerms:
     - tags:
+        # {{ if eq .NodePool.ConfigItems.internal_node_subnets_enabled "true" }}
+        kubernetes.io/role/internal-node: "enabled"
+        # {{ else }}
         kubernetes.io/role/karpenter: "enabled"
+        # {{ end }}
   securityGroupSelectorTerms:
     - tags:
         karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
-  # {{ if eq .Cluster.ConfigItems.associate_public_ip_on_launch "true" }}
+  # {{ if eq .NodePool.ConfigItems.associate_public_ip_on_launch "true" }}
   associatePublicIPAddress: true
   # {{ end }}
   instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"

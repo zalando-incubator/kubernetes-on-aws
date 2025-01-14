@@ -37,9 +37,13 @@ Resources:
         PropagateAtLaunch: true
         Value: "{{ .NodePool.ConfigItems.pod_max_pids }}"
       VPCZoneIdentifier:
-{{ with $values := .Values }}
-{{ range $az := $values.availability_zones }}
-        - "{{ index $values.subnets $az }}"
+{{ with $data := . }}
+{{ range $az := $data.Values.availability_zones }}
+        # {{ if eq $data.NodePool.ConfigItems.internal_node_subnets_enabled "true" }}
+        - "{{ index $data.Values.internal_node_subnets $az }}"
+        # {{ else }}
+        - "{{ index $data.Values.subnets $az }}"
+        # {{ end }}
 {{ end }}
 {{ end }}
       TargetGroupARNs:
@@ -81,7 +85,7 @@ Resources:
             VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
-          # {{ if eq .Cluster.ConfigItems.associate_public_ip_on_launch "true" }}
+          # {{ if eq .NodePool.ConfigItems.associate_public_ip_on_launch "true" }}
           AssociatePublicIpAddress: true
           # {{ end }}
           Groups:
