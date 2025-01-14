@@ -339,7 +339,7 @@ post_apply:
 - name: kube-janitor
   kind: ClusterRoleBinding
 {{- end }}
-{{- if ne .Cluster.ConfigItems.wiz_enable_runtime_monitoring_daemonset "true" }}
+{{- if ne .Cluster.ConfigItems.wiz_enable_runtime_connector "true" }}
 - name: wiz-kubernetes-connector-create-connector
   kind : Job
   namespace: wiz
@@ -351,18 +351,6 @@ post_apply:
   namespace: wiz
 - name: wiz-sensor
   kind : DaemonSet
-  namespace: wiz
-- name: wiz-sensor
-  kind: ServiceAccount
-  namespace: wiz
-- name: wiz-sensor-apikey
-  kind: Secret
-  namespace: wiz
-- name: wiz-sensor
-  kind : ClusterRole
-  namespace: wiz
-- name: wiz-sensor
-  kind : ClusterRoleBinding
   namespace: wiz
 - name: wiz-broker
   kind : ServiceAccount
@@ -389,6 +377,20 @@ post_apply:
   kind : RoleBinding
   namespace: wiz
 - name: wiz-cluster-reader
+  kind : ClusterRoleBinding
+  namespace: wiz
+{{- end }}
+{{- if ne .Cluster.ConfigItems.wiz_enable_runtime_sensor "true" }}
+- name: wiz-sensor
+  kind: ServiceAccount
+  namespace: wiz
+- name: wiz-sensor-apikey
+  kind: Secret
+  namespace: wiz
+- name: wiz-sensor
+  kind : ClusterRole
+  namespace: wiz
+- name: wiz-sensor
   kind : ClusterRoleBinding
   namespace: wiz
 {{- end }}
