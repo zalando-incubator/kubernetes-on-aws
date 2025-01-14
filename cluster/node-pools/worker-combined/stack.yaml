@@ -118,9 +118,13 @@ Resources:
         PropagateAtLaunch: true
         Value: "{{ .NodePool.ConfigItems.pod_max_pids }}"
       VPCZoneIdentifier:
-{{ with $values := .Values }}
-{{ range $az := $values.availability_zones }}
-        - "{{ index $values.subnets $az }}"
+{{ with $data := . }}
+{{ range $az := $data.Values.availability_zones }}
+        # {{ if eq $data.NodePool.ConfigItems.internal_node_subnets_enabled "true" }}
+        - "{{ index $data.Values.internal_node_subnets $az }}"
+        # {{ else }}
+        - "{{ index $data.Values.subnets $az }}"
+        # {{ end }}
 {{ end }}
 {{ end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
