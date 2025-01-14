@@ -349,9 +349,6 @@ post_apply:
 - name: wiz-connector-agent
   kind : Deployment
   namespace: wiz
-- name: wiz-sensor
-  kind : DaemonSet
-  namespace: wiz
 - name: wiz-broker
   kind : ServiceAccount
   namespace: wiz
@@ -381,6 +378,9 @@ post_apply:
   namespace: wiz
 {{- end }}
 {{- if ne .Cluster.ConfigItems.wiz_enable_runtime_sensor "true" }}
+- name: wiz-sensor
+  kind : DaemonSet
+  namespace: wiz
 - name: wiz-sensor
   kind: ServiceAccount
   namespace: wiz
