@@ -123,7 +123,11 @@ Resources:
         PropagateAtLaunch: true
         Value: "{{ $data.NodePool.ConfigItems.pod_max_pids }}"
       VPCZoneIdentifier:
+        # {{ if eq $data.NodePool.ConfigItems.internal_node_subnets_enabled "true" }}
+        - "{{ index $data.Values.internal_node_subnets $az }}"
+        # {{ else }}
         - "{{ index $data.Values.subnets $az }}"
+        # {{ end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
 {{ end }}
 {{ end }}
