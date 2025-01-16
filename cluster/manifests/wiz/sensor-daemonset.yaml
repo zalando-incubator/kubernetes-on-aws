@@ -30,7 +30,11 @@ spec:
     spec:
       serviceAccountName: wiz-sensor
       nodeSelector:
+        {{ if eq .Cluster.ConfigItems.wiz_node_feature_rollout "true" }}
+        node-feature.zalando.org/wiz: enabled
+        {{ else }}
         node.kubernetes.io/role: worker
+        {{ end }}
       hostPID: true
       hostIPC: true
       tolerations:
@@ -69,6 +73,7 @@ spec:
             - FOWNER # file hashing
             - SYS_PTRACE # eBPF
             - SYSLOG # kernel symbol resolve
+            drop:
             - KILL # response
           privileged: false
           runAsNonRoot: true
@@ -145,6 +150,8 @@ spec:
               containerName: wiz-sensor
               resource: limits.cpu
               divisor: "1m"
+        - name: DISALLOW_RUNTIME_RESPONSE
+          value: "true"
         volumeMounts:
         - name: sensor-host-cache
           mountPath: /wiz-host-cache/
@@ -158,11 +165,11 @@ spec:
           mountPath: /api-endpoint-name/
         resources:
           limits:
-            cpu: {{ .Cluster.ConfigItems.wiz_adapter_cpu }} 
-            memory: {{ .Cluster.ConfigItems.wiz_adapter_memory }} 
+            cpu: {{ .Cluster.ConfigItems.wiz_sensor_cpu }} 
+            memory: {{ .Cluster.ConfigItems.wiz_sensor_memory }} 
           requests:
-            cpu: {{ .Cluster.ConfigItems.wiz_adapter_cpu }}
-            memory: {{ .Cluster.ConfigItems.wiz_adapter_memory }} 
+            cpu: {{ .Cluster.ConfigItems.wiz_sensor_cpu }}
+            memory: {{ .Cluster.ConfigItems.wiz_sensor_memory }} 
       terminationGracePeriodSeconds: 90
       # imagePullSecrets:
       #   - name: wiz-sensor-imagepullkey
