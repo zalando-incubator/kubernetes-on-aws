@@ -160,7 +160,7 @@ Resources:
             VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
-          # {{ if eq .NodePool.ConfigItems.associate_public_ip_on_launch "true" }}
+          # {{ if and (eq .NodePool.ConfigItems.associate_public_ip_on_launch "true") (ne .NodePool.ConfigItems.internal_node_subnets_enabled "true") }}
           AssociatePublicIpAddress: true
           # {{ end }}
           # {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
