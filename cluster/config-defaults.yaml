@@ -44,9 +44,6 @@ karpenter_max_pods_per_node: "32"
 # legacy => 0.36.2-main-25.patched
 karpenter_version: "current"
 
-# Configure whether to associate public ip when launching instances.
-associate_public_ip_on_launch: "true"
-
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
@@ -1157,7 +1154,13 @@ control_plane_load_balancer_internal: "none"
 
 # Optionally use internal subnets for running the nodes. This can be configured
 # a node pool level to only run a subset of nodes in the internal subnets.
+# If this is true then `associate_public_ip_on_launch` is automatically treated
+# as false.
 internal_node_subnets_enabled: "false"
+
+# Configure whether to associate public ip when launching instances.
+# This is only relevant when `internal_node_subnets_enabled` is false.
+associate_public_ip_on_launch: "true"
 
 # This allows setting custom sysctl settings. The config-item is intended to be
 # used on node-pools rather being set globally.
