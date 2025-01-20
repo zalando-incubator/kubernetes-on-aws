@@ -9,7 +9,7 @@
 {{ $cluster_internal_cidrs := list "10.2.0.0/15" .Values.vpc_ipv4_cidr }}
 {{ if eq .Cluster.Provider "zalando-eks" }}
 {{ if eq .Cluster.ConfigItems.eks_ip_family "ipv6" }}
-{{ $cluster_internal_cidrs = .Values.vpc_ipv6_cidrs }}
+{{ $cluster_internal_cidrs = append .Values.vpc_ipv6_cidrs .Values.vpc_ipv4_cidr }}
 {{ else }}
 {{ $cluster_internal_cidrs = list .Values.vpc_ipv4_cidr }}
 {{ end }}
