@@ -49,17 +49,17 @@ const (
 	compliantImage7 = "container-registry.zalando.net/teapot/skipper:v0.21.6"
 	compliantImage8 = "container-registry.zalando.net/teapot/skipper:v0.21.7"
 
-	// these are non-compliant because of expired base image
-	nonCompliantImage1  = "container-registry.zalando.net/teapot/skipper:v0.16.0"
-	nonCompliantImage2  = "container-registry.zalando.net/teapot/skipper:v0.16.1"
-	nonCompliantImage3  = "container-registry.zalando.net/teapot/skipper:v0.16.2"
-	nonCompliantImage4  = "container-registry.zalando.net/teapot/skipper:v0.16.3"
-	nonCompliantImage5  = "container-registry.zalando.net/teapot/skipper:v0.16.4"
-	nonCompliantImage6  = "container-registry.zalando.net/teapot/skipper:v0.16.5"
-	nonCompliantImage7  = "container-registry.zalando.net/teapot/skipper:v0.16.6"
-	nonCompliantImage8  = "container-registry.zalando.net/teapot/skipper:v0.16.7"
-	nonCompliantImage9  = "container-registry.zalando.net/teapot/skipper:v0.16.8"
-	nonCompliantImage10 = "container-registry.zalando.net/teapot/skipper:v0.16.9"
+	// these are non-compliant because of being test images
+	nonCompliantImage1  = "container-registry-test.zalando.net/teapot/skipper-test:pr-3380-1"
+	nonCompliantImage2  = "container-registry-test.zalando.net/teapot/skipper-test:pr-3379-1"
+	nonCompliantImage3  = "container-registry-test.zalando.net/teapot/skipper-test:pr-3378-1"
+	nonCompliantImage4  = "container-registry-test.zalando.net/teapot/skipper-test:pr-3377-1"
+	nonCompliantImage5  = "container-registry-test.zalando.net/teapot/skipper-test:pr-3376-1"
+	nonCompliantImage6  = "container-registry-test.zalando.net/teapot/skipper-test:pr-3373-1"
+	nonCompliantImage7  = "container-registry-test.zalando.net/teapot/skipper-test:pr-3372-1"
+	nonCompliantImage8  = "container-registry-test.zalando.net/teapot/skipper-test:pr-3371-1"
+	nonCompliantImage9  = "container-registry-test.zalando.net/teapot/skipper-test:pr-3375-9"
+	nonCompliantImage10 = "container-registry-test.zalando.net/teapot/skipper-test:pr-3374-8"
 	waitForPodTimeout   = 5 * time.Minute
 )
 
