@@ -70,16 +70,26 @@ data:
         log
 {{ end }}
         template IN A {
+            {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+            rcode NOERROR
+            {{- else}}
             match "^.*[.]ingress[.]cluster[.]local"
             {{- if eq .Cluster.Provider "zalando-eks" }}
-            answer "{{"{{"}} .Name {{"}}"}} 60 IN AAAA {{ nthAddressFromCIDR .Cluster.ConfigItems.service_cidr 50 }}"
+            answer "{{"{{"}} .Name {{"}}"}} 60 IN A {{ nthAddressFromCIDR .Cluster.ConfigItems.service_cidr 50 }}"
             {{- else}}
             answer "{{"{{"}} .Name {{"}}"}} 60 IN A 10.5.99.99"
             {{- end}}
             fallthrough
+            {{- end}}
         }
         template IN AAAA {
+            {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+            match "^.*[.]ingress[.]cluster[.]local"
+            answer "{{"{{"}} .Name {{"}}"}} 60 IN AAAA {{ nthAddressFromCIDR .Cluster.ConfigItems.service_cidr 50 }}"
+            fallthrough
+            {{- else}}
             rcode NOERROR
+            {{- end}}
         }
         prometheus :9153
         ready :9155
