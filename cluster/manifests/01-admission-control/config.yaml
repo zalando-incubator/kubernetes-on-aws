@@ -29,7 +29,7 @@ data:
   pod.service-account-iam.enable: "true"
   pod.service-account-iam.base-aws-account-id: "{{ accountID .Cluster.InfrastructureAccount }}"
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
-  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-234"
+  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-246"
 {{- end }}
   pod.env-inject.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables }}"
   pod.env-inject.variable._PLATFORM_ACCOUNT: "{{ .Cluster.Alias }}"
@@ -107,6 +107,9 @@ data:
   pod.pod-security-policy.privileged-service-accounts.kube-system_efs-provisioner: ""
 {{- if eq .Cluster.ConfigItems.s3_csi_driver "true" }}
   pod.pod-security-policy.privileged-service-accounts.kube-system_s3-csi-driver: ""
+{{- end }}
+{{- if eq .Cluster.ConfigItems.aws_efa_device_plugin_enabled "true" }}
+  pod.pod-security-policy.privileged-service-accounts.kube-system_aws-efa-k8s-device-plugin: ""
 {{- end }}
   pod.pod-security-policy.privileged-service-accounts.visibility_logging-agent: ""
 {{- range $sa := split .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_privileged_service_accounts "," }}

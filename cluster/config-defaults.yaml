@@ -427,6 +427,11 @@ nvidia_dcgm_exporter_enabled: "false"
 nvidia_dcgm_exporter_cpu: "10m"
 nvidia_dcgm_exporter_memory: "200Mi"
 
+# AWS EFA device plugin
+aws_efa_device_plugin_enabled: "false"
+aws_efa_device_plugin_cpu: "10m"
+aws_efa_device_plugin_memory: "20Mi"
+
 # static egress controller settings
 static_egress_controller_enabled: "true"
 
@@ -1147,6 +1152,16 @@ control_plane_graceful_shutdown: "true"
 # For rolling back it needs to be done in multiple stages: active -> serving -> pre -> none
 control_plane_load_balancer_internal: "none"
 
+# Optionally use internal subnets for running the nodes. This can be configured
+# a node pool level to only run a subset of nodes in the internal subnets.
+# If this is true then `associate_public_ip_on_launch` is automatically treated
+# as false.
+internal_node_subnets_enabled: "false"
+
+# Configure whether to associate public ip when launching instances.
+# This is only relevant when `internal_node_subnets_enabled` is false.
+associate_public_ip_on_launch: "true"
+
 # This allows setting custom sysctl settings. The config-item is intended to be
 # used on node-pools rather being set globally.
 #
@@ -1186,6 +1201,13 @@ kube_janitor_enabled: "true"
 # scheduling_controls
 teapot_admission_controller_scheduling_controls_enabled: "false"
 teapot_admission_controller_scheduling_controls_default_architecture: "amd64"
+
+# master-node-autoscaler configuration
+
+# Ignore recommendations for downgrading the instance generation of the master nodes
+# This is required to persist the upgrade of instance generation for master nodes
+# in a cluster.
+master_node_autoscaler_instance_generation_downgrade_disabled: "false"
 
 # role-sync-controller configs
 # Enabled by default only on Zalando EKS clusters
