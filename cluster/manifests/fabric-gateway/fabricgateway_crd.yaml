@@ -456,6 +456,7 @@ spec:
                     description: |-
                       The name of the StackSet resource in the same namespace which
                       should be handling requests coming through FabricGateway
+                    maxLength: 63
                     type: string
                   stackVersion:
                     description: |-
@@ -629,6 +630,9 @@ spec:
         required:
         - spec
         type: object
+        x-kubernetes-validations:
+          - message: metadata.name may not be longer than 63, see https://fabric.docs.zalando.net/fabric-gateway-troubleshooting/#gateway-troubleshooting
+            rule: size(self.metadata.name) < 64
     served: true
     storage: true
     subresources:
