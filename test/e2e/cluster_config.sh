@@ -131,8 +131,6 @@ clusters:
       taints: dedicated=node-tests:NoSchedule
   - discount_strategy: spot
     instance_types:
-    - "g3s.xlarge"
-    - "g3.4xlarge"
     - "g4dn.xlarge"
     - "g4dn.2xlarge"
     - "g4dn.4xlarge"
