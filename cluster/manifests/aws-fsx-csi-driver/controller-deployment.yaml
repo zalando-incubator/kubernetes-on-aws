@@ -1,0 +1,112 @@
+# Source: aws-fsx-csi-driver/templates/controller-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fsx-csi-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: aws-fsx-csi-driver
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      deployment: fsx-csi-controller
+  template:
+    metadata:
+      labels:
+        deployment: fsx-csi-controller
+        application: kubernetes
+        component: aws-fsx-csi-driver
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      serviceAccountName: fsx-csi-controller-sa
+      priorityClassName: system-cluster-critical
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+          tolerationSeconds: 300
+      containers:
+        - name: fsx-plugin
+          image: container-registry.zalando.net/teapot/aws-fsx-csi-driver:v1.3.0-master-25
+          imagePullPolicy: IfNotPresent
+          args:
+            - --mode=controller
+            - --endpoint=$(CSI_ENDPOINT)
+            - --logging-format=text
+            - --v=2
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:///var/lib/csi/sockets/pluginproxy/csi.sock
+            - name: CSI_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secret
+                  key: key_id
+                  optional: true
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secret
+                  key: access_key
+                  optional: true
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+          ports:
+            - name: healthz
+              containerPort: 9910
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 2
+            failureThreshold: 5
+        - name: csi-provisioner
+          image: container-registry.zalando.net/teapot/external-provisioner:v5.1.0-eks-1-31-10-master-24
+          args:
+            - --csi-address=$(ADDRESS)
+            - --v=2
+            - --timeout=5m
+            - --extra-create-metadata
+            - --leader-election=true
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+        - name: csi-resizer
+          image: container-registry.zalando.net/teapot/external-resizer:v1.12.0-eks-1-31-10-master-24
+          args:
+            - --csi-address=$(ADDRESS)
+            - --v=2
+            - --leader-election=true
+            - --timeout=5m
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+        - name: liveness-probe
+          image: container-registry.zalando.net/teapot/livenessprobe:v2.14.0-eks-1-31-10-master-24
+          args:
+            - --csi-address=/csi/csi.sock
+            - --health-port=9910
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+      volumes:
+        - name: socket-dir
+          emptyDir: {}

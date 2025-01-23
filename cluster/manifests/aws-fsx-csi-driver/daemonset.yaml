@@ -1,0 +1,117 @@
+# Source: aws-fsx-csi-driver/templates/node-daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fsx-csi-node
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: aws-fsx-csi-driver
+spec:
+  selector:
+    matchLabels:
+      daemonset: fsx-csi-node
+      application: kubernetes
+      component: aws-fsx-csi-driver
+  template:
+    metadata:
+      labels:
+        daemonset: fsx-csi-node
+        application: kubernetes
+        component: aws-fsx-csi-driver
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      dnsPolicy: ClusterFirst
+      serviceAccountName: fsx-csi-node-sa
+      priorityClassName: system-node-critical
+      tolerations:
+        - operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: eks.amazonaws.com/compute-type
+                operator: NotIn
+                values:
+                - fargate
+      containers:
+        - name: fsx-plugin
+          securityContext:
+            privileged: true
+          image: container-registry.zalando.net/teapot/aws-fsx-csi-driver:v1.3.0-master-25
+          imagePullPolicy: IfNotPresent
+          args:
+            - --mode=node
+            - --endpoint=$(CSI_ENDPOINT)
+            - --logging-format=text
+            - --v=2
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:/csi/csi.sock
+            - name: CSI_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: kubelet-dir
+              mountPath: /var/lib/kubelet
+              mountPropagation: "Bidirectional"
+            - name: plugin-dir
+              mountPath: /csi
+          ports:
+            - name: healthz
+              containerPort: 9810
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: healthz
+            initialDelaySeconds: 10
+            timeoutSeconds: 3
+            periodSeconds: 2
+            failureThreshold: 5
+        - name: node-driver-registrar
+          image: container-registry.zalando.net/teapot/node-driver-registrar:v2.12.0-eks-1-31-10-master-24
+          imagePullPolicy: IfNotPresent
+          args:
+            - --csi-address=$(ADDRESS)
+            - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+            - --v=2
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+            - name: DRIVER_REG_SOCK_PATH
+              value: /var/lib/kubelet/plugins/fsx.csi.aws.com/csi.sock
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+            - name: registration-dir
+              mountPath: /registration
+        - name: liveness-probe
+          image: container-registry.zalando.net/teapot/livenessprobe:v2.14.0-eks-1-31-10-master-24
+          imagePullPolicy: IfNotPresent
+          args:
+            - --csi-address=/csi/csi.sock
+            - --health-port=9810
+          volumeMounts:
+            - mountPath: /csi
+              name: plugin-dir
+      volumes:
+        - name: kubelet-dir
+          hostPath:
+            path: /var/lib/kubelet
+            type: Directory
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: Directory
+        - name: plugin-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/fsx.csi.aws.com/
+            type: DirectoryOrCreate

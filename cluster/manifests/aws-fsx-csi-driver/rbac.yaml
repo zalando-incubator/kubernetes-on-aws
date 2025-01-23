@@ -1,0 +1,147 @@
+# Source: aws-fsx-csi-driver/templates/controller-serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fsx-csi-controller-sa
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: aws-fsx-csi-driver
+---
+# Source: aws-fsx-csi-driver/templates/node-serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fsx-csi-node-sa
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: aws-fsx-csi-driver
+---
+# Source: aws-fsx-csi-driver/templates/clusterrole-csi-node.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: fsx-csi-node-role
+  labels:
+    application: kubernetes
+    component: aws-fsx-csi-driver
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "patch"]
+---
+# Source: aws-fsx-csi-driver/templates/controller-serviceaccount.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: fsx-csi-external-provisioner-role
+  labels:
+    application: kubernetes
+    component: aws-fsx-csi-driver
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csinodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "watch", "list", "delete", "update", "create"]
+---
+# Source: aws-fsx-csi-driver/templates/controller-serviceaccount.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: fsx-external-resizer-role
+  labels:
+    application: kubernetes
+    component: aws-fsx-csi-driver
+rules:
+  # The following rule should be uncommented for plugins that require secrets
+  # for provisioning.
+  # - apiGroups: [""]
+  #   resources: ["secrets"]
+  #   verbs: ["get", "list", "watch"]
+  - apiGroups: [ "" ]
+    resources: [ "persistentvolumes" ]
+    verbs: [ "get", "list", "watch", "update", "patch" ]
+  - apiGroups: [ "" ]
+    resources: [ "persistentvolumeclaims" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "persistentvolumeclaims/status" ]
+    verbs: [ "update", "patch" ]
+  - apiGroups: [ "storage.k8s.io" ]
+    resources: [ "storageclasses" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "events" ]
+    verbs: [ "list", "watch", "create", "update", "patch" ]
+  - apiGroups: [ "" ]
+    resources: [ "pods" ]
+    verbs: [ "get", "list", "watch" ]
+---
+# Source: aws-fsx-csi-driver/templates/clusterrolebinding-csi-node.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: fsx-csi-node-getter-binding
+  labels:
+    application: kubernetes
+    component: aws-fsx-csi-driver
+subjects:
+  - kind: ServiceAccount
+    name: fsx-csi-node-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: fsx-csi-node-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: aws-fsx-csi-driver/templates/controller-serviceaccount.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: fsx-csi-external-provisioner-binding
+  labels:
+    application: kubernetes
+    component: aws-fsx-csi-driver
+subjects:
+  - kind: ServiceAccount
+    name: fsx-csi-controller-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: fsx-csi-external-provisioner-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: aws-fsx-csi-driver/templates/controller-serviceaccount.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: fsx-csi-resizer-binding
+  labels:
+    application: kubernetes
+    component: aws-fsx-csi-driver
+subjects:
+  - kind: ServiceAccount
+    name: fsx-csi-controller-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: fsx-external-resizer-role
+  apiGroup: rbac.authorization.k8s.io
