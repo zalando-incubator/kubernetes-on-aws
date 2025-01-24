@@ -143,10 +143,6 @@ data:
 {{- end}}
 
 {{- if eq. .Cluster.ConfigItems.wiz_enable_runtime_sensor "true" }}
-  pod.pod-security-policy.privileged-service-accounts.wiz_wiz_sensor: ""
-{{- end }}
-
-{{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
   pod.pod-security-policy.allowed-restricted-capabilities.DAC_READ_SEARCH: ""
   pod.pod-security-policy.allowed-restricted-capabilities.IPC_LOCK: ""
   pod.pod-security-policy.allowed-restricted-capabilities.NET_ADMIN: ""
@@ -155,7 +151,11 @@ data:
   pod.pod-security-policy.allowed-restricted-capabilities.SYS_PTRACE: ""
   pod.pod-security-policy.allowed-restricted-capabilities.SYS_RESOURCE: ""
   pod.pod-security-policy.allowed-restricted-capabilities.SYS_RAWIO: ""
-  pod.pod-security-policy.allowed-restricted-capabilities.SYSLOG: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SYSLOG: "": ""
+{{- end }}
+
+{{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
+  pod.pod-security-policy.allowed-unsafe-sysctls.{{ $sysctl }}: ""
 {{- end}}
 
   pod.pod-security-policy.allow-privilege-escalation: "{{ .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_privileged_allow_privilege_escalation }}"
