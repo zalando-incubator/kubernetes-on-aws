@@ -9,12 +9,12 @@ metadata:
     helm.sh/chart: wiz-sensor-1.0.4760
     application: "wiz"
     component: "sensor"
+    daemonset: "wiz-sensor"
   namespace: wiz
 spec:
   selector:
     matchLabels:
-      application: "wiz"
-      component: "sensor"
+      daemonset: "wiz-sensor"
   updateStrategy:
     type: RollingUpdate
   template:
@@ -23,6 +23,7 @@ spec:
         helm.sh/chart: wiz-sensor-1.0.4760
         application: "wiz"
         component: "sensor"
+        daemonset: "wiz-sensor"
       annotations:
         container.apparmor.security.beta.kubernetes.io/wiz-sensor: unconfined
         cluster-autoscaler.kubernetes.io/enable-ds-eviction: "true"
@@ -32,9 +33,8 @@ spec:
       nodeSelector:
         {{ if eq .Cluster.ConfigItems.wiz_node_feature_rollout "true" }}
         node-feature.zalando.org/wiz: enabled
-        {{ else }}
-        node.kubernetes.io/role: worker
         {{ end }}
+        node.kubernetes.io/role: worker
       hostPID: true
       hostIPC: true
       tolerations:

@@ -115,6 +115,9 @@ data:
 {{- range $sa := split .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_privileged_service_accounts "," }}
   pod.pod-security-policy.privileged-service-accounts.{{ $sa }}: ""
 {{- end}}
+{{- if eq. .Cluster.ConfigItems.wiz_enable_runtime_sensor "true" }}
+  pod.pod-security-policy.privileged-service-accounts.wiz_wiz_sensor: ""
+{{- end }}
 
   pod.pod-security-policy.allowed-restricted-capabilities.AUDIT_WRITE: ""
   pod.pod-security-policy.allowed-restricted-capabilities.CHOWN: ""
@@ -139,9 +142,20 @@ data:
   pod.pod-security-policy.allowed-privileged-capabilities.{{ $cap }}: ""
 {{- end}}
 
+{{- if eq. .Cluster.ConfigItems.wiz_enable_runtime_sensor "true" }}
+  pod.pod-security-policy.privileged-service-accounts.wiz_wiz_sensor: ""
+{{- end }}
 
 {{- range $sysctl := split .Cluster.ConfigItems.allowed_unsafe_sysctls "," }}
-  pod.pod-security-policy.allowed-unsafe-sysctls.{{ $sysctl }}: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.DAC_READ_SEARCH: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.IPC_LOCK: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.NET_ADMIN: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SYS_ADMIN: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SYS_MODULE: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SYS_PTRACE: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SYS_RESOURCE: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SYS_RAWIO: ""
+  pod.pod-security-policy.allowed-restricted-capabilities.SYSLOG: ""
 {{- end}}
 
   pod.pod-security-policy.allow-privilege-escalation: "{{ .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_privileged_allow_privilege_escalation }}"

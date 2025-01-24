@@ -394,6 +394,10 @@ post_apply:
   kind : ClusterRoleBinding
   namespace: wiz
 {{- end }}
+{{- if and (ne .Cluster.ConfigItems.wiz_enable_runtime_connector "true") (ne .Cluster.ConfigItems.wiz_enable_runtime_sensor "true") }}
+- name: wiz
+  kind: Namespace
+{{- end }}
 {{- if ne .Cluster.ConfigItems.aws_efa_device_plugin_enabled "true"}}
 - name: aws-efa-k8s-device-plugin
   kind: DaemonSet
