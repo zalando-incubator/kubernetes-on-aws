@@ -44,6 +44,11 @@ karpenter_max_pods_per_node: "32"
 # legacy => 0.36.2-main-25.patched
 karpenter_version: "current"
 
+# configure whether karpenter should assume instances with local storage use
+# RAID0 for ephemeral pod storage.
+# Our AMI configured RAID0 at boot.
+karpenter_instance_storage_raid0: "true"
+
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
 kube_aws_ingress_controller_idle_timeout: "1m"
@@ -1216,6 +1221,21 @@ role_sync_controller_enabled: "true"
 {{ else }}
 role_sync_controller_enabled: "false"
 {{ end }}
+
+#Wiz Configs
+# When wiz_enable_runtime_sensor and wiz_enable_runtime_connector are set to true,
+# this enables WIZ runtime monitoring. A DaemonSet called Sensor and a Deployment
+# called Connector will be deployed into the cluster.
+wiz_enable_runtime_sensor: "false"
+wiz_enable_runtime_connector: "false"
+wiz_sensor_cpu: "300m"
+wiz_sensor_memory: "300Mi"
+wiz_connector_cpu: "300m"
+wiz_connector_memory: "300Mi"
+# Please note when this is set to true it allows the use of the node selector feature
+# to deploy the sensor and connector on specific nodes, by manually setting the node selector label on the nodes.
+# This is useful when you want to deploy the sensor and connector on specific nodes.
+wiz_node_feature_rollout : "false"
 
 # EKS specific configuration
 eks_control_plane_logging: "false"
