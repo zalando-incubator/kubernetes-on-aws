@@ -1,6 +1,6 @@
 {{/* image-updater-bot detects *image variables so use print to disable it for main image */}}
 
-{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.21.247-1070" }}
+{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.21.257-1079" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.21.257-1079" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
@@ -184,7 +184,9 @@ spec:
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - '-kubernetes-east-west-range-predicates=ClientIP("{{ .cluster_internal_cidrs | join `","` }}")'
           - '-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}'
+          - '-kubernetes-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_filters_append }}'
           - '-kubernetes-east-west-range-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_predicates }}'
+          - '-kubernetes-east-west-range-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_filters_append }}'
           - "-reverse-source-predicate"
 {{ end }}
           - "-proxy-preserve-host"
@@ -556,7 +558,9 @@ spec:
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
           - '-kubernetes-east-west-range-predicates=ClientIP("{{ $cluster_internal_cidrs | join `","` }}")'
           - '-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}'
+          - '-kubernetes-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_filters_append }}'
           - '-kubernetes-east-west-range-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_predicates }}'
+          - '-kubernetes-east-west-range-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_filters_append }}'
           - "-reverse-source-predicate"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
