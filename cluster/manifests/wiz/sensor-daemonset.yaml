@@ -1,0 +1,203 @@
+{{ if eq .Cluster.ConfigItems.wiz_enable_runtime_sensor "true"}}
+---
+# Source: wiz-sensor/templates/daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: wiz-sensor
+  labels:
+    helm.sh/chart: wiz-sensor-1.0.4760
+    application: "wiz"
+    component: "sensor"
+    daemonset: "wiz-sensor"
+  namespace: wiz
+spec:
+  selector:
+    matchLabels:
+      daemonset: "wiz-sensor"
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: wiz-sensor-1.0.4760
+        application: "wiz"
+        component: "sensor"
+        daemonset: "wiz-sensor"
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/wiz-sensor: unconfined
+        cluster-autoscaler.kubernetes.io/enable-ds-eviction: "true"
+        node-ready.cluster.zalando.org/exclude: "true"
+    spec:
+      serviceAccountName: wiz-sensor
+      nodeSelector:
+        {{ if eq .Cluster.ConfigItems.wiz_node_feature_rollout "true" }}
+        node-feature.zalando.org/wiz: enabled
+        {{ end }}
+        node.kubernetes.io/role: worker
+      hostPID: true
+      hostIPC: true
+      tolerations:
+        - key: karpenter.sh/disruption
+          operator: Exists
+        - key: node.kubernetes.io/not-ready
+          operator: Exists
+        - key: aws.amazon.com/spot
+          operator: Exists
+        - key: zalando.org/node-not-ready
+          operator: Exists
+          effect: NoSchedule
+        - key: nvidia.com/gpu
+          value: present
+          effect: NoSchedule
+        - key: dedicated
+          value: skipper-ingress
+          effect: NoSchedule
+      restartPolicy: Always
+      containers:
+      - name: wiz-sensor
+        image: container-registry.zalando.net/secops-systems/wiz-sensor:v1-main-2
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          capabilities:
+            add:
+            - SYS_ADMIN # moving between namespaces
+            - SYS_CHROOT # moving between namespaces
+            - SYS_RESOURCE # eBPF
+            - SYS_RAWIO # file hashing
+            - DAC_OVERRIDE # file hashing
+            - DAC_READ_SEARCH # file hashing
+            - NET_ADMIN # network events
+            - NET_RAW # network events
+            - IPC_LOCK # eBPF
+            - FOWNER # file hashing
+            - SYS_PTRACE # eBPF
+            - SYSLOG # kernel symbol resolve
+            drop:
+            - KILL # response
+          privileged: false
+          runAsNonRoot: true
+          runAsUser: 2202
+          runAsGroup: 2202
+          readOnlyRootFilesystem: true
+          seccompProfile:
+            type: Unconfined
+          seLinuxOptions:
+            user: "system_u"
+            role: "system_r"
+            level: "s0"
+            type: "spc_t"
+        env:
+        - name: MIN_SENSOR_COMPAT_BUILD_VER
+          value: "4142"
+        - name: HELM_CHART_COMPAT_VER
+          value: "1"
+        - name: WIZ_TMP_STORE
+          value: "/wiz-sensor-store/"
+        - name: WIZ_HOST_STORE
+          value: "/wiz-host-cache/"
+        - name: WIZ_RAMFS_STORE
+          value: "/tmp/"
+        - name: LOG_FILE
+          value: "/wiz-sensor-store/sensor.log" # ToDo: after discussing with WIZ we can add annotation logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}" to push logs diretcly scalyr
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: MY_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_APIKEY_SECRET_NAME
+          value: wiz-sensor-apikey
+        - name: AWS_EC2_METADATA_DISABLED
+          value: "true"
+        - name: CRI_SOCKET_CUSTOM_PATH
+          value: 
+        - name: HTTP_PROXY_URL
+          value: 
+        - name: HTTP_PROXY_USERNAME
+          value: 
+        - name: HTTP_PROXY_PASSWORD
+          value: 
+        - name: HTTP_PROXY_CERT
+          value: 
+        - name: BACKEND_ENV
+          value: prod
+        - name: SENSOR_CLUSTER_NAME
+          value: 
+        - name: RUST_LOG
+          value: info
+        - name: STDOUT_LOG
+          value: error
+        - name: POD_MEM_LIMITS
+          valueFrom:
+            resourceFieldRef:
+              containerName: wiz-sensor
+              resource: limits.memory
+              divisor: "1Mi"
+        - name: POD_CPU_LIMITS
+          valueFrom:
+            resourceFieldRef:
+              containerName: wiz-sensor
+              resource: limits.cpu
+              divisor: "1m"
+        - name: DISALLOW_RUNTIME_RESPONSE
+          value: "true"
+        volumeMounts:
+        - name: sensor-host-cache
+          mountPath: /wiz-host-cache/
+        - name: sensor-store
+          mountPath: /wiz-sensor-store/
+        - name: tmp-store
+          mountPath: /tmp/
+        - name: api-client-secret
+          mountPath: /api-client/
+        - name: api-endpoint-name-secret
+          mountPath: /api-endpoint-name/
+        resources:
+          limits:
+            cpu: {{ .Cluster.ConfigItems.wiz_sensor_cpu }} 
+            memory: {{ .Cluster.ConfigItems.wiz_sensor_memory }} 
+          requests:
+            cpu: {{ .Cluster.ConfigItems.wiz_sensor_cpu }}
+            memory: {{ .Cluster.ConfigItems.wiz_sensor_memory }} 
+      terminationGracePeriodSeconds: 90
+      # imagePullSecrets:
+      #   - name: wiz-sensor-imagepullkey
+      volumes:
+      - name: sensor-host-cache
+        hostPath:
+          path: /var/lib/wiz/
+          type: DirectoryOrCreate
+      - name: api-client-secret
+        secret:
+          secretName: wiz-sensor-apikey
+          items:
+            - key: clientId
+              path: clientId
+            - key: clientToken
+              path: clientToken
+      - name: api-endpoint-name-secret
+        secret:
+          secretName: wiz-sensor-apikey
+          optional: true
+          items:
+            - key: clientEndpoint
+              path: clientEndpoint
+      - name: sensor-store
+        emptyDir:
+          sizeLimit: "1Gi"
+      - name: tmp-store
+        emptyDir:
+          sizeLimit: "100Mi"
+          medium: "Memory"
+{{end}}
