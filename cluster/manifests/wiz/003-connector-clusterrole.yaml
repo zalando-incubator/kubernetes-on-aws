@@ -1,0 +1,20 @@
+{{ if eq .Cluster.ConfigItems.wiz_enable_runtime_connector "true"}}
+---
+# Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/service-account-cluster-reader.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: wiz-cluster-reader
+  labels:
+    helm.sh/chart: wiz-broker-2.1.0
+    application: "wiz"
+    component: "connector"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name:  readonly # readonly role created by default in out kubernetes environment
+subjects:
+- kind: ServiceAccount
+  name: wiz-cluster-reader
+  namespace: "wiz"
+{{end}}
