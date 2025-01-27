@@ -1,0 +1,43 @@
+{{ if eq .Cluster.ConfigItems.wiz_enable_runtime_connector "true"}}
+---
+# Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/service-account-modify-connector.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: wiz-auto-modify-connector
+  namespace: "wiz"
+  labels:
+    helm.sh/chart: wiz-broker-2.1.0
+    application: "wiz"
+    component: "connector"
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["wiz-connector-connector"]
+    verbs: ["update", "get"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: 
+      - "wiz-api-token"
+      - "wiz-cluster-reader-token"
+    verbs: ["get"]
+---
+# Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/service-account-modify-connector.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: wiz-auto-modify-connector
+  namespace: "wiz"
+  labels:
+    helm.sh/chart: wiz-broker-2.1.0
+    application: "wiz"
+    component: "connector"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name:  wiz-auto-modify-connector
+subjects:
+- kind: ServiceAccount
+  name: wiz-auto-modify-connector
+  namespace: "wiz"
+{{end}}
