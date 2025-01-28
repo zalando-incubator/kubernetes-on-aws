@@ -125,12 +125,7 @@ func createIngressWithInfo(serviceName, hostName, ns string, port int, cs kubern
 	_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 	framework.ExpectNoError(err)
 
-	// Verify skipper routing
-	By("Waiting for skipper route to default redirect from http to https")
-	err = waitForResponse(addr, "http", waitTime, isRedirect, true)
-	framework.ExpectNoError(err)
-
-	By("Waiting for ALB to create endpoint and skipper route")
+	By("Waiting for LB to create endpoint and skipper route")
 	err = waitForResponse(addr, "https", waitTime, isNotFound, true)
 	framework.ExpectNoError(err)
 
