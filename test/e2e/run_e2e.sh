@@ -210,7 +210,7 @@ if [ "$e2e" = true ]; then
 
     mkdir -p junit_reports
     ginkgo -procs=25 -flake-attempts=2 \
-        -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
+        -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\]|\[Opa\])" \
         -skip="($(IFS="|" ; echo "${SKIPPED_TESTS[*]}"))" \
         "e2e.test" -- \
         -delete-namespace-on-failure=false \
