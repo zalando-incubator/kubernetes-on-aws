@@ -1,0 +1,157 @@
+{{ if eq .Cluster.ConfigItems.wiz_enable_runtime_connector "true"}}
+---
+# Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/job-create-connector.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wiz-kubernetes-connector-create-connector
+  namespace: "wiz"
+  labels:
+    helm.sh/chart: wiz-broker-2.1.0
+    application: "wiz"
+    component: "connector"
+    job: "wiz-connector-agent"
+spec:
+  ttlSecondsAfterFinished: 60
+  manualSelector: true
+  selector:
+    matchLabels:
+      job: "wiz-connector-agent"
+  backoffLimit: 1
+  template:
+    metadata:
+      labels: 
+        helm.sh/chart: wiz-broker-2.1.0
+        application: "wiz"
+        component: "connector"
+        job: "wiz-connector-agent"
+    spec:
+      serviceAccountName: wiz-auto-modify-connector
+      restartPolicy: "Never"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: wiz-connector-creator
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+          image: "container-registry.zalando.net/secops-systems/wiz-broker:2.5-main-2"
+          imagePullPolicy: IfNotPresent
+          command:
+            - "wiz-broker"
+          args:
+            - create-kubernetes-connector
+            - --api-server-endpoint
+            - "https://kubernetes.default.svc.cluster.local"
+            - --secrets-namespace
+            - "wiz"
+            - --service-account-token-secret-name
+            - "wiz-cluster-reader-token"
+            - --output-secret-name
+            - "wiz-connector-connector"
+            - --is-on-prem=true
+            - --service-type
+            - "Kubernetes"
+            - --wait=true
+            - --connector-name
+            - {{.Cluster.Alias}}
+          env:
+          - name: LOG_LEVEL
+            value: info
+          - name: WIZ_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: wiz-api-token
+                key: clientId
+                optional: false
+          - name: WIZ_CLIENT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: wiz-api-token
+                key: clientToken
+                optional: false
+          - name: WIZ_ENV
+            value: 
+          resources:
+            limits:
+              cpu: {{ .Cluster.ConfigItems.wiz_connector_cpu }} 
+              memory: {{ .Cluster.ConfigItems.wiz_connector_memory }} 
+            requests:
+              cpu: {{ .Cluster.ConfigItems.wiz_connector_cpu }}
+              memory: {{ .Cluster.ConfigItems.wiz_connector_memory }} 
+---
+# Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/job-delete-connector.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wiz-kubernetes-connector-delete-connector
+  namespace: "wiz"
+  labels:
+    helm.sh/chart: wiz-broker-2.1.0
+    application: "wiz"
+    component: "connector"
+    job: "wiz-connector-agent"
+spec:
+  ttlSecondsAfterFinished: 60
+  manualSelector: true
+  selector:
+    matchLabels:
+      job: "wiz-connector-agent"
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:  
+        helm.sh/chart: wiz-broker-2.1.0
+        application: "wiz"
+        component: "connector"
+        job: "wiz-connector-agent"
+    spec:
+      serviceAccountName: wiz-auto-modify-connector
+      restartPolicy: "Never"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: wiz-connector-delete
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+          image: "container-registry.zalando.net/secops-systems/wiz-broker:2.5-main-2"
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c"]
+          args:
+            - >
+              wiz-broker delete-kubernetes-connector 
+              --input-secrets-namespace 
+              "wiz" 
+              --input-secret-name 
+              "wiz-connector-connector" 
+              || true
+          env:
+          - name: LOG_LEVEL
+            value: info
+          - name: WIZ_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: wiz-api-token
+                key: clientId
+                optional: false
+          - name: WIZ_CLIENT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: wiz-api-token
+                key: clientToken
+                optional: false
+          - name: WIZ_ENV
+            value: ""
+          resources:
+            limits:
+              cpu: {{ .Cluster.ConfigItems.wiz_connector_cpu }} 
+              memory: {{ .Cluster.ConfigItems.wiz_connector_memory }} 
+            requests:
+              cpu: {{ .Cluster.ConfigItems.wiz_connector_cpu }}
+              memory: {{ .Cluster.ConfigItems.wiz_connector_memory }} 
+{{end}}
