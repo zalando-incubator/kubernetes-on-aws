@@ -147,7 +147,7 @@ func updateIngressAndWait(serviceName, hostName, path, ingressRoute string, port
 	)
 	ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
 	framework.ExpectNoError(err)
-	time.Sleep(2 * time.Minute) // wait for routing change propagation
+	time.Sleep(4 * time.Minute) // wait for routing change propagation
 
 	return ingressUpdate
 }
