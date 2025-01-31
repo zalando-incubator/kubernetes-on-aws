@@ -169,3 +169,36 @@ subjects:
 - kind: ServiceAccount
   name: custom-metrics-apiserver
   namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-metrics-adapter-scaling-schedule-scaler
+  labels:
+    application: kubernetes
+    component: kube-metrics-adapter
+rules:
+- apiGroups:
+  - "apps"
+  resources:
+  - deployments/scale
+  - statefulsets/scale
+  verbs:
+  - get
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-metrics-adapter-scaling-schedule-scaler
+  labels:
+    application: kubernetes
+    component: kube-metrics-adapter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-metrics-adapter-scaling-schedule-scaler
+subjects:
+- kind: ServiceAccount
+  name: custom-metrics-apiserver
+  namespace: kube-system
