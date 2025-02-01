@@ -13,11 +13,11 @@ write_files:
       KUBELET_ROLE=worker
       ON_DEMAND_WORKER_REPLACEMENT_STRATEGY={{ .Cluster.ConfigItems.on_demand_worker_replacement_strategy }}
 
-{{if index .NodePool.ConfigItems "instance_storage_mount_path"}}
+{{if index .NodePool.ConfigItems "instance_storage_raid_setup_method"}}
   - owner: root:root
     path: /etc/kuberuntu/instance-storage.env
     content: |
-      MOUNT_DIRECTORY={{.NodePool.ConfigItems.instance_storage_mount_path}}
+      RAID_SETUP_METHOD={{.NodePool.ConfigItems.instance_storage_raid_setup_method}}
 {{end}}
 
   - owner: root:root
