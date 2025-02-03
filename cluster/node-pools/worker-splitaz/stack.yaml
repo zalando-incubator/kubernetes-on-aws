@@ -123,7 +123,11 @@ Resources:
         PropagateAtLaunch: true
         Value: "{{ $data.NodePool.ConfigItems.pod_max_pids }}"
       VPCZoneIdentifier:
+        # {{ if eq $data.NodePool.ConfigItems.internal_node_subnets_enabled "true" }}
+        - "{{ index $data.Values.internal_node_subnets $az }}"
+        # {{ else }}
         - "{{ index $data.Values.subnets $az }}"
+        # {{ end }}
     Type: 'AWS::AutoScaling::AutoScalingGroup'
 {{ end }}
 {{ end }}
@@ -155,7 +159,7 @@ Resources:
             VolumeType: gp3
         NetworkInterfaces:
         - DeviceIndex: 0
-          # {{ if eq .Cluster.ConfigItems.associate_public_ip_on_launch "true" }}
+          # {{ if and (eq .NodePool.ConfigItems.associate_public_ip_on_launch "true") (ne .NodePool.ConfigItems.internal_node_subnets_enabled "true") }}
           AssociatePublicIpAddress: true
           # {{ end }}
           Groups:

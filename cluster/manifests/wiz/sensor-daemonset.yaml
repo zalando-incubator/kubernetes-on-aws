@@ -10,6 +10,8 @@ metadata:
     application: "wiz"
     component: "sensor"
     daemonset: "wiz-sensor"
+  annotations:
+    node-ready.cluster.zalando.org/exclude: "true"
   namespace: wiz
 spec:
   selector:
@@ -27,7 +29,6 @@ spec:
       annotations:
         container.apparmor.security.beta.kubernetes.io/wiz-sensor: unconfined
         cluster-autoscaler.kubernetes.io/enable-ds-eviction: "true"
-        node-ready.cluster.zalando.org/exclude: "true"
     spec:
       serviceAccountName: wiz-sensor
       nodeSelector:

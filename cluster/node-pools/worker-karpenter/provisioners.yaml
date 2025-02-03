@@ -17,11 +17,15 @@ spec:
     httpTokens: optional
   subnetSelectorTerms:
     - tags:
+        # {{ if eq .NodePool.ConfigItems.internal_node_subnets_enabled "true" }}
+        kubernetes.io/role/internal-node: "enabled"
+        # {{ else }}
         kubernetes.io/role/karpenter: "enabled"
+        # {{ end }}
   securityGroupSelectorTerms:
     - tags:
         karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
-  # {{ if eq .Cluster.ConfigItems.associate_public_ip_on_launch "true" }}
+  # {{ if and (eq .NodePool.ConfigItems.associate_public_ip_on_launch "true") (ne .NodePool.ConfigItems.internal_node_subnets_enabled "true") }}
   associatePublicIPAddress: true
   # {{ end }}
   instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
@@ -31,6 +35,9 @@ spec:
         deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination }}
         volumeSize: {{ .NodePool.ConfigItems.ebs_root_volume_size }}Gi
         volumeType: gp3
+  # {{ if eq .NodePool.ConfigItems.karpenter_instance_storage_raid0 "true" }}
+  instanceStorePolicy: RAID0
+  # {{ end }}
   # If you enable this option, the Amazon EC2 console displays monitoring graphs with a 1-minute period for the instances that Karpenter launches.
   detailedMonitoring: false
   tags:

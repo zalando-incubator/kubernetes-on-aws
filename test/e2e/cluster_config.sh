@@ -47,6 +47,11 @@ clusters:
     karpenter_pools_enabled: "true"
     okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
     teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
+    skipper_open_policy_agent_enabled: "${SKIPPER_OPA_ENABLED}"
+    skipper_open_policy_agent_styra_token: "${STYRA_TOKEN}"
+    skipper_open_policy_agent_bucket_arn: "${SKIPPER_OPA_BUCKET_ARN}"
+    skipper_open_policy_agent_observability_url: "${SKIPPER_OPA_OBSERVABILITY_URL}"
+    skipper_open_policy_agent_bundles_url: "${SKIPPER_OPA_BUNDLES_URL}"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
@@ -131,9 +136,6 @@ clusters:
       taints: dedicated=node-tests:NoSchedule
   - discount_strategy: spot
     instance_types:
-    - "p3.2xlarge"
-    - "g3s.xlarge"
-    - "g3.4xlarge"
     - "g4dn.xlarge"
     - "g4dn.2xlarge"
     - "g4dn.4xlarge"
@@ -142,6 +144,9 @@ clusters:
     - "g5.4xlarge"
     - "g5.8xlarge"
     - "g5.16xlarge"
+    - "g6.xlarge"
+    - "g6.2xlarge"
+    - "g6.4xlarge"
     name: worker-gpu
     profile: worker-splitaz
     min_size: 0

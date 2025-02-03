@@ -44,8 +44,10 @@ karpenter_max_pods_per_node: "32"
 # legacy => 0.36.2-main-25.patched
 karpenter_version: "current"
 
-# Configure whether to associate public ip when launching instances.
-associate_public_ip_on_launch: "true"
+# configure whether karpenter should assume instances with local storage use
+# RAID0 for ephemeral pod storage.
+# Our AMI configured RAID0 at boot.
+karpenter_instance_storage_raid0: "true"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -130,8 +132,11 @@ skipper_edit_route_placeholders: ""
 skipper_ingress_inline_routes: ""
 skipper_ingress_refuse_payload: ""
 skipper_endpointslices_enabled: "true"
+
 skipper_kubernetes_annotation_predicates: ''
+skipper_kubernetes_annotation_filters_append: ''
 skipper_kubernetes_east_west_range_annotation_predicates: ''
+skipper_kubernetes_east_west_range_annotation_filters_append: ''
 
 skipper_compress_encodings: "gzip,deflate,br"
 
@@ -1155,6 +1160,16 @@ control_plane_graceful_shutdown: "true"
 # For rolling back it needs to be done in multiple stages: active -> serving -> pre -> none
 control_plane_load_balancer_internal: "none"
 
+# Optionally use internal subnets for running the nodes. This can be configured
+# a node pool level to only run a subset of nodes in the internal subnets.
+# If this is true then `associate_public_ip_on_launch` is automatically treated
+# as false.
+internal_node_subnets_enabled: "false"
+
+# Configure whether to associate public ip when launching instances.
+# This is only relevant when `internal_node_subnets_enabled` is false.
+associate_public_ip_on_launch: "true"
+
 # This allows setting custom sysctl settings. The config-item is intended to be
 # used on node-pools rather being set globally.
 #
@@ -1194,6 +1209,13 @@ kube_janitor_enabled: "true"
 # scheduling_controls
 teapot_admission_controller_scheduling_controls_enabled: "false"
 teapot_admission_controller_scheduling_controls_default_architecture: "amd64"
+
+# master-node-autoscaler configuration
+
+# Ignore recommendations for downgrading the instance generation of the master nodes
+# This is required to persist the upgrade of instance generation for master nodes
+# in a cluster.
+master_node_autoscaler_instance_generation_downgrade_disabled: "false"
 
 # role-sync-controller configs
 # Enabled by default only on Zalando EKS clusters
