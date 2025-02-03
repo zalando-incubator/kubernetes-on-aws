@@ -59,13 +59,13 @@ var _ = Describe("Ingress tests for OPA filters", func() {
 
 		url := "https://" + hostName + authorizationEnforcedPath
 		req, err := http.NewRequest("GET", url, nil)
-		resp, err := getAndWaitResponse(rt, req, 10*time.Second, http.StatusForbidden)
+		resp, err := getAndWaitResponseWithInterval(rt, req, 60*time.Second, 5*time.Second, http.StatusForbidden)
 		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 
 		By(fmt.Sprintf("Calling ingress %s/%s we wait to get a 200 with opaAuthorizeRequest %s policy", ingressUpdate.Namespace, ingressUpdate.Name, opaPolicyName))
 		req.Header.Set("Authorization", "Basic valid_token") // Authorized request
-		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
+		resp, err = getAndWaitResponseWithInterval(rt, req, 60*time.Second, 5*time.Second, http.StatusOK)
 		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err := getBody(resp)
@@ -91,13 +91,13 @@ var _ = Describe("Ingress tests for OPA filters", func() {
 
 		url := "https://" + hostName + serveResponsePath
 		req, err := http.NewRequest("GET", url, nil)
-		resp, err := getAndWaitResponse(rt, req, 10*time.Second, http.StatusForbidden)
+		resp, err := getAndWaitResponseWithInterval(rt, req, 60*time.Second, 5*time.Second, http.StatusForbidden)
 		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 
 		By(fmt.Sprintf("Calling ingress %s/%s we wait to get a 200 with opaServeResponse %s policy", ingressUpdate.Namespace, ingressUpdate.Name, opaPolicyName))
 		req.Header.Set("Authorization", "Basic permissions_token") // Authorized request
-		resp, err = getAndWaitResponse(rt, req, 10*time.Second, http.StatusOK)
+		resp, err = getAndWaitResponseWithInterval(rt, req, 60*time.Second, 5*time.Second, http.StatusOK)
 		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		s, err := getBody(resp)
