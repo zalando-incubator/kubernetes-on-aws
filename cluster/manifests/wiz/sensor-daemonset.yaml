@@ -38,21 +38,10 @@ spec:
       hostPID: true
       hostIPC: true
       tolerations:
-        - key: karpenter.sh/disruption
+        - effect: NoSchedule
           operator: Exists
-        - key: node.kubernetes.io/not-ready
+        - effect: NoExecute
           operator: Exists
-        - key: aws.amazon.com/spot
-          operator: Exists
-        - key: zalando.org/node-not-ready
-          operator: Exists
-          effect: NoSchedule
-        - key: nvidia.com/gpu
-          value: present
-          effect: NoSchedule
-        - key: dedicated
-          value: skipper-ingress
-          effect: NoSchedule
       restartPolicy: Always
       containers:
       - name: wiz-sensor
