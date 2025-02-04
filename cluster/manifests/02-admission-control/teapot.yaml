@@ -583,4 +583,33 @@ webhooks:
         expression: '!(request.userInfo.username in ["system:kube-controller-manager", "system:kube-scheduler", "zalando-iam:zalando:service:k8sapi_credentials-provider"])'
       - name: 'exclude-eks-components'
         expression: '!request.userInfo.username.startsWith("eks:")'
+  {{- if eq .Cluster.ConfigItems.role_sync_controller_enabled "true" }}
+  - name: clusterrole-admitter.teapot.zalan.do
+    clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/node"
+      {{- else }}
+      url: "https://localhost:8085/clusterrole"
+      {{- end }}
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    matchPolicy: Equivalent
+    sideEffects: "None"
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: ["rbac.authorization.k8s.io"]
+        apiVersions: ["v1"]
+        resources: ["clusterroles"]
+    matchConditions:
+      - name: 'exclude-privileged-groups'
+        expression: 'request.userInfo.groups.all(g, !(g in ["system:masters", "system:nodes", "system:serviceaccounts:kube-system", "okta:common/administrator", "zalando:administrator"]))'
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      - name: 'exclude-eks-components'
+        expression: '!request.userInfo.username.startsWith("eks:")'
+      {{- end }}
+  {{- end }}
 {{- end }}
