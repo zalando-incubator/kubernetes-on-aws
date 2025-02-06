@@ -10,6 +10,17 @@ post_apply:
 - name: coredns
   kind: ConfigMap
   namespace: kube-system
+{{- if ne .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
+- name: fis-experiment
+  kind: ClusterRoleBinding
+- name: fis-experiment
+  kind: ClusterRole
+# {{ range $namespace := split .Cluster.ConfigItems.eks_fis_namespaces "," }}
+- name: fis-experiment
+  kind: ServiceAccount
+  namespace: "{{ $namespace }}"
+# {{ end }}
+{{- end }}
 {{- end }}
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
