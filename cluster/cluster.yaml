@@ -1823,17 +1823,34 @@ Resources:
   # if Skipper Ingress needs to access other AWS resources
   SkipperIngressIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{ .Values.hosted_zone }}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:skipper-ingress"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:skipper-ingress"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
