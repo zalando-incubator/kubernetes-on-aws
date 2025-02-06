@@ -356,6 +356,11 @@ post_apply:
   kind : RoleBinding
   namespace: wiz
 {{- end }}
+{{- if ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true" }}
+- name: wiz-connector-agent
+  kind : Deployment
+  namespace: wiz
+{{- end }}
 {{- if and (ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true") (ne .Cluster.ConfigItems.wiz_enable_runtime_connector "true") }}
 - name: wiz-connector-connector
   kind : Secret
@@ -371,11 +376,6 @@ post_apply:
   namespace: wiz
 - name: wiz-cluster-reader
   kind : ClusterRoleBinding
-  namespace: wiz
-{{- end }}
-{{- if ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true" }}
-- name: wiz-connector-agent
-  kind : Deployment
   namespace: wiz
 - name: wiz-broker
   kind : ServiceAccount
