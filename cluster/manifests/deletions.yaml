@@ -346,18 +346,22 @@ post_apply:
 - name: wiz-kubernetes-connector-delete-connector
   kind : Job
   namespace: wiz
-- name: wiz-connector-agent
-  kind : Deployment
-  namespace: wiz
-- name: wiz-broker
-  kind : ServiceAccount
-  namespace: wiz
-- name: wiz-cluster-reader
-  kind : ServiceAccount
-  namespace: wiz
 - name: wiz-auto-modify-connector
   kind : ServiceAccount
   namespace: wiz
+- name: wiz-auto-modify-connector
+  kind : Role
+  namespace: wiz
+- name: wiz-auto-modify-connector
+  kind : RoleBinding
+  namespace: wiz
+{{- end }}
+{{- if ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true" }}
+- name: wiz-connector-agent
+  kind : Deployment
+  namespace: wiz
+{{- end }}
+{{- if and (ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true") (ne .Cluster.ConfigItems.wiz_enable_runtime_connector "true") }}
 - name: wiz-connector-connector
   kind : Secret
   namespace: wiz
@@ -367,14 +371,14 @@ post_apply:
 - name: wiz-api-token
   kind : Secret
   namespace: wiz
-- name: wiz-auto-modify-connector
-  kind : Role
-  namespace: wiz
-- name: wiz-auto-modify-connector
-  kind : RoleBinding
+- name: wiz-cluster-reader
+  kind : ServiceAccount
   namespace: wiz
 - name: wiz-cluster-reader
   kind : ClusterRoleBinding
+  namespace: wiz
+- name: wiz-broker
+  kind : ServiceAccount
   namespace: wiz
 {{- end }}
 {{- if ne .Cluster.ConfigItems.wiz_enable_runtime_sensor "true" }}
@@ -394,7 +398,7 @@ post_apply:
   kind : ClusterRoleBinding
   namespace: wiz
 {{- end }}
-{{- if and (ne .Cluster.ConfigItems.wiz_enable_runtime_connector "true") (ne .Cluster.ConfigItems.wiz_enable_runtime_sensor "true") }}
+{{- if and (ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true") (ne .Cluster.ConfigItems.wiz_enable_runtime_sensor "true") }}
 - name: wiz
   kind: Namespace
 {{- end }}
