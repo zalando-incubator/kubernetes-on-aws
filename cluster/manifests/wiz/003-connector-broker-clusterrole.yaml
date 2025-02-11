@@ -1,4 +1,6 @@
-{{ if eq .Cluster.ConfigItems.wiz_enable_runtime_connector "true"}}
+{{ if or (eq .Cluster.ConfigItems.wiz_enable_runtime_connector "true") (eq .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true") }}
+# wiz-cluster-reader-token Secret is dependent on wiz-cluster-reader SA.
+# It is created when wiz_enable_runtime_connector or wiz_enable_runtime_connector_broker is true and deleted when wiz_enable_runtime_connector_broker  and wiz_enable_runtime_connector is false
 ---
 # Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/service-account-cluster-reader.yaml
 apiVersion: rbac.authorization.k8s.io/v1
