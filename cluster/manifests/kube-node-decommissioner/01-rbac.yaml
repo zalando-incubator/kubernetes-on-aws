@@ -1,0 +1,40 @@
+# {{ if eq .Cluster.ConfigItems.kube_node_decommissioner_enabled "true" }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "kube-node-decommissioner"
+  namespace: "kube-system"
+  annotations:
+    application: kubernetes
+    component: kube-node-decommissioner
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-node-decommissioner
+  labels:
+    application: kubernetes
+    component: kube-node-decommissioner
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["list", "patch"]
+---
+# This role binding allows service-account "kube-node-decommissioner" to
+# list and patch nodes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-node-decommissioner
+  labels:
+    application: kubernetes
+    component: kube-node-decommissioner
+roleRef:
+  kind: ClusterRole
+  name: kube-node-decommissioner
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: "kube-node-decommissioner"
+  namespace: "kube-system"
+# {{ end }}
