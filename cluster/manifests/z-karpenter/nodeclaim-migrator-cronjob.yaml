@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: karpenter-nodeclaim-migrator
+  namespace: "kube-system"
+  labels:
+    application: kubernetes
+    component: karpenter-nodeclaim-migrator
+spec:
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 300
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            application: kubernetes
+            component: karpenter-nodeclaim-migrator
+          annotations:
+            logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        spec:
+          serviceAccountName: karpenter
+          restartPolicy: Never
+          containers:
+          - name: karpenter-nodeclaim-migrator
+            image: container-registry.zalando.net/teapot/karpenter-v1-migrator:main-2
+            args:
+            - -mode=nc-fix
+            resources:
+              limits:
+                cpu: 100m
+                memory: 100Mi
+              requests:
+                cpu: 100m
+                memory: 100Mi
