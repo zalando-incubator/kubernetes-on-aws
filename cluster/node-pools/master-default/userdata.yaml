@@ -3,7 +3,6 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
-      NODEPOOL_TAINTS=node.kubernetes.io/role=master:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
       NODE_LABELS=master=true,node.kubernetes.io/exclude-from-external-load-balancers,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,lifecycle-status=ready{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=master
@@ -76,6 +75,17 @@ write_files:
       # variables are replaced on instance start-up.
       providerID: __PROVIDER_ID__
       clusterDNS: [__CLUSTER_DNS__]
+      registerWithTaints:
+        - key: node.kubernetes.io/role
+          value: master
+          effect: NoSchedule
+{{- range $taint := .NodePool.Taints }}
+        - key: {{$taint.Key}}
+          effect: {{$taint.Effect}}
+{{- if $taint.Value }}
+          value: {{$taint.Value }}
+{{- end }}
+{{- end }}
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-apiserver.yaml
