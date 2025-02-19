@@ -34,14 +34,14 @@ spec:
       dnsPolicy: Default
       serviceAccountName: karpenter
       securityContext:
-        fsGroup: 65536
+        fsGroup: 65532
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       dnsPolicy: ClusterFirst
       containers:
         - name: controller
           securityContext:
-            runAsUser: 65536
-            runAsGroup: 65536
+            runAsUser: 65532
+            runAsGroup: 65532
             runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
@@ -50,11 +50,7 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
-          {{if eq .Cluster.ConfigItems.karpenter_version "current"}}
-          image: "container-registry.zalando.net/teapot/karpenter:0.37.0-main-27.patched"
-          {{else if eq .Cluster.ConfigItems.karpenter_version "legacy"}}
-          image: "container-registry.zalando.net/teapot/karpenter:0.36.2-main-25.patched"
-          {{end}}
+          image: "container-registry.zalando.net/teapot/karpenter:1.0.5-main-28.patched"
           imagePullPolicy: IfNotPresent
           env:
             - name: KUBERNETES_MIN_VERSION
@@ -71,8 +67,18 @@ spec:
               value: "false"
             - name: KARPENTER_SERVICE
               value: karpenter
+            - name: WEBHOOK_PORT
+              value: "8443"
+            - name: WEBHOOK_METRICS_PORT
+              value: "8001"
+            - name: DISABLE_WEBHOOK
+              value: "false"
             - name: LOG_LEVEL
               value: {{ .Cluster.ConfigItems.karpenter_log_level }}
+            - name: LOG_OUTPUT_PATHS
+              value: "stdout"
+            - name: LOG_ERROR_OUTPUT_PATHS
+              value: "stderr"
             - name: METRICS_PORT
               value: "8000"
             - name: HEALTH_PROBE_PORT
@@ -107,6 +113,12 @@ spec:
           ports:
             - name: http-metrics
               containerPort: 8000
+              protocol: TCP
+            - name: webhook-metrics
+              containerPort: 8001
+              protocol: TCP
+            - name: https-webhook
+              containerPort: 8443
               protocol: TCP
             - name: http
               containerPort: 8081

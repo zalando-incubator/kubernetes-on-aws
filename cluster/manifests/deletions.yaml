@@ -140,37 +140,6 @@ post_apply:
   namespace: kubenurse
   kind: Service
 {{- end }}
-# for karpenter >=v0.33.0 webhooks and settings configmaps have been removed
-# https://karpenter.sh/v0.32/upgrading/v1beta1-migration/#webhook-support-deprecated-in-favor-of-cel
-# https://karpenter.sh/v0.32/upgrading/v1beta1-migration/#global-settings
-- name: karpenter-logging-config
-  kind: ConfigMap
-  namespace: kube-system
-- name: karpenter-webhook
-  kind: ClusterRole
-- name: karpenter-webhook
-  kind: ClusterRoleBinding
-- name: karpenter-webhook
-  kind: ClusterRole
-- name: karpenter-webhook
-  kind: ClusterRoleBinding
-- name: karpenter-global-settings
-  kind: ConfigMap
-  namespace: kube-system
-- name: config-logging
-  kind: ConfigMap
-  namespace: kube-system
-- name: karpenter-cert
-  kind: Secret
-  namespace: kube-system
-- name: defaulting.webhook.karpenter.k8s.aws
-  kind: MutatingWebhookConfiguration
-- name: validation.webhook.karpenter.k8s.aws
-  kind: ValidatingWebhookConfiguration
-- name: validation.webhook.config.karpenter.sh
-  kind: ValidatingWebhookConfiguration
-- name: validation.webhook.karpenter.sh
-  kind: ValidatingWebhookConfiguration
 {{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "false" }}
 - name: provisioners.karpenter.sh
   kind: CustomResourceDefinition
