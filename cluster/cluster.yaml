@@ -9,6 +9,37 @@ Metadata:
 
 Resources:
 {{ if eq .Cluster.Provider "zalando-eks" }}
+  # https://aws.amazon.com/blogs/containers/aws-fault-injection-simulator-supports-chaos-engineering-experiments-on-amazon-eks-pods/
+  {{- if eq .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
+  FISEKSClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-eks-fis-experiment-executor"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - fis.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSFaultInjectionSimulatorEKSAccess
+      Policies:
+      - PolicyDocument:
+          Statement:
+            - Action:
+              - "logs:CreateLogDelivery"
+              - "logs:PutResourcePolicy"
+              - "logs:DescribeResourcePolicies"
+              - "logs:DescribeLogGroups"
+              Effect: Allow
+              Resource: "*"
+          Version: 2012-10-17
+        PolicyName: root
+  {{- end }}
+
   EKSClusterRole:
     Type: AWS::IAM::Role
     Properties:
@@ -190,6 +221,15 @@ Resources:
       KubernetesGroups:
       - zalando:administrator
       Type: "STANDARD"
+  {{- if eq .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
+  EKSAccessEntryFISEKSRole:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt FISEKSClusterRole.Arn
+      Username: "fis-experiment-executor"
+      Type: "STANDARD"
+  {{- end }}
   EKSAccessEntryZalandoIAMAuth:
     Type: "AWS::EKS::AccessEntry"
     Properties:
