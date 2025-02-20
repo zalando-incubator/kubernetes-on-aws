@@ -38,11 +38,6 @@ karpenter_controller_memory: "256Mi"
 karpenter_log_level: "error"
 # restrict the maximum number of pods for karpenter nodes
 karpenter_max_pods_per_node: "32"
-#
-# Karpenter version for controlling roll-out, can be "current" or "legacy"
-# current => 0.37.0-main-26.patched
-# legacy => 0.36.2-main-25.patched
-karpenter_version: "current"
 
 # configure whether karpenter should assume instances with local storage use
 # RAID0 for ephemeral pod storage.
@@ -605,6 +600,7 @@ teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
 teapot_admission_controller_namespace_delete_protection_enabled: "true"
+teapot_admission_controller_postgresql_owning_application_check_enabled: "true"
 {{else if eq .Cluster.Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
@@ -616,6 +612,7 @@ teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
 teapot_admission_controller_namespace_delete_protection_enabled: "false"
+teapot_admission_controller_postgresql_owning_application_check_enabled: "false"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
@@ -627,6 +624,7 @@ teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "false"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
 teapot_admission_controller_namespace_delete_protection_enabled: "false"
+teapot_admission_controller_postgresql_owning_application_check_enabled: "false"
 {{end}}
 
 # Enable automatic replacement of vanity images with ECR images

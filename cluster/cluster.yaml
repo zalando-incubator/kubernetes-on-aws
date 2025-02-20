@@ -662,19 +662,35 @@ Resources:
               "Version": "2012-10-17",
               "Statement": [
                 {
-                  "Sid": "AllowScopedEC2InstanceActions",
+                  "Sid": "AllowScopedEC2InstanceAccessActions",
                   "Effect": "Allow",
                   "Resource": [
                     "arn:${AWS::Partition}:ec2:${AWS::Region}::image/*",
                     "arn:${AWS::Partition}:ec2:${AWS::Region}::snapshot/*",
                     "arn:${AWS::Partition}:ec2:${AWS::Region}:*:security-group/*",
-                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:subnet/*",
-                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:launch-template/*"
+                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:subnet/*"
                   ],
                   "Action": [
                     "ec2:RunInstances",
                     "ec2:CreateFleet"
                   ]
+                },
+                {
+                  "Sid": "AllowScopedEC2LaunchTemplateAccessActions",
+                  "Effect": "Allow",
+                  "Resource": "arn:${AWS::Partition}:ec2:${AWS::Region}:*:launch-template/*",
+                  "Action": [
+                    "ec2:RunInstances",
+                    "ec2:CreateFleet"
+                  ],
+                  "Condition": {
+                    "StringEquals": {
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned"
+                    },
+                    "StringLike": {
+                      "aws:ResourceTag/karpenter.sh/nodepool": "*"
+                    }
+                  }
                 },
                 {
                   "Sid": "AllowScopedEC2InstanceActionsWithTags",
@@ -694,7 +710,8 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned"
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      "aws:RequestTag/eks:eks-cluster-name": "{{.Cluster.ID}}"
                     },
                     "StringLike": {
                       "aws:RequestTag/karpenter.sh/nodepool": "*"
@@ -716,6 +733,7 @@ Resources:
                   "Condition": {
                     "StringEquals": {
                       "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      "aws:RequestTag/eks:eks-cluster-name": "{{.Cluster.ID}}",
                       "ec2:CreateAction": [
                         "RunInstances",
                         "CreateFleet",
@@ -739,8 +757,12 @@ Resources:
                     "StringLike": {
                       "aws:ResourceTag/karpenter.sh/nodepool": "*"
                     },
+                    "StringEqualsIfExists": {
+                      "aws:RequestTag/eks:eks-cluster-name": "{{.Cluster.ID}}"
+                    },
                     "ForAllValues:StringEquals": {
                       "aws:TagKeys": [
+                        "eks:eks-cluster-name",
                         "karpenter.sh/nodeclaim",
                         "Name"
                       ]
@@ -824,13 +846,14 @@ Resources:
                 {
                   "Sid": "AllowScopedInstanceProfileCreationActions",
                   "Effect": "Allow",
-                  "Resource": "*",
+                  "Resource": "arn:${AWS::Partition}:iam::${AWS::AccountId}:instance-profile/*",
                   "Action": [
                     "iam:CreateInstanceProfile"
                   ],
                   "Condition": {
                     "StringEquals": {
                       "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      "aws:RequestTag/eks:eks-cluster-name": "{{.Cluster.ID}}",
                       "aws:RequestTag/topology.kubernetes.io/region": "${AWS::Region}"
                     },
                     "StringLike": {
@@ -841,7 +864,7 @@ Resources:
                 {
                   "Sid": "AllowScopedInstanceProfileTagActions",
                   "Effect": "Allow",
-                  "Resource": "*",
+                  "Resource": "arn:${AWS::Partition}:iam::${AWS::AccountId}:instance-profile/*",
                   "Action": [
                     "iam:TagInstanceProfile"
                   ],
@@ -850,6 +873,7 @@ Resources:
                       "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
                       "aws:ResourceTag/topology.kubernetes.io/region": "${AWS::Region}",
                       "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      "aws:RequestTag/eks:eks-cluster-name": "{{.Cluster.ID}}",
                       "aws:RequestTag/topology.kubernetes.io/region": "${AWS::Region}"
                     },
                     "StringLike": {
@@ -861,7 +885,7 @@ Resources:
                 {
                   "Sid": "AllowScopedInstanceProfileActions",
                   "Effect": "Allow",
-                  "Resource": "*",
+                  "Resource": "arn:${AWS::Partition}:iam::${AWS::AccountId}:instance-profile/*",
                   "Action": [
                     "iam:AddRoleToInstanceProfile",
                     "iam:RemoveRoleFromInstanceProfile",
@@ -880,8 +904,14 @@ Resources:
                 {
                   "Sid": "AllowInstanceProfileReadActions",
                   "Effect": "Allow",
-                  "Resource": "*",
+                  "Resource": "arn:${AWS::Partition}:iam::${AWS::AccountId}:instance-profile/*",
                   "Action": "iam:GetInstanceProfile"
+                },
+                {
+                  "Sid": "AllowAPIServerEndpointDiscovery",
+                  "Effect": "Allow",
+                  "Resource": "arn:${AWS::Partition}:eks:${AWS::Region}:${AWS::AccountId}:cluster/{{.Cluster.ID}}",
+                  "Action": "eks:DescribeCluster"
                 }
               ]
             }
