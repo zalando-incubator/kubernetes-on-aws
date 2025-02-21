@@ -1,5 +1,6 @@
 {{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
 ---
+# Source: karpenter/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -14,6 +15,14 @@ spec:
     - name: http-metrics
       port: 8080
       targetPort: http-metrics
+      protocol: TCP
+    - name: webhook-metrics
+      port: 8001
+      targetPort: webhook-metrics
+      protocol: TCP
+    - name: https-webhook
+      port: 8443
+      targetPort: https-webhook
       protocol: TCP
   selector:
     deployment: karpenter
