@@ -28,9 +28,6 @@ spec:
   # {{ if and (eq .NodePool.ConfigItems.associate_public_ip_on_launch "true") (ne .NodePool.ConfigItems.internal_node_subnets_enabled "true") }}
   associatePublicIPAddress: true
   # {{ end }}
-  # {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
-  ipv6AddressCount: 1
-  # {{- end }}
   instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
   blockDeviceMappings:
     - deviceName: /dev/sda1
