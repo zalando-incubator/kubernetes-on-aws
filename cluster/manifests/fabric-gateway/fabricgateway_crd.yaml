@@ -140,6 +140,14 @@ spec:
                               description: The description of requests which must
                                 be routed through the corresponding custom route
                               properties:
+                                headerRegexps:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    HeaderRegexps defines HTTP headers and corresponding regular expressions.
+                                    If a request header matches the provided regex, the route is considered a match.
+                                  minProperties: 1
+                                  type: object
                                 headers:
                                   additionalProperties:
                                     type: string
@@ -148,9 +156,11 @@ spec:
                                     specific request should be processed by this route.
                                   minProperties: 1
                                   type: object
-                              required:
-                              - headers
                               type: object
+                              x-kubernetes-validations:
+                              - message: at least one of headers or headerRegexps
+                                  must be specified
+                                rule: has(self.headers) || has(self.headerRegexps)
                             x-fabric-privileges:
                               description: The name of a scope which will be extracted
                                 from the bearer token
