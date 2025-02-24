@@ -50,7 +50,7 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
-          image: "container-registry.zalando.net/teapot/karpenter:1.0.5-main-28.patched"
+          image: "container-registry.zalando.net/teapot/karpenter:1.1.1-main-29.patched"
           imagePullPolicy: IfNotPresent
           env:
             - name: KUBERNETES_MIN_VERSION
@@ -67,12 +67,6 @@ spec:
               value: "false"
             - name: KARPENTER_SERVICE
               value: karpenter
-            - name: WEBHOOK_PORT
-              value: "8443"
-            - name: WEBHOOK_METRICS_PORT
-              value: "8001"
-            - name: DISABLE_WEBHOOK
-              value: "false"
             - name: LOG_LEVEL
               value: {{ .Cluster.ConfigItems.karpenter_log_level }}
             - name: LOG_OUTPUT_PATHS
@@ -113,12 +107,6 @@ spec:
           ports:
             - name: http-metrics
               containerPort: 8000
-              protocol: TCP
-            - name: webhook-metrics
-              containerPort: 8001
-              protocol: TCP
-            - name: https-webhook
-              containerPort: 8443
               protocol: TCP
             - name: http
               containerPort: 8081
