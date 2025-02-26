@@ -26,7 +26,7 @@ spec:
         component: karpenter
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
-        prometheus.io/port: "8000"
+        prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
         prometheus.io/scheme: "http"
         prometheus.io/scrape: "true"
@@ -50,7 +50,7 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
-          image: "container-registry.zalando.net/teapot/karpenter:1.1.1-main-29.patched"
+          image: "container-registry.zalando.net/teapot/karpenter:1.2.0-main-30.patched"
           imagePullPolicy: IfNotPresent
           env:
             - name: KUBERNETES_MIN_VERSION
@@ -74,7 +74,7 @@ spec:
             - name: LOG_ERROR_OUTPUT_PATHS
               value: "stderr"
             - name: METRICS_PORT
-              value: "8000"
+              value: "8080"
             - name: HEALTH_PROBE_PORT
               value: "8081"
             - name: SYSTEM_NAMESPACE
@@ -106,7 +106,7 @@ spec:
               value: "{{ nodeCIDRMaxNodesPodCIDR (parseInt64 $pod_cidr_size) (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}"
           ports:
             - name: http-metrics
-              containerPort: 8000
+              containerPort: 8080
               protocol: TCP
             - name: http
               containerPort: 8081
