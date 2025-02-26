@@ -7,7 +7,9 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
+{{- if eq .NodePool.ConfigItems.kuberuntu_ami_version "old" }}
       NODEPOOL_TAINTS={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}}
+{{- end }}
       NODE_LABELS=node.kubernetes.io/profile={{ .NodePool.Profile }},lifecycle-status=ready,node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}{{if or (eq .NodePool.Profile "worker-splitaz") (eq .NodePool.Profile "worker-combined")}},asg-lifecycle-hook=true{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=worker
@@ -118,6 +120,22 @@ write_files:
       # variables are replaced on instance start-up.
       providerID: __PROVIDER_ID__
       clusterDNS: [__CLUSTER_DNS__]
+{{- if eq .NodePool.ConfigItems.kuberuntu_ami_version "new" }}
+{{- if or (.NodePool.Taints) (eq .NodePool.Profile "worker-karpenter") }}
+      registerWithTaints:
+{{- range $taint := .NodePool.Taints }}
+        - key: {{$taint.Key}}
+          effect: {{$taint.Effect}}
+{{- if $taint.Value }}
+          value: {{$taint.Value }}
+{{- end }}
+{{- end }}
+{{- if eq .NodePool.Profile "worker-karpenter" }}
+        - key: karpenter.sh/unregistered
+          effect: NoExecute
+{{-  end }}
+{{-  end }}
+{{-  end }}
 
 {{- if and .Cluster.ConfigItems.vm_dirty_background_bytes .Cluster.ConfigItems.vm_dirty_bytes }}
   - owner: root:root
@@ -135,7 +153,7 @@ write_files:
       {{index $cfg 0}} = {{index $cfg 1}}
       {{- end}}
 {{- end}}
-
+{{ if eq .NodePool.ConfigItems.kuberuntu_ami_version "old" }}
   # TODO: Remove this once all nodes are running an AMI compatible with /etc/cni/net.d/10-flannel.conflist
   - owner: root:root
     path: /etc/kubernetes/cni/net.d/10-flannel.conflist
@@ -153,7 +171,7 @@ write_files:
           }
         ]
       }
-
+{{ end }}
   - owner: root:root
     path: /etc/cni/net.d/10-flannel.conflist
     content: |
