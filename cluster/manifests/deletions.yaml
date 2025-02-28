@@ -132,16 +132,6 @@ post_apply:
   namespace: kubenurse
   kind: Service
 {{- end }}
-# Remove karpenter webhook related resources which are not used since v1.1.1
-- name: karpenter-lease
-  kind: Role
-  namespace: kube-node-lease
-- name: karpenter-lease
-  kind: RoleBinding
-  namespace: kube-node-lease
-- name: karpenter-cert
-  kind: Secret
-  namespace: kube-system
 {{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "false" }}
 - name: provisioners.karpenter.sh
   kind: CustomResourceDefinition
@@ -401,6 +391,3 @@ post_apply:
   kind: ServiceAccount
   namespace: kube-system
 {{- end}}
-- name: karpenter-v1-migrator
-  namespace: "kube-system"
-  kind: CronJob
