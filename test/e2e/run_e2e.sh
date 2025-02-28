@@ -146,9 +146,11 @@ if [ "$create_cluster" = true ]; then
         --registry=head_cluster.yaml \
         --manage-etcd-stack
 
-    aws eks --region "${REGION}" update-kubeconfig --name "${LOCAL_ID}" --kubeconfig kubeconfig
-    KUBECONFIG="$(pwd)/kubeconfig"
-    export KUBECONFIG="$KUBECONFIG"
+    if [ "$CLUSTER_PROVIDER" == "zalando-eks" ]; then
+        aws eks --region "${REGION}" update-kubeconfig --name "${LOCAL_ID}" --kubeconfig kubeconfig
+        KUBECONFIG="$(pwd)/kubeconfig"
+        export KUBECONFIG="$KUBECONFIG"
+    fi
 
     # rotate nodes with old daemonset pods and update strategy onDelete
     # This is important to ensure we e2e test against e.g. latest coredns daemonset
