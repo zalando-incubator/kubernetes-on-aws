@@ -205,6 +205,9 @@ if [ "$e2e" = true ]; then
             "Mirror pods should be created for the main Kubernetes components \[Zalando\]"
             "Should audit API calls to create, update, patch, delete pods. \[Audit\] \[Zalando\]"
             "should validate permissions for \[Authorization\] \[RBAC\] \[Zalando\]" # TODO: Remains skipped until we remove the older RBAC setup
+            "Should NOT get AWS IAM credentials" # Disabled on IPv6 as kube2iam is not compatible in current config.
+            "should creating a working mysql cluster" # upstream test which does not work with IPv6
+            "Should create DNS entry via Service \[Zalando\]" # Depends on service Type LoadBalancer which doesn't work with IPv6.
         )
     fi
 
