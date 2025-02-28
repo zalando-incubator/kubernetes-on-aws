@@ -201,6 +201,13 @@ if [ "$e2e" = true ]; then
         "Should.create.gradual.traffic.routes"
     )
 
+    if [ "$CLUSTER_PROVIDER" == "zalando-aws" ]; then
+        # some tests are skipped for zalando-aws because they only apply to zalando-eks
+        SKIPPED_TESTS+=(
+            "Authorization via admission-controller \[RBAC\] \[Zalando\]"
+        )
+    fi
+
     if [ "$CLUSTER_PROVIDER" == "zalando-eks" ]; then
         # some tests are skipped for eks because they test part of the control plane which is part of EKS
         SKIPPED_TESTS+=(
