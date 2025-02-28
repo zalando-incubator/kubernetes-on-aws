@@ -37,6 +37,125 @@ pipeline:
 
 # Provider: zalando-aws
 
+e2e_env_aws: &e2e_env_aws
+- name: CLUSTER_PROVIDER
+  value: "zalando-aws"
+- name: CLUSTER_DOMAIN
+  value: teapot-e2e.zalan.do
+- name: CLUSTER_DOMAIN_INTERNAL
+  value: ingress.cluster.local
+- name: RESULT_BUCKET
+  value: "teapot-kubernetes-e2e-results"
+- name: ETCD_ENDPOINTS
+  value: "https://etcd-server.etcd.teapot-e2e.zalan.do:2479"
+- name: SKIPPER_OPA_ENABLED
+  value: "true"
+- name: HOSTED_ZONE
+  valueFrom:
+    configMapKeyRef:
+      name: kubernetes-e2e-config
+      key: "HOSTED_ZONE"
+- name: REGION
+  valueFrom:
+    configMapKeyRef:
+      name: kubernetes-e2e-config
+      key: "REGION"
+- name: AWS_ACCOUNT
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "AWS_ACCOUNT"
+- name: AWS_REGION
+  valueFrom:
+    configMapKeyRef:
+      name: kubernetes-e2e-config
+      key: "REGION"
+- name: ZMON_ROOT_ACCOUNT_ROLE
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "ZMON_ROOT_ACCOUNT_ROLE"
+- name: AUDITTRAIL_ROOT_ACCOUNT_ROLE
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "AUDITTRAIL_ROOT_ACCOUNT_ROLE"
+- name: SESSION_MANAGER_DESTINATION_ARN
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "SESSION_MANAGER_DESTINATION_ARN"
+- name: APISERVER_BUSINESS_PARTNER_IDS
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "APISERVER_BUSINESS_PARTNER_IDS"
+- name: LIGHTSTEP_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "LIGHTSTEP_TOKEN"
+- name: OWNER
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "OWNER"
+- name: VPC_ID
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "VPC_ID"
+- name: EFS_ID
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "EFS_ID"
+- name: ETCD_CLIENT_CA_CERT
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "ETCD_CLIENT_CA_CERT"
+- name: ETCD_CLIENT_CA_KEY
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "ETCD_CLIENT_CA_KEY"
+- name: ETCD_SCALYR_KEY
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "ETCD_SCALYR_KEY"
+- name: OKTA_AUTH_ISSUER_URL
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "OKTA_AUTH_ISSUER_URL"
+- name: STYRA_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "STYRA_TOKEN"
+- name: SKIPPER_OPA_BUCKET_ARN
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "SKIPPER_OPA_BUCKET_ARN"
+- name: SKIPPER_OPA_OBSERVABILITY_URL
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "SKIPPER_OPA_OBSERVABILITY_URL"
+- name: SKIPPER_OPA_BUNDLES_URL
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-config-secret
+      key: "SKIPPER_OPA_BUNDLES_URL"
+- name: CLUSTER_ADMIN_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: kubernetes-e2e-credentials
+      key: "cluster-token-secret"
+
 - id: create-cluster-zalando-aws
   when:
     event: pull_request
@@ -73,124 +192,7 @@ pipeline:
           image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - create-cluster
-          env: &e2e_env
-          - name: CLUSTER_DOMAIN
-            value: teapot-e2e.zalan.do
-          - name: CLUSTER_DOMAIN_INTERNAL
-            value: ingress.cluster.local
-          - name: RESULT_BUCKET
-            value: "teapot-kubernetes-e2e-results"
-          - name: ETCD_ENDPOINTS
-            value: "https://etcd-server.etcd.teapot-e2e.zalan.do:2479"
-          - name: CLUSTER_PROVIDER
-            value: "zalando-aws"
-          - name: SKIPPER_OPA_ENABLED
-            value: "true"
-          - name: HOSTED_ZONE
-            valueFrom:
-              configMapKeyRef:
-                name: kubernetes-e2e-config
-                key: "HOSTED_ZONE"
-          - name: REGION
-            valueFrom:
-              configMapKeyRef:
-                name: kubernetes-e2e-config
-                key: "REGION"
-          - name: AWS_ACCOUNT
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "AWS_ACCOUNT"
-          - name: AWS_REGION
-            valueFrom:
-              configMapKeyRef:
-                name: kubernetes-e2e-config
-                key: "REGION"
-          - name: ZMON_ROOT_ACCOUNT_ROLE
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "ZMON_ROOT_ACCOUNT_ROLE"
-          - name: AUDITTRAIL_ROOT_ACCOUNT_ROLE
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "AUDITTRAIL_ROOT_ACCOUNT_ROLE"
-          - name: SESSION_MANAGER_DESTINATION_ARN
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "SESSION_MANAGER_DESTINATION_ARN"
-          - name: APISERVER_BUSINESS_PARTNER_IDS
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "APISERVER_BUSINESS_PARTNER_IDS"
-          - name: LIGHTSTEP_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "LIGHTSTEP_TOKEN"
-          - name: OWNER
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "OWNER"
-          - name: VPC_ID
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "VPC_ID"
-          - name: EFS_ID
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "EFS_ID"
-          - name: ETCD_CLIENT_CA_CERT
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "ETCD_CLIENT_CA_CERT"
-          - name: ETCD_CLIENT_CA_KEY
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "ETCD_CLIENT_CA_KEY"
-          - name: ETCD_SCALYR_KEY
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "ETCD_SCALYR_KEY"
-          - name: OKTA_AUTH_ISSUER_URL
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "OKTA_AUTH_ISSUER_URL"
-          - name: STYRA_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "STYRA_TOKEN"
-          - name: SKIPPER_OPA_BUCKET_ARN
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "SKIPPER_OPA_BUCKET_ARN"
-          - name: SKIPPER_OPA_OBSERVABILITY_URL
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "SKIPPER_OPA_OBSERVABILITY_URL"
-          - name: SKIPPER_OPA_BUNDLES_URL
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "SKIPPER_OPA_BUNDLES_URL"
-          - name: CLUSTER_ADMIN_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-credentials
-                key: "cluster-token-secret"
+          env: *e2e_env_aws
           resources:
             limits:
               cpu: 500m
@@ -227,7 +229,7 @@ pipeline:
           image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - e2e
-          env: *e2e_env
+          env: *e2e_env_aws
           resources:
             limits:
               cpu: 2
@@ -264,7 +266,7 @@ pipeline:
           image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - loadtest-e2e
-          env: *e2e_env
+          env: *e2e_env_aws
           resources:
             limits:
               cpu: 1000m
@@ -301,7 +303,7 @@ pipeline:
           image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - stackset-e2e
-          env: *e2e_env
+          env: *e2e_env_aws
           resources:
             limits:
               cpu: 2
@@ -340,7 +342,7 @@ pipeline:
           image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
           args:
           - decommission-cluster
-          env: *e2e_env
+          env: *e2e_env_aws
           resources:
             limits:
               cpu: 500m
