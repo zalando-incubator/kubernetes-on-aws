@@ -1,3 +1,4 @@
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -227,7 +228,8 @@ spec:
                                     description: |-
                                       User specific value to apply to the route. If the particular user makes more requests that
                                       value within the defined period, then this user will start getting HTTP 429 responses.
-                                    minimum: 1
+                                      Setting `rate` to 0 will cause all requests matching the rate limit configuration to be denied.
+                                    minimum: 0
                                     type: integer
                                 required:
                                 - headers
@@ -381,7 +383,8 @@ spec:
                               description: |-
                                 User specific value to apply to the route. If the particular user makes more requests that
                                 value within the defined period, then this user will start getting HTTP 429 responses.
-                              minimum: 1
+                                Setting `rate` to 0 will cause all requests matching the rate limit configuration to be denied.
+                              minimum: 0
                               type: integer
                           required:
                           - headers
@@ -641,8 +644,8 @@ spec:
         - spec
         type: object
         x-kubernetes-validations:
-          - message: metadata.name may not be longer than 63, see https://fabric.docs.zalando.net/fabric-gateway-troubleshooting/#gateway-troubleshooting
-            rule: size(self.metadata.name) < 64
+        - message: metadata.name may not be longer than 63, see https://fabric.docs.zalando.net/fabric-gateway-troubleshooting/#gateway-troubleshooting
+          rule: size(self.metadata.name) < 64
     served: true
     storage: true
     subresources:
