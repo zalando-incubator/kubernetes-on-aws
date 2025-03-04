@@ -813,7 +813,7 @@ func getUnprivilegedClient(cluster *types.Cluster, awsAccountID string) (*kubern
 
 // getPostgresAdministratorClient returns a client with the `zalando:postgres-admin` group.
 func getPostgresAdministratorClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
-	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-postgres-administrator-role", awsAccountID, aws.ToString(cluster.Name)))
+	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-postgres-admin-role", awsAccountID, aws.ToString(cluster.Name)))
 }
 
 // newClientWithRole returns a new Kubernetes client with the specified IAM role and its associated AccessEntries.

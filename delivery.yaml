@@ -35,7 +35,7 @@ pipeline:
       IMAGE=container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e
       IMAGE=$IMAGE VERSION=$CDP_BUILD_VERSION make build.push.multiarch
 
-- id: create-cluster
+- id: create-cluster-aws
   when:
     event: pull_request
   depends_on:
@@ -46,7 +46,7 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: &apply_env
+      env: &apply_env_aws
       - name: DEPLOYMENT_PATH
         value: test/e2e
       - name: IAM_ROLE_ARN
@@ -55,6 +55,10 @@ pipeline:
         value: kubernetes
       - name: COMPONENT
         value: e2e
+      - name: CLUSTER_PROVIDER
+        value: zalando-aws
+      - name: E2E_SKIP_CLUSTER_UPDATE
+        value: "false"
     end2end_tests:
       metadata:
         name: e2e
@@ -81,9 +85,15 @@ pipeline:
           - name: ETCD_ENDPOINTS
             value: "https://etcd-server.etcd.teapot-e2e.zalan.do:2479"
           - name: CLUSTER_PROVIDER
-            value: "zalando-eks"
+            valueFrom:
+              configMapKeyRef:
+                name: kubernetes-e2e-config
+                key: "CLUSTER_PROVIDER"
           - name: E2E_SKIP_CLUSTER_UPDATE
-            value: "true"
+            valueFrom:
+              configMapKeyRef:
+                name: kubernetes-e2e-config
+                key: "E2E_SKIP_CLUSTER_UPDATE"
           - name: SKIPPER_OPA_ENABLED
             value: "true"
           - name: HOSTED_ZONE
@@ -199,18 +209,18 @@ pipeline:
               cpu: 500m
               memory: 2Gi
 
-- id: e2e-tests
+- id: e2e-tests-aws
   when:
     event: pull_request
   depends_on:
-  - create-cluster
+  - create-cluster-aws
   type: process
   desc: "Kubernetes e2e tests"
   target: stups-test
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env
+      env: *apply_env_aws
     end2end_tests:
       metadata:
         name: e2e
@@ -236,18 +246,18 @@ pipeline:
               cpu: 2
               memory: 8Gi
 
-- id: e2e-load-test-result
+- id: e2e-load-test-result-aws
   when:
     event: pull_request
   depends_on:
-  - create-cluster
+  - create-cluster-aws
   type: process
   desc: "Kubernetes e2e load tests"
   target: stups-test
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env
+      env: *apply_env_aws
     end2end_tests:
       metadata:
         name: e2e
@@ -273,18 +283,18 @@ pipeline:
               cpu: 1000m
               memory: 1000Mi
 
-- id: stackset-e2e-tests
+- id: stackset-e2e-tests-aws
   when:
     event: pull_request
   depends_on:
-  - create-cluster
+  - create-cluster-aws
   type: process
   desc: "StackSet e2e tests"
   target: stups-test
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env
+      env: *apply_env_aws
     end2end_tests:
       metadata:
         name: e2e
@@ -310,20 +320,219 @@ pipeline:
               cpu: 2
               memory: 1Gi
 
-- id: decommission-cluster
+- id: decommission-cluster-aws
   when:
     event: pull_request
   depends_on:
-  - e2e-tests
-  - stackset-e2e-tests
-  - e2e-load-test-result
+  - e2e-tests-aws
+  - stackset-e2e-tests-aws
+  - e2e-load-test-result-aws
   type: process
   desc: "Decommission cluster used for Kubernetes e2e tests"
   target: stups-test
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env
+      env: *apply_env_aws
+    end2end_tests:
+      metadata:
+        name: e2e
+        labels:
+          application: kubernetes
+          component: e2e
+        annotations:
+          zalando.org/runtime-policy: require-on-demand
+      spec:
+        serviceAccountName: kubernetes-e2e
+        restartPolicy: Never
+        containers:
+        - name: e2e
+          image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          args:
+          - decommission-cluster
+          env: *e2e_env
+          resources:
+            limits:
+              cpu: 500m
+              memory: 1Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+
+- id: create-cluster-eks
+  when:
+    event: pull_request
+  depends_on:
+  - build
+  type: process
+  desc: "Create cluster for Kubernetes e2e tests"
+  target: stups-test
+  process: microservice_standard_test
+  config:
+    apply_manifests:
+      env: &apply_env_eks
+      - name: DEPLOYMENT_PATH
+        value: test/e2e
+      - name: IAM_ROLE_ARN
+        value: "arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint"
+      - name: APPLICATION
+        value: kubernetes
+      - name: COMPONENT
+        value: e2e
+      - name: CLUSTER_PROVIDER
+        value: zalando-eks
+      - name: E2E_SKIP_CLUSTER_UPDATE
+        value: "true"
+    end2end_tests:
+      metadata:
+        name: e2e
+        labels:
+          application: kubernetes
+          component: e2e
+        annotations:
+          zalando.org/runtime-policy: require-on-demand
+      spec:
+        serviceAccountName: kubernetes-e2e
+        restartPolicy: Never
+        containers:
+        - name: e2e
+          image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          args:
+          - create-cluster
+          env: *e2e_env
+          resources:
+            limits:
+              cpu: 500m
+              memory: 2Gi
+            requests:
+              cpu: 500m
+              memory: 2Gi
+
+- id: e2e-tests-eks
+  when:
+    event: pull_request
+  depends_on:
+  - create-cluster-eks
+  type: process
+  desc: "Kubernetes e2e tests"
+  target: stups-test
+  process: microservice_standard_test
+  config:
+    apply_manifests:
+      env: *apply_env_eks
+    end2end_tests:
+      metadata:
+        name: e2e
+        labels:
+          application: kubernetes
+          component: e2e
+        annotations:
+          zalando.org/runtime-policy: require-on-demand
+      spec:
+        serviceAccountName: kubernetes-e2e
+        restartPolicy: Never
+        containers:
+        - name: e2e
+          image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          args:
+          - e2e
+          env: *e2e_env
+          resources:
+            limits:
+              cpu: 2
+              memory: 8Gi
+            requests:
+              cpu: 2
+              memory: 8Gi
+
+- id: e2e-load-test-result-eks
+  when:
+    event: pull_request
+  depends_on:
+  - create-cluster-eks
+  type: process
+  desc: "Kubernetes e2e load tests"
+  target: stups-test
+  process: microservice_standard_test
+  config:
+    apply_manifests:
+      env: *apply_env_eks
+    end2end_tests:
+      metadata:
+        name: e2e
+        labels:
+          application: kubernetes
+          component: e2e
+        annotations:
+          zalando.org/runtime-policy: require-on-demand
+      spec:
+        serviceAccountName: kubernetes-e2e
+        restartPolicy: Never
+        containers:
+        - name: e2e
+          image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          args:
+          - loadtest-e2e
+          env: *e2e_env
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1000Mi
+            requests:
+              cpu: 1000m
+              memory: 1000Mi
+
+- id: stackset-e2e-tests-eks
+  when:
+    event: pull_request
+  depends_on:
+  - create-cluster-eks
+  type: process
+  desc: "StackSet e2e tests"
+  target: stups-test
+  process: microservice_standard_test
+  config:
+    apply_manifests:
+      env: *apply_env_eks
+    end2end_tests:
+      metadata:
+        name: e2e
+        labels:
+          application: kubernetes
+          component: e2e
+        annotations:
+          zalando.org/runtime-policy: require-on-demand
+      spec:
+        serviceAccountName: kubernetes-e2e
+        restartPolicy: Never
+        containers:
+        - name: e2e
+          image: "container-registry-test.zalando.net/teapot/kubernetes-on-aws-e2e:#{CDP_BUILD_VERSION}"
+          args:
+          - stackset-e2e
+          env: *e2e_env
+          resources:
+            limits:
+              cpu: 2
+              memory: 1Gi
+            requests:
+              cpu: 2
+              memory: 1Gi
+
+- id: decommission-cluster-eks
+  when:
+    event: pull_request
+  depends_on:
+  - e2e-tests-eks
+  - stackset-e2e-tests-eks
+  - e2e-load-test-result-eks
+  type: process
+  desc: "Decommission cluster used for Kubernetes e2e tests"
+  target: stups-test
+  process: microservice_standard_test
+  config:
+    apply_manifests:
+      env: *apply_env_eks
     end2end_tests:
       metadata:
         name: e2e

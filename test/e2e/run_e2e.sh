@@ -45,12 +45,12 @@ CDP_TARGET_COMMIT_ID="${CDP_TARGET_COMMIT_ID:-"dev"}"
 CDP_HEAD_COMMIT_ID="${CDP_HEAD_COMMIT_ID:-"$(git describe --tags --always)"}"
 RESULT_BUCKET="${RESULT_BUCKET:-""}"
 
-export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-${CDP_BUILD_VERSION}"}"
-export LOCAL_ID="${LOCAL_ID:-"e2e-${CDP_BUILD_VERSION}"}"
+export CLUSTER_PROVIDER="${CLUSTER_PROVIDER:-"zalando-aws"}"
+export CLUSTER_ALIAS="${CLUSTER_ALIAS:-"e2e-${CDP_BUILD_VERSION}-${CLUSTER_PROVIDER#zalando-}"}"
+export LOCAL_ID="${LOCAL_ID:-"e2e-${CDP_BUILD_VERSION}-${CLUSTER_PROVIDER#zalando-}"}"
 export API_SERVER_URL="https://${LOCAL_ID}.${HOSTED_ZONE}"
 export INFRASTRUCTURE_ACCOUNT="aws:${AWS_ACCOUNT}"
 export CLUSTER_ID="${INFRASTRUCTURE_ACCOUNT}:${REGION}:${LOCAL_ID}"
-export CLUSTER_PROVIDER="${CLUSTER_PROVIDER:-"zalando-aws"}"
 
 if [ "$CLUSTER_PROVIDER" == "zalando-aws" ]; then
     # create kubeconfig
@@ -146,9 +146,11 @@ if [ "$create_cluster" = true ]; then
         --registry=head_cluster.yaml \
         --manage-etcd-stack
 
-    aws eks --region "${REGION}" update-kubeconfig --name "${LOCAL_ID}" --kubeconfig kubeconfig
-    KUBECONFIG="$(pwd)/kubeconfig"
-    export KUBECONFIG="$KUBECONFIG"
+    if [ "$CLUSTER_PROVIDER" == "zalando-eks" ]; then
+        aws eks --region "${REGION}" update-kubeconfig --name "${LOCAL_ID}" --kubeconfig kubeconfig
+        KUBECONFIG="$(pwd)/kubeconfig"
+        export KUBECONFIG="$KUBECONFIG"
+    fi
 
     # rotate nodes with old daemonset pods and update strategy onDelete
     # This is important to ensure we e2e test against e.g. latest coredns daemonset
@@ -198,6 +200,13 @@ if [ "$e2e" = true ]; then
         "validates.that.there.is.no.conflict.between.pods.with.same.hostPort.but.different.hostIP.and.protocol"
         "Should.create.gradual.traffic.routes"
     )
+
+    if [ "$CLUSTER_PROVIDER" == "zalando-aws" ]; then
+        # some tests are skipped for zalando-aws because they only apply to zalando-eks
+        SKIPPED_TESTS+=(
+            "Authorization via admission-controller \[RBAC\] \[Zalando\]"
+        )
+    fi
 
     if [ "$CLUSTER_PROVIDER" == "zalando-eks" ]; then
         # some tests are skipped for eks because they test part of the control plane which is part of EKS
