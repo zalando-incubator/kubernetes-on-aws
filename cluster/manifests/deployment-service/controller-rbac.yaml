@@ -123,6 +123,29 @@ subjects:
     name: "deployment-service-controller"
     namespace: "kube-system"
   # {{ end }}
+# {{ if eq .Cluster.ConfigItems.role_sync_controller_enabled "true" }}
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "deployment-service-executor-poweruser-secret-read"
+  labels:
+    application: "deployment-service"
+    component: "controller"
+roleRef:
+  kind: ClusterRole
+  name: poweruser-secret-read
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: zalando-iam:zalando:service:k8sapi-local_deployment-service-executor
+  # {{ if eq .Cluster.Provider "zalando-eks" }}
+  - kind: ServiceAccount
+    name: "deployment-service-controller"
+    namespace: "kube-system"
+  # {{ end }}
+# {{ end }}
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
