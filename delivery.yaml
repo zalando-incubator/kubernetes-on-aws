@@ -46,7 +46,7 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: &apply_env_aws
+      env: &apply_env
       - name: DEPLOYMENT_PATH
         value: test/e2e
       - name: IAM_ROLE_ARN
@@ -55,10 +55,6 @@ pipeline:
         value: kubernetes
       - name: COMPONENT
         value: e2e
-      - name: CLUSTER_PROVIDER
-        value: zalando-aws
-      - name: E2E_SKIP_CLUSTER_UPDATE
-        value: "false"
     end2end_tests:
       metadata:
         name: e2e
@@ -76,131 +72,18 @@ pipeline:
           args:
           - create-cluster
           env: &e2e_env
-          - name: CLUSTER_DOMAIN
-            value: teapot-e2e.zalan.do
-          - name: CLUSTER_DOMAIN_INTERNAL
-            value: ingress.cluster.local
-          - name: RESULT_BUCKET
-            value: "teapot-kubernetes-e2e-results"
-          - name: ETCD_ENDPOINTS
-            value: "https://etcd-server.etcd.teapot-e2e.zalan.do:2479"
-          - name: CLUSTER_PROVIDER
-            valueFrom:
-              configMapKeyRef:
-                name: kubernetes-e2e-config
-                key: "CLUSTER_PROVIDER"
-          - name: E2E_SKIP_CLUSTER_UPDATE
-            valueFrom:
-              configMapKeyRef:
-                name: kubernetes-e2e-config
-                key: "E2E_SKIP_CLUSTER_UPDATE"
-          - name: SKIPPER_OPA_ENABLED
-            value: "true"
-          - name: HOSTED_ZONE
-            valueFrom:
-              configMapKeyRef:
-                name: kubernetes-e2e-config
-                key: "HOSTED_ZONE"
-          - name: REGION
-            valueFrom:
-              configMapKeyRef:
-                name: kubernetes-e2e-config
-                key: "REGION"
-          - name: AWS_ACCOUNT
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "AWS_ACCOUNT"
-          - name: AWS_REGION
-            valueFrom:
-              configMapKeyRef:
-                name: kubernetes-e2e-config
-                key: "REGION"
-          - name: ZMON_ROOT_ACCOUNT_ROLE
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "ZMON_ROOT_ACCOUNT_ROLE"
-          - name: AUDITTRAIL_ROOT_ACCOUNT_ROLE
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "AUDITTRAIL_ROOT_ACCOUNT_ROLE"
-          - name: SESSION_MANAGER_DESTINATION_ARN
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "SESSION_MANAGER_DESTINATION_ARN"
-          - name: APISERVER_BUSINESS_PARTNER_IDS
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "APISERVER_BUSINESS_PARTNER_IDS"
-          - name: LIGHTSTEP_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "LIGHTSTEP_TOKEN"
-          - name: OWNER
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "OWNER"
-          - name: VPC_ID
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "VPC_ID"
-          - name: EFS_ID
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "EFS_ID"
-          - name: ETCD_CLIENT_CA_CERT
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "ETCD_CLIENT_CA_CERT"
-          - name: ETCD_CLIENT_CA_KEY
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "ETCD_CLIENT_CA_KEY"
-          - name: ETCD_SCALYR_KEY
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "ETCD_SCALYR_KEY"
-          - name: OKTA_AUTH_ISSUER_URL
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "OKTA_AUTH_ISSUER_URL"
-          - name: STYRA_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "STYRA_TOKEN"
-          - name: SKIPPER_OPA_BUCKET_ARN
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "SKIPPER_OPA_BUCKET_ARN"
-          - name: SKIPPER_OPA_OBSERVABILITY_URL
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "SKIPPER_OPA_OBSERVABILITY_URL"
-          - name: SKIPPER_OPA_BUNDLES_URL
-            valueFrom:
-              secretKeyRef:
-                name: kubernetes-e2e-config-secret
-                key: "SKIPPER_OPA_BUNDLES_URL"
           - name: CLUSTER_ADMIN_TOKEN
             valueFrom:
               secretKeyRef:
                 name: kubernetes-e2e-credentials
                 key: "cluster-token-secret"
+          envFrom: &e2e_env_from_aws
+          - configMapRef:
+              name: kubernetes-e2e-config-provider-aws
+          - configMapRef:
+              name: kubernetes-e2e-config
+          - secretRef:
+              name: kubernetes-e2e-config-secret
           resources:
             limits:
               cpu: 500m
@@ -220,7 +103,7 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env_aws
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
@@ -238,6 +121,7 @@ pipeline:
           args:
           - e2e
           env: *e2e_env
+          envFrom: *e2e_env_from_aws
           resources:
             limits:
               cpu: 2
@@ -257,7 +141,7 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env_aws
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
@@ -275,6 +159,7 @@ pipeline:
           args:
           - loadtest-e2e
           env: *e2e_env
+          envFrom: *e2e_env_from_aws
           resources:
             limits:
               cpu: 1000m
@@ -294,7 +179,7 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env_aws
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
@@ -312,6 +197,7 @@ pipeline:
           args:
           - stackset-e2e
           env: *e2e_env
+          envFrom: *e2e_env_from_aws
           resources:
             limits:
               cpu: 2
@@ -333,7 +219,7 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env_aws
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
@@ -351,6 +237,7 @@ pipeline:
           args:
           - decommission-cluster
           env: *e2e_env
+          envFrom: *e2e_env_from_aws
           resources:
             limits:
               cpu: 500m
@@ -370,19 +257,7 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: &apply_env_eks
-      - name: DEPLOYMENT_PATH
-        value: test/e2e
-      - name: IAM_ROLE_ARN
-        value: "arn:aws:iam::925511348110:role/cluster-lifecycle-manager-entrypoint"
-      - name: APPLICATION
-        value: kubernetes
-      - name: COMPONENT
-        value: e2e
-      - name: CLUSTER_PROVIDER
-        value: zalando-eks
-      - name: E2E_SKIP_CLUSTER_UPDATE
-        value: "true"
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
@@ -400,6 +275,13 @@ pipeline:
           args:
           - create-cluster
           env: *e2e_env
+          envFrom: &e2e_env_from_eks
+          - configMapRef:
+              name: kubernetes-e2e-config-provider-eks
+          - configMapRef:
+              name: kubernetes-e2e-config
+          - secretRef:
+              name: kubernetes-e2e-config-secret
           resources:
             limits:
               cpu: 500m
@@ -419,7 +301,7 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env_eks
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
@@ -437,6 +319,7 @@ pipeline:
           args:
           - e2e
           env: *e2e_env
+          envFrom: *e2e_env_from_eks
           resources:
             limits:
               cpu: 2
@@ -456,7 +339,7 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env_eks
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
@@ -474,6 +357,7 @@ pipeline:
           args:
           - loadtest-e2e
           env: *e2e_env
+          envFrom: *e2e_env_from_eks
           resources:
             limits:
               cpu: 1000m
@@ -493,7 +377,7 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env_eks
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
@@ -511,6 +395,7 @@ pipeline:
           args:
           - stackset-e2e
           env: *e2e_env
+          envFrom: *e2e_env_from_eks
           resources:
             limits:
               cpu: 2
@@ -532,7 +417,7 @@ pipeline:
   process: microservice_standard_test
   config:
     apply_manifests:
-      env: *apply_env_eks
+      env: *apply_env
     end2end_tests:
       metadata:
         name: e2e
@@ -550,6 +435,7 @@ pipeline:
           args:
           - decommission-cluster
           env: *e2e_env
+          envFrom: *e2e_env_from_eks
           resources:
             limits:
               cpu: 500m
