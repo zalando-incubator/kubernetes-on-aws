@@ -25,6 +25,7 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9153"
     spec:
+      terminationGracePeriodSeconds: 40
       initContainers:
       - name: ensure-apiserver
         image: container-registry.zalando.net/teapot/ensure-apiserver:master-6
@@ -66,7 +67,7 @@ spec:
         lifecycle:
           preStop:
             sleep:
-              seconds: 25
+              seconds: 35
         resources:
           requests:
             ephemeral-storage: 256Mi
@@ -137,6 +138,10 @@ spec:
           limits:
             cpu: {{.Cluster.ConfigItems.dns_dnsmasq_cpu}}
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_mem}}
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 35
       - name: sidecar
         image: container-registry.zalando.net/teapot/k8s-dns-sidecar:1.17.4-master-15
         securityContext:
@@ -165,6 +170,10 @@ spec:
           limits:
             cpu: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_cpu}}
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_mem}}
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 35
 {{ end }}
       - name: coredns
         image: container-registry.zalando.net/teapot/coredns:1.12.0-master-25
@@ -208,6 +217,10 @@ spec:
           limits:
             cpu: {{.Cluster.ConfigItems.dns_coredns_cpu}}
             memory: {{.Cluster.ConfigItems.dns_coredns_mem}}
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 35
       priorityClassName: system-node-critical
       serviceAccountName: coredns
       hostNetwork: true
