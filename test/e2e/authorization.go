@@ -590,12 +590,14 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 
 	g.Context("for namespaced resources", func() {
 		var (
-			systemResource    *corev1.Pod
-			nonSystemResource *corev1.Pod
+			systemResource       *corev1.Pod
+			collaboratorResource *corev1.Pod
+			nonSystemResource    *corev1.Pod
 		)
 
 		g.BeforeEach(func() {
 			systemResource = examplePod("kube-system", nil)
+			collaboratorResource = examplePod("visibility", nil)
 			nonSystemResource = examplePod(f.Namespace.Name, nil)
 		})
 
@@ -614,9 +616,40 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", nonSystemResource.Name, nonSystemResource.Namespace)
 			})
 
+			g.It("should allow write access in collaborator namespace", func() {
+				_, err := client.CoreV1().Pods(collaboratorResource.Namespace).Create(context.Background(), collaboratorResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", collaboratorResource.Name, collaboratorResource.Namespace)
+			})
+
 			g.It("should allow write access in system namespace", func() {
 				_, err := client.CoreV1().Pods(systemResource.Namespace).Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{"All"}})
 				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", systemResource.Name, systemResource.Namespace)
+			})
+		})
+
+		g.Context("as collaborator user", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getCollaboratorClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should allow write access in user namespace", func() {
+				_, err := client.CoreV1().Pods(nonSystemResource.Namespace).Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", nonSystemResource.Name, nonSystemResource.Namespace)
+			})
+
+			g.It("should allow write access in collaborator namespace", func() {
+				_, err := client.CoreV1().Pods(collaboratorResource.Namespace).Create(context.Background(), collaboratorResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", collaboratorResource.Name, collaboratorResource.Namespace)
+			})
+
+			g.It("should deny write access in system namespace", func() {
+				_, err := client.CoreV1().Pods(systemResource.Namespace).Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
 			})
 		})
 
@@ -633,6 +666,11 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 			g.It("should allow write access in user namespace", func() {
 				_, err := client.CoreV1().Pods(nonSystemResource.Namespace).Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{"All"}})
 				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", nonSystemResource.Name, nonSystemResource.Namespace)
+			})
+
+			g.It("should deny write access in collaborator namespace", func() {
+				_, err := client.CoreV1().Pods(collaboratorResource.Namespace).Create(context.Background(), collaboratorResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
 			})
 
 			g.It("should deny write access in system namespace", func() {
@@ -804,6 +842,11 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 // getPrivilegedClient returns a client with the `zalando:administrator` group.
 func getPrivilegedClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
 	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-privileged-role", awsAccountID, aws.ToString(cluster.Name)))
+}
+
+// getCollaboratorClient returns a client with the `zalando:collaborator` group.
+func getCollaboratorClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
+	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-collaborator-role", awsAccountID, aws.ToString(cluster.Name)))
 }
 
 // getUnprivilegedClient returns a client with the `zalando:readonly` group.
