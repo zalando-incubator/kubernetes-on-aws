@@ -52,6 +52,17 @@ spec:
             port: https
             scheme: HTTPS
           periodSeconds: 10
+        # This is needed to fix the issue where when a new metrics-server Pod comes up at
+        # the same time when many nodes are Terminated, it will get stuck and not be marked
+        # Ready for a long time. This provides a failsafe where the kubelet can kill the Pod
+        # and it can be restarted.
+        startupProbe:
+          periodSeconds: 10
+          failureThreshold: 12 #120s = 2min startup timeout
+          httpGet:
+            path: /healthz
+            port: https
+            scheme: HTTPS
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
