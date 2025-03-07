@@ -28,7 +28,7 @@ import (
 	admissionapi "k8s.io/pod-security-admission/api"
 )
 
-var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
+var _ = describe("AWS IAM Integration (kube2iam + kube-aws-iam-controller)", func() {
 	f := framework.NewDefaultFramework("aws-iam")
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
@@ -49,7 +49,7 @@ var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
 		framework.ExpectNoError(err)
 	})
 
-	It("Should get AWS IAM credentials [AWS-IAM] [Zalando]", func() {
+	It("Should get AWS IAM credentials (kube-aws-iam-controller) [AWS-IAM] [Zalando]", func() {
 		awsIAMRoleRS := "aws-iam-test"
 		ns := f.Namespace.Name
 
@@ -68,6 +68,20 @@ var _ = describe("AWS IAM Integration (kube-aws-iam-controller)", func() {
 			Expect(err2).NotTo(HaveOccurred())
 		}()
 		_, err = zcs.ZalandoV1().AWSIAMRoles(ns).Create(context.TODO(), rs, metav1.CreateOptions{})
+		framework.ExpectNoError(err)
+
+		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
+	})
+
+	It("Should get AWS IAM credentials (kube2iam) [AWS-IAM] [Zalando]", func() {
+		ns := f.Namespace.Name
+
+		By("Creating a awscli POD in namespace " + ns)
+		pod := createAWSCLIPod("aws-iam-", ns, []string{"s3", "ls", fmt.Sprintf("s3://%s", E2ES3AWSIAMBucket())})
+		pod.Annotations = map[string]string{
+			"iam.amazonaws.com/role": E2EAWSIAMRole(),
+		}
+		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
 		framework.ExpectNoError(err)
 
 		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
