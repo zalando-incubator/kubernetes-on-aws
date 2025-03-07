@@ -5,6 +5,7 @@ Metadata:
     InfrastructureComponent: "true"
     application: "kubernetes"
     component: "shared-resource"
+    "kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
 
 Mappings:
   Images:
@@ -162,6 +163,9 @@ Resources:
           # {{ if and (eq .NodePool.ConfigItems.associate_public_ip_on_launch "true") (ne .NodePool.ConfigItems.internal_node_subnets_enabled "true") }}
           AssociatePublicIpAddress: true
           # {{ end }}
+          # {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+          Ipv6AddressCount: 1
+          # {{- end}}
           Groups:
           - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
         EbsOptimized: false

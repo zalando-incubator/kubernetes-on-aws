@@ -9,7 +9,11 @@ metadata:
 {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
   # Note: if the role extends beyond OPA use, this condition can be removed
   annotations:
+    {{- if eq .Cluster.Provider "zalando-eks" }}
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccount | getAWSAccountID}}:role/{{ .Cluster.LocalID }}-app-skipper-ingress"
+    {{- else}}
     iam.amazonaws.com/role: "{{ .Cluster.LocalID }}-app-skipper-ingress"
+    {{- end}}
 {{ end }}
 ---
 apiVersion: v1

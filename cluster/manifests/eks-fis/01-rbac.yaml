@@ -1,0 +1,48 @@
+{{- if eq .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
+# {{ range $namespace := split .Cluster.ConfigItems.eks_fis_namespaces "," }}
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  namespace: "{{ $namespace }}"
+  name: fis-experiment-executor
+---
+# {{ end }}
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: fis-experiment-executor
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "create", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["create", "get", "delete", "deletecollection", "list"]
+- apiGroups: [""]
+  resources: ["pods/ephemeralcontainers"]
+  verbs: ["update"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fis-experiment-executor
+subjects:
+# {{ range $namespace := split .Cluster.ConfigItems.eks_fis_namespaces "," }}
+- kind: ServiceAccount
+  name: fis-experiment-executor
+  namespace: "{{ $namespace }}"
+# {{ end }}
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: fis-experiment-executor
+roleRef:
+  kind: ClusterRole
+  name: fis-experiment-executor
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
