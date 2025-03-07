@@ -318,6 +318,37 @@ Resources:
       KubernetesGroups:
       - zalando:administrator
       Type: "STANDARD"
+  E2EEKSIAMTestRoleCollaborator:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          - 'sts:SetSourceIdentity'
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        Version: 2012-10-17
+      Path: /
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-collaborator-role"
+    Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestAccessEntryCollaborator:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt E2EEKSIAMTestRoleCollaborator.Arn
+      Username: !Join
+          - ''
+          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
+            - !Ref E2EEKSIAMTestRoleCollaborator
+            - '/{{`{{SessionName}}`}}'
+      KubernetesGroups:
+      - zalando:collaborator
+      Type: "STANDARD"
   E2EEKSIAMTestRolePostgresAdministrator:
     Properties:
       AssumeRolePolicyDocument:
