@@ -25,9 +25,14 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9153"
     spec:
+      terminationGracePeriodSeconds: 40
       initContainers:
       - name: ensure-apiserver
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/ensure-apiserver:master-6
+{{- else }}
         image: container-registry.zalando.net/teapot/ensure-apiserver:master-6
+{{- end }}
         resources:
           requests:
             cpu: 1m
@@ -39,7 +44,11 @@ spec:
       containers:
 {{ if eq .Cluster.ConfigItems.dns_cache "unbound" }}
       - name: unbound
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound:1.22.0-master-10
+{{- else }}
         image: container-registry.zalando.net/teapot/unbound:1.22.0-master-10
+{{- end }}
         args:
         - -d
         - -c
@@ -57,12 +66,20 @@ spec:
             command:
             - dig
             - "+short"
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv4") }}
             - "@127.0.0.1"
+{{- else }}
+            - "::1"
+{{- end }}
             - "kubernetes.default.svc.cluster.local"
           initialDelaySeconds: 60
           periodSeconds: 10
           timeoutSeconds: 5
 {{- end }}
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 35
         resources:
           requests:
             ephemeral-storage: 256Mi
@@ -75,9 +92,14 @@ spec:
           readOnly: true
           subPath: unbound.conf
       - name: unbound-telemetry
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound-telemetry:master-5
+{{- else }}
         image: container-registry.zalando.net/teapot/unbound-telemetry:master-5
+{{- end }}
         args:
         - tcp
+        # TODO: ipv6
         - --bind=0.0.0.0:9054
         ports:
         - name: metrics
@@ -92,7 +114,11 @@ spec:
 {{ end }}
 {{ if eq .Cluster.ConfigItems.dns_cache "dnsmasq" }}
       - name: dnsmasq
+        {{- if eq .Cluster.Provider "zalando-eks" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-dns-dnsmasq-nanny:1.17.4-master-15
+        {{- else }}
         image: container-registry.zalando.net/teapot/k8s-dns-dnsmasq-nanny:1.17.4-master-15
+        {{- end }}
         securityContext:
           privileged: true
         livenessProbe:
@@ -118,8 +144,8 @@ spec:
         - --neg-ttl=60
         # send requests to the last server first, only fallback to the previous ones if it's unreachable
         - --strict-order
-        - --server=10.5.0.11#53
-        - --server=127.0.0.1#9254
+        - --server=10.5.0.11#53 # TODO: fix this for ipv6
+        - --server={{ if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}127.0.0.1{{else}}::1{{end}}#9254
         ports:
         - containerPort: 53
           name: dns
@@ -133,8 +159,16 @@ spec:
           limits:
             cpu: {{.Cluster.ConfigItems.dns_dnsmasq_cpu}}
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_mem}}
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 35
       - name: sidecar
+        {{- if eq .Cluster.Provider "zalando-eks" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-dns-sidecar:1.17.4-master-15
+        {{- else }}
         image: container-registry.zalando.net/teapot/k8s-dns-sidecar:1.17.4-master-15
+        {{- end }}
         securityContext:
           privileged: true
         livenessProbe:
@@ -149,6 +183,7 @@ spec:
         args:
         - --v=2
         - --logtostderr
+        # TODO: ipv6
         - --probe=dnsmasq,127.0.0.1:9254,ec2.amazonaws.com,5,A
         - --prometheus-port=9054
         ports:
@@ -161,9 +196,17 @@ spec:
           limits:
             cpu: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_cpu}}
             memory: {{.Cluster.ConfigItems.dns_dnsmasq_sidecar_mem}}
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 35
 {{ end }}
       - name: coredns
+        {{- if eq .Cluster.Provider "zalando-eks" }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/coredns:1.11.3-master-24
+        {{- else }}
         image: container-registry.zalando.net/teapot/coredns:1.12.0-master-25
+        {{- end }}
         args: [ "-conf", "/etc/coredns/Corefile" ]
         env:
         - name: ZONE
@@ -204,6 +247,10 @@ spec:
           limits:
             cpu: {{.Cluster.ConfigItems.dns_coredns_cpu}}
             memory: {{.Cluster.ConfigItems.dns_coredns_mem}}
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 35
       priorityClassName: system-node-critical
       serviceAccountName: coredns
       hostNetwork: true

@@ -26,7 +26,7 @@ spec:
         component: karpenter
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
-        prometheus.io/port: "8000"
+        prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
         prometheus.io/scheme: "http"
         prometheus.io/scrape: "true"
@@ -34,14 +34,14 @@ spec:
       dnsPolicy: Default
       serviceAccountName: karpenter
       securityContext:
-        fsGroup: 65536
+        fsGroup: 65532
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       dnsPolicy: ClusterFirst
       containers:
         - name: controller
           securityContext:
-            runAsUser: 65536
-            runAsGroup: 65536
+            runAsUser: 65532
+            runAsGroup: 65532
             runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
@@ -50,11 +50,7 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
-          {{if eq .Cluster.ConfigItems.karpenter_version "current"}}
-          image: "container-registry.zalando.net/teapot/karpenter:0.37.0-main-26.patched"
-          {{else if eq .Cluster.ConfigItems.karpenter_version "legacy"}}
-          image: "container-registry.zalando.net/teapot/karpenter:0.36.2-main-25.patched"
-          {{end}}
+          image: "container-registry.zalando.net/teapot/karpenter:1.2.0-main-30.patched"
           imagePullPolicy: IfNotPresent
           env:
             - name: KUBERNETES_MIN_VERSION
@@ -73,8 +69,12 @@ spec:
               value: karpenter
             - name: LOG_LEVEL
               value: {{ .Cluster.ConfigItems.karpenter_log_level }}
+            - name: LOG_OUTPUT_PATHS
+              value: "stdout"
+            - name: LOG_ERROR_OUTPUT_PATHS
+              value: "stderr"
             - name: METRICS_PORT
-              value: "8000"
+              value: "8080"
             - name: HEALTH_PROBE_PORT
               value: "8081"
             - name: SYSTEM_NAMESPACE
@@ -96,7 +96,7 @@ spec:
             - name: ASSUME_ROLE_DURATION
               value: "15m"
             - name: CLUSTER_NAME
-              value: "{{.Cluster.ID}}"
+              value: "{{.Cluster.Name }}"
             - name: VM_MEMORY_OVERHEAD_PERCENT
               value: "0.075"
             - name: RESERVED_ENIS
@@ -106,7 +106,7 @@ spec:
               value: "{{ nodeCIDRMaxNodesPodCIDR (parseInt64 $pod_cidr_size) (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}"
           ports:
             - name: http-metrics
-              containerPort: 8000
+              containerPort: 8080
               protocol: TCP
             - name: http
               containerPort: 8081
@@ -164,4 +164,9 @@ spec:
         - key: node.kubernetes.io/role
           value: master
           effect: NoSchedule
+{{- if eq .Cluster.Provider "zalando-eks"}}
+        - key: dedicated
+          value: cluster-seed
+          effect: NoSchedule
+{{- end}}
 {{ end }}

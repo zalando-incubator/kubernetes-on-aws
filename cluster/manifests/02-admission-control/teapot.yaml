@@ -7,8 +7,29 @@ metadata:
     component: teapot-admission-controller
 webhooks:
   - name: pod-admitter.teapot.zalan.do
+{{- if eq .Cluster.Provider "zalando-eks"}}
+    # avoid admission-control applying to the admission-controller components (🐔🥚)
+    objectSelector:
+      matchExpressions:
+        - key: component
+          operator: NotIn
+          values: ["admission-controller", "coredns", "aws-node"]
+        - key: k8s-app
+          operator: NotIn
+          values: ["kube-proxy"]
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values: ["eks-pod-identity-agent"]
+{{- end }}
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/pod"
+      {{- else }}
       url: "https://localhost:8085/pod"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -21,8 +42,29 @@ webhooks:
         resources: ["pods", "pods/ephemeralcontainers"]
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables "true" }}
   - name: pod-binding-admitter.teapot.zalan.do
+{{- if eq .Cluster.Provider "zalando-eks"}}
+    # avoid admission-control applying to the admission-controller components (🐔🥚)
+    objectSelector:
+      matchExpressions:
+        - key: component
+          operator: NotIn
+          values: ["admission-controller", "coredns", "aws-node"]
+        - key: k8s-app
+          operator: NotIn
+          values: ["kube-proxy"]
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values: ["eks-pod-identity-agent"]
+{{- end }}
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/pod"
+      {{- else }}
       url: "https://localhost:8085/pod"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Ignore
@@ -35,7 +77,14 @@ webhooks:
 {{- end }}
   - name: storageclass-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/storageclass"
+      {{- else }}
       url: "https://localhost:8085/storageclass"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -46,8 +95,23 @@ webhooks:
         apiVersions: ["v1", "v1beta1"]
         resources: ["storageclasses"]
   - name: node-admitter.teapot.zalan.do
+{{- if eq .Cluster.Provider "zalando-eks"}}
+    # avoid admission-control applying to seed node where the admission-controller components run (🐔🥚)
+    objectSelector:
+      matchExpressions:
+        - key: dedicated
+          operator: NotIn
+          values: ["cluster-seed"]
+{{- end }}
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/node"
+      {{- else }}
       url: "https://localhost:8085/node"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -60,7 +124,14 @@ webhooks:
         resources: ["nodes"]
   - name: configmap-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/configmap"
+      {{- else }}
       url: "https://localhost:8085/configmap"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -73,7 +144,14 @@ webhooks:
         resources: ["configmaps"]
   - name: cronjob-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/cronjob"
+      {{- else }}
       url: "https://localhost:8085/cronjob"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -85,7 +163,14 @@ webhooks:
         resources: ["cronjobs"]
   - name: job-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/job"
+      {{- else }}
       url: "https://localhost:8085/job"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -97,8 +182,23 @@ webhooks:
         apiVersions: ["v1"]
         resources: ["jobs"]
   - name: deployment-admitter.teapot.zalan.do
+{{- if eq .Cluster.Provider "zalando-eks"}}
+    # avoid admission-control applying to the admission-controller components (🐔🥚)
+    objectSelector:
+      matchExpressions:
+        - key: component
+          operator: NotIn
+          values: ["admission-controller"]
+{{- end }}
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/deployment"
+      {{- else }}
       url: "https://localhost:8085/deployment"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -111,7 +211,14 @@ webhooks:
         resources: ["deployments"]
   - name: statefulset-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/statefulset"
+      {{- else }}
       url: "https://localhost:8085/statefulset"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -124,7 +231,14 @@ webhooks:
         resources: ["statefulsets"]
   - name: crd-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/crd"
+      {{- else }}
       url: "https://localhost:8085/crd"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -137,7 +251,14 @@ webhooks:
         resources: ["customresourcedefinitions"]
   - name: stack-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/stack"
+      {{- else }}
       url: "https://localhost:8085/stack"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -149,7 +270,14 @@ webhooks:
         resources: ["stacks"]
   - name: stackset-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/stackset"
+      {{- else }}
       url: "https://localhost:8085/stackset"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -161,7 +289,14 @@ webhooks:
         resources: ["stacksets"]
   - name: hpa-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/hpa"
+      {{- else }}
       url: "https://localhost:8085/hpa"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -173,8 +308,23 @@ webhooks:
         apiVersions: ["v2"]
         resources: ["horizontalpodautoscalers"]
   - name: serviceaccount-admitter.teapot.zalan.do
+{{- if eq .Cluster.Provider "zalando-eks"}}
+    # avoid admission-control applying to the admission-controller components (🐔🥚)
+    objectSelector:
+      matchExpressions:
+        - key: component
+          operator: NotIn
+          values: ["admission-controller", "aws-node", "coredns"]
+{{- end }}
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/serviceaccount"
+      {{- else }}
       url: "https://localhost:8085/serviceaccount"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -187,8 +337,29 @@ webhooks:
         resources: ["serviceaccounts"]
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_check_daemonset_resources "true" }}
   - name: daemonset-admitter.teapot.zalan.do
+{{- if eq .Cluster.Provider "zalando-eks"}}
+    # avoid admission-control applying to the admission-controller components (🐔🥚)
+    objectSelector:
+      matchExpressions:
+        - key: component
+          operator: NotIn
+          values: ["aws-node", "coredns"]
+        - key: k8s-app
+          operator: NotIn
+          values: ["kube-proxy"]
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values: ["eks-pod-identity-agent"]
+{{- end }}
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/daemonset"
+      {{- else }}
       url: "https://localhost:8085/daemonset"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -202,7 +373,14 @@ webhooks:
 {{- end }}
   - name: priorityclass-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/priorityclass"
+      {{- else }}
       url: "https://localhost:8085/priorityclass"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -215,20 +393,34 @@ webhooks:
         resources: ["priorityclasses"]
   - name: postgresql-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/postgresql"
+      {{- else }}
       url: "https://localhost:8085/postgresql"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
     sideEffects: "NoneOnDryRun"
     matchPolicy: Equivalent
     rules:
-      - operations: [ "CREATE", "DELETE" ]
+      - operations: [ "CREATE", "DELETE", "UPDATE" ]
         apiGroups: ["acid.zalan.do"]
         apiVersions: ["v1"]
         resources: ["postgresqls"]
   - name: namespace-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/namespace"
+      {{- else }}
       url: "https://localhost:8085/namespace"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -240,8 +432,23 @@ webhooks:
         apiVersions: ["v1"]
         resources: ["namespaces"]
   - name: service-admitter.teapot.zalan.do
+{{- if eq .Cluster.Provider "zalando-eks"}}
+    # avoid admission-control applying to the admission-controller components (🐔🥚)
+    objectSelector:
+      matchExpressions:
+        - key: component
+          operator: NotIn
+          values: ["admission-controller"]
+{{- end }}
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/service"
+      {{- else }}
       url: "https://localhost:8085/service"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -254,8 +461,23 @@ webhooks:
         resources: ["services"]
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_enable_rolebinding_webhook "true" }}
   - name: rolebinding-admitter.teapot.zalan.do
+{{- if eq .Cluster.Provider "zalando-eks"}}
+    # avoid admission-control applying to the admission-controller components (🐔🥚)
+    objectSelector:
+      matchExpressions:
+        - key: component
+          operator: NotIn
+          values: ["admission-controller"]
+{{- end }}
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/rolebinding"
+      {{- else }}
       url: "https://localhost:8085/rolebinding"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -270,7 +492,14 @@ webhooks:
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_enable_write_protection_webhook "true" }}
   - name: pod-exec-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/pod/exec"
+      {{- else }}
       url: "https://localhost:8085/pod/exec"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -290,11 +519,16 @@ webhooks:
     matchConditions:
       - name: 'exclude-privileged-groups'
         expression: 'request.userInfo.groups.all(g, !(g in ["okta:common/administrator", "zalando:administrator"]))'
-      - name: 'exclude-postgres-admins'
-        expression: 'request.userInfo.groups.all(g, !(g in ["okta:common/postgres-admin"]))'
   - name: namespaced-deny-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/deny"
+      {{- else }}
       url: "https://localhost:8085/deny"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -304,7 +538,7 @@ webhooks:
       matchExpressions:
         - key: kubernetes.io/metadata.name
           operator: In
-          values: [ "kube-system", "visibility", "kubenurse" ]
+          values: [ "kube-system", "kubenurse" ]
     rules:
       - operations: [ "*" ]
         apiGroups: ["*"]
@@ -318,9 +552,49 @@ webhooks:
         expression: '!(request.userInfo.username in ["system:kube-controller-manager", "system:kube-scheduler", "zalando-iam:zalando:service:k8sapi_credentials-provider"])'
       - name: 'exclude-eks-components'
         expression: '!request.userInfo.username.startsWith("eks:")'
+  - name: collaborator-deny-admitter.teapot.zalan.do
+    clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/deny"
+      {{- else }}
+      url: "https://localhost:8085/deny"
+      {{- end }}
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    matchPolicy: Equivalent
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [ "visibility" ]
+    rules:
+      - operations: [ "*" ]
+        apiGroups: ["*"]
+        apiVersions: ["*"]
+        resources: ["*/*"]
+        scope: "Namespaced"
+    matchConditions:
+      - name: 'exclude-privileged-groups'
+        expression: 'request.userInfo.groups.all(g, !(g in ["system:masters", "system:nodes", "system:serviceaccounts:kube-system", "okta:common/administrator", "zalando:administrator", "okta:common/collaborator", "zalando:collaborator"]))'
+      - name: 'exclude-privileged-usernames'
+        expression: '!(request.userInfo.username in ["system:kube-controller-manager", "system:kube-scheduler", "zalando-iam:zalando:service:k8sapi_credentials-provider"])'
+      - name: 'exclude-eks-components'
+        expression: '!request.userInfo.username.startsWith("eks:")'
   - name: global-deny-admitter.teapot.zalan.do
     clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/deny"
+      {{- else }}
       url: "https://localhost:8085/deny"
+      {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
@@ -342,4 +616,33 @@ webhooks:
         expression: '!(request.userInfo.username in ["system:kube-controller-manager", "system:kube-scheduler", "zalando-iam:zalando:service:k8sapi_credentials-provider"])'
       - name: 'exclude-eks-components'
         expression: '!request.userInfo.username.startsWith("eks:")'
+  {{- if eq .Cluster.ConfigItems.role_sync_controller_enabled "true" }}
+  - name: clusterrole-admitter.teapot.zalan.do
+    clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/clusterrole"
+      {{- else }}
+      url: "https://localhost:8085/clusterrole"
+      {{- end }}
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    matchPolicy: Equivalent
+    sideEffects: "None"
+    rules:
+      - operations: [ "CREATE", "UPDATE" ]
+        apiGroups: ["rbac.authorization.k8s.io"]
+        apiVersions: ["v1"]
+        resources: ["clusterroles"]
+    matchConditions:
+      - name: 'exclude-privileged-groups'
+        expression: 'request.userInfo.groups.all(g, !(g in ["system:masters", "system:nodes", "system:serviceaccounts:kube-system", "okta:common/administrator", "zalando:administrator"]))'
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      - name: 'exclude-eks-components'
+        expression: '!request.userInfo.username.startsWith("eks:")'
+      {{- end }}
+  {{- end }}
 {{- end }}

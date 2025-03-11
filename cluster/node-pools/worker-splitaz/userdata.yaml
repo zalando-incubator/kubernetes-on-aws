@@ -7,7 +7,9 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
+{{- if eq .NodePool.ConfigItems.kuberuntu_ami_version "old" }}
       NODEPOOL_TAINTS={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}}
+{{- end }}
       NODE_LABELS=node.kubernetes.io/profile={{ .NodePool.Profile }},lifecycle-status=ready,node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}{{if or (eq .NodePool.Profile "worker-splitaz") (eq .NodePool.Profile "worker-combined")}},asg-lifecycle-hook=true{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=worker
@@ -34,11 +36,16 @@ write_files:
       clusters:
       - name: local
         cluster:
+        {{- if eq .Cluster.Provider "zalando-eks" }}
+          server: {{.Cluster.ConfigItems.eks_endpoint}}
+          certificate-authority-data: "{{.Cluster.ConfigItems.eks_certificate_authority_data}}"
+        {{- else }}
 {{- if eq .Cluster.ConfigItems.control_plane_load_balancer_internal "active" }}
           server: "https://{{.Cluster.LocalID}}-internal.{{.Values.hosted_zone}}"
 {{- else }}
           server: {{ .Cluster.APIServerURL }}
 {{- end }}
+        {{- end}}
       users:
       - name: kubelet
         user:
@@ -49,7 +56,7 @@ write_files:
                - eks
                - get-token
                - --cluster-name
-               - "{{.Cluster.ID}}"
+               - "{{.Cluster.Name}}"
       contexts:
       - context:
           cluster: local
@@ -70,14 +77,26 @@ write_files:
       imageGCLowThresholdPercent: {{.Cluster.ConfigItems.kubelet_image_gc_low_threshold}}
       clusterDomain: cluster.local
       cpuCFSQuota: false
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      hairpinMode: hairpin-veth
+{{- end }}
       featureGates:
         SizeMemoryBackedVolumes: {{ .Cluster.ConfigItems.enable_size_memory_backed_volumes }}
 {{- if eq .NodePool.ConfigItems.exec_probe_timeout_enabled "false" }}
         ExecProbeTimeout: false
 {{- end }}
+{{- if eq .Cluster.Provider "zalando-eks"}}
+        RotateKubeletServerCertificate: true
+{{- end }}
       podPidsLimit: {{ .NodePool.ConfigItems.pod_max_pids }}
       cpuManagerPolicy: {{ .NodePool.ConfigItems.cpu_manager_policy }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
+      # replaced with dynamic value based on instance type during instance
+      # start-up.
+      maxPods: __MAX_PODS__
+{{- else }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
+{{- end }}
 {{- if ne .Cluster.ConfigItems.serialize_image_pulls "true" }}
       serializeImagePulls: false
 {{- end }}
@@ -85,8 +104,12 @@ write_files:
       registryBurst: {{ .Cluster.ConfigItems.kubelet_registry_burst }}
       healthzPort: 10248
       healthzBindAddress: "0.0.0.0"
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      serverTLSBootstrap: true
+{{- else }}
       tlsCertFile: "/etc/kubernetes/ssl/worker.pem"
       tlsPrivateKeyFile: "/etc/kubernetes/ssl/worker-key.pem"
+{{- end }}
       eventRecordQPS: 50
       eventBurst: 50
       kubeAPIQPS: 50
@@ -118,6 +141,22 @@ write_files:
       # variables are replaced on instance start-up.
       providerID: __PROVIDER_ID__
       clusterDNS: [__CLUSTER_DNS__]
+{{- if eq .NodePool.ConfigItems.kuberuntu_ami_version "new" }}
+{{- if or (.NodePool.Taints) (eq .NodePool.Profile "worker-karpenter") }}
+      registerWithTaints:
+{{- range $taint := .NodePool.Taints }}
+        - key: {{$taint.Key}}
+          effect: {{$taint.Effect}}
+{{- if $taint.Value }}
+          value: {{$taint.Value }}
+{{- end }}
+{{- end }}
+{{- if eq .NodePool.Profile "worker-karpenter" }}
+        - key: karpenter.sh/unregistered
+          effect: NoExecute
+{{-  end }}
+{{-  end }}
+{{-  end }}
 
 {{- if and .Cluster.ConfigItems.vm_dirty_background_bytes .Cluster.ConfigItems.vm_dirty_bytes }}
   - owner: root:root
@@ -136,6 +175,8 @@ write_files:
       {{- end}}
 {{- end}}
 
+{{- if ne .Cluster.Provider "zalando-eks" }}
+{{ if eq .NodePool.ConfigItems.kuberuntu_ami_version "old" }}
   # TODO: Remove this once all nodes are running an AMI compatible with /etc/cni/net.d/10-flannel.conflist
   - owner: root:root
     path: /etc/kubernetes/cni/net.d/10-flannel.conflist
@@ -153,7 +194,7 @@ write_files:
           }
         ]
       }
-
+{{ end }}
   - owner: root:root
     path: /etc/cni/net.d/10-flannel.conflist
     content: |
@@ -170,3 +211,4 @@ write_files:
           }
         ]
       }
+{{- end}}
