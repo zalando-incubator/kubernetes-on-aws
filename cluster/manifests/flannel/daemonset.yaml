@@ -1,3 +1,5 @@
+# TODO: what to do with kube-proxy for eks?
+{{- if ne .Cluster.Provider "zalando-eks"}}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -57,7 +59,7 @@ spec:
           failureThreshold: 30
           periodSeconds: 10
       - name: kube-flannel
-        image: container-registry.zalando.net/teapot/flannel:v0.26.3-master-34
+        image: container-registry.zalando.net/teapot/flannel:v0.26.5-master-36
         command:
         - /opt/bin/flanneld
         args:
@@ -135,3 +137,4 @@ spec:
           path: /lib/tc
           type: ""
         name: lib-tc
+{{- end}}

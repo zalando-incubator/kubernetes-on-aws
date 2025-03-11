@@ -1,7 +1,7 @@
 {{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
 
 ---
-# Source: karpenter/templates/02-role.yaml
+# Source: karpenter/templates/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -27,7 +27,7 @@ rules:
     resources: ["leases"]
     verbs: ["create"]
 ---
-# Source: karpenter/templates/02-role.yaml
+# Source: karpenter/templates/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -42,23 +42,4 @@ rules:
     resources: ["services"]
     resourceNames: ["kube-dns"]
     verbs: ["get"]
----
-# Source: karpenter/templates/02-role.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: karpenter-lease
-  namespace: kube-node-lease
-  labels:
-    application: kubernetes
-    component: karpenter
-rules:
-  # Read
-  - apiGroups: ["coordination.k8s.io"]
-    resources: ["leases"]
-    verbs: ["get", "list", "watch"]
-  # Write
-  - apiGroups: ["coordination.k8s.io"]
-    resources: ["leases"]
-    verbs: ["delete"]
 {{end}}

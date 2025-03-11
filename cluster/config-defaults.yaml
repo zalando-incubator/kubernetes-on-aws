@@ -38,11 +38,6 @@ karpenter_controller_memory: "256Mi"
 karpenter_log_level: "error"
 # restrict the maximum number of pods for karpenter nodes
 karpenter_max_pods_per_node: "32"
-#
-# Karpenter version for controlling roll-out, can be "current" or "legacy"
-# current => 0.37.0-main-26.patched
-# legacy => 0.36.2-main-25.patched
-karpenter_version: "current"
 
 # configure whether karpenter should assume instances with local storage use
 # RAID0 for ephemeral pod storage.
@@ -341,6 +336,9 @@ skipper_oauth2_ui_login: "true"
 # Comma-separated list of tokeninfo keys to retain
 skipper_oauth2_ui_login_tokeninfo_keys: ""
 
+skipper_hostname_credentials_controller_cpu: 10m
+skipper_hostname_credentials_controller_memory: 50Mi
+
 # ClusterScalingSchedules
 # One or multiple cluster scaling schedules can be configured as a
 # comma-separated list of <cluster schedule name>=<target value> pairs.
@@ -416,6 +414,11 @@ kube_proxy_memory_request: "200Mi"
 kube_proxy_memory_limit: "200Mi"
 kube_proxy_sync_period: "15m0s"
 kube_proxy_verbose_level: "2"
+
+# kube-node-decommissioner
+kube_node_decommissioner_enabled: "true"
+kube_node_decommissioner_cpu: "100m"
+kube_node_decommissioner_memory: "1Gi"
 
 # flannel settings
 flannel_cpu: "25m"
@@ -602,6 +605,7 @@ teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
 teapot_admission_controller_namespace_delete_protection_enabled: "true"
+teapot_admission_controller_postgresql_owning_application_check_enabled: "true"
 {{else if eq .Cluster.Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
@@ -613,6 +617,7 @@ teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
 teapot_admission_controller_namespace_delete_protection_enabled: "false"
+teapot_admission_controller_postgresql_owning_application_check_enabled: "false"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
@@ -624,6 +629,7 @@ teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "false"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
 teapot_admission_controller_namespace_delete_protection_enabled: "false"
+teapot_admission_controller_postgresql_owning_application_check_enabled: "false"
 {{end}}
 
 # Enable automatic replacement of vanity images with ECR images
@@ -689,10 +695,15 @@ teapot_admission_controller_configmap_deletion_protection_factories_enabled: "tr
 # enable the rolebinding admission-controller webhook which validates rolebindings and clusterrolebindings
 teapot_admission_controller_enable_rolebinding_webhook: "true"
 
-# enable the generic deny-all admission webhook which rejects all requests it receives
+{{ if eq .Cluster.Provider "zalando-eks" }}
+# enable the resource protection admission webhook which prevents users from accessing system resources
+teapot_admission_controller_enable_write_protection_webhook: "true"
+# configure the behaviour of the resource protection admission webhook, `true` blocks everything, `false` allows everything
+teapot_admission_controller_prevent_write_operations: "true"
+{{ else }}
 teapot_admission_controller_enable_write_protection_webhook: "false"
-# configure the behaviour of the deny-all admission webhook, `true` blocks everything, `false` allows everything
 teapot_admission_controller_prevent_write_operations: "false"
+{{ end }}
 
 # Enable and configure Pod Security Policy rules implemented in admission-controller.
 teapot_admission_controller_pod_security_policy_enabled: "true"
@@ -731,7 +742,7 @@ etcd_instance_type: "t3.medium"
 
 etcd_scalyr_key: ""
 
-etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.13-amd64-main-34" "861068367966"}}
+etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.18-amd64-main-35" "861068367966"}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -753,12 +764,14 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_31_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.4-amd64-master-359" "861068367966" }}
-kuberuntu_image_v1_31_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.4-arm64-master-359" "861068367966" }}
+kuberuntu_image_v1_31_old_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.4-amd64-master-359" "861068367966" }}
+kuberuntu_image_v1_31_old_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.4-arm64-master-359" "861068367966" }}
+kuberuntu_image_v1_31_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.6-amd64-master-368" "861068367966" }}
+kuberuntu_image_v1_31_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.6-arm64-master-368" "861068367966" }}
 
-# Which distro from the previous config items should be used. Valid options are only `jammy` for now. Can be set for each node pool.
-kuberuntu_distro_master: "jammy"
-kuberuntu_distro_worker: "jammy"
+# This is used to determine which AMI to use for the cluster or individual node
+# pools. Possible values are 'new' or 'old'
+kuberuntu_ami_version: "new"
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -1231,11 +1244,32 @@ role_sync_controller_enabled: "false"
 # called Connector will be deployed into the cluster.
 wiz_enable_runtime_sensor: "false"
 wiz_enable_runtime_connector: "false"
+wiz_enable_runtime_connector_broker: "false"
 wiz_sensor_cpu: "300m"
 wiz_sensor_memory: "300Mi"
 wiz_connector_cpu: "300m"
 wiz_connector_memory: "300Mi"
+wiz_priority: "false"
 # Please note when this is set to true it allows the use of the node selector feature
 # to deploy the sensor and connector on specific nodes, by manually setting the node selector label on the nodes.
 # This is useful when you want to deploy the sensor and connector on specific nodes.
 wiz_node_feature_rollout : "false"
+
+# EKS specific configuration
+eks_control_plane_logging: "false"
+eks_ip_family: "ipv4"
+eks_zalando_iam_aws_proxy_cpu: "100m"
+eks_zalando_iam_aws_proxy_memory: "512Mi"
+eks_zalando_iam_aws_proxy_hpa_max_replicas: "10"
+eks_zalando_iam_aws_proxy_hpa_cpu_target: "80"
+eks_zalando_iam_aws_proxy_hpa_memory_target: "80"
+eks_okta_identity_provider: "true"
+eks_fis_support_enabled: "false"
+eks_fis_namespaces: "default"
+
+# prefix delegation can only be configured for ipv4. For ipv6 it can only be true.
+aws_vpc_cni_prefix_delegation: "false"
+# enable network policy enforcement in the cluster.
+aws_vpc_cni_enable_network_policy: "false"
+# specify the network policy enforcement mode.
+aws_vpc_cni_network_policy_enforcing_mode: "standard"

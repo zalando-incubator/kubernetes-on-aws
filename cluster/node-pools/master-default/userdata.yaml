@@ -3,7 +3,9 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
+{{- if eq .NodePool.ConfigItems.kuberuntu_ami_version "old" }}
       NODEPOOL_TAINTS=node.kubernetes.io/role=master:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
+{{- end }}
       NODE_LABELS=master=true,node.kubernetes.io/exclude-from-external-load-balancers,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,lifecycle-status=ready{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=master
@@ -76,6 +78,19 @@ write_files:
       # variables are replaced on instance start-up.
       providerID: __PROVIDER_ID__
       clusterDNS: [__CLUSTER_DNS__]
+{{- if eq .NodePool.ConfigItems.kuberuntu_ami_version "new" }}
+      registerWithTaints:
+        - key: node.kubernetes.io/role
+          value: master
+          effect: NoSchedule
+{{- range $taint := .NodePool.Taints }}
+        - key: {{$taint.Key}}
+          effect: {{$taint.Effect}}
+{{- if $taint.Value }}
+          value: {{$taint.Value }}
+{{- end }}
+{{- end }}
+{{- end }}
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-apiserver.yaml
@@ -206,7 +221,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-235
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-245
           name: admission-controller
           lifecycle:
             preStop:
@@ -274,7 +289,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-137
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-138
           name: webhook
           ports:
           - containerPort: 8081
@@ -923,7 +938,7 @@ write_files:
       {{index $cfg 0}} = {{index $cfg 1}}
       {{- end}}
 {{- end}}
-
+{{ if eq .NodePool.ConfigItems.kuberuntu_ami_version "old" }}
   # TODO: Remove this once all nodes are running an AMI compatible with /etc/cni/net.d/10-flannel.conflist
   - owner: root:root
     path: /etc/kubernetes/cni/net.d/10-flannel.conflist
@@ -941,7 +956,7 @@ write_files:
           }
         ]
       }
-
+{{ end }}
   - owner: root:root
     path: /etc/cni/net.d/10-flannel.conflist
     content: |
