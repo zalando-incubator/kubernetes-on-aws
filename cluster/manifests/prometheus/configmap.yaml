@@ -104,6 +104,32 @@ data:
       bearer_token_file: /meta/credentials/remote-write-token-secret
 {{ end }}
     scrape_configs:
+{{- if eq .Cluster.Provider "zalando-eks" }}
+    # Scrape config for API servers
+    - job_name: 'kubernetes-apiservers'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+              - default
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: kubernetes;https
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        source_labels:
+        - __meta_kubernetes_service_name
+        target_label: service
+{{- else }}
     # scrape from kube-apiserver pods
     - job_name: 'kubernetes-apiservers'
       scheme: https
@@ -126,6 +152,7 @@ data:
       - action: replace
         source_labels: ['__meta_kubernetes_pod_label_component']
         target_label: component
+{{- end }}
     - &apiserver_container_metric
       job_name: 'teapot-admission-controller'
       scheme: http
@@ -183,6 +210,7 @@ data:
         target_label: node_name
       - action: labeldrop
         regex: "^(pod|node|container)$"
+{{- if ne .Cluster.Provider "zalando-eks" }}
     - job_name: 'etcd-servers'
       scheme: http
       dns_sd_configs:
@@ -205,6 +233,7 @@ data:
        - source_labels: [ __name__ ]
          regex: 'node_textfile.*'
          action: drop
+{{- end }}
 {{ if eq .Cluster.ConfigItems.network_monitoring_enabled "true" }}
 {{if eq .Cluster.ConfigItems.network_monitoring_separate_prometheus "false"}}
     - job_name: "kubenurse"
