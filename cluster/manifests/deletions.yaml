@@ -3,6 +3,25 @@ pre_apply: []
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
+{{- if eq .Cluster.Provider "zalando-eks"}}
+- name: coredns
+  kind: Deployment
+  namespace: kube-system
+- name: coredns
+  kind: ConfigMap
+  namespace: kube-system
+{{- if ne .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
+- name: fis-experiment
+  kind: ClusterRoleBinding
+- name: fis-experiment
+  kind: ClusterRole
+# {{ range $namespace := split .Cluster.ConfigItems.eks_fis_namespaces "," }}
+- name: fis-experiment
+  kind: ServiceAccount
+  namespace: "{{ $namespace }}"
+# {{ end }}
+{{- end }}
+{{- end }}
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
@@ -289,6 +308,11 @@ post_apply:
 - name: role-sync-controller
   kind: ServiceAccount
   namespace: kube-system
+# secret-read role/bindings
+- name: cdp-deployer-poweruser-secret-read
+  kind: ClusterRoleBinding
+- name: deployment-service-executor-poweruser-secret-read
+  kind: ClusterRoleBinding
 {{- end }}
 {{- if ne .Cluster.ConfigItems.kube_janitor_enabled "true" }}
 - name: kube-janitor

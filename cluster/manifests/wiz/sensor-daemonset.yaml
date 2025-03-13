@@ -31,6 +31,9 @@ spec:
         cluster-autoscaler.kubernetes.io/enable-ds-eviction: "true"
     spec:
       serviceAccountName: wiz-sensor
+      {{- if eq .Cluster.ConfigItems.wiz_priority "true" }}
+      priorityClassName: system-node-critical
+      {{- end }}
       nodeSelector:
         {{ if eq .Cluster.ConfigItems.wiz_node_feature_rollout "true" }}
         node-feature.zalando.org/wiz: enabled
@@ -46,7 +49,7 @@ spec:
       restartPolicy: Always
       containers:
       - name: wiz-sensor
-        image: container-registry.zalando.net/secops-systems/wiz-sensor:v1-main-2
+        image: container-registry.zalando.net/secops-systems/wiz-sensor:v1-main-3
         imagePullPolicy: IfNotPresent
         securityContext:
           capabilities:
