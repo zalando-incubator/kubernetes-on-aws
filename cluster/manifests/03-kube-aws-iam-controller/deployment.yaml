@@ -27,13 +27,15 @@ spec:
       hostNetwork: true
       containers:
       - name: kube-aws-iam-controller
-        image: container-registry.zalando.net/teapot/kube-aws-iam-controller:v0.3.0-62-gd73875f
+        image: container-registry.zalando.net/teapot/kube-aws-iam-controller:v0.3.0-66-g9bdbaef
         env:
         - name: AWS_DEFAULT_REGION
           value: "{{.Cluster.Region}}"
         args:
         - --debug
+{{- if ne .Cluster.Provider "zalando-eks" }}
         - "--assume-role={{.Cluster.LocalID}}-worker"
+{{- end }}
         resources:
           limits:
             cpu: "{{.Cluster.ConfigItems.kube_aws_iam_controller_cpu}}"
@@ -41,9 +43,18 @@ spec:
           requests:
             cpu: "{{.Cluster.ConfigItems.kube_aws_iam_controller_cpu}}"
             memory: "{{.Cluster.ConfigItems.kube_aws_iam_controller_mem}}"
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      nodeSelector:
+        dedicated: cluster-seed
+      tolerations:
+      - key: dedicated
+        value: cluster-seed
+        effect: NoSchedule
+{{- else}}
+      nodeSelector:
+        node.kubernetes.io/role: master
       tolerations:
       - key: node.kubernetes.io/role
         value: master
         effect: NoSchedule
-      nodeSelector:
-        node.kubernetes.io/role: master
+{{- end}}
