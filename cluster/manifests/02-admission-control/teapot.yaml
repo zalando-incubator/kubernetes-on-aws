@@ -552,6 +552,13 @@ webhooks:
         expression: '!(request.userInfo.username in ["system:kube-controller-manager", "system:kube-scheduler", "zalando-iam:zalando:service:k8sapi_credentials-provider"])'
       - name: 'exclude-eks-components'
         expression: '!request.userInfo.username.startsWith("eks:")'
+      - name: 'allow-api-monitoring-controller-access'
+        expression: |
+          !(
+            request.userInfo.username == "system:serviceaccount:api-infrastructure:api-monitoring-controller" &&
+            object.kind == "ConfigMap" &&
+            object.metadata.name == "skipper-default-filters"
+          )
   - name: collaborator-deny-admitter.teapot.zalan.do
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
