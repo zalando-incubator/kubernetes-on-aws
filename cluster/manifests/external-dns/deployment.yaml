@@ -33,7 +33,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: container-registry.zalando.net/teapot/external-dns:v0.15.1-master-42
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/external-dns:v0.15.1-master-42
         args:
         - --source=service
         - --source=ingress
@@ -72,3 +72,9 @@ spec:
         env:
         - name: AWS_REGION
           value: "{{ .Cluster.Region }}"
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      tolerations:
+        - key: dedicated
+          value: cluster-seed
+          effect: NoSchedule
+{{- end}}

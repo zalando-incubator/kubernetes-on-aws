@@ -66,10 +66,10 @@ spec:
             command:
             - dig
             - "+short"
-{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv4") }}
-            - "@127.0.0.1"
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+            - "@::1"
 {{- else }}
-            - "::1"
+            - "@127.0.0.1"
 {{- end }}
             - "kubernetes.default.svc.cluster.local"
           initialDelaySeconds: 60
@@ -91,16 +91,20 @@ spec:
           name: config-volume
           readOnly: true
           subPath: unbound.conf
-      - name: unbound-telemetry
-{{- if eq .Cluster.Provider "zalando-eks" }}
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound-telemetry:master-5
-{{- else }}
-        image: container-registry.zalando.net/teapot/unbound-telemetry:master-5
-{{- end }}
+        - mountPath: /run/unbound
+          name: unbound-socket
+          readOnly: false
+      - name: unbound-exporter
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound_exporter:v0.4.6-main-1.custom
         args:
-        - tcp
-        # TODO: ipv6
-        - --bind=0.0.0.0:9054
+        - -unbound.ca
+        - ""
+        - -unbound.cert
+        - ""
+        - -unbound.host
+        - "unix:///run/unbound/unbound.ctl"
+        - -web.listen-address
+        - ":9054"
         ports:
         - name: metrics
           containerPort: 9054
@@ -109,8 +113,12 @@ spec:
           requests:
             ephemeral-storage: 256Mi
           limits:
-            cpu: {{.Cluster.ConfigItems.dns_unbound_telemetry_cpu}}
-            memory: {{.Cluster.ConfigItems.dns_unbound_telemetry_mem}}
+            cpu: {{.Cluster.ConfigItems.dns_unbound_exporter_cpu}}
+            memory: {{.Cluster.ConfigItems.dns_unbound_exporter_mem}}
+        volumeMounts:
+        - mountPath: /run/unbound
+          name: unbound-socket
+          readOnly: false
 {{ end }}
 {{ if eq .Cluster.ConfigItems.dns_cache "dnsmasq" }}
       - name: dnsmasq
@@ -183,7 +191,6 @@ spec:
         args:
         - --v=2
         - --logtostderr
-        # TODO: ipv6
         - --probe=dnsmasq,127.0.0.1:9254,ec2.amazonaws.com,5,A
         - --prometheus-port=9054
         ports:
@@ -203,7 +210,7 @@ spec:
 {{ end }}
       - name: coredns
         {{- if eq .Cluster.Provider "zalando-eks" }}
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/coredns:1.11.3-master-24
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/coredns:1.12.0-master-25
         {{- else }}
         image: container-registry.zalando.net/teapot/coredns:1.12.0-master-25
         {{- end }}
@@ -292,3 +299,7 @@ spec:
             path: Corefile
           - key: unbound.conf
             path: unbound.conf
+{{- if eq .Cluster.ConfigItems.dns_cache "unbound" }}
+      - name: unbound-socket
+        emptyDir: {}
+{{- end }}
