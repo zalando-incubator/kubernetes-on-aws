@@ -13,6 +13,12 @@ webhooks:
         apiGroups: ["zalando.org"]
         apiVersions: ["v1"]
         resources: ["routegroups"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
     clientConfig:
       # {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
@@ -34,6 +40,12 @@ webhooks:
         apiGroups: ["networking.k8s.io"]
         apiVersions: ["v1"]
         resources: ["ingresses"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
     clientConfig:
       # {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
