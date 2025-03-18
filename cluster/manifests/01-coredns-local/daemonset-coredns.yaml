@@ -66,10 +66,10 @@ spec:
             command:
             - dig
             - "+short"
-{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv4") }}
-            - "@127.0.0.1"
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+            - "@::1"
 {{- else }}
-            - "::1"
+            - "@127.0.0.1"
 {{- end }}
             - "kubernetes.default.svc.cluster.local"
           initialDelaySeconds: 60
@@ -183,7 +183,6 @@ spec:
         args:
         - --v=2
         - --logtostderr
-        # TODO: ipv6
         - --probe=dnsmasq,127.0.0.1:9254,ec2.amazonaws.com,5,A
         - --prometheus-port=9054
         ports:
@@ -203,7 +202,7 @@ spec:
 {{ end }}
       - name: coredns
         {{- if eq .Cluster.Provider "zalando-eks" }}
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/coredns:1.11.3-master-24
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/coredns:1.12.0-master-25
         {{- else }}
         image: container-registry.zalando.net/teapot/coredns:1.12.0-master-25
         {{- end }}
