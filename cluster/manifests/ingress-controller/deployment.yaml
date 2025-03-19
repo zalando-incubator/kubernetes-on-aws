@@ -1,4 +1,4 @@
-# {{ $image := "container-registry.zalando.net/teapot/kube-ingress-aws-controller:v0.15.34" }}
+# {{ $image := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/kube-ingress-aws-controller:v0.15.34" }}
 # {{ $version := index (split $image ":") 1 }}
 
 apiVersion: apps/v1
@@ -75,3 +75,9 @@ spec:
             requests:
               cpu: 50m
               memory: 4Gi
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      tolerations:
+        - key: dedicated
+          value: cluster-seed
+          effect: NoSchedule
+{{- end}}
