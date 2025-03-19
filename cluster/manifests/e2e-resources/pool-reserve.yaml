@@ -22,6 +22,16 @@ spec:
     spec:
       nodeSelector:
         node.kubernetes.io/node-pool: "{{$pool}}"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: pool
+                operator: In
+                values:
+                - "{{$pool}}"
+            topologyKey: "kubernetes.io/hostname"
       tolerations:
       {{ if eq $pool "worker-node-tests" }}
         - effect: NoSchedule
