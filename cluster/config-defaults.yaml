@@ -250,6 +250,14 @@ skipper_pod_deletion_cost_controller_resync_interval: "1h"
 # polarsignals - only enabled for testing teapot
 polarsignals_enabled: "false"
 
+# Emergency Access Service
+# Control whether the emergency access service is enabled or not.
+{{ if and (eq .Cluster.Environment "production") (eq .Cluster.Provider "zalando-aws") }}
+emergency_access_service_enabled: "true"
+{{else}}
+emergency_access_service_enabled: "false"
+{{end}}
+
 # Kube-Metrics-Adapter
 ## Scheduled scaling metrics: ramp up/down over this period of time
 kube_metrics_adapter_default_scaling_window: "10m"
@@ -915,8 +923,8 @@ dns_dnsmasq_sidecar_cpu: "10m"
 dns_dnsmasq_sidecar_mem: "45Mi"
 dns_unbound_cpu: "100m"
 dns_unbound_mem: "50Mi"
-dns_unbound_telemetry_cpu: "10m"
-dns_unbound_telemetry_mem: "45Mi"
+dns_unbound_exporter_cpu: "10m"
+dns_unbound_exporter_mem: "45Mi"
 dns_coredns_cpu: "50m"
 dns_coredns_mem: "100Mi"
 
@@ -1251,7 +1259,7 @@ wiz_priority: "false"
 wiz_node_feature_rollout : "false"
 
 # EKS specific configuration
-eks_control_plane_logging: "false"
+eks_control_plane_logging: "true"
 eks_ip_family: "ipv4"
 eks_zalando_iam_aws_proxy_cpu: "100m"
 eks_zalando_iam_aws_proxy_memory: "512Mi"
@@ -1264,6 +1272,10 @@ eks_fis_namespaces: "default"
 
 # prefix delegation can only be configured for ipv4. For ipv6 it can only be true.
 aws_vpc_cni_prefix_delegation: "false"
+# enable custom networking for the AWS VPC CNI. This assumes that a custom CIDR
+# range is available in the VPC and that there are dedicated subnets for the
+# custom CIDR.
+aws_vpc_cni_custom_networking: "false"
 # enable network policy enforcement in the cluster.
 aws_vpc_cni_enable_network_policy: "false"
 # specify the network policy enforcement mode.

@@ -171,15 +171,17 @@ Resources:
         EndpointPublicAccess: true
         EndpointPrivateAccess: true
         # PublicAccessCidrs: [ "1.1.1.2/32" ]
-{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
       Logging:
         ClusterLogging:
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
           EnabledTypes:
             - Type: api
             - Type: audit
             - Type: authenticator
             - Type: controllerManager
             - Type: scheduler
+{{- else }}
+          EnabledTypes: []
 {{- end }}
       # Tags:
       # - Key: "application"
