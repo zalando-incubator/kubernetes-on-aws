@@ -10,7 +10,11 @@ data:
   unbound.conf: |
     server:
       directory: "/etc/unbound/"
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+      interface: "::0"
+{{- else }}
       interface: 0.0.0.0
+{{- end }}
       interface-automatic: yes
       # Drop user privileges after binding the port.
       username: "_unbound"
@@ -21,7 +25,11 @@ data:
       log-servfail: yes
       # allow query localhost (coredns at 127.0.0.1:9254)
       do-not-query-localhost: no
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+      access-control: ::/0 allow
+{{- else }}
       access-control: 0.0.0.0/0 allow
+{{- end }}
       harden-dnssec-stripped: no
       so-reuseport: yes
       cache-min-ttl: 1
@@ -29,16 +37,40 @@ data:
       minimal-responses: yes
       extended-statistics: yes
       # support reverse lookup of kubernetes addresses
+{{- if eq .Cluster.Provider "zalando-eks" }}
+      # CoreDNS is authoritative for the reverse lookup ranges. Therefore
+      # disable the default protection in unbound to allow reverse lookup
+      # queries to pass through to CoreDNS
+      # https://github.com/NLnetLabs/unbound/blob/5c84bb573f9728c10bcb3592dbd12be403d362de/doc/example.conf.in#L804-L850
+      local-zone: "d.f.ip6.arpa." nodefault
+      local-zone: "8.e.f.ip6.arpa." nodefault
+      local-zone: "9.e.f.ip6.arpa." nodefault
+      local-zone: "a.e.f.ip6.arpa." nodefault
+      local-zone: "b.e.f.ip6.arpa." nodefault
+      local-zone: "8.b.d.0.1.0.0.2.ip6.arpa." nodefault
+      local-zone: "ip6.arpa." transparent
+      local-zone: "10.in-addr.arpa." nodefault
+      local-zone: "in-addr.arpa." transparent
+{{- else }}
       local-zone: "2.10.in-addr.arpa." transparent
       local-zone: "3.10.in-addr.arpa." transparent
       local-zone: "5.10.in-addr.arpa." transparent
-      # make metrics available for the unbound-telemetry container (127.0.0.1:9054)
+{{- end }}
+      # make metrics available for the unbound_exporter
       remote-control:
         control-enable: yes
-        control-use-cert: no
+        control-interface: /run/unbound/unbound.ctl
     forward-zone:
       name: "."
       forward-addr: 127.0.0.1@9254 # coredns
+{{- if eq .Cluster.Provider "zalando-eks" }}
+    forward-zone:
+      name: "ip6.arpa."
+      forward-addr: 127.0.0.1@9254 # coredns
+    forward-zone:
+      name: "in-addr.arpa."
+      forward-addr: 127.0.0.1@9254 # coredns
+{{- else }}
     forward-zone:
       name: "2.10.in-addr.arpa."
       forward-addr: 127.0.0.1@9254 # coredns
@@ -48,6 +80,7 @@ data:
     forward-zone:
       name: "5.10.in-addr.arpa."
       forward-addr: 127.0.0.1@9254 # coredns
+{{- end }}
   Corefile: |
 {{ if and .Cluster.ConfigItems.custom_dns_zone .Cluster.ConfigItems.custom_dns_zone_nameservers }}
     {{ .Cluster.ConfigItems.custom_dns_zone }}:9254 {
