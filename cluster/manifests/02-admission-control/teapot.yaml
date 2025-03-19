@@ -13,13 +13,21 @@ webhooks:
       matchExpressions:
         - key: component
           operator: NotIn
-          values: ["admission-controller", "coredns", "aws-node"]
+          values:
+            - "admission-controller"
+            - "coredns"
+            - "aws-node"
+            - "external-dns"
+            - "zalando-iam-aws-proxy"
         - key: k8s-app
           operator: NotIn
           values: ["kube-proxy"]
         - key: app.kubernetes.io/name
           operator: NotIn
           values: ["eks-pod-identity-agent"]
+        - key: application
+          operator: NotIn
+          values: ["kube-ingress-aws-controller"]
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
@@ -48,13 +56,21 @@ webhooks:
       matchExpressions:
         - key: component
           operator: NotIn
-          values: ["admission-controller", "coredns", "aws-node"]
+          values:
+            - "admission-controller"
+            - "coredns"
+            - "aws-node"
+            - "external-dns"
+            - "zalando-iam-aws-proxy"
         - key: k8s-app
           operator: NotIn
           values: ["kube-proxy"]
         - key: app.kubernetes.io/name
           operator: NotIn
           values: ["eks-pod-identity-agent"]
+        - key: application
+          operator: NotIn
+          values: ["kube-ingress-aws-controller"]
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
