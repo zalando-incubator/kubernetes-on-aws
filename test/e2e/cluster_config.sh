@@ -101,7 +101,7 @@ EOFF
     - default-for-karpenter
     config_items:
       scaling_priority: "100"
-  - name: karpenter-catch-all
+  - name: karpenter-arm
     profile: worker-karpenter
     discount_strategy: none
     max_size: 0
@@ -109,7 +109,7 @@ EOFF
     instance_types:
     - not-specified
     config_items:
-      scaling_priority: "2"
+      requirements: "- key: kubernetes.io/arch\n  operator: In\n  values:\n  - arm64\n"
   - discount_strategy: spot
     instance_types:
     - "c7g.large"
@@ -149,14 +149,13 @@ EOFF
     - "g6.xlarge"
     - "g6.2xlarge"
     - "g6.4xlarge"
-    name: worker-gpu
+    name: karpenter-gpu
     profile: worker-karpenter
     min_size: 0
     max_size: 0
     config_items:
       labels: zalando.org/nvidia-gpu=tesla
       taints: nvidia.com/gpu=present:NoSchedule
-      scaling_priority: "3"
   - discount_strategy: none
     instance_types:
     - "default-for-karpenter"
