@@ -156,6 +156,7 @@ EOFF
     config_items:
       labels: zalando.org/nvidia-gpu=tesla
       taints: nvidia.com/gpu=present:NoSchedule
+      scaling_priority: "3"
   - discount_strategy: none
     instance_types:
     - "default-for-karpenter"
