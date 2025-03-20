@@ -39,7 +39,6 @@ clusters:
     vm_dirty_bytes: 134217728
     vm_dirty_background_bytes: 67108864
     coredns_max_upsteam_concurrency: 30
-    ebs_root_volume_size: "550" # required by the limitRanger e2e tests (needs 500Gi ephemoral storage) https://github.com/kubernetes/kubernetes/blob/v1.18.3/test/e2e/scheduling/limit_range.go#L59
     routegroups_validation: "enabled"
     stackset_routegroup_support_enabled: "true"
     stackset_ingress_source_switch_ttl: "1m"
@@ -85,15 +84,6 @@ EOFF
   fi)
   - discount_strategy: none
     instance_types:
-    - "m6i.2xlarge"
-    name: default-worker-splitaz
-    profile: worker-splitaz
-    min_size: 0
-    max_size: 21
-    config_items:
-      cpu_manager_policy: static
-  - discount_strategy: none
-    instance_types:
     - "m6i.xlarge"
     config_items:
       availability_zones: "eu-central-1a"
@@ -102,23 +92,24 @@ EOFF
     profile: worker-splitaz
     min_size: 0
     max_size: 21
-  - discount_strategy: none
-    instance_types:
-    - "m6id.xlarge"
-    name: worker-instance-storage
-    profile: worker-splitaz
+  - name: default-karpenter
+    profile: worker-karpenter
+    discount_strategy: none
+    max_size: 0
     min_size: 0
-    max_size: 21
-  - discount_strategy: none
     instance_types:
-    - "m6i.xlarge"
-    name: worker-combined
-    profile: worker-combined
+    - default-for-karpenter
     config_items:
-      labels: dedicated=worker-combined
-      taints: dedicated=worker-combined:NoSchedule
+      scaling_priority: "100"
+  - name: karpenter-catch-all
+    profile: worker-karpenter
+    discount_strategy: none
+    max_size: 0
     min_size: 0
-    max_size: 21
+    instance_types:
+    - not-specified
+    config_items:
+      scaling_priority: "2"
   - discount_strategy: spot
     instance_types:
     - "c7g.large"
@@ -137,17 +128,10 @@ EOFF
       taints: dedicated=skipper-ingress:NoSchedule
   - discount_strategy: spot
     instance_types:
-    - "m6a.large"
-    - "m6i.large"
-    - "m6a.xlarge"
-    - "m6i.xlarge"
-    - "c6i.large"
-    - "c6i.xlarge"
-    - "c6a.large"
-    - "c6a.xlarge"
+    - "default-for-karpenter"
     min_size: 0
-    max_size: 3
-    profile: worker-splitaz
+    max_size: 0
+    profile: worker-karpenter
     name: worker-node-tests
     config_items:
       labels: dedicated=node-tests
@@ -166,54 +150,22 @@ EOFF
     - "g6.2xlarge"
     - "g6.4xlarge"
     name: worker-gpu
-    profile: worker-splitaz
+    profile: worker-karpenter
     min_size: 0
-    max_size: 6
+    max_size: 0
     config_items:
-      availability_zones: "eu-central-1a,eu-central-1b"
       labels: zalando.org/nvidia-gpu=tesla
       taints: nvidia.com/gpu=present:NoSchedule
-      scaling_priority: "-100"
-  - discount_strategy: none
-    instance_types: ["g4dn.xlarge"]
-    name: worker-gpu-on-demand
-    profile: worker-splitaz
-    min_size: 0
-    max_size: 6
-    config_items:
-      availability_zones: "eu-central-1a,eu-central-1b"
-      labels: zalando.org/nvidia-gpu=tesla
-      taints: nvidia.com/gpu=present:NoSchedule
-      scaling_priority: "-200"
   - discount_strategy: none
     instance_types:
-    - "m6i.xlarge"
+    - "default-for-karpenter"
     min_size: 0
-    max_size: 3
-    profile: worker-splitaz
+    max_size: 0
+    profile: worker-karpenter
     name: node-reboot-tests
     config_items:
       labels: dedicated=node-reboot-tests
       taints: dedicated=node-reboot-tests:NoSchedule
-  - discount_strategy: none
-    instance_types: ["default-for-karpenter"]
-    min_size: 0
-    max_size: 0
-    profile: worker-karpenter
-    name: worker-karpenter
-    config_items:
-      labels: dedicated=worker-karpenter
-      taints: dedicated=worker-karpenter:NoSchedule
-  - discount_strategy: none
-    instance_types:
-    - "m6g.large"
-    min_size: 0
-    max_size: 3
-    profile: worker-splitaz
-    name: worker-arm64
-    config_items:
-      labels: dedicated=worker-arm64
-      taints: dedicated=worker-arm64:NoSchedule
   provider: ${CLUSTER_PROVIDER}
   region: ${REGION}
   owner: '${OWNER}'
