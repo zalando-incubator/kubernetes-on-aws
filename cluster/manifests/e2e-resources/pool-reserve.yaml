@@ -43,6 +43,11 @@ spec:
           key: dedicated
           value: node-tests
       {{ end }}
+      {{ if eq $pool "worker-limit-az" }}
+        - effect: NoSchedule
+          key: dedicated
+          value: {{$pool}}
+      {{ end }}
       terminationGracePeriodSeconds: 0
       containers:
       - name: pause
