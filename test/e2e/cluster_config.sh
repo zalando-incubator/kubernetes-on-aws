@@ -82,12 +82,18 @@ cat <<EOFF
     max_size: 2
 EOFF
   fi)
-  - discount_strategy: none
+  - discount_strategy: spot
     instance_types:
-    - "m6i.xlarge"
+    - "c6i.large"
+    - "m6i.large"
+    - "r6i.large"
+    - "c7i.large"
+    - "m7i.large"
+    - "r7i.large"
     config_items:
       availability_zones: "eu-central-1a"
-      scaling_priority: "-100"
+      labels: dedicated=worker-limit-az
+      taints: dedicated=worker-limit-az:NoSchedule
     name: worker-limit-az
     profile: worker-splitaz
     min_size: 0
