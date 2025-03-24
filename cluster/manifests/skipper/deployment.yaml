@@ -311,6 +311,7 @@ spec:
           - "-oauth2-callback-path={{ .Cluster.ConfigItems.skipper_oauth2_redirect_uri_path }}"
           - "-oauth2-grant-tokeninfo-keys={{ .Cluster.ConfigItems.skipper_oauth2_ui_login_tokeninfo_keys }}"
 {{ end }}
+          - "-oidc-secrets-file=/etc/skipper/secret/encryption-key"
 {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
           - "-enable-open-policy-agent"
           - "-open-policy-agent-config-template=/etc/skipper/open-policy-agent/opaconfig.yaml"
@@ -411,10 +412,10 @@ spec:
           - name: hostname-credentials
             mountPath: /etc/skipper/hostname-credentials
             readOnly: true
+{{ end }}
           - name: encryption-key
             mountPath: /etc/skipper/secret
             readOnly: true
-{{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
           - name: open-policy-agent-config
             mountPath: /etc/skipper/open-policy-agent
@@ -444,10 +445,10 @@ spec:
         - name: hostname-credentials
           secret:
             secretName: hostname-credentials
+{{ end }}
         - name: encryption-key
           secret:
             secretName: skipper-ingress
-{{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
         - name: open-policy-agent-config
           configMap:
