@@ -19,6 +19,7 @@ webhooks:
             - "aws-node"
             - "external-dns"
             - "zalando-iam-aws-proxy"
+            - "kube-cluster-autoscaler"
         - key: k8s-app
           operator: NotIn
           values: ["kube-proxy"]
@@ -27,7 +28,9 @@ webhooks:
           values: ["eks-pod-identity-agent"]
         - key: application
           operator: NotIn
-          values: ["kube-ingress-aws-controller"]
+          values:
+          - "kube-ingress-aws-controller"
+          - "skipper-ingress"
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
@@ -62,6 +65,7 @@ webhooks:
             - "aws-node"
             - "external-dns"
             - "zalando-iam-aws-proxy"
+            - "kube-cluster-autoscaler"
         - key: k8s-app
           operator: NotIn
           values: ["kube-proxy"]
@@ -70,7 +74,9 @@ webhooks:
           values: ["eks-pod-identity-agent"]
         - key: application
           operator: NotIn
-          values: ["kube-ingress-aws-controller"]
+          values:
+          - "kube-ingress-aws-controller"
+          - "skipper-ingress"
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
