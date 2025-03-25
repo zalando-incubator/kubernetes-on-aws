@@ -1121,7 +1121,6 @@ Resources:
       Path: "/"
       Roles:
         - !Ref WorkerIAMRole
-{{- if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
   KarpenterIAMRole: # role for the karpenter controller
     Properties:
       AssumeRolePolicyDocument: !Sub
@@ -1485,7 +1484,6 @@ Resources:
       Targets:
         - Id: KarpenterInterruptionQueueTarget
           Arn: !GetAtt KarpenterInterruptionQueue.Arn
-{{- end }}
   DeploymentIAMRole:
     Properties:
       AssumeRolePolicyDocument:

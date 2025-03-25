@@ -44,7 +44,6 @@ clusters:
     stackset_routegroup_support_enabled: "true"
     stackset_ingress_source_switch_ttl: "1m"
     teapot_admission_controller_daemonset_reserved_cpu: "518m"
-    karpenter_pools_enabled: "true"
     okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
     teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
     eks_okta_identity_provider: "false" # disabled to speed up EKS cluster creation for e2e.
