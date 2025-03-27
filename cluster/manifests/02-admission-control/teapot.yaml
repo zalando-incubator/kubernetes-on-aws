@@ -575,6 +575,16 @@ webhooks:
             object.kind == "ConfigMap" &&
             object.metadata.name == "skipper-default-filters"
           )
+      - name: 'allow-routesrv-routes-access'
+        expression: |
+          !(
+            "okta:common/engineer" in request.userInfo.groups &&
+            request.name == "skipper-ingress-routesrv" &&
+            request.resource.resource == "services" &&
+            request.subResource == "proxy" &&
+            request.operation == "CONNECT"
+          )
+
   - name: collaborator-deny-admitter.teapot.zalan.do
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}

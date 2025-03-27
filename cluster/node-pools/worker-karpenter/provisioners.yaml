@@ -150,6 +150,14 @@ spec:
           values:
             - nitro
 #{{ end }}
+#{{ if eq .Cluster.ConfigItems.karpenter_nitro_support_required "true" }}
+#{{ if and (eq .Cluster.Provider "zalando-aws") (eq .NodePool.KarpenterInstanceTypeStrategy "not-specified") }}
+        - key: karpenter.k8s.aws/instance-hypervisor
+          operator: in
+          values:
+            - nitro
+#{{ end }}
+#{{ end }}
 #{{ if $taints }}
 #  {{ range $taints }}
 #    {{ $taint := . }}
