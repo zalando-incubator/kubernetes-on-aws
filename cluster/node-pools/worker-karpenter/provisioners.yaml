@@ -160,7 +160,9 @@ spec:
 #{{ end }}
 #{{ if eq .NodePool.ConfigItems.karpenter_in_transit_support_required "true" }}
         - key: karpenter.k8s.aws/instance-encryption-in-transit-supported
-          operator: Exists
+          operator: In
+          values:
+            - "true"
 #{{ end }}
 #{{ if $taints }}
 #  {{ range $taints }}
