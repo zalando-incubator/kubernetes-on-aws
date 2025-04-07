@@ -52,7 +52,6 @@ clusters:
     skipper_open_policy_agent_bucket_arn: "${SKIPPER_OPA_BUCKET_ARN}"
     skipper_open_policy_agent_observability_url: "${SKIPPER_OPA_OBSERVABILITY_URL}"
     skipper_open_policy_agent_bundles_url: "${SKIPPER_OPA_BUNDLES_URL}"
-    skipper_open_policy_agent_styra_response_header_timeout: 2
     eks_ip_family: "ipv6"
   criticality_level: 1
   environment: e2e
