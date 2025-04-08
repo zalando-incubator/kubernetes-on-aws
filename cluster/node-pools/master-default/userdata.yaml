@@ -3,9 +3,6 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
-{{- if eq .NodePool.ConfigItems.kuberuntu_ami_version "old" }}
-      NODEPOOL_TAINTS=node.kubernetes.io/role=master:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
-{{- end }}
       NODE_LABELS=master=true,node.kubernetes.io/exclude-from-external-load-balancers,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,lifecycle-status=ready{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=master
@@ -78,7 +75,6 @@ write_files:
       # variables are replaced on instance start-up.
       providerID: __PROVIDER_ID__
       clusterDNS: [__CLUSTER_DNS__]
-{{- if eq .NodePool.ConfigItems.kuberuntu_ami_version "new" }}
       registerWithTaints:
         - key: node.kubernetes.io/role
           value: master
@@ -88,7 +84,6 @@ write_files:
           effect: {{$taint.Effect}}
 {{- if $taint.Value }}
           value: {{$taint.Value }}
-{{- end }}
 {{- end }}
 {{- end }}
 
@@ -221,7 +216,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-250
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-251
           name: admission-controller
           lifecycle:
             preStop:
@@ -262,7 +257,7 @@ write_files:
               name: admission-controller-kubeconfig
               readOnly: true
         - name: skipper-admission-webhook
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.18
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.19
           args:
             - webhook
             - --address=:9085
@@ -439,7 +434,7 @@ write_files:
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
         - name: skipper-proxy
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.18
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.19
           args:
           - skipper
           - -access-log-strip-query
@@ -490,7 +485,7 @@ write_files:
             name: ssl-certs-kubernetes
             readOnly: true
         - name: skipper-metrics
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.18
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.19
           args:
           - skipper
           - -access-log-strip-query
@@ -938,25 +933,7 @@ write_files:
       {{index $cfg 0}} = {{index $cfg 1}}
       {{- end}}
 {{- end}}
-{{ if eq .NodePool.ConfigItems.kuberuntu_ami_version "old" }}
-  # TODO: Remove this once all nodes are running an AMI compatible with /etc/cni/net.d/10-flannel.conflist
-  - owner: root:root
-    path: /etc/kubernetes/cni/net.d/10-flannel.conflist
-    content: |
-      {
-        "name": "podnet",
-        "cniVersion": "0.3.1",
-        "plugins": [
-          {
-            "type": "flannel",
-            "delegate": {
-              "isDefaultGateway": true,
-              "hairpinMode": true
-            }
-          }
-        ]
-      }
-{{ end }}
+
   - owner: root:root
     path: /etc/cni/net.d/10-flannel.conflist
     content: |
