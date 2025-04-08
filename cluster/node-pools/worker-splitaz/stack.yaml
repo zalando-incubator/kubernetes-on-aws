@@ -137,11 +137,6 @@ Resources:
     Properties:
       LaunchTemplateName: '{{ .Cluster.LocalID }}-{{ .NodePool.Name }}'
       LaunchTemplateData:
-{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
-        MetadataOptions:
-          HttpEndpoint: enabled
-          HttpProtocolIpv6: enabled
-{{- end }}
         TagSpecifications:
         - ResourceType: "volume"
           Tags:

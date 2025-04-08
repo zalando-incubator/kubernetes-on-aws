@@ -11,11 +11,7 @@ spec:
     - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_31_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
   metadataOptions:
     httpEndpoint: enabled
-    # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
-    httpProtocolIPv6: enabled
-    # {{ else }}
     httpProtocolIPv6: disabled
-    # {{ end }}
     httpPutResponseHopLimit: 2
     httpTokens: optional
   subnetSelectorTerms:
