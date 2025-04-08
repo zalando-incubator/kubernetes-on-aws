@@ -45,6 +45,10 @@ data:
   pod.env-inject.variable._PLATFORM_OBSERVABILITY_METRICS_PORT: "{{ .Cluster.ConfigItems.observability_metrics_port }}"
   pod.env-inject.variable._PLATFORM_OBSERVABILITY_ACCESS_TOKEN: "{{ .Cluster.ConfigItems.lightstep_token }}"
   pod.env-inject.variable._PLATFORM_OBSERVABILITY_COMMON_ATTRIBUTE_CLOUD__ACCOUNT__ID : "{{ .Cluster.Alias }}"
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}
+  pod.env-inject.variable.AWS_EC2_METADATA_SERVICE_ENDPOINT: "http://[fd00:ec2::254]"
+  pod.env-inject.variable.AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE: "IPv6"
+{{- end }}
 {{- if eq .Cluster.Environment "e2e" }}
   pod.env-inject.variable._PLATFORM_E2E: "injected"
 {{- end }}
