@@ -7,9 +7,6 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
-{{- if eq .NodePool.ConfigItems.kuberuntu_ami_version "old" }}
-      NODEPOOL_TAINTS={{if index .NodePool.ConfigItems "taints"}}{{.NodePool.ConfigItems.taints}}{{end}}
-{{- end }}
       NODE_LABELS=node.kubernetes.io/profile={{ .NodePool.Profile }},lifecycle-status=ready,node.kubernetes.io/distro=ubuntu{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}{{if or (eq .NodePool.Profile "worker-splitaz") (eq .NodePool.Profile "worker-combined")}},asg-lifecycle-hook=true{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=worker
@@ -141,7 +138,6 @@ write_files:
       # variables are replaced on instance start-up.
       providerID: __PROVIDER_ID__
       clusterDNS: [__CLUSTER_DNS__]
-{{- if eq .NodePool.ConfigItems.kuberuntu_ami_version "new" }}
 {{- if or (.NodePool.Taints) (eq .NodePool.Profile "worker-karpenter") }}
       registerWithTaints:
 {{- range $taint := .NodePool.Taints }}
@@ -154,7 +150,6 @@ write_files:
 {{- if eq .NodePool.Profile "worker-karpenter" }}
         - key: karpenter.sh/unregistered
           effect: NoExecute
-{{-  end }}
 {{-  end }}
 {{-  end }}
 
@@ -174,27 +169,7 @@ write_files:
       {{index $cfg 0}} = {{index $cfg 1}}
       {{- end}}
 {{- end}}
-
-{{- if ne .Cluster.Provider "zalando-eks" }}
-{{ if eq .NodePool.ConfigItems.kuberuntu_ami_version "old" }}
-  # TODO: Remove this once all nodes are running an AMI compatible with /etc/cni/net.d/10-flannel.conflist
-  - owner: root:root
-    path: /etc/kubernetes/cni/net.d/10-flannel.conflist
-    content: |
-      {
-        "name": "podnet",
-        "cniVersion": "0.3.1",
-        "plugins": [
-          {
-            "type": "flannel",
-            "delegate": {
-              "isDefaultGateway": true,
-              "hairpinMode": true
-            }
-          }
-        ]
-      }
-{{ end }}
+{{if ne .Cluster.Provider "zalando-eks" }}
   - owner: root:root
     path: /etc/cni/net.d/10-flannel.conflist
     content: |
