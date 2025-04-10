@@ -84,14 +84,20 @@ EOFF
   fi)
   - discount_strategy: spot
     instance_types:
-    - "c6i.large"
-    - "m6i.large"
-    - "r6i.large"
-    - "c7i.large"
-    - "m7i.large"
-    - "r7i.large"
+    - "c6i.xlarge"
+    - "m6i.xlarge"
+    - "r6i.xlarge"
+    - "c7i.xlarge"
+    - "m7i.xlarge"
+    - "r7i.xlarge"
+    - "c6i.2xlarge"
+    - "m6i.2xlarge"
+    - "r6i.2xlarge"
+    - "c7i.2xlarge"
+    - "m7i.2xlarge"
+    - "r7i.2xlarge"
     config_items:
-      availability_zones: "eu-central-1a"
+      availability_zones: "eu-central-1c"
       labels: dedicated=worker-limit-az
       taints: dedicated=worker-limit-az:NoSchedule
     name: worker-limit-az
