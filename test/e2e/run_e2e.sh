@@ -102,7 +102,7 @@ if [ "$create_cluster" = true ]; then
         fi
 
         # generate the cluster certificates
-        aws-account-creator refresh-certificates --registry-file base_cluster.yaml --create-ca
+        aws-account-creator refresh-certificates --registry-file base_cluster.yaml --create-ca --provider "${CLUSTER_PROVIDER}"
 
         # Create cluster
         clm provision \
