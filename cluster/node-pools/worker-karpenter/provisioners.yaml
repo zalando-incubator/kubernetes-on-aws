@@ -152,6 +152,11 @@ spec:
           operator: In
           values:
             - nitro
+        - key: "karpenter.k8s.aws/instance-family"
+          operator: NotIn
+          values:
+              # the ARM architecture is too old and flannel breaks
+            - "a1"
 #{{ if eq .NodePool.ConfigItems.karpenter_in_transit_support_required "true" }}
         - key: karpenter.k8s.aws/instance-encryption-in-transit-supported
           operator: In
