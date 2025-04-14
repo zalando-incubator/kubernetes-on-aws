@@ -558,6 +558,7 @@ spec:
           - "-enable-profile"
           - "-kubernetes"
           - "-kubernetes-in-cluster"
+          - "-kubernetes-healthcheck=false" # see -inline-routes of skipper pods
           - "-kubernetes-path-mode=path-prefix"
           - "-kubernetes-backend-traffic-algorithm={{ .Cluster.ConfigItems.skipper_ingress_backend_traffic_algorithm }}"
           - "-kubernetes-default-lb-algorithm={{ .Cluster.ConfigItems.skipper_ingress_default_lb_algorithm }}"
@@ -574,7 +575,6 @@ spec:
           - '-kubernetes-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_filters_append }}'
           - '-kubernetes-east-west-range-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_predicates }}'
           - '-kubernetes-east-west-range-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_filters_append }}'
-          - "-reverse-source-predicate"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
