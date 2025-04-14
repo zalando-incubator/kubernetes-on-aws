@@ -124,6 +124,7 @@ EOFF
     config_items:
       requirements: "- key: kubernetes.io/arch\n  operator: In\n  values:\n  - arm64\n"
       consolidate_after: "5m"
+      taints: kubernetes.io/arch=arm64:NoSchedule
   - discount_strategy: spot
     instance_types:
     - "c7g.large"
