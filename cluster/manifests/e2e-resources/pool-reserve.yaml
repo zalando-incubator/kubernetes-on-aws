@@ -48,6 +48,11 @@ spec:
           key: dedicated
           value: {{$pool}}
       {{ end }}
+      {{ if eq $pool "worker-arm64" }}
+        - effect: NoSchedule
+          key: kubernetes.io/arch
+          value: arm64
+      {{ end }}
       terminationGracePeriodSeconds: 0
       containers:
       - name: pause
