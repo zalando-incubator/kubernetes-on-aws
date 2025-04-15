@@ -918,6 +918,9 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 					},
 				},
 			},
+			NodeSelector: map[string]string{
+				"kubernetes.io/arch": "amd64",
+			},
 		},
 	}
 }

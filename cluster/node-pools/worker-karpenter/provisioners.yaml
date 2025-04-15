@@ -11,7 +11,11 @@ spec:
     - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_31_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
   metadataOptions:
     httpEndpoint: enabled
+    # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+    httpProtocolIPv6: enabled
+    # {{ else }}
     httpProtocolIPv6: disabled
+    # {{ end }}
     httpPutResponseHopLimit: 2
     httpTokens: optional
   subnetSelectorTerms:
@@ -144,11 +148,20 @@ spec:
       # Operators { In, NotIn, Exists, DoesNotExist, Gt, and Lt } are supported.
       # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#operators
       requirements:
-#{{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
         - key: karpenter.k8s.aws/instance-hypervisor
           operator: In
           values:
             - nitro
+        - key: "karpenter.k8s.aws/instance-family"
+          operator: NotIn
+          values:
+              # the ARM architecture is too old and flannel breaks
+            - "a1"
+#{{ if eq .NodePool.ConfigItems.karpenter_in_transit_support_required "true" }}
+        - key: karpenter.k8s.aws/instance-encryption-in-transit-supported
+          operator: In
+          values:
+            - "true"
 #{{ end }}
 #{{ if $taints }}
 #  {{ range $taints }}
