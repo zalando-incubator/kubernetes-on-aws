@@ -29,7 +29,7 @@ data:
   pod.service-account-iam.enable: "true"
   pod.service-account-iam.base-aws-account-id: "{{ accountID .Cluster.InfrastructureAccount }}"
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
-  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-249"
+  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-257"
 {{- end }}
   pod.env-inject.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables }}"
   pod.env-inject.variable._PLATFORM_ACCOUNT: "{{ .Cluster.Alias }}"
@@ -45,6 +45,10 @@ data:
   pod.env-inject.variable._PLATFORM_OBSERVABILITY_METRICS_PORT: "{{ .Cluster.ConfigItems.observability_metrics_port }}"
   pod.env-inject.variable._PLATFORM_OBSERVABILITY_ACCESS_TOKEN: "{{ .Cluster.ConfigItems.lightstep_token }}"
   pod.env-inject.variable._PLATFORM_OBSERVABILITY_COMMON_ATTRIBUTE_CLOUD__ACCOUNT__ID : "{{ .Cluster.Alias }}"
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}
+  pod.env-inject.variable.AWS_EC2_METADATA_SERVICE_ENDPOINT: "http://[fd00:ec2::254]"
+  pod.env-inject.variable.AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE: "IPv6"
+{{- end }}
 {{- if eq .Cluster.Environment "e2e" }}
   pod.env-inject.variable._PLATFORM_E2E: "injected"
 {{- end }}
