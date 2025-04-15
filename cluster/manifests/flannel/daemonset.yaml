@@ -39,9 +39,19 @@ spec:
             memory: 50Mi
       containers:
       - name: delayed-install-cni
-        image: container-registry.zalando.net/teapot/flannel-awaiter:master-15
+        image: container-registry.zalando.net/teapot/flannel-awaiter:master-16
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         command:
         - /await
+        {{- if eq .Cluster.ConfigItems.flannel_awaiter_check_only_older_nodes "true" }}
+        args:
+        - "--own-node-name=$(NODE_NAME)"
+        - "--timeout=30s"
+        {{- end }}
         stdin: true
         resources:
           requests:
