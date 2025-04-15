@@ -23,8 +23,13 @@ spec:
     spec:
       serviceAccountName: audittrail-adapter
       priorityClassName: system-node-critical
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      nodeSelector:
+        dedicated: cluster-seed
+{{- else}}
       nodeSelector:
         node.kubernetes.io/role: master
+{{- end}}
       tolerations:
       - operator: Exists
         effect: NoSchedule
@@ -33,7 +38,7 @@ spec:
       hostNetwork: true
       containers:
       - name: audittrail-adapter
-        image: container-registry.zalando.net/teapot/audittrail-adapter:master-71
+        image: container-registry.zalando.net/teapot/audittrail-adapter:master-72
         env:
           - name: AWS_REGION
             value: "{{ .Cluster.Region }}"

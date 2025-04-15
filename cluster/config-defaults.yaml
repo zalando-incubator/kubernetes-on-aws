@@ -30,7 +30,7 @@ cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
 # karpenter settings
 # DO NOT SET TO FALSE IF THE CLUSTER HAS KARPENTER POOLS OR NODES. REFER TO TEAPOT DOCS  FOR HOW TO ROLLBACK KARPENTER
 # https://teapot.docs.zalando.net/howtos/karpenter-operations/
-karpenter_pools_enabled: "false"
+karpenter_pools_enabled: "true"
 
 karpenter_controller_cpu: "25m"
 karpenter_controller_memory: "256Mi"
@@ -38,11 +38,17 @@ karpenter_controller_memory: "256Mi"
 karpenter_log_level: "error"
 # restrict the maximum number of pods for karpenter nodes
 karpenter_max_pods_per_node: "32"
-#
-# Karpenter version for controlling roll-out, can be "current" or "legacy"
-# current => 0.37.0-main-26.patched
-# legacy => 0.36.2-main-25.patched
-karpenter_version: "current"
+
+# configure whether karpenter should assume instances with local storage use
+# RAID0 for ephemeral pod storage.
+# Our AMI configured RAID0 at boot.
+karpenter_instance_storage_raid0: "true"
+
+# configure whether karpenter node pools only allow instances supporting
+# in-transit encryption
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/data-protection.html#encryption-transit
+# Can be set cluster wide or per node pool
+karpenter_in_transit_support_required: "false"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -107,11 +113,7 @@ skipper_ingress_binpack: "false"
 
 # skipper node-pool
 enable_dedicate_nodepool_skipper: "true"
-{{if eq .Cluster.Environment "e2e"}}
-skipper_attach_only_to_skipper_node_pool: "false"
-{{else}}
 skipper_attach_only_to_skipper_node_pool: "true"
-{{end}}
 
 skipper_suppress_route_update_logs: "true"
 skipper_validate_query: "true"
@@ -127,8 +129,11 @@ skipper_edit_route_placeholders: ""
 skipper_ingress_inline_routes: ""
 skipper_ingress_refuse_payload: ""
 skipper_endpointslices_enabled: "true"
+
 skipper_kubernetes_annotation_predicates: ''
+skipper_kubernetes_annotation_filters_append: ''
 skipper_kubernetes_east_west_range_annotation_predicates: ''
+skipper_kubernetes_east_west_range_annotation_filters_append: ''
 
 skipper_compress_encodings: "gzip,deflate,br"
 
@@ -247,6 +252,14 @@ skipper_pod_deletion_cost_controller_resync_interval: "1h"
 # polarsignals - only enabled for testing teapot
 polarsignals_enabled: "false"
 
+# Emergency Access Service
+# Control whether the emergency access service is enabled or not.
+{{ if and (eq .Cluster.Environment "production") (eq .Cluster.Provider "zalando-aws") }}
+emergency_access_service_enabled: "true"
+{{else}}
+emergency_access_service_enabled: "false"
+{{end}}
+
 # Kube-Metrics-Adapter
 ## Scheduled scaling metrics: ramp up/down over this period of time
 kube_metrics_adapter_default_scaling_window: "10m"
@@ -333,6 +346,9 @@ skipper_oauth2_ui_login: "true"
 # Comma-separated list of tokeninfo keys to retain
 skipper_oauth2_ui_login_tokeninfo_keys: ""
 
+skipper_hostname_credentials_controller_cpu: 10m
+skipper_hostname_credentials_controller_memory: 50Mi
+
 # ClusterScalingSchedules
 # One or multiple cluster scaling schedules can be configured as a
 # comma-separated list of <cluster schedule name>=<target value> pairs.
@@ -354,6 +370,9 @@ skipper_ingress_routegroup_crd_require_hosts: "true"
 # Set defaults values that would enable Open Policy Agent in a skipper filter
 skipper_open_policy_agent_enabled: "false"
 skipper_open_policy_agent_styra_token: ""
+
+# Default timeout value in seconds for outgoing http calls from Open Policy Agent in a skipper filter
+skipper_open_policy_agent_styra_response_header_timeout: "2"
 
 #
 # FabricGateway controller config
@@ -409,6 +428,11 @@ kube_proxy_memory_limit: "200Mi"
 kube_proxy_sync_period: "15m0s"
 kube_proxy_verbose_level: "2"
 
+# kube-node-decommissioner
+kube_node_decommissioner_enabled: "true"
+kube_node_decommissioner_cpu: "100m"
+kube_node_decommissioner_memory: "1Gi"
+
 # flannel settings
 flannel_cpu: "25m"
 flannel_memory_request: "100Mi"
@@ -427,8 +451,17 @@ nvidia_dcgm_exporter_enabled: "false"
 nvidia_dcgm_exporter_cpu: "10m"
 nvidia_dcgm_exporter_memory: "200Mi"
 
+# AWS EFA device plugin
+aws_efa_device_plugin_enabled: "false"
+aws_efa_device_plugin_cpu: "10m"
+aws_efa_device_plugin_memory: "20Mi"
+
 # static egress controller settings
+{{- if eq .Cluster.Provider "zalando-eks" }}
+static_egress_controller_enabled: "false"
+{{- else }}
 static_egress_controller_enabled: "true"
+{{- end }}
 
 # journald reader settings
 journald_reader_enabled: "true"
@@ -589,6 +622,7 @@ teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
 teapot_admission_controller_namespace_delete_protection_enabled: "true"
+teapot_admission_controller_postgresql_owning_application_check_enabled: "true"
 {{else if eq .Cluster.Environment "e2e"}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
@@ -600,6 +634,7 @@ teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
 teapot_admission_controller_namespace_delete_protection_enabled: "false"
+teapot_admission_controller_postgresql_owning_application_check_enabled: "false"
 {{else}}
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
@@ -611,6 +646,7 @@ teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "false"
 teapot_admission_controller_postgresql_delete_protection_enabled: "false"
 teapot_admission_controller_namespace_delete_protection_enabled: "false"
+teapot_admission_controller_postgresql_owning_application_check_enabled: "false"
 {{end}}
 
 # Enable automatic replacement of vanity images with ECR images
@@ -676,10 +712,10 @@ teapot_admission_controller_configmap_deletion_protection_factories_enabled: "tr
 # enable the rolebinding admission-controller webhook which validates rolebindings and clusterrolebindings
 teapot_admission_controller_enable_rolebinding_webhook: "true"
 
-# enable the generic deny-all admission webhook which rejects all requests it receives
-teapot_admission_controller_enable_write_protection_webhook: "false"
-# configure the behaviour of the deny-all admission webhook, `true` blocks everything, `false` allows everything
-teapot_admission_controller_prevent_write_operations: "false"
+# enable the resource protection admission webhook which prevents users from accessing system resources
+teapot_admission_controller_enable_write_protection_webhook: "true"
+# configure the behaviour of the resource protection admission webhook, `true` blocks, `false` allows
+teapot_admission_controller_prevent_write_operations: "true"
 
 # Enable and configure Pod Security Policy rules implemented in admission-controller.
 teapot_admission_controller_pod_security_policy_enabled: "true"
@@ -718,7 +754,7 @@ etcd_instance_type: "t3.medium"
 
 etcd_scalyr_key: ""
 
-etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.13-amd64-main-34" "861068367966"}}
+etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.18-amd64-main-35" "861068367966"}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -740,12 +776,18 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_31_jammy_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.0-amd64-master-347" "861068367966" }}
-kuberuntu_image_v1_31_jammy_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.0-arm64-master-347" "861068367966" }}
+kuberuntu_image_v1_31_aws_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.6-amd64-master-368" "861068367966" }}
+kuberuntu_image_v1_31_aws_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.6-arm64-master-368" "861068367966" }}
+kuberuntu_image_v1_31_eks_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.7-amd64-master-371" "861068367966" }}
+kuberuntu_image_v1_31_eks_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.7-arm64-master-371" "861068367966" }}
 
-# Which distro from the previous config items should be used. Valid options are only `jammy` for now. Can be set for each node pool.
-kuberuntu_distro_master: "jammy"
-kuberuntu_distro_worker: "jammy"
+# This is used to determine which AMI to use for the cluster or individual node
+# pools. Possible values are 'aws' or 'eks'
+{{if eq .Cluster.Provider "zalando-eks"}}
+kuberuntu_ami_version: "eks"
+{{else}}
+kuberuntu_ami_version: "aws"
+{{end}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -833,7 +875,7 @@ kubelet_registry_burst: "40"
 #  - upstream: official Kubernetes version
 #  - zalando:  internal Zalando build with our custom patches
 kubernetes_scheduler_image: "zalando"
-kubernetes_controller_manager_image: "zalando"
+kubernetes_controller_manager_image: "upstream"
 
 # when set to true, service account tokens can be used from outside the cluster
 allow_external_service_accounts: "false"
@@ -883,7 +925,7 @@ external_dns_zones_cache_duration: "1h"
 external_dns_mem: "4Gi"
 
 # select which cache to use for Cluster DNS: unbound or dnsmasq.
-dns_cache: "dnsmasq"
+dns_cache: "unbound"
 
 expirimental_dns_unbound_liveness_probe: "true"
 
@@ -894,8 +936,8 @@ dns_dnsmasq_sidecar_cpu: "10m"
 dns_dnsmasq_sidecar_mem: "45Mi"
 dns_unbound_cpu: "100m"
 dns_unbound_mem: "50Mi"
-dns_unbound_telemetry_cpu: "10m"
-dns_unbound_telemetry_mem: "45Mi"
+dns_unbound_exporter_cpu: "10m"
+dns_unbound_exporter_mem: "45Mi"
 dns_coredns_cpu: "50m"
 dns_coredns_mem: "100Mi"
 
@@ -1147,6 +1189,16 @@ control_plane_graceful_shutdown: "true"
 # For rolling back it needs to be done in multiple stages: active -> serving -> pre -> none
 control_plane_load_balancer_internal: "none"
 
+# Optionally use internal subnets for running the nodes. This can be configured
+# a node pool level to only run a subset of nodes in the internal subnets.
+# If this is true then `associate_public_ip_on_launch` is automatically treated
+# as false.
+internal_node_subnets_enabled: "false"
+
+# Configure whether to associate public ip when launching instances.
+# This is only relevant when `internal_node_subnets_enabled` is false.
+associate_public_ip_on_launch: "true"
+
 # This allows setting custom sysctl settings. The config-item is intended to be
 # used on node-pools rather being set globally.
 #
@@ -1187,6 +1239,13 @@ kube_janitor_enabled: "true"
 teapot_admission_controller_scheduling_controls_enabled: "false"
 teapot_admission_controller_scheduling_controls_default_architecture: "amd64"
 
+# master-node-autoscaler configuration
+
+# Ignore recommendations for downgrading the instance generation of the master nodes
+# This is required to persist the upgrade of instance generation for master nodes
+# in a cluster.
+master_node_autoscaler_instance_generation_downgrade_disabled: "false"
+
 # role-sync-controller configs
 # Enabled by default only on Zalando EKS clusters
 {{ if eq .Cluster.Provider "zalando-eks" }}
@@ -1194,3 +1253,43 @@ role_sync_controller_enabled: "true"
 {{ else }}
 role_sync_controller_enabled: "false"
 {{ end }}
+
+#Wiz Configs
+# When wiz_enable_runtime_sensor and wiz_enable_runtime_connector are set to true,
+# this enables WIZ runtime monitoring. A DaemonSet called Sensor and a Deployment
+# called Connector will be deployed into the cluster.
+wiz_enable_runtime_sensor: "false"
+wiz_enable_runtime_connector: "false"
+wiz_enable_runtime_connector_broker: "false"
+wiz_sensor_cpu: "200m"
+wiz_sensor_memory: "300Mi"
+wiz_connector_cpu: "50m"
+wiz_connector_memory: "150Mi"
+wiz_priority: "false"
+# Please note when this is set to true it allows the use of the node selector feature
+# to deploy the sensor and connector on specific nodes, by manually setting the node selector label on the nodes.
+# This is useful when you want to deploy the sensor and connector on specific nodes.
+wiz_node_feature_rollout : "false"
+
+# EKS specific configuration
+eks_control_plane_logging: "true"
+eks_ip_family: "ipv4"
+eks_zalando_iam_aws_proxy_cpu: "100m"
+eks_zalando_iam_aws_proxy_memory: "512Mi"
+eks_zalando_iam_aws_proxy_hpa_max_replicas: "10"
+eks_zalando_iam_aws_proxy_hpa_cpu_target: "80"
+eks_zalando_iam_aws_proxy_hpa_memory_target: "80"
+eks_okta_identity_provider: "true"
+eks_fis_support_enabled: "false"
+eks_fis_namespaces: "default"
+
+# prefix delegation can only be configured for ipv4. For ipv6 it can only be true.
+aws_vpc_cni_prefix_delegation: "false"
+# enable custom networking for the AWS VPC CNI. This assumes that a custom CIDR
+# range is available in the VPC and that there are dedicated subnets for the
+# custom CIDR.
+aws_vpc_cni_custom_networking: "false"
+# enable network policy enforcement in the cluster.
+aws_vpc_cni_enable_network_policy: "false"
+# specify the network policy enforcement mode.
+aws_vpc_cni_network_policy_enforcing_mode: "standard"

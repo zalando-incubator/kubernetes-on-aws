@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpa-recommender
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: recommender
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: vpa-recommender
+  template:
+    metadata:
+      labels:
+        deployment: vpa-recommender
+        application: kubernetes
+        component: vpa-recommender
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+    spec:
+      serviceAccountName: vpa-recommender
+      containers:
+      - name: recommender
+        {{if eq .Cluster.ConfigItems.vertical_pod_autoscaler_version "current"}}
+        image: container-registry.zalando.net/teapot/vpa-recommender:v1.3.0-main-8-custom
+        {{else if eq .Cluster.ConfigItems.vertical_pod_autoscaler_version "legacy"}}
+        image: container-registry.zalando.net/teapot/vpa-recommender:v1.2.1-main-6-custom
+        {{end}}
+        args:
+        - --logtostderr
+        - --v=1
+        - --memory-saver
+        - --pod-recommendation-min-memory-mb=50
+        command:
+        - "/recommender"
+        resources:
+          limits:
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
+          requests:
+            cpu: {{.Cluster.ConfigItems.vpa_cpu}}
+            memory: {{.Cluster.ConfigItems.vpa_mem}}
+        ports:
+        - containerPort: 8080
+          protocol: TCP

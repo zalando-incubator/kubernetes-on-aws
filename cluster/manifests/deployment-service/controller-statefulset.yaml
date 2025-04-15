@@ -29,10 +29,13 @@ spec:
       terminationGracePeriodSeconds: 300
       containers:
         - name: "deployment-service-controller"
-          image: "container-registry.zalando.net/teapot/deployment-controller:master-234"
+          image: "container-registry.zalando.net/teapot/deployment-controller:master-239"
           args:
             - "--config-namespace=kube-system"
             - "--decrypt-kms-alias-arn=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:alias/deployment-secret"
+            # {{ if eq .Cluster.Provider "zalando-eks" }}
+            - --use-service-account
+            # {{ end }}
           env:
             - name: AWS_REGION
               value: "{{.Cluster.Region}}"

@@ -1,0 +1,24 @@
+# {{ if eq .Cluster.Provider "zalando-eks" }}
+# {{ if eq .Cluster.ConfigItems.aws_vpc_cni_custom_networking "true" }}
+# {{ with $data := . }}
+# {{ with $azCount := len $data.Values.availability_zones }}
+# {{ range $az := $data.Values.availability_zones }}
+# {{ with $azID := azID $az }}
+---
+apiVersion : crd.k8s.amazonaws.com/v1alpha1
+kind : ENIConfig
+metadata:
+  name: "{{$az}}"
+  labels:
+    application: kubernetes
+    component: aws-node
+spec:
+  securityGroups:
+    - {{ $data.Values.ClusterStackOutputs.EKSWorkerSecurityGroup }}
+  subnet: "{{ index $data.Values.pod_subnets $az }}"
+# {{end}}
+# {{end}}
+# {{end}}
+# {{end}}
+# {{end}}
+# {{end}}

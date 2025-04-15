@@ -1,6 +1,5 @@
-#{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
 ---
-apiVersion: karpenter.k8s.aws/v1beta1
+apiVersion: karpenter.k8s.aws/v1
 kind: EC2NodeClass
 metadata:
   name: "{{ .NodePool.Name }}"
@@ -8,20 +7,30 @@ spec:
   amiFamily: Custom
   amiSelectorTerms:
     # Select on any AMI that has any of the following IDs
-    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_31_" .NodePool.ConfigItems.kuberuntu_distro_worker "_amd64") }}
-    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_31_" .NodePool.ConfigItems.kuberuntu_distro_worker "_arm64") }}
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_31_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_31_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
   metadataOptions:
     httpEndpoint: enabled
+    # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+    httpProtocolIPv6: enabled
+    # {{ else }}
     httpProtocolIPv6: disabled
+    # {{ end }}
     httpPutResponseHopLimit: 2
     httpTokens: optional
   subnetSelectorTerms:
     - tags:
+        # {{ if eq .NodePool.ConfigItems.internal_node_subnets_enabled "true" }}
+        kubernetes.io/role/internal-node: "enabled"
+        # {{ else }}
         kubernetes.io/role/karpenter: "enabled"
+        # {{ end }}
   securityGroupSelectorTerms:
     - tags:
         karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
+  # {{ if and (eq .NodePool.ConfigItems.associate_public_ip_on_launch "true") (ne .NodePool.ConfigItems.internal_node_subnets_enabled "true") }}
   associatePublicIPAddress: true
+  # {{ end }}
   instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
   blockDeviceMappings:
     - deviceName: /dev/sda1
@@ -29,8 +38,29 @@ spec:
         deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination }}
         volumeSize: {{ .NodePool.ConfigItems.ebs_root_volume_size }}Gi
         volumeType: gp3
+  # {{ if eq .NodePool.ConfigItems.karpenter_instance_storage_raid0 "true" }}
+  instanceStorePolicy: RAID0
+  # {{ end }}
   # If you enable this option, the Amazon EC2 console displays monitoring graphs with a 1-minute period for the instances that Karpenter launches.
   detailedMonitoring: false
+  # Karpenter provides the ability to specify a few additional Kubelet args.
+  # These are all optional and provide support for additional customization and use cases.
+  kubelet:
+    clusterDNS: [ "10.0.1.100" ]
+    cpuCFSQuota: false
+#{{ if ne .Cluster.Provider "zalando-eks" }}
+# {{ if ne .Cluster.ConfigItems.karpenter_max_pods_per_node "" }}
+    maxPods: {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
+# {{ else }}
+    maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
+# {{ end }}
+#{{ end }}
+    systemReserved:
+      cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
+      memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
+    kubeReserved:
+      cpu: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_cpu }}"
+      memory: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_memory }}"
   tags:
     Name: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
     InfrastructureComponent: 'true'
@@ -59,7 +89,7 @@ spec:
   userData: |
 {{ .Values.UserData | indent 4 }}
 ---
-apiVersion: karpenter.sh/v1beta1
+apiVersion: karpenter.sh/v1
 kind: NodePool
 metadata:
   name: "{{.NodePool.Name}}"
@@ -89,8 +119,14 @@ spec:
         karpenter.sh/do-not-disrupt: "true"
 #{{  end }}
     spec:
+      # The amount of time a Node can live on the cluster before being removed
+      # Avoiding long-running Nodes helps to reduce security vulnerabilities as well as to reduce the chance of issues that can plague Nodes with long uptimes such as file fragmentation or memory leaks from system processes
+      # You can choose to disable expiration entirely by setting the string value 'Never' here
+      expireAfter: Never
       # References the Cloud Provider's NodeClass resource, see your cloud provider specific documentation
       nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
         name: {{ .NodePool.Name }}
 #{{ $taints := .NodePool.Taints }}
 #{{  if $taints }}
@@ -112,6 +148,21 @@ spec:
       # Operators { In, NotIn, Exists, DoesNotExist, Gt, and Lt } are supported.
       # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#operators
       requirements:
+        - key: karpenter.k8s.aws/instance-hypervisor
+          operator: In
+          values:
+            - nitro
+        - key: "karpenter.k8s.aws/instance-family"
+          operator: NotIn
+          values:
+              # the ARM architecture is too old and flannel breaks
+            - "a1"
+#{{ if eq .NodePool.ConfigItems.karpenter_in_transit_support_required "true" }}
+        - key: karpenter.k8s.aws/instance-encryption-in-transit-supported
+          operator: In
+          values:
+            - "true"
+#{{ end }}
 #{{ if $taints }}
 #  {{ range $taints }}
 #    {{ $taint := . }}
@@ -128,9 +179,6 @@ spec:
         - key: "karpenter.k8s.aws/instance-family"
           operator: In
           values:
-            - "c5"
-            - "m5"
-            - "r5"
             - "c5d"
             - "m5d"
             - "r5d"
@@ -209,22 +257,6 @@ spec:
 #{{ range $az :=  $azs }}
           - "{{ $az }}"
 #{{ end }}
-      # Karpenter provides the ability to specify a few additional Kubelet args.
-      # These are all optional and provide support for additional customization and use cases.
-      kubelet:
-        clusterDNS: [ "10.0.1.100" ]
-        cpuCFSQuota: false
-# {{ if ne .Cluster.ConfigItems.karpenter_max_pods_per_node "" }}
-        maxPods: {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
-# {{ else }}
-        maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
-# {{ end }}
-        systemReserved:
-          cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
-          memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
-        kubeReserved:
-          cpu: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_cpu }}"
-          memory: "{{ .Cluster.ConfigItems.kubelet_kube_reserved_memory }}"
   # Disruption section which describes the ways in which Karpenter can disrupt and replace Nodes
   # Configuration in this section constrains how aggressive Karpenter can be with performing operations
   # like rolling Nodes due to them hitting their maximum lifetime (expiry) or scaling down nodes to reduce cluster cost
@@ -234,7 +266,7 @@ spec:
       - nodes: "5%"
       - nodes: "10"
     # Describes which types of Nodes Karpenter should consider for consolidation
-    # If using 'WhenUnderutilized', Karpenter will consider all nodes for consolidation and attempt to remove or replace Nodes when it discovers that the Node is underutilized and could be changed to reduce cost
+    # If using 'WhenEmptyOrUnderutilized', Karpenter will consider all nodes for consolidation and attempt to remove or replace Nodes when it discovers that the Node is underutilized and could be changed to reduce cost
     # If using `WhenEmpty`, Karpenter will only consider nodes for consolidation that contain no workload pods
 #{{  if and (index .NodePool.ConfigItems "consolidation_policy") (eq .NodePool.ConfigItems.consolidation_policy "WhenEmpty") }}
     consolidationPolicy: WhenEmpty
@@ -243,17 +275,12 @@ spec:
     # You can choose to disable consolidation entirely by setting the string value 'Never' here
     consolidateAfter: {{ or (index .NodePool.ConfigItems "consolidate_after") "10m" }}
 #{{  else }}
-    consolidationPolicy: WhenUnderutilized
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: {{ or (index .NodePool.ConfigItems "consolidate_after") "0s" }}
 #{{  end }}
-    # The amount of time a Node can live on the cluster before being removed
-    # Avoiding long-running Nodes helps to reduce security vulnerabilities as well as to reduce the chance of issues that can plague Nodes with long uptimes such as file fragmentation or memory leaks from system processes
-    # You can choose to disable expiration entirely by setting the string value 'Never' here
-    expireAfter: Never
   # Priority given to the NodePool when the scheduler considers which NodePool
   # to select. Higher weights indicate higher priority when comparing NodePools.
   # Specifying no weight is equivalent to specifying a weight of 0.
 #  {{ if index .NodePool.ConfigItems "scaling_priority"}}
   weight: {{.NodePool.ConfigItems.scaling_priority}}
 #  {{ end}}
-
-#{{ end }}

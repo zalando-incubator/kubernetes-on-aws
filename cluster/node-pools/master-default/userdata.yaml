@@ -3,7 +3,6 @@ write_files:
   - owner: root:root
     path: /etc/kubernetes/secrets.env
     content: |
-      NODEPOOL_TAINTS=node.kubernetes.io/role=master:NoSchedule{{if index .NodePool.ConfigItems "taints"}},{{.NodePool.ConfigItems.taints}}{{end}}
       NODE_LABELS=master=true,node.kubernetes.io/exclude-from-external-load-balancers,node.kubernetes.io/distro=ubuntu,cluster-lifecycle-controller.zalan.do/decommission-priority=999,lifecycle-status=ready{{if index .NodePool.ConfigItems "labels"}},{{.NodePool.ConfigItems.labels}}{{end}}
       NODEPOOL_NAME={{ .NodePool.Name }}
       KUBELET_ROLE=master
@@ -76,6 +75,17 @@ write_files:
       # variables are replaced on instance start-up.
       providerID: __PROVIDER_ID__
       clusterDNS: [__CLUSTER_DNS__]
+      registerWithTaints:
+        - key: node.kubernetes.io/role
+          value: master
+          effect: NoSchedule
+{{- range $taint := .NodePool.Taints }}
+        - key: {{$taint.Key}}
+          effect: {{$taint.Effect}}
+{{- if $taint.Value }}
+          value: {{$taint.Value }}
+{{- end }}
+{{- end }}
 
   - owner: root:root
     path: /etc/kubernetes/manifests/kube-apiserver.yaml
@@ -206,7 +216,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-228
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-251
           name: admission-controller
           lifecycle:
             preStop:
@@ -247,7 +257,7 @@ write_files:
               name: admission-controller-kubeconfig
               readOnly: true
         - name: skipper-admission-webhook
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.21.228
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.5
           args:
             - webhook
             - --address=:9085
@@ -274,7 +284,7 @@ write_files:
             - mountPath: /etc/kubernetes/ssl
               name: ssl-certs-kubernetes
               readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-137
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-138
           name: webhook
           ports:
           - containerPort: 8081
@@ -357,7 +367,7 @@ write_files:
           - mountPath: /etc/kubernetes/k8s-authnz-webhook-kubeconfig
             name: k8s-authnz-webhook-kubeconfig
             readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-131
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-146
           name: tokeninfo
           ports:
             - containerPort: 9021
@@ -388,7 +398,7 @@ write_files:
               value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ if ne .Cluster.Environment "production" }}
         - name: tokeninfo-sandbox
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-131
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-146
           ports:
           - containerPort: 9022
           lifecycle:
@@ -424,7 +434,7 @@ write_files:
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
         - name: skipper-proxy
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.21.228
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.5
           args:
           - skipper
           - -access-log-strip-query
@@ -475,7 +485,7 @@ write_files:
             name: ssl-certs-kubernetes
             readOnly: true
         - name: skipper-metrics
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.21.228
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.5
           args:
           - skipper
           - -access-log-strip-query
@@ -599,11 +609,7 @@ write_files:
           effect: NoSchedule
         containers:
         - name: kube-controller-manager
-{{- if eq .Cluster.ConfigItems.kubernetes_controller_manager_image "zalando" }}
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/kube-controller-manager-internal:v1.31.3-master-133
-{{- else }}
-          image: nonexistent.zalan.do/teapot/kube-controller-manager:fixed
-{{- end }}
+          image: nonexistent.zalan.do/teapot/{{if eq .Cluster.ConfigItems.kubernetes_controller_manager_image "zalando" }}kube-controller-manager-internal{{else}}kube-controller-manager{{end}}:fixed
           args:
           - --kubeconfig=/etc/kubernetes/controller-manager-kubeconfig
           - --leader-elect=true
@@ -929,7 +935,7 @@ write_files:
 {{- end}}
 
   - owner: root:root
-    path: /etc/kubernetes/cni/net.d/10-flannel.conflist
+    path: /etc/cni/net.d/10-flannel.conflist
     content: |
       {
         "name": "podnet",

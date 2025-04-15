@@ -9,24 +9,31 @@ metadata:
     component: role-sync-controller
 spec:
   schedule: "*/1 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 30
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     metadata:
       labels:
         application: kubernetes
         component: role-sync-controller
     spec:
-      backoffLimit: 3
+      activeDeadlineSeconds: 30
+      backoffLimit: 1
       template:
         metadata:
           labels:
             application: kubernetes
             component: role-sync-controller
+          annotations:
+            logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         spec:
           serviceAccountName: role-sync-controller
-          restartPolicy: OnFailure
+          restartPolicy: Never
           containers:
           - name: role-sync-controller
-            image: container-registry.zalando.net/teapot/role-sync-controller:main-4
+            image: container-registry.zalando.net/teapot/role-sync-controller:main-7
             args:
               - --subject-group=PowerUser
               - --subject-group=Manual

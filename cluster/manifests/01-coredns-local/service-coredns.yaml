@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: coredns
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: coredns
+spec:
+  selector:
+    component: coredns
+{{- if ne .Cluster.Provider "zalando-eks"}}
+# TODO: what to do with eks service range?
+  clusterIP: 10.5.0.11
+{{- end}}
+  ports:
+  - name: dns
+    port: 53
+    protocol: UDP
+  - name: dns-tcp
+    port: 53
+    protocol: TCP
