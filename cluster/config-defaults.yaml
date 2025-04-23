@@ -28,9 +28,6 @@ cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
 cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
 
 # karpenter settings
-# DO NOT SET TO FALSE IF THE CLUSTER HAS KARPENTER POOLS OR NODES. REFER TO TEAPOT DOCS  FOR HOW TO ROLLBACK KARPENTER
-# https://teapot.docs.zalando.net/howtos/karpenter-operations/
-karpenter_pools_enabled: "false"
 
 karpenter_controller_cpu: "25m"
 karpenter_controller_memory: "256Mi"
@@ -43,6 +40,12 @@ karpenter_max_pods_per_node: "32"
 # RAID0 for ephemeral pod storage.
 # Our AMI configured RAID0 at boot.
 karpenter_instance_storage_raid0: "true"
+
+# configure whether karpenter node pools only allow instances supporting
+# in-transit encryption
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/data-protection.html#encryption-transit
+# Can be set cluster wide or per node pool
+karpenter_in_transit_support_required: "false"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -107,11 +110,7 @@ skipper_ingress_binpack: "false"
 
 # skipper node-pool
 enable_dedicate_nodepool_skipper: "true"
-{{if eq .Cluster.Environment "e2e"}}
-skipper_attach_only_to_skipper_node_pool: "false"
-{{else}}
 skipper_attach_only_to_skipper_node_pool: "true"
-{{end}}
 
 skipper_suppress_route_update_logs: "true"
 skipper_validate_query: "true"
@@ -252,11 +251,7 @@ polarsignals_enabled: "false"
 
 # Emergency Access Service
 # Control whether the emergency access service is enabled or not.
-{{ if and (eq .Cluster.Environment "production") (eq .Cluster.Provider "zalando-aws") }}
-emergency_access_service_enabled: "true"
-{{else}}
 emergency_access_service_enabled: "false"
-{{end}}
 
 # Kube-Metrics-Adapter
 ## Scheduled scaling metrics: ramp up/down over this period of time
@@ -369,6 +364,9 @@ skipper_ingress_routegroup_crd_require_hosts: "true"
 skipper_open_policy_agent_enabled: "false"
 skipper_open_policy_agent_styra_token: ""
 
+# Default timeout value in seconds for outgoing http calls from Open Policy Agent in a skipper filter
+skipper_open_policy_agent_styra_response_header_timeout: "2"
+
 #
 # FabricGateway controller config
 #
@@ -436,6 +434,10 @@ flannel_memory_limit: "100Mi"
 flannel_awaiter_cpu: "25m"
 flannel_awaiter_memory_request: "50Mi"
 flannel_awaiter_memory_limit: "50Mi"
+
+# configure flannel-awaiter to only check for nodes older than the current node
+# and set timeout for nodes being reachable to 30s (down from the default of 2m).
+flannel_awaiter_check_only_older_nodes: "true"
 
 # nvidia device plugin
 nvidia_device_plugin_cpu: "10m"
@@ -771,14 +773,18 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_31_old_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.4-amd64-master-359" "861068367966" }}
-kuberuntu_image_v1_31_old_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.4-arm64-master-359" "861068367966" }}
-kuberuntu_image_v1_31_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.6-amd64-master-368" "861068367966" }}
-kuberuntu_image_v1_31_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.6-arm64-master-368" "861068367966" }}
+kuberuntu_image_v1_31_aws_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.6-amd64-master-368" "861068367966" }}
+kuberuntu_image_v1_31_aws_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.6-arm64-master-368" "861068367966" }}
+kuberuntu_image_v1_31_eks_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.7-amd64-master-371" "861068367966" }}
+kuberuntu_image_v1_31_eks_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.7-arm64-master-371" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
-# pools. Possible values are 'new' or 'old'
-kuberuntu_ami_version: "new"
+# pools. Possible values are 'aws' or 'eks'
+{{if eq .Cluster.Provider "zalando-eks"}}
+kuberuntu_ami_version: "eks"
+{{else}}
+kuberuntu_ami_version: "aws"
+{{end}}
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -916,7 +922,7 @@ external_dns_zones_cache_duration: "1h"
 external_dns_mem: "4Gi"
 
 # select which cache to use for Cluster DNS: unbound or dnsmasq.
-dns_cache: "dnsmasq"
+dns_cache: "unbound"
 
 expirimental_dns_unbound_liveness_probe: "true"
 
@@ -1252,10 +1258,10 @@ role_sync_controller_enabled: "false"
 wiz_enable_runtime_sensor: "false"
 wiz_enable_runtime_connector: "false"
 wiz_enable_runtime_connector_broker: "false"
-wiz_sensor_cpu: "300m"
+wiz_sensor_cpu: "200m"
 wiz_sensor_memory: "300Mi"
-wiz_connector_cpu: "300m"
-wiz_connector_memory: "300Mi"
+wiz_connector_cpu: "50m"
+wiz_connector_memory: "150Mi"
 wiz_priority: "false"
 # Please note when this is set to true it allows the use of the node selector feature
 # to deploy the sensor and connector on specific nodes, by manually setting the node selector label on the nodes.

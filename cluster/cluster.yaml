@@ -252,6 +252,21 @@ Resources:
       KubernetesGroups:
       - zalando:administrator
       Type: "STANDARD"
+{{- if eq .Cluster.Environment "e2e" }}
+  EKSAccessEntryManualAdministratorAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/Manual"
+      Username: !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/Manual/{{`{{SessionName}}`}}"
+      KubernetesGroups:
+      - zalando:administrator
+      Type: "STANDARD"
+{{- end }}
   EKSAddonPodIdentityAgent:
     Type: AWS::EKS::Addon
     Properties:
@@ -1121,7 +1136,6 @@ Resources:
       Path: "/"
       Roles:
         - !Ref WorkerIAMRole
-{{- if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
   KarpenterIAMRole: # role for the karpenter controller
     Properties:
       AssumeRolePolicyDocument: !Sub
@@ -1485,7 +1499,6 @@ Resources:
       Targets:
         - Id: KarpenterInterruptionQueueTarget
           Arn: !GetAtt KarpenterInterruptionQueue.Arn
-{{- end }}
   DeploymentIAMRole:
     Properties:
       AssumeRolePolicyDocument:

@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use print to disable it for main image */}}
 
-{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.22.1-1111" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.22.15-1125" }}
+{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.22.7-1117" }}
+{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.22.21-1130" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -176,6 +176,9 @@ spec:
           - "-kubernetes-default-lb-algorithm={{ .Cluster.ConfigItems.skipper_ingress_default_lb_algorithm }}"
           - "-kubernetes-disable-catchall-routes={{ .Cluster.ConfigItems.skipper_ingress_disable_catchall_routes }}"
           - "-enable-kubernetes-endpointslices={{ .Cluster.ConfigItems.skipper_endpointslices_enabled }}"
+{{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}
+          - "-whitelisted-healthcheck-cidr={{ .Values.subnet_ipv6_cidrs }}"
+{{ end }}
 {{ end }}
           - "-address=:9999"
           - "-wait-first-route-load"
