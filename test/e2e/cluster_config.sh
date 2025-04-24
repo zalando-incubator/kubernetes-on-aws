@@ -52,6 +52,8 @@ clusters:
     skipper_open_policy_agent_observability_url: "${SKIPPER_OPA_OBSERVABILITY_URL}"
     skipper_open_policy_agent_bundles_url: "${SKIPPER_OPA_BUNDLES_URL}"
     eks_ip_family: "ipv6"
+    consolidation_policy: "WhenEmpty"
+    consolidate_after: "5m"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
@@ -113,7 +115,6 @@ EOFF
     - default-for-karpenter
     config_items:
       scaling_priority: "100"
-      consolidate_after: "5m"
   - name: karpenter-arm
     profile: worker-karpenter
     discount_strategy: none
@@ -123,7 +124,6 @@ EOFF
     - not-specified
     config_items:
       requirements: "- key: kubernetes.io/arch\n  operator: In\n  values:\n  - arm64\n"
-      consolidate_after: "5m"
       taints: kubernetes.io/arch=arm64:NoSchedule
   - discount_strategy: spot
     instance_types:
@@ -151,7 +151,6 @@ EOFF
     config_items:
       labels: dedicated=node-tests
       taints: dedicated=node-tests:NoSchedule
-      consolidate_after: "5m"
   - discount_strategy: spot
     instance_types:
     - "g4dn.xlarge"
@@ -172,7 +171,6 @@ EOFF
     config_items:
       labels: zalando.org/nvidia-gpu=tesla
       taints: nvidia.com/gpu=present:NoSchedule
-      consolidate_after: "5m"
   - discount_strategy: none
     instance_types:
     - "default-for-karpenter"
@@ -183,7 +181,6 @@ EOFF
     config_items:
       labels: dedicated=node-reboot-tests
       taints: dedicated=node-reboot-tests:NoSchedule
-      consolidate_after: "5m"
   provider: ${CLUSTER_PROVIDER}
   region: ${REGION}
   owner: '${OWNER}'
