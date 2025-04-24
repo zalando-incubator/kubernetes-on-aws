@@ -642,6 +642,17 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", nonSystemResource.Name, nonSystemResource.Namespace)
 			})
 
+			g.It("should deny delete access in collaborator namespace", func() {
+				err := client.CoreV1().Pods(collaboratorResource.Namespace).Delete(context.Background(), collaboratorResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("delete operations are forbidden")))
+			})
+
+			// Should allow visibility ns deletion?
+			// g.It("should allow delete access in collaborator namespace", func() {
+			// 	err := client.CoreV1().Pods(collaboratorResource.Namespace).Delete(context.Background(), collaboratorResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+			// 	framework.ExpectNoError(err, "failed to delete pod: %s in namespace: %s", collaboratorResource.Name, collaboratorResource.Namespace)
+			// })
+
 			g.It("should allow write access in collaborator namespace", func() {
 				_, err := client.CoreV1().Pods(collaboratorResource.Namespace).Create(context.Background(), collaboratorResource, metav1.CreateOptions{DryRun: []string{"All"}})
 				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", collaboratorResource.Name, collaboratorResource.Namespace)
@@ -650,6 +661,11 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 			g.It("should deny write access in system namespace", func() {
 				_, err := client.CoreV1().Pods(systemResource.Namespace).Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{"All"}})
 				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
+			})
+
+			g.It("should deny delete access in system namespace", func() {
+				err := client.CoreV1().Pods(systemResource.Namespace).Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("delete operations are forbidden")))
 			})
 		})
 
