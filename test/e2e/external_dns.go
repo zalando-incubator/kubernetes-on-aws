@@ -73,6 +73,10 @@ var _ = describe("External DNS creation", func() {
 			svc.ObjectMeta = metav1.ObjectMeta{
 				Name: serviceName,
 				Annotations: map[string]string{
+					"service.beta.kubernetes.io/aws-load-balancer-type":            "external",
+					"service.beta.kubernetes.io/aws-load-balancer-ip-address-type": "dualstack",
+					"service.beta.kubernetes.io/aws-load-balancer-nlb-target-type": "ip",
+					"service.beta.kubernetes.io/aws-load-balancer-scheme":          "internet-facing",
 					externalDNSAnnotation: hostName,
 				},
 			}
