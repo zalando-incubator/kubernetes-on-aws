@@ -1,12 +1,12 @@
 # builder image
-FROM golang:1.23 AS builder
+FROM golang:1.24 AS builder
 
 RUN CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.21.0
 
 # final image
 # TODO get rid of python dependencies
 # * wait-for-update.py
-FROM container-registry.zalando.net/library/python-3.12-slim:latest
+FROM container-registry.zalando.net/library/python-3.13-slim:latest
 
 ARG TARGETARCH
 
@@ -16,7 +16,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qq bc curl
 
 ARG KUBE_VERSION
 RUN curl -L -s --fail "https://dl.k8s.io/${KUBE_VERSION}/kubernetes-client-linux-${TARGETARCH}.tar.gz" -o "kubernetes-client-linux-${TARGETARCH}.tar.gz" && \
-    printf "0f27d1918088df6a672f42b13cf213acb5e7499db1b9db5191478adb2ca0c350ba8f5004ceee3798b0ff47fc358bf2fb37097c1113f603dbedd0d00ae0dbaf7f kubernetes-client-linux-amd64.tar.gz\nad0af31c2845e80fcc1916b550b6047a42bd01971f5a20256d98bdd59b51d03061607898cf190365a484a169d411a5b3d46aa8365ec3e035fb98fd345fb04c09 kubernetes-client-linux-arm64.tar.gz" | grep "${TARGETARCH}" | sha512sum -c - && \
+    printf "924bd0cdbef91caab04b5e9c31017c24d9d7c718f6db9e2c61d5c203d579c8f0c00ac7451bd3658d5cdf31d7a08c8ee5884511d8e961f0e9331d00b1f6f03bee kubernetes-client-linux-amd64.tar.gz\nbf84363c16f72863e38d9d67194531aabafb6a82a20e3361354cc037964205557e8a39b62fa23b3c435c87f989838b6619980ea5c325c456e5cd5d47564d1644 kubernetes-client-linux-arm64.tar.gz" | grep "${TARGETARCH}" | sha512sum -c - && \
     tar xvf "kubernetes-client-linux-${TARGETARCH}.tar.gz" --strip-components 3 kubernetes/client/bin/ && \
     rm "kubernetes-client-linux-${TARGETARCH}.tar.gz" && \
     mv kubectl /usr/bin/kubectl
