@@ -714,6 +714,13 @@ teapot_admission_controller_enable_write_protection_webhook: "true"
 # configure the behaviour of the resource protection admission webhook, `true` blocks, `false` allows
 teapot_admission_controller_prevent_write_operations: "true"
 
+# inject default values into Services for ALBC on EKS
+{{ if eq .Cluster.Provider "zalando-eks" }}
+teapot_admission_controller_inject_albc_defaults: "true"
+{{ else }}
+teapot_admission_controller_inject_albc_defaults: "false"
+{{ end }}
+
 # Enable and configure Pod Security Policy rules implemented in admission-controller.
 teapot_admission_controller_pod_security_policy_enabled: "true"
 
