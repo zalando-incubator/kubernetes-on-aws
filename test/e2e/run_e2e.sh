@@ -205,7 +205,6 @@ if [ "$e2e" = true ]; then
         # some tests are skipped for zalando-aws because they only apply to zalando-eks
         SKIPPED_TESTS+=(
             "Authorization via admission-controller \[RBAC\] \[Zalando\]"
-            "Should create DNS entry via Service and AWS Load Balancer Controller \[Zalando\]" # Depends on availability of AWS Load Balancer Controller in the cluster.
         )
     fi
 
@@ -216,7 +215,6 @@ if [ "$e2e" = true ]; then
             "Should audit API calls to create, update, patch, delete pods. \[Audit\] \[Zalando\]"
             "should validate permissions for \[Authorization\] \[RBAC\] \[Zalando\]" # TODO: Remains skipped until we remove the older RBAC setup
             "should creating a working mysql cluster" # upstream test which does not work with IPv6
-            "Should create DNS entry via Service and AWS Cloud Provider \[Zalando\]" # Legacy Service Type LoadBalancer controller doesn't support IPv6.
         )
     fi
 
