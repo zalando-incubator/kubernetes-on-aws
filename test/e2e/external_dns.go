@@ -124,17 +124,18 @@ var _ = describe("External DNS creation", func() {
 			framework.ExpectNoError(err, "failed to delete service: %s in namespace: %s", serviceName, ns)
 		}()
 
+		loadBalancerClass := "service.k8s.aws/nlb"
 		hostName := fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
 		_, err := jigs.CreateLoadBalancerService(ctx, timeout, func(svc *v1.Service) {
 			svc.ObjectMeta = metav1.ObjectMeta{
 				Name: serviceName,
 				Annotations: map[string]string{
-					"service.beta.kubernetes.io/aws-load-balancer-type":            "external",
 					"service.beta.kubernetes.io/aws-load-balancer-ip-address-type": "dualstack",
 					externalDNSAnnotation: hostName,
 				},
 			}
 			svc.Spec.Type = v1.ServiceTypeLoadBalancer
+			svc.Spec.LoadBalancerClass = &loadBalancerClass
 			svc.Spec.Selector = labels
 			svc.Spec.Ports = []v1.ServicePort{
 				{
