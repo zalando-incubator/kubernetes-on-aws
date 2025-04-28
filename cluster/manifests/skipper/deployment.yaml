@@ -177,9 +177,6 @@ spec:
           - "-kubernetes-default-lb-algorithm={{ .Cluster.ConfigItems.skipper_ingress_default_lb_algorithm }}"
           - "-kubernetes-disable-catchall-routes={{ .Cluster.ConfigItems.skipper_ingress_disable_catchall_routes }}"
           - "-enable-kubernetes-endpointslices={{ .Cluster.ConfigItems.skipper_endpointslices_enabled }}"
-{{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}
-          - "-whitelisted-healthcheck-cidr={{ .Values.subnet_ipv6_cidrs }}"
-{{ end }}
 {{ end }}
           - "-address=:9999"
           - "-wait-first-route-load"
@@ -323,21 +320,18 @@ spec:
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
 {{ end }}
-          - >-
-            -inline-routes=
-            kube__healthz_down:
-            Path("/kube-system/healthz") &&
-            Shutdown() &&
-            SourceFromLast("10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12", "127.0.0.1/8", "::1/128"{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}{{ range $ip := split .Values.subnet_ipv6_cidrs "," }},"{{ $ip }}"{{ end }}{{- else }}, "fd00::/8"{{- end }})
-            -> disableAccessLog()
-            -> status(503)
-            -> <shunt>;
-            kube__healthz_up:
-            Path("/kube-system/healthz") &&
-            SourceFromLast("10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12", "127.0.0.1/8", "::1/128"{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}{{ range $ip := split .Values.subnet_ipv6_cidrs "," }},"{{ $ip }}"{{ end }}{{- else }}, "fd00::/8"{{- end }})
-            -> disableAccessLog()
-            -> status(200)
-            -> <shunt>;
+          - "-inline-routes"
+          - |
+            kube__healthz_down: Path("/kube-system/healthz") && Shutdown()
+              && SourceFromLast("{{ .cluster_internal_cidrs | join `","` }}", "10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12", "127.0.0.1/8", "fd00::/8", "::1/128")
+              -> disableAccessLog()
+              -> status(503)
+              -> <shunt>;
+            kube__healthz_up: Path("/kube-system/healthz")
+              && SourceFromLast("{{ .cluster_internal_cidrs | join `","` }}", "10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12", "127.0.0.1/8", "fd00::/8", "::1/128")
+              -> disableAccessLog()
+              -> status(200)
+              -> <shunt>;
             {{ .Cluster.ConfigItems.skipper_ingress_inline_routes }}
 
 {{ if .Cluster.ConfigItems.skipper_ingress_health_check_options }}
