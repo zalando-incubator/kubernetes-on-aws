@@ -3222,7 +3222,7 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
     Type: 'AWS::IAM::Role'
-# {{- if eq .Cluster.Provider "zalando-eks"}}
+# {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
   AWSLoadBalancerControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument: !Sub
