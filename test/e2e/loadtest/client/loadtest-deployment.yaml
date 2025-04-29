@@ -70,7 +70,7 @@ spec:
         - name: RATE
           value: "1000/1s"
         - name: TARGET_VARIANT
-          value: "get.txt"
+          value: "get_external.txt"
         - name: SLEEP_TIME
           value: "10"
         - name: DURATION
@@ -78,6 +78,28 @@ spec:
         image: container-registry.zalando.net/teapot/calibrated-loadtest:master-4
         imagePullPolicy: IfNotPresent
         name: e2e-vegeta
+        resources:
+          limits:
+            cpu: "2"
+            memory: 4Gi
+          requests:
+            cpu: "2"
+            memory: 4Gi
+        volumeMounts:
+        - name: cfg
+          mountPath: /load-targets
+      - env:
+        - name: RATE
+          value: "1000/1s"
+        - name: TARGET_VARIANT
+          value: "get_internal.txt"
+        - name: SLEEP_TIME
+          value: "10"
+        - name: DURATION
+          value: "1h"
+        image: container-registry.zalando.net/teapot/calibrated-loadtest:master-4
+        imagePullPolicy: IfNotPresent
+        name: e2e-vegeta-internal
         resources:
           limits:
             cpu: "2"
