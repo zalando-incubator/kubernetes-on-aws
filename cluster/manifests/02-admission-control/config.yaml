@@ -13,6 +13,9 @@ data:
   dns.default.subdomain-max-length: "{{ .Cluster.ConfigItems.subdomain_max_length }}"
 
   generic.prevent-write-operations.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_prevent_write_operations }}"
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+  generic.inject-albc-defaults.enable: "true"
+{{- end }}
 
   pod.container-resource-control.min-memory-request: "25Mi"
   pod.container-resource-control.default-cpu-request: "{{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}"
