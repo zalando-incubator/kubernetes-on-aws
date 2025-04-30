@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use print to disable it for main image */}}
 
 {{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.22.7-1117" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.22.7-1117" }}
+{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.22.21-1130" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -171,6 +171,7 @@ spec:
 {{ else }}
           - "-kubernetes"
           - "-kubernetes-in-cluster"
+          - "-kubernetes-healthcheck=false" # see -inline-routes
           - "-kubernetes-path-mode=path-prefix"
           - "-kubernetes-backend-traffic-algorithm={{ .Cluster.ConfigItems.skipper_ingress_backend_traffic_algorithm }}"
           - "-kubernetes-default-lb-algorithm={{ .Cluster.ConfigItems.skipper_ingress_default_lb_algorithm }}"
@@ -190,7 +191,6 @@ spec:
           - '-kubernetes-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_filters_append }}'
           - '-kubernetes-east-west-range-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_predicates }}'
           - '-kubernetes-east-west-range-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_filters_append }}'
-          - "-reverse-source-predicate"
 {{ end }}
           - "-proxy-preserve-host"
           - "-compress-encodings={{ .Cluster.ConfigItems.skipper_compress_encodings }}"
@@ -323,9 +323,23 @@ spec:
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
 {{ end }}
-{{ if .Cluster.ConfigItems.skipper_ingress_inline_routes }}
-          - "-inline-routes={{ .Cluster.ConfigItems.skipper_ingress_inline_routes }}"
-{{ end }}
+          - >-
+            -inline-routes=
+            kube__healthz_down:
+            Path("/kube-system/healthz") &&
+            Shutdown() &&
+            SourceFromLast("10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12", "127.0.0.1/8", "::1/128"{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}{{ range $ip := split .Values.subnet_ipv6_cidrs "," }},"{{ $ip }}"{{ end }}{{- else }}, "fd00::/8"{{- end }})
+            -> disableAccessLog()
+            -> status(503)
+            -> <shunt>;
+            kube__healthz_up:
+            Path("/kube-system/healthz") &&
+            SourceFromLast("10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12", "127.0.0.1/8", "::1/128"{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}{{ range $ip := split .Values.subnet_ipv6_cidrs "," }},"{{ $ip }}"{{ end }}{{- else }}, "fd00::/8"{{- end }})
+            -> disableAccessLog()
+            -> status(200)
+            -> <shunt>;
+            {{ .Cluster.ConfigItems.skipper_ingress_inline_routes }}
+
 {{ if .Cluster.ConfigItems.skipper_ingress_health_check_options }}
           - "-passive-health-check={{ .Cluster.ConfigItems.skipper_ingress_health_check_options }}"
 {{ end }}
