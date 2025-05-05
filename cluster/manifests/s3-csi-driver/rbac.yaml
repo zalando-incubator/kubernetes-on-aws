@@ -1,0 +1,41 @@
+{{- if eq .Cluster.ConfigItems.s3_csi_driver "true" }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: s3-csi-driver
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: aws-mountpoint-s3-csi-driver
+    app.kubernetes.io/name: aws-mountpoint-s3-csi-driver
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: s3-csi-driver-cluster-role
+  labels:
+    application: kubernetes
+    component: aws-mountpoint-s3-csi-driver
+    app.kubernetes.io/name: aws-mountpoint-s3-csi-driver
+rules:
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: mountpoint-s3-csi-node-binding
+  labels:
+    application: kubernetes
+    component: aws-mountpoint-s3-csi-driver
+    app.kubernetes.io/name: aws-mountpoint-s3-csi-driver
+roleRef:
+  kind: ClusterRole
+  name: s3-csi-driver-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: s3-csi-driver
+    namespace: kube-system
+{{- end }}

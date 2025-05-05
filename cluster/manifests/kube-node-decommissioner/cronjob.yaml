@@ -1,0 +1,40 @@
+# {{ if eq .Cluster.ConfigItems.kube_node_decommissioner_enabled "true" }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kube-node-decommissioner
+  namespace: "kube-system"
+  labels:
+    application: kubernetes
+    component: kube-node-decommissioner
+spec:
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Replace
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 300
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            application: kubernetes
+            component: kube-node-decommissioner
+          annotations:
+            logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        spec:
+          serviceAccountName: kube-node-decommissioner
+          restartPolicy: Never
+          containers:
+          - name: kube-node-decommissioner
+            image: container-registry.zalando.net/teapot/kube-node-decommissioner:main-3
+            resources:
+              limits:
+                cpu: "{{.Cluster.ConfigItems.kube_node_decommissioner_cpu}}"
+                memory: "{{.Cluster.ConfigItems.kube_node_decommissioner_memory}}"
+              requests:
+                cpu: "{{.Cluster.ConfigItems.kube_node_decommissioner_cpu}}"
+                memory: "{{.Cluster.ConfigItems.kube_node_decommissioner_memory}}"
+# {{ end }}

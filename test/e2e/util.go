@@ -918,6 +918,9 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 					},
 				},
 			},
+			NodeSelector: map[string]string{
+				"kubernetes.io/arch": "amd64",
+			},
 		},
 	}
 }
@@ -953,9 +956,12 @@ func createHTTPRoundTripper() (http.RoundTripper, chan<- struct{}) {
 }
 
 func getAndWaitResponse(rt http.RoundTripper, req *http.Request, timeout time.Duration, expectedStatusCode int) (resp *http.Response, err error) {
-	d := 1 * time.Second
-	if timeout < d {
-		d = timeout - 1
+	return getAndWaitResponseWithInterval(rt, req, timeout, 1*time.Second, expectedStatusCode)
+}
+
+func getAndWaitResponseWithInterval(rt http.RoundTripper, req *http.Request, timeout time.Duration, interval time.Duration, expectedStatusCode int) (resp *http.Response, err error) {
+	if timeout < interval {
+		interval = timeout - 1
 	}
 	timeoutCH := make(chan struct{})
 	go func() {
@@ -976,7 +982,7 @@ func getAndWaitResponse(rt http.RoundTripper, req *http.Request, timeout time.Du
 		case <-timeoutCH:
 			log.Printf("timeout to GET %s", req.URL)
 			return
-		case <-time.After(d):
+		case <-time.After(interval):
 			log.Printf("retry to GET %s", req.URL)
 			continue
 		}

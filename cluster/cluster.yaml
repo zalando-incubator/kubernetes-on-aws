@@ -4,7 +4,542 @@ Metadata:
   Tags:
     InfrastructureComponent: "true"
     application: "kubernetes"
+    cluster-provider: "{{ .Cluster.Provider }}"
+    "kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
+
 Resources:
+{{ if eq .Cluster.Provider "zalando-eks" }}
+  # https://aws.amazon.com/blogs/containers/aws-fault-injection-simulator-supports-chaos-engineering-experiments-on-amazon-eks-pods/
+  {{- if eq .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
+  FISEKSClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-eks-fis-experiment-executor"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - fis.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSFaultInjectionSimulatorEKSAccess
+      Policies:
+      - PolicyDocument:
+          Statement:
+            - Action:
+              - "logs:CreateLogDelivery"
+              - "logs:PutResourcePolicy"
+              - "logs:DescribeResourcePolicies"
+              - "logs:DescribeLogGroups"
+              Effect: Allow
+              Resource: "*"
+          Version: 2012-10-17
+        PolicyName: root
+  {{- end }}
+
+  EKSClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-eks-cluster-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - eks.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSVPCResourceController
+
+  EKSControlPlaneSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "{{ .Cluster.Alias }}-control-plane"
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+  EKSWorkerSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "{{ .Cluster.ID }}-worker-sg"
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: -1
+          IpProtocol: icmp
+          ToPort: -1
+        - CidrIp: {{ if eq .Cluster.ConfigItems.ssh_vpc_only "true" }}"{{.Values.vpc_ipv4_cidr}}"{{ else }}"0.0.0.0/0"{{ end }}
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+{{- if index .Cluster.ConfigItems "open_sg_ingress_ranges" }}
+{{- range $index, $element := sgIngressRanges .Cluster.ConfigItems.open_sg_ingress_ranges }}
+        - CidrIp: {{ $element.CIDR }}
+          FromPort: {{ $element.FromPort }}
+          IpProtocol: {{ $element.Protocol }}
+          ToPort: {{ $element.ToPort }}
+{{- end }}
+{{- end }}
+        - CidrIp: {{ if eq .Cluster.ConfigItems.kube_aws_ingress_controller_nlb_enabled "true" }}"0.0.0.0/0"{{else}}"{{.Values.vpc_ipv4_cidr}}"{{end}}
+          FromPort: 9998
+          IpProtocol: tcp
+          ToPort: 9999
+{{- if eq .Cluster.ConfigItems.skipper_ingress_redis_swim_enabled "true" }}
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9990
+          IpProtocol: tcp
+          ToPort: 9990
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9990
+          IpProtocol: udp
+          ToPort: 9990
+{{- end }}
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 10248
+          IpProtocol: tcp
+          ToPort: 10248
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9054
+          IpProtocol: tcp
+          ToPort: 9054
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9153
+          IpProtocol: tcp
+          ToPort: 9153
+        # Allow all traffic from Cluster Security Group
+        - SourceSecurityGroupId: !GetAtt EKSCluster.ClusterSecurityGroupId
+          IpProtocol : "-1"
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 30000
+          IpProtocol: tcp
+          ToPort: 32767
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 53
+          IpProtocol: tcp
+          ToPort: 53
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 53
+          IpProtocol: udp
+          ToPort: 53
+      Tags:
+        - Key: 'karpenter.sh/discovery'
+          Value: '{{ .Cluster.ID }}/WorkerNodeSecurityGroup'
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+  EKSSelfWorkerSecurityIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: "-1"
+      GroupId: !Ref EKSWorkerSecurityGroup
+      SourceSecurityGroupId: !Ref EKSWorkerSecurityGroup
+  # allow access from Worker Security Group to the Control Plane SG
+  EKSGroupControlPlaneWorkerSecurityIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      FromPort: 443
+      GroupId: !GetAtt EKSCluster.ClusterSecurityGroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref EKSWorkerSecurityGroup
+      ToPort: 443
+  EKSCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: "{{.Cluster.Name}}"
+      Version: "1.31"
+      RoleArn: !GetAtt EKSClusterRole.Arn
+      KubernetesNetworkConfig:
+        IpFamily: "{{.Cluster.ConfigItems.eks_ip_family}}"
+      AccessConfig:
+        AuthenticationMode: API
+        BootstrapClusterCreatorAdminPermissions: false
+      EncryptionConfig:
+        - Provider:
+            KeyArn: !GetAtt EtcdEncryptionKey.Arn # TODO: maybe use another key for EKS?
+          Resources:
+          - secrets
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+          - !Ref EKSControlPlaneSecurityGroup
+        SubnetIds:
+        {{ with $values := .Values }}
+        {{ range $az := $values.availability_zones }}
+          - "{{ index $values.subnets $az }}"
+        {{ end }}
+        {{ end }}
+        EndpointPublicAccess: true
+        EndpointPrivateAccess: true
+        # PublicAccessCidrs: [ "1.1.1.2/32" ]
+      Logging:
+        ClusterLogging:
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
+          EnabledTypes:
+            - Type: api
+            - Type: audit
+            - Type: authenticator
+            - Type: controllerManager
+            - Type: scheduler
+{{- else }}
+          EnabledTypes: []
+{{- end }}
+      # Tags:
+      # - Key: "application"
+      #   Value: "kubernetes"
+      # TODO: vanity domain name? (certificate issue)
+      #
+      #
+{{- if eq .Cluster.ConfigItems.eks_okta_identity_provider "true" }}
+  EKSIdentityProvider:
+    Type: AWS::EKS::IdentityProviderConfig
+    Properties:
+      ClusterName: !Ref EKSCluster
+      IdentityProviderConfigName: "okta"
+      Oidc:
+        IssuerUrl: "{{.Cluster.ConfigItems.okta_auth_issuer_url}}"
+        ClientId: "{{.Cluster.ConfigItems.okta_auth_client_id}}"
+        UsernameClaim: "email"
+        UsernamePrefix: "okta:"
+        GroupsClaim: "groups"
+        GroupsPrefix: "okta:"
+      Type: "oidc"
+{{- end }}
+  EKSAccessEntryNodeAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-worker"
+      Type: "EC2_LINUX"
+  EKSAccessEntryClusterLifecycleManagerAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
+      Username: !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/cluster-lifecycle-manager-entrypoint/{{`{{SessionName}}`}}"
+      KubernetesGroups:
+      - zalando:administrator
+      Type: "STANDARD"
+  {{- if eq .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
+  EKSAccessEntryFISEKSRole:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt FISEKSClusterRole.Arn
+      Username: "fis-experiment-executor"
+      Type: "STANDARD"
+  {{- end }}
+  EKSAccessEntryZalandoIAMAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt EKSZalandoIAMIAMRole.Arn
+      Username: "zalando-iam:zalando:service:{{`{{SessionName}}`}}"
+      Type: "STANDARD"
+  EKSAccessEntryAdministratorAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
+      Username: !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/Administrator/{{`{{SessionName}}`}}"
+      KubernetesGroups:
+      - zalando:administrator
+      Type: "STANDARD"
+{{- if eq .Cluster.Environment "e2e" }}
+  EKSAccessEntryManualAdministratorAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/Manual"
+      Username: !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/Manual/{{`{{SessionName}}`}}"
+      KubernetesGroups:
+      - zalando:administrator
+      Type: "STANDARD"
+{{- end }}
+  EKSAddonPodIdentityAgent:
+    Type: AWS::EKS::Addon
+    Properties:
+      AddonName: eks-pod-identity-agent
+      ClusterName: !Ref EKSCluster
+  {{ if eq .Cluster.Environment "e2e" }}
+  E2EEKSIAMTestRoleUnprivileged:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          - 'sts:SetSourceIdentity'
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        Version: 2012-10-17
+      Path: /
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-unprivileged-role"
+    Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestAccessEntryUnprivileged:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt E2EEKSIAMTestRoleUnprivileged.Arn
+      Username: !Join
+          - ''
+          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
+            - !Ref E2EEKSIAMTestRoleUnprivileged
+            - '/{{`{{SessionName}}`}}'
+      KubernetesGroups:
+      - zalando:readonly
+      Type: "STANDARD"
+  E2EEKSIAMTestRolePrivileged:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          - 'sts:SetSourceIdentity'
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        Version: 2012-10-17
+      Path: /
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-privileged-role"
+    Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestAccessEntryPrivileged:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt E2EEKSIAMTestRolePrivileged.Arn
+      Username: !Join
+          - ''
+          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
+            - !Ref E2EEKSIAMTestRolePrivileged
+            - '/{{`{{SessionName}}`}}'
+      KubernetesGroups:
+      - zalando:administrator
+      Type: "STANDARD"
+  E2EEKSIAMTestRoleCollaborator:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          - 'sts:SetSourceIdentity'
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        Version: 2012-10-17
+      Path: /
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-collaborator-role"
+    Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestAccessEntryCollaborator:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt E2EEKSIAMTestRoleCollaborator.Arn
+      Username: !Join
+          - ''
+          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
+            - !Ref E2EEKSIAMTestRoleCollaborator
+            - '/{{`{{SessionName}}`}}'
+      KubernetesGroups:
+      - zalando:collaborator
+      Type: "STANDARD"
+  E2EEKSIAMTestRolePostgresAdministrator:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          - 'sts:SetSourceIdentity'
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        Version: 2012-10-17
+      Path: /
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-postgres-admin-role"
+    Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestAccessEntryPostgresAdministrator:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt E2EEKSIAMTestRolePostgresAdministrator.Arn
+      Username: !Join
+          - ''
+          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
+            - !Ref E2EEKSIAMTestRolePostgresAdministrator
+            - '/{{`{{SessionName}}`}}'
+      KubernetesGroups:
+      - zalando:postgres-admin
+      Type: "STANDARD"
+  {{ end }}
+  # TODO: IAM POLICY
+  EKSCNIIPv6Policy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      # PolicyName: "{{.Cluster.LocalID}}-eks-cni-ipv6"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Action:
+          - "ec2:AssignIpv6Addresses"
+          - "ec2:DescribeInstances"
+          - "ec2:DescribeTags"
+          - "ec2:DescribeNetworkInterfaces"
+          - "ec2:DescribeInstanceTypes"
+          Resource: "*"
+        - Effect: Allow
+          Action:
+          - "ec2:CreateTags"
+          Resource:
+          - "arn:aws:ec2:*:*:network-interface/*"
+  EKSAWSNodeIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-aws-node"
+      AssumeRolePolicyDocument: {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": [
+                    "ec2.amazonaws.com"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRole"
+                ]
+              },
+              {
+                "Sid": "AllowEksAuthToAssumeRoleForPodIdentity",
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "pods.eks.amazonaws.com"
+                },
+                "Action": [
+                    "sts:AssumeRole",
+                    "sts:TagSession"
+                ]
+              }
+            ]
+          }
+      Path: /
+      ManagedPolicyArns:
+{{- if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}
+      - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+{{- else }}
+      - !Ref EKSCNIIPv6Policy
+{{- end }}
+  EKSAWSNodePodIdentity:
+    Type: "AWS::EKS::PodIdentityAssociation"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      Namespace: kube-system
+      RoleArn: !GetAtt EKSAWSNodeIAMRole.Arn
+      ServiceAccount: aws-node
+  EKSZalandoIAMProxyIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-zalando-iam-aws-proxy"
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": [
+                    "ec2.amazonaws.com"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRole"
+                ]
+              },
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:zalando-iam-aws-proxy"
+                  }
+                }
+              }
+            ]
+          }
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+      Path: /
+      Policies:
+      - PolicyDocument:
+          Statement:
+            - Action: "sts:AssumeRole"
+              Effect: Allow
+              Resource: "*"
+            - Action: "sts:SetSourceIdentity"
+              Effect: Allow
+              Resource: "*"
+          Version: 2012-10-17
+        PolicyName: root
+  EKSZalandoIAMIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-zalando-iam"
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - 'sts:AssumeRole'
+              - 'sts:SetSourceIdentity'
+        Version: '2012-10-17'
+  EKSOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      ClientIdList:
+      - "sts.amazonaws.com"
+      Url: !GetAtt EKSCluster.OpenIdConnectIssuerUrl
+      ThumbprintList:
+      # SHA-1 sum of the root certificate in the trust chain for the certificate
+      # use to serve the open id discovery document.
+      - "9e99a48a9960b14926bb7f3b02e22da2b0ab7280"
+{{ else }}
 {{ if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
   EtcdClusterSecurityGroupIngressFromMaster:
     Type: 'AWS::EC2::SecurityGroupIngress'
@@ -22,36 +557,86 @@ Resources:
       GroupId: !ImportValue '{{.Cluster.ConfigItems.etcd_stack_name}}:etcd-security-group-id'
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-  IngressLoadBalancerSecurityGroup:
-    Properties:
-      GroupDescription: !Ref 'AWS::StackName'
-      SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          FromPort: 80
-          IpProtocol: tcp
-          ToPort: 80
-        - CidrIp: 0.0.0.0/0
-          FromPort: 443
-          IpProtocol: tcp
-          ToPort: 443
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
-        - Key: 'kubernetes:application'
-          Value: kube-ingress-aws-controller
-      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
-    Type: 'AWS::EC2::SecurityGroup'
   MasterKubeletToMasterKubeletSecurityGroup:
     Properties:
       FromPort: 10250
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
+      ToPort: 10250
+    Type: 'AWS::EC2::SecurityGroupIngress'
+{{- if or (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "pre") (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "serving") (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "active") }}
+  ControlPlaneInternalLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: "{{.Cluster.LocalID}}-nlb-internal"
+      LoadBalancerAttributes:
+        - Key: load_balancing.cross_zone.enabled
+          Value: true
+      Scheme: internal
+      Subnets:
+  {{ with $values := .Values }}
+  {{ range $az := $values.availability_zones }}
+        - "{{ index $values.lb_subnets $az }}"
+  {{ end }}
+  {{ end }}
       Tags:
         - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
           Value: owned
-      ToPort: 10250
-    Type: 'AWS::EC2::SecurityGroupIngress'
+        - Key: "component"
+          Value: "kube-apiserver"
+      Type: network
+  ControlPlaneInternalLBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPort: 8443
+      HealthCheckProtocol: HTTPS
+      HealthCheckPath: "/readyz"
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Name: "{{.Cluster.LocalID}}-nlb-internal"
+      Port: 8443
+      Protocol: TLS
+      Tags:
+        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
+          Value: owned
+        - Key: "component"
+          Value: "kube-apiserver"
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 60
+        - Key: preserve_client_ip.enabled
+          Value: "false"
+  ControlPlaneInternalLBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      AlpnPolicy:
+        - {{ if eq .Cluster.ConfigItems.experimental_nlb_alpn_h2_enabled "true" }}HTTP2Preferred{{else}}None{{end}}
+      SslPolicy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+      Certificates:
+        - CertificateArn: "{{.Values.load_balancer_certificate}}"
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref ControlPlaneInternalLBTargetGroup
+      LoadBalancerArn: !Ref ControlPlaneInternalLB
+      Port: 443
+      Protocol: TLS
+  ControlPlaneInternalLBVersionDomain:
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt
+          - ControlPlaneInternalLB
+          - DNSName
+        HostedZoneId: !GetAtt
+          - ControlPlaneInternalLB
+          - CanonicalHostedZoneID
+      HostedZoneName: "{{.Values.hosted_zone}}."
+      Name: "{{.Cluster.LocalID}}-internal.{{.Values.hosted_zone}}."
+      Type: A
+    Type: 'AWS::Route53::RecordSet'
+{{- end  }}
   MasterLoadBalancerNLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -63,12 +648,10 @@ Resources:
       Subnets:
   {{ with $values := .Values }}
   {{ range $az := $values.availability_zones }}
-        - "{{ index $values.subnets $az }}"
+        - "{{ index $values.lb_subnets $az }}"
   {{ end }}
   {{ end }}
       Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
         - Key: "component"
           Value: "kube-apiserver"
       Type: network
@@ -85,8 +668,6 @@ Resources:
       Port: 8443
       Protocol: TLS
       Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
         - Key: "component"
           Value: "kube-apiserver"
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
@@ -162,9 +743,6 @@ Resources:
           FromPort: 53
           IpProtocol: udp
           ToPort: 53
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
   MasterSecurityGroupIngressFromFlannelToMaster:
@@ -173,9 +751,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: udp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromMasterFlannelToMaster:
@@ -184,9 +759,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: udp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromMaster:
@@ -195,9 +767,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 443
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromWorker:
@@ -206,9 +775,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 443
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromWorkerToMasterKubeletAndKubeProxy:
@@ -217,9 +783,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 10250 # Kubelet
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromWorkerToNodeMonitor:
@@ -229,9 +792,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
     Type: 'AWS::EC2::SecurityGroupIngress'
   MasterSecurityGroupIngressFromWorkerToSkipperMetrics:
     Properties:
@@ -240,9 +800,6 @@ Resources:
       GroupId: !Ref MasterSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroup:
     Properties:
@@ -307,8 +864,6 @@ Resources:
           IpProtocol: udp
           ToPort: 53
       Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
         - Key: 'karpenter.sh/discovery'
           Value: '{{ .Cluster.ID }}/WorkerNodeSecurityGroup'
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
@@ -319,9 +874,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: udp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromMasterToKubelet:
@@ -330,9 +882,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref MasterSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToFlannel:
@@ -341,9 +890,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: udp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 8472
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToWorkerKubeletAndKubeProxy:
@@ -352,9 +898,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 10250 # Kubelet
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToWorkerSkipperMetrics:
@@ -363,9 +906,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 9911
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToWorkerSkipperTokeninfoMetrics:
@@ -374,9 +914,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 9022
     Type: 'AWS::EC2::SecurityGroupIngress'
   WorkerSecurityGroupIngressFromWorkerToNodeMonitor:
@@ -386,9 +923,6 @@ Resources:
       GroupId: !Ref WorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
     Type: 'AWS::EC2::SecurityGroupIngress'
   EFSSecurityGroupIngressFromWorkerSecurityGroup:
     Properties:
@@ -396,17 +930,11 @@ Resources:
       GroupId: !Ref EFSWorkerSecurityGroup
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       ToPort: 2049
     Type: 'AWS::EC2::SecurityGroupIngress'
   EFSWorkerSecurityGroup:
     Properties:
       GroupDescription: worker to EFS sg
-      Tags:
-        - Key: 'kubernetes.io/cluster/{{.Cluster.ID}}'
-          Value: owned
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
 
@@ -422,6 +950,27 @@ Resources:
       # SHA-1 sum of the root certificate in the trust chain for the certificate
       # use to serve the open id discovery document.
       - "9e99a48a9960b14926bb7f3b02e22da2b0ab7280"
+# end of non eks resources
+{{ end }}
+{{- if ne .Cluster.ConfigItems.delete_vpc_resources "true" }}
+  IngressLoadBalancerSecurityGroup:
+    Properties:
+      GroupDescription: !Ref 'AWS::StackName'
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      Tags:
+        - Key: 'kubernetes:application'
+          Value: kube-ingress-aws-controller
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+    Type: 'AWS::EC2::SecurityGroup'
+{{- end }}
   WorkerIAMRole: # role used by worker nodes, including karpenter ones
     Properties:
       AssumeRolePolicyDocument:
@@ -442,6 +991,11 @@ Resources:
                   - !Ref MasterIAMRole
         Version: 2012-10-17
       Path: /
+{{- if eq .Cluster.Provider "zalando-eks"}}
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+{{- end }}
       Policies:
         - PolicyDocument:
             Statement:
@@ -515,17 +1069,34 @@ Resources:
     Type: 'AWS::IAM::Role'
   AutoscalerIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:cluster-autoscaler"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:cluster-autoscaler"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -565,21 +1136,37 @@ Resources:
       Path: "/"
       Roles:
         - !Ref WorkerIAMRole
-{{- if eq .Cluster.ConfigItems.karpenter_pools_enabled "true"}}
   KarpenterIAMRole: # role for the karpenter controller
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: "arn:aws:iam::{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:aud": "sts.amazonaws.com"
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:karpenter"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:aud": "sts.amazonaws.com",
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:karpenter"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyName: "KarpenterControllerPolicy-{{ .Cluster.ID | awsValidID }}"
@@ -590,19 +1177,36 @@ Resources:
               "Version": "2012-10-17",
               "Statement": [
                 {
-                  "Sid": "AllowScopedEC2InstanceActions",
+                  "Sid": "AllowScopedEC2InstanceAccessActions",
                   "Effect": "Allow",
                   "Resource": [
                     "arn:${AWS::Partition}:ec2:${AWS::Region}::image/*",
                     "arn:${AWS::Partition}:ec2:${AWS::Region}::snapshot/*",
                     "arn:${AWS::Partition}:ec2:${AWS::Region}:*:security-group/*",
                     "arn:${AWS::Partition}:ec2:${AWS::Region}:*:subnet/*",
-                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:launch-template/*"
+                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:capacity-reservation/*"
                   ],
                   "Action": [
                     "ec2:RunInstances",
                     "ec2:CreateFleet"
                   ]
+                },
+                {
+                  "Sid": "AllowScopedEC2LaunchTemplateAccessActions",
+                  "Effect": "Allow",
+                  "Resource": "arn:${AWS::Partition}:ec2:${AWS::Region}:*:launch-template/*",
+                  "Action": [
+                    "ec2:RunInstances",
+                    "ec2:CreateFleet"
+                  ],
+                  "Condition": {
+                    "StringEquals": {
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
+                    },
+                    "StringLike": {
+                      "aws:ResourceTag/karpenter.sh/nodepool": "*"
+                    }
+                  }
                 },
                 {
                   "Sid": "AllowScopedEC2InstanceActionsWithTags",
@@ -613,7 +1217,8 @@ Resources:
                     "arn:${AWS::Partition}:ec2:${AWS::Region}:*:volume/*",
                     "arn:${AWS::Partition}:ec2:${AWS::Region}:*:network-interface/*",
                     "arn:${AWS::Partition}:ec2:${AWS::Region}:*:launch-template/*",
-                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:spot-instances-request/*"
+                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:spot-instances-request/*",
+                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:capacity-reservation/*"
                   ],
                   "Action": [
                     "ec2:RunInstances",
@@ -622,7 +1227,8 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned"
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned",
+                      "aws:RequestTag/eks:eks-cluster-name": "{{.Cluster.Name}}"
                     },
                     "StringLike": {
                       "aws:RequestTag/karpenter.sh/nodepool": "*"
@@ -643,7 +1249,7 @@ Resources:
                   "Action": "ec2:CreateTags",
                   "Condition": {
                     "StringEquals": {
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned",
                       "ec2:CreateAction": [
                         "RunInstances",
                         "CreateFleet",
@@ -662,13 +1268,17 @@ Resources:
                   "Action": "ec2:CreateTags",
                   "Condition": {
                     "StringEquals": {
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned"
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
                     },
                     "StringLike": {
                       "aws:ResourceTag/karpenter.sh/nodepool": "*"
                     },
+                    "StringEqualsIfExists": {
+                      "aws:RequestTag/eks:eks-cluster-name": "{{.Cluster.Name}}"
+                    },
                     "ForAllValues:StringEquals": {
                       "aws:TagKeys": [
+                        "eks:eks-cluster-name",
                         "karpenter.sh/nodeclaim",
                         "Name"
                       ]
@@ -688,7 +1298,7 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned"
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
                     },
                     "StringLike": {
                       "aws:ResourceTag/karpenter.sh/nodepool": "*"
@@ -701,6 +1311,7 @@ Resources:
                   "Resource": "*",
                   "Action": [
                     "ec2:DescribeAvailabilityZones",
+                    "ec2:DescribeCapacityReservations",
                     "ec2:DescribeImages",
                     "ec2:DescribeInstances",
                     "ec2:DescribeInstanceTypeOfferings",
@@ -752,13 +1363,14 @@ Resources:
                 {
                   "Sid": "AllowScopedInstanceProfileCreationActions",
                   "Effect": "Allow",
-                  "Resource": "*",
+                  "Resource": "arn:${AWS::Partition}:iam::${AWS::AccountId}:instance-profile/*",
                   "Action": [
                     "iam:CreateInstanceProfile"
                   ],
                   "Condition": {
                     "StringEquals": {
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned",
+                      "aws:RequestTag/eks:eks-cluster-name": "{{.Cluster.Name}}",
                       "aws:RequestTag/topology.kubernetes.io/region": "${AWS::Region}"
                     },
                     "StringLike": {
@@ -769,15 +1381,16 @@ Resources:
                 {
                   "Sid": "AllowScopedInstanceProfileTagActions",
                   "Effect": "Allow",
-                  "Resource": "*",
+                  "Resource": "arn:${AWS::Partition}:iam::${AWS::AccountId}:instance-profile/*",
                   "Action": [
                     "iam:TagInstanceProfile"
                   ],
                   "Condition": {
                     "StringEquals": {
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned",
                       "aws:ResourceTag/topology.kubernetes.io/region": "${AWS::Region}",
-                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      "aws:RequestTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned",
+                      "aws:RequestTag/eks:eks-cluster-name": "{{.Cluster.Name}}",
                       "aws:RequestTag/topology.kubernetes.io/region": "${AWS::Region}"
                     },
                     "StringLike": {
@@ -789,7 +1402,7 @@ Resources:
                 {
                   "Sid": "AllowScopedInstanceProfileActions",
                   "Effect": "Allow",
-                  "Resource": "*",
+                  "Resource": "arn:${AWS::Partition}:iam::${AWS::AccountId}:instance-profile/*",
                   "Action": [
                     "iam:AddRoleToInstanceProfile",
                     "iam:RemoveRoleFromInstanceProfile",
@@ -797,7 +1410,7 @@ Resources:
                   ],
                   "Condition": {
                     "StringEquals": {
-                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.ID}}": "owned",
+                      "aws:ResourceTag/kubernetes.io/cluster/{{.Cluster.Name}}": "owned",
                       "aws:ResourceTag/topology.kubernetes.io/region": "${AWS::Region}"
                     },
                     "StringLike": {
@@ -808,8 +1421,14 @@ Resources:
                 {
                   "Sid": "AllowInstanceProfileReadActions",
                   "Effect": "Allow",
-                  "Resource": "*",
+                  "Resource": "arn:${AWS::Partition}:iam::${AWS::AccountId}:instance-profile/*",
                   "Action": "iam:GetInstanceProfile"
+                },
+                {
+                  "Sid": "AllowAPIServerEndpointDiscovery",
+                  "Effect": "Allow",
+                  "Resource": "arn:${AWS::Partition}:eks:${AWS::Region}:${AWS::AccountId}:cluster/{{.Cluster.Name}}",
+                  "Action": "eks:DescribeCluster"
                 }
               ]
             }
@@ -880,7 +1499,6 @@ Resources:
       Targets:
         - Id: KarpenterInterruptionQueueTarget
           Arn: !GetAtt KarpenterInterruptionQueue.Arn
-{{- end }}
   DeploymentIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -906,6 +1524,7 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyModifyShibboleth"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
       RoleName: "{{.Cluster.LocalID}}-deployment"
     Type: 'AWS::IAM::Role'
   DeploymentServiceBucket:
@@ -974,17 +1593,34 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: "{{.Cluster.LocalID}}-deployment-service-controller"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:deployment-service-controller"
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:deployment-service-controller"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Policies:
         - PolicyName: ControllerPolicy
           PolicyDocument:
@@ -1039,6 +1675,7 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyModifyShibboleth"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
 {{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
   DeploymentControllerMLExperimentDeploymentRole:
     Type: AWS::IAM::Role
@@ -1059,17 +1696,34 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: "{{.Cluster.LocalID}}-deployment-service-status-service"
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:deployment-service-status-service"
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:deployment-service-status-service"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Policies:
         - PolicyName: StatusServicePolicy
           PolicyDocument:
@@ -1100,17 +1754,34 @@ Resources:
                 Resource: '*'
   ExternalDNSIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:external-dns"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:external-dns"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1124,17 +1795,34 @@ Resources:
     Type: 'AWS::IAM::Role'
   IngressControllerIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{ .Values.hosted_zone }}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-ingress-aws-controller"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:kube-ingress-aws-controller"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1178,7 +1866,13 @@ Resources:
               - Action: 'elasticloadbalancingv2:*'
                 Effect: Allow
                 Resource: '*'
+              - Action: 'ec2:DescribeAccountAttributes'
+                Effect: Allow
+                Resource: '*'
               - Action: 'ec2:DescribeInstances'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'ec2:DescribeInternetGateways'
                 Effect: Allow
                 Resource: '*'
               - Action: 'ec2:DescribeSubnets'
@@ -1193,6 +1887,12 @@ Resources:
               - Action: 'ec2:DescribeVpcs'
                 Effect: Allow
                 Resource: '*'
+              - Action: 'iam:CreateServiceLinkedRole'
+                Effect: Allow
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    "iam:AWSServiceName": "elasticloadbalancing.amazonaws.com"
               - Action: 'iam:GetServerCertificate'
                 Effect: Allow
                 Resource: '*'
@@ -1241,17 +1941,34 @@ Resources:
   # if Skipper Ingress needs to access other AWS resources
   SkipperIngressIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{ .Values.hosted_zone }}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:skipper-ingress"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:skipper-ingress"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1268,17 +1985,34 @@ Resources:
 {{ end }}
   ClusterLifecycleControllerIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Effect: Allow
-          Principal:
-            Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-          Action:
-            - 'sts:AssumeRoleWithWebIdentity'
-          Condition:
-            StringEquals:
-              "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:cluster-lifecycle-controller"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:cluster-lifecycle-controller"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
       - PolicyDocument:
@@ -1322,25 +2056,49 @@ Resources:
     Type: 'AWS::IAM::Role'
   KubeReadyIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-node-ready"
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - !Sub 'arn:aws:iam::${AWS::AccountId}:role/'
-                  - !Ref MasterIAMRole
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+{{- if ne .Cluster.Provider "zalando-eks" }}
+              {
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "${MasterIAMRole}"
+                }
+              },
+{{- end }}
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:kube-node-ready"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+          MasterIAMRole: !Join
+            - ''
+            - - !Sub 'arn:aws:iam::${AWS::AccountId}:role/'
+              - !Ref MasterIAMRole
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1434,6 +2192,7 @@ Resources:
             Version: 2012-10-17
           PolicyName: root
     Type: 'AWS::IAM::Role'
+{{- if ne .Cluster.Provider "zalando-eks" }}
   CloudControllerManagerIAMRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1559,20 +2318,38 @@ Resources:
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-etcd-backup"
+{{- end }}
     Type: 'AWS::IAM::Role'
   StaticEgressControllerIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:kube-static-egress-controller"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:kube-static-egress-controller"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1640,34 +2417,79 @@ Resources:
               - Action: 'ec2:DescribeVpcs'
                 Effect: Allow
                 Resource: '*'
+              - Action:
+                - "s3:PutObject"
+                - "s3:GetObject"
+                - "s3:GetObjectVersion"
+                Effect: Allow
+                Resource: "arn:aws:s3:::cluster-lifecycle-manager-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.Region}}/*"
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-static-egress-controller"
     Type: 'AWS::IAM::Role'
   ZmonIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - !Sub 'arn:aws:iam::${AWS::AccountId}:role/'
-                  - !Ref WorkerIAMRole
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              AWS: '{{.Cluster.ConfigItems.zmon_root_account_role}}'
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": ["ec2.amazonaws.com"]
+                }
+              },
+              {
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "arn:aws:iam::${AWS::AccountId}:role/${WorkerIAMRole}"
+                }
+              },
+              {{/* TODO: Remove all of the above when ZMON is fully migrated to OIDC */}}
+              {
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "{{.Cluster.ConfigItems.zmon_root_account_role}}"
+                }
+              },
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:aud": "sts.amazonaws.com",
+                    "${OIDC}:sub": [
+                      "system:serviceaccount:visibility:zmon-appliance-scheduler",
+                      "system:serviceaccount:visibility:zmon-appliance-aws-agent",
+                      "system:serviceaccount:visibility:zmon"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1724,6 +2546,9 @@ Resources:
                 Effect: Allow
                 Resource: '*'
               - Action: 'kinesis:Describe*'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'kinesisanalytics:List*'
                 Effect: Allow
                 Resource: '*'
               - Action: 'lambda:List*'
@@ -1790,6 +2615,9 @@ Resources:
               - Action: 'states:ListExecutions'
                 Effect: Allow
                 Resource: '*'
+              - Action: 'secretsmanager:GetSecretValue'
+                Effect: Allow
+                Resource: "arn:aws:secretsmanager:{{.Cluster.Region}}:{{.Cluster.InfrastructureAccount | getAWSAccountID}}:secret:*.zmon-db-user.credentials*"
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-zmon"
@@ -1800,37 +2628,65 @@ Resources:
     Properties:
       RoleName: "{{.Cluster.LocalID}}-app-logging-agent"
       Path: /
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Action:
-              - 'sts:AssumeRole'
-            Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-          - Action: ["sts:AssumeRole"]
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - !Sub 'arn:aws:iam::${AWS::AccountId}:role/'
-                  - !Ref WorkerIAMRole
-          - Action: ["sts:AssumeRole"]
-            Effect: Allow
-            Principal:
-              AWS: !Join
-                - ''
-                - - !Sub 'arn:aws:iam::${AWS::AccountId}:role/'
-                  - !Ref MasterIAMRole
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:visibility:logging-agent"
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Principal": {
+                  "Service": [
+                    "ec2.amazonaws.com"
+                  ]
+                }
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Principal": {
+                  "AWS": "${WorkerIAMRole}"
+                }
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "sts:AssumeRole"
+                ],
+                "Principal": {
+                  "AWS": "${MasterIAMRole}"
+                }
+              },
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:visibility:logging-agent"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
+          WorkerIAMRole: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${WorkerIAMRole}'
+          MasterIAMRole: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${MasterIAMRole}'
       Policies:
         - PolicyName: AllowS3BucketAccess
           PolicyDocument:
@@ -1860,17 +2716,34 @@ Resources:
 
   KubeMetricsIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:custom-metrics-apiserver"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:custom-metrics-apiserver"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -1894,17 +2767,34 @@ Resources:
 
   EBSCSIControllerIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -2125,6 +3015,7 @@ Resources:
                 - BucketArn: !GetAtt AuditTrailBucket.Arn
 {{- end }}
 
+{{- if index .Cluster.ConfigItems "session_manager_destination_arn" }}
   SessionManagerLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -2184,22 +3075,40 @@ Resources:
                 Resource:
                   - !GetAtt SessionManagerLogGroup.Arn
       RoleName: "SessionManager-{{.Cluster.Alias}}"
+{{- end }}
 
   AWSNodeDecommissionerIAMRole:
     Type: 'AWS::IAM::Role'
     Properties:
       RoleName: "{{.Cluster.LocalID}}-aws-node-decommissioner"
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:aws-node-decommissioner"
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:aws-node-decommissioner"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -2213,17 +3122,34 @@ Resources:
           PolicyName: root
   EmergencyAccessServiceIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:emergency-access-service"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:emergency-access-service"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -2247,17 +3173,34 @@ Resources:
     Type: 'AWS::IAM::Role'
   AudittrailAdapterIAMRole:
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-            Action:
-              - 'sts:AssumeRoleWithWebIdentity'
-            Condition:
-              StringEquals:
-                "{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}:sub": "system:serviceaccount:kube-system:audittrail-adapter"
-        Version: 2012-10-17
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:audittrail-adapter"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
       Path: /
       Policies:
         - PolicyDocument:
@@ -2279,6 +3222,217 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
     Type: 'AWS::IAM::Role'
+# {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+  AWSLoadBalancerControllerIAMRole:
+    Properties:
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
+                  }
+                }
+              }
+            ]
+          }
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - iam:CreateServiceLinkedRole
+              Resource: "*"
+              Condition:
+                StringEquals:
+                  iam:AWSServiceName: elasticloadbalancing.amazonaws.com
+            - Effect: Allow
+              Action:
+              - ec2:DescribeAccountAttributes
+              - ec2:DescribeAddresses
+              - ec2:DescribeAvailabilityZones
+              - ec2:DescribeInternetGateways
+              - ec2:DescribeVpcs
+              - ec2:DescribeVpcPeeringConnections
+              - ec2:DescribeSubnets
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeInstances
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeTags
+              - ec2:GetCoipPoolUsage
+              - ec2:DescribeCoipPools
+              - ec2:GetSecurityGroupsForVpc
+              - ec2:DescribeIpamPools
+              - elasticloadbalancing:DescribeLoadBalancers
+              - elasticloadbalancing:DescribeLoadBalancerAttributes
+              - elasticloadbalancing:DescribeListeners
+              - elasticloadbalancing:DescribeListenerCertificates
+              - elasticloadbalancing:DescribeSSLPolicies
+              - elasticloadbalancing:DescribeRules
+              - elasticloadbalancing:DescribeTargetGroups
+              - elasticloadbalancing:DescribeTargetGroupAttributes
+              - elasticloadbalancing:DescribeTargetHealth
+              - elasticloadbalancing:DescribeTags
+              - elasticloadbalancing:DescribeTrustStores
+              - elasticloadbalancing:DescribeListenerAttributes
+              - elasticloadbalancing:DescribeCapacityReservation
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - cognito-idp:DescribeUserPoolClient
+              - acm:ListCertificates
+              - acm:DescribeCertificate
+              - iam:ListServerCertificates
+              - iam:GetServerCertificate
+              - waf-regional:GetWebACL
+              - waf-regional:GetWebACLForResource
+              - waf-regional:AssociateWebACL
+              - waf-regional:DisassociateWebACL
+              - wafv2:GetWebACL
+              - wafv2:GetWebACLForResource
+              - wafv2:AssociateWebACL
+              - wafv2:DisassociateWebACL
+              - shield:GetSubscriptionState
+              - shield:DescribeProtection
+              - shield:CreateProtection
+              - shield:DeleteProtection
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:RevokeSecurityGroupIngress
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - ec2:CreateSecurityGroup
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - ec2:CreateTags
+              Resource: arn:aws:ec2:*:*:security-group/*
+              Condition:
+                StringEquals:
+                  ec2:CreateAction: CreateSecurityGroup
+                'Null':
+                  aws:RequestTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - ec2:CreateTags
+              - ec2:DeleteTags
+              Resource: arn:aws:ec2:*:*:security-group/*
+              Condition:
+                'Null':
+                  aws:RequestTag/elbv2.k8s.aws/cluster: 'true'
+                  aws:ResourceTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:RevokeSecurityGroupIngress
+              - ec2:DeleteSecurityGroup
+              Resource: "*"
+              Condition:
+                'Null':
+                  aws:ResourceTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:CreateLoadBalancer
+              - elasticloadbalancing:CreateTargetGroup
+              Resource: "*"
+              Condition:
+                'Null':
+                  aws:RequestTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:CreateListener
+              - elasticloadbalancing:DeleteListener
+              - elasticloadbalancing:CreateRule
+              - elasticloadbalancing:DeleteRule
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:AddTags
+              - elasticloadbalancing:RemoveTags
+              Resource:
+              - arn:aws:elasticloadbalancing:*:*:targetgroup/*/*
+              - arn:aws:elasticloadbalancing:*:*:loadbalancer/net/*/*
+              - arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*
+              Condition:
+                'Null':
+                  aws:RequestTag/elbv2.k8s.aws/cluster: 'true'
+                  aws:ResourceTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:AddTags
+              - elasticloadbalancing:RemoveTags
+              Resource:
+              - arn:aws:elasticloadbalancing:*:*:listener/net/*/*/*
+              - arn:aws:elasticloadbalancing:*:*:listener/app/*/*/*
+              - arn:aws:elasticloadbalancing:*:*:listener-rule/net/*/*/*
+              - arn:aws:elasticloadbalancing:*:*:listener-rule/app/*/*/*
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:ModifyLoadBalancerAttributes
+              - elasticloadbalancing:SetIpAddressType
+              - elasticloadbalancing:SetSecurityGroups
+              - elasticloadbalancing:SetSubnets
+              - elasticloadbalancing:DeleteLoadBalancer
+              - elasticloadbalancing:ModifyTargetGroup
+              - elasticloadbalancing:ModifyTargetGroupAttributes
+              - elasticloadbalancing:DeleteTargetGroup
+              - elasticloadbalancing:ModifyListenerAttributes
+              - elasticloadbalancing:ModifyCapacityReservation
+              - elasticloadbalancing:ModifyIpPools
+              Resource: "*"
+              Condition:
+                'Null':
+                  aws:ResourceTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:AddTags
+              Resource:
+              - arn:aws:elasticloadbalancing:*:*:targetgroup/*/*
+              - arn:aws:elasticloadbalancing:*:*:loadbalancer/net/*/*
+              - arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*
+              Condition:
+                StringEquals:
+                  elasticloadbalancing:CreateAction:
+                  - CreateTargetGroup
+                  - CreateLoadBalancer
+                'Null':
+                  aws:RequestTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:RegisterTargets
+              - elasticloadbalancing:DeregisterTargets
+              Resource: arn:aws:elasticloadbalancing:*:*:targetgroup/*/*
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:SetWebAcl
+              - elasticloadbalancing:ModifyListener
+              - elasticloadbalancing:AddListenerCertificates
+              - elasticloadbalancing:RemoveListenerCertificates
+              - elasticloadbalancing:ModifyRule
+              - elasticloadbalancing:SetRulePriorities
+              Resource: "*"
+          PolicyName: root
+      RoleName: "aws-load-balancer-controller-{{.Cluster.Name}}"
+    Type: 'AWS::IAM::Role'
+# {{- end }}
   RemoteFilesEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:
@@ -2344,6 +3498,17 @@ Resources:
             - "kms:*"
             - "tag:TagResources"
             Resource: "*"
+{{- if eq .Cluster.Provider "zalando-eks" }}
+          - Sid: "Allow EKSClusterRole access to describe the key"
+            Effect: "Allow"
+            Principal:
+              AWS:
+              - !GetAtt EKSClusterRole.Arn
+            Action:
+            - "kms:DescribeKey"
+            - "kms:CreateGrant"
+            Resource: "*"
+{{- else }}
           - Sid: "Enable master nodes to encrypt and decrypt secrets in etcd"
             Effect: "Allow"
             Principal:
@@ -2355,6 +3520,8 @@ Resources:
             Action:
             - "kms:Encrypt"
             - "kms:Decrypt"
+{{- end }}
+{{- if ne .Cluster.Provider "zalando-eks" }}
   MasterFilesEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:
@@ -2392,6 +3559,7 @@ Resources:
             Resource: "*"
             Action:
             - "kms:Decrypt"
+{{- end}}
   WorkerFilesEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:
@@ -2430,22 +3598,37 @@ Resources:
             Action:
             - "kms:Decrypt"
 Outputs:
+{{- if eq .Cluster.Provider "zalando-eks" }}
+  EKSControlPlaneEndpoint:
+    Export:
+      Name: "{{.Cluster.ID}}:eks-control-plane-endpoint"
+    Value: !GetAtt EKSCluster.Endpoint
+  # EKSServiceIpv6Cidr:
+  #   Export:
+  #     Name: "{{.Cluster.ID}}:eks-service-cidr"
+  #   Value: !GetAtt EKSCluster.KubernetesNetworkConfig.ServiceIpv6Cidr
+  EKSOpenIdConnectIssuerUrl:
+    Export:
+      Name: "{{.Cluster.ID}}:eks-oidc-url"
+    Value: !GetAtt EKSCluster.OpenIdConnectIssuerUrl
+  EKSClusterSecurityGroupId:
+    Export:
+      Name: "{{.Cluster.ID}}:eks-security-group-id"
+    Value: !GetAtt EKSCluster.ClusterSecurityGroupId
+  EKSWorkerSecurityGroup:
+    Export:
+      Name: "{{.Cluster.ID}}:worker-security-group"
+    Value: !Ref EKSWorkerSecurityGroup
+  # Too big for Cloudformation output?
+  # EKSCertificateAuthorityData:
+  #   Export:
+  #     Name: "{{.Cluster.ID}}:eks-certificate-authority-data"
+  #   Value: !GetAtt EKSCluster.CertificateAuthorityData
+{{- else }}
   MasterIAMRole:
     Export:
       Name: '{{.Cluster.ID}}:master-iam-role'
     Value: !Ref MasterIAMRole
-  WorkerIAMRole:
-    Export:
-      Name: '{{.Cluster.ID}}:worker-iam-role'
-    Value: !Ref WorkerIAMRole
-  RemoteFilesEncryptionKey:
-    Export:
-      Name: '{{ .Cluster.ID}}:remote-files-encryption-key'
-    Value: !Ref RemoteFilesEncryptionKey
-  WorkerFilesEncryptionKey:
-    Export:
-      Name: '{{ .Cluster.ID}}:worker-files-encryption-key'
-    Value: !Ref WorkerFilesEncryptionKey
   MasterFilesEncryptionKey:
     Export:
       Name: '{{ .Cluster.ID}}:master-files-encryption-key'
@@ -2455,6 +3638,12 @@ Outputs:
     Export:
       Name: '{{.Cluster.ID}}:master-load-balancer-nlb-target-group'
     Value: !Ref MasterLoadBalancerNLBTargetGroup
+{{- if or (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "pre") (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "serving") (eq .Cluster.ConfigItems.control_plane_load_balancer_internal "active") }}
+  ControlPlaneInternalLBTargetGroup:
+    Export:
+      Name: '{{.Cluster.ID}}:control-plane-internal-lb-target-group'
+    Value: !Ref ControlPlaneInternalLBTargetGroup
+{{- end }}
   MasterSecurityGroup:
     Export:
       Name: '{{.Cluster.ID}}:master-security-group'
@@ -2468,3 +3657,16 @@ Outputs:
     Export:
       Name: '{{ .Cluster.ID}}:etcd-encryption-key'
     Value: !Ref EtcdEncryptionKey
+{{- end}}
+  WorkerIAMRole:
+    Export:
+      Name: '{{.Cluster.ID}}:worker-iam-role'
+    Value: !Ref WorkerIAMRole
+  RemoteFilesEncryptionKey:
+    Export:
+      Name: '{{ .Cluster.ID}}:remote-files-encryption-key'
+    Value: !Ref RemoteFilesEncryptionKey
+  WorkerFilesEncryptionKey:
+    Export:
+      Name: '{{ .Cluster.ID}}:worker-files-encryption-key'
+    Value: !Ref WorkerFilesEncryptionKey

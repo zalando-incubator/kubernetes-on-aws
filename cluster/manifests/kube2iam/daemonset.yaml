@@ -21,7 +21,7 @@ spec:
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
-{{- if and (eq .Cluster.ConfigItems.kube2iam_worker_only "true") (eq .Cluster.ConfigItems.control_plane_asg_lifecycle_hook "false") }}
+{{- if eq .Cluster.ConfigItems.kube2iam_worker_only "true" }}
       nodeSelector:
         node.kubernetes.io/role: worker
 {{- end }}
@@ -38,13 +38,15 @@ spec:
         effect: NoExecute
       hostNetwork: true
       containers:
-      - image: container-registry.zalando.net/teapot/kube2iam:0.11.2-master-18.patched
+      - image: container-registry.zalando.net/teapot/kube2iam:0.12.0-master-22.patched
         name: kube2iam
         args:
         - --auto-discover-base-arn
         - --verbose
         - --node=$(NODE_NAME)
         env:
+        - name: AWS_DEFAULT_REGION
+          value: "{{.Cluster.Region}}"
         - name: NODE_NAME
           valueFrom:
             fieldRef:

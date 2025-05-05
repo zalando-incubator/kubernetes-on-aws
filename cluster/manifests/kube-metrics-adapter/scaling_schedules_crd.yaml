@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.16.5
   name: scalingschedules.zalando.org
 spec:
   group: zalando.org
@@ -14,6 +13,9 @@ spec:
     kind: ScalingSchedule
     listKind: ScalingScheduleList
     plural: scalingschedules
+    shortNames:
+    - sched
+    - schedule
     singular: scalingschedule
   scope: Namespaced
   versions:
@@ -25,18 +27,24 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: ScalingSchedule describes a namespaced time based metric to be
-          used in autoscaling operations.
+        description: |-
+          ScalingSchedule describes a namespaced time based metric to be used
+          in autoscaling operations.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -49,25 +57,30 @@ spec:
                 format: int64
                 type: integer
               schedules:
-                description: Schedules is the list of schedules for this ScalingSchedule
+                description: |-
+                  Schedules is the list of schedules for this ScalingSchedule
                   resource. All the schedules defined here will result on the value
-                  to the same metric. New metrics require a new ScalingSchedule resource.
+                  to the same metric. New metrics require a new ScalingSchedule
+                  resource.
                 items:
                   description: Schedule is the schedule details to be used inside
                     a ScalingSchedule.
                   properties:
                     date:
-                      description: Defines the starting date of a OneTime schedule.
-                        It has to be a RFC3339 formatted date.
+                      description: |-
+                        Defines the starting date of a OneTime schedule. It has to
+                        be a RFC3339 formatted date.
                       format: date-time
                       type: string
                     durationMinutes:
-                      description: The duration in minutes (default 0) that the configured
-                        value will be returned for the defined schedule.
+                      description: |-
+                        The duration in minutes (default 0) that the configured value will be
+                        returned for the defined schedule.
                       type: integer
                     endDate:
-                      description: Defines the ending date of a OneTime schedule.
-                        It must be a RFC3339 formatted date.
+                      description: |-
+                        Defines the ending date of a OneTime schedule. It must be
+                        a RFC3339 formatted date.
                       format: date-time
                       type: string
                     period:
@@ -97,8 +110,9 @@ spec:
                           pattern: (([0-1][0-9])|([2][0-3])):([0-5][0-9])
                           type: string
                         timezone:
-                          description: The location name corresponding to a file in
-                            the IANA Time Zone database, like Europe/Berlin.
+                          description: |-
+                            The location name corresponding to a file in the IANA
+                            Time Zone database, like Europe/Berlin.
                           type: string
                       required:
                       - days
@@ -106,7 +120,8 @@ spec:
                       - timezone
                       type: object
                     type:
-                      description: Defines if the schedule is a OneTime schedule or
+                      description: |-
+                        Defines if the schedule is a OneTime schedule or
                         Repeating one. If OneTime, date has to be defined. If Repeating,
                         Period has to be defined.
                       enum:
@@ -131,8 +146,9 @@ spec:
             properties:
               active:
                 default: false
-                description: Active is true if at least one of the schedules defined
-                  in the scaling schedule is currently active.
+                description: |-
+                  Active is true if at least one of the schedules defined in the
+                  scaling schedule is currently active.
                 type: boolean
             type: object
         required:
@@ -142,9 +158,3 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

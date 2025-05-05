@@ -3,6 +3,25 @@ pre_apply: []
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
+{{- if eq .Cluster.Provider "zalando-eks"}}
+- name: coredns
+  kind: Deployment
+  namespace: kube-system
+- name: coredns
+  kind: ConfigMap
+  namespace: kube-system
+{{- if ne .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
+- name: fis-experiment
+  kind: ClusterRoleBinding
+- name: fis-experiment
+  kind: ClusterRole
+# {{ range $namespace := split .Cluster.ConfigItems.eks_fis_namespaces "," }}
+- name: fis-experiment
+  kind: ServiceAccount
+  namespace: "{{ $namespace }}"
+# {{ end }}
+{{- end }}
+{{- end }}
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
   namespace: default
@@ -132,94 +151,6 @@ post_apply:
   namespace: kubenurse
   kind: Service
 {{- end }}
-# for karpenter >=v0.33.0 webhooks and settings configmaps have been removed
-# https://karpenter.sh/v0.32/upgrading/v1beta1-migration/#webhook-support-deprecated-in-favor-of-cel
-# https://karpenter.sh/v0.32/upgrading/v1beta1-migration/#global-settings
-- name: karpenter-logging-config
-  kind: ConfigMap
-  namespace: kube-system
-- name: karpenter-webhook
-  kind: ClusterRole
-- name: karpenter-webhook
-  kind: ClusterRoleBinding
-- name: karpenter-webhook
-  kind: ClusterRole
-- name: karpenter-webhook
-  kind: ClusterRoleBinding
-- name: karpenter-global-settings
-  kind: ConfigMap
-  namespace: kube-system
-- name: config-logging
-  kind: ConfigMap
-  namespace: kube-system
-- name: karpenter-cert
-  kind: Secret
-  namespace: kube-system
-- name: defaulting.webhook.karpenter.k8s.aws
-  kind: MutatingWebhookConfiguration
-- name: validation.webhook.karpenter.k8s.aws
-  kind: ValidatingWebhookConfiguration
-- name: validation.webhook.config.karpenter.sh
-  kind: ValidatingWebhookConfiguration
-- name: validation.webhook.karpenter.sh
-  kind: ValidatingWebhookConfiguration
-{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "false" }}
-- name: provisioners.karpenter.sh
-  kind: CustomResourceDefinition
-- name: awsnodetemplates.karpenter.k8s.aws
-  kind: CustomResourceDefinition
-- name: machines.karpenter.sh
-  kind: CustomResourceDefinition
-- name: karpenter
-  namespace: kube-system
-  kind: Deployment
-- name: nodepools.karpenter.sh
-  kind: CustomResourceDefinition
-- name: ec2nodeclasses.karpenter.k8s.aws
-  kind: CustomResourceDefinition
-- name: nodeclaims.karpenter.sh
-  kind: CustomResourceDefinition
-- name: karpenter
-  namespace: kube-system
-  kind: PodDisruptionBudget
-- name: karpenter
-  namespace: kube-system
-  kind: ServiceAccount
-- name: karpenter-admin
-  kind: ClusterRole
-- name: karpenter-core
-  kind: ClusterRole
-- name: karpenter-core
-  kind: ClusterRoleBinding
-- name: karpenter
-  kind: ClusterRole
-- name: karpenter
-  kind: ClusterRoleBinding
-- name: karpenter
-  namespace: kube-system
-  kind: Role
-- name: karpenter-dns
-  namespace: kube-system
-  kind: Role
-- name: karpenter-lease
-  namespace: kube-system
-  kind: Role
-- name: karpenter
-  namespace: kube-system
-  kind: RoleBinding
-- name: karpenter-dns
-  namespace: kube-system
-  kind: RoleBinding
-- name: karpenter-lease
-  namespace: kube-system
-  kind: RoleBinding
-- name: karpenter
-  namespace: kube-system
-  kind: Service
-- name: karpenter-vpa
-  namespace: kube-system
-  kind: VerticalPodAutoscaler
-{{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "false" }}
 - kind: ConfigMap
   name: open-policy-agent-config
@@ -296,11 +227,142 @@ post_apply:
   kind: Ingress
   namespace: kube-system
 
-{{ if ne .Cluster.ConfigItems.k8s_dashboard_enabled "true" }}
-- name: readonly-dashboard
-  kind: Role
+- name: skipper-canary-conrtroller
+  kind: CronJob
   namespace: kube-system
-- name: readonly-dashboard
-  kind: RoleBinding
+{{- if ne .Cluster.ConfigItems.s3_csi_driver "true" }}
+- name: s3.csi.aws.com
+  kind: CSIDriver
+- name: s3-csi-driver
+  kind: ServiceAccount
   namespace: kube-system
-{{ end }}
+- name: s3-csi-node
+  kind: DaemonSet
+  namespace: kube-system
+{{- end }}
+{{- if ne .Cluster.ConfigItems.role_sync_controller_enabled "true" }}
+- name: role-sync-controller
+  kind: CronJob
+  namespace: kube-system
+- name: role-sync-controller
+  kind: ClusterRole
+- name: role-sync-controller
+  kind: ClusterRoleBinding
+- name: role-sync-controller
+  kind: ServiceAccount
+  namespace: kube-system
+# secret-read role/bindings
+- name: cdp-deployer-poweruser-secret-read
+  kind: ClusterRoleBinding
+- name: deployment-service-executor-poweruser-secret-read
+  kind: ClusterRoleBinding
+{{- end }}
+{{- if ne .Cluster.ConfigItems.kube_janitor_enabled "true" }}
+- name: kube-janitor
+  kind: Deployment
+  namespace: kube-system
+- name: kube-janitor
+  kind: ConfigMap
+  namespace: kube-system
+- name: kube-janitor
+  kind: VerticalPodAutoscaler
+  namespace: kube-system
+- name: kube-janitor
+  kind: ServiceAccount
+  namespace: kube-system
+- name: kube-janitor
+  kind: ClusterRole
+- name: kube-janitor
+  kind: ClusterRoleBinding
+{{- end }}
+{{- if ne .Cluster.ConfigItems.wiz_enable_runtime_connector "true" }}
+- name: wiz-kubernetes-connector-create-connector
+  kind : Job
+  namespace: wiz
+- name: wiz-kubernetes-connector-delete-connector
+  kind : Job
+  namespace: wiz
+- name: wiz-auto-modify-connector
+  kind : ServiceAccount
+  namespace: wiz
+- name: wiz-auto-modify-connector
+  kind : Role
+  namespace: wiz
+- name: wiz-auto-modify-connector
+  kind : RoleBinding
+  namespace: wiz
+{{- end }}
+{{- if ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true" }}
+- name: wiz-connector-agent
+  kind : Deployment
+  namespace: wiz
+{{- end }}
+{{- if and (ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true") (ne .Cluster.ConfigItems.wiz_enable_runtime_connector "true") }}
+- name: wiz-connector-connector
+  kind : Secret
+  namespace: wiz
+- name: wiz-cluster-reader-token
+  kind : Secret
+  namespace: wiz
+- name: wiz-api-token
+  kind : Secret
+  namespace: wiz
+- name: wiz-cluster-reader
+  kind : ServiceAccount
+  namespace: wiz
+- name: wiz-cluster-reader
+  kind : ClusterRoleBinding
+  namespace: wiz
+- name: wiz-broker
+  kind : ServiceAccount
+  namespace: wiz
+{{- end }}
+{{- if ne .Cluster.ConfigItems.wiz_enable_runtime_sensor "true" }}
+- name: wiz-sensor
+  kind : DaemonSet
+  namespace: wiz
+- name: wiz-sensor
+  kind: ServiceAccount
+  namespace: wiz
+- name: wiz-sensor-apikey
+  kind: Secret
+  namespace: wiz
+- name: wiz-sensor
+  kind : ClusterRole
+  namespace: wiz
+- name: wiz-sensor
+  kind : ClusterRoleBinding
+  namespace: wiz
+{{- end }}
+{{- if and (ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true") (ne .Cluster.ConfigItems.wiz_enable_runtime_sensor "true") }}
+- name: wiz
+  kind: Namespace
+{{- end }}
+{{- if ne .Cluster.ConfigItems.aws_efa_device_plugin_enabled "true"}}
+- name: aws-efa-k8s-device-plugin
+  kind: DaemonSet
+  namespace: kube-system
+- name: aws-efa-k8s-device-plugin
+  kind: ServiceAccount
+  namespace: kube-system
+{{- end}}
+{{- if ne .Cluster.ConfigItems.kube_node_decommissioner_enabled "true"}}
+- name: kube-node-decommissioner
+  kind: CronJob
+  namespace: kube-system
+- name: kube-node-decommissioner
+  kind: ClusterRole
+- name: kube-node-decommissioner
+  kind: ClusterRoleBinding
+- name: kube-node-decommissioner
+  kind: ServiceAccount
+  namespace: kube-system
+{{- end}}
+{{- if eq .Cluster.Provider "zalando-eks"}}
+{{- if ne .Cluster.ConfigItems.aws_vpc_cni_custom_networking "true"}}
+- kind: ENIConfig
+  labels:
+    application: kubernetes
+    component: aws-node
+{{- end }}
+{{- end }}

@@ -7,6 +7,8 @@ metadata:
   labels:
     application: kubernetes
     component: kubenurse
+  annotations:
+    node-ready.cluster.zalando.org/exclude: "true"
   name: kubenurse
   namespace: kubenurse
 spec:
@@ -55,7 +57,7 @@ spec:
               value: "{{.Cluster.ConfigItems.network_monitoring_check_neighborhood}}"
             - name: KUBENURSE_HISTOGRAM_BUCKETS
               value: 0.005,0.05,0.5,1,5,10
-          image: "container-registry.zalando.net/teapot/kubenurse:v1.13.1-main-8.custom"
+          image: "container-registry.zalando.net/teapot/kubenurse:v1.14.4-main-12.custom"
           resources:
             requests:
               cpu: "{{.Cluster.ConfigItems.network_monitoring_daemonset_cpu}}"

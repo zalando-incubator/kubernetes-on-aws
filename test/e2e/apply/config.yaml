@@ -8,3 +8,33 @@ metadata:
 data:
   HOSTED_ZONE: "teapot-e2e.zalan.do"
   REGION: "eu-central-1"
+  AWS_REGION: "eu-central-1"
+  CLUSTER_DOMAIN: "teapot-e2e.zalan.do"
+  CLUSTER_DOMAIN_INTERNAL: "ingress.cluster.local"
+  RESULT_BUCKET: "teapot-kubernetes-e2e-results"
+  ETCD_ENDPOINTS: "https://etcd-server.etcd.teapot-e2e.zalan.do:2479"
+  SKIPPER_OPA_ENABLED: "true"
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    application: "{{{APPLICATION}}}"
+    component: "{{{COMPONENT}}}"
+  name: "{{{APPLICATION}}}-{{{COMPONENT}}}-config-provider-aws"
+data:
+  CLUSTER_PROVIDER: "zalando-aws"
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    application: "{{{APPLICATION}}}"
+    component: "{{{COMPONENT}}}"
+  name: "{{{APPLICATION}}}-{{{COMPONENT}}}-config-provider-eks"
+data:
+  CLUSTER_PROVIDER: "zalando-eks"

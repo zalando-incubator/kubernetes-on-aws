@@ -19,31 +19,6 @@ subjects:
   - kind: Group
     name: "okta:common/read-only"
     apiGroup: rbac.authorization.k8s.io
-{{ if ne .Cluster.ConfigItems.k8s_dashboard_enabled "true" }}
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: readonly-dashboard
-  namespace: kube-system
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: readonly-dashboard
-subjects:
-  - kind: Group
-    name: ReadOnly
-    apiGroup: rbac.authorization.k8s.io
-  - kind: Group
-    name: "okta:common/engineer"
-    apiGroup: rbac.authorization.k8s.io
-  - kind: Group
-    name: "okta:common/collaborator"
-    apiGroup: rbac.authorization.k8s.io
-  - kind: Group
-    name: "okta:common/read-only"
-    apiGroup: rbac.authorization.k8s.io
-{{ end }}
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1

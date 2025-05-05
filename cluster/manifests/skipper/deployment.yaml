@@ -1,31 +1,44 @@
-{{ $internal_version := "v0.21.198-1017" }}
-{{ $canary_internal_version := "v0.21.198-1017" }}
+{{/* image-updater-bot detects *image variables so use print to disable it for main image */}}
+
+{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.22.7-1117" }}
+{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.22.21-1130" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
 
+{{ $cluster_internal_cidrs := list "10.2.0.0/15" .Values.vpc_ipv4_cidr }}
+{{ if eq .Cluster.Provider "zalando-eks" }}
+{{ if eq .Cluster.ConfigItems.eks_ip_family "ipv6" }}
+{{ $cluster_internal_cidrs = append .Values.vpc_ipv6_cidrs .Values.vpc_ipv4_cidr }}
+{{ else }}
+{{ $cluster_internal_cidrs = list .Values.vpc_ipv4_cidr }}
+{{ end }}
+{{ end }}
+
 {{ template "skipper-ingress" dict
   "name" "skipper-ingress"
-  "internal_version" $internal_version
+  "image" $main_image
 
   "Cluster" .Cluster
   "Values" .Values
+  "cluster_internal_cidrs" $cluster_internal_cidrs
 }}
 
 {{ if eq .Cluster.ConfigItems.skipper_ingress_canary_enabled "true" }}
 {{ template "skipper-ingress" dict
   "name" "skipper-ingress-canary"
-  "internal_version" $canary_internal_version
+  "image" $canary_image
   "replicas" 1
   "args" $canary_args
 
   "Cluster" .Cluster
   "Values" .Values
+  "cluster_internal_cidrs" $cluster_internal_cidrs
 }}
 {{ end }}
 
 {{ define "skipper-ingress" }}
-{{ $version := index (split .internal_version "-") 0 }}
+{{ $version := index (split (index (split .image ":") 1) "-") 0 }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -65,8 +78,8 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "9911"
         prometheus.io/scrape: "true"
-{{- if eq .Cluster.ConfigItems.skipper_topology_spread_enabled "true" }}
-        zalando.org/topology-spread-timeout: 7m
+{{- if and (eq .Cluster.ConfigItems.skipper_topology_spread_enabled "true") (ne .Cluster.ConfigItems.skipper_topology_spread_timeout "0")}}
+        zalando.org/topology-spread-timeout: {{ .Cluster.ConfigItems.skipper_topology_spread_timeout }}
 {{- end }}
     spec:
 {{- if eq .Cluster.ConfigItems.skipper_topology_spread_enabled "true" }}
@@ -76,7 +89,8 @@ spec:
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              deployment: skipper-ingress
+              component: ingress
+              application: skipper-ingress
 {{- end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
@@ -85,7 +99,7 @@ spec:
       hostNetwork: true
       containers:
       - name: skipper-ingress
-        image: container-registry.zalando.net/teapot/skipper-internal:{{ .internal_version }}
+        image: "{{ .image }}"
         terminationMessagePolicy: FallbackToLogsOnError
         ports:
         - name: ingress-port
@@ -157,6 +171,7 @@ spec:
 {{ else }}
           - "-kubernetes"
           - "-kubernetes-in-cluster"
+          - "-kubernetes-healthcheck=false" # see -inline-routes
           - "-kubernetes-path-mode=path-prefix"
           - "-kubernetes-backend-traffic-algorithm={{ .Cluster.ConfigItems.skipper_ingress_backend_traffic_algorithm }}"
           - "-kubernetes-default-lb-algorithm={{ .Cluster.ConfigItems.skipper_ingress_default_lb_algorithm }}"
@@ -168,8 +183,11 @@ spec:
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
-          - "-reverse-source-predicate"
+          - '-kubernetes-east-west-range-predicates=ClientIP("{{ .cluster_internal_cidrs | join `","` }}")'
+          - '-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}'
+          - '-kubernetes-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_filters_append }}'
+          - '-kubernetes-east-west-range-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_predicates }}'
+          - '-kubernetes-east-west-range-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_filters_append }}'
 {{ end }}
           - "-proxy-preserve-host"
           - "-compress-encodings={{ .Cluster.ConfigItems.skipper_compress_encodings }}"
@@ -177,6 +195,8 @@ spec:
           - "-serve-method-metric={{ .Cluster.ConfigItems.skipper_serve_method_metric }}"
           - "-serve-status-code-metric={{ .Cluster.ConfigItems.skipper_serve_status_code_metric }}"
           - "-serve-host-counter"
+          - "-combined-response-metrics={{ .Cluster.ConfigItems.skipper_combined_response_metrics }}"
+          - "-backend-host-metrics={{ .Cluster.ConfigItems.skipper_backend_host_metrics }}"
           - "-disable-metrics-compat"
           - "-enable-profile"
           - "-memory-profile-rate={{ .Cluster.ConfigItems.skipper_memory_profile_rate }}"
@@ -225,7 +245,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=container-registry.zalando.net/teapot/skipper-internal:{{ .internal_version }}
+            tag=artifact={{ .image }}
             max-buffered-spans={{ .Cluster.ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .Cluster.ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .Cluster.ConfigItems.skipper_ingress_lightstep_max_period }}
@@ -250,6 +270,8 @@ spec:
           - "-idle-timeout-server={{ .Cluster.ConfigItems.skipper_idle_timeout_server }}"
           - "-read-timeout-server={{ .Cluster.ConfigItems.skipper_read_timeout_server }}"
           - "-write-timeout-server={{ .Cluster.ConfigItems.skipper_write_timeout_server }}"
+          - "-keepalive-server={{ .Cluster.ConfigItems.skipper_keepalive_server }}"
+          - "-keepalive-requests-server={{ .Cluster.ConfigItems.skipper_keepalive_requests_server }}"
           - "-lua-sources={{ .Cluster.ConfigItems.skipper_lua_sources }}"
           - "-disabled-filters={{ .Cluster.ConfigItems.skipper_disabled_filters }}"
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
@@ -298,11 +320,22 @@ spec:
 {{ end }}
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
-          - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
+          - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
 {{ end }}
-{{ if .Cluster.ConfigItems.skipper_ingress_inline_routes }}
-          - "-inline-routes={{ .Cluster.ConfigItems.skipper_ingress_inline_routes }}"
-{{ end }}
+          - "-inline-routes"
+          - |
+            kube__healthz_down: Path("/kube-system/healthz") && Shutdown()
+              && SourceFromLast("{{ .cluster_internal_cidrs | join `","` }}", "10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12", "127.0.0.1/8", "fd00::/8", "::1/128")
+              -> disableAccessLog()
+              -> status(503)
+              -> <shunt>;
+            kube__healthz_up: Path("/kube-system/healthz")
+              && SourceFromLast("{{ .cluster_internal_cidrs | join `","` }}", "10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12", "127.0.0.1/8", "fd00::/8", "::1/128")
+              -> disableAccessLog()
+              -> status(200)
+              -> <shunt>;
+            {{ .Cluster.ConfigItems.skipper_ingress_inline_routes }}
+
 {{ if .Cluster.ConfigItems.skipper_ingress_health_check_options }}
           - "-passive-health-check={{ .Cluster.ConfigItems.skipper_ingress_health_check_options }}"
 {{ end }}
@@ -444,7 +477,7 @@ spec:
 {{ end }}
 
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "false" }}
-{{ $version := index (split $internal_version "-") 0 }}
+{{ $main_version := index (split (index (split $main_image ":") 1) "-") 0 }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -453,7 +486,7 @@ metadata:
   namespace: kube-system
   labels:
     application: skipper-ingress
-    version: {{ $version }}
+    version: "{{ $main_version }}"
     component: routesrv
 spec:
   strategy:
@@ -469,7 +502,7 @@ spec:
       labels:
         deployment: skipper-ingress-routesrv
         application: skipper-ingress
-        version: {{ $version }}
+        version: "{{ $main_version }}"
         component: routesrv
       annotations:
         config/hash: {{"secret.yaml" | manifestHash}}
@@ -513,7 +546,7 @@ spec:
 {{- end }}
       containers:
       - name: routesrv
-        image: container-registry.zalando.net/teapot/skipper:{{ $version }}
+        image: container-registry.zalando.net/teapot/skipper:{{ $main_version }}
         terminationMessagePolicy: FallbackToLogsOnError
         ports:
         - name: ingress-port
@@ -522,6 +555,7 @@ spec:
         args:
           - "routesrv"
           - "-application-log-level={{ .Cluster.ConfigItems.skipper_routesrv_log_level }}"
+          - "-enable-profile"
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-path-mode=path-prefix"
@@ -531,8 +565,15 @@ spec:
           - "-enable-kubernetes-endpointslices={{ .Cluster.ConfigItems.skipper_endpointslices_enabled }}"
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6")}}
+          - "-whitelisted-healthcheck-cidr={{ .Values.subnet_ipv6_cidrs }}"
+{{- end }}
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - "-kubernetes-east-west-range-predicates=ClientIP(\"10.2.0.0/15\", \"{{ .Values.vpc_ipv4_cidr }}\")"
+          - '-kubernetes-east-west-range-predicates=ClientIP("{{ $cluster_internal_cidrs | join `","` }}")'
+          - '-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}'
+          - '-kubernetes-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_filters_append }}'
+          - '-kubernetes-east-west-range-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_predicates }}'
+          - '-kubernetes-east-west-range-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_filters_append }}'
           - "-reverse-source-predicate"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
@@ -555,7 +596,7 @@ spec:
 {{ end }}
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
-          - "-forwarded-headers-exclude-cidrs=10.2.0.0/15,{{ .Values.vpc_ipv4_cidr}}"
+          - '-forwarded-headers-exclude-cidrs={{ $cluster_internal_cidrs | join "," }}'
 {{ end }}
           - >-
             -opentracing=lightstep
@@ -567,7 +608,7 @@ spec:
             tag=component=routesrv
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=container-registry.zalando.net/teapot/skipper:{{ $version }}
+            tag=artifact=container-registry.zalando.net/teapot/skipper:{{ $main_version }}
             max-buffered-spans={{ .Cluster.ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .Cluster.ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period=2500ms

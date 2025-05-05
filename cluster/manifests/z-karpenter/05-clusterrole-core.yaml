@@ -1,6 +1,5 @@
-{{ if eq .Cluster.ConfigItems.karpenter_pools_enabled "true" }}
 ---
-# Source: karpenter/templates/05-clusterrole-core.yaml
+# Source: karpenter/templates/clusterrole-core.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -17,7 +16,7 @@ rules:
     resources: ["pods", "nodes", "persistentvolumes", "persistentvolumeclaims", "replicationcontrollers", "namespaces"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["storage.k8s.io"]
-    resources: ["storageclasses", "csinodes"]
+    resources: ["storageclasses", "csinodes", "volumeattachments"]
     verbs: ["get", "watch", "list"]
   - apiGroups: ["apps"]
     resources: ["daemonsets", "deployments", "replicasets", "statefulsets"]
@@ -25,6 +24,9 @@ rules:
   - apiGroups: ["policy"]
     resources: ["poddisruptionbudgets"]
     verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", list, "watch"]
   # Write
   - apiGroups: ["karpenter.sh"]
     resources: ["nodeclaims", "nodeclaims/status"]
@@ -37,12 +39,15 @@ rules:
     verbs: ["create", "patch"]
   - apiGroups: [""]
     resources: ["nodes"]
-    verbs: ["patch", "delete"]
+    verbs: ["patch", "delete", "update"]
   - apiGroups: [""]
     resources: ["pods/eviction"]
     verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["delete"]
 ---
-# Source: karpenter/templates/05-clusterrole-core.yaml
+# Source: karpenter/templates/clusterrole-core.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -58,4 +63,3 @@ subjects:
   - kind: ServiceAccount
     name: karpenter
     namespace: kube-system
-{{end}}

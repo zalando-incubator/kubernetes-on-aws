@@ -1,3 +1,5 @@
+# TODO: what to do with kube-proxy for eks?
+{{- if ne .Cluster.Provider "zalando-eks"}}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -8,7 +10,7 @@ metadata:
     component: flannel
 spec:
   updateStrategy:
-    type: RollingUpdate
+    type: OnDelete
   selector:
     matchLabels:
       daemonset: kube-flannel
@@ -37,18 +39,28 @@ spec:
             memory: 50Mi
       containers:
       - name: delayed-install-cni
-        image: container-registry.zalando.net/teapot/flannel-awaiter:master-14
+        image: container-registry.zalando.net/teapot/flannel-awaiter:master-16
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         command:
         - /await
+        {{- if eq .Cluster.ConfigItems.flannel_awaiter_check_only_older_nodes "true" }}
+        args:
+        - "--own-node-name=$(NODE_NAME)"
+        - "--timeout=30s"
+        {{- end }}
         stdin: true
         resources:
           requests:
             cpu: "{{ .Cluster.ConfigItems.flannel_awaiter_cpu }}"
-            memory: "{{ .Cluster.ConfigItems.flannel_awaiter_memory }}"
+            memory: "{{ .Cluster.ConfigItems.flannel_awaiter_memory_request }}"
             ephemeral-storage: 256Mi
           limits:
             cpu: "{{ .Cluster.ConfigItems.flannel_awaiter_cpu }}"
-            memory: "{{ .Cluster.ConfigItems.flannel_awaiter_memory }}"
+            memory: "{{ .Cluster.ConfigItems.flannel_awaiter_memory_limit }}"
         startupProbe:
           exec:
             command:
@@ -57,7 +69,7 @@ spec:
           failureThreshold: 30
           periodSeconds: 10
       - name: kube-flannel
-        image: container-registry.zalando.net/teapot/flannel:v0.25.5-master-28
+        image: container-registry.zalando.net/teapot/flannel:v0.26.6-master-37
         command:
         - /opt/bin/flanneld
         args:
@@ -78,11 +90,11 @@ spec:
         resources:
           requests:
             cpu: "{{ .Cluster.ConfigItems.flannel_cpu }}"
-            memory: "{{ .Cluster.ConfigItems.flannel_memory }}"
+            memory: "{{ .Cluster.ConfigItems.flannel_memory_request }}"
             ephemeral-storage: 256Mi
           limits:
             cpu: "{{ .Cluster.ConfigItems.flannel_cpu }}"
-            memory: "{{ .Cluster.ConfigItems.flannel_memory }}"
+            memory: "{{ .Cluster.ConfigItems.flannel_memory_limit }}"
         readinessProbe:
           httpGet:
             host: 127.0.0.1
@@ -100,7 +112,7 @@ spec:
         - /tc-flannel.sh
         command:
         - /bin/bash
-        image: container-registry.zalando.net/teapot/flannel-tc:master-12
+        image: container-registry.zalando.net/teapot/flannel-tc:master-13
         name: flannel-tc
         resources:
           requests:
@@ -135,3 +147,4 @@ spec:
           path: /lib/tc
           type: ""
         name: lib-tc
+{{- end}}

@@ -1,3 +1,5 @@
+# TODO: what to do with kube-proxy for eks?
+{{- if ne .Cluster.Provider "zalando-eks"}}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -60,11 +62,11 @@ spec:
         resources:
           requests:
             cpu: {{.Cluster.ConfigItems.kube_proxy_cpu}}
-            memory: {{.Cluster.ConfigItems.kube_proxy_memory}}
+            memory: {{.Cluster.ConfigItems.kube_proxy_memory_request}}
             ephemeral-storage: 256Mi
           limits:
             cpu: {{.Cluster.ConfigItems.kube_proxy_cpu}}
-            memory: {{.Cluster.ConfigItems.kube_proxy_memory}}
+            memory: {{.Cluster.ConfigItems.kube_proxy_memory_limit}}
         volumeMounts:
         - name: kube-api-token
           mountPath: /var/run/secrets/kubernetes.io/serviceaccount
@@ -82,3 +84,4 @@ spec:
       - name: kube-proxy-config
         configMap:
           name: kube-proxy-config
+{{- end}}
