@@ -1,0 +1,79 @@
+# {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aws-load-balancer-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: aws-load-balancer-controller
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      deployment: aws-load-balancer-controller
+  template:
+    metadata:
+      labels:
+        application: kubernetes
+        component: aws-load-balancer-controller
+        deployment: aws-load-balancer-controller
+    spec:
+      containers:
+      - args:
+        - "--aws-region={{.Cluster.Region}}"
+        - "--aws-vpc-id={{.Cluster.ConfigItems.vpc_id}}"
+        - "--cluster-name={{.Cluster.Name}}"
+        - --feature-gates=ServiceTypeLoadBalancerOnly=true
+        - --webhook-cert-file=admission-controller.pem
+        - --webhook-key-file=admission-controller-key.pem
+        - --default-ssl-policy=ELBSecurityPolicy-TLS13-1-2-2021-06
+        - --default-load-balancer-scheme=internet-facing
+        - --default-target-type=ip
+        image: container-registry.zalando.net/teapot/aws-load-balancer-controller:v2.12.0-main-2.patched
+        livenessProbe:
+          failureThreshold: 2
+          httpGet:
+            path: /healthz
+            port: 61779
+            scheme: HTTP
+          initialDelaySeconds: 30
+          timeoutSeconds: 10
+        name: controller
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        resources:
+          limits:
+            cpu: {{ .Cluster.ConfigItems.aws_load_balancer_controller_cpu }}
+            memory: {{ .Cluster.ConfigItems.aws_load_balancer_controller_mem_max }}
+          requests:
+            cpu: {{ .Cluster.ConfigItems.aws_load_balancer_controller_cpu }}
+            memory: {{ .Cluster.ConfigItems.aws_load_balancer_controller_mem_max }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+      priorityClassName: system-cluster-critical
+      securityContext:
+        fsGroup: 1337
+      serviceAccountName: aws-load-balancer-controller
+      terminationGracePeriodSeconds: 10
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - topologyKey: topology.kubernetes.io/zone
+            labelSelector:
+              matchLabels:
+                deployment: aws-load-balancer-controller
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: admission-controller-tls-certs
+# {{- end }}
