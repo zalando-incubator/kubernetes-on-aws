@@ -7,6 +7,8 @@ metadata:
   name: wiz-sensor
   labels:
     helm.sh/chart: wiz-sensor-1.0.6440
+    image/tag: v1
+    dsimage/tag: v1
     application: "wiz"
     component: "sensor"
     daemonset: "wiz-sensor"
@@ -23,6 +25,8 @@ spec:
     metadata:
       labels:
         helm.sh/chart: wiz-sensor-1.0.6440
+        image/tag: v1
+        dsimage/tag: v1
         application: "wiz"
         component: "sensor"
         daemonset: "wiz-sensor"
@@ -131,6 +135,10 @@ spec:
           value: info
         - name: STDOUT_LOG
           value: error
+        - name: POD_IMAGE_TAG
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['image/tag']
         - name: POD_MEM_LIMITS
           valueFrom:
             resourceFieldRef:
