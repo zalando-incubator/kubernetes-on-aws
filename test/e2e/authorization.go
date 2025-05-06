@@ -601,6 +601,7 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 			nonSystemResource = examplePod(f.Namespace.Name, nil)
 		})
 
+		// TODO: see remarks below about privileged acceess / engineer role. Let's rename this to "admin" access to avoid any confusion.
 		g.Context("as privileged user", func() {
 			var client *kubernetes.Clientset
 
@@ -669,6 +670,34 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 			})
 		})
 
+		// TODO: this is for manual/ememergency access (to be consistent let's rename it to "privleged" because this si now called "privielegd access" by the IAM team)
+		g.Context("as engineer user", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getEngineerClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			// these tests are similar to the ones for unprivileged (let's think about that) (also see remarks of the first test in the block below)
+			g.It("should allow write access in user namespace", func() {
+				_, err := client.CoreV1().Pods(nonSystemResource.Namespace).Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", nonSystemResource.Name, nonSystemResource.Namespace)
+			})
+
+			g.It("should deny write access in collaborator namespace", func() {
+				_, err := client.CoreV1().Pods(collaboratorResource.Namespace).Create(context.Background(), collaboratorResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
+			})
+
+			g.It("should deny write access in system namespace", func() {
+				_, err := client.CoreV1().Pods(systemResource.Namespace).Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
+			})
+		})
+
 		g.Context("as unprivileged user", func() {
 			var client *kubernetes.Clientset
 
@@ -679,6 +708,7 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				framework.ExpectNoError(err)
 			})
 
+			// TODO: is that correct?? We use "readonly" as the role in the test case, why should this be able to delete something?
 			g.It("should allow write access in user namespace", func() {
 				_, err := client.CoreV1().Pods(nonSystemResource.Namespace).Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{"All"}})
 				framework.ExpectNoError(err, "failed to create pod: %s in namespace: %s", nonSystemResource.Name, nonSystemResource.Namespace)
@@ -730,6 +760,72 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 			g.It("should allow write access for system resources", func() {
 				err := client.RbacV1().ClusterRoles().Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
 				framework.ExpectNoError(err, "failed to delete cluster role: %s", systemResource.Name)
+			})
+		})
+
+		g.Context("as collaborator user", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getCollaboratorClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should allow write access for non-system resources", func() {
+				err := client.RbacV1().ClusterRoles().Delete(context.Background(), nonSystemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to delete cluster role: %s", nonSystemResource.Name)
+			})
+
+			g.It("should deny write access for system resources", func() {
+				err := client.RbacV1().ClusterRoles().Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
+			})
+
+			// test specific namespaces
+
+			g.It("should deny deletion of kube-system namespace", func() {
+				err := client.CoreV1().Namespaces().Delete(context.Background(), "kube-system", metav1.DeleteOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
+			})
+
+			g.It("should deny deletion of visibility namespace", func() {
+				err := client.CoreV1().Namespaces().Delete(context.Background(), "visibility", metav1.DeleteOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to delete cluster role: %s", nonSystemResource.Name)
+			})
+		})
+
+		g.Context("as engineer user", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getEngineerClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should allow write access for non-system resources", func() {
+				err := client.RbacV1().ClusterRoles().Delete(context.Background(), nonSystemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to delete cluster role: %s", nonSystemResource.Name)
+			})
+
+			g.It("should deny write access for system resources", func() {
+				err := client.RbacV1().ClusterRoles().Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
+			})
+
+			// test specific namespaces
+
+			g.It("should deny deletion of kube-system namespace", func() {
+				err := client.CoreV1().Namespaces().Delete(context.Background(), "kube-system", metav1.DeleteOptions{DryRun: []string{"All"}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
+			})
+
+			g.It("should deny deletion of visibility namespace", func() {
+				err := client.CoreV1().Namespaces().Delete(context.Background(), "visibility", metav1.DeleteOptions{DryRun: []string{"All"}})
+				framework.ExpectNoError(err, "failed to delete cluster role: %s", nonSystemResource.Name)
 			})
 		})
 
@@ -863,6 +959,11 @@ func getPrivilegedClient(cluster *types.Cluster, awsAccountID string) (*kubernet
 // getCollaboratorClient returns a client with the `zalando:collaborator` group.
 func getCollaboratorClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
 	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-collaborator-role", awsAccountID, aws.ToString(cluster.Name)))
+}
+
+// getEngineerClient returns a client with the `zalando:engineer` group.
+func getEngineerClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
+	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-engineer-role", awsAccountID, aws.ToString(cluster.Name)))
 }
 
 // getUnprivilegedClient returns a client with the `zalando:readonly` group.
