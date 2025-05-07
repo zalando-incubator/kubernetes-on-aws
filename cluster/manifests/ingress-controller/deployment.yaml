@@ -8,7 +8,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-ingress-aws-controller
-    version: "{{ $version }}"
+    version: v0.15.35-12-geadee29-dirty
 spec:
   replicas: 1
   selector:
@@ -18,7 +18,7 @@ spec:
     metadata:
       labels:
         application: kube-ingress-aws-controller
-        version: "{{ $version }}"
+        version: v0.15.35-12-geadee29-dirty
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "controller", "parser": "keyValue"}]
@@ -35,7 +35,7 @@ spec:
       serviceAccountName: kube-ingress-aws-controller
       containers:
         - name: controller
-          image: "{{ $image }}"
+          image: container-registry-test.zalando.net/gwproxy/kube-ingress-aws-controller-test:v0.15.35-12-geadee29-dirty
           args:
             - --target-access-mode=HostPort
             - --stack-termination-protection
