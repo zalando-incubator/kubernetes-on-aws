@@ -964,7 +964,7 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 
 // getAdminClient returns a client with the `zalando:administrator` group.
 func getAdminClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
-	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-privileged-role", awsAccountID, aws.ToString(cluster.Name)))
+	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-administrator-role", awsAccountID, aws.ToString(cluster.Name)))
 }
 
 // getCollaboratorClient returns a client with the `zalando:collaborator` group.
@@ -979,7 +979,7 @@ func getEngineerClient(cluster *types.Cluster, awsAccountID string) (*kubernetes
 
 // getReadOnlyClient returns a client with the `zalando:readonly` group.
 func getReadOnlyClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
-	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-unprivileged-role", awsAccountID, aws.ToString(cluster.Name)))
+	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-read-only-role", awsAccountID, aws.ToString(cluster.Name)))
 }
 
 // getPostgresAdministratorClient returns a client with the `zalando:postgres-admin` group.
