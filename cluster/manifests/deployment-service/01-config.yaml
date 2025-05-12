@@ -31,3 +31,10 @@ data:
   cloudformation-update-source-branch-changes: "{{.Cluster.ConfigItems.deployment_service_cf_update_source_branch_changes}}"
   skip-mustache: "{{.Cluster.ConfigItems.deployment_service_skip_mustache_rendering}}"
   cleanup-namespace-prefix: "d-"
+{{- if eq .Cluster.Provider "zalando-eks" }}
+  pgview-url: "https://pgview-{{.Cluster.Alias}}.{{.Cluster.AccountName}}.zalan.do"
+  pgui-url: "https://pgui-{{.Cluster.Alias}}.{{.Cluster.AccountName}}.zalan.do"
+{{- else }}
+  pgview-url: "https://pgview.{{.Cluster.AccountName}}.zalan.do"
+  pgui-url: "https://pgui.{{.Cluster.AccountName}}.zalan.do"
+{{- end }}
