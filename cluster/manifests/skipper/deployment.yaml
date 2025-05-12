@@ -326,11 +326,17 @@ spec:
           - |
             kube__healthz_down: Path("/kube-system/healthz") && Shutdown()
               && SourceFromLast("{{ .cluster_internal_cidrs | join `","` }}", "10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12", "127.0.0.1/8", "fd00::/8", "::1/128")
+{{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
+              -> annotate("iam.zalando.org/public", "Healthcheck route access is restricted by IP")
+{{ end }}
               -> disableAccessLog()
               -> status(503)
               -> <shunt>;
             kube__healthz_up: Path("/kube-system/healthz")
               && SourceFromLast("{{ .cluster_internal_cidrs | join `","` }}", "10.0.0.0/8", "192.168.0.0/16", "172.16.0.0/12", "127.0.0.1/8", "fd00::/8", "::1/128")
+{{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
+              -> annotate("iam.zalando.org/public", "Healthcheck route access is restricted by IP")
+{{ end }}
               -> disableAccessLog()
               -> status(200)
               -> <shunt>;
