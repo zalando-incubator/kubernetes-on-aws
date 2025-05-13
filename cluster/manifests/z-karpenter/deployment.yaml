@@ -50,7 +50,7 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: true
-          image: "container-registry.zalando.net/teapot/karpenter:1.3.2-main-36.patched"
+          image: "container-registry.zalando.net/teapot/karpenter:1.4.0-main-38.patched"
           imagePullPolicy: IfNotPresent
           env:
             - name: KUBERNETES_MIN_VERSION
@@ -88,13 +88,15 @@ spec:
                   divisor: "0"
                   resource: limits.memory
             - name: FEATURE_GATES
-              value: "Drift=false,SpotToSpotConsolidation=true"
+              value: "Drift=false,SpotToSpotConsolidation=true,NodeRepair=false"
             - name: BATCH_MAX_DURATION
               value: "10s"
             - name: BATCH_IDLE_DURATION
               value: "1s"
             - name: ASSUME_ROLE_DURATION
               value: "15m"
+            - name: PREFERENCE_POLICY
+              value: "Respect"
             - name: CLUSTER_NAME
               value: "{{.Cluster.Name }}"
             - name: VM_MEMORY_OVERHEAD_PERCENT
