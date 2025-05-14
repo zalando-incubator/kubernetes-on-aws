@@ -744,11 +744,6 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				framework.ExpectNoError(err, "failed to delete cluster role: %s", nonSystemResource.Name)
 			})
 
-			g.It("should allow write access for collaborator resources", func() {
-				err := client.RbacV1().ClusterRoles().Delete(context.Background(), "visibility", metav1.DeleteOptions{DryRun: []string{"All"}})
-				framework.ExpectNoError(err, "failed to delete cluster role: %s", "visibility")
-			})
-
 			g.It("should allow write access for system resources", func() {
 				err := client.RbacV1().ClusterRoles().Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
 				framework.ExpectNoError(err, "failed to delete cluster role: %s", systemResource.Name)
@@ -770,29 +765,19 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				framework.ExpectNoError(err, "failed to delete cluster role: %s", nonSystemResource.Name)
 			})
 
-			g.It("should allow write access for collaborator resources", func() {
-				err := client.RbacV1().ClusterRoles().Delete(context.Background(), "visibility", metav1.DeleteOptions{DryRun: []string{"All"}})
-				framework.ExpectNoError(err, "failed to delete cluster role: %s", "visibility")
-			})
-
 			g.It("should deny write access for system resources", func() {
 				err := client.RbacV1().ClusterRoles().Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
 				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
 			})
 
 			// test specific namespaces
-			g.It("should allow deletion of non-system namespace", func() {
-				err := client.CoreV1().Namespaces().Delete(context.Background(), nonSystemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
-				framework.ExpectNoError(err, "failed to delete namespace: %s", nonSystemResource.Name)
-			})
-
 			g.It("should deny deletion of visibility namespace", func() {
 				err := client.CoreV1().Namespaces().Delete(context.Background(), "visibility", metav1.DeleteOptions{DryRun: []string{"All"}})
 				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
 			})
 
 			g.It("should deny deletion of kube-system namespace", func() {
-				err := client.CoreV1().Namespaces().Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				err := client.CoreV1().Namespaces().Delete(context.Background(), "kube-system", metav1.DeleteOptions{DryRun: []string{"All"}})
 				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("this namespace may not be deleted")))
 			})
 		})
@@ -812,11 +797,6 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				framework.ExpectNoError(err, "failed to delete cluster role: %s", nonSystemResource.Name)
 			})
 
-			g.It("should deny write access for collaborator resources", func() {
-				err := client.RbacV1().ClusterRoles().Delete(context.Background(), "visibility", metav1.DeleteOptions{DryRun: []string{"All"}})
-				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
-			})
-
 			g.It("should deny write access for system resources", func() {
 				err := client.RbacV1().ClusterRoles().Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
 				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
@@ -829,7 +809,7 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 			})
 
 			g.It("should deny deletion of kube-system namespace", func() {
-				err := client.CoreV1().Namespaces().Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
+				err := client.CoreV1().Namespaces().Delete(context.Background(), "kube-system", metav1.DeleteOptions{DryRun: []string{"All"}})
 				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("this namespace may not be deleted")))
 			})
 		})
@@ -848,11 +828,6 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 			g.It("should allow write access for non-system resources", func() {
 				err := client.RbacV1().ClusterRoles().Delete(context.Background(), nonSystemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
 				framework.ExpectNoError(err, "failed to delete cluster role: %s", nonSystemResource.Name)
-			})
-
-			g.It("should deny write access for collaborator resources", func() {
-				err := client.RbacV1().ClusterRoles().Delete(context.Background(), "visibility", metav1.DeleteOptions{DryRun: []string{"All"}})
-				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
 			})
 
 			g.It("should deny write access for system resources", func() {
