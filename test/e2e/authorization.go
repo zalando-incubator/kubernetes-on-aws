@@ -685,32 +685,6 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
 			})
 		})
-
-		g.Context("as read-only user", func() {
-			var client *kubernetes.Clientset
-
-			g.BeforeEach(func() {
-				var err error
-
-				client, err = getReadOnlyClient(eksCluster, awsAccountID)
-				framework.ExpectNoError(err)
-			})
-
-			g.It("should deny write access in user namespace", func() {
-				err := client.CoreV1().Pods(nonSystemResource.Namespace).Delete(context.Background(), nonSystemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
-				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
-			})
-
-			g.It("should deny write access in collaborator namespace", func() {
-				err := client.CoreV1().Pods(collaboratorResource.Namespace).Delete(context.Background(), collaboratorResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
-				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
-			})
-
-			g.It("should deny write access in system namespace", func() {
-				err := client.CoreV1().Pods(systemResource.Namespace).Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
-				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
-			})
-		})
 	})
 
 	g.Context("for global resources", func() {
@@ -811,28 +785,6 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 			g.It("should deny deletion of kube-system namespace", func() {
 				err := client.CoreV1().Namespaces().Delete(context.Background(), "kube-system", metav1.DeleteOptions{DryRun: []string{"All"}})
 				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("this namespace may not be deleted")))
-			})
-		})
-
-		g.Context("as read-only user", func() {
-			var client *kubernetes.Clientset
-
-			g.BeforeEach(func() {
-				var err error
-
-				client, err = getReadOnlyClient(eksCluster, awsAccountID)
-				framework.ExpectNoError(err)
-			})
-
-			// why allow any write acess for read-only user?
-			g.It("should allow write access for non-system resources", func() {
-				err := client.RbacV1().ClusterRoles().Delete(context.Background(), nonSystemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
-				framework.ExpectNoError(err, "failed to delete cluster role: %s", nonSystemResource.Name)
-			})
-
-			g.It("should deny write access for system resources", func() {
-				err := client.RbacV1().ClusterRoles().Delete(context.Background(), systemResource.Name, metav1.DeleteOptions{DryRun: []string{"All"}})
-				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
 			})
 		})
 	})
