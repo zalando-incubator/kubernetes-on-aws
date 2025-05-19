@@ -1,0 +1,209 @@
+---
+# Source: flink-kubernetes-operator/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flink-operator
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: flink-operator
+    app.kubernetes.io/name: flink-kubernetes-operator
+    app.kubernetes.io/version: "1.10.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: flink-kubernetes-operator-1.10.0
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - services
+      - configmaps
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+      - deletecollection
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - get
+      - watch
+      - list
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - deployments/scale
+      #     - deployments/finalizers CDP users doesn't have permission for this one
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - extensions
+    resources:
+      - deployments
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - flink.apache.org
+    resources:
+      - flinkdeployments
+      #      - flinkdeployments/finalizers
+      - flinksessionjobs
+      #      - flinksessionjobs/finalizers
+      - flinkstatesnapshots
+      - flinkstatesnapshots/status
+    #      - flinkstatesnapshots/finalizers
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - flink.apache.org
+    resources:
+      - flinkdeployments/status
+      - flinksessionjobs/status
+    verbs:
+      - get
+      - update
+      - patch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+---
+# Source: flink-kubernetes-operator/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: flink-operator-role-binding
+  namespace: "{{NAMESPACE}}"
+  labels:
+    app.kubernetes.io/name: flink-kubernetes-operator
+    app.kubernetes.io/version: "1.10.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: flink-kubernetes-operator-1.10.0
+    application: "{{{APPLICATION}}}"
+    component: "{{{COMPONENT}}}"
+roleRef:
+  kind: ClusterRole
+  name: flink-operator
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: flink-operator
+    namespace: "{{NAMESPACE}}"
+---
+# Source: flink-kubernetes-operator/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: flink
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: flink-operator
+    app.kubernetes.io/name: flink-kubernetes-operator
+    app.kubernetes.io/version: "1.10.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: flink-kubernetes-operator-1.10.0
+  annotations:
+    "helm.sh/resource-policy": keep
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    #      - deployments/finalizers
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+---
+# Source: flink-kubernetes-operator/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: flink-role-binding
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: flink-operator
+    app.kubernetes.io/name: flink-kubernetes-operator
+    app.kubernetes.io/version: "1.10.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: flink-kubernetes-operator-1.10.0
+  annotations:
+    "helm.sh/resource-policy": keep
+roleRef:
+  kind: Role
+  name: flink
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: flink
+    namespace: "{{NAMESPACE}}"
