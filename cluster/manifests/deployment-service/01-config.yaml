@@ -12,14 +12,17 @@ data:
   create-namespaces: "true"
   aws-available: "true"
   worker-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-worker"
+  {{ $oidc_issuer := "" }}
 {{- if eq .Cluster.Provider "zalando-eks" }}
-  {{ $eks_oidc_issuer := index (split .Cluster.ConfigItems.eks_oidc_issuer_url "//") 1 }}
-  oidc-provider-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:oidc-provider/{{$eks_oidc_issuer}}"
-  oidc-subject-key: "{{$eks_oidc_issuer}}:sub"
+  {{ $oidc_issuer = index (split .Cluster.ConfigItems.eks_oidc_issuer_url "//") 1 }}
 {{- else }}
-  oidc-provider-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-  oidc-subject-key: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}:sub"
+  {{ $oidc_issuer = printf "%s.%s" .Cluster.LocalID .Values.hosted_zone }}
 {{- end }}
+  {{ $oidc_provider_arn := printf "arn:aws:iam::%s:oidc-provider/%s" (accountID .Cluster.InfrastructureAccount) $oidc_issuer }}
+  {{ $oidc_subject_key := printf "%s:sub" $oidc_issuer }}
+  oidc-provider-arn: "{{$oidc_provider_arn}}"
+  oidc-subject-key: "{{$oidc_subject_key}}"
+  oidc-trust-relationship-template: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}}]}'
   s3-bucket-name: "zalando-deployment-service-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
   status-service-url: "https://depl-status-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"
   status-service-url-local: "http://deployment-status-service.ingress.cluster.local."
