@@ -273,7 +273,7 @@ Resources:
       AddonName: eks-pod-identity-agent
       ClusterName: !Ref EKSCluster
   {{ if eq .Cluster.Environment "e2e" }}
-  E2EEKSIAMTestRoleReadOnly:
+  E2EEKSIAMTestRoleUnprivileged:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -285,9 +285,9 @@ Resources:
             AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
         Version: 2012-10-17
       Path: /
-      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-read-only-role"
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-unprivileged-role"
     Type: 'AWS::IAM::Role'
-  E2EEKSIAMTestAccessEntryReadOnly:
+  E2EEKSIAMTestAccessEntryUnprivileged:
     Type: "AWS::EKS::AccessEntry"
     Properties:
       AccessPolicies:
@@ -295,16 +295,16 @@ Resources:
           Type: "cluster"
         PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
       ClusterName: !Ref EKSCluster
-      PrincipalArn: !GetAtt E2EEKSIAMTestRoleReadOnly.Arn
+      PrincipalArn: !GetAtt E2EEKSIAMTestRoleUnprivileged.Arn
       Username: !Join
           - ''
           - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
-            - !Ref E2EEKSIAMTestRoleReadOnly
+            - !Ref E2EEKSIAMTestRoleUnprivileged
             - '/{{`{{SessionName}}`}}'
       KubernetesGroups:
       - zalando:readonly
       Type: "STANDARD"
-  E2EEKSIAMTestRoleAdministrator:
+  E2EEKSIAMTestRolePrivileged:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -316,9 +316,9 @@ Resources:
             AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
         Version: 2012-10-17
       Path: /
-      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-administrator-role"
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-privileged-role"
     Type: 'AWS::IAM::Role'
-  E2EEKSIAMTestAccessEntryAdministrator:
+  E2EEKSIAMTestAccessEntryPrivileged:
     Type: "AWS::EKS::AccessEntry"
     Properties:
       AccessPolicies:
@@ -326,11 +326,11 @@ Resources:
           Type: "cluster"
         PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
       ClusterName: !Ref EKSCluster
-      PrincipalArn: !GetAtt E2EEKSIAMTestRoleAdministrator.Arn
+      PrincipalArn: !GetAtt E2EEKSIAMTestRolePrivileged.Arn
       Username: !Join
           - ''
           - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
-            - !Ref E2EEKSIAMTestRoleAdministrator
+            - !Ref E2EEKSIAMTestRolePrivileged
             - '/{{`{{SessionName}}`}}'
       KubernetesGroups:
       - zalando:administrator
@@ -365,37 +365,6 @@ Resources:
             - '/{{`{{SessionName}}`}}'
       KubernetesGroups:
       - zalando:collaborator
-      Type: "STANDARD"
-  E2EEKSIAMTestRoleEngineer:
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Action:
-          - 'sts:AssumeRole'
-          - 'sts:SetSourceIdentity'
-          Effect: Allow
-          Principal:
-            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
-        Version: 2012-10-17
-      Path: /
-      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-engineer-role"
-    Type: 'AWS::IAM::Role'
-  E2EEKSIAMTestAccessEntryEngineer:
-    Type: "AWS::EKS::AccessEntry"
-    Properties:
-      AccessPolicies:
-      - AccessScope:
-          Type: "cluster"
-        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-      ClusterName: !Ref EKSCluster
-      PrincipalArn: !GetAtt E2EEKSIAMTestRoleEngineer.Arn
-      Username: !Join
-          - ''
-          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
-            - !Ref E2EEKSIAMTestRoleEngineer
-            - '/{{`{{SessionName}}`}}'
-      KubernetesGroups:
-      - zalando:engineer
       Type: "STANDARD"
   E2EEKSIAMTestRolePostgresAdministrator:
     Properties:
