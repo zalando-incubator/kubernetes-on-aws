@@ -7,6 +7,7 @@ data:
   aws-account-id: "{{accountID .Cluster.InfrastructureAccount}}"
   aws-account-name: "{{.Cluster.AccountName}}"
   cluster-alias: "{{.Cluster.Alias}}"
+  cluster-provider: "{{.Cluster.Provider}}"
   cluster-vpc-id: "{{.Cluster.ConfigItems.vpc_id}}"
   scalyr-team-token: "{{.Cluster.ConfigItems.scalyr_team_token}}"
   create-namespaces: "true"
@@ -34,10 +35,3 @@ data:
   cloudformation-update-source-branch-changes: "{{.Cluster.ConfigItems.deployment_service_cf_update_source_branch_changes}}"
   skip-mustache: "{{.Cluster.ConfigItems.deployment_service_skip_mustache_rendering}}"
   cleanup-namespace-prefix: "d-"
-{{- if eq .Cluster.Provider "zalando-eks" }}
-  pgview-url: "https://pgview-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"
-  pgui-url: "https://pgui-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"
-{{- else }}
-  pgview-url: "https://pgview.{{.Values.hosted_zone}}"
-  pgui-url: "https://pgui.{{.Values.hosted_zone}}"
-{{- end }}
