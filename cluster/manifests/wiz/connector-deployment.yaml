@@ -29,6 +29,9 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
       volumes:
+        - name: api-client
+          secret:
+            secretName: wiz-api-token
         - name: connector-data
           secret:
             secretName: wiz-broker-connector
@@ -44,26 +47,22 @@ spec:
           image: "container-registry.zalando.net/secops-systems/wiz-broker:2.7-main-3"
           imagePullPolicy: IfNotPresent
           volumeMounts:
+          - name: api-client
+            mountPath: /var/api-client
+            readOnly: true
           - name: connector-data
             mountPath: /etc/connectorData
             readOnly: true
-          args:
-            - /etc/connectorData/data
+          args: [
+            /etc/connectorData/data
+          ]
           env:
           - name: LOG_LEVEL
             value: info
           - name: WIZ_ENV
             value: 
-          - name: WIZ_CLIENT_ID
-            valueFrom:
-              secretKeyRef:
-                name: wiz-api-token
-                key: clientId
-          - name: WIZ_CLIENT_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: wiz-api-token
-                key: clientToken
+          - name: CLI_FILES_AS_ARGS
+            value: "/var/api-client/clientToken,/var/api-client/clientId"
           - name: TARGET_IP
             value: kubernetes.default.svc.cluster.local
           - name: TARGET_PORT
