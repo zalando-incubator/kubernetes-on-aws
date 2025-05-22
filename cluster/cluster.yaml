@@ -147,7 +147,7 @@ Resources:
     Type: AWS::EKS::Cluster
     Properties:
       Name: "{{.Cluster.Name}}"
-      Version: "1.31"
+      Version: "1.32"
       RoleArn: !GetAtt EKSClusterRole.Arn
       KubernetesNetworkConfig:
         IpFamily: "{{.Cluster.ConfigItems.eks_ip_family}}"
@@ -273,7 +273,7 @@ Resources:
       AddonName: eks-pod-identity-agent
       ClusterName: !Ref EKSCluster
   {{ if eq .Cluster.Environment "e2e" }}
-  E2EEKSIAMTestRoleUnprivileged:
+  E2EEKSIAMTestRoleReadOnly:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -285,9 +285,9 @@ Resources:
             AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
         Version: 2012-10-17
       Path: /
-      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-unprivileged-role"
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-read-only-role"
     Type: 'AWS::IAM::Role'
-  E2EEKSIAMTestAccessEntryUnprivileged:
+  E2EEKSIAMTestAccessEntryReadOnly:
     Type: "AWS::EKS::AccessEntry"
     Properties:
       AccessPolicies:
@@ -295,16 +295,16 @@ Resources:
           Type: "cluster"
         PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
       ClusterName: !Ref EKSCluster
-      PrincipalArn: !GetAtt E2EEKSIAMTestRoleUnprivileged.Arn
+      PrincipalArn: !GetAtt E2EEKSIAMTestRoleReadOnly.Arn
       Username: !Join
           - ''
           - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
-            - !Ref E2EEKSIAMTestRoleUnprivileged
+            - !Ref E2EEKSIAMTestRoleReadOnly
             - '/{{`{{SessionName}}`}}'
       KubernetesGroups:
       - zalando:readonly
       Type: "STANDARD"
-  E2EEKSIAMTestRolePrivileged:
+  E2EEKSIAMTestRoleAdministrator:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -316,9 +316,9 @@ Resources:
             AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
         Version: 2012-10-17
       Path: /
-      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-privileged-role"
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-administrator-role"
     Type: 'AWS::IAM::Role'
-  E2EEKSIAMTestAccessEntryPrivileged:
+  E2EEKSIAMTestAccessEntryAdministrator:
     Type: "AWS::EKS::AccessEntry"
     Properties:
       AccessPolicies:
@@ -326,11 +326,11 @@ Resources:
           Type: "cluster"
         PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
       ClusterName: !Ref EKSCluster
-      PrincipalArn: !GetAtt E2EEKSIAMTestRolePrivileged.Arn
+      PrincipalArn: !GetAtt E2EEKSIAMTestRoleAdministrator.Arn
       Username: !Join
           - ''
           - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
-            - !Ref E2EEKSIAMTestRolePrivileged
+            - !Ref E2EEKSIAMTestRoleAdministrator
             - '/{{`{{SessionName}}`}}'
       KubernetesGroups:
       - zalando:administrator
@@ -365,6 +365,37 @@ Resources:
             - '/{{`{{SessionName}}`}}'
       KubernetesGroups:
       - zalando:collaborator
+      Type: "STANDARD"
+  E2EEKSIAMTestRoleEngineer:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          - 'sts:SetSourceIdentity'
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        Version: 2012-10-17
+      Path: /
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-engineer-role"
+    Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestAccessEntryEngineer:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt E2EEKSIAMTestRoleEngineer.Arn
+      Username: !Join
+          - ''
+          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
+            - !Ref E2EEKSIAMTestRoleEngineer
+            - '/{{`{{SessionName}}`}}'
+      KubernetesGroups:
+      - zalando:engineer
       Type: "STANDARD"
   E2EEKSIAMTestRolePostgresAdministrator:
     Properties:
