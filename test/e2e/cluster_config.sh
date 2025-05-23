@@ -46,6 +46,7 @@ clusters:
     okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
     teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
     eks_okta_identity_provider: "false" # disabled to speed up EKS cluster creation for e2e.
+    eks_legacy_cluster_local_id: "https://e2e-${CDP_BUILD_VERSION}-aws.${HOSTED_ZONE}"
     skipper_open_policy_agent_enabled: "${SKIPPER_OPA_ENABLED}"
     skipper_open_policy_agent_styra_token: "${STYRA_TOKEN}"
     skipper_open_policy_agent_bucket_arn: "${SKIPPER_OPA_BUCKET_ARN}"
