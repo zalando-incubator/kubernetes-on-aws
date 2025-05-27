@@ -46,6 +46,31 @@ spec:
                 operator: In
                 values:
                 - skipper-ingress-redis
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node.kubernetes.io/node-pool
+                operator: In
+                values:
+                - skipper-ingress-redis
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values:
+                - c7i.large
+                - m7i.large
+          - weight: 50
+            preference:
+              matchExpressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values:
+                - c6i.large
+                - m6i.large
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       terminationGracePeriodSeconds: 45
       containers:
