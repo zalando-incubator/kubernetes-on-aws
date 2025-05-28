@@ -1,3 +1,4 @@
+{{ if eq .Cluster.ConfigItems.flink_operator_enabled "true" }}
 ---
 # Source: flink-kubernetes-operator/templates/flink-operator.yaml
 apiVersion: v1
@@ -38,7 +39,7 @@ data:
     appender.console.name = ConsoleAppender
     appender.console.type = CONSOLE
     appender.console.layout.type = JsonTemplateLayout
-  
+
   log4j-console.properties: |+
     # This affects logging for both user code and Flink
     rootLogger.level = INFO
@@ -160,11 +161,11 @@ spec:
               value:
           resources:
             limits:
-              cpu: "200m"
-              memory: "859Mi"
+              cpu: {{ .Cluster.ConfigItems.flink_operator_cpu }}
+              memory: {{ .Cluster.ConfigItems.flink_operator_memory }}
             requests:
-              cpu: "200m"
-              memory: "850Mi"
+              cpu: { { .Cluster.ConfigItems.flink_operator_cpu } }
+              memory: { { .Cluster.ConfigItems.flink_operator_memory } }
           securityContext:
             {}
           volumeMounts:
@@ -197,3 +198,5 @@ spec:
                 path: log4j-console.properties
         - name: flink-artifacts-volume
           emptyDir: {}
+{{ end }}
+
