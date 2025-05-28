@@ -6,78 +6,16 @@ metadata:
   name: flink-operator-config
   namespace: kube-system
   labels:
-    app.kubernetes.io/name: flink-kubernetes-operator
-    app.kubernetes.io/version: "1.10.0"
-    app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: flink-kubernetes-operator-1.10.0
     application: kubernetes
     component: flink-operator
 data:
   flink-conf.yaml: |+
-    ################################################################################
-    #  Licensed to the Apache Software Foundation (ASF) under one
-    #  or more contributor license agreements.  See the NOTICE file
-    #  distributed with this work for additional information
-    #  regarding copyright ownership.  The ASF licenses this file
-    #  to you under the Apache License, Version 2.0 (the
-    #  "License"); you may not use this file except in compliance
-    #  with the License.  You may obtain a copy of the License at
-    #
-    #      http://www.apache.org/licenses/LICENSE-2.0
-    #
-    #  Unless required by applicable law or agreed to in writing, software
-    #  distributed under the License is distributed on an "AS IS" BASIS,
-    #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    #  See the License for the specific language governing permissions and
-    # limitations under the License.
-    ################################################################################
-    
     # Flink job/cluster related configs
     taskmanager.numberOfTaskSlots: 1
     parallelism.default: 1
-    # job.autoscaler.enabled: true
-    # job.autoscaler.memory.tuning.enabled: true
-    # job.autoscaler.scaling.enabled: true
-    
-    # Flink operator related configs
-    # kubernetes.operator.dynamic.config.enabled: true
-    # kubernetes.operator.dynamic.config.check.interval: 60 s
-    
     
     kubernetes.operator.metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
     kubernetes.operator.metrics.reporter.prom.port: 9999
-    
-    # kubernetes.operator.reconcile.interval: 60 s
-    # kubernetes.operator.reconcile.parallelism: 5
-    # kubernetes.operator.flink.client.cancel.timeout: 1 min
-    # kubernetes.operator.resource.cleanup.timeout: 60 s
-    # kubernetes.operator.observer.rest-ready.delay: 10 s
-    # kubernetes.operator.observer.progress-check.interval: 10 s
-    # kubernetes.operator.observer.savepoint.trigger.grace-period: 10 s
-    # kubernetes.operator.flink.client.timeout: 10 s
-    # kubernetes.operator.deployment.rollback.enabled: false
-    # kubernetes.operator.deployment.readiness.timeout: 5min
-    # kubernetes.operator.user.artifacts.base.dir: /opt/flink/artifacts
-    # kubernetes.operator.job.upgrade.ignore-pending-savepoint: false
-    # kubernetes.operator.watched.namespaces: ns1,ns2
-    # kubernetes.operator.label.selector: flink=enabled
-    # kubernetes.operator.dynamic.namespaces.enabled: false
-    # kubernetes.operator.retry.initial.interval: 5 s
-    # kubernetes.operator.retry.interval.multiplier: 2
-    # kubernetes.operator.retry.max.attempts: 10
-    # kubernetes.operator.exception.stacktrace.enabled: false
-    # kubernetes.operator.exception.stacktrace.max.length: 2048
-    # kubernetes.operator.exception.field.max.length: 2048
-    # kubernetes.operator.exception.throwable.list.max.count: 2
-    # kubernetes.operator.exception.label.mapper: Job has already been submitted:duplicatedJobFound,Server returned HTTP response code:httpResponseCodeFound
-    # kubernetes.operator.leader-election.enabled: false
-    # kubernetes.operator.leader-election.lease-name: flink-operator-lease
-    
-    # kubernetes.operator.snapshot.resource.enabled: true
-    # kubernetes.operator.savepoint.dispose-on-delete: true
-    
-    # kubernetes.operator.metrics.reporter.slf4j.factory.class: org.apache.flink.metrics.slf4j.Slf4jReporterFactory
-    # kubernetes.operator.metrics.reporter.slf4j.interval: 5 MINUTE
     
     # Flink Config Overrides
     kubernetes.operator.metrics.reporter.slf4j.factory.class: org.apache.flink.metrics.slf4j.Slf4jReporterFactory
@@ -89,24 +27,6 @@ data:
     kubernetes.operator.health.probe.enabled: true
     kubernetes.operator.health.probe.port: 8085
   log4j-operator.properties: |+
-    ################################################################################
-    #  Licensed to the Apache Software Foundation (ASF) under one
-    #  or more contributor license agreements.  See the NOTICE file
-    #  distributed with this work for additional information
-    #  regarding copyright ownership.  The ASF licenses this file
-    #  to you under the Apache License, Version 2.0 (the
-    #  "License"); you may not use this file except in compliance
-    #  with the License.  You may obtain a copy of the License at
-    #
-    #      http://www.apache.org/licenses/LICENSE-2.0
-    #
-    #  Unless required by applicable law or agreed to in writing, software
-    #  distributed under the License is distributed on an "AS IS" BASIS,
-    #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    #  See the License for the specific language governing permissions and
-    # limitations under the License.
-    ################################################################################
-    
     # Allows this configuration to be modified at runtime. The file will be checked every 30 seconds.    
     monitorInterval=30
 
@@ -119,26 +39,7 @@ data:
     appender.console.type = CONSOLE
     appender.console.layout.type = JsonTemplateLayout
   
-
   log4j-console.properties: |+
-    ################################################################################
-    #  Licensed to the Apache Software Foundation (ASF) under one
-    #  or more contributor license agreements.  See the NOTICE file
-    #  distributed with this work for additional information
-    #  regarding copyright ownership.  The ASF licenses this file
-    #  to you under the Apache License, Version 2.0 (the
-    #  "License"); you may not use this file except in compliance
-    #  with the License.  You may obtain a copy of the License at
-    #
-    #      http://www.apache.org/licenses/LICENSE-2.0
-    #
-    #  Unless required by applicable law or agreed to in writing, software
-    #  distributed under the License is distributed on an "AS IS" BASIS,
-    #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    #  See the License for the specific language governing permissions and
-    # limitations under the License.
-    ################################################################################
-    
     # This affects logging for both user code and Flink
     rootLogger.level = INFO
     rootLogger.appenderRef.console.ref = ConsoleAppender
@@ -194,10 +95,6 @@ metadata:
   name: flink-kubernetes-operator
   namespace: kube-system
   labels:
-    app.kubernetes.io/name: flink-kubernetes-operator
-    app.kubernetes.io/version: "1.10.0"
-    app.kubernetes.io/managed-by: Helm
-    helm.sh/chart: flink-kubernetes-operator-1.10.0
     application: kubernetes
     component: flink-operator
 spec:
@@ -224,7 +121,7 @@ spec:
       serviceAccountName: flink-operator
       containers:
         - name: flink-kubernetes-operator
-          image: "{{{IMAGE}}}"
+          image: "registry.opensource.zalan.do/library/flink-kubernetes-operator-1.10"
           imagePullPolicy: IfNotPresent
           command: ["/docker-entrypoint.sh", "operator"]
           ports:
@@ -263,11 +160,11 @@ spec:
               value:
           resources:
             limits:
-              cpu: "{{{CPU}}}"
-              memory: "{{{MEMORY}}}"
+              cpu: "200m"
+              memory: "859Mi"
             requests:
-              cpu: "{{{CPU}}}"
-              memory: "{{{MEMORY}}}"
+              cpu: "200m"
+              memory: "850Mi"
           securityContext:
             {}
           volumeMounts:
