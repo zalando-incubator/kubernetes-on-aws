@@ -143,6 +143,7 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref EKSWorkerSecurityGroup
       ToPort: 443
+{{- if eq .Cluster.ConfigItems.open_sg_for_steadybit "true" }}
   EKSWorkerSecurityGroupIngressFromWorkerToWorkerSteadyBit:
     Properties:
       FromPort: 8085
@@ -151,6 +152,7 @@ Resources:
       SourceSecurityGroupId: !Ref EKSWorkerSecurityGroup
       ToPort: 8087
     Type: 'AWS::EC2::SecurityGroupIngress'
+{{- end }}
   EKSCluster:
     Type: AWS::EKS::Cluster
     Properties:
@@ -939,6 +941,7 @@ Resources:
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
       ToPort: 10250 # Kubelet
     Type: 'AWS::EC2::SecurityGroupIngress'
+{{- if eq .Cluster.ConfigItems.open_sg_for_steadybit "true" }}
   WorkerSecurityGroupIngressFromWorkerToWorkerSteadyBit:
     Properties:
       FromPort: 8085
@@ -947,6 +950,7 @@ Resources:
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
       ToPort: 8087
     Type: 'AWS::EC2::SecurityGroupIngress'
+{{- end }}
   WorkerSecurityGroupIngressFromWorkerToWorkerSkipperMetrics:
     Properties:
       FromPort: 9911
