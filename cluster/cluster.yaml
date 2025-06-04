@@ -915,46 +915,12 @@ Resources:
       SourceSecurityGroupId: !Ref MasterSecurityGroup
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToFlannel:
+  WorkerSecurityGroupWorkerToWorker:
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      FromPort: 8472
+      IpProtocol: "-1"
       GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: udp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      ToPort: 8472
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToWorkerKubeletAndKubeProxy:
-    Properties:
-      FromPort: 10249 # KubeProxy
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      ToPort: 10250 # Kubelet
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToWorkerSkipperMetrics:
-    Properties:
-      FromPort: 9911
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      ToPort: 9911
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToWorkerSkipperTokeninfoMetrics:
-    Properties:
-      FromPort: 9022
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      ToPort: 9022
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToNodeMonitor:
-    Properties:
-      FromPort: 9100
-      ToPort: 9101
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-    Type: 'AWS::EC2::SecurityGroupIngress'
   EFSSecurityGroupIngressFromWorkerSecurityGroup:
     Properties:
       FromPort: 2049
