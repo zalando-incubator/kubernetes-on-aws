@@ -6,7 +6,8 @@ kind: DaemonSet
 metadata:
   name: wiz-sensor
   labels:
-    helm.sh/chart: wiz-sensor-1.0.4760
+    helm.sh/chart: wiz-sensor-1.0.6440
+    image/tag: v1
     application: "wiz"
     component: "sensor"
     daemonset: "wiz-sensor"
@@ -22,7 +23,8 @@ spec:
   template:
     metadata:
       labels:
-        helm.sh/chart: wiz-sensor-1.0.4760
+        helm.sh/chart: wiz-sensor-1.0.6440
+        image/tag: v1
         application: "wiz"
         component: "sensor"
         daemonset: "wiz-sensor"
@@ -80,6 +82,15 @@ spec:
             role: "system_r"
             level: "s0"
             type: "spc_t"
+          startupProbe:
+            exec:
+              command:
+              - "/usr/src/app/wiz-sensor"
+              - "version"
+            initialDelaySeconds: 15
+            periodSeconds: 60
+            timeoutSeconds: 30
+            failureThreshold: 5
         env:
         - name: MIN_SENSOR_COMPAT_BUILD_VER
           value: "4142"
@@ -131,6 +142,10 @@ spec:
           value: info
         - name: STDOUT_LOG
           value: error
+        - name: POD_IMAGE_TAG
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['image/tag']
         - name: POD_MEM_LIMITS
           valueFrom:
             resourceFieldRef:
