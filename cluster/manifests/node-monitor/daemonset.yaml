@@ -30,55 +30,6 @@ spec:
       priorityClassName: system-node-critical
       serviceAccountName: node-monitor
       containers:
-{{- if eq .Cluster.ConfigItems.cadvisor_enabled "true" }}
-        - name: cadvisor
-          image: container-registry.zalando.net/teapot/cadvisor:v0.47.0-master-11
-          args:
-            - --port=9101
-{{- if eq .Cluster.ConfigItems.cadvisor_profiling_enabled "true" }}
-            - --profiling
-{{- end }}
-            - --housekeeping_interval=10s
-            - --max_housekeeping_interval=15s
-            - --event_storage_event_limit=default=0
-            - --event_storage_age_limit=default=0
-            - --disable_metrics=sched,percpu,tcp,udp,cpu_topology,advtcp
-            - --docker_only
-            - --raw_cgroup_prefix_whitelist=/system.slice/kubelet.service
-            - --store_container_labels=false
-            - --whitelisted_container_labels=io.kubernetes.container.name,io.kubernetes.pod.name,io.kubernetes.pod.namespace,io.kubernetes.pod.uid,application,component
-          resources:
-            requests:
-              cpu: "{{ .Cluster.ConfigItems.cadvisor_cpu }}"
-              memory: "{{ .Cluster.ConfigItems.cadvisor_memory }}"
-              ephemeral-storage: 256Mi
-            limits:
-              cpu: "{{ .Cluster.ConfigItems.cadvisor_cpu }}"
-              memory: "{{ .Cluster.ConfigItems.cadvisor_memory }}"
-          securityContext:
-            privileged: true # allows reading /dev/kmsg
-          volumeMounts:
-            - name: rootfs
-              mountPath: /rootfs
-              readOnly: true
-            - name: var-run
-              mountPath: /var/run
-              readOnly: true
-            - name: sys
-              mountPath: /sys
-              readOnly: true
-            - name: containerd
-              mountPath: /opt/podruntime/containerd
-              readOnly: true
-            - name: kmsg
-              mountPath: /dev/kmsg
-              readOnly: true
-          ports:
-            - name: cadvisor
-              containerPort: 9101
-              hostPort: 9101
-              protocol: TCP
-{{- end }}
         - image: container-registry.zalando.net/teapot/prometheus-node-exporter:v1.9.1-master-24
           args:
 {{- if eq .Cluster.ConfigItems.node_exporter_experimental_metrics "true" }}
