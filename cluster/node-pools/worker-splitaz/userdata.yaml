@@ -79,6 +79,9 @@ write_files:
 {{- end }}
       featureGates:
         SizeMemoryBackedVolumes: {{ .Cluster.ConfigItems.enable_size_memory_backed_volumes }}
+{{- if eq .Cluster.ConfigItems.enable_image_volumes "true" }}
+        ImageVolume: true
+{{- end }}
 {{- if eq .NodePool.ConfigItems.exec_probe_timeout_enabled "false" }}
         ExecProbeTimeout: false
 {{- end }}
@@ -169,7 +172,8 @@ write_files:
       {{index $cfg 0}} = {{index $cfg 1}}
       {{- end}}
 {{- end}}
-{{if ne .Cluster.Provider "zalando-eks" }}
+
+{{- if ne .Cluster.Provider "zalando-eks" }}
   - owner: root:root
     path: /etc/cni/net.d/10-flannel.conflist
     content: |

@@ -215,7 +215,6 @@ if [ "$e2e" = true ]; then
             "Should audit API calls to create, update, patch, delete pods. \[Audit\] \[Zalando\]"
             "should validate permissions for \[Authorization\] \[RBAC\] \[Zalando\]" # TODO: Remains skipped until we remove the older RBAC setup
             "should creating a working mysql cluster" # upstream test which does not work with IPv6
-            "Should create DNS entry via Service \[Zalando\]" # Depends on service Type LoadBalancer which doesn't work with IPv6.
         )
     fi
 

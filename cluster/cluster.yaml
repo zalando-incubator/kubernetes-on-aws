@@ -147,7 +147,7 @@ Resources:
     Type: AWS::EKS::Cluster
     Properties:
       Name: "{{.Cluster.Name}}"
-      Version: "1.31"
+      Version: "1.32"
       RoleArn: !GetAtt EKSClusterRole.Arn
       KubernetesNetworkConfig:
         IpFamily: "{{.Cluster.ConfigItems.eks_ip_family}}"
@@ -273,7 +273,7 @@ Resources:
       AddonName: eks-pod-identity-agent
       ClusterName: !Ref EKSCluster
   {{ if eq .Cluster.Environment "e2e" }}
-  E2EEKSIAMTestRoleUnprivileged:
+  E2EEKSIAMTestRoleReadOnly:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -285,9 +285,9 @@ Resources:
             AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
         Version: 2012-10-17
       Path: /
-      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-unprivileged-role"
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-read-only-role"
     Type: 'AWS::IAM::Role'
-  E2EEKSIAMTestAccessEntryUnprivileged:
+  E2EEKSIAMTestAccessEntryReadOnly:
     Type: "AWS::EKS::AccessEntry"
     Properties:
       AccessPolicies:
@@ -295,16 +295,16 @@ Resources:
           Type: "cluster"
         PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
       ClusterName: !Ref EKSCluster
-      PrincipalArn: !GetAtt E2EEKSIAMTestRoleUnprivileged.Arn
+      PrincipalArn: !GetAtt E2EEKSIAMTestRoleReadOnly.Arn
       Username: !Join
           - ''
           - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
-            - !Ref E2EEKSIAMTestRoleUnprivileged
+            - !Ref E2EEKSIAMTestRoleReadOnly
             - '/{{`{{SessionName}}`}}'
       KubernetesGroups:
       - zalando:readonly
       Type: "STANDARD"
-  E2EEKSIAMTestRolePrivileged:
+  E2EEKSIAMTestRoleAdministrator:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -316,9 +316,9 @@ Resources:
             AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
         Version: 2012-10-17
       Path: /
-      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-privileged-role"
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-administrator-role"
     Type: 'AWS::IAM::Role'
-  E2EEKSIAMTestAccessEntryPrivileged:
+  E2EEKSIAMTestAccessEntryAdministrator:
     Type: "AWS::EKS::AccessEntry"
     Properties:
       AccessPolicies:
@@ -326,11 +326,11 @@ Resources:
           Type: "cluster"
         PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
       ClusterName: !Ref EKSCluster
-      PrincipalArn: !GetAtt E2EEKSIAMTestRolePrivileged.Arn
+      PrincipalArn: !GetAtt E2EEKSIAMTestRoleAdministrator.Arn
       Username: !Join
           - ''
           - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
-            - !Ref E2EEKSIAMTestRolePrivileged
+            - !Ref E2EEKSIAMTestRoleAdministrator
             - '/{{`{{SessionName}}`}}'
       KubernetesGroups:
       - zalando:administrator
@@ -365,6 +365,37 @@ Resources:
             - '/{{`{{SessionName}}`}}'
       KubernetesGroups:
       - zalando:collaborator
+      Type: "STANDARD"
+  E2EEKSIAMTestRoleEngineer:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          - 'sts:SetSourceIdentity'
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        Version: 2012-10-17
+      Path: /
+      RoleName: "{{.Cluster.LocalID}}-e2e-eks-iam-test-engineer-role"
+    Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestAccessEntryEngineer:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt E2EEKSIAMTestRoleEngineer.Arn
+      Username: !Join
+          - ''
+          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
+            - !Ref E2EEKSIAMTestRoleEngineer
+            - '/{{`{{SessionName}}`}}'
+      KubernetesGroups:
+      - zalando:engineer
       Type: "STANDARD"
   E2EEKSIAMTestRolePostgresAdministrator:
     Properties:
@@ -614,7 +645,7 @@ Resources:
     Properties:
       AlpnPolicy:
         - {{ if eq .Cluster.ConfigItems.experimental_nlb_alpn_h2_enabled "true" }}HTTP2Preferred{{else}}None{{end}}
-      SslPolicy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+      SslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
       Certificates:
         - CertificateArn: "{{.Values.load_balancer_certificate}}"
       DefaultActions:
@@ -681,7 +712,7 @@ Resources:
     Properties:
       AlpnPolicy:
         - {{ if eq .Cluster.ConfigItems.experimental_nlb_alpn_h2_enabled "true" }}HTTP2Preferred{{else}}None{{end}}
-      SslPolicy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+      SslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
       Certificates:
         - CertificateArn: "{{.Values.load_balancer_certificate}}"
       DefaultActions:
@@ -884,46 +915,12 @@ Resources:
       SourceSecurityGroupId: !Ref MasterSecurityGroup
       ToPort: 10250
     Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToFlannel:
+  WorkerSecurityGroupWorkerToWorker:
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      FromPort: 8472
+      IpProtocol: "-1"
       GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: udp
       SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      ToPort: 8472
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToWorkerKubeletAndKubeProxy:
-    Properties:
-      FromPort: 10249 # KubeProxy
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      ToPort: 10250 # Kubelet
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToWorkerSkipperMetrics:
-    Properties:
-      FromPort: 9911
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      ToPort: 9911
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToWorkerSkipperTokeninfoMetrics:
-    Properties:
-      FromPort: 9022
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-      ToPort: 9022
-    Type: 'AWS::EC2::SecurityGroupIngress'
-  WorkerSecurityGroupIngressFromWorkerToNodeMonitor:
-    Properties:
-      FromPort: 9100
-      ToPort: 9101
-      GroupId: !Ref WorkerSecurityGroup
-      IpProtocol: tcp
-      SourceSecurityGroupId: !Ref WorkerSecurityGroup
-    Type: 'AWS::EC2::SecurityGroupIngress'
   EFSSecurityGroupIngressFromWorkerSecurityGroup:
     Properties:
       FromPort: 2049
@@ -1936,7 +1933,6 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-ingr-ctrl"
     Type: 'AWS::IAM::Role'
-{{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
   # Note: this is not strictly specific to Open Policy Agent and can be extend
   # if Skipper Ingress needs to access other AWS resources
   SkipperIngressIAMRole:
@@ -1982,7 +1978,6 @@ Resources:
           PolicyName: read-opa-bundles
       RoleName: "{{.Cluster.LocalID}}-app-skipper-ingress"
     Type: 'AWS::IAM::Role'
-{{ end }}
   ClusterLifecycleControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument: !Sub
@@ -3222,6 +3217,217 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-audittrail-adapter"
     Type: 'AWS::IAM::Role'
+# {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+  AWSLoadBalancerControllerIAMRole:
+    Properties:
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
+                  }
+                }
+              }
+            ]
+          }
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - iam:CreateServiceLinkedRole
+              Resource: "*"
+              Condition:
+                StringEquals:
+                  iam:AWSServiceName: elasticloadbalancing.amazonaws.com
+            - Effect: Allow
+              Action:
+              - ec2:DescribeAccountAttributes
+              - ec2:DescribeAddresses
+              - ec2:DescribeAvailabilityZones
+              - ec2:DescribeInternetGateways
+              - ec2:DescribeVpcs
+              - ec2:DescribeVpcPeeringConnections
+              - ec2:DescribeSubnets
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeInstances
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeTags
+              - ec2:GetCoipPoolUsage
+              - ec2:DescribeCoipPools
+              - ec2:GetSecurityGroupsForVpc
+              - ec2:DescribeIpamPools
+              - elasticloadbalancing:DescribeLoadBalancers
+              - elasticloadbalancing:DescribeLoadBalancerAttributes
+              - elasticloadbalancing:DescribeListeners
+              - elasticloadbalancing:DescribeListenerCertificates
+              - elasticloadbalancing:DescribeSSLPolicies
+              - elasticloadbalancing:DescribeRules
+              - elasticloadbalancing:DescribeTargetGroups
+              - elasticloadbalancing:DescribeTargetGroupAttributes
+              - elasticloadbalancing:DescribeTargetHealth
+              - elasticloadbalancing:DescribeTags
+              - elasticloadbalancing:DescribeTrustStores
+              - elasticloadbalancing:DescribeListenerAttributes
+              - elasticloadbalancing:DescribeCapacityReservation
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - cognito-idp:DescribeUserPoolClient
+              - acm:ListCertificates
+              - acm:DescribeCertificate
+              - iam:ListServerCertificates
+              - iam:GetServerCertificate
+              - waf-regional:GetWebACL
+              - waf-regional:GetWebACLForResource
+              - waf-regional:AssociateWebACL
+              - waf-regional:DisassociateWebACL
+              - wafv2:GetWebACL
+              - wafv2:GetWebACLForResource
+              - wafv2:AssociateWebACL
+              - wafv2:DisassociateWebACL
+              - shield:GetSubscriptionState
+              - shield:DescribeProtection
+              - shield:CreateProtection
+              - shield:DeleteProtection
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:RevokeSecurityGroupIngress
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - ec2:CreateSecurityGroup
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - ec2:CreateTags
+              Resource: arn:aws:ec2:*:*:security-group/*
+              Condition:
+                StringEquals:
+                  ec2:CreateAction: CreateSecurityGroup
+                'Null':
+                  aws:RequestTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - ec2:CreateTags
+              - ec2:DeleteTags
+              Resource: arn:aws:ec2:*:*:security-group/*
+              Condition:
+                'Null':
+                  aws:RequestTag/elbv2.k8s.aws/cluster: 'true'
+                  aws:ResourceTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - ec2:AuthorizeSecurityGroupIngress
+              - ec2:RevokeSecurityGroupIngress
+              - ec2:DeleteSecurityGroup
+              Resource: "*"
+              Condition:
+                'Null':
+                  aws:ResourceTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:CreateLoadBalancer
+              - elasticloadbalancing:CreateTargetGroup
+              Resource: "*"
+              Condition:
+                'Null':
+                  aws:RequestTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:CreateListener
+              - elasticloadbalancing:DeleteListener
+              - elasticloadbalancing:CreateRule
+              - elasticloadbalancing:DeleteRule
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:AddTags
+              - elasticloadbalancing:RemoveTags
+              Resource:
+              - arn:aws:elasticloadbalancing:*:*:targetgroup/*/*
+              - arn:aws:elasticloadbalancing:*:*:loadbalancer/net/*/*
+              - arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*
+              Condition:
+                'Null':
+                  aws:RequestTag/elbv2.k8s.aws/cluster: 'true'
+                  aws:ResourceTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:AddTags
+              - elasticloadbalancing:RemoveTags
+              Resource:
+              - arn:aws:elasticloadbalancing:*:*:listener/net/*/*/*
+              - arn:aws:elasticloadbalancing:*:*:listener/app/*/*/*
+              - arn:aws:elasticloadbalancing:*:*:listener-rule/net/*/*/*
+              - arn:aws:elasticloadbalancing:*:*:listener-rule/app/*/*/*
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:ModifyLoadBalancerAttributes
+              - elasticloadbalancing:SetIpAddressType
+              - elasticloadbalancing:SetSecurityGroups
+              - elasticloadbalancing:SetSubnets
+              - elasticloadbalancing:DeleteLoadBalancer
+              - elasticloadbalancing:ModifyTargetGroup
+              - elasticloadbalancing:ModifyTargetGroupAttributes
+              - elasticloadbalancing:DeleteTargetGroup
+              - elasticloadbalancing:ModifyListenerAttributes
+              - elasticloadbalancing:ModifyCapacityReservation
+              - elasticloadbalancing:ModifyIpPools
+              Resource: "*"
+              Condition:
+                'Null':
+                  aws:ResourceTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:AddTags
+              Resource:
+              - arn:aws:elasticloadbalancing:*:*:targetgroup/*/*
+              - arn:aws:elasticloadbalancing:*:*:loadbalancer/net/*/*
+              - arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*
+              Condition:
+                StringEquals:
+                  elasticloadbalancing:CreateAction:
+                  - CreateTargetGroup
+                  - CreateLoadBalancer
+                'Null':
+                  aws:RequestTag/elbv2.k8s.aws/cluster: 'false'
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:RegisterTargets
+              - elasticloadbalancing:DeregisterTargets
+              Resource: arn:aws:elasticloadbalancing:*:*:targetgroup/*/*
+            - Effect: Allow
+              Action:
+              - elasticloadbalancing:SetWebAcl
+              - elasticloadbalancing:ModifyListener
+              - elasticloadbalancing:AddListenerCertificates
+              - elasticloadbalancing:RemoveListenerCertificates
+              - elasticloadbalancing:ModifyRule
+              - elasticloadbalancing:SetRulePriorities
+              Resource: "*"
+          PolicyName: root
+      RoleName: "aws-load-balancer-controller-{{.Cluster.Name}}"
+    Type: 'AWS::IAM::Role'
+# {{- end }}
   RemoteFilesEncryptionKey:
     Type: "AWS::KMS::Key"
     Properties:

@@ -7,18 +7,40 @@ data:
   aws-account-id: "{{accountID .Cluster.InfrastructureAccount}}"
   aws-account-name: "{{.Cluster.AccountName}}"
   cluster-alias: "{{.Cluster.Alias}}"
+  cluster-provider: "{{.Cluster.Provider}}"
   cluster-vpc-id: "{{.Cluster.ConfigItems.vpc_id}}"
   scalyr-team-token: "{{.Cluster.ConfigItems.scalyr_team_token}}"
   create-namespaces: "true"
   aws-available: "true"
   worker-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-worker"
 {{- if eq .Cluster.Provider "zalando-eks" }}
-  {{ $eks_oidc_issuer := index (split .Cluster.ConfigItems.eks_oidc_issuer_url "//") 1 }}
-  oidc-provider-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:oidc-provider/{{$eks_oidc_issuer}}"
-  oidc-subject-key: "{{$eks_oidc_issuer}}:sub"
+  {{ $oidc_issuer_aws := printf "%s.%s" .Cluster.ConfigItems.eks_legacy_cluster_local_id .Values.hosted_zone }}
+  {{ $oidc_issuer_eks := index (split .Cluster.ConfigItems.eks_oidc_issuer_url "//") 1 }}
+  {{ $oidc_provider_arn_aws := printf "arn:aws:iam::%s:oidc-provider/%s" (accountID .Cluster.InfrastructureAccount) $oidc_issuer_aws }}
+  {{ $oidc_provider_arn_eks := printf "arn:aws:iam::%s:oidc-provider/%s" (accountID .Cluster.InfrastructureAccount) $oidc_issuer_eks }}
+  {{ $oidc_subject_key_aws := printf "%s:sub" $oidc_issuer_aws }}
+  {{ $oidc_subject_key_eks := printf "%s:sub" $oidc_issuer_eks }}
+  oidc-provider-arn: "{{$oidc_provider_arn_eks}}"
+  oidc-subject-key: "{{$oidc_subject_key_eks}}"
+  {{- if ne .Cluster.ConfigItems.eks_legacy_cluster_local_id "" }}
+  oidc-trust-relationship-template: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_aws}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_aws}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}},{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_eks}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_eks}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}}]}'
+  {{- else }}
+  oidc-trust-relationship-template: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_eks}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_eks}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}}]}'
+  {{- end }}
 {{- else }}
-  oidc-provider-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:oidc-provider/{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
-  oidc-subject-key: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}:sub"
+  {{ $oidc_issuer_aws := printf "%s.%s" .Cluster.LocalID .Values.hosted_zone }}
+  {{ $oidc_issuer_eks := index (split .Cluster.ConfigItems.eks_oidc_issuer_url "//") 1 }}
+  {{ $oidc_provider_arn_aws := printf "arn:aws:iam::%s:oidc-provider/%s" (accountID .Cluster.InfrastructureAccount) $oidc_issuer_aws }}
+  {{ $oidc_provider_arn_eks := printf "arn:aws:iam::%s:oidc-provider/%s" (accountID .Cluster.InfrastructureAccount) $oidc_issuer_eks }}
+  {{ $oidc_subject_key_aws := printf "%s:sub" $oidc_issuer_aws }}
+  {{ $oidc_subject_key_eks := printf "%s:sub" $oidc_issuer_eks }}
+  oidc-provider-arn: "{{$oidc_provider_arn_aws}}"
+  oidc-subject-key: "{{$oidc_subject_key_aws}}"
+  {{- if ne $oidc_issuer_eks "" }}
+  oidc-trust-relationship-template: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_aws}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_aws}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}},{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_eks}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_eks}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}}]}'
+  {{- else }}
+  oidc-trust-relationship-template: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_aws}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_aws}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}}]}'
+  {{- end }}
 {{- end }}
   s3-bucket-name: "zalando-deployment-service-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
   status-service-url: "https://depl-status-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"

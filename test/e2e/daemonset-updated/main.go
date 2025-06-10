@@ -192,11 +192,19 @@ func onDeleteDaemonsets(ctx context.Context, client kubernetes.Interface) (map[d
 
 	for _, ds := range daemonsets.Items {
 		if ds.Spec.UpdateStrategy.Type == appsv1.OnDeleteDaemonSetStrategyType {
+			var templateGeneration int64
+			if genStr, ok := ds.Annotations["deprecated.daemonset.template.generation"]; ok {
+				templateGeneration, err = strconv.ParseInt(genStr, 10, 64)
+				if err != nil {
+					templateGeneration = 0
+				}
+
+			}
 			onDeleteDaemonsets[dsID{
 				Name:      ds.Name,
 				Namespace: ds.Namespace,
 				UID:       ds.UID,
-			}] = ds.Generation
+			}] = templateGeneration
 		}
 	}
 

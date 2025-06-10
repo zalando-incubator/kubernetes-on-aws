@@ -27,7 +27,7 @@ spec:
       serviceAccountName: zalando-iam-aws-proxy
       containers:
       - name: proxy
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/zalando-iam-aws-proxy:main-1
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/zalando-iam-aws-proxy:main-4
         args:
         - "--apiserver-url=https://kubernetes.default.svc.cluster.local"
         - "--ca-file-path=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
@@ -49,7 +49,7 @@ spec:
             sleep:
               seconds: 20
       - name: tokeninfo
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-146
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-154
         env:
         - name: OPENID_PROVIDER_CONFIGURATION_URL
           value: https://identity.zalando.com/.well-known/openid-configuration
@@ -79,7 +79,7 @@ spec:
             memory: 100Mi
       # {{- if ne .Cluster.Environment "production"}}
       - name: tokeninfo-sandbox
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-146
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-154
         env:
         - name: OPENID_PROVIDER_CONFIGURATION_URL
           value: https://sandbox.identity.zalando.com/.well-known/openid-configuration

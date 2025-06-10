@@ -28,9 +28,6 @@ cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
 cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
 
 # karpenter settings
-# DO NOT SET TO FALSE IF THE CLUSTER HAS KARPENTER POOLS OR NODES. REFER TO TEAPOT DOCS  FOR HOW TO ROLLBACK KARPENTER
-# https://teapot.docs.zalando.net/howtos/karpenter-operations/
-karpenter_pools_enabled: "true"
 
 karpenter_controller_cpu: "25m"
 karpenter_controller_memory: "256Mi"
@@ -50,8 +47,15 @@ karpenter_instance_storage_raid0: "true"
 # Can be set cluster wide or per node pool
 karpenter_in_transit_support_required: "false"
 
+# configure whether we allow t instance families for Karpenter nodes
+# t type instances have burstable CPU, which can be undesirable in production
+karpenter_instance_family_t_enabled: "false"
+
+# configure whether spot instances should be enabled in Karpenter's capacity-types
+karpenter_enable_spot: "true"
+
 # ALB config created by kube-aws-ingress-controller
-kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
 kube_aws_ingress_controller_idle_timeout: "1m"
 kube_aws_ingress_controller_deregistration_delay_timeout: "10s"
 # allow using NLBs for ingress
@@ -252,14 +256,6 @@ skipper_pod_deletion_cost_controller_resync_interval: "1h"
 # polarsignals - only enabled for testing teapot
 polarsignals_enabled: "false"
 
-# Emergency Access Service
-# Control whether the emergency access service is enabled or not.
-{{ if and (eq .Cluster.Environment "production") (eq .Cluster.Provider "zalando-aws") }}
-emergency_access_service_enabled: "true"
-{{else}}
-emergency_access_service_enabled: "false"
-{{end}}
-
 # Kube-Metrics-Adapter
 ## Scheduled scaling metrics: ramp up/down over this period of time
 kube_metrics_adapter_default_scaling_window: "10m"
@@ -312,6 +308,12 @@ skipper_serve_method_metric: "false"
 # defines if the http response status code is included in the dimension
 # of the skipper_serve_host_duration_seconds_bucket metric.
 skipper_serve_status_code_metric: "false"
+# skipper_combined_response_metrics sets the flag -combined-response-metrics.
+# It enables reporting combined response time metrics
+skipper_combined_response_metrics: "false"
+# skipper_backend_host_metrics sets the flag -backend-host-metrics.
+# It enables reporting total serve time metrics for backend
+skipper_backend_host_metrics: "false"
 
 # disabled|provisioned|enabled routegroup validation via skipper webhook
 # can be one of disabled|provisioned|enabled
@@ -385,7 +387,7 @@ fabric_gateway_controller_enabled: "true"
 fabric_gateway_controller_cpu: "50m"
 fabric_gateway_controller_memory: "150Mi"
 fabric_gateway_controller_allow_all_filters: "false"
-fabric_gateway_controller_snapshots_history_limit: "3"
+fabric_gateway_controller_snapshots_history_limit: "1"
 fabric_gateway_controller_enable_versioning: "true"
 fabric_gateway_controller_ssl_policy: ""
 fabric_gateway_controller_log_level: "INFO"
@@ -397,12 +399,6 @@ fabric_gateway_controller_log_level: "INFO"
 event_rate_limit_enable: "true"
 event_rate_limit_config_qps: "500"
 event_rate_limit_config_burst: "1000"
-
-# cadvisor settings
-cadvisor_cpu: "150m"
-cadvisor_memory: "150Mi"
-cadvisor_profiling_enabled: "false"
-cadvisor_enabled: "false"
 
 # settings for enabling the kubelet-summary-metrics proxy and prometheus metric
 # collection.
@@ -780,18 +776,12 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_31_aws_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.6-amd64-master-368" "861068367966" }}
-kuberuntu_image_v1_31_aws_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.6-arm64-master-368" "861068367966" }}
-kuberuntu_image_v1_31_eks_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.7-amd64-master-371" "861068367966" }}
-kuberuntu_image_v1_31_eks_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.31.7-arm64-master-371" "861068367966" }}
+kuberuntu_image_v1_32_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.32.4-amd64-master-373" "861068367966" }}
+kuberuntu_image_v1_32_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.32.4-arm64-master-373" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
-# pools. Possible values are 'aws' or 'eks'
-{{if eq .Cluster.Provider "zalando-eks"}}
-kuberuntu_ami_version: "eks"
-{{else}}
-kuberuntu_ami_version: "aws"
-{{end}}
+# pools. Possible values are 'new' or 'old'
+kuberuntu_ami_version: "new"
 
 # Feature toggle for auditing events
 audit_pod_events: "true"
@@ -928,16 +918,9 @@ external_dns_zones_cache_duration: "1h"
 # resource configuration
 external_dns_mem: "4Gi"
 
-# select which cache to use for Cluster DNS: unbound or dnsmasq.
-dns_cache: "unbound"
-
 expirimental_dns_unbound_liveness_probe: "true"
 
 # DNS container resources
-dns_dnsmasq_cpu: "100m"
-dns_dnsmasq_mem: "50Mi"
-dns_dnsmasq_sidecar_cpu: "10m"
-dns_dnsmasq_sidecar_mem: "45Mi"
 dns_unbound_cpu: "100m"
 dns_unbound_mem: "50Mi"
 dns_unbound_exporter_cpu: "10m"
@@ -1104,6 +1087,9 @@ config_provider_service: "false"
 # enable SizeMemoryBackedVolumes feature flag
 enable_size_memory_backed_volumes: "true"
 
+# enable ImageVolume feature flag
+enable_image_volumes: "false"
+
 # enable StatefulSetAutoDeletePVC feature flag
 # https://kubernetes.io/blog/2021/12/16/kubernetes-1-23-statefulset-pvc-auto-deletion/
 enable_statefulset_autodelete_pvc: "true"
@@ -1143,7 +1129,7 @@ enable_statefulset_autodelete_pvc: "true"
 # Source for the template function: sgIngressRanges: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/42695865a251fef58e22ce612d6549e75fa5d103/provisioner/template.go#L336-L417
 open_sg_ingress_ranges: ""
 
-# Each subdomain can reach a max of 63 bytes on Route53
+# Each DNS label (subdomain) can be 63 octets or less (https://datatracker.ietf.org/doc/html/rfc1035#section-2.3.4)
 # This custom value sets the subdomain max allowed length taking into consideration the 'cname-' prefix added by external-dns
 subdomain_max_length: "57"
 
@@ -1269,7 +1255,7 @@ wiz_sensor_cpu: "200m"
 wiz_sensor_memory: "300Mi"
 wiz_connector_cpu: "50m"
 wiz_connector_memory: "150Mi"
-wiz_priority: "false"
+wiz_priority: "true"
 # Please note when this is set to true it allows the use of the node selector feature
 # to deploy the sensor and connector on specific nodes, by manually setting the node selector label on the nodes.
 # This is useful when you want to deploy the sensor and connector on specific nodes.
@@ -1284,6 +1270,8 @@ eks_zalando_iam_aws_proxy_hpa_max_replicas: "10"
 eks_zalando_iam_aws_proxy_hpa_cpu_target: "80"
 eks_zalando_iam_aws_proxy_hpa_memory_target: "80"
 eks_okta_identity_provider: "true"
+eks_legacy_cluster_local_id: "kube-1"
+eks_oidc_issuer_url: "https://"
 eks_fis_support_enabled: "false"
 eks_fis_namespaces: "default"
 
@@ -1297,3 +1285,7 @@ aws_vpc_cni_custom_networking: "false"
 aws_vpc_cni_enable_network_policy: "false"
 # specify the network policy enforcement mode.
 aws_vpc_cni_network_policy_enforcing_mode: "standard"
+
+# aws-load-balancer-controller resource settings
+aws_load_balancer_controller_cpu: "100m"
+aws_load_balancer_controller_mem_max: "4Gi"

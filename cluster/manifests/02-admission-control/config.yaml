@@ -13,6 +13,9 @@ data:
   dns.default.subdomain-max-length: "{{ .Cluster.ConfigItems.subdomain_max_length }}"
 
   generic.prevent-write-operations.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_prevent_write_operations }}"
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+  generic.inject-albc-defaults.enable: "true"
+{{- end }}
 
   pod.container-resource-control.min-memory-request: "25Mi"
   pod.container-resource-control.default-cpu-request: "{{ .Cluster.ConfigItems.teapot_admission_controller_default_cpu_request }}"
@@ -29,7 +32,7 @@ data:
   pod.service-account-iam.enable: "true"
   pod.service-account-iam.base-aws-account-id: "{{ accountID .Cluster.InfrastructureAccount }}"
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
-  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-257"
+  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-266"
 {{- end }}
   pod.env-inject.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables }}"
   pod.env-inject.variable._PLATFORM_ACCOUNT: "{{ .Cluster.Alias }}"

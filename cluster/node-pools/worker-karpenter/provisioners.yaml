@@ -7,8 +7,8 @@ spec:
   amiFamily: Custom
   amiSelectorTerms:
     # Select on any AMI that has any of the following IDs
-    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_31_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
-    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_31_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_32_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_32_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
   metadataOptions:
     httpEndpoint: enabled
     # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
@@ -157,6 +157,13 @@ spec:
           values:
               # the ARM architecture is too old and flannel breaks
             - "a1"
+#{{ if eq .Cluster.ConfigItems.karpenter_instance_family_t_enabled "false"}}
+              # t type instances have burstable CPU, undesired in production
+            - "t4g"
+            - "t3a"
+            - "t3"
+            - "t2"
+#{{ end }}
 #{{ if eq .NodePool.ConfigItems.karpenter_in_transit_support_required "true" }}
         - key: karpenter.k8s.aws/instance-encryption-in-transit-supported
           operator: In
@@ -242,7 +249,9 @@ spec:
         - key: "karpenter.sh/capacity-type"
           operator: In
           values:
+#{{ if eq .NodePool.ConfigItems.karpenter_enable_spot "true" }}
             - "spot"
+#{{ end }}
             - "on-demand"
         - key: "kubernetes.io/arch"
           operator: In
