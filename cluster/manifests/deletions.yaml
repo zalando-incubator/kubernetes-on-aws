@@ -366,3 +366,27 @@ post_apply:
     component: aws-node
 {{- end }}
 {{- end }}
+{{ if ne .Cluster.ConfigItems.flink_operator_enabled "true" }}
+- name: flink-operator-config
+  kind: ConfigMap
+  namespace: kube-system
+- name: flink-kubernetes-operator
+  kind: Deployment
+  namespace: kube-system
+- name: flink-operator
+  kind: ServiceAccount
+  namespace: kube-system
+- name: flink
+  kind: ServiceAccount
+  namespace: kube-system
+- name: flink-operator
+  kind: ClusterRole
+- name: flink-operator-role-binding
+  kind: ClusterRoleBinding
+- name: flink
+  kind: Role
+  namespace: kube-system
+- name: flink-role-binding
+  kind: RoleBinding
+  namespace: kube-system
+{{- end }}
