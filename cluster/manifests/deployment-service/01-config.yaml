@@ -42,7 +42,7 @@ data:
   oidc-trust-relationship-template: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_aws}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_aws}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}}]}'
   {{- end }}
 {{- end }}
-  s3-bucket-name: "zalando-deployment-service-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
+  s3-bucket-name: "{{ .Cluster.ConfigItems.deployment_service_bucket_name }}"
   status-service-url: "https://depl-status-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"
   status-service-url-local: "http://deployment-status-service.ingress.cluster.local."
   deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
