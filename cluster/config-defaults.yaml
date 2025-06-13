@@ -1133,7 +1133,11 @@ open_sg_ingress_ranges: ""
 
 # Each DNS label (subdomain) can be 63 octets or less (https://datatracker.ietf.org/doc/html/rfc1035#section-2.3.4)
 # This custom value sets the subdomain max allowed length taking into consideration the 'cname-' prefix added by external-dns
+{{ if eq .Cluster.Alias "stups-test" }}
+subdomain_max_length: "100"
+{{ else }}
 subdomain_max_length: "57"
+{{ end }}
 
 # Network monitoring
 network_monitoring_enabled: "false"
