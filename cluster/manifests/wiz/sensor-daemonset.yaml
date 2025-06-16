@@ -6,7 +6,8 @@ kind: DaemonSet
 metadata:
   name: wiz-sensor
   labels:
-    helm.sh/chart: wiz-sensor-1.0.4760
+    helm.sh/chart: wiz-sensor-1.0.6440
+    image/tag: 1.0.6572
     application: "wiz"
     component: "sensor"
     daemonset: "wiz-sensor"
@@ -22,7 +23,8 @@ spec:
   template:
     metadata:
       labels:
-        helm.sh/chart: wiz-sensor-1.0.4760
+        helm.sh/chart: wiz-sensor-1.0.6440
+        image/tag: 1.0.6572
         application: "wiz"
         component: "sensor"
         daemonset: "wiz-sensor"
@@ -51,6 +53,15 @@ spec:
       - name: wiz-sensor
         image: container-registry.zalando.net/secops-systems/wiz-sensor:1.0.6572-main-4
         imagePullPolicy: IfNotPresent
+        startupProbe:
+            exec:
+              command:
+              - "/usr/src/app/wiz-sensor"
+              - "version"
+            initialDelaySeconds: 15
+            periodSeconds: 60
+            timeoutSeconds: 30
+            failureThreshold: 5
         securityContext:
           capabilities:
             add:
@@ -131,6 +142,10 @@ spec:
           value: info
         - name: STDOUT_LOG
           value: error
+        - name: POD_IMAGE_TAG
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['image/tag']
         - name: POD_MEM_LIMITS
           valueFrom:
             resourceFieldRef:
