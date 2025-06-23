@@ -7,7 +7,7 @@ metadata:
   name: wiz-kubernetes-connector-create-connector
   namespace: "wiz"
   labels:
-    helm.sh/chart: wiz-broker-2.1.0
+    helm.sh/chart: wiz-kubernetes-connector-3.3.11
     application: "wiz"
     component: "connector"
     job: "wiz-connector-agent"
@@ -21,7 +21,7 @@ spec:
   template:
     metadata:
       labels: 
-        helm.sh/chart: wiz-broker-2.1.0
+        helm.sh/chart: wiz-kubernetes-connector-3.3.11
         application: "wiz"
         component: "connector"
         job: "wiz-connector-agent"
@@ -31,6 +31,10 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+      volumes:
+      - name: api-client
+        secret:
+          secretName: wiz-api-token
       containers:
         - name: wiz-connector-creator
           securityContext:
@@ -58,20 +62,10 @@ spec:
             - --connector-name
             - {{.Cluster.Alias}}
           env:
+          - name: CLI_FILES_AS_ARGS
+            value: "/var/api-client/clientToken,/var/api-client/clientId"
           - name: LOG_LEVEL
             value: info
-          - name: WIZ_CLIENT_ID
-            valueFrom:
-              secretKeyRef:
-                name: wiz-api-token
-                key: clientId
-                optional: false
-          - name: WIZ_CLIENT_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: wiz-api-token
-                key: clientToken
-                optional: false
           - name: WIZ_ENV
             value: 
           resources:
@@ -81,4 +75,8 @@ spec:
             requests:
               cpu: {{ .Cluster.ConfigItems.wiz_connector_cpu }}
               memory: {{ .Cluster.ConfigItems.wiz_connector_memory }}
+          volumeMounts:
+          - name: api-client
+            mountPath: /var/api-client
+            readOnly: true
 {{end}}
