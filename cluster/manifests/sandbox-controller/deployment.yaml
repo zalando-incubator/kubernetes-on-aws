@@ -1,0 +1,42 @@
+# {{ $image := "container-registry.zalando.net/gwproxy/sandbox-controller:main-8" }}
+# {{ $version := index (split $image ":") 1 }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sandbox-controller
+  namespace: kube-system
+  labels:
+    application: sandbox-controller
+    version: "{{ $version }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: sandbox-controller
+  template:
+    metadata:
+      labels:
+        application: sandbox-controller
+        version: "{{ $version }}"
+      annotations:
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "controller", "parser": "keyValue"}]
+        logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
+        # no metrics exposed so far
+        # prometheus.io/path: /metrics
+        # prometheus.io/port: "7979"
+        # prometheus.io/scrape: "true"
+    spec:
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
+      serviceAccountName: sandbox-controller
+      containers:
+        - name: controller
+          image: "{{ $image }}"
+          resources:
+            limits:
+              cpu: 50m
+              memory: 0.3Gi
+            requests:
+              cpu: 50m
+              memory: 0.3Gi
