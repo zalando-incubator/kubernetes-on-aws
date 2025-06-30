@@ -38,6 +38,8 @@ spec:
           image: "{{ $image }}"
           args:
             - --target-access-mode=AWSCNI
+            - --target-cni-namespace=kube-system
+            - --target-cni-pod-labelSelector=k8s-app=aws-node
             - --stack-termination-protection
             - --ssl-policy={{ .Cluster.ConfigItems.kube_aws_ingress_controller_ssl_policy }}
             - --idle-connection-timeout={{ .Cluster.ConfigItems.kube_aws_ingress_controller_idle_timeout }}
