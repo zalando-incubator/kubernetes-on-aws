@@ -14,7 +14,7 @@ import (
 	applyconfigurationsautoscalingv1 "k8s.io/client-go/applyconfigurations/autoscaling/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
-	"k8s.io/kubernetes/test/e2e/framework/deployment"
+	testutils "k8s.io/kubernetes/test/utils"
 )
 
 var _ = describe("Infrastructure tests", func() {
@@ -47,7 +47,7 @@ var _ = describe("Infrastructure tests", func() {
 			deploy, err := cs.AppsV1().Deployments("default").Get(context.Background(), fmt.Sprintf("pool-reserve-%s", pool), metav1.GetOptions{})
 			framework.ExpectNoError(err)
 
-			err = deployment.WaitForDeploymentComplete(cs, deploy)
+			err = testutils.WaitForDeploymentComplete(cs, deploy, framework.Logf, poll, 2*pollLongTimeout)
 			framework.ExpectNoError(err)
 
 			// Scale out deployment to one more replica. In combination with Pod-Anti-Affinity, this should require one more node.
@@ -64,7 +64,7 @@ var _ = describe("Infrastructure tests", func() {
 			deploy, err := cs.AppsV1().Deployments("default").Get(context.Background(), fmt.Sprintf("pool-reserve-%s", pool), metav1.GetOptions{})
 			framework.ExpectNoError(err)
 
-			err = deployment.WaitForDeploymentComplete(cs, deploy)
+			err = testutils.WaitForDeploymentComplete(cs, deploy, framework.Logf, poll, 2*pollLongTimeout)
 			framework.ExpectNoError(err)
 		}
 	})
