@@ -4,7 +4,7 @@ metadata:
   name: deployment-config
   namespace: kube-system
 data:
-  aws-account-id: "{{accountID .Cluster.InfrastructureAccount}}"
+  aws-account-id: "{{.Cluster.InfrastructureAccountID}}"
   aws-account-name: "{{.Cluster.AccountName}}"
   cluster-alias: "{{.Cluster.Alias}}"
   cluster-provider: "{{.Cluster.Provider}}"
@@ -19,9 +19,9 @@ data:
   s3-bucket-name: "{{ .Cluster.ConfigItems.deployment_service_bucket_name }}"
   status-service-url: "https://depl-status-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"
   status-service-url-local: "http://deployment-status-service.ingress.cluster.local."
-  deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
+  deployment-role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccountID}}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
 {{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
-  ml-experiment-deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{ .Cluster.ConfigItems.deployment_service_ml_experiments_role_name }}"
+  ml-experiment-deployment-role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccountID}}:role/{{ .Cluster.ConfigItems.deployment_service_ml_experiments_role_name }}"
 {{- end }}
   cloudformation-enable-auto-expand: "{{.Cluster.ConfigItems.deployment_service_cf_auto_expand_enabled}}"
   cloudformation-update-source-branch-changes: "{{.Cluster.ConfigItems.deployment_service_cf_update_source_branch_changes}}"

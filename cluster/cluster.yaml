@@ -1050,7 +1050,7 @@ Resources:
                 Effect: Allow
                 Resource:
                 - >-
-                  arn:aws:s3:::zalando-e2e-test-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}
+                  arn:aws:s3:::zalando-e2e-test-{{.Cluster.InfrastructureAccountID}}-{{.Cluster.LocalID}}
               - Action:
                 - 's3:PutObject'
                 - 's3:GetObject'
@@ -1058,7 +1058,7 @@ Resources:
                 Effect: Allow
                 Resource:
                 - >-
-                  arn:aws:s3:::zalando-e2e-test-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}/*
+                  arn:aws:s3:::zalando-e2e-test-{{.Cluster.InfrastructureAccountID}}-{{.Cluster.LocalID}}/*
 {{ end }}
             Version: 2012-10-17
           PolicyName: root
@@ -2417,7 +2417,7 @@ Resources:
                 - "s3:GetObject"
                 - "s3:GetObjectVersion"
                 Effect: Allow
-                Resource: "arn:aws:s3:::cluster-lifecycle-manager-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.Region}}/*"
+                Resource: "arn:aws:s3:::cluster-lifecycle-manager-{{.Cluster.InfrastructureAccountID}}-{{.Cluster.Region}}/*"
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-static-egress-controller"
@@ -2612,7 +2612,7 @@ Resources:
                 Resource: '*'
               - Action: 'secretsmanager:GetSecretValue'
                 Effect: Allow
-                Resource: "arn:aws:secretsmanager:{{.Cluster.Region}}:{{.Cluster.InfrastructureAccount | getAWSAccountID}}:secret:*.zmon-db-user.credentials*"
+                Resource: "arn:aws:secretsmanager:{{.Cluster.Region}}:{{.Cluster.InfrastructureAccountID}}:secret:*.zmon-db-user.credentials*"
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-zmon"
@@ -2909,7 +2909,7 @@ Resources:
             Effect: Allow
             Resource:
             - >-
-              arn:aws:s3:::zalando-e2e-test-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}
+              arn:aws:s3:::zalando-e2e-test-{{.Cluster.InfrastructureAccountID}}-{{.Cluster.LocalID}}
           - Action:
             - 's3:PutObject'
             - 's3:GetObject'
@@ -2917,7 +2917,7 @@ Resources:
             Effect: Allow
             Resource:
             - >-
-              arn:aws:s3:::zalando-e2e-test-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}/*
+              arn:aws:s3:::zalando-e2e-test-{{.Cluster.InfrastructureAccountID}}-{{.Cluster.LocalID}}/*
           Version: 2012-10-17
         PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-e2e-aws-iam-test"
@@ -2926,7 +2926,7 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
     Properties:
-      BucketName: "zalando-e2e-test-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
+      BucketName: "zalando-e2e-test-{{.Cluster.InfrastructureAccountID}}-{{.Cluster.LocalID}}"
       LifecycleConfiguration:
         Rules:
         - AbortIncompleteMultipartUpload:
