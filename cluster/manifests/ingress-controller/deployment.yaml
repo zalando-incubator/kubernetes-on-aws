@@ -37,7 +37,10 @@ spec:
         - name: controller
           image: "{{ $image }}"
           args:
-            - --target-access-mode=HostPort
+            - --ip-addr-type=dualstack
+            - --target-access-mode=AWSCNI
+            - --target-cni-namespace=kube-system
+            - --target-cni-pod-labelselector=application=skipper-ingress,component=ingress
             - --stack-termination-protection
             - --ssl-policy={{ .Cluster.ConfigItems.kube_aws_ingress_controller_ssl_policy }}
             - --idle-connection-timeout={{ .Cluster.ConfigItems.kube_aws_ingress_controller_idle_timeout }}

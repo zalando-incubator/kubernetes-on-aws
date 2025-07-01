@@ -96,7 +96,6 @@ spec:
       serviceAccountName: skipper-ingress
       terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
       dnsPolicy: ClusterFirstWithHostNet
-      hostNetwork: true
       containers:
       - name: skipper-ingress
         image: "{{ .image }}"
@@ -104,12 +103,10 @@ spec:
         ports:
         - name: ingress-port
           containerPort: 9999
-          hostPort: 9999
           protocol: TCP
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
         - name: http-redirect
           containerPort: 9998
-          hostPort: 9998
           protocol: TCP
 {{ end }}
         env:
