@@ -1,0 +1,36 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: sandboxes.zalando.org
+spec:
+  group: zalando.org
+  names:
+    kind: Sandbox
+    plural: sandboxes
+    singular: sandbox
+    shortNames:
+      - sb
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - testContext
+                - sourceHosts
+                - target
+              properties:
+                testContext:
+                  type: string
+                sourceHosts:
+                  type: array
+                  items:
+                    type: string
+                target:
+                  type: string
