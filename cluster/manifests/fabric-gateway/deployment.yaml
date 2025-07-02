@@ -1,4 +1,4 @@
-# {{ $image := "container-registry.zalando.net/gwproxy/fabric-gateway:master-332" }}
+# {{ $image := "container-registry.zalando.net/gwproxy/fabric-gateway:master-333" }}
 # {{ $version := index (split $image ":") 1 }}
 apiVersion: apps/v1
 kind: Deployment
@@ -47,6 +47,9 @@ spec:
             - -ssl-policy={{ .Cluster.ConfigItems.fabric_gateway_controller_ssl_policy }}
             {{ if eq .Cluster.ConfigItems.fabric_gateway_controller_allow_all_filters "true" }}
             - -allow-all-filters=true
+            {{ end }}
+            {{ if ne .Cluster.ConfigItems.fabric_gateway_controller_snapshots_history_limit "0" }}
+            - -snapshots-history-limit={{ .Cluster.ConfigItems.fabric_gateway_controller_snapshots_history_limit }}
             {{ end }}
             {{ if eq .Cluster.ConfigItems.fabric_gateway_controller_enable_versioning "true" }}
             - -enable-versioning=true
