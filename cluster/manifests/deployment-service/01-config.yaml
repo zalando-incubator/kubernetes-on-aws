@@ -19,7 +19,7 @@ data:
   s3-bucket-name: "{{ .Cluster.ConfigItems.deployment_service_bucket_name }}"
   status-service-url: "https://depl-status-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"
   status-service-url-local: "http://deployment-status-service.ingress.cluster.local."
-  deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
+  deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.ConfigItems.deployment_service_deployment_role_name}}"
 {{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
   ml-experiment-deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{ .Cluster.ConfigItems.deployment_service_ml_experiments_role_name }}"
 {{- end }}
