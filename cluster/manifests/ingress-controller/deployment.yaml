@@ -8,7 +8,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-ingress-aws-controller
-    version: "{{ $version }}"
+    version: v0.17.6-1-gba9904f
 spec:
   replicas: 1
   selector:
@@ -18,7 +18,7 @@ spec:
     metadata:
       labels:
         application: kube-ingress-aws-controller
-        version: "{{ $version }}"
+        version: v0.17.6-1-gba9904f
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "controller", "parser": "keyValue"}]
@@ -35,9 +35,12 @@ spec:
       serviceAccountName: kube-ingress-aws-controller
       containers:
         - name: controller
-          image: "{{ $image }}"
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/gwproxy/kube-ingress-aws-controller-test:v0.17.6-1-gba9904f
           args:
-            - --target-access-mode=HostPort
+            - --ip-addr-type=dualstack
+            - --target-access-mode=AWSCNI
+            - --target-cni-namespace=kube-system
+            - --target-cni-pod-labelselector=application=skipper-ingress,component=ingress
             - --stack-termination-protection
             - --ssl-policy={{ .Cluster.ConfigItems.kube_aws_ingress_controller_ssl_policy }}
             - --idle-connection-timeout={{ .Cluster.ConfigItems.kube_aws_ingress_controller_idle_timeout }}
