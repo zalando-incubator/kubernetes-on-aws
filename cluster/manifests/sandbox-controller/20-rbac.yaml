@@ -1,0 +1,68 @@
+{{ if eq .Cluster.ConfigItems.sandbox_controller_enabled "true" }}
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sandbox-controller
+  namespace: kube-system
+  labels:
+    application: sandbox-controller
+    component: sandbox-controller
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: sandbox-controller
+  labels:
+    application: sandbox-controller
+    component: sandbox-controller
+rules:
+  - apiGroups:
+      - zalando.org
+    resources:
+      - sandboxes
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - zalando.org
+    resources:
+      - routegroups
+    verbs:
+      - list
+      - watch
+      - get
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs:
+      - list
+      - watch
+      - get
+      - create
+      - update
+      - patch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: sandbox-controller
+  labels:
+    application: sandbox-controller
+    component: sandbox-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: sandbox-controller
+subjects:
+  - kind: ServiceAccount
+    name: sandbox-controller
+    namespace: kube-system
+{{ end }}
