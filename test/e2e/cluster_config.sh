@@ -166,7 +166,7 @@ EOFF
     - "g6.xlarge"
     - "g6.2xlarge"
     - "g6.4xlarge"
-    name: karpenter-gpu
+    name: karpenter-gpu-tesla
     profile: worker-karpenter
     min_size: 0
     max_size: 0
@@ -183,6 +183,52 @@ EOFF
     config_items:
       labels: dedicated=node-reboot-tests
       taints: dedicated=node-reboot-tests:NoSchedule
+  - config_items:
+      requirements: "- key: karpenter.k8s.aws/instance-gpu-manufacturer\n  operator: In\n  values:\n  - nvidia\n- key: zalando.org/dedicated\n  operator: Exists\n"
+      scaling_priority: "2"
+      taints: nvidia.com/gpu=present:NoSchedule,zalando.org/dedicated=dedicated:NoSchedule
+    discount_strategy: none
+    instance_type: not-specified
+    instance_types:
+    - not-specified
+    max_size: 0
+    min_size: 0
+    name: karpenter-gpu-dedicated
+    profile: worker-karpenter
+  - config_items:
+      requirements: "- key: zalando.org/dedicated\n  operator: Exists\n"
+      scaling_priority: "1"
+      taints: zalando.org/dedicated=dedicated:NoSchedule
+    discount_strategy: none
+    instance_type: not-specified
+    instance_types:
+    - not-specified
+    max_size: 0
+    min_size: 0
+    name: karpenter-catch-all-dedicated
+    profile: worker-karpenter
+  - config_items:
+      requirements: "- key: karpenter.k8s.aws/instance-gpu-manufacturer\n  operator: In\n  values:\n  - nvidia\n"
+      scaling_priority: "3"
+      taints: nvidia.com/gpu=present:NoSchedule
+    discount_strategy: none
+    instance_type: not-specified
+    instance_types:
+    - not-specified
+    max_size: 0
+    min_size: 0
+    name: karpenter-gpu
+    profile: worker-karpenter
+  - config_items:
+      scaling_priority: "2"
+    discount_strategy: none
+    instance_type: not-specified
+    instance_types:
+    - not-specified
+    max_size: 0
+    min_size: 0
+    name: karpenter-catch-all
+    profile: worker-karpenter
   provider: ${CLUSTER_PROVIDER}
   region: ${REGION}
   owner: '${OWNER}'
