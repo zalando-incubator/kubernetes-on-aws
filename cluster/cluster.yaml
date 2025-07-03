@@ -1558,7 +1558,7 @@ Resources:
   DeploymentControllerRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: "{{.Cluster.LocalID}}-deployment-service-controller"
+      RoleName: "{{.Cluster.ConfigItems.deployment_service_controller_role_name}}"
       AssumeRolePolicyDocument: !Sub
         - |
           {
@@ -1623,11 +1623,11 @@ Resources:
                   - 'sts:AssumeRole'
                 Effect: Allow
                 Resource:
-                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/{{.Cluster.ConfigItems.deployment_service_deployment_role_name}}"
   DeploymentControllerDeploymentRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: "{{.Cluster.LocalID}}-deployment-service-deployment"
+      RoleName: "{{.Cluster.ConfigItems.deployment_service_deployment_role_name}}"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -1661,7 +1661,7 @@ Resources:
   DeploymentStatusServiceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: "{{.Cluster.LocalID}}-deployment-service-status-service"
+      RoleName: "{{.Cluster.ConfigItems.deployment_service_status_service_role_name}}"
       AssumeRolePolicyDocument: !Sub
         - |
           {
@@ -2912,7 +2912,7 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
     Properties:
-      BucketName: "zalando-audittrail-{{accountID .Cluster.InfrastructureAccount}}-{{.Cluster.LocalID}}"
+      BucketName: "{{ .Cluster.ConfigItems.audittrail_bucket_name }}"
       LifecycleConfiguration:
         Rules:
           - AbortIncompleteMultipartUpload:
