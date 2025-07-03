@@ -297,6 +297,11 @@ post_apply:
   kind : Deployment
   namespace: wiz
 {{- end }}
+{{ if ne .Cluster.ConfigItems.sandbox_controller_enabled "true" }}
+- name: sandbox-controller
+  namespace: kube-system
+  kind: Deployment
+{{ end }}
 {{- if and (ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true") (ne .Cluster.ConfigItems.wiz_enable_runtime_connector "true") }}
 - name: wiz-connector-connector
   kind : Secret
