@@ -1,7 +1,6 @@
-{{- if eq .Cluster.ConfigItems.stackset_controller_per_stack_hostnames "true" }}
-{{ $version := "pr-696-10"}}
-{{- else }}
 {{ $version := "v1.4.99" }}
+{{- if eq .Cluster.ConfigItems.stackset_controller_per_stack_hostnames "true" }}
+{{ $version = "pr-696-10"}}
 {{- end }}
 apiVersion: apps/v1
 kind: Deployment
@@ -34,7 +33,11 @@ spec:
       serviceAccountName: stackset-controller
       containers:
       - name: stackset-controller
+      {{- if eq .Cluster.ConfigItems.stackset_controller_per_stack_hostnames "true" }}
+        image: "container-registry-test.zalando.net/teapot/stackset-controller:{{ $version }}"
+      {{- else }}
         image: "container-registry.zalando.net/teapot/stackset-controller:{{ $version }}"
+      {{- end }}
         args:
         - "--interval={{ .Cluster.ConfigItems.stackset_controller_sync_interval }}"
 {{- if eq .Cluster.ConfigItems.stackset_routegroup_support_enabled "true" }}
