@@ -372,6 +372,7 @@ skipper_ingress_routegroup_crd_require_hosts: "true"
 # Set defaults values that would enable Open Policy Agent in a skipper filter
 skipper_open_policy_agent_enabled: "false"
 skipper_open_policy_agent_styra_token: ""
+skipper_open_policy_agent_data_preprocessing_optimization_enabled: "false"
 
 # Default timeout value in seconds for outgoing http calls from Open Policy Agent in a skipper filter
 skipper_open_policy_agent_styra_response_header_timeout: "2"
@@ -800,6 +801,7 @@ audittrail_adapter_cpu: "50m"
 audittrail_adapter_memory: "200Mi"
 
 audittrail_adapter_timeout: "2s"
+audittrail_bucket_name: "zalando-audittrail-{{ .Cluster.InfrastructureAccount | getAWSAccountID }}-{{ .Cluster.LocalID }}"
 
 # When enabled, any read-only events are added to the metrics, but are dropped
 # before being sent to audittrail-api.
@@ -1038,6 +1040,9 @@ deployment_service_tokeninfo_url: ""
 deployment_service_lightstep_token: ""
 deployment_service_ml_experiments_enabled: "true"
 deployment_service_ml_experiments_role_name: "{{ .Cluster.LocalID }}-deployment-service-ml-experiment-deployment"
+deployment_service_controller_role_name: "{{ .Cluster.LocalID }}-deployment-service-controller"
+deployment_service_deployment_role_name: "{{ .Cluster.LocalID }}-deployment-service-deployment"
+deployment_service_status_service_role_name: "{{ .Cluster.LocalID }}-deployment-service-status-service"
 deployment_service_cf_auto_expand_enabled: "false"
 deployment_service_cf_update_source_branch_changes: "true"
 deployment_service_executor_cdp_permissions: "false"
@@ -1269,8 +1274,6 @@ eks_zalando_iam_aws_proxy_hpa_max_replicas: "10"
 eks_zalando_iam_aws_proxy_hpa_cpu_target: "80"
 eks_zalando_iam_aws_proxy_hpa_memory_target: "80"
 eks_okta_identity_provider: "true"
-eks_legacy_cluster_local_id: "kube-1"
-eks_oidc_issuer_url: "https://"
 eks_fis_support_enabled: "false"
 eks_fis_namespaces: "default"
 
@@ -1288,3 +1291,6 @@ aws_vpc_cni_network_policy_enforcing_mode: "standard"
 # aws-load-balancer-controller resource settings
 aws_load_balancer_controller_cpu: "100m"
 aws_load_balancer_controller_mem_max: "4Gi"
+
+# configure if sandbox-controller should be deployed
+sandbox_controller_enabled: "false" 

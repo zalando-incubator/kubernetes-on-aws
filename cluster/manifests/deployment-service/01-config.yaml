@@ -16,35 +16,10 @@ data:
   oidc-provider-arn: "{{.Cluster.OIDCProviderARN}}"
   oidc-subject-key: "{{.Cluster.OIDCSubjectKey}}"
   iam-role-trust-relationship-template: '{{.Cluster.IAMRoleTrustRelationshipTemplate}}'
-{{- if eq .Cluster.Provider "zalando-eks" }}
-  {{ $oidc_issuer_aws := printf "%s.%s" .Cluster.ConfigItems.eks_legacy_cluster_local_id .Values.hosted_zone }}
-  {{ $oidc_issuer_eks := index (split .Cluster.ConfigItems.eks_oidc_issuer_url "//") 1 }}
-  {{ $oidc_provider_arn_aws := printf "arn:aws:iam::%s:oidc-provider/%s" (accountID .Cluster.InfrastructureAccount) $oidc_issuer_aws }}
-  {{ $oidc_provider_arn_eks := printf "arn:aws:iam::%s:oidc-provider/%s" (accountID .Cluster.InfrastructureAccount) $oidc_issuer_eks }}
-  {{ $oidc_subject_key_aws := printf "%s:sub" $oidc_issuer_aws }}
-  {{ $oidc_subject_key_eks := printf "%s:sub" $oidc_issuer_eks }}
-  {{- if ne .Cluster.ConfigItems.eks_legacy_cluster_local_id "" }}
-  oidc-trust-relationship-template: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_aws}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_aws}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}},{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_eks}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_eks}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}}]}'
-  {{- else }}
-  oidc-trust-relationship-template: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_eks}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_eks}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}}]}'
-  {{- end }}
-{{- else }}
-  {{ $oidc_issuer_aws := printf "%s.%s" .Cluster.LocalID .Values.hosted_zone }}
-  {{ $oidc_issuer_eks := index (split .Cluster.ConfigItems.eks_oidc_issuer_url "//") 1 }}
-  {{ $oidc_provider_arn_aws := printf "arn:aws:iam::%s:oidc-provider/%s" (accountID .Cluster.InfrastructureAccount) $oidc_issuer_aws }}
-  {{ $oidc_provider_arn_eks := printf "arn:aws:iam::%s:oidc-provider/%s" (accountID .Cluster.InfrastructureAccount) $oidc_issuer_eks }}
-  {{ $oidc_subject_key_aws := printf "%s:sub" $oidc_issuer_aws }}
-  {{ $oidc_subject_key_eks := printf "%s:sub" $oidc_issuer_eks }}
-  {{- if ne $oidc_issuer_eks "" }}
-  oidc-trust-relationship-template: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_aws}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_aws}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}},{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_eks}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_eks}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}}]}'
-  {{- else }}
-  oidc-trust-relationship-template: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Federated":"{{$oidc_provider_arn_aws}}"},"Action":"sts:AssumeRoleWithWebIdentity","Condition":{"StringLike":{"{{$oidc_subject_key_aws}}":"system:serviceaccount:${SERVICE_ACCOUNT}"}}}]}'
-  {{- end }}
-{{- end }}
   s3-bucket-name: "{{ .Cluster.ConfigItems.deployment_service_bucket_name }}"
   status-service-url: "https://depl-status-{{.Cluster.Alias}}.{{.Values.hosted_zone}}"
   status-service-url-local: "http://deployment-status-service.ingress.cluster.local."
-  deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-deployment-service-deployment"
+  deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.ConfigItems.deployment_service_deployment_role_name}}"
 {{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
   ml-experiment-deployment-role-arn: "arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{ .Cluster.ConfigItems.deployment_service_ml_experiments_role_name }}"
 {{- end }}
