@@ -8,9 +8,9 @@ metadata:
     component: "status-service"
   annotations:
     {{- if eq .Cluster.Provider "zalando-eks" }}
-    eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccountID}}:role/{{.Cluster.LocalID}}-deployment-service-status-service"
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccountID}}:role/{{.Cluster.ConfigItems.deployment_service_status_service_role_name}}"
     {{- else }}
-    iam.amazonaws.com/role: "{{.Cluster.LocalID}}-deployment-service-status-service"
+    iam.amazonaws.com/role: "{{.Cluster.ConfigItems.deployment_service_status_service_role_name}}"
     {{- end }}
 ---
 kind: ClusterRole
