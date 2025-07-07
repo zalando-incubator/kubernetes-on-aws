@@ -1,0 +1,23 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: "fabricgateway-policy.zalando.org"
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   ["zalando.org"]
+      apiVersions: ["v1"]
+      operations:  ["CREATE"]
+      resources:   ["fabricgateways"]
+  validations:
+    - expression: 'object.spec.exists(key, key == "x-external-service-provider") && object.spec["x-external-service-provider"].exists(key, key == "stackVersion")'
+      message: "x-external-service-provider.stackVersion must be set if you are using FabricGateway with StackSet to enable FabricGateway versioning."
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: "fabricgateway-policy.zalando.org"
+spec:
+  policyName: "fabricgateway-policy.zalando.org"
+  validationActions: [Deny]
