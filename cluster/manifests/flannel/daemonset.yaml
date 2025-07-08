@@ -10,7 +10,7 @@ metadata:
     component: flannel
 spec:
   updateStrategy:
-    type: OnDelete
+    type: RollingUpdate
   selector:
     matchLabels:
       daemonset: kube-flannel
@@ -20,6 +20,7 @@ spec:
         daemonset: kube-flannel
         application: kubernetes
         component: flannel
+        test: rolling
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         config/hash: {{"configmap.yaml" | manifestHash}}
