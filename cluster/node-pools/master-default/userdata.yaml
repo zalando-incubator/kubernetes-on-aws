@@ -260,7 +260,7 @@ write_files:
               name: admission-controller-kubeconfig
               readOnly: true
         - name: skipper-admission-webhook
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.57
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.59
           args:
             - webhook
             - --address=:9085
@@ -313,7 +313,7 @@ write_files:
               memory: 50Mi
           args:
             - --node-auth-cluster-id={{.Cluster.ID}}
-            - "--node-auth-role-arn=arn:aws:iam::{{accountID .Cluster.InfrastructureAccount}}:role/{{.Cluster.LocalID}}-worker"
+            - "--node-auth-role-arn=arn:aws:iam::{{.Cluster.InfrastructureAccountID}}:role/{{.Cluster.LocalID}}-worker"
             - "--node-auth-rate-limit={{.Cluster.ConfigItems.node_auth_rate_limit}}"
             - --cluster-alias={{.Cluster.Alias}}
 
@@ -437,7 +437,7 @@ write_files:
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
         - name: skipper-proxy
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.57
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.59
           args:
           - skipper
           - -access-log-strip-query
@@ -488,7 +488,7 @@ write_files:
             name: ssl-certs-kubernetes
             readOnly: true
         - name: skipper-metrics
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.57
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.59
           args:
           - skipper
           - -access-log-strip-query
@@ -549,7 +549,7 @@ write_files:
           image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/aws-encryption-provider:87537492279066f5ddc94bf0cf3667f38f3f6328-main-3.custom
           command:
           - /aws-encryption-provider
-          - --key=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccount | getAWSAccountID }}:key/{{ .Values.ClusterStackOutputs.EtcdEncryptionKey }}
+          - --key=arn:aws:kms:{{ .Cluster.Region }}:{{ .Cluster.InfrastructureAccountID }}:key/{{ .Values.ClusterStackOutputs.EtcdEncryptionKey }}
           - --region={{ .Cluster.Region }}
           - --listen=/var/run/kmsplugin/socket.sock
           - --health-port=:8086
