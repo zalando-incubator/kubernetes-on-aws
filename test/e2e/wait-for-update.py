@@ -25,8 +25,9 @@ def update_complete(kind, check_fn):
 
 def daemonset_updated(spec, status):
     desired = status.get("desiredNumberScheduled", 0)
+    updated = status.get("updatedNumberScheduled", 0)
     ready = status.get("numberReady", 0)
-    if desired == ready:
+    if desired == ready and desired == updated:
         return None
     else:
         return "{}/{} [{}]".format(ready, desired, condition_messages(status))
