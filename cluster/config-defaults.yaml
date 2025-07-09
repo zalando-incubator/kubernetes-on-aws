@@ -689,7 +689,7 @@ spot_node_rescheduler_cpu: "50m"
 
 # Enable and configure prevent scale down annotation
 teapot_admission_controller_prevent_scale_down_enabled: "true"
-{{if eq .Cluster.Environment "production"}}
+{{if or (eq .Cluster.Environment "production") (eq .Cluster.Environment "e2e")}}
 teapot_admission_controller_prevent_scale_down_allowed: "true"
 {{else}}
 teapot_admission_controller_prevent_scale_down_allowed: "false"
@@ -1070,7 +1070,7 @@ observability_metrics_pods_labels: "application,component,version,environment,st
 
 observability_metrics_ingresses_labels: ""
 
-observability_metrics_pods_annotations: "zalando.org/zmon-job-metric-stored"
+observability_metrics_pods_annotations: "zalando.org/zmon-job-metric-stored,topology.kubernetes.io/zone"
 
 # opentelemetry collector
 observability_otel_collector_enabled: "true"
