@@ -13,3 +13,36 @@ subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User
   name: zalando-iam:zalando:service:stups_kubernetes
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubernetes-resource-analyzer-secrets
+  labels:
+    application: kubernetes
+    application: resource-analyzer
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubernetes-resource-analyzer-secrets
+  labels:
+    application: kubernetes
+    application: resource-analyzer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubernetes-resource-analyzer-secrets
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: zalando-iam:zalando:service:stups_kubernetes
