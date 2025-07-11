@@ -98,7 +98,7 @@ echo "provision namespace: loadtest-e2e"
 kubectl create namespace loadtest-e2e
 
 echo "provision loadtest backend with target https://${TARGET}.${ZONE}"
-kubectl create -f ./loadtest/backend
+kubectl apply -f ./loadtest/backend
 
 # we do not want to fail on failing curl
 set +e
@@ -117,7 +117,7 @@ done
 set -e
 
 echo "provision loadtest client"
-kubectl create -f ./loadtest/client
+kubectl apply -f ./loadtest/client
 
 echo "load test started, waiting ${sleep_seconds} seconds"
 sleep "$sleep_seconds"
