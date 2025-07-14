@@ -55,7 +55,7 @@ karpenter_instance_family_t_enabled: "false"
 karpenter_enable_spot: "true"
 
 # ALB config created by kube-aws-ingress-controller
-kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
+kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
 kube_aws_ingress_controller_idle_timeout: "1m"
 kube_aws_ingress_controller_deregistration_delay_timeout: "10s"
 # allow using NLBs for ingress
@@ -470,7 +470,7 @@ journald_reader_cpu: "1m"
 journald_reader_memory: "30Mi"
 
 # Logging settings
-logging_s3_bucket: "zalando-logging-{{ .Cluster.InfrastructureAccount | getAWSAccountID}}-{{ .Cluster.Region }}"
+logging_s3_bucket: "zalando-logging-{{ .Cluster.InfrastructureAccountID }}-{{ .Cluster.Region }}"
 scalyr_team_token: ""
 log_destination_infra: "scalyr/stups"
 log_destination_both: "scalyr/main+stups"
@@ -689,7 +689,7 @@ spot_node_rescheduler_cpu: "50m"
 
 # Enable and configure prevent scale down annotation
 teapot_admission_controller_prevent_scale_down_enabled: "true"
-{{if eq .Cluster.Environment "production"}}
+{{if or (eq .Cluster.Environment "production") (eq .Cluster.Environment "e2e")}}
 teapot_admission_controller_prevent_scale_down_allowed: "true"
 {{else}}
 teapot_admission_controller_prevent_scale_down_allowed: "false"
@@ -801,7 +801,7 @@ audittrail_adapter_cpu: "50m"
 audittrail_adapter_memory: "200Mi"
 
 audittrail_adapter_timeout: "2s"
-audittrail_bucket_name: "zalando-audittrail-{{ .Cluster.InfrastructureAccount | getAWSAccountID }}-{{ .Cluster.LocalID }}"
+audittrail_bucket_name: "zalando-audittrail-{{ .Cluster.InfrastructureAccountID }}-{{ .Cluster.LocalID }}"
 
 # When enabled, any read-only events are added to the metrics, but are dropped
 # before being sent to audittrail-api.
@@ -1047,7 +1047,7 @@ deployment_service_cf_auto_expand_enabled: "false"
 deployment_service_cf_update_source_branch_changes: "true"
 deployment_service_executor_cdp_permissions: "false"
 deployment_service_skip_mustache_rendering: "true"
-deployment_service_bucket_name: "zalando-deployment-service-{{ .Cluster.InfrastructureAccount | getAWSAccountID }}-{{ .Cluster.LocalID }}"
+deployment_service_bucket_name: "zalando-deployment-service-{{ .Cluster.InfrastructureAccountID }}-{{ .Cluster.LocalID }}"
 {{- if eq .Cluster.Environment "test" }}
 # disable CF update of source branch changes in test to avoid updating CF stacks
 # on any PR.
@@ -1070,7 +1070,7 @@ observability_metrics_pods_labels: "application,component,version,environment,st
 
 observability_metrics_ingresses_labels: ""
 
-observability_metrics_pods_annotations: "zalando.org/zmon-job-metric-stored"
+observability_metrics_pods_annotations: "zalando.org/zmon-job-metric-stored,topology.kubernetes.io/zone"
 
 # opentelemetry collector
 observability_otel_collector_enabled: "true"
@@ -1293,4 +1293,4 @@ aws_load_balancer_controller_cpu: "100m"
 aws_load_balancer_controller_mem_max: "4Gi"
 
 # configure if sandbox-controller should be deployed
-sandbox_controller_enabled: "false" 
+sandbox_controller_enabled: "false"
