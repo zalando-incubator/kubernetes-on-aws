@@ -55,8 +55,10 @@ spec:
         - "--sync-ingress-annotation=zalando.org/aws-waf-web-acl-id"
         - "--sync-ingress-annotation=kubernetes.io/ingress.class"
 {{ end}}
-        - "--cluster-domain={{ .Values.hosted_zone }}"
         - "--cluster-domain=ingress.cluster.local"
+{{- if eq .Cluster.Provider "zalando-aws" }}
+        - "--cluster-domain={{ .Values.hosted_zone }}"
+{{- end }}
         resources:
           limits:
             cpu: 10m
