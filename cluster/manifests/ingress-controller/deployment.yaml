@@ -8,7 +8,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-ingress-aws-controller
-    version: pr-750-9
+    version: pr-752-2
 spec:
   replicas: 1
   selector:
@@ -18,7 +18,7 @@ spec:
     metadata:
       labels:
         application: kube-ingress-aws-controller
-        version: pr-750-9
+        version: pr-752-2
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "controller", "parser": "keyValue"}]
@@ -35,9 +35,9 @@ spec:
       serviceAccountName: kube-ingress-aws-controller
       containers:
         - name: controller
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/teapot/kube-ingress-aws-controller-test-eks:pr-750-9
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/teapot/kube-ingress-aws-controller:pr-752-2
           args:
-            - --ip-addr-type=dualstack
+            - --target-ip-addr-type=ipv6
             - --target-access-mode=AWSCNI
             - --target-cni-namespace=kube-system
             - --target-cni-pod-labelselector=application=skipper-ingress,component=ingress
