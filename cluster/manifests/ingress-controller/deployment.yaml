@@ -1,4 +1,4 @@
-# {{ $image := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/kube-ingress-aws-controller:v0.18.7" }}
+# {{ $image := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/teapot/kube-ingress-aws-controller:pr-753-14" }}
 # {{ $version := index (split $image ":") 1 }}
 
 apiVersion: apps/v1
@@ -63,6 +63,7 @@ spec:
             # {{ if .Cluster.ConfigItems.kube_aws_ingress_controller_cert_filter_tag }}
             - --cert-filter-tag={{ .Cluster.ConfigItems.kube_aws_ingress_controller_cert_filter_tag }}
             # {{ end }}
+            - --min-load-balancer-age=4m59s
           env:
             - name: CUSTOM_FILTERS
               value: "tag:kubernetes.io/cluster/{{.Cluster.Name}}=owned tag:node.kubernetes.io/role=worker tag:zalando.org/ingress-enabled=true"
