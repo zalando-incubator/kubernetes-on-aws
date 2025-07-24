@@ -17,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubelabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubernetes/test/e2e/framework"
 	testutil "k8s.io/kubernetes/test/utils"
@@ -940,7 +939,7 @@ func newClientWithRole(cluster *types.Cluster, assumeRole string) (*kubernetes.C
 	if err != nil {
 		return nil, err
 	}
-	clientset, err := kubernetes.NewForConfig(
+	kubernetes, err := kubernetes.NewForConfig(
 		&rest.Config{
 			Host:        aws.ToString(cluster.Endpoint),
 			BearerToken: tok.Token,
@@ -952,7 +951,7 @@ func newClientWithRole(cluster *types.Cluster, assumeRole string) (*kubernetes.C
 	if err != nil {
 		return nil, err
 	}
-	return clientset, nil
+	return kubernetes, nil
 }
 
 // getEKSCluster returns the EKS cluster where its Endpoint matches the given config's Host.
@@ -997,7 +996,7 @@ func examplePod(namespace string, labels map[string]string) *corev1.Pod {
 }
 
 // createPod starts a Pod in the specified namespace and with the specific labels.
-func createPod(ctx context.Context, client clientset.Interface, namespace string, labels map[string]string) (*corev1.Pod, error) {
+func createPod(ctx context.Context, client kubernetes.Interface, namespace string, labels map[string]string) (*corev1.Pod, error) {
 	pod, err := client.CoreV1().Pods(namespace).Create(ctx, examplePod(namespace, labels), metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
@@ -1011,7 +1010,7 @@ func createPod(ctx context.Context, client clientset.Interface, namespace string
 }
 
 // createClusterRole creates a ClusterRole with the specified labels.
-func createClusterRole(ctx context.Context, client clientset.Interface, labels map[string]string) (*rbacv1.ClusterRole, error) {
+func createClusterRole(ctx context.Context, client kubernetes.Interface, labels map[string]string) (*rbacv1.ClusterRole, error) {
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-cluster-role-",
