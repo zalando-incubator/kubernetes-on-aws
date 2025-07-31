@@ -504,6 +504,52 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 			})
 		})
 
+        // Test secret read permissions for CDP and deployment-service
+        // =============================================================================
+        // Validates the RBAC permissions granted to CDP and deployment-service for reading
+        // secrets across all namespaces, including kube-system. These permissions enable
+        // the workflow where users deploy cluster roles with secret read permissions that
+        // are subsequently rewritten by the admission controller.
+        g.When("the service account is deployment-service-controller", func() {
+			g.BeforeEach(func() {
+				tc.data.users = []string{"system:serviceaccount:kube-system:deployment-service-controller"}
+				tc.data.groups = [][]string{{"system:serviceaccounts:kube-system"}}
+			})
+			g.It("should allow to read secrets on user namespaces", func() {
+				tc.data.namespaces = []string{"teapot"}
+				tc.data.resources = []string{"secrets"}
+				tc.data.verbs = []string{"read"}
+				tc.run(context.TODO(), cs, true)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
+			})
+			g.It("should allow to read secrets on system namespace", func() {
+				tc.data.namespaces = []string{"kube-system"}
+				tc.data.resources = []string{"secrets"}
+				tc.data.verbs = []string{"read"}
+				tc.run(context.TODO(), cs, true)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
+			})
+		})
+		g.When("the service account is CDP", func() {
+			g.BeforeEach(func() {
+				tc.data.users = []string{"system:serviceaccount:default:cdp"}
+				tc.data.groups = [][]string{{"system:serviceaccounts:default"}}
+			})
+			g.It("should allow to read secrets on user namespaces", func() {
+				tc.data.namespaces = []string{"teapot"}
+				tc.data.resources = []string{"secrets"}
+				tc.data.verbs = []string{"read"}
+				tc.run(context.TODO(), cs, true)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
+			})
+			g.It("should allow to read secrets on system namespace", func() {
+				tc.data.namespaces = []string{"kube-system"}
+				tc.data.resources = []string{"secrets"}
+				tc.data.verbs = []string{"read"}
+				tc.run(context.TODO(), cs, true)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
+			})
+		})
 	})
 
 	g.Context("For administrators", func() {
@@ -893,6 +939,69 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				gomega.Expect(result.Error()).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
 			})
 		})
+    })
+
+    // Test secret read permissions for CDP and deployment-service
+    // =============================================================================
+    // Validates that the admission controller correctly rewrites ClusterRole
+    // permissions related to secret access, ensuring that secret read permissions
+    // granted to CDP and deployment-service are revoked.
+	g.Context("cdp and deployment-service", func() {
+		var (
+            testSecret           *corev1.Secret
+			systemSecret     *corev1.Secret
+		)
+
+		g.BeforeEach(func() {
+			var err error
+			testSecret, err = createSecret(context.Background(), f.ClientSet, f.Namespace.Name, map[string]string{"application": "my-app"})
+			framework.ExpectNoError(err)
+
+			systemSecret, err = createSecret(context.Background(), f.ClientSet, "kube-system", map[string]string{"application": "my-app"})
+			framework.ExpectNoError(err)
+		})
+
+		g.Context("cdp", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getCDPClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should deny secret read access to user namespace", func() {
+				_, err := client.CoreV1().Secrets(testSecret.Namespace).Get(context.Background(), testSecret.Name, metav1.GetOptions{})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("read operations are forbidden")))
+            })
+
+			g.It("should deny secret read access to kube-system namespace", func() {
+				_, err := client.CoreV1().Secrets(systemSecret.Namespace).Get(context.Background(), systemSecret.Name, metav1.GetOptions{})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("read operations are forbidden")))
+			})
+		})
+
+		g.Context("deployment-service", func() {
+			var client *kubernetes.Clientset
+
+			g.BeforeEach(func() {
+				var err error
+
+				client, err = getDeploymentServiceClient(eksCluster, awsAccountID)
+				framework.ExpectNoError(err)
+			})
+
+			g.It("should deny secret read access to user namespace", func() {
+				_, err := client.CoreV1().Secrets(testSecret.Namespace).Get(context.Background(), testSecret.Name, metav1.GetOptions{})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("read operations are forbidden")))
+            })
+
+			g.It("should deny secret read access to kube-system namespace", func() {
+				_, err := client.CoreV1().Secrets(systemSecret.Namespace).Get(context.Background(), systemSecret.Name, metav1.GetOptions{})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("read operations are forbidden")))
+			})
+		})
 	})
 })
 
@@ -919,6 +1028,15 @@ func getReadOnlyClient(cluster *types.Cluster, awsAccountID string) (*kubernetes
 // getPostgresAdministratorClient returns a client with the `zalando:postgres-admin` group.
 func getPostgresAdministratorClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
 	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-postgres-admin-role", awsAccountID, aws.ToString(cluster.Name)))
+}
+
+// getCDPClient returns a client with the `zalando:cdp` group.
+func getCDPClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
+	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-cdp-role", awsAccountID, aws.ToString(cluster.Name)))
+}
+// getDeploymentServiceClient returns a client with the `zalando:deployment-service` group.
+func getDeploymentServiceClient(cluster *types.Cluster, awsAccountID string) (*kubernetes.Clientset, error) {
+	return newClientWithRole(cluster, fmt.Sprintf("arn:aws:iam::%s:role/%s-e2e-eks-iam-test-deployment-service-role", awsAccountID, aws.ToString(cluster.Name)))
 }
 
 // newClientWithRole returns a new Kubernetes client with the specified IAM role and its associated AccessEntries.
@@ -1019,6 +1137,18 @@ func createClusterRole(ctx context.Context, client kubernetes.Interface, labels 
 	}
 
 	return client.RbacV1().ClusterRoles().Create(ctx, clusterRole, metav1.CreateOptions{})
+}
+
+// createSecret creates a Secret with the specified labels.
+func createSecret(ctx context.Context, client kubernetes.Interface, namespace string, labels map[string]string) (*corev1.Secret, error) {
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "test-secret-",
+			Labels:       labels,
+		},
+	}
+
+	return client.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
 }
 
 // getAWSAccountID returns the current AWS account's ID.

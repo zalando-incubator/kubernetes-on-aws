@@ -458,6 +458,76 @@ Resources:
       KubernetesGroups:
       - zalando:postgres-admin
       Type: "STANDARD"
+  E2EEKSIAMTestCDP:
+    Properties:
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:default:cdp"
+                  }
+                }
+              }
+            ]
+          }
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'secretsmanager:GetSecretValue'
+                Effect: Allow
+                Resource: "arn:aws:secretsmanager:{{.Cluster.Region}}:{{.Cluster.InfrastructureAccountID}}:secret:*.*.*"
+      RoleName: "{{.Cluster.LocalID}}-cdp"
+    Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestDeploymentService:
+    Properties:
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:deployment-service-controller"
+                  }
+                }
+              }
+            ]
+          }
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: 'secretsmanager:GetSecretValue'
+                Effect: Allow
+                Resource: "arn:aws:secretsmanager:{{.Cluster.Region}}:{{.Cluster.InfrastructureAccountID}}:secret:*.*.*"
+      RoleName: "{{.Cluster.LocalID}}-deployment-service"
+    Type: 'AWS::IAM::Role'
   {{ end }}
   # TODO: IAM POLICY
   EKSCNIIPv6Policy:
