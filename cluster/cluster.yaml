@@ -143,6 +143,19 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref EKSWorkerSecurityGroup
       ToPort: 443
+  EKSEFSSecurityGroupIngressFromEKSWorkerSecurityGroup:
+    Properties:
+      FromPort: 2049
+      GroupId: !Ref EKSEFSWorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref EKSWorkerSecurityGroup
+      ToPort: 2049
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  EKSEFSWorkerSecurityGroup:
+    Properties:
+      GroupDescription: EKS worker to EFS sg
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+    Type: 'AWS::EC2::SecurityGroup'
   EKSCluster:
     Type: AWS::EKS::Cluster
     Properties:
