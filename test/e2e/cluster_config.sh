@@ -54,6 +54,8 @@ clusters:
     eks_ip_family: "ipv6"
     consolidation_policy: "WhenEmpty"
     consolidate_after: "5m"
+    wiz_api_client_id: "${WIZ_API_CLIENT_ID}"
+    wiz_api_client_token: "${WIZ_API_CLIENT_TOKEN}"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
