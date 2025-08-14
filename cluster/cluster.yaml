@@ -460,74 +460,31 @@ Resources:
       Type: "STANDARD"
   E2EEKSIAMTestCDP:
     Properties:
-      AssumeRolePolicyDocument: !Sub
-        - |
-          {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Effect": "Allow",
-                "Principal": {
-                  "Federated": [
-                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
-                  ]
-                },
-                "Action": [
-                  "sts:AssumeRoleWithWebIdentity"
-                ],
-                "Condition": {
-                  "StringEquals": {
-                    "${OIDC}:sub": "system:serviceaccount:default:cdp"
-                  }
-                }
-              }
-            ]
-          }
-        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          - 'sts:SetSourceIdentity'
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        Version: 2012-10-17
       Path: /
-      Policies:
-        - PolicyDocument:
-            Statement:
-              - Action: 'secretsmanager:GetSecretValue'
-                Effect: Allow
-                Resource: "arn:aws:secretsmanager:{{.Cluster.Region}}:{{.Cluster.InfrastructureAccountID}}:secret:*.*.*"
-      RoleName: "{{.Cluster.LocalID}}-cdp"
+      RoleName: "{{.Cluster.LocalID}}-e2e-cdp"
     Type: 'AWS::IAM::Role'
   E2EEKSIAMTestDeploymentService:
     Properties:
-      AssumeRolePolicyDocument: !Sub
-        - |
-          {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Effect": "Allow",
-                "Principal": {
-                  "Federated": [
-                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
-                  ]
-                },
-                "Action": [
-                  "sts:AssumeRoleWithWebIdentity"
-                ],
-                "Condition": {
-                  "StringEquals": {
-                    "${OIDC}:sub": "system:serviceaccount:kube-system:deployment-service-controller"
-                  }
-                }
-              }
-            ]
-          }
-        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - 'sts:AssumeRole'
+          - 'sts:SetSourceIdentity'
+          Effect: Allow
+          Principal:
+            AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+        Version: 2012-10-17
       Path: /
-      Policies:
-        - PolicyDocument:
-            Statement:
-              - Action: 'secretsmanager:GetSecretValue'
-                Effect: Allow
-                Resource: "arn:aws:secretsmanager:{{.Cluster.Region}}:{{.Cluster.InfrastructureAccountID}}:secret:*.*.*"
-      RoleName: "{{.Cluster.LocalID}}-deployment-service"
-    Type: 'AWS::IAM::Role'
+      RoleName: "{{.Cluster.LocalID}}-e2e-deployment-service"
   {{ end }}
   # TODO: IAM POLICY
   EKSCNIIPv6Policy:
