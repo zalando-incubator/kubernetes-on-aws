@@ -130,6 +130,10 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 		})
 	})
 
+    // NOTE: The read-only role is restricted by RBAC to non-mutating operations.
+    // Such requests bypass the admission controller, which only processes
+    // mutating requests. Admission controller tests for this role are unnecessary,
+    // as access control is fully enforced at the RBAC authorization stage.
 	g.Context("For ReadOnly group", func() {
 		var tc testCase
 		g.BeforeEach(func() {
