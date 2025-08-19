@@ -6,6 +6,11 @@ Metadata:
     "kubernetes:component": "etcd-cluster"
     application: "kubernetes"
     component: "etcd-cluster"
+Mappings:
+  Images:
+      {{.Cluster.Region}}:
+        # Use the etcd instance architecture to construct the config item name that we're using to get the AMI name.
+        MachineImage: '{{ index .Cluster.ConfigItems (print "etcd_ami_" .Values.etcd_instance_type_info.Architecture) }}'
 Outputs:
   EtcdClusterSecurityGroupId:
     Description: "Security Group ID of the etcd cluster"
@@ -53,7 +58,10 @@ Resources:
         IamInstanceProfile:
           Name: !Ref AppServerInstanceProfile
         InstanceInitiatedShutdownBehavior: terminate
-        ImageId: {{.Cluster.ConfigItems.etcd_ami}}
+        ImageId: !FindInMap
+          - Images
+          - !Ref 'AWS::Region'
+          - MachineImage
         InstanceType: {{.Cluster.ConfigItems.etcd_instance_type}}
         UserData:
           Fn::Base64: !Sub |
