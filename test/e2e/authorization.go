@@ -512,8 +512,8 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
         // are subsequently rewritten by the admission controller.
         g.When("the service account is deployment-service-controller", func() {
 			g.BeforeEach(func() {
-				tc.data.users = []string{"system:serviceaccount:kube-system:deployment-service-controller"}
 				tc.data.groups = [][]string{{"system:serviceaccounts:kube-system"}}
+				tc.data.users = []string{"system:serviceaccount:kube-system:deployment-service-controller"}
 			})
 			g.It("should allow to read secrets on user namespaces", func() {
 				tc.data.namespaces = []string{"teapot"}
@@ -532,8 +532,8 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 		})
 		g.When("the service account is CDP", func() {
 			g.BeforeEach(func() {
-				tc.data.users = []string{"system:serviceaccount:default:cdp"}
 				tc.data.groups = [][]string{{"system:serviceaccounts:default"}}
+				tc.data.users = []string{"system:serviceaccount:default:cdp"}
 			})
 			g.It("should allow to read secrets on user namespaces", func() {
 				tc.data.namespaces = []string{"teapot"}
@@ -546,6 +546,14 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 				tc.data.namespaces = []string{"kube-system"}
 				tc.data.resources = []string{"secrets"}
 				tc.data.verbs = []string{"read"}
+				tc.run(context.TODO(), cs, true)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
+			})
+            // TODO: create clusterrole with read secret permission
+			g.It("should create a clusterrole with read secret permission", func() {
+				tc.data.namespaces = []string{"teapot"}
+				tc.data.resources = []string{"clusterrole"}
+				tc.data.verbs = []string{"create"}
 				tc.run(context.TODO(), cs, true)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
