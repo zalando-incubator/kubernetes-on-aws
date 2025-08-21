@@ -3023,6 +3023,16 @@ Resources:
                 - BucketArn: !GetAtt AuditTrailBucket.Arn
 {{- end }}
 
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging_migration "true" }}
+  ControlPlaneLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: "/aws/eks/{{.Cluster.LocalID}}/cluster"
+      RetentionInDays: 545
+{{- end }}
+{{- end }}
+
 {{- if index .Cluster.ConfigItems "session_manager_destination_arn" }}
   SessionManagerLogGroup:
     Type: AWS::Logs::LogGroup
