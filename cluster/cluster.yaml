@@ -158,6 +158,9 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
   EKSCluster:
     Type: AWS::EKS::Cluster
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
+    DependsOn: ControlPlaneLogGroup
+{{- end }}
     Properties:
       Name: "{{.Cluster.Name}}"
       Version: "1.32"
