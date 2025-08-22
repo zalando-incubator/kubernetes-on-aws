@@ -1,0 +1,158 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: nakadisqlqueries.nakadi.zalan.do
+spec:
+  scope: Namespaced
+  group: nakadi.zalan.do
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                queryOwningApplication:
+                  type: string
+                sql:
+                  type: string
+                envelope:
+                  type: boolean
+                readFrom:
+                  type: string
+                  enum: ["begin", "end"]
+                outputEventType:
+                  type: object
+                  properties:
+                    owningApplication:
+                      type: string
+                    category:
+                      type: string
+                      enum: [ "undefined", "data", "business" ]
+                    audience:
+                      type: string
+                      enum: [ "component-internal", "business-unit-internal", "company-internal", "external-partner", "external-public" ]
+                    authorization:
+                      type: object
+                      description: "Allows to specify list of readers to read from output event type"
+                      properties:
+                        readers:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              dataType:
+                                type: string
+                              value:
+                                type: string
+                            required:
+                              - dataType
+                              - value
+                          minItems: 1
+                      required:
+                        - readers
+                    partitionCompactionKeyField:
+                      type: string
+                    orderingKeyFields:
+                      type: array
+                      items:
+                        type: string
+                    cleanupPolicy:
+                      type: string
+                      enum: [ "delete", "compact", "compact_and_delete" ]
+                    retentionTime:
+                      type: integer
+                    repartitionParameters:
+                      type: object
+                      description: |
+                        Repartition parameters for the output event
+                      properties:
+                        numberOfPartitions:
+                          type: integer
+                        partitionKeyFields:
+                          type: array
+                          items:
+                            type: string
+                        partitionStrategy:
+                          type: string
+                          enum: [ "random", "hash"]
+                      required:
+                        - numberOfPartitions
+                        - partitionStrategy
+                    annotations:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    labels:
+                      type: object
+                      additionalProperties:
+                        type: string
+                  required:
+                    - owningApplication
+                    - category
+                    - cleanupPolicy
+                    - authorization
+                authorization:
+                  type: object
+                  properties:
+                    admins:
+                      type: array
+                      description: |
+                        The nakadi operator will always add itself as an admin.
+                      items:
+                        type: object
+                        properties:
+                          dataType:
+                            type: string
+                          value:
+                            type: string
+                        required:
+                          - dataType
+                          - value
+                      minItems: 1
+              required:
+                - sql
+                - outputEventType
+                - authorization
+                - queryOwningApplication
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+              properties:
+                queryStatus:
+                  type: string
+                status:
+                  type: string
+                createdAt:
+                  type: string
+                  description: Creation time of the query
+                updatedAt:
+                  type: string
+                  description: Update time of the query
+                error:
+                  type: string
+                  description: Contains the error message if status is ERROR.
+      subresources:
+        status: { }
+      additionalPrinterColumns:
+        - name: Query Status
+          type: string
+          jsonPath: .status.queryStatus
+        - name: Status
+          type: string
+          description: The status of the nsql custom resource
+          jsonPath: .status.status
+        - name: Error Message
+          type: string
+          jsonPath: .status.error
+          description: Shows error message.
+  names:
+    kind: NakadiSqlQuery
+    plural: nakadisqlqueries
+    singular: nakadisqlquery
+    shortNames:
+      - nsql

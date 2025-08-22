@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "nakadi-k8s-operator"
+  namespace: "nakadi-k8s-operator"
+  labels:
+    application: "nakadi-k8s-operator"
+  annotations:
+    # permanently exclude this deployment from downscaling
+    downscaler/exclude: "true"
+spec:
+  strategy:
+    type: "Recreate"
+  replicas: 1
+  selector:
+    matchLabels:
+      application: "nakadi-k8s-operator"
+  template:
+    metadata:
+      labels:
+        application: "nakadi-k8s-operator"
+    spec:
+      serviceAccountName: "nakadi-k8s-operator-robot"
+      containers:
+        - name: "nakadi-k8s-operator"
+          image: container-registry.zalando.net/aruha/nakadi-k8s-operator:master-131
+          envFrom:
+            - configMapRef:
+                name: "nakadi-k8s-operator"
+          resources:
+            requests:
+              cpu: 20m
+              memory: 512Mi
+            limits:
+              cpu: 20m
+              memory: 512Mi
+          volumeMounts:
+            - name: "nakadi-k8s-operator-credentials"
+              mountPath: /meta/credentials
+              readOnly: true
+      tolerations:
+        - key: aws.amazon.com/spot
+          operator: Exists
+      volumes:
+        - name: "nakadi-k8s-operator-credentials"
+          secret:
+            secretName: "nakadi-k8s-operator-credentials"

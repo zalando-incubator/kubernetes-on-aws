@@ -1,0 +1,327 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: eventtypes.nakadi.zalan.do
+spec:
+  scope: Namespaced
+  group: nakadi.zalan.do
+  versions:
+    - name: v1alpha1
+      served: false
+      storage: false
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                owningApplication:
+                  type: string
+                category:
+                  type: string
+                  enum: [ "undefined", "data", "business" ]
+                enrichmentStrategies:
+                  type: array
+                  items:
+                    type: string
+                    enum: [ "metadata_enrichment" ]
+                partitionStrategy:
+                  type: string
+                  enum: [ "random", "hash", "user_defined" ]
+                compatibilityMode:
+                  type: string
+                  enum: [ "compatible", "forward", "none" ]
+                schemaObject:
+                  type: object
+                  description: |
+                    Event schema as YAML object. Will be encoded as String using JSON Schema v04.
+                  x-kubernetes-preserve-unknown-fields: true
+                partitionKeyFields:
+                  type: array
+                  items:
+                    type: string
+                cleanupPolicy:
+                  type: string
+                  enum: [ "delete", "compact", "compact_and_delete" ]
+                defaultStatistic:
+                  type: object
+                  description: |
+                    The properties messages_per_minute and message_size will always be assumed as 1.
+                  properties:
+                    readParallelism:
+                      type: integer
+                      minimum: 1
+                    writeParallelism:
+                      type: integer
+                      minimum: 1
+                  required:
+                    - readParallelism
+                    - writeParallelism
+                options:
+                  type: object
+                  properties:
+                    retentionTime:
+                      type: integer
+                authorization:
+                  type: object
+                  properties:
+                    admins:
+                      type: array
+                      description: |
+                        The nakadi operator will always add itself as an admin.
+                      items:
+                        type: object
+                        properties:
+                          dataType:
+                            type: string
+                          value:
+                            type: string
+                    readers:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          dataType:
+                            type: string
+                          value:
+                            type: string
+                    writers:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          dataType:
+                            type: string
+                          value:
+                            type: string
+                  required:
+                    - readers
+                    - writers
+                orderingKeyFields:
+                  type: array
+                  items:
+                    type: string
+                eventOwnerSelector:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: [ "path", "static" ]
+                    name:
+                      type: string
+                    value:
+                      type: string
+                orderingInstanceIds:
+                  type: array
+                  items:
+                    type: string
+                audience:
+                  type: string
+                  enum: [ "component-internal", "business-unit-internal", "company-internal", "external-partner", "external-public" ]
+              required:
+                - owningApplication
+                - category
+                - schemaObject
+                - authorization
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+              properties:
+                status:
+                  type: string
+                createdAt:
+                  type: string
+                  description: Creation time of the event type
+                updatedAt:
+                  type: string
+                  description: Update time of the event type
+                schemaVersion:
+                  type: string
+                  description: Version of the schema of the event type
+                schemaCreatedAt:
+                  type: string
+                  description: Creation time of the current schema of the event type
+      subresources:
+        status: { }
+      additionalPrinterColumns:
+        - name: category
+          type: string
+          jsonPath: .spec.category
+        - name: Status
+          type: string
+          description: The status of the event type regarding the synchronization to Nakadi
+          jsonPath: .status.status
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                owningApplication:
+                  type: string
+                category:
+                  type: string
+                  enum: [ "undefined", "data", "business" ]
+                enrichmentStrategies:
+                  type: array
+                  items:
+                    type: string
+                    enum: [ "metadata_enrichment" ]
+                partitionStrategy:
+                  type: string
+                  enum: [ "random", "hash", "user_defined" ]
+                compatibilityMode:
+                  type: string
+                  enum: [ "compatible", "forward", "none" ]
+                schemaType:
+                  type: string
+                  enum: [ "json_schema", "avro_schema"]
+                schemaObject:
+                  type: object
+                  description: |
+                    Event schema as YAML object. Will be encoded as String using JSON Schema v04.
+                  x-kubernetes-preserve-unknown-fields: true
+                partitionKeyFields:
+                  type: array
+                  items:
+                    type: string
+                cleanupPolicy:
+                  type: string
+                  enum: [ "delete", "compact", "compact_and_delete" ]
+                defaultStatistic:
+                  type: object
+                  description: |
+                    The properties messages_per_minute and message_size will always be assumed as 1.
+                  properties:
+                    readParallelism:
+                      type: integer
+                      minimum: 1
+                    writeParallelism:
+                      type: integer
+                      minimum: 1
+                  required:
+                    - readParallelism
+                    - writeParallelism
+                options:
+                  type: object
+                  properties:
+                    retentionTime:
+                      type: integer
+                authorization:
+                  type: object
+                  properties:
+                    admins:
+                      type: array
+                      description: |
+                        The nakadi operator will always add itself as an admin.
+                      items:
+                        type: object
+                        properties:
+                          dataType:
+                            type: string
+                          value:
+                            type: string
+                        required:
+                          - dataType
+                          - value
+                    readers:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          dataType:
+                            type: string
+                          value:
+                            type: string
+                        required:
+                          - dataType
+                          - value
+                      minItems: 1
+                    writers:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          dataType:
+                            type: string
+                          value:
+                            type: string
+                        required:
+                          - dataType
+                          - value
+                      minItems: 1
+                  required:
+                    - readers
+                    - writers
+                orderingKeyFields:
+                  type: array
+                  items:
+                    type: string
+                eventOwnerSelector:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: [ "path", "static" ]
+                    name:
+                      type: string
+                    value:
+                      type: string
+                orderingInstanceIds:
+                  type: array
+                  items:
+                    type: string
+                audience:
+                  type: string
+                  enum: [ "component-internal", "business-unit-internal", "company-internal", "external-partner", "external-public" ]
+              required:
+                - owningApplication
+                - category
+                - schemaObject
+                - authorization
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+              properties:
+                status:
+                  type: string
+                createdAt:
+                  type: string
+                  description: Creation time of the event type
+                updatedAt:
+                  type: string
+                  description: Update time of the event type
+                schemaVersion:
+                  type: string
+                  description: Version of the schema of the event type
+                schemaCreatedAt:
+                  type: string
+                  description: Creation time of the current schema of the event type
+                error:
+                  type: string
+                  description: Contains the error message if status is ERROR.
+      subresources:
+        status: { }
+      additionalPrinterColumns:
+        - name: category
+          type: string
+          jsonPath: .spec.category
+        - name: Status
+          type: string
+          description: The status of the event type regarding the synchronization to Nakadi
+          jsonPath: .status.status
+        - name: Error Message
+          type: string
+          jsonPath: .status.error
+          description: Shows error message.
+  names:
+    kind: EventType
+    plural: eventtypes
+    singular: eventtype
+    shortNames:
+      - et
