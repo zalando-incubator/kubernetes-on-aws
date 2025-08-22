@@ -472,6 +472,23 @@ Resources:
       Path: /
       RoleName: "{{.Cluster.LocalID}}-e2e-cdp"
     Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestAccessEntryCDP:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt E2EEKSIAMTestCDP.Arn
+      Username: !Join
+          - ''
+          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
+            - !Ref E2EEKSIAMTestCDP
+            - '/{{`{{SessionName}}`}}'
+      KubernetesGroups:
+      - zalando:cdp
+      Type: "STANDARD"
   E2EEKSIAMTestDeploymentService:
     Properties:
       AssumeRolePolicyDocument:
@@ -485,6 +502,24 @@ Resources:
         Version: 2012-10-17
       Path: /
       RoleName: "{{.Cluster.LocalID}}-e2e-deployment-service"
+    Type: 'AWS::IAM::Role'
+  E2EEKSIAMTestAccessEntryDeploymentService:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      AccessPolicies:
+      - AccessScope:
+          Type: "cluster"
+        PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt E2EEKSIAMTestDeploymentService.Arn
+      Username: !Join
+          - ''
+          - - !Sub 'arn:aws:sts::${AWS::AccountId}:assumed-role/'
+            - !Ref E2EEKSIAMTestDeploymentService
+            - '/{{`{{SessionName}}`}}'
+      KubernetesGroups:
+      - zalando:deployment-service
+      Type: "STANDARD"
   {{ end }}
   # TODO: IAM POLICY
   EKSCNIIPv6Policy:
