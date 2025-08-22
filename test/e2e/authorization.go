@@ -529,8 +529,15 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 				tc.run(context.TODO(), cs, true)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
+			g.It("should create a clusterrole with read secret permission", func() {
+				tc.data.namespaces = []string{"teapot"}
+				tc.data.resources = []string{"clusterrole"}
+				tc.data.verbs = []string{"create"}
+				tc.run(context.TODO(), cs, true)
+				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
+			})
 		})
-		g.When("the service account is CDP", func() {
+		g.When("[Katyanna] the service account is CDP", func() {
 			g.BeforeEach(func() {
 				tc.data.groups = [][]string{{"system:serviceaccounts:default"}}
 				tc.data.users = []string{"system:serviceaccount:default:cdp"}
@@ -549,7 +556,6 @@ var _ = g.Describe("Authorization [RBAC] [Zalando]", func() {
 				tc.run(context.TODO(), cs, true)
 				gomega.Expect(tc.output.passed).To(gomega.BeTrue(), tc.output.String())
 			})
-            // TODO: create clusterrole with read secret permission
 			g.It("should create a clusterrole with read secret permission", func() {
 				tc.data.namespaces = []string{"teapot"}
 				tc.data.resources = []string{"clusterrole"}
@@ -956,17 +962,22 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
     // granted to CDP and deployment-service are revoked.
 	g.Context("cdp and deployment-service", func() {
 		var (
-            testSecret           *corev1.Secret
-			systemSecret     *corev1.Secret
+			systemResource    *rbacv1.ClusterRole
+			nonSystemResource *rbacv1.ClusterRole
 		)
 
 		g.BeforeEach(func() {
-			var err error
-			testSecret, err = createSecret(context.Background(), f.ClientSet, f.Namespace.Name, map[string]string{"application": "my-app"})
-			framework.ExpectNoError(err)
-
-			systemSecret, err = createSecret(context.Background(), f.ClientSet, "kube-system", map[string]string{"application": "my-app"})
-			framework.ExpectNoError(err)
+            systemResource = &rbacv1.ClusterRole{
+                ObjectMeta: metav1.ObjectMeta{
+                    GenerateName: "test-cluster-role-",
+                    Labels:       map[string]string{"admission.zalando.org/infrastructure-component": "true"},
+                },
+            }
+            nonSystemResource = &rbacv1.ClusterRole{
+                ObjectMeta: metav1.ObjectMeta{
+                    GenerateName: "test-cluster-role-",
+                },
+            }
 		})
 
 		g.Context("cdp", func() {
@@ -979,14 +990,14 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				framework.ExpectNoError(err)
 			})
 
-			g.It("should deny secret read access to user namespace", func() {
-				_, err := client.CoreV1().Secrets(testSecret.Namespace).Get(context.Background(), testSecret.Name, metav1.GetOptions{})
-				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("read operations are forbidden")))
+			g.It("should deny creating clusterrole with read secret permission on system namespace", func() {
+				_, err := client.RbacV1().ClusterRoles().Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
             })
 
-			g.It("should deny secret read access to kube-system namespace", func() {
-				_, err := client.CoreV1().Secrets(systemSecret.Namespace).Get(context.Background(), systemSecret.Name, metav1.GetOptions{})
-				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("read operations are forbidden")))
+			g.It("should deny creating clusterrole with read secret permission on user namespace", func() {
+				_, err := client.RbacV1().ClusterRoles().Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
 			})
 		})
 
@@ -1000,14 +1011,14 @@ var _ = g.Describe("Authorization via admission-controller [RBAC] [Zalando]", fu
 				framework.ExpectNoError(err)
 			})
 
-			g.It("should deny secret read access to user namespace", func() {
-				_, err := client.CoreV1().Secrets(testSecret.Namespace).Get(context.Background(), testSecret.Name, metav1.GetOptions{})
-				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("read operations are forbidden")))
+			g.It("should deny creating clusterrole with read secret permission on system namespace", func() {
+				_, err := client.RbacV1().ClusterRoles().Create(context.Background(), systemResource, metav1.CreateOptions{DryRun: []string{}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
             })
 
-			g.It("should deny secret read access to kube-system namespace", func() {
-				_, err := client.CoreV1().Secrets(systemSecret.Namespace).Get(context.Background(), systemSecret.Name, metav1.GetOptions{})
-				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("read operations are forbidden")))
+			g.It("should deny creating clusterrole with read secret permission on user namespace", func() {
+				_, err := client.RbacV1().ClusterRoles().Create(context.Background(), nonSystemResource, metav1.CreateOptions{DryRun: []string{}})
+				gomega.Expect(err).To(gomega.MatchError(gomega.ContainSubstring("write operations are forbidden")))
 			})
 		})
 	})
