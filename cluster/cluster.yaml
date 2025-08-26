@@ -1540,6 +1540,9 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
+        {{- if or (eq .Cluster.Name "playground") (eq .Cluster.Name "testaccount1")}}
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser-Playground"
+        {{- end }}
       RoleName: "{{.Cluster.LocalID}}-deployment"
     Type: 'AWS::IAM::Role'
   DeploymentServiceBucket:
@@ -1691,6 +1694,9 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
+        {{- if or (eq .Cluster.Name "playground") (eq .Cluster.Name "testaccount1")}}
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser-Playground"
+        {{- end }}
 {{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
   DeploymentControllerMLExperimentDeploymentRole:
     Type: AWS::IAM::Role
