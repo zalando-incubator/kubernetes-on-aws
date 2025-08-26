@@ -1,0 +1,55 @@
+{{ if eq .Cluster.ConfigItems.polarsignals_enabled "true" }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/component: continuous-profiler
+    app.kubernetes.io/instance: polarsignals-agent
+    app.kubernetes.io/name: polarsignals-agent
+  name: polarsignals-agent
+  namespace: polarsignals
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/component: continuous-profiler
+    app.kubernetes.io/instance: polarsignals-agent
+    app.kubernetes.io/name: polarsignals-agent
+  name: polarsignals-agent
+  namespace: polarsignals
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: continuous-profiler
+    app.kubernetes.io/instance: polarsignals-agent
+    app.kubernetes.io/name: polarsignals-agent
+  name: polarsignals-agent
+  namespace: polarsignals
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: polarsignals-agent
+subjects:
+  - kind: ServiceAccount
+    name: polarsignals-agent
+    namespace: polarsignals
+---
+{{ end }}
