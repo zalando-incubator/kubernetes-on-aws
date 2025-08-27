@@ -30,6 +30,23 @@ post_apply:
   namespace: cron
   kind: LimitRange
 {{ end }}
+{{ if ne .Cluster.ConfigItems.polarsignals_enabled "true" }}
+- name: polarsignals
+  namespace: polarsignals
+  kind: Secret
+- name: polarsignals-agent
+  namespace: polarsignals
+  kind: DaemonSet
+- name: polarsignals-agent
+  namespace: polarsignals
+  kind: ServiceAccount
+- name: polarsignals-agent
+  kind: ClusterRole
+- name: polarsignals-agent
+  kind: ClusterRoleBinding
+- name: polarsignals
+  kind: Namespace
+{{ end }}
 {{ if ne .Cluster.ConfigItems.downscaler_enabled "true" }}
 - name: kube-downscaler
   namespace: kube-system
