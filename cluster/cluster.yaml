@@ -158,6 +158,11 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
   EKSCluster:
     Type: AWS::EKS::Cluster
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging_migration "true" }}
+    DependsOn: ControlPlaneLogGroup
+{{- end }}
+{{- end }}
     Properties:
       Name: "{{.Cluster.Name}}"
       Version: "1.32"
@@ -1504,6 +1509,9 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
+        {{- if eq .Cluster.Name "playground" }}
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser-Playground"
+        {{- end }}
       RoleName: "{{.Cluster.LocalID}}-deployment"
     Type: 'AWS::IAM::Role'
   DeploymentServiceBucket:
@@ -1655,6 +1663,9 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
+        {{- if eq .Cluster.Name "playground" }}
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser-Playground"
+        {{- end }}
 {{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
   DeploymentControllerMLExperimentDeploymentRole:
     Type: AWS::IAM::Role
@@ -2990,6 +3001,16 @@ Resources:
               - !Sub
                 - "${BucketArn}/*"
                 - BucketArn: !GetAtt AuditTrailBucket.Arn
+{{- end }}
+
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging_migration "true" }}
+  ControlPlaneLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: "/aws/eks/{{.Cluster.LocalID}}/cluster"
+      RetentionInDays: 545
+{{- end }}
 {{- end }}
 
 {{- if index .Cluster.ConfigItems "session_manager_destination_arn" }}
