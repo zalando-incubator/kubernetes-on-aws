@@ -156,6 +156,13 @@ Resources:
       GroupDescription: EKS worker to EFS sg
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
+  ControlPlaneLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: "/aws/eks/{{.Cluster.Name}}/cluster"
+      RetentionInDays: 545
+{{- end }}
   EKSCluster:
     Type: AWS::EKS::Cluster
 {{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
@@ -3030,14 +3037,6 @@ Resources:
               - !Sub
                 - "${BucketArn}/*"
                 - BucketArn: !GetAtt AuditTrailBucket.Arn
-{{- end }}
-
-{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
-  ControlPlaneLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: "/aws/eks/{{.Cluster.Name}}/cluster"
-      RetentionInDays: 545
 {{- end }}
 
 {{- if index .Cluster.ConfigItems "session_manager_destination_arn" }}
