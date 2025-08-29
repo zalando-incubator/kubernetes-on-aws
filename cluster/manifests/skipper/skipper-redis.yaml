@@ -1,9 +1,11 @@
+# {{ $image := "container-registry.zalando.net/library/redis-7-alpine:7.2-alpine-20250805" }}
+# {{ $version := index (split $image ":") 1 }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   labels:
     application: skipper-ingress-redis
-    version: v7.2.4
+    version: "{{ $version }}"
   annotations:
     zalando.org/update-using-hpa-replicas: skipper-ingress-redis
   name: skipper-ingress-redis
@@ -19,7 +21,7 @@ spec:
       labels:
         statefulset: skipper-ingress-redis
         application: skipper-ingress-redis
-        version: v7.2.4
+        version: "{{ $version }}"
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
@@ -49,7 +51,7 @@ spec:
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       terminationGracePeriodSeconds: 45
       containers:
-      - image: container-registry.zalando.net/library/redis-7-alpine:7.2-alpine-20250805
+      - image: "{{ $image }}"
         name: skipper-ingress-redis
         args:
         - /usr/local/bin/docker-entrypoint.sh
