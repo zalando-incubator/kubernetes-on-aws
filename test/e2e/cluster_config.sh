@@ -56,6 +56,7 @@ clusters:
     consolidate_after: "5m"
     wiz_api_client_id: "${WIZ_API_CLIENT_ID}"
     wiz_api_client_token: "${WIZ_API_CLIENT_TOKEN}"
+    eks_control_plane_logging: "false"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
