@@ -159,9 +159,7 @@ Resources:
   EKSCluster:
     Type: AWS::EKS::Cluster
 {{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
-{{- if eq .Cluster.ConfigItems.eks_control_plane_logging_migration "true" }}
     DependsOn: ControlPlaneLogGroup
-{{- end }}
 {{- end }}
     Properties:
       Name: "{{.Cluster.Name}}"
@@ -2337,8 +2335,8 @@ Resources:
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-etcd-backup"
-{{- end }}
     Type: 'AWS::IAM::Role'
+{{- end }}
   StaticEgressControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument: !Sub
@@ -3035,13 +3033,11 @@ Resources:
 {{- end }}
 
 {{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
-{{- if eq .Cluster.ConfigItems.eks_control_plane_logging_migration "true" }}
   ControlPlaneLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: "/aws/eks/{{.Cluster.LocalID}}/cluster"
+      LogGroupName: "/aws/eks/{{.Cluster.Name}}/cluster"
       RetentionInDays: 545
-{{- end }}
 {{- end }}
 
 {{- if index .Cluster.ConfigItems "session_manager_destination_arn" }}
