@@ -14,6 +14,15 @@ rules:
     - "namespaces"
     verbs:
     - "list"
+  # Allow the controller to manage ServiceAccounts
+  - apiGroups:
+    - ""
+    resources:
+    - serviceaccounts
+    verbs:
+    - "get"
+    - "create"
+    - "update"
   # Allow the controller to manage Roles and Rolebindings
   - apiGroups:
     - rbac.authorization.k8s.io
@@ -41,6 +50,23 @@ rules:
     - "get"
     - "list"
     - "watch"
+  # Allow the controller to manage roles with permissions required by eks-fis
+  # integration.
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "get", "delete", "deletecollection", "list"]
+  - apiGroups: [""]
+    resources: ["pods/ephemeralcontainers"]
+    verbs: ["update"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

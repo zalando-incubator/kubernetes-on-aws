@@ -33,7 +33,8 @@ spec:
           restartPolicy: Never
           containers:
           - name: role-sync-controller
-            image: container-registry.zalando.net/teapot/role-sync-controller:main-13
+            # image: container-registry.zalando.net/teapot/role-sync-controller:main-13
+            image: container-registry-test.zalando.net/teapot/role-sync-controller:pr-23-3
             args:
               - --subject-group=PowerUser
               - --subject-group=Manual
@@ -46,5 +47,8 @@ spec:
               {{- end}}
               {{- if eq .Cluster.Provider "zalando-eks"}}
               - --subject-serviceaccount=kube-system/deployment-service-controller
+              {{- end}}
+              {{- if eq .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
+              - --eks-fis-serviceaccount=fis-experiment-executor
               {{- end}}
 {{ end }}
