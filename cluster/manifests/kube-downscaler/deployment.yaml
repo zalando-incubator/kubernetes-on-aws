@@ -34,10 +34,10 @@ spec:
           - --interval=30
           - --exclude-namespaces=kube-system,visibility,tracing,wiz
           # do not downscale ourselves, also keep Postgres Operator so excluded DBs can be managed
-          - --exclude-deployments=kube-downscaler,postgres-operator
+          - --exclude-deployments=kube-downscaler{{if ne .Cluster.ConfigItems.downscaler_scale_statefulsets "true"}},postgres-operator{{end}}
           - "--default-uptime={{ .Cluster.ConfigItems.downscaler_default_uptime }}"
           - "--default-downtime={{ .Cluster.ConfigItems.downscaler_default_downtime }}"
-          - --include-resources=deployments,stacks
+          - --include-resources=deployments,stacks{{if eq .Cluster.ConfigItems.downscaler_scale_statefulsets "true"}},statefulsets{{end}}
           - --deployment-time-annotation=deployment-time
         resources:
           limits:
