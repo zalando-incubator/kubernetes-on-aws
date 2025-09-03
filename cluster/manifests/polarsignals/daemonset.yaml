@@ -17,13 +17,16 @@ spec:
       application: polarsignals
   template:
     metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7071"
+        prometheus.io/scrape: "true"
       labels:
         component: agent
         application: polarsignals
     spec:
       containers:
         - args:
-            - /bin/parca-agent
             - --log-level=info
             - --node=$(NODE_NAME)
             - --http-address=:7071
@@ -37,15 +40,11 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-          image: container-registry.zalando.net/gwproxy/parca-agent:v0.41.0
+          image: container-registry.zalando.net/gwproxy/parca-agent:v0.41.0-main-1
           name: polarsignals-agent
           ports:
             - containerPort: 7071
               name: http
-          readinessProbe:
-            httpGet:
-              path: /ready
-              port: http
           resources:
             limits:
               cpu: "{{ .Cluster.ConfigItems.polarsignals_cpu}}"
@@ -85,8 +84,6 @@ spec:
         - effect: NoSchedule
           key: dedicated
           value: skipper-ingress
-        - effect: NoExecute
-          operator: Exists
       volumes:
         - emptyDir: {}
           name: tmp
