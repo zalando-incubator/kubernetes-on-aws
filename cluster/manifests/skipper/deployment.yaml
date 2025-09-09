@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use print to disable it for main image */}}
 
-{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:v0.22.103-1210" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.22.103-1210" }}
+{{ $main_image := print "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/teapot/skipper-internal-test:pr-3559-5-pr-49-3" }}
+{{ $canary_image := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/teapot/skipper-internal-test:pr-3559-5-pr-49-3" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -118,6 +118,35 @@ spec:
             secretKeyRef:
               name: skipper-ingress
               key: lightstep-token
+{{ if eq .Cluster.ConfigItems.skipper_ingress_open_telemetry_enabled "true" }}
+        # https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/
+        - name: OTEL_TRACES_EXPORTER
+          value: otlp
+        - name: OTEL_EXPORTER_OTLP_PROTOCOL
+          value: grpc
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "https://{{ .Cluster.ConfigItems.tracing_collector_host }}:8443"
+        - name: OTEL_EXPORTER_OTLP_HEADERS
+          value: "lightstep-access-token=$(LIGHTSTEP_TOKEN)"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: service.name=skipper-ingress,application=skipper-ingress,account={{ .Cluster.Alias }},cluster={{ .Cluster.Alias }},artifact={{ .image }}
+          # TODO: consider adding
+          # cloud.account.id={{ .Cluster.Alias }}
+          # cloud.availability.zone -> fieldPath: metadata.annotations['topology.kubernetes.io/zone']
+          # k8s.namespace.name -> fieldPath: metadata.namespace
+          # k8s.node.name -> fieldPath: spec.nodeName
+          # k8s.pod.name -> fieldPath: metadata.name
+        - name: OTEL_PROPAGATORS
+          value: tracecontext,ottrace,b3multi,baggage
+        - name: OTEL_BSP_MAX_QUEUE_SIZE
+          value: "2048"
+        - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+          value: "512"
+        - name: OTEL_BSP_SCHEDULE_DELAY
+          value: "5000"
+        - name: OTEL_BSP_EXPORT_TIMEOUT
+          value: "5000"
+{{ end }}
 {{ if or (eq .Cluster.ConfigItems.skipper_local_tokeninfo "production") (eq .Cluster.ConfigItems.skipper_local_tokeninfo "bridge") }}
         - name: LOCAL_TOKENINFO
           value: "true"
@@ -236,6 +265,9 @@ spec:
 {{ end }}
 {{ end }}
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
+{{ if eq .Cluster.ConfigItems.skipper_ingress_open_telemetry_enabled "true" }}
+          - "-open-telemetry={}"
+{{ else }}
           - >-
             -opentracing=lightstep
             component-name=skipper-ingress
@@ -255,6 +287,8 @@ spec:
             max-logs-per-span={{ .Cluster.ConfigItems.skipper_ingress_lightstep_max_logs_per_span }}
             propagators={{ .Cluster.ConfigItems.skipper_ingress_lightstep_propagators }}
             {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
+{{ end }}
+          # Note: the following -opentracing-* options are used for both OpenTelemetry and OpenTracing
           - "-opentracing-excluded-proxy-tags={{ .Cluster.ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
 {{ if eq .Cluster.ConfigItems.skipper_ingress_opentracing_backend_name_tag "true" }}
           - "-opentracing-backend-name-tag"
