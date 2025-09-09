@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.22.115-1222" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.22.115-1222" }}
+{{ $main_image_updated_manually := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/teapot/skipper-internal-test:pr-3627-7-pr-50-3" }}
+{{ $canary_image := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/teapot/skipper-internal-test:pr-3627-7-pr-50-3" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -236,6 +236,28 @@ spec:
 {{ end }}
 {{ end }}
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
+{{ if eq .Cluster.ConfigItems.skipper_ingress_open_telemetry_enabled "true" }}
+          - -open-telemetry
+          - |
+            tracesExporter: otlp
+            exporterOtlp:
+              protocol: grpc
+              endpoint: "https://{{ .Cluster.ConfigItems.tracing_collector_host }}:8443"
+              headers:
+                lightstep-access-token: $(LIGHTSTEP_TOKEN)
+            resourceAttributes:
+              service.name: skipper-ingress
+              application: skipper-ingress
+              account: {{ .Cluster.Alias }}
+              cluster: {{ .Cluster.Alias }}
+              artifact: {{ .image }}
+            propagators: [tracecontext, ottrace, b3multi, baggage]
+            batchSpanProcessor:
+              maxQueueSize: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_max_queue_size }}
+              maxExportBatchSize: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_max_export_batch_size }}
+              scheduleDelay: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_schedule_delay }}
+              exportTimeout: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_export_timeout }}
+{{ else }}
           - >-
             -opentracing=lightstep
             component-name=skipper-ingress
@@ -255,6 +277,8 @@ spec:
             max-logs-per-span={{ .Cluster.ConfigItems.skipper_ingress_lightstep_max_logs_per_span }}
             propagators={{ .Cluster.ConfigItems.skipper_ingress_lightstep_propagators }}
             {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
+{{ end }}
+          # Note: the following -opentracing-* options are used for both OpenTelemetry and OpenTracing
           - "-opentracing-excluded-proxy-tags={{ .Cluster.ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
 {{ if eq .Cluster.ConfigItems.skipper_ingress_opentracing_backend_name_tag "true" }}
           - "-opentracing-backend-name-tag"
@@ -480,7 +504,7 @@ spec:
 {{ end }}
 
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "false" }}
-{{ $main_version := index (split (index (split $main_image_updated_manually ":") 1) "-") 0 }}
+{{ $main_version := "v0.22.115" }}
 ---
 apiVersion: apps/v1
 kind: Deployment
