@@ -1,0 +1,121 @@
+{{ if eq .Cluster.ConfigItems.polarsignals_enabled "true" }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    component: agent
+    application: polarsignals
+  name: polarsignals-agent
+  namespace: polarsignals
+  annotations:
+    node-ready.cluster.zalando.org/exclude: "true"
+spec:
+  selector:
+    matchLabels:
+      component: agent
+      application: polarsignals
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7071"
+        prometheus.io/scrape: "true"
+      labels:
+        component: agent
+        application: polarsignals
+    spec:
+      containers:
+        - args:
+            - --log-level=info
+            - --node=$(NODE_NAME)
+            - --http-address=:7071
+            - --remote-store-address=grpc.polarsignals.com:443
+            - --remote-store-bearer-token-file=/var/polarsignals-agent/token
+            - --debuginfo-strip
+            - --debuginfo-temp-dir=/tmp
+            - --debuginfo-upload-cache-duration=5m
+            - --metadata-external-labels=cluster={{ .Cluster.Alias }};environment={{ .Cluster.Environment }};zone=$(ZONE_NAME);region=$(REGION_NAME)
+          env:
+            - name: ZONE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.annotations['topology.kubernetes.io/zone']
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: REGION_NAME
+              value: "{{ .Cluster.Region }}"
+          image: container-registry.zalando.net/gwproxy/parca-agent:v0.41.0-main-1
+          name: polarsignals-agent
+          ports:
+            - containerPort: 7071
+              name: http
+          resources:
+            limits:
+              cpu: "{{ .Cluster.ConfigItems.polarsignals_cpu}}"
+              memory: "{{ .Cluster.ConfigItems.polarsignals_memory}}"
+            requests:
+              cpu: "{{ .Cluster.ConfigItems.polarsignals_cpu}}"
+              memory: "{{ .Cluster.ConfigItems.polarsignals_memory}}"
+          securityContext:
+            privileged: true
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /run
+              name: run
+            - mountPath: /boot
+              name: boot
+              readOnly: true
+            - mountPath: /lib/modules
+              name: modules
+            - mountPath: /sys/kernel/debug
+              name: debugfs
+            - mountPath: /sys/fs/cgroup
+              name: cgroup
+            - mountPath: /sys/fs/bpf
+              name: bpffs
+            - mountPath: /var/run/dbus/system_bus_socket
+              name: dbus-system
+            - mountPath: /var/polarsignals-agent
+              name: token
+      hostPID: true
+      serviceAccountName: polarsignals-agent
+      nodeSelector:
+        kubernetes.io/os: linux
+        dedicated: skipper-ingress
+      tolerations:
+        - effect: NoSchedule
+          key: dedicated
+          value: skipper-ingress
+      volumes:
+        - emptyDir: {}
+          name: tmp
+        - hostPath:
+            path: /run
+          name: run
+        - hostPath:
+            path: /boot
+          name: boot
+        - hostPath:
+            path: /sys/fs/cgroup
+          name: cgroup
+        - hostPath:
+            path: /lib/modules
+          name: modules
+        - hostPath:
+            path: /sys/fs/bpf
+          name: bpffs
+        - hostPath:
+            path: /sys/kernel/debug
+          name: debugfs
+        - hostPath:
+            path: /var/run/dbus/system_bus_socket
+          name: dbus-system
+        - secret:
+            secretName: polarsignals-agent
+          name: token
+{{ end }}
