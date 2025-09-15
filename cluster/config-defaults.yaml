@@ -51,6 +51,11 @@ karpenter_in_transit_support_required: "false"
 # t type instances have burstable CPU, which can be undesirable in production
 karpenter_instance_family_t_enabled: "false"
 
+# configure whether we allow g6f instance family for Karpenter nodes
+# g6f has fractional GPU count which is also mislabeled by Karpenter and causes
+# scheduling issues, we need to properly test and support it later if needed
+karpenter_instance_family_g6f_enabled: "false"
+
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
 
@@ -253,8 +258,12 @@ skipper_pod_deletion_cost_controller_poll_timeout: "60s"
 skipper_pod_deletion_cost_controller_resync_enable: "true"
 skipper_pod_deletion_cost_controller_resync_interval: "1h"
 
-# polarsignals - only enabled for testing teapot
+# polarsignals - only enabled for some clusters
+# right now only installed on skipper-ingress nodes
 polarsignals_enabled: "false"
+polarsignals_apikey: ""
+polarsignals_memory: 400Mi
+polarsignals_cpu: 50m
 
 # Kube-Metrics-Adapter
 ## Scheduled scaling metrics: ramp up/down over this period of time
@@ -377,6 +386,11 @@ skipper_open_policy_agent_data_preprocessing_optimization_enabled: "false"
 # Default timeout value in seconds for outgoing http calls from Open Policy Agent in a skipper filter
 skipper_open_policy_agent_styra_response_header_timeout: "2"
 
+# Decision logging use event buffer type
+skipper_open_policy_agent_decision_logs_buffer_type_event_enable: "false"
+# Decision logging sets the maximum number of decision log events that can be buffered before being dropped
+skipper_open_policy_agent_decision_logs_buffer_type_event_limit: "10000"
+
 #
 # FabricGateway controller config
 #
@@ -392,6 +406,7 @@ fabric_gateway_controller_snapshots_history_limit: "1"
 fabric_gateway_controller_enable_versioning: "true"
 fabric_gateway_controller_ssl_policy: ""
 fabric_gateway_controller_log_level: "INFO"
+fabric_gateway_custom_validation_enabled: "true"
 
 # kube-api-server settings
 
@@ -423,7 +438,7 @@ kube_proxy_cpu: "50m"
 kube_proxy_memory_request: "200Mi"
 kube_proxy_memory_limit: "200Mi"
 kube_proxy_sync_period: "15m0s"
-kube_proxy_verbose_level: "2"
+kube_proxy_verbose_level: "1"
 
 # kube-node-decommissioner
 kube_node_decommissioner_enabled: "true"
@@ -540,6 +555,8 @@ downscaler_default_uptime: "always"
 downscaler_default_downtime: "never"
 downscaler_enabled: "false"
 {{end}}
+# optionally enable downscaling of statefulsets
+downscaler_scale_statefulsets: "false"
 
 # HPA settings (defaults from https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/)
 horizontal_pod_autoscaler_sync_period: "30s"
@@ -755,7 +772,8 @@ etcd_instance_type: "t3.medium"
 
 etcd_scalyr_key: ""
 
-etcd_ami: {{ amiID "zalando-ubuntu-etcd-production-v3.5.18-amd64-main-35" "861068367966"}}
+etcd_ami_amd64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.22-amd64-main-38" "861068367966"}}
+etcd_ami_arm64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.22-arm64-main-38" "861068367966"}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -777,8 +795,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_32_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.32.4-amd64-master-373" "861068367966" }}
-kuberuntu_image_v1_32_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.32.4-arm64-master-373" "861068367966" }}
+kuberuntu_image_v1_33_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.33.4-amd64-master-378" "861068367966" }}
+kuberuntu_image_v1_33_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.33.4-arm64-master-378" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
@@ -1252,9 +1270,14 @@ role_sync_controller_enabled: "false"
 # When wiz_enable_runtime_sensor and wiz_enable_runtime_connector are set to true,
 # this enables WIZ runtime monitoring. A DaemonSet called Sensor and a Deployment
 # called Connector will be deployed into the cluster.
-wiz_enable_runtime_sensor: "false"
+{{ if eq .Cluster.Provider "zalando-eks" }}
 wiz_enable_runtime_connector: "false"
 wiz_enable_runtime_connector_broker: "false"
+{{ else }}
+wiz_enable_runtime_connector: "true"
+wiz_enable_runtime_connector_broker: "true"
+{{ end }}
+wiz_enable_runtime_sensor: "false"
 wiz_sensor_cpu: "200m"
 wiz_sensor_memory: "300Mi"
 wiz_connector_cpu: "50m"
