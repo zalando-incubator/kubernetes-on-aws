@@ -139,6 +139,14 @@ webhooks:
         apiVersions: ["v1"]
         resources: ["nodes"]
   - name: configmap-admitter.teapot.zalan.do
+{{- if eq .Cluster.Provider "zalando-eks"}}
+    # avoid admission-control applying to the admission-controller components (🐔🥚)
+    objectSelector:
+      matchExpressions:
+        - key: eks.amazonaws.com/component
+          operator: NotIn
+          values: ["kube-proxy"]
+{{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
       service:

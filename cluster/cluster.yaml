@@ -143,11 +143,34 @@ Resources:
       IpProtocol: tcp
       SourceSecurityGroupId: !Ref EKSWorkerSecurityGroup
       ToPort: 443
+  EKSEFSSecurityGroupIngressFromEKSWorkerSecurityGroup:
+    Properties:
+      FromPort: 2049
+      GroupId: !Ref EKSEFSWorkerSecurityGroup
+      IpProtocol: tcp
+      SourceSecurityGroupId: !Ref EKSWorkerSecurityGroup
+      ToPort: 2049
+    Type: 'AWS::EC2::SecurityGroupIngress'
+  EKSEFSWorkerSecurityGroup:
+    Properties:
+      GroupDescription: EKS worker to EFS sg
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+    Type: 'AWS::EC2::SecurityGroup'
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
+  ControlPlaneLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: "/aws/eks/{{.Cluster.Name}}/cluster"
+      RetentionInDays: 545
+{{- end }}
   EKSCluster:
     Type: AWS::EKS::Cluster
+{{- if eq .Cluster.ConfigItems.eks_control_plane_logging "true" }}
+    DependsOn: ControlPlaneLogGroup
+{{- end }}
     Properties:
       Name: "{{.Cluster.Name}}"
-      Version: "1.32"
+      Version: "1.33"
       RoleArn: !GetAtt EKSClusterRole.Arn
       KubernetesNetworkConfig:
         IpFamily: "{{.Cluster.ConfigItems.eks_ip_family}}"
@@ -271,6 +294,13 @@ Resources:
     Type: AWS::EKS::Addon
     Properties:
       AddonName: eks-pod-identity-agent
+      AddonVersion: "v1.3.8-eksbuild.2"
+      ClusterName: !Ref EKSCluster
+  EKSAddonKubeProxy:
+    Type: AWS::EKS::Addon
+    Properties:
+      AddonName: kube-proxy
+      AddonVersion: "v1.33.3-eksbuild.6"
       ClusterName: !Ref EKSCluster
   {{ if eq .Cluster.Environment "e2e" }}
   E2EEKSIAMTestRoleReadOnly:
@@ -1522,6 +1552,9 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
+        {{- if eq .Cluster.Name "playground" }}
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser-Playground"
+        {{- end }}
       RoleName: "{{.Cluster.LocalID}}-deployment"
     Type: 'AWS::IAM::Role'
   DeploymentServiceBucket:
@@ -1673,6 +1706,9 @@ Resources:
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
         - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
+        {{- if eq .Cluster.Name "playground" }}
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser-Playground"
+        {{- end }}
 {{- if eq .Cluster.ConfigItems.deployment_service_ml_experiments_enabled "true"}}
   DeploymentControllerMLExperimentDeploymentRole:
     Type: AWS::IAM::Role
@@ -2313,8 +2349,8 @@ Resources:
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-etcd-backup"
-{{- end }}
     Type: 'AWS::IAM::Role'
+{{- end }}
   StaticEgressControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument: !Sub
