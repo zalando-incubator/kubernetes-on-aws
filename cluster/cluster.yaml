@@ -170,7 +170,7 @@ Resources:
 {{- end }}
     Properties:
       Name: "{{.Cluster.Name}}"
-      Version: "1.32"
+      Version: "1.33"
       RoleArn: !GetAtt EKSClusterRole.Arn
       KubernetesNetworkConfig:
         IpFamily: "{{.Cluster.ConfigItems.eks_ip_family}}"
@@ -295,6 +295,12 @@ Resources:
     Properties:
       AddonName: eks-pod-identity-agent
       AddonVersion: "v1.3.8-eksbuild.2"
+      ClusterName: !Ref EKSCluster
+  EKSAddonKubeProxy:
+    Type: AWS::EKS::Addon
+    Properties:
+      AddonName: kube-proxy
+      AddonVersion: "v1.33.3-eksbuild.6"
       ClusterName: !Ref EKSCluster
   {{ if eq .Cluster.Environment "e2e" }}
   E2EEKSIAMTestRoleReadOnly:
