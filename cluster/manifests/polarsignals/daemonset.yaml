@@ -36,6 +36,8 @@ spec:
             - --debuginfo-temp-dir=/tmp
             - --debuginfo-upload-cache-duration=5m
             - --metadata-external-labels=cluster={{ .Cluster.Alias }};environment={{ .Cluster.Environment }};zone=$(ZONE_NAME);region=$(REGION_NAME)
+            - --profiling-probabilistic-interval={{ .Cluster.ConfigItems.polarsignals_probabilistic_profiling_interval }}
+            - --profiling-probabilistic-threshold={{ .Cluster.ConfigItems.polarsignals_probabilistic_profiling_perc }}
           env:
             - name: ZONE_NAME
               valueFrom:
