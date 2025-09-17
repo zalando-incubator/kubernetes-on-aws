@@ -30,6 +30,9 @@ spec:
         - --configure-cloud-routes=false
         image: container-registry.zalando.net/teapot/aws-cloud-controller-manager-internal:v1.32.3-master-149
         name: aws-cloud-controller-manager
+        env:
+        - name: AWS_REGION
+          value: "{{ .Cluster.Region }}"
         resources:
           requests:
             cpu: "{{ .Cluster.ConfigItems.aws_cloud_controller_manager_cpu }}"
