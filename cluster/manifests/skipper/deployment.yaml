@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use print to disable it for main image */}}
 
-{{ $main_image := print "container-registry.zalando.net/teapot/skipper-internal:" "v0.22.103-1210" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.22.115-1222" }}
+{{ $main_image := "container-registry-test.zalando.net/teapot/skipper-test:pr-3582-9" }}
+{{ $canary_image := "container-registry-test.zalando.net/teapot/skipper-test:pr-3582-9" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -549,7 +549,7 @@ spec:
 {{- end }}
       containers:
       - name: routesrv
-        image: container-registry.zalando.net/teapot/skipper:{{ $main_version }}
+        image: container-registry-test.zalando.net/teapot/skipper-test:pr-3582-9
         terminationMessagePolicy: FallbackToLogsOnError
         ports:
         - name: ingress-port
@@ -608,7 +608,7 @@ spec:
             tag=component=routesrv
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
-            tag=artifact=container-registry.zalando.net/teapot/skipper:{{ $main_version }}
+            tag=artifact=container-registry-test.zalando.net/teapot/skipper-test:pr-3582-9
             max-buffered-spans={{ .Cluster.ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .Cluster.ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period=2500ms
