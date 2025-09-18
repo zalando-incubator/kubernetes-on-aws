@@ -279,6 +279,13 @@ spec:
     budgets:
       - nodes: "5%"
       - nodes: "10"
+        reasons: 
+        - "Empty"
+        - "Underutilized"
+      # Do not allow nodes to be disrupted due to Drift.
+      - nodes: "0"
+        reasons: 
+        - "Drifted"
     # Describes which types of Nodes Karpenter should consider for consolidation
     # If using 'WhenEmptyOrUnderutilized', Karpenter will consider all nodes for consolidation and attempt to remove or replace Nodes when it discovers that the Node is underutilized and could be changed to reduce cost
     # If using `WhenEmpty`, Karpenter will only consider nodes for consolidation that contain no workload pods
