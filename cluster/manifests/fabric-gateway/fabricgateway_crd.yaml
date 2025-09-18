@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.18.0
   name: fabricgateways.zalando.org
 spec:
   group: zalando.org
@@ -111,20 +111,16 @@ spec:
                               type: object
                             x-fabric-employee-access:
                               description: |-
-                                The `user-list` should only be populated if `type` is set to `allow_list`.
-                                If `type` is not present, it will be defaulted to `scoped_access`
+                                Defines employee access policy which overrides global policy if any.
+                                By default employees have implicit access to routes which aren't scope protected.
                               properties:
                                 type:
                                   description: |-
-                                    If `allow_list` is selected, then the `user-list` property must be populated, otherwise it
-                                    is ignored. If allow_all is selected, any token which is Employee realm will be able to
-                                    access the endpoint in spite of any scope restrictions. If `deny_all` is selected, then any
-                                    employee realm token will be rejected even if there are no scope restrictions beyond `uid`.
-                                    If the employee access route config object is not present, the employee access configuration
-                                    is inherited from any globally defined employee access config.
-                                    If no employee access configuration is configured then employee access will work as per normal scope
-                                    rules; i.e. employees will have access to routes which aren't scope protected. This can be overridden
-                                    on a per route basis.
+                                    If `allow_list` is selected, then the `user-list` property must be populated, otherwise configuration is ignored.
+                                    If `allow_all` is selected, any token from Employee realm will be able to access the endpoint despite of any scope restrictions.
+                                    If `deny_all` is selected, then any employee realm token will be rejected even if there are no scope restrictions beyond `uid`.
+                                    If the employee access route configuration is not present it is inherited from globally defined employee access configuration if any.
+                                    If no employee access configuration is configured then employee access will work as per normal scope rules: employees will have access to routes which aren't scope protected.
                                   enum:
                                   - allow_list
                                   - allow_all
@@ -293,20 +289,16 @@ spec:
                         type: array
                       x-fabric-employee-access:
                         description: |-
-                          The `user-list` should only be populated if `type` is set to `allow_list`.
-                          If `type` is not present, it will be defaulted to `scoped_access`
+                          Defines employee access policy which overrides global policy if any.
+                          By default employees have implicit access to routes which aren't scope protected.
                         properties:
                           type:
                             description: |-
-                              If `allow_list` is selected, then the `user-list` property must be populated, otherwise it
-                              is ignored. If allow_all is selected, any token which is Employee realm will be able to
-                              access the endpoint in spite of any scope restrictions. If `deny_all` is selected, then any
-                              employee realm token will be rejected even if there are no scope restrictions beyond `uid`.
-                              If the employee access route config object is not present, the employee access configuration
-                              is inherited from any globally defined employee access config.
-                              If no employee access configuration is configured then employee access will work as per normal scope
-                              rules; i.e. employees will have access to routes which aren't scope protected. This can be overridden
-                              on a per route basis.
+                              If `allow_list` is selected, then the `user-list` property must be populated, otherwise configuration is ignored.
+                              If `allow_all` is selected, any token from Employee realm will be able to access the endpoint despite of any scope restrictions.
+                              If `deny_all` is selected, then any employee realm token will be rejected even if there are no scope restrictions beyond `uid`.
+                              If the employee access route configuration is not present it is inherited from globally defined employee access configuration if any.
+                              If no employee access configuration is configured then employee access will work as per normal scope rules: employees will have access to routes which aren't scope protected.
                             enum:
                             - allow_list
                             - allow_all
@@ -475,8 +467,9 @@ spec:
                     type: string
                   stackVersion:
                     description: |-
-                      EXPERIMENTAL: This field is experimental and may be removed in the future
                       Specifies stack version for this gateway
+                      Setting this value enables versioning for this gateway
+                      e.g. generate RouteGroup for each StackVersion instead of a single RouteGroup "*-refrg"
                       it should match stackset.spec.stackTemplate.spec.version field
                     type: string
                 required:
@@ -536,21 +529,16 @@ spec:
                 - allowedHeaders
                 type: object
               x-fabric-employee-access:
-                description: |-
-                  The `user-list` should only be populated if `type` is set to `allow_list`.
-                  If `type` is not present, it will be defaulted to `scoped_access`
+                description: Defines global employee access policy which can be overridden
+                  per route.
                 properties:
                   type:
                     description: |-
-                      If `allow_list` is selected, then the `user-list` property must be populated, otherwise it
-                      is ignored. If allow_all is selected, any token which is Employee realm will be able to
-                      access the endpoint in spite of any scope restrictions. If `deny_all` is selected, then any
-                      employee realm token will be rejected even if there are no scope restrictions beyond `uid`.
-                      If the employee access route config object is not present, the employee access configuration
-                      is inherited from any globally defined employee access config.
-                      If no employee access configuration is configured then employee access will work as per normal scope
-                      rules; i.e. employees will have access to routes which aren't scope protected. This can be overridden
-                      on a per route basis.
+                      If `allow_list` is selected, then the `user-list` property must be populated, otherwise configuration is ignored.
+                      If `allow_all` is selected, any token from Employee realm will be able to access the endpoint despite of any scope restrictions.
+                      If `deny_all` is selected, then any employee realm token will be rejected even if there are no scope restrictions beyond `uid`.
+                      If the employee access route configuration is not present it is inherited from globally defined employee access configuration if any.
+                      If no employee access configuration is configured then employee access will work as per normal scope rules: employees will have access to routes which aren't scope protected.
                     enum:
                     - allow_list
                     - allow_all
