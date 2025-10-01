@@ -36,6 +36,12 @@ spec:
             - --debuginfo-temp-dir=/tmp
             - --debuginfo-upload-cache-duration=5m
             - --metadata-external-labels=cluster={{ .Cluster.Alias }};environment={{ .Cluster.Environment }};zone=$(ZONE_NAME);region=$(REGION_NAME)
+            - --profiling-probabilistic-interval={{ .Cluster.ConfigItems.polarsignals_probabilistic_profiling_interval }}
+            - --profiling-probabilistic-threshold={{ .Cluster.ConfigItems.polarsignals_probabilistic_profiling_perc }}
+            - --enable-oom-prof={{ .Cluster.ConfigItems.polarsignals_oom_prof_enable }}
+            - --enable-oom-prof-allocs={{ .Cluster.ConfigItems.polarsignals_oom_prof_allocs_enable }}
+            - --collect-custom-labels
+            - --config-path=/parca/parca-agent.yml
           env:
             - name: ZONE_NAME
               valueFrom:
@@ -47,7 +53,7 @@ spec:
                   fieldPath: spec.nodeName
             - name: REGION_NAME
               value: "{{ .Cluster.Region }}"
-          image: container-registry.zalando.net/gwproxy/parca-agent:v0.41.0-main-1
+          image: container-registry.zalando.net/gwproxy/parca-agent:v0.41.1-main-3
           name: polarsignals-agent
           ports:
             - containerPort: 7071
@@ -63,6 +69,8 @@ spec:
             privileged: true
             readOnlyRootFilesystem: true
           volumeMounts:
+            - name: parca-config-volume
+              mountPath: /parca
             - mountPath: /tmp
               name: tmp
             - mountPath: /run
@@ -92,6 +100,10 @@ spec:
           key: dedicated
           value: skipper-ingress
       volumes:
+        - name: parca-config-volume
+          configMap:
+            defaultMode: 420
+            name: polarsignals-conf
         - emptyDir: {}
           name: tmp
         - hostPath:
