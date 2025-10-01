@@ -261,9 +261,17 @@ skipper_pod_deletion_cost_controller_resync_interval: "1h"
 # polarsignals - only enabled for some clusters
 # right now only installed on skipper-ingress nodes
 polarsignals_enabled: "false"
+polarsignals_oom_prof_enable: "false"
+polarsignals_oom_prof_allocs_enable: "false"
 polarsignals_apikey: ""
 polarsignals_memory: 400Mi
 polarsignals_cpu: 50m
+polarsignals_probabilistic_profiling_interval: 1m
+{{if eq .Cluster.Environment "production"}}
+polarsignals_probabilistic_profiling_perc: "75"
+{{else}}
+polarsignals_probabilistic_profiling_perc: "50"
+{{end}}
 
 # Kube-Metrics-Adapter
 ## Scheduled scaling metrics: ramp up/down over this period of time
