@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.5
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: stacks.zalando.org
 spec:
   group: zalando.org
@@ -94,7 +94,9 @@ spec:
                           policies:
                             description: |-
                               policies is a list of potential scaling polices which can be used during scaling.
-                              At least one policy must be specified, otherwise the HPAScalingRules will be discarded as invalid
+                              If not set, use the default values:
+                              - For scale up: allow doubling the number of pods, or an absolute change of 4 pods in a 15s window.
+                              - For scale down: allow all pods to be removed in a 15s window.
                             items:
                               description: HPAScalingPolicy is a single policy which
                                 must hold true for a specified past interval.
@@ -137,6 +139,24 @@ spec:
                               - For scale down: 300 (i.e. the stabilization window is 300 seconds long).
                             format: int32
                             type: integer
+                          tolerance:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: |-
+                              tolerance is the tolerance on the ratio between the current and desired
+                              metric value under which no updates are made to the desired number of
+                              replicas (e.g. 0.01 for 1%). Must be greater than or equal to zero. If not
+                              set, the default cluster-wide tolerance is applied (by default 10%).
+
+                              For example, if autoscaling is configured with a memory consumption target of 100Mi,
+                              and scale-down and scale-up tolerances of 5% and 1% respectively, scaling will be
+                              triggered when the actual consumption falls below 95Mi or exceeds 101Mi.
+
+                              This is an alpha field and requires enabling the HPAConfigurableTolerance
+                              feature gate.
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
                         type: object
                       scaleUp:
                         description: |-
@@ -149,7 +169,9 @@ spec:
                           policies:
                             description: |-
                               policies is a list of potential scaling polices which can be used during scaling.
-                              At least one policy must be specified, otherwise the HPAScalingRules will be discarded as invalid
+                              If not set, use the default values:
+                              - For scale up: allow doubling the number of pods, or an absolute change of 4 pods in a 15s window.
+                              - For scale down: allow all pods to be removed in a 15s window.
                             items:
                               description: HPAScalingPolicy is a single policy which
                                 must hold true for a specified past interval.
@@ -192,6 +214,24 @@ spec:
                               - For scale down: 300 (i.e. the stabilization window is 300 seconds long).
                             format: int32
                             type: integer
+                          tolerance:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: |-
+                              tolerance is the tolerance on the ratio between the current and desired
+                              metric value under which no updates are made to the desired number of
+                              replicas (e.g. 0.01 for 1%). Must be greater than or equal to zero. If not
+                              set, the default cluster-wide tolerance is applied (by default 10%).
+
+                              For example, if autoscaling is configured with a memory consumption target of 100Mi,
+                              and scale-down and scale-up tolerances of 5% and 1% respectively, scaling will be
+                              triggered when the actual consumption falls below 95Mi or exceeds 101Mi.
+
+                              This is an alpha field and requires enabling the HPAConfigurableTolerance
+                              feature gate.
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
                         type: object
                     type: object
                   maxReplicas:
@@ -821,42 +861,16 @@ spec:
                                       type: object
                                       x-kubernetes-map-type: atomic
                                     matchLabelKeys:
-                                      description: |-
-                                        MatchLabelKeys is a set of pod label keys to select which pods will
-                                        be taken into consideration. The keys are used to lookup values from the
-                                        incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
-                                        to select the group of existing pods which pods will be taken into consideration
-                                        for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-                                        pod labels will be ignored. The default value is empty.
-                                        The same key is forbidden to exist in both matchLabelKeys and labelSelector.
-                                        Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
                                     mismatchLabelKeys:
-                                      description: |-
-                                        MismatchLabelKeys is a set of pod label keys to select which pods will
-                                        be taken into consideration. The keys are used to lookup values from the
-                                        incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
-                                        to select the group of existing pods which pods will be taken into consideration
-                                        for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-                                        pod labels will be ignored. The default value is empty.
-                                        The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
-                                        Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
                                     namespaceSelector:
-                                      description: |-
-                                        A label query over the set of namespaces that the term applies to.
-                                        The term is applied to the union of the namespaces selected by this field
-                                        and the ones listed in the namespaces field.
-                                        null selector and null or empty namespaces list means "this pod's namespace".
-                                        An empty selector ({}) matches all namespaces.
                                       properties:
                                         matchExpressions:
                                           items:
@@ -883,22 +897,11 @@ spec:
                                       type: object
                                       x-kubernetes-map-type: atomic
                                     namespaces:
-                                      description: |-
-                                        namespaces specifies a static list of namespace names that the term applies to.
-                                        The term is applied to the union of the namespaces listed in this field
-                                        and the ones selected by namespaceSelector.
-                                        null or empty namespaces list and null namespaceSelector means "this pod's namespace".
                                       items:
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
                                     topologyKey:
-                                      description: |-
-                                        This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
-                                        the labelSelector in the specified namespaces, where co-located is defined as running on a node
-                                        whose value of the label with key topologyKey matches that of any node on which any of the
-                                        selected pods is running.
-                                        Empty topologyKey is not allowed.
                                       type: string
                                   required:
                                   - topologyKey
@@ -919,8 +922,8 @@ spec:
                                   most preferred is the one with the greatest sum of weights, i.e.
                                   for each node that meets all of the scheduling requirements (resource
                                   request, requiredDuringScheduling anti-affinity expressions, etc.),
-                                  compute a sum by iterating through the elements of this field and adding
-                                  "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the
+                                  compute a sum by iterating through the elements of this field and subtracting
+                                  "weight" from the sum if the node has pods which matches the corresponding podAffinityTerm; the
                                   node(s) with the highest sum are the most preferred.
                                 items:
                                   description: The weights of all of the matched WeightedPodAffinityTerm
@@ -1063,42 +1066,16 @@ spec:
                                       type: object
                                       x-kubernetes-map-type: atomic
                                     matchLabelKeys:
-                                      description: |-
-                                        MatchLabelKeys is a set of pod label keys to select which pods will
-                                        be taken into consideration. The keys are used to lookup values from the
-                                        incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`
-                                        to select the group of existing pods which pods will be taken into consideration
-                                        for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-                                        pod labels will be ignored. The default value is empty.
-                                        The same key is forbidden to exist in both matchLabelKeys and labelSelector.
-                                        Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
                                     mismatchLabelKeys:
-                                      description: |-
-                                        MismatchLabelKeys is a set of pod label keys to select which pods will
-                                        be taken into consideration. The keys are used to lookup values from the
-                                        incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`
-                                        to select the group of existing pods which pods will be taken into consideration
-                                        for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming
-                                        pod labels will be ignored. The default value is empty.
-                                        The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
-                                        Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
                                     namespaceSelector:
-                                      description: |-
-                                        A label query over the set of namespaces that the term applies to.
-                                        The term is applied to the union of the namespaces selected by this field
-                                        and the ones listed in the namespaces field.
-                                        null selector and null or empty namespaces list means "this pod's namespace".
-                                        An empty selector ({}) matches all namespaces.
                                       properties:
                                         matchExpressions:
                                           items:
@@ -1135,12 +1112,6 @@ spec:
                                       type: array
                                       x-kubernetes-list-type: atomic
                                     topologyKey:
-                                      description: |-
-                                        This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
-                                        the labelSelector in the specified namespaces, where co-located is defined as running on a node
-                                        whose value of the label with key topologyKey matches that of any node on which any of the
-                                        selected pods is running.
-                                        Empty topologyKey is not allowed.
                                       type: string
                                   required:
                                   - topologyKey
@@ -1200,8 +1171,9 @@ spec:
                                   present in a Container.
                                 properties:
                                   name:
-                                    description: Name of the environment variable.
-                                      Must be a C_IDENTIFIER.
+                                    description: |-
+                                      Name of the environment variable.
+                                      May consist of any printable ASCII characters except '='.
                                     type: string
                                   value:
                                     description: |-
@@ -1220,7 +1192,6 @@ spec:
                                       value. Cannot be used if value is not empty.
                                     properties:
                                       configMapKeyRef:
-                                        description: Selects a key of a ConfigMap.
                                         properties:
                                           key:
                                             type: string
@@ -1243,6 +1214,23 @@ spec:
                                         - fieldPath
                                         type: object
                                         x-kubernetes-map-type: atomic
+                                      fileKeyRef:
+                                        properties:
+                                          key:
+                                            type: string
+                                          optional:
+                                            default: false
+                                            type: boolean
+                                          path:
+                                            type: string
+                                          volumeName:
+                                            type: string
+                                        required:
+                                        - key
+                                        - path
+                                        - volumeName
+                                        type: object
+                                        x-kubernetes-map-type: atomic
                                       resourceFieldRef:
                                         properties:
                                           containerName:
@@ -1260,8 +1248,6 @@ spec:
                                         type: object
                                         x-kubernetes-map-type: atomic
                                       secretKeyRef:
-                                        description: Selects a key of a secret in
-                                          the pod's namespace
                                         properties:
                                           key:
                                             type: string
@@ -1285,14 +1271,14 @@ spec:
                             envFrom:
                               description: |-
                                 List of sources to populate environment variables in the container.
-                                The keys defined within a source must be a C_IDENTIFIER. All invalid keys
-                                will be reported as an event when the container is starting. When a key exists in multiple
+                                The keys defined within a source may consist of any printable ASCII characters except '='.
+                                When a key exists in multiple
                                 sources, the value associated with the last source will take precedence.
                                 Values defined by an Env with a duplicate key will take precedence.
                                 Cannot be updated.
                               items:
                                 description: EnvFromSource represents the source of
-                                  a set of ConfigMaps
+                                  a set of ConfigMaps or Secrets
                                 properties:
                                   configMapRef:
                                     description: The ConfigMap to select from
@@ -1301,14 +1287,13 @@ spec:
                                         default: ""
                                         type: string
                                       optional:
-                                        description: Specify whether the ConfigMap
-                                          must be defined
                                         type: boolean
                                     type: object
                                     x-kubernetes-map-type: atomic
                                   prefix:
-                                    description: An optional identifier to prepend
-                                      to each key in the ConfigMap. Must be a C_IDENTIFIER.
+                                    description: |-
+                                      Optional text to prepend to the name of each environment variable.
+                                      May consist of any printable ASCII characters except '='.
                                     type: string
                                   secretRef:
                                     description: The Secret to select from
@@ -1317,8 +1302,6 @@ spec:
                                         default: ""
                                         type: string
                                       optional:
-                                        description: Specify whether the Secret must
-                                          be defined
                                         type: boolean
                                     type: object
                                     x-kubernetes-map-type: atomic
@@ -1353,7 +1336,8 @@ spec:
                                     More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
                                   properties:
                                     exec:
-                                      description: Exec specifies the action to take.
+                                      description: Exec specifies a command to execute
+                                        in the container.
                                       properties:
                                         command:
                                           items:
@@ -1362,7 +1346,7 @@ spec:
                                           x-kubernetes-list-type: atomic
                                       type: object
                                     httpGet:
-                                      description: HTTPGet specifies the http request
+                                      description: HTTPGet specifies an HTTP GET request
                                         to perform.
                                       properties:
                                         host:
@@ -1393,8 +1377,8 @@ spec:
                                       - port
                                       type: object
                                     sleep:
-                                      description: Sleep represents the duration that
-                                        the container should sleep before being terminated.
+                                      description: Sleep represents a duration that
+                                        the container should sleep.
                                       properties:
                                         seconds:
                                           format: int64
@@ -1405,8 +1389,8 @@ spec:
                                     tcpSocket:
                                       description: |-
                                         Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept
-                                        for the backward compatibility. There are no validation of this field and
-                                        lifecycle hooks will fail in runtime when tcp handler is specified.
+                                        for backward compatibility. There is no validation of this field and
+                                        lifecycle hooks will fail at runtime when it is specified.
                                       properties:
                                         host:
                                           type: string
@@ -1432,7 +1416,8 @@ spec:
                                     More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
                                   properties:
                                     exec:
-                                      description: Exec specifies the action to take.
+                                      description: Exec specifies a command to execute
+                                        in the container.
                                       properties:
                                         command:
                                           items:
@@ -1441,7 +1426,7 @@ spec:
                                           x-kubernetes-list-type: atomic
                                       type: object
                                     httpGet:
-                                      description: HTTPGet specifies the http request
+                                      description: HTTPGet specifies an HTTP GET request
                                         to perform.
                                       properties:
                                         host:
@@ -1472,8 +1457,8 @@ spec:
                                       - port
                                       type: object
                                     sleep:
-                                      description: Sleep represents the duration that
-                                        the container should sleep before being terminated.
+                                      description: Sleep represents a duration that
+                                        the container should sleep.
                                       properties:
                                         seconds:
                                           format: int64
@@ -1484,8 +1469,8 @@ spec:
                                     tcpSocket:
                                       description: |-
                                         Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept
-                                        for the backward compatibility. There are no validation of this field and
-                                        lifecycle hooks will fail in runtime when tcp handler is specified.
+                                        for backward compatibility. There is no validation of this field and
+                                        lifecycle hooks will fail at runtime when it is specified.
                                       properties:
                                         host:
                                           type: string
@@ -1498,6 +1483,12 @@ spec:
                                       - port
                                       type: object
                                   type: object
+                                stopSignal:
+                                  description: |-
+                                    StopSignal defines which signal will be sent to a container when it is being stopped.
+                                    If not specified, the default is defined by the container runtime in use.
+                                    StopSignal can only be set for Pods with a non-empty .spec.os.name
+                                  type: string
                               type: object
                             livenessProbe:
                               description: |-
@@ -1507,15 +1498,10 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                               properties:
                                 exec:
-                                  description: Exec specifies the action to take.
+                                  description: Exec specifies a command to execute
+                                    in the container.
                                   properties:
                                     command:
-                                      description: |-
-                                        Command is the command line to execute inside the container, the working directory for the
-                                        command  is root ('/') in the container's filesystem. The command is simply exec'd, it is
-                                        not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use
-                                        a shell, you need to explicitly call out to that shell.
-                                        Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
                                       items:
                                         type: string
                                       type: array
@@ -1528,8 +1514,7 @@ spec:
                                   format: int32
                                   type: integer
                                 grpc:
-                                  description: GRPC specifies an action involving
-                                    a GRPC port.
+                                  description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
                                     port:
                                       description: Port number of the gRPC service.
@@ -1548,7 +1533,7 @@ spec:
                                   - port
                                   type: object
                                 httpGet:
-                                  description: HTTPGet specifies the http request
+                                  description: HTTPGet specifies an HTTP GET request
                                     to perform.
                                   properties:
                                     host:
@@ -1560,8 +1545,6 @@ spec:
                                       description: Custom headers to set in the request.
                                         HTTP allows repeated headers.
                                       items:
-                                        description: HTTPHeader describes a custom
-                                          header to be used in HTTP probes
                                         properties:
                                           name:
                                             type: string
@@ -1612,7 +1595,7 @@ spec:
                                   format: int32
                                   type: integer
                                 tcpSocket:
-                                  description: TCPSocket specifies an action involving
+                                  description: TCPSocket specifies a connection to
                                     a TCP port.
                                   properties:
                                     host:
@@ -1718,15 +1701,10 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                               properties:
                                 exec:
-                                  description: Exec specifies the action to take.
+                                  description: Exec specifies a command to execute
+                                    in the container.
                                   properties:
                                     command:
-                                      description: |-
-                                        Command is the command line to execute inside the container, the working directory for the
-                                        command  is root ('/') in the container's filesystem. The command is simply exec'd, it is
-                                        not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use
-                                        a shell, you need to explicitly call out to that shell.
-                                        Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
                                       items:
                                         type: string
                                       type: array
@@ -1739,8 +1717,7 @@ spec:
                                   format: int32
                                   type: integer
                                 grpc:
-                                  description: GRPC specifies an action involving
-                                    a GRPC port.
+                                  description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
                                     port:
                                       description: Port number of the gRPC service.
@@ -1759,7 +1736,7 @@ spec:
                                   - port
                                   type: object
                                 httpGet:
-                                  description: HTTPGet specifies the http request
+                                  description: HTTPGet specifies an HTTP GET request
                                     to perform.
                                   properties:
                                     host:
@@ -1771,8 +1748,6 @@ spec:
                                       description: Custom headers to set in the request.
                                         HTTP allows repeated headers.
                                       items:
-                                        description: HTTPHeader describes a custom
-                                          header to be used in HTTP probes
                                         properties:
                                           name:
                                             type: string
@@ -1823,7 +1798,7 @@ spec:
                                   format: int32
                                   type: integer
                                 tcpSocket:
-                                  description: TCPSocket specifies an action involving
+                                  description: TCPSocket specifies a connection to
                                     a TCP port.
                                   properties:
                                     host:
@@ -1897,7 +1872,7 @@ spec:
                                     Claims lists the names of resources, defined in spec.resourceClaims,
                                     that are used by this container.
 
-                                    This is an alpha field and requires enabling the
+                                    This field depends on the
                                     DynamicResourceAllocation feature gate.
 
                                     This field is immutable. It can only be set for containers.
@@ -1906,10 +1881,6 @@ spec:
                                       in PodSpec.ResourceClaims.
                                     properties:
                                       name:
-                                        description: |-
-                                          Name must match the name of one entry in pod.spec.resourceClaims of
-                                          the Pod where this field is used. It makes that resource available
-                                          inside a container.
                                         type: string
                                       request:
                                         type: string
@@ -1948,10 +1919,10 @@ spec:
                             restartPolicy:
                               description: |-
                                 RestartPolicy defines the restart behavior of individual containers in a pod.
-                                This field may only be set for init containers, and the only allowed value is "Always".
-                                For non-init containers or when this field is not specified,
+                                This overrides the pod-level restart policy. When this field is not specified,
                                 the restart behavior is defined by the Pod's restart policy and the container type.
-                                Setting the RestartPolicy as "Always" for the init container will have the following effect:
+                                Additionally, setting the RestartPolicy as "Always" for the init container will
+                                have the following effect:
                                 this init container will be continually restarted on
                                 exit until all regular containers have terminated. Once all regular
                                 containers have completed, all init containers with restartPolicy "Always"
@@ -1963,6 +1934,49 @@ spec:
                                 init container is started, or after any startupProbe has successfully
                                 completed.
                               type: string
+                            restartPolicyRules:
+                              description: |-
+                                Represents a list of rules to be checked to determine if the
+                                container should be restarted on exit. The rules are evaluated in
+                                order. Once a rule matches a container exit condition, the remaining
+                                rules are ignored. If no rule matches the container exit condition,
+                                the Container-level restart policy determines the whether the container
+                                is restarted or not. Constraints on the rules:
+                                - At most 20 rules are allowed.
+                                - Rules can have the same action.
+                                - Identical rules are not forbidden in validations.
+                                When rules are specified, container MUST set RestartPolicy explicitly
+                                even it if matches the Pod's RestartPolicy.
+                              items:
+                                description: ContainerRestartRule describes how a
+                                  container exit is handled.
+                                properties:
+                                  action:
+                                    description: |-
+                                      Specifies the action taken on a container exit if the requirements
+                                      are satisfied. The only possible value is "Restart" to restart the
+                                      container.
+                                    type: string
+                                  exitCodes:
+                                    description: Represents the exit codes to check
+                                      on container exits.
+                                    properties:
+                                      operator:
+                                        type: string
+                                      values:
+                                        items:
+                                          format: int32
+                                          type: integer
+                                        type: array
+                                        x-kubernetes-list-type: set
+                                    required:
+                                    - operator
+                                    type: object
+                                required:
+                                - action
+                                type: object
+                              type: array
+                              x-kubernetes-list-type: atomic
                             securityContext:
                               description: |-
                                 SecurityContext defines the security options the container should be run with.
@@ -2012,16 +2026,12 @@ spec:
                                     add:
                                       description: Added capabilities
                                       items:
-                                        description: Capability represent POSIX capabilities
-                                          type
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
                                     drop:
                                       description: Removed capabilities
                                       items:
-                                        description: Capability represent POSIX capabilities
-                                          type
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
@@ -2107,11 +2117,6 @@ spec:
                                     Note that this field cannot be set when spec.os.name is windows.
                                   properties:
                                     localhostProfile:
-                                      description: |-
-                                        localhostProfile indicates a profile defined in a file on the node should be used.
-                                        The profile must be preconfigured on the node to work.
-                                        Must be a descending path, relative to the kubelet's configured seccomp profile location.
-                                        Must be set if type is "Localhost". Must NOT be set for any other type.
                                       type: string
                                     type:
                                       description: |-
@@ -2143,18 +2148,8 @@ spec:
                                         of the GMSA credential spec to use.
                                       type: string
                                     hostProcess:
-                                      description: |-
-                                        HostProcess determines if a container should be run as a 'Host Process' container.
-                                        All of a Pod's containers must have the same effective HostProcess value
-                                        (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).
-                                        In addition, if HostProcess is true then HostNetwork must also be set to true.
                                       type: boolean
                                     runAsUserName:
-                                      description: |-
-                                        The UserName in Windows to run the entrypoint of the container process.
-                                        Defaults to the user specified in image metadata if unspecified.
-                                        May also be set in PodSecurityContext. If set in both SecurityContext and
-                                        PodSecurityContext, the value specified in SecurityContext takes precedence.
                                       type: string
                                   type: object
                               type: object
@@ -2169,15 +2164,10 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                               properties:
                                 exec:
-                                  description: Exec specifies the action to take.
+                                  description: Exec specifies a command to execute
+                                    in the container.
                                   properties:
                                     command:
-                                      description: |-
-                                        Command is the command line to execute inside the container, the working directory for the
-                                        command  is root ('/') in the container's filesystem. The command is simply exec'd, it is
-                                        not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use
-                                        a shell, you need to explicitly call out to that shell.
-                                        Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
                                       items:
                                         type: string
                                       type: array
@@ -2190,8 +2180,7 @@ spec:
                                   format: int32
                                   type: integer
                                 grpc:
-                                  description: GRPC specifies an action involving
-                                    a GRPC port.
+                                  description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
                                     port:
                                       description: Port number of the gRPC service.
@@ -2210,7 +2199,7 @@ spec:
                                   - port
                                   type: object
                                 httpGet:
-                                  description: HTTPGet specifies the http request
+                                  description: HTTPGet specifies an HTTP GET request
                                     to perform.
                                   properties:
                                     host:
@@ -2222,8 +2211,6 @@ spec:
                                       description: Custom headers to set in the request.
                                         HTTP allows repeated headers.
                                       items:
-                                        description: HTTPHeader describes a custom
-                                          header to be used in HTTP probes
                                         properties:
                                           name:
                                             type: string
@@ -2274,7 +2261,7 @@ spec:
                                   format: int32
                                   type: integer
                                 tcpSocket:
-                                  description: TCPSocket specifies an action involving
+                                  description: TCPSocket specifies a connection to
                                     a TCP port.
                                   properties:
                                     host:
@@ -2489,9 +2476,13 @@ spec:
                                 options of a pod.
                               properties:
                                 name:
-                                  description: Required.
+                                  description: |-
+                                    Name is this DNS resolver option's name.
+                                    Required.
                                   type: string
                                 value:
+                                  description: Value is this DNS resolver option's
+                                    value.
                                   type: string
                               type: object
                             type: array
@@ -2575,8 +2566,9 @@ spec:
                                   present in a Container.
                                 properties:
                                   name:
-                                    description: Name of the environment variable.
-                                      Must be a C_IDENTIFIER.
+                                    description: |-
+                                      Name of the environment variable.
+                                      May consist of any printable ASCII characters except '='.
                                     type: string
                                   value:
                                     description: |-
@@ -2595,7 +2587,6 @@ spec:
                                       value. Cannot be used if value is not empty.
                                     properties:
                                       configMapKeyRef:
-                                        description: Selects a key of a ConfigMap.
                                         properties:
                                           key:
                                             type: string
@@ -2618,6 +2609,23 @@ spec:
                                         - fieldPath
                                         type: object
                                         x-kubernetes-map-type: atomic
+                                      fileKeyRef:
+                                        properties:
+                                          key:
+                                            type: string
+                                          optional:
+                                            default: false
+                                            type: boolean
+                                          path:
+                                            type: string
+                                          volumeName:
+                                            type: string
+                                        required:
+                                        - key
+                                        - path
+                                        - volumeName
+                                        type: object
+                                        x-kubernetes-map-type: atomic
                                       resourceFieldRef:
                                         properties:
                                           containerName:
@@ -2635,8 +2643,6 @@ spec:
                                         type: object
                                         x-kubernetes-map-type: atomic
                                       secretKeyRef:
-                                        description: Selects a key of a secret in
-                                          the pod's namespace
                                         properties:
                                           key:
                                             type: string
@@ -2660,14 +2666,14 @@ spec:
                             envFrom:
                               description: |-
                                 List of sources to populate environment variables in the container.
-                                The keys defined within a source must be a C_IDENTIFIER. All invalid keys
-                                will be reported as an event when the container is starting. When a key exists in multiple
+                                The keys defined within a source may consist of any printable ASCII characters except '='.
+                                When a key exists in multiple
                                 sources, the value associated with the last source will take precedence.
                                 Values defined by an Env with a duplicate key will take precedence.
                                 Cannot be updated.
                               items:
                                 description: EnvFromSource represents the source of
-                                  a set of ConfigMaps
+                                  a set of ConfigMaps or Secrets
                                 properties:
                                   configMapRef:
                                     description: The ConfigMap to select from
@@ -2676,14 +2682,13 @@ spec:
                                         default: ""
                                         type: string
                                       optional:
-                                        description: Specify whether the ConfigMap
-                                          must be defined
                                         type: boolean
                                     type: object
                                     x-kubernetes-map-type: atomic
                                   prefix:
-                                    description: An optional identifier to prepend
-                                      to each key in the ConfigMap. Must be a C_IDENTIFIER.
+                                    description: |-
+                                      Optional text to prepend to the name of each environment variable.
+                                      May consist of any printable ASCII characters except '='.
                                     type: string
                                   secretRef:
                                     description: The Secret to select from
@@ -2692,8 +2697,6 @@ spec:
                                         default: ""
                                         type: string
                                       optional:
-                                        description: Specify whether the Secret must
-                                          be defined
                                         type: boolean
                                     type: object
                                     x-kubernetes-map-type: atomic
@@ -2725,7 +2728,8 @@ spec:
                                     More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
                                   properties:
                                     exec:
-                                      description: Exec specifies the action to take.
+                                      description: Exec specifies a command to execute
+                                        in the container.
                                       properties:
                                         command:
                                           items:
@@ -2734,7 +2738,7 @@ spec:
                                           x-kubernetes-list-type: atomic
                                       type: object
                                     httpGet:
-                                      description: HTTPGet specifies the http request
+                                      description: HTTPGet specifies an HTTP GET request
                                         to perform.
                                       properties:
                                         host:
@@ -2765,8 +2769,8 @@ spec:
                                       - port
                                       type: object
                                     sleep:
-                                      description: Sleep represents the duration that
-                                        the container should sleep before being terminated.
+                                      description: Sleep represents a duration that
+                                        the container should sleep.
                                       properties:
                                         seconds:
                                           format: int64
@@ -2777,8 +2781,8 @@ spec:
                                     tcpSocket:
                                       description: |-
                                         Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept
-                                        for the backward compatibility. There are no validation of this field and
-                                        lifecycle hooks will fail in runtime when tcp handler is specified.
+                                        for backward compatibility. There is no validation of this field and
+                                        lifecycle hooks will fail at runtime when it is specified.
                                       properties:
                                         host:
                                           type: string
@@ -2804,7 +2808,8 @@ spec:
                                     More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
                                   properties:
                                     exec:
-                                      description: Exec specifies the action to take.
+                                      description: Exec specifies a command to execute
+                                        in the container.
                                       properties:
                                         command:
                                           items:
@@ -2813,7 +2818,7 @@ spec:
                                           x-kubernetes-list-type: atomic
                                       type: object
                                     httpGet:
-                                      description: HTTPGet specifies the http request
+                                      description: HTTPGet specifies an HTTP GET request
                                         to perform.
                                       properties:
                                         host:
@@ -2844,8 +2849,8 @@ spec:
                                       - port
                                       type: object
                                     sleep:
-                                      description: Sleep represents the duration that
-                                        the container should sleep before being terminated.
+                                      description: Sleep represents a duration that
+                                        the container should sleep.
                                       properties:
                                         seconds:
                                           format: int64
@@ -2856,8 +2861,8 @@ spec:
                                     tcpSocket:
                                       description: |-
                                         Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept
-                                        for the backward compatibility. There are no validation of this field and
-                                        lifecycle hooks will fail in runtime when tcp handler is specified.
+                                        for backward compatibility. There is no validation of this field and
+                                        lifecycle hooks will fail at runtime when it is specified.
                                       properties:
                                         host:
                                           type: string
@@ -2870,20 +2875,21 @@ spec:
                                       - port
                                       type: object
                                   type: object
+                                stopSignal:
+                                  description: |-
+                                    StopSignal defines which signal will be sent to a container when it is being stopped.
+                                    If not specified, the default is defined by the container runtime in use.
+                                    StopSignal can only be set for Pods with a non-empty .spec.os.name
+                                  type: string
                               type: object
                             livenessProbe:
                               description: Probes are not allowed for ephemeral containers.
                               properties:
                                 exec:
-                                  description: Exec specifies the action to take.
+                                  description: Exec specifies a command to execute
+                                    in the container.
                                   properties:
                                     command:
-                                      description: |-
-                                        Command is the command line to execute inside the container, the working directory for the
-                                        command  is root ('/') in the container's filesystem. The command is simply exec'd, it is
-                                        not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use
-                                        a shell, you need to explicitly call out to that shell.
-                                        Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
                                       items:
                                         type: string
                                       type: array
@@ -2896,8 +2902,7 @@ spec:
                                   format: int32
                                   type: integer
                                 grpc:
-                                  description: GRPC specifies an action involving
-                                    a GRPC port.
+                                  description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
                                     port:
                                       description: Port number of the gRPC service.
@@ -2916,7 +2921,7 @@ spec:
                                   - port
                                   type: object
                                 httpGet:
-                                  description: HTTPGet specifies the http request
+                                  description: HTTPGet specifies an HTTP GET request
                                     to perform.
                                   properties:
                                     host:
@@ -2928,8 +2933,6 @@ spec:
                                       description: Custom headers to set in the request.
                                         HTTP allows repeated headers.
                                       items:
-                                        description: HTTPHeader describes a custom
-                                          header to be used in HTTP probes
                                         properties:
                                           name:
                                             type: string
@@ -2980,7 +2983,7 @@ spec:
                                   format: int32
                                   type: integer
                                 tcpSocket:
-                                  description: TCPSocket specifies an action involving
+                                  description: TCPSocket specifies a connection to
                                     a TCP port.
                                   properties:
                                     host:
@@ -3074,15 +3077,10 @@ spec:
                               description: Probes are not allowed for ephemeral containers.
                               properties:
                                 exec:
-                                  description: Exec specifies the action to take.
+                                  description: Exec specifies a command to execute
+                                    in the container.
                                   properties:
                                     command:
-                                      description: |-
-                                        Command is the command line to execute inside the container, the working directory for the
-                                        command  is root ('/') in the container's filesystem. The command is simply exec'd, it is
-                                        not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use
-                                        a shell, you need to explicitly call out to that shell.
-                                        Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
                                       items:
                                         type: string
                                       type: array
@@ -3095,8 +3093,7 @@ spec:
                                   format: int32
                                   type: integer
                                 grpc:
-                                  description: GRPC specifies an action involving
-                                    a GRPC port.
+                                  description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
                                     port:
                                       description: Port number of the gRPC service.
@@ -3115,7 +3112,7 @@ spec:
                                   - port
                                   type: object
                                 httpGet:
-                                  description: HTTPGet specifies the http request
+                                  description: HTTPGet specifies an HTTP GET request
                                     to perform.
                                   properties:
                                     host:
@@ -3127,8 +3124,6 @@ spec:
                                       description: Custom headers to set in the request.
                                         HTTP allows repeated headers.
                                       items:
-                                        description: HTTPHeader describes a custom
-                                          header to be used in HTTP probes
                                         properties:
                                           name:
                                             type: string
@@ -3179,7 +3174,7 @@ spec:
                                   format: int32
                                   type: integer
                                 tcpSocket:
-                                  description: TCPSocket specifies an action involving
+                                  description: TCPSocket specifies a connection to
                                     a TCP port.
                                   properties:
                                     host:
@@ -3252,7 +3247,7 @@ spec:
                                     Claims lists the names of resources, defined in spec.resourceClaims,
                                     that are used by this container.
 
-                                    This is an alpha field and requires enabling the
+                                    This field depends on the
                                     DynamicResourceAllocation feature gate.
 
                                     This field is immutable. It can only be set for containers.
@@ -3261,10 +3256,6 @@ spec:
                                       in PodSpec.ResourceClaims.
                                     properties:
                                       name:
-                                        description: |-
-                                          Name must match the name of one entry in pod.spec.resourceClaims of
-                                          the Pod where this field is used. It makes that resource available
-                                          inside a container.
                                         type: string
                                       request:
                                         type: string
@@ -3304,9 +3295,43 @@ spec:
                               description: |-
                                 Restart policy for the container to manage the restart behavior of each
                                 container within a pod.
-                                This may only be set for init containers. You cannot set this field on
-                                ephemeral containers.
+                                You cannot set this field on ephemeral containers.
                               type: string
+                            restartPolicyRules:
+                              description: |-
+                                Represents a list of rules to be checked to determine if the
+                                container should be restarted on exit. You cannot set this field on
+                                ephemeral containers.
+                              items:
+                                description: ContainerRestartRule describes how a
+                                  container exit is handled.
+                                properties:
+                                  action:
+                                    description: |-
+                                      Specifies the action taken on a container exit if the requirements
+                                      are satisfied. The only possible value is "Restart" to restart the
+                                      container.
+                                    type: string
+                                  exitCodes:
+                                    description: Represents the exit codes to check
+                                      on container exits.
+                                    properties:
+                                      operator:
+                                        type: string
+                                      values:
+                                        items:
+                                          format: int32
+                                          type: integer
+                                        type: array
+                                        x-kubernetes-list-type: set
+                                    required:
+                                    - operator
+                                    type: object
+                                required:
+                                - action
+                                type: object
+                              type: array
+                              x-kubernetes-list-type: atomic
                             securityContext:
                               description: |-
                                 Optional: SecurityContext defines the security options the ephemeral container should be run with.
@@ -3355,16 +3380,12 @@ spec:
                                     add:
                                       description: Added capabilities
                                       items:
-                                        description: Capability represent POSIX capabilities
-                                          type
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
                                     drop:
                                       description: Removed capabilities
                                       items:
-                                        description: Capability represent POSIX capabilities
-                                          type
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
@@ -3450,11 +3471,6 @@ spec:
                                     Note that this field cannot be set when spec.os.name is windows.
                                   properties:
                                     localhostProfile:
-                                      description: |-
-                                        localhostProfile indicates a profile defined in a file on the node should be used.
-                                        The profile must be preconfigured on the node to work.
-                                        Must be a descending path, relative to the kubelet's configured seccomp profile location.
-                                        Must be set if type is "Localhost". Must NOT be set for any other type.
                                       type: string
                                     type:
                                       description: |-
@@ -3486,18 +3502,8 @@ spec:
                                         of the GMSA credential spec to use.
                                       type: string
                                     hostProcess:
-                                      description: |-
-                                        HostProcess determines if a container should be run as a 'Host Process' container.
-                                        All of a Pod's containers must have the same effective HostProcess value
-                                        (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).
-                                        In addition, if HostProcess is true then HostNetwork must also be set to true.
                                       type: boolean
                                     runAsUserName:
-                                      description: |-
-                                        The UserName in Windows to run the entrypoint of the container process.
-                                        Defaults to the user specified in image metadata if unspecified.
-                                        May also be set in PodSecurityContext. If set in both SecurityContext and
-                                        PodSecurityContext, the value specified in SecurityContext takes precedence.
                                       type: string
                                   type: object
                               type: object
@@ -3505,15 +3511,10 @@ spec:
                               description: Probes are not allowed for ephemeral containers.
                               properties:
                                 exec:
-                                  description: Exec specifies the action to take.
+                                  description: Exec specifies a command to execute
+                                    in the container.
                                   properties:
                                     command:
-                                      description: |-
-                                        Command is the command line to execute inside the container, the working directory for the
-                                        command  is root ('/') in the container's filesystem. The command is simply exec'd, it is
-                                        not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use
-                                        a shell, you need to explicitly call out to that shell.
-                                        Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
                                       items:
                                         type: string
                                       type: array
@@ -3526,8 +3527,7 @@ spec:
                                   format: int32
                                   type: integer
                                 grpc:
-                                  description: GRPC specifies an action involving
-                                    a GRPC port.
+                                  description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
                                     port:
                                       description: Port number of the gRPC service.
@@ -3546,7 +3546,7 @@ spec:
                                   - port
                                   type: object
                                 httpGet:
-                                  description: HTTPGet specifies the http request
+                                  description: HTTPGet specifies an HTTP GET request
                                     to perform.
                                   properties:
                                     host:
@@ -3558,8 +3558,6 @@ spec:
                                       description: Custom headers to set in the request.
                                         HTTP allows repeated headers.
                                       items:
-                                        description: HTTPHeader describes a custom
-                                          header to be used in HTTP probes
                                         properties:
                                           name:
                                             type: string
@@ -3610,7 +3608,7 @@ spec:
                                   format: int32
                                   type: integer
                                 tcpSocket:
-                                  description: TCPSocket specifies an action involving
+                                  description: TCPSocket specifies a connection to
                                     a TCP port.
                                   properties:
                                     host:
@@ -3841,7 +3839,9 @@ spec:
                       hostNetwork:
                         description: |-
                           Host networking requested for this pod. Use the host's network namespace.
-                          If this option is set, the ports that will be used must be specified.
+                          When using HostNetwork you should specify ports so the scheduler is aware.
+                          When `hostNetwork` is true, specified `hostPort` fields in port definitions must match `containerPort`,
+                          and unspecified `hostPort` fields in port definitions are defaulted to match `containerPort`.
                           Default to false.
                         type: boolean
                       hostPID:
@@ -3865,6 +3865,19 @@ spec:
                         description: |-
                           Specifies the hostname of the Pod
                           If not specified, the pod's hostname will be set to a system-defined value.
+                        type: string
+                      hostnameOverride:
+                        description: |-
+                          HostnameOverride specifies an explicit override for the pod's hostname as perceived by the pod.
+                          This field only specifies the pod's hostname and does not affect its DNS records.
+                          When this field is set to a non-empty string:
+                          - It takes precedence over the values set in `hostname` and `subdomain`.
+                          - The Pod's hostname will be set to this value.
+                          - `setHostnameAsFQDN` must be nil or set to false.
+                          - `hostNetwork` must be set to false.
+
+                          This field must be a valid DNS subdomain as defined in RFC 1123 and contain at most 64 characters.
+                          Requires the HostnameOverride feature gate to be enabled.
                         type: string
                       imagePullSecrets:
                         description: |-
@@ -3901,7 +3914,7 @@ spec:
                           Init containers may not have Lifecycle actions, Readiness probes, Liveness probes, or Startup probes.
                           The resourceRequirements of an init container are taken into account during scheduling
                           by finding the highest request/limit for each resource type, and then using the max of
-                          of that value or the sum of the normal containers. Limits are applied to init containers
+                          that value or the sum of the normal containers. Limits are applied to init containers
                           in a similar fashion.
                           Init containers cannot currently be added or removed.
                           Cannot be updated.
@@ -3947,8 +3960,9 @@ spec:
                                   present in a Container.
                                 properties:
                                   name:
-                                    description: Name of the environment variable.
-                                      Must be a C_IDENTIFIER.
+                                    description: |-
+                                      Name of the environment variable.
+                                      May consist of any printable ASCII characters except '='.
                                     type: string
                                   value:
                                     description: |-
@@ -3967,7 +3981,6 @@ spec:
                                       value. Cannot be used if value is not empty.
                                     properties:
                                       configMapKeyRef:
-                                        description: Selects a key of a ConfigMap.
                                         properties:
                                           key:
                                             type: string
@@ -3990,6 +4003,23 @@ spec:
                                         - fieldPath
                                         type: object
                                         x-kubernetes-map-type: atomic
+                                      fileKeyRef:
+                                        properties:
+                                          key:
+                                            type: string
+                                          optional:
+                                            default: false
+                                            type: boolean
+                                          path:
+                                            type: string
+                                          volumeName:
+                                            type: string
+                                        required:
+                                        - key
+                                        - path
+                                        - volumeName
+                                        type: object
+                                        x-kubernetes-map-type: atomic
                                       resourceFieldRef:
                                         properties:
                                           containerName:
@@ -4007,8 +4037,6 @@ spec:
                                         type: object
                                         x-kubernetes-map-type: atomic
                                       secretKeyRef:
-                                        description: Selects a key of a secret in
-                                          the pod's namespace
                                         properties:
                                           key:
                                             type: string
@@ -4032,14 +4060,14 @@ spec:
                             envFrom:
                               description: |-
                                 List of sources to populate environment variables in the container.
-                                The keys defined within a source must be a C_IDENTIFIER. All invalid keys
-                                will be reported as an event when the container is starting. When a key exists in multiple
+                                The keys defined within a source may consist of any printable ASCII characters except '='.
+                                When a key exists in multiple
                                 sources, the value associated with the last source will take precedence.
                                 Values defined by an Env with a duplicate key will take precedence.
                                 Cannot be updated.
                               items:
                                 description: EnvFromSource represents the source of
-                                  a set of ConfigMaps
+                                  a set of ConfigMaps or Secrets
                                 properties:
                                   configMapRef:
                                     description: The ConfigMap to select from
@@ -4048,14 +4076,13 @@ spec:
                                         default: ""
                                         type: string
                                       optional:
-                                        description: Specify whether the ConfigMap
-                                          must be defined
                                         type: boolean
                                     type: object
                                     x-kubernetes-map-type: atomic
                                   prefix:
-                                    description: An optional identifier to prepend
-                                      to each key in the ConfigMap. Must be a C_IDENTIFIER.
+                                    description: |-
+                                      Optional text to prepend to the name of each environment variable.
+                                      May consist of any printable ASCII characters except '='.
                                     type: string
                                   secretRef:
                                     description: The Secret to select from
@@ -4064,8 +4091,6 @@ spec:
                                         default: ""
                                         type: string
                                       optional:
-                                        description: Specify whether the Secret must
-                                          be defined
                                         type: boolean
                                     type: object
                                     x-kubernetes-map-type: atomic
@@ -4100,7 +4125,8 @@ spec:
                                     More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
                                   properties:
                                     exec:
-                                      description: Exec specifies the action to take.
+                                      description: Exec specifies a command to execute
+                                        in the container.
                                       properties:
                                         command:
                                           items:
@@ -4109,7 +4135,7 @@ spec:
                                           x-kubernetes-list-type: atomic
                                       type: object
                                     httpGet:
-                                      description: HTTPGet specifies the http request
+                                      description: HTTPGet specifies an HTTP GET request
                                         to perform.
                                       properties:
                                         host:
@@ -4140,8 +4166,8 @@ spec:
                                       - port
                                       type: object
                                     sleep:
-                                      description: Sleep represents the duration that
-                                        the container should sleep before being terminated.
+                                      description: Sleep represents a duration that
+                                        the container should sleep.
                                       properties:
                                         seconds:
                                           format: int64
@@ -4152,8 +4178,8 @@ spec:
                                     tcpSocket:
                                       description: |-
                                         Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept
-                                        for the backward compatibility. There are no validation of this field and
-                                        lifecycle hooks will fail in runtime when tcp handler is specified.
+                                        for backward compatibility. There is no validation of this field and
+                                        lifecycle hooks will fail at runtime when it is specified.
                                       properties:
                                         host:
                                           type: string
@@ -4179,7 +4205,8 @@ spec:
                                     More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
                                   properties:
                                     exec:
-                                      description: Exec specifies the action to take.
+                                      description: Exec specifies a command to execute
+                                        in the container.
                                       properties:
                                         command:
                                           items:
@@ -4188,7 +4215,7 @@ spec:
                                           x-kubernetes-list-type: atomic
                                       type: object
                                     httpGet:
-                                      description: HTTPGet specifies the http request
+                                      description: HTTPGet specifies an HTTP GET request
                                         to perform.
                                       properties:
                                         host:
@@ -4219,8 +4246,8 @@ spec:
                                       - port
                                       type: object
                                     sleep:
-                                      description: Sleep represents the duration that
-                                        the container should sleep before being terminated.
+                                      description: Sleep represents a duration that
+                                        the container should sleep.
                                       properties:
                                         seconds:
                                           format: int64
@@ -4231,8 +4258,8 @@ spec:
                                     tcpSocket:
                                       description: |-
                                         Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept
-                                        for the backward compatibility. There are no validation of this field and
-                                        lifecycle hooks will fail in runtime when tcp handler is specified.
+                                        for backward compatibility. There is no validation of this field and
+                                        lifecycle hooks will fail at runtime when it is specified.
                                       properties:
                                         host:
                                           type: string
@@ -4245,6 +4272,12 @@ spec:
                                       - port
                                       type: object
                                   type: object
+                                stopSignal:
+                                  description: |-
+                                    StopSignal defines which signal will be sent to a container when it is being stopped.
+                                    If not specified, the default is defined by the container runtime in use.
+                                    StopSignal can only be set for Pods with a non-empty .spec.os.name
+                                  type: string
                               type: object
                             livenessProbe:
                               description: |-
@@ -4254,15 +4287,10 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                               properties:
                                 exec:
-                                  description: Exec specifies the action to take.
+                                  description: Exec specifies a command to execute
+                                    in the container.
                                   properties:
                                     command:
-                                      description: |-
-                                        Command is the command line to execute inside the container, the working directory for the
-                                        command  is root ('/') in the container's filesystem. The command is simply exec'd, it is
-                                        not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use
-                                        a shell, you need to explicitly call out to that shell.
-                                        Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
                                       items:
                                         type: string
                                       type: array
@@ -4275,8 +4303,7 @@ spec:
                                   format: int32
                                   type: integer
                                 grpc:
-                                  description: GRPC specifies an action involving
-                                    a GRPC port.
+                                  description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
                                     port:
                                       description: Port number of the gRPC service.
@@ -4295,7 +4322,7 @@ spec:
                                   - port
                                   type: object
                                 httpGet:
-                                  description: HTTPGet specifies the http request
+                                  description: HTTPGet specifies an HTTP GET request
                                     to perform.
                                   properties:
                                     host:
@@ -4307,8 +4334,6 @@ spec:
                                       description: Custom headers to set in the request.
                                         HTTP allows repeated headers.
                                       items:
-                                        description: HTTPHeader describes a custom
-                                          header to be used in HTTP probes
                                         properties:
                                           name:
                                             type: string
@@ -4359,7 +4384,7 @@ spec:
                                   format: int32
                                   type: integer
                                 tcpSocket:
-                                  description: TCPSocket specifies an action involving
+                                  description: TCPSocket specifies a connection to
                                     a TCP port.
                                   properties:
                                     host:
@@ -4465,15 +4490,10 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                               properties:
                                 exec:
-                                  description: Exec specifies the action to take.
+                                  description: Exec specifies a command to execute
+                                    in the container.
                                   properties:
                                     command:
-                                      description: |-
-                                        Command is the command line to execute inside the container, the working directory for the
-                                        command  is root ('/') in the container's filesystem. The command is simply exec'd, it is
-                                        not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use
-                                        a shell, you need to explicitly call out to that shell.
-                                        Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
                                       items:
                                         type: string
                                       type: array
@@ -4486,8 +4506,7 @@ spec:
                                   format: int32
                                   type: integer
                                 grpc:
-                                  description: GRPC specifies an action involving
-                                    a GRPC port.
+                                  description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
                                     port:
                                       description: Port number of the gRPC service.
@@ -4506,7 +4525,7 @@ spec:
                                   - port
                                   type: object
                                 httpGet:
-                                  description: HTTPGet specifies the http request
+                                  description: HTTPGet specifies an HTTP GET request
                                     to perform.
                                   properties:
                                     host:
@@ -4518,8 +4537,6 @@ spec:
                                       description: Custom headers to set in the request.
                                         HTTP allows repeated headers.
                                       items:
-                                        description: HTTPHeader describes a custom
-                                          header to be used in HTTP probes
                                         properties:
                                           name:
                                             type: string
@@ -4570,7 +4587,7 @@ spec:
                                   format: int32
                                   type: integer
                                 tcpSocket:
-                                  description: TCPSocket specifies an action involving
+                                  description: TCPSocket specifies a connection to
                                     a TCP port.
                                   properties:
                                     host:
@@ -4644,7 +4661,7 @@ spec:
                                     Claims lists the names of resources, defined in spec.resourceClaims,
                                     that are used by this container.
 
-                                    This is an alpha field and requires enabling the
+                                    This field depends on the
                                     DynamicResourceAllocation feature gate.
 
                                     This field is immutable. It can only be set for containers.
@@ -4691,10 +4708,10 @@ spec:
                             restartPolicy:
                               description: |-
                                 RestartPolicy defines the restart behavior of individual containers in a pod.
-                                This field may only be set for init containers, and the only allowed value is "Always".
-                                For non-init containers or when this field is not specified,
+                                This overrides the pod-level restart policy. When this field is not specified,
                                 the restart behavior is defined by the Pod's restart policy and the container type.
-                                Setting the RestartPolicy as "Always" for the init container will have the following effect:
+                                Additionally, setting the RestartPolicy as "Always" for the init container will
+                                have the following effect:
                                 this init container will be continually restarted on
                                 exit until all regular containers have terminated. Once all regular
                                 containers have completed, all init containers with restartPolicy "Always"
@@ -4706,6 +4723,49 @@ spec:
                                 init container is started, or after any startupProbe has successfully
                                 completed.
                               type: string
+                            restartPolicyRules:
+                              description: |-
+                                Represents a list of rules to be checked to determine if the
+                                container should be restarted on exit. The rules are evaluated in
+                                order. Once a rule matches a container exit condition, the remaining
+                                rules are ignored. If no rule matches the container exit condition,
+                                the Container-level restart policy determines the whether the container
+                                is restarted or not. Constraints on the rules:
+                                - At most 20 rules are allowed.
+                                - Rules can have the same action.
+                                - Identical rules are not forbidden in validations.
+                                When rules are specified, container MUST set RestartPolicy explicitly
+                                even it if matches the Pod's RestartPolicy.
+                              items:
+                                description: ContainerRestartRule describes how a
+                                  container exit is handled.
+                                properties:
+                                  action:
+                                    description: |-
+                                      Specifies the action taken on a container exit if the requirements
+                                      are satisfied. The only possible value is "Restart" to restart the
+                                      container.
+                                    type: string
+                                  exitCodes:
+                                    description: Represents the exit codes to check
+                                      on container exits.
+                                    properties:
+                                      operator:
+                                        type: string
+                                      values:
+                                        items:
+                                          format: int32
+                                          type: integer
+                                        type: array
+                                        x-kubernetes-list-type: set
+                                    required:
+                                    - operator
+                                    type: object
+                                required:
+                                - action
+                                type: object
+                              type: array
+                              x-kubernetes-list-type: atomic
                             securityContext:
                               description: |-
                                 SecurityContext defines the security options the container should be run with.
@@ -4755,16 +4815,12 @@ spec:
                                     add:
                                       description: Added capabilities
                                       items:
-                                        description: Capability represent POSIX capabilities
-                                          type
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
                                     drop:
                                       description: Removed capabilities
                                       items:
-                                        description: Capability represent POSIX capabilities
-                                          type
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
@@ -4850,11 +4906,6 @@ spec:
                                     Note that this field cannot be set when spec.os.name is windows.
                                   properties:
                                     localhostProfile:
-                                      description: |-
-                                        localhostProfile indicates a profile defined in a file on the node should be used.
-                                        The profile must be preconfigured on the node to work.
-                                        Must be a descending path, relative to the kubelet's configured seccomp profile location.
-                                        Must be set if type is "Localhost". Must NOT be set for any other type.
                                       type: string
                                     type:
                                       description: |-
@@ -4886,18 +4937,8 @@ spec:
                                         of the GMSA credential spec to use.
                                       type: string
                                     hostProcess:
-                                      description: |-
-                                        HostProcess determines if a container should be run as a 'Host Process' container.
-                                        All of a Pod's containers must have the same effective HostProcess value
-                                        (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).
-                                        In addition, if HostProcess is true then HostNetwork must also be set to true.
                                       type: boolean
                                     runAsUserName:
-                                      description: |-
-                                        The UserName in Windows to run the entrypoint of the container process.
-                                        Defaults to the user specified in image metadata if unspecified.
-                                        May also be set in PodSecurityContext. If set in both SecurityContext and
-                                        PodSecurityContext, the value specified in SecurityContext takes precedence.
                                       type: string
                                   type: object
                               type: object
@@ -4912,15 +4953,10 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
                               properties:
                                 exec:
-                                  description: Exec specifies the action to take.
+                                  description: Exec specifies a command to execute
+                                    in the container.
                                   properties:
                                     command:
-                                      description: |-
-                                        Command is the command line to execute inside the container, the working directory for the
-                                        command  is root ('/') in the container's filesystem. The command is simply exec'd, it is
-                                        not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use
-                                        a shell, you need to explicitly call out to that shell.
-                                        Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
                                       items:
                                         type: string
                                       type: array
@@ -4933,8 +4969,7 @@ spec:
                                   format: int32
                                   type: integer
                                 grpc:
-                                  description: GRPC specifies an action involving
-                                    a GRPC port.
+                                  description: GRPC specifies a GRPC HealthCheckRequest.
                                   properties:
                                     port:
                                       description: Port number of the gRPC service.
@@ -4953,7 +4988,7 @@ spec:
                                   - port
                                   type: object
                                 httpGet:
-                                  description: HTTPGet specifies the http request
+                                  description: HTTPGet specifies an HTTP GET request
                                     to perform.
                                   properties:
                                     host:
@@ -4965,8 +5000,6 @@ spec:
                                       description: Custom headers to set in the request.
                                         HTTP allows repeated headers.
                                       items:
-                                        description: HTTPHeader describes a custom
-                                          header to be used in HTTP probes
                                         properties:
                                           name:
                                             type: string
@@ -5017,7 +5050,7 @@ spec:
                                   format: int32
                                   type: integer
                                 tcpSocket:
-                                  description: TCPSocket specifies an action involving
+                                  description: TCPSocket specifies a connection to
                                     a TCP port.
                                   properties:
                                     host:
@@ -5235,6 +5268,7 @@ spec:
                           - spec.hostPID
                           - spec.hostIPC
                           - spec.hostUsers
+                          - spec.resources
                           - spec.securityContext.appArmorProfile
                           - spec.securityContext.seLinuxOptions
                           - spec.securityContext.seccompProfile
@@ -5384,6 +5418,74 @@ spec:
                         x-kubernetes-list-map-keys:
                         - name
                         x-kubernetes-list-type: map
+                      resources:
+                        description: |-
+                          Resources is the total amount of CPU and Memory resources required by all
+                          containers in the pod. It supports specifying Requests and Limits for
+                          "cpu", "memory" and "hugepages-" resource names only. ResourceClaims are not supported.
+
+                          This field enables fine-grained control over resource allocation for the
+                          entire pod, allowing resource sharing among containers in a pod.
+
+                          This is an alpha field and requires enabling the PodLevelResources feature
+                          gate.
+                        properties:
+                          claims:
+                            description: |-
+                              Claims lists the names of resources, defined in spec.resourceClaims,
+                              that are used by this container.
+
+                              This field depends on the
+                              DynamicResourceAllocation feature gate.
+
+                              This field is immutable. It can only be set for containers.
+                            items:
+                              description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                              properties:
+                                name:
+                                  description: |-
+                                    Name must match the name of one entry in pod.spec.resourceClaims of
+                                    the Pod where this field is used. It makes that resource available
+                                    inside a container.
+                                  type: string
+                                request:
+                                  description: |-
+                                    Request is the name chosen for a request in the referenced claim.
+                                    If empty, everything from the claim is made available, otherwise
+                                    only the result of this request.
+                                  type: string
+                              required:
+                              - name
+                              type: object
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                          limits:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Limits describes the maximum amount of compute resources allowed.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                          requests:
+                            additionalProperties:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            description: |-
+                              Requests describes the minimum amount of compute resources required.
+                              If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                              otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                            type: object
+                        type: object
                       restartPolicy:
                         description: |-
                           Restart policy for all containers within the pod.
@@ -5508,6 +5610,32 @@ spec:
                               Note that this field cannot be set when spec.os.name is windows.
                             format: int64
                             type: integer
+                          seLinuxChangePolicy:
+                            description: |-
+                              seLinuxChangePolicy defines how the container's SELinux label is applied to all volumes used by the Pod.
+                              It has no effect on nodes that do not support SELinux or to volumes does not support SELinux.
+                              Valid values are "MountOption" and "Recursive".
+
+                              "Recursive" means relabeling of all files on all Pod volumes by the container runtime.
+                              This may be slow for large volumes, but allows mixing privileged and unprivileged Pods sharing the same volume on the same node.
+
+                              "MountOption" mounts all eligible Pod volumes with `-o context` mount option.
+                              This requires all Pods that share the same volume to use the same SELinux label.
+                              It is not possible to share the same volume among privileged and unprivileged Pods.
+                              Eligible volumes are in-tree FibreChannel and iSCSI volumes, and all CSI volumes
+                              whose CSI driver announces SELinux support by setting spec.seLinuxMount: true in their
+                              CSIDriver instance. Other volumes are always re-labelled recursively.
+                              "MountOption" value is allowed only when SELinuxMount feature gate is enabled.
+
+                              If not specified and SELinuxMount feature gate is enabled, "MountOption" is used.
+                              If not specified and SELinuxMount feature gate is disabled, "MountOption" is used for ReadWriteOncePod volumes
+                              and "Recursive" for all other volumes.
+
+                              This field affects only Pods that have SELinux label set, either in PodSecurityContext or in SecurityContext of all containers.
+
+                              All Pods that use the same volume should use the same seLinuxChangePolicy, otherwise some pods can get stuck in ContainerCreating state.
+                              Note that this field cannot be set when spec.os.name is windows.
+                            type: string
                           seLinuxOptions:
                             description: |-
                               The SELinux context to be applied to all containers.
@@ -5743,13 +5871,8 @@ spec:
                                       relates the key and values.
                                     properties:
                                       key:
-                                        description: key is the label key that the
-                                          selector applies to.
                                         type: string
                                       operator:
-                                        description: |-
-                                          operator represents a key's relationship to a set of values.
-                                          Valid operators are In, NotIn, Exists and DoesNotExist.
                                         type: string
                                       values:
                                         items:
@@ -5840,7 +5963,6 @@ spec:
                                 - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations.
 
                                 If this value is nil, the behavior is equivalent to the Honor policy.
-                                This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
                               type: string
                             nodeTaintsPolicy:
                               description: |-
@@ -5851,7 +5973,6 @@ spec:
                                 - Ignore: node taints are ignored. All nodes are included.
 
                                 If this value is nil, the behavior is equivalent to the Ignore policy.
-                                This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
                               type: string
                             topologyKey:
                               description: |-
@@ -5909,6 +6030,8 @@ spec:
                               description: |-
                                 awsElasticBlockStore represents an AWS Disk resource that is attached to a
                                 kubelet's host machine and then exposed to the pod.
+                                Deprecated: AWSElasticBlockStore is deprecated. All operations for the in-tree
+                                awsElasticBlockStore type are redirected to the ebs.csi.aws.com CSI driver.
                                 More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
                               properties:
                                 fsType:
@@ -5940,8 +6063,10 @@ spec:
                               - volumeID
                               type: object
                             azureDisk:
-                              description: azureDisk represents an Azure Data Disk
-                                mount on the host and bind mount to the pod.
+                              description: |-
+                                azureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
+                                Deprecated: AzureDisk is deprecated. All operations for the in-tree azureDisk type
+                                are redirected to the disk.csi.azure.com CSI driver.
                               properties:
                                 cachingMode:
                                   description: 'cachingMode is the Host Caching mode:
@@ -5980,8 +6105,10 @@ spec:
                               - diskURI
                               type: object
                             azureFile:
-                              description: azureFile represents an Azure File Service
-                                mount on the host and bind mount to the pod.
+                              description: |-
+                                azureFile represents an Azure File Service mount on the host and bind mount to the pod.
+                                Deprecated: AzureFile is deprecated. All operations for the in-tree azureFile type
+                                are redirected to the file.csi.azure.com CSI driver.
                               properties:
                                 readOnly:
                                   description: |-
@@ -6000,8 +6127,9 @@ spec:
                               - shareName
                               type: object
                             cephfs:
-                              description: cephFS represents a Ceph FS mount on the
-                                host that shares a pod's lifetime
+                              description: |-
+                                cephFS represents a Ceph FS mount on the host that shares a pod's lifetime.
+                                Deprecated: CephFS is deprecated and the in-tree cephfs type is no longer supported.
                               properties:
                                 monitors:
                                   description: |-
@@ -6054,6 +6182,8 @@ spec:
                             cinder:
                               description: |-
                                 cinder represents a cinder volume attached and mounted on kubelets host machine.
+                                Deprecated: Cinder is deprecated. All operations for the in-tree cinder type
+                                are redirected to the cinder.csi.openstack.org CSI driver.
                                 More info: https://examples.k8s.io/mysql-cinder-pd/README.md
                               properties:
                                 fsType:
@@ -6076,12 +6206,6 @@ spec:
                                   properties:
                                     name:
                                       default: ""
-                                      description: |-
-                                        Name of the referent.
-                                        This field is effectively required, but due to backwards compatibility is
-                                        allowed to be empty. Instances of this type with an empty value here are
-                                        almost certainly wrong.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -6122,7 +6246,6 @@ spec:
                                       a volume.
                                     properties:
                                       key:
-                                        description: key is the key to project.
                                         type: string
                                       mode:
                                         format: int32
@@ -6153,7 +6276,7 @@ spec:
                             csi:
                               description: csi (Container Storage Interface) represents
                                 ephemeral storage that is handled by certain external
-                                CSI drivers (Beta feature).
+                                CSI drivers.
                               properties:
                                 driver:
                                   description: |-
@@ -6176,12 +6299,6 @@ spec:
                                   properties:
                                     name:
                                       default: ""
-                                      description: |-
-                                        Name of the referent.
-                                        This field is effectively required, but due to backwards compatibility is
-                                        allowed to be empty. Instances of this type with an empty value here are
-                                        almost certainly wrong.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -6225,9 +6342,6 @@ spec:
                                       pod field
                                     properties:
                                       fieldRef:
-                                        description: 'Required: Selects a field of
-                                          the pod: only annotations, labels, name,
-                                          namespace and uid are supported.'
                                         properties:
                                           apiVersion:
                                             type: string
@@ -6484,6 +6598,7 @@ spec:
                               description: |-
                                 flexVolume represents a generic volume resource that is
                                 provisioned/attached using an exec based plugin.
+                                Deprecated: FlexVolume is deprecated. Consider using a CSIDriver instead.
                               properties:
                                 driver:
                                   description: driver is the name of the driver to
@@ -6529,9 +6644,9 @@ spec:
                               - driver
                               type: object
                             flocker:
-                              description: flocker represents a Flocker volume attached
-                                to a kubelet's host machine. This depends on the Flocker
-                                control service being running
+                              description: |-
+                                flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running.
+                                Deprecated: Flocker is deprecated and the in-tree flocker type is no longer supported.
                               properties:
                                 datasetName:
                                   description: |-
@@ -6547,6 +6662,8 @@ spec:
                               description: |-
                                 gcePersistentDisk represents a GCE Disk resource that is attached to a
                                 kubelet's host machine and then exposed to the pod.
+                                Deprecated: GCEPersistentDisk is deprecated. All operations for the in-tree
+                                gcePersistentDisk type are redirected to the pd.csi.storage.gke.io CSI driver.
                                 More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
                               properties:
                                 fsType:
@@ -6582,7 +6699,7 @@ spec:
                             gitRepo:
                               description: |-
                                 gitRepo represents a git repository at a particular revision.
-                                DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an
+                                Deprecated: GitRepo is deprecated. To provision a container with a git repo, mount an
                                 EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir
                                 into the Pod's container.
                               properties:
@@ -6606,12 +6723,11 @@ spec:
                             glusterfs:
                               description: |-
                                 glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
-                                More info: https://examples.k8s.io/volumes/glusterfs/README.md
+                                Deprecated: Glusterfs is deprecated and the in-tree glusterfs type is no longer supported.
                               properties:
                                 endpoints:
-                                  description: |-
-                                    endpoints is the endpoint name that details Glusterfs topology.
-                                    More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
+                                  description: endpoints is the endpoint name that
+                                    details Glusterfs topology.
                                   type: string
                                 path:
                                   description: |-
@@ -6665,7 +6781,7 @@ spec:
                                 The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
                                 The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
                                 The volume will be mounted read-only (ro) and non-executable files (noexec).
-                                Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath).
+                                Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33.
                                 The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
                               properties:
                                 pullPolicy:
@@ -6690,7 +6806,7 @@ spec:
                               description: |-
                                 iscsi represents an ISCSI Disk resource that is attached to a
                                 kubelet's host machine and then exposed to the pod.
-                                More info: https://examples.k8s.io/volumes/iscsi/README.md
+                                More info: https://kubernetes.io/docs/concepts/storage/volumes/#iscsi
                               properties:
                                 chapAuthDiscovery:
                                   description: chapAuthDiscovery defines whether support
@@ -6745,12 +6861,6 @@ spec:
                                   properties:
                                     name:
                                       default: ""
-                                      description: |-
-                                        Name of the referent.
-                                        This field is effectively required, but due to backwards compatibility is
-                                        allowed to be empty. Instances of this type with an empty value here are
-                                        almost certainly wrong.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -6815,9 +6925,9 @@ spec:
                               - claimName
                               type: object
                             photonPersistentDisk:
-                              description: photonPersistentDisk represents a PhotonController
-                                persistent disk attached and mounted on kubelets host
-                                machine
+                              description: |-
+                                photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine.
+                                Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.
                               properties:
                                 fsType:
                                   description: |-
@@ -6833,8 +6943,11 @@ spec:
                               - pdID
                               type: object
                             portworxVolume:
-                              description: portworxVolume represents a portworx volume
-                                attached and mounted on kubelets host machine
+                              description: |-
+                                portworxVolume represents a portworx volume attached and mounted on kubelets host machine.
+                                Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type
+                                are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate
+                                is on.
                               properties:
                                 fsType:
                                   description: |-
@@ -6917,8 +7030,6 @@ spec:
                                         - path
                                         type: object
                                       configMap:
-                                        description: configMap information about the
-                                          configMap data to project
                                         properties:
                                           items:
                                             items:
@@ -6944,8 +7055,6 @@ spec:
                                         type: object
                                         x-kubernetes-map-type: atomic
                                       downwardAPI:
-                                        description: downwardAPI information about
-                                          the downwardAPI data to project
                                         properties:
                                           items:
                                             items:
@@ -6987,9 +7096,26 @@ spec:
                                             type: array
                                             x-kubernetes-list-type: atomic
                                         type: object
+                                      podCertificate:
+                                        properties:
+                                          certificateChainPath:
+                                            type: string
+                                          credentialBundlePath:
+                                            type: string
+                                          keyPath:
+                                            type: string
+                                          keyType:
+                                            type: string
+                                          maxExpirationSeconds:
+                                            format: int32
+                                            type: integer
+                                          signerName:
+                                            type: string
+                                        required:
+                                        - keyType
+                                        - signerName
+                                        type: object
                                       secret:
-                                        description: secret information about the
-                                          secret data to project
                                         properties:
                                           items:
                                             items:
@@ -7015,8 +7141,6 @@ spec:
                                         type: object
                                         x-kubernetes-map-type: atomic
                                       serviceAccountToken:
-                                        description: serviceAccountToken is information
-                                          about the serviceAccountToken data to project
                                         properties:
                                           audience:
                                             type: string
@@ -7033,8 +7157,9 @@ spec:
                                   x-kubernetes-list-type: atomic
                               type: object
                             quobyte:
-                              description: quobyte represents a Quobyte mount on the
-                                host that shares a pod's lifetime
+                              description: |-
+                                quobyte represents a Quobyte mount on the host that shares a pod's lifetime.
+                                Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.
                               properties:
                                 group:
                                   description: |-
@@ -7073,7 +7198,7 @@ spec:
                             rbd:
                               description: |-
                                 rbd represents a Rados Block Device mount on the host that shares a pod's lifetime.
-                                More info: https://examples.k8s.io/volumes/rbd/README.md
+                                Deprecated: RBD is deprecated and the in-tree rbd type is no longer supported.
                               properties:
                                 fsType:
                                   description: |-
@@ -7124,12 +7249,6 @@ spec:
                                   properties:
                                     name:
                                       default: ""
-                                      description: |-
-                                        Name of the referent.
-                                        This field is effectively required, but due to backwards compatibility is
-                                        allowed to be empty. Instances of this type with an empty value here are
-                                        almost certainly wrong.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -7145,8 +7264,9 @@ spec:
                               - monitors
                               type: object
                             scaleIO:
-                              description: scaleIO represents a ScaleIO persistent
-                                volume attached and mounted on Kubernetes nodes.
+                              description: |-
+                                scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
+                                Deprecated: ScaleIO is deprecated and the in-tree scaleIO type is no longer supported.
                               properties:
                                 fsType:
                                   default: xfs
@@ -7176,12 +7296,6 @@ spec:
                                   properties:
                                     name:
                                       default: ""
-                                      description: |-
-                                        Name of the referent.
-                                        This field is effectively required, but due to backwards compatibility is
-                                        allowed to be empty. Instances of this type with an empty value here are
-                                        almost certainly wrong.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -7243,7 +7357,6 @@ spec:
                                       a volume.
                                     properties:
                                       key:
-                                        description: key is the key to project.
                                         type: string
                                       mode:
                                         format: int32
@@ -7267,8 +7380,9 @@ spec:
                                   type: string
                               type: object
                             storageos:
-                              description: storageOS represents a StorageOS volume
-                                attached and mounted on Kubernetes nodes.
+                              description: |-
+                                storageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
+                                Deprecated: StorageOS is deprecated and the in-tree storageos type is no longer supported.
                               properties:
                                 fsType:
                                   description: |-
@@ -7288,12 +7402,6 @@ spec:
                                   properties:
                                     name:
                                       default: ""
-                                      description: |-
-                                        Name of the referent.
-                                        This field is effectively required, but due to backwards compatibility is
-                                        allowed to be empty. Instances of this type with an empty value here are
-                                        almost certainly wrong.
-                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                   type: object
                                   x-kubernetes-map-type: atomic
@@ -7313,8 +7421,10 @@ spec:
                                   type: string
                               type: object
                             vsphereVolume:
-                              description: vsphereVolume represents a vSphere volume
-                                attached and mounted on kubelets host machine
+                              description: |-
+                                vsphereVolume represents a vSphere volume attached and mounted on kubelets host machine.
+                                Deprecated: VsphereVolume is deprecated. All operations for the in-tree vsphereVolume type
+                                are redirected to the csi.vsphere.vmware.com CSI driver.
                               properties:
                                 fsType:
                                   description: |-
@@ -7406,6 +7516,7 @@ spec:
                             `dynamic` - use the backend provided by filters. This allows skipper as library users to do proxy calls to a certain target from their own implementation dynamically looked up by their filters.
                             `lb` - balance the load across multiple network endpoints using specified algorithm. If algorithm is not specified it will use the default algorithm set by Skipper at start.
                             `network` - use arbitrary HTTP or HTTPS URL.
+                            `forward` - replaced by a network backend chosen by skipper -forward-backend-url.
                           enum:
                           - service
                           - shunt
@@ -7413,6 +7524,7 @@ spec:
                           - dynamic
                           - lb
                           - network
+                          - forward
                           type: string
                       required:
                       - name
