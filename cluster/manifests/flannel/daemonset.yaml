@@ -10,7 +10,7 @@ metadata:
     component: flannel
 spec:
   updateStrategy:
-    type: OnDelete
+    type: RollingUpdate
   selector:
     matchLabels:
       daemonset: kube-flannel
@@ -39,7 +39,7 @@ spec:
             memory: 50Mi
       containers:
       - name: delayed-install-cni
-        image: container-registry.zalando.net/teapot/flannel-awaiter:master-23
+        image: container-registry.zalando.net/teapot/flannel-awaiter:master-24
         env:
         - name: NODE_NAME
           valueFrom:
@@ -112,7 +112,7 @@ spec:
         - /tc-flannel.sh
         command:
         - /bin/bash
-        image: container-registry.zalando.net/teapot/flannel-tc:master-14
+        image: container-registry.zalando.net/teapot/flannel-tc:master-15
         name: flannel-tc
         resources:
           requests:
