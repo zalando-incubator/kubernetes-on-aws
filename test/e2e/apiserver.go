@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/framework/job"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
@@ -262,12 +263,19 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 
 		By("Updating pod " + namePrefix + " in namespace " + namespace)
 
-		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
-		framework.ExpectNoError(err)
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// Get the latest version of the resource
+			pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
 
-		pod.Spec.Containers[0].Image = compliantImage4
+			pod.Spec.Containers[0].Image = compliantImage4
 
-		_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
+			// Try to update
+			_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
+			return err
+		})
 		framework.ExpectNoError(err)
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
@@ -295,14 +303,21 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		framework.ExpectNoError(err)
 
-		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
-		framework.ExpectNoError(err)
-
 		By("Updating pod " + namePrefix + " in namespace " + namespace)
 
-		pod.Spec.Containers[0].Image = nonCompliantImage5
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// Get the latest version of the resource
+			pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
 
-		_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
+			pod.Spec.Containers[0].Image = nonCompliantImage5
+
+			// Try to update
+			_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
+			return err
+		})
 		Expect(err).To(HaveOccurred())
 	})
 })
@@ -337,14 +352,21 @@ var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func()
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
 		framework.ExpectNoError(err)
 
-		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
-		framework.ExpectNoError(err)
-
 		By("Updating pod " + namePrefix + " in namespace " + namespace)
 
-		pod.Spec.Containers[0].Image = nonCompliantImage6
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// Get the latest version of the resource
+			pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
 
-		_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
+			pod.Spec.Containers[0].Image = nonCompliantImage6
+
+			// Try to update
+			_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
+			return err
+		})
 		framework.ExpectNoError(err)
 
 		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
