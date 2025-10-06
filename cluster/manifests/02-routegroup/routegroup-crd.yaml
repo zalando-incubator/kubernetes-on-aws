@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: routegroups.zalando.org
 spec:
   group: zalando.org
@@ -96,6 +96,7 @@ spec:
                         `dynamic` - use the backend provided by filters. This allows skipper as library users to do proxy calls to a certain target from their own implementation dynamically looked up by their filters.
                         `lb` - balance the load across multiple network endpoints using specified algorithm. If algorithm is not specified it will use the default algorithm set by Skipper at start.
                         `network` - use arbitrary HTTP or HTTPS URL.
+                        `forward` - replaced by a network backend chosen by skipper -forward-backend-url.
                       enum:
                       - service
                       - shunt
@@ -103,6 +104,7 @@ spec:
                       - dynamic
                       - lb
                       - network
+                      - forward
                       type: string
                   required:
                   - name
