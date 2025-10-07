@@ -243,12 +243,44 @@ post_apply:
 {{- if ne .Cluster.ConfigItems.s3_csi_driver "true" }}
 - name: s3.csi.aws.com
   kind: CSIDriver
-- name: s3-csi-driver
+- name: s3-csi-driver-sa
   kind: ServiceAccount
   namespace: kube-system
 - name: s3-csi-node
   kind: DaemonSet
   namespace: kube-system
+- name: s3-csi-controller
+  kind: Deployment
+  namespace: kube-system
+- name: mount-s3
+  kind: Namespace
+- name: mount-s3-critical
+  kind: PriorityClass
+- name: mountpoints3podattachments.s3.csi.aws.com
+  kind: CustomResourceDefinition
+- name: mountpoint-s3-csi-node-binding
+  kind: ClusterRoleBinding
+- name: s3-csi-driver-cluster-role
+  kind: ClusterRole
+- name: s3-csi-driver-node-mountpoint-pod-namespace-role-binding
+  kind: RoleBinding
+  namespace: mount-s3
+- name: s3-csi-driver-node-mountpoint-pod-namespace-role
+  kind: Role
+  namespace: mount-s3
+- name: s3-csi-driver-controller-sa
+  kind: ServiceAccount
+  namespace: kube-system
+- name: s3-csi-driver-controller-cluster-role-binding
+  kind: ClusterRoleBinding
+- name: s3-csi-driver-controller-cluster-role
+  kind: ClusterRole
+- name: s3-csi-driver-controller-role-binding
+  kind: RoleBinding
+  namespace: mount-s3
+- name: s3-csi-driver-controller-role
+  kind: Role
+  namespace: mount-s3
 {{- end }}
 {{- if ne .Cluster.ConfigItems.role_sync_controller_enabled "true" }}
 - name: role-sync-controller

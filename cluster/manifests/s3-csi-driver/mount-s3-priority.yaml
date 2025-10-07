@@ -1,0 +1,17 @@
+{{- if eq .Cluster.ConfigItems.s3_csi_driver "true" }}
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: mount-s3-critical
+  labels:
+    application: kubernetes
+    component: aws-mountpoint-s3-csi-driver
+value: 1000000000
+preemptionPolicy: Never
+globalDefault: false
+description: >-
+  Default priority class for Mountpoint Pods.
+  It has the highest possible value for non-builtin PriorityClasses to ensure Mountpoint Pods get scheduled quickly and not evicted first in case of a resource pressure.
+  It will not cause other Pods to be preempted.
+{{- end }}

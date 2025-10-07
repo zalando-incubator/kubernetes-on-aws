@@ -1,0 +1,142 @@
+{{- if eq .Cluster.ConfigItems.s3_csi_driver "true" }}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.3
+  name: mountpoints3podattachments.s3.csi.aws.com
+spec:
+  group: s3.csi.aws.com
+  names:
+    kind: MountpointS3PodAttachment
+    listKind: MountpointS3PodAttachmentList
+    plural: mountpoints3podattachments
+    shortNames:
+      - s3pa
+    singular: mountpoints3podattachment
+  scope: Cluster
+  versions:
+    - additionalPrinterColumns:
+        - description: The node where the volume is mounted
+          jsonPath: .spec.nodeName
+          name: Node
+          type: string
+        - description: The persistent volume name
+          jsonPath: .spec.persistentVolumeName
+          name: PV Name
+          type: string
+        - description: Comma separated mount options
+          jsonPath: .spec.mountOptions
+          name: Mount Options
+          type: string
+        - jsonPath: .metadata.creationTimestamp
+          name: Age
+          type: date
+      name: v2
+      schema:
+        openAPIV3Schema:
+          description:
+            MountpointS3PodAttachment is the Schema for the mountpoints3podattachments
+            API.
+          properties:
+            apiVersion:
+              description: |-
+                APIVersion defines the versioned schema of this representation of an object.
+                Servers should convert recognized schemas to the latest internal value, and
+                may reject unrecognized values.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+              type: string
+            kind:
+              description: |-
+                Kind is a string value representing the REST resource this object represents.
+                Servers may infer this from the endpoint the client submits requests to.
+                Cannot be updated.
+                In CamelCase.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+              type: string
+            metadata:
+              type: object
+            spec:
+              description:
+                MountpointS3PodAttachmentSpec defines the desired state of
+                MountpointS3PodAttachment.
+              properties:
+                authenticationSource:
+                  description:
+                    Authentication source taken from volume attribute field
+                    `authenticationSource`.
+                  type: string
+                mountOptions:
+                  description: Comma separated mount options taken from volume.
+                  type: string
+                mountpointS3PodAttachments:
+                  additionalProperties:
+                    items:
+                      description:
+                        WorkloadAttachment represents the attachment details
+                        of a workload pod to a Mountpoint S3 pod.
+                      properties:
+                        attachmentTime:
+                          description:
+                            AttachmentTime represents when the workload pod
+                            was attached to the Mountpoint S3 pod
+                          format: date-time
+                          type: string
+                        workloadPodUID:
+                          description:
+                            WorkloadPodUID is the unique identifier of the
+                            attached workload pod
+                          type: string
+                      required:
+                        - attachmentTime
+                        - workloadPodUID
+                      type: object
+                    type: array
+                  description: Maps each Mountpoint S3 pod name to its workload attachments
+                  type: object
+                nodeName:
+                  description: Name of the node.
+                  type: string
+                persistentVolumeName:
+                  description: Name of the Persistent Volume.
+                  type: string
+                volumeID:
+                  description: Volume ID.
+                  type: string
+                workloadFSGroup:
+                  description: Workload pod's `fsGroup` from pod security context
+                  type: string
+                workloadNamespace:
+                  description:
+                    "Workload pod's namespace. Exists only if `authenticationSource:
+                    pod`."
+                  type: string
+                workloadServiceAccountIAMRoleARN:
+                  description:
+                    "EKS IAM Role ARN from workload pod's service account
+                    annotation (IRSA). Exists only if `authenticationSource: pod` and
+                    service account has `eks.amazonaws.com/role-arn` annotation."
+                  type: string
+                workloadServiceAccountName:
+                  description:
+                    "Workload pod's service account name. Exists only if
+                    `authenticationSource: pod`."
+                  type: string
+              required:
+                - authenticationSource
+                - mountOptions
+                - mountpointS3PodAttachments
+                - nodeName
+                - persistentVolumeName
+                - volumeID
+                - workloadFSGroup
+              type: object
+          type: object
+      selectableFields:
+        - jsonPath: .spec.nodeName
+      served: true
+      storage: true
+      subresources:
+        status: {}
+{{- end }}

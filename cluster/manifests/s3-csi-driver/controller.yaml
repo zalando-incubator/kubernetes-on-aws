@@ -1,0 +1,59 @@
+{{- if eq .Cluster.ConfigItems.s3_csi_driver "true" }}
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: s3-csi-controller
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: aws-mountpoint-s3-csi-driver
+    app.kubernetes.io/component: csi-driver
+    application: kubernetes
+    component: aws-mountpoint-s3-csi-driver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: s3-csi-controller
+  template:
+    metadata:
+      labels:
+        deployment: s3-csi-controller
+        app: s3-csi-controller
+        app.kubernetes.io/name: aws-mountpoint-s3-csi-driver
+        app.kubernetes.io/component: csi-driver
+        application: kubernetes
+        component: aws-mountpoint-s3-csi-driver
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      serviceAccountName: s3-csi-driver-controller-sa
+      priorityClassName: system-cluster-critical
+      containers:
+        - name: s3-csi-controller
+          # image: container-registry.zalando.net/teapot/aws-mountpoint-s3-csi-driver:v2.0.0-master-32
+          image: mikkeloscar/s3-csi-driver:1
+          imagePullPolicy: IfNotPresent
+          command:
+            - "/bin/aws-s3-csi-controller"
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          env:
+            - name: MOUNTPOINT_IMAGE
+              value: container-registry.zalando.net/teapot/aws-mountpoint-s3-csi-driver:v2.0.0-master-32
+            - name: MOUNTPOINT_IMAGE_PULL_POLICY
+              value: IfNotPresent
+            - name: MOUNTPOINT_NAMESPACE
+              value: mount-s3
+            - name: MOUNTPOINT_PRIORITY_CLASS_NAME
+              value: mount-s3-critical
+          resources:
+            limits:
+              cpu: 1m
+              memory: 40Mi
+            requests:
+              cpu: 1m
+              memory: 40Mi
+              ephemeral-storage: 256Mi
+{{- end }}
