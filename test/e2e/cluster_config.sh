@@ -108,15 +108,6 @@ EOFF
     profile: worker-splitaz
     min_size: 0
     max_size: 21
-  - name: default-karpenter
-    profile: worker-karpenter
-    discount_strategy: none
-    max_size: 0
-    min_size: 0
-    instance_types:
-    - default-for-karpenter
-    config_items:
-      scaling_priority: "100"
   - name: karpenter-arm
     profile: worker-karpenter
     discount_strategy: none
@@ -188,7 +179,6 @@ EOFF
       scaling_priority: "2"
       taints: nvidia.com/gpu=present:NoSchedule,zalando.org/dedicated=dedicated:NoSchedule
     discount_strategy: none
-    instance_type: not-specified
     instance_types:
     - not-specified
     max_size: 0
@@ -200,9 +190,8 @@ EOFF
       scaling_priority: "1"
       taints: zalando.org/dedicated=dedicated:NoSchedule
     discount_strategy: none
-    instance_type: not-specified
     instance_types:
-    - not-specified
+    - default-for-karpenter
     max_size: 0
     min_size: 0
     name: karpenter-catch-all-dedicated
@@ -212,7 +201,6 @@ EOFF
       scaling_priority: "3"
       taints: nvidia.com/gpu=present:NoSchedule
     discount_strategy: none
-    instance_type: not-specified
     instance_types:
     - not-specified
     max_size: 0
@@ -222,9 +210,8 @@ EOFF
   - config_items:
       scaling_priority: "2"
     discount_strategy: none
-    instance_type: not-specified
     instance_types:
-    - not-specified
+    - default-for-karpenter
     max_size: 0
     min_size: 0
     name: karpenter-catch-all
