@@ -169,6 +169,11 @@ data:
 {{- end}}
 
   pod.pod-security-policy.allow-privilege-escalation: "{{ .Cluster.ConfigItems.teapot_admission_controller_pod_security_policy_privileged_allow_privilege_escalation }}"
+{{- if eq .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
+  pod.aws-fis-experiment-service-account-name: "fis-experiment-executor"
+  pod.aws-fis-experiment-user: "fis-experiment-executor"
+  pod.aws-fis-experiment-privileged-capabilities.NET_ADMIN: ""
+{{- end}}
 
   deployment.default.rolling-update-max-surge: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_surge }}"
   deployment.default.rolling-update-max-unavailable: "{{ .Cluster.ConfigItems.teapot_admission_controller_deployment_default_max_unavailable }}"
