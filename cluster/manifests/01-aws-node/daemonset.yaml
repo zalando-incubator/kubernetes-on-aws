@@ -5,7 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/instance: aws-vpc-cni
     app.kubernetes.io/name: aws-node
-    app.kubernetes.io/version: v1.19.0
+    app.kubernetes.io/version: v1.19.5
     k8s-app: aws-node
     application: kubernetes
     component: aws-node
@@ -95,7 +95,7 @@ spec:
         - name: NETWORK_POLICY_ENFORCING_MODE
           value: "{{.Cluster.ConfigItems.aws_vpc_cni_network_policy_enforcing_mode}}"
         - name: VPC_CNI_VERSION
-          value: v1.19.0
+          value: v1.19.5
         - name: VPC_ID
           value: "{{ .Cluster.ConfigItems.vpc_id }}"
         - name: WARM_ENI_TARGET
@@ -112,7 +112,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: 602401143452.dkr.ecr.{{.Cluster.Region}}.amazonaws.com/amazon-k8s-cni:v1.19.0-eksbuild.1
+        image: 602401143452.dkr.ecr.{{.Cluster.Region}}.amazonaws.com/amazon-k8s-cni:v1.19.5-eksbuild.1
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -180,9 +180,13 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: spec.nodeName
-        image: 602401143452.dkr.ecr.{{.Cluster.Region}}.amazonaws.com/amazon/aws-network-policy-agent:v1.1.5-eksbuild.1
+        image: 602401143452.dkr.ecr.{{.Cluster.Region}}.amazonaws.com/amazon/aws-network-policy-agent:v1.2.1-eksbuild.1
         imagePullPolicy: IfNotPresent
         name: aws-eks-nodeagent
+        ports:
+        - containerPort: 8162
+          name: agentmetrics
+          protocol: TCP
         resources:
           requests:
             cpu: 25m
@@ -210,7 +214,7 @@ spec:
           value: "false"
         - name: ENABLE_IPv6
           value: "{{ if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}false{{else}}true{{end}}"
-        image: 602401143452.dkr.ecr.{{.Cluster.Region}}.amazonaws.com/amazon-k8s-cni-init:v1.19.0-eksbuild.1
+        image: 602401143452.dkr.ecr.{{.Cluster.Region}}.amazonaws.com/amazon-k8s-cni-init:v1.19.5-eksbuild.1
         imagePullPolicy: IfNotPresent
         name: aws-vpc-cni-init
         resources:
