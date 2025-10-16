@@ -1,0 +1,35 @@
+# {{ if eq .Cluster.ConfigItems.skipper_eks_migration_svc_enabled "true" }}
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: skipper-ingress-eks.{{ .Values.hosted_zone }}
+    service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: application=skipper-ingress,component=ingress
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+    # SG of the old cluster worker nodes
+    service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: {{ .Cluster.ConfigItems.worker_sg_legacy_cluster }}
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: /kube-system/healthz
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: http
+    service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+    service.beta.kubernetes.io/aws-load-balancer-ip-address-type: dualstack
+    service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+  labels:
+    application: skipper-ingress
+    component: ingress
+  name: skipper-internal-eks
+  namespace: kube-system
+spec:
+  # >=1.34 we can set PreferSameZone
+  trafficDistribution: PreferClose
+  externalTrafficPolicy: Local
+  ports:
+  - name: main
+    port: 80
+    protocol: TCP
+    targetPort: 9999
+  selector:
+    application: skipper-ingress
+    component: ingress
+  type: LoadBalancer
+# {{ end }}
