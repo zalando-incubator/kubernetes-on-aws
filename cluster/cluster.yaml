@@ -290,6 +290,18 @@ Resources:
       - zalando:administrator
       Type: "STANDARD"
 {{- end }}
+  EKSAccessEntrySecurityAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/SecAudit
+      Type: "STANDARD"
+      AccessPolicies:
+        - AccessScope:
+            Type: "cluster"
+          PolicyArn: "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+      KubernetesGroups:
+        - zalando:security
   EKSAddonPodIdentityAgent:
     Type: AWS::EKS::Addon
     Properties:
