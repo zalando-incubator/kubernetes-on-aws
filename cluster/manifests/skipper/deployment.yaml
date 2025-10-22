@@ -1,6 +1,6 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.22.127-1233" }}
+{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.22.141-1245" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.22.141-1245" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
@@ -318,6 +318,7 @@ spec:
           - "-open-policy-agent-config-template=/etc/skipper/open-policy-agent/opaconfig.yaml"
           - "-open-policy-agent-envoy-metadata=/etc/skipper/open-policy-agent/envoymetadata.json"
           - "-enable-open-policy-agent-data-preprocessing-optimization={{ .Cluster.ConfigItems.skipper_open_policy_agent_data_preprocessing_optimization_enabled }}"
+          - "-enable-open-policy-agent-preloading={{ .Cluster.ConfigItems.skipper_open_policy_agent_preloading_enabled }}"
 {{ end }}
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
