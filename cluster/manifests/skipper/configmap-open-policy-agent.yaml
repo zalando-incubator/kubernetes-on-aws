@@ -37,6 +37,13 @@ data:
         buffer_type: "event"
         buffer_size_limit_events: {{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_logs_buffer_type_event_limit }}
     {{ end }}
+    {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_jwt_cache_enable "true" }}
+    caching: 
+      inter_query_builtin_value_cache:
+        named:
+          io_jwt:
+            max_num_entries: {{ .Cluster.ConfigItems.skipper_open_policy_agent_jwt_cache_max_num_entries }}
+    {{ end }}
   envoymetadata.json: |-
     {
       "filter_metadata": {
