@@ -490,7 +490,8 @@ aws_efa_device_plugin_cpu: "10m"
 aws_efa_device_plugin_memory: "20Mi"
 
 # static egress controller settings
-{{- if eq .Cluster.Provider "zalando-eks" }}
+# by default static egress controller is enabled on legacy clusters and disabled on zalando-eks clusters with multiple clusters
+{{- if and (eq .Cluster.Provider "zalando-eks") (gt (len .Cluster.AccountClusters) 1) }}
 static_egress_controller_enabled: "false"
 {{- else }}
 static_egress_controller_enabled: "true"
