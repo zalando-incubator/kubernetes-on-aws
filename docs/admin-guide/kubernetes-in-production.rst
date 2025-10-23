@@ -70,17 +70,28 @@ We provision clusters on AWS and therefore want to integrate with AWS services w
 Ingress
 =======
 
-There is no official way of implementing Ingress on AWS. We decided to create a new component `Kube AWS Ingress Controller`_ to achieve our goals:
+There was no official way of implementing Ingress on AWS. We decided to create a new component `Kube AWS Ingress Controller`_ and reuse our Skipper_ HTTP proxy to achieve our goals:
 
-* SSL termination by ALB: convenient usage of ACM (free Amazon CA) and certificates upload to AWS IAM
-* Using the “new” ELBv2 Application Load Balancer
-* Cost efficiency by using SNI and create shared ALBs with up to 25 X509 certificates.
+* SSL termination by NLB or ALB: convenient usage of ACM (free Amazon CA) and certificates upload to AWS IAM
+* Using the “new” ELBv2 Application and Network Load Balancer
+* Cost efficiency by using SNI and create shared NLBs (ALBs) with up to 25 X509 certificates.
 * Support blue-green deployments with `Stackset Controller`_ and Skipper_
+* E2E test routing support via sandbox CRD.
+* Authentication by default via Skipper_
 
 .. image:: images/kube-aws-ingress-controller.svg
 
-We use Skipper_ as our HTTP proxy to route based on Host header and path. Skipper is running as a ``DaemonSet`` on all worker nodes for convenient AWS ASG integration (new nodes are automatically registered in the ALB's Target Group).
-Skipper_ directly comes with a Kubernetes data client to automatically update its routes periodically.
+We use Skipper_ as our HTTP proxy to route based on Host header and plenty of optional HTTP specific routing options like path or clientID inside a JWT Token.
+Our Skipper_ setup has changed over time. Skipper directly comes with a Kubernetes data client to automatically update its routes periodically. We started by deploying skipper as ``Daemonset``.
+Today, Skipper is running as a ``Deployment`` with ``HorizontalPodAutoscaler`` (HPA) on dedicated worker nodes.
+We run Skipper_ by a split of control plane components and data plane components.
+The data plane has 2 deployments skipper-ingress-canary that runs a single replica in all clusters and skipper-ingress that runs by a deployment with HPA. We also have a fleet o fautoscaled redis running in the clusters to support cluster wide ratelimit features in the data plane.
+The control plane consists of routesrv, sandbox-controller, fabric-gateway, pod-deletion-cost-controller, api-monitoring-controller and skipper-canary-controller.
+Routesrv_ preprocesses the routing table for the dataplane. Routesrv polls regularly kube-apiserver to get all Ingress_ and RouteGroup_ and exposes an API to fetch skipper routes as eskip_ file. Eskip is the routing language of Skipper.
+Sandbox-controller and fabric-gateway are special routing objects to provide platform capabilities liek E2E testing and a secure by default API resource. Both components read their CRDs and write Ingress_ and/or RouteGroup_ resources to orchestrate skipper-ingress data plane.
+Pod-deletion-cost-controller fixes zone aware downscaling see also https://github.com/kubernetes/kubernetes/issues/124149 .
+The api-monitoring-controller reads an internal API repository and writes a configmap per cluster. The configmap is mounted to the skipper-ingress-routesrv control-plane pods to prepare `Skipper filter`_ configuration to provide enhanced API monitoring.
+The deployment of skipper-ingress takes a bit more time than other components for safety reasons. To speedup deployment and reduce toil we will have skipper-canary-controller in the future to update automatically skipper-ingress deployment in case skipper-ingress-canary is running in some bounds of "good" (think of errors and latency compared to skipper-ingress) in the cluster.
 
 `External DNS`_ is automatically configuring the Ingress hosts as DNS records in Route53 for us.
 
@@ -91,6 +102,11 @@ duplication you normally have to write in Kubernetes manifests.
 
 .. _Kube AWS Ingress Controller: https://github.com/zalando-incubator/kube-ingress-aws-controller
 .. _Skipper: https://github.com/zalando/skipper
+.. _Skipper filter: https://opensource.zalando.com/skipper/reference/filters/
+.. _Routesrv: https://opensource.zalando.com/skipper/kubernetes/ingress-controller/#routesrv
+.. _RouteGroup: https://opensource.zalando.com/skipper/kubernetes/routegroup-crd/
+.. _Ingress: https://opensource.zalando.com/skipper/kubernetes/ingress-usage/
+.. _eskip: https://pkg.go.dev/github.com/zalando/skipper/eskip
 .. _External DNS: https://github.com/kubernetes-incubator/external-dns
 .. _Stackset Controller: https://github.com/zalando-incubator/stackset-controller
 
