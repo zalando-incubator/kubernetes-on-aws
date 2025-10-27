@@ -83,7 +83,11 @@ Resources:
           ToPort: {{ $element.ToPort }}
 {{- end }}
 {{- end }}
-        - CidrIp: {{ if eq .Cluster.ConfigItems.kube_aws_ingress_controller_nlb_enabled "true" }}"0.0.0.0/0"{{else}}"{{.Values.vpc_ipv4_cidr}}"{{end}}
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 9998
+          IpProtocol: tcp
+          ToPort: 9999
+        - CidrIpv6: "::/0"
           FromPort: 9998
           IpProtocol: tcp
           ToPort: 9999
@@ -851,7 +855,7 @@ Resources:
           ToPort: {{ $element.ToPort }}
 {{- end }}
 {{- end }}
-        - CidrIp: {{ if eq .Cluster.ConfigItems.kube_aws_ingress_controller_nlb_enabled "true" }}"0.0.0.0/0"{{else}}"{{.Values.vpc_ipv4_cidr}}"{{end}}
+        - CidrIp: "0.0.0.0/0"
           FromPort: 9998
           IpProtocol: tcp
           ToPort: 9999
