@@ -578,6 +578,23 @@ spec:
                   - serviceName
                   type: object
                 type: array
+              x-fabric-shadow-traffic:
+                description: |-
+                  If present, all traffic is tee'd to the target URL specified in the shadow traffic object using the
+                  Skipper tee filter. When using a versioned FabricGateway, this field is not stored in the ControllerRevision
+                  and thus not subject to versioning. The shadow traffic configuration can be modified and the current
+                  configuration is applied to all versions of the gateway. It is applied to all routes as the first filter in the
+                  filter chain.
+                properties:
+                  targetURL:
+                    description: the URL to which the shadow traffic should be sent
+                    type: string
+                required:
+                - targetURL
+                type: object
+                x-kubernetes-validations:
+                - message: targetURL has to be a valid URL
+                  rule: isURL(self.targetURL)
               x-fabric-whitelist:
                 description: |-
                   UID of a service which will be allowed access to the API if it matches all other authorization
