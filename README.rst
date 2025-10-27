@@ -68,7 +68,7 @@ Assumptions
 
 * The AWS account has one or more hosted zones in Route53 including a proper SSL cert (you can use the free ACM service)
 * The VPC has at least one public subnet per AZ (either AWS default VPC setup or public subnet named "dmz-<REGION>-<AZ>")
-* The VPC is in region eu-central-1 or eu-west-1 or eu-nord-1
+* The VPC is in region eu-central-1 or eu-west-1 or eu-north-1
 * etcd cluster is available via DNS discovery (SRV records) at etcd.<YOUR-HOSTED-ZONE> (zalando-aws cluster)
 * `OAuth Token Info`_ is available to validate user tokens
 
