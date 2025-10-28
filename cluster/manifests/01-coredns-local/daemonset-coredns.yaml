@@ -28,11 +28,7 @@ spec:
       terminationGracePeriodSeconds: 40
       initContainers:
       - name: ensure-apiserver
-{{- if eq .Cluster.Provider "zalando-eks" }}
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/ensure-apiserver:master-6
-{{- else }}
-        image: container-registry.zalando.net/teapot/ensure-apiserver:master-6
-{{- end }}
         resources:
           requests:
             cpu: 1m
@@ -43,11 +39,7 @@ spec:
             memory: 50Mi
       containers:
       - name: unbound
-{{- if eq .Cluster.Provider "zalando-eks" }}
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound:1.24.1-master-14
-{{- else }}
-        image: container-registry.zalando.net/teapot/unbound:1.24.1-master-14
-{{- end }}
         args:
         - -d
         - -c
@@ -119,11 +111,7 @@ spec:
           name: unbound-socket
           readOnly: false
       - name: coredns
-        {{- if eq .Cluster.Provider "zalando-eks" }}
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/coredns:1.12.4-master-29
-        {{- else }}
-        image: container-registry.zalando.net/teapot/coredns:1.12.4-master-29
-        {{- end }}
         args: [ "-conf", "/etc/coredns/Corefile" ]
         env:
         - name: ZONE
