@@ -35,8 +35,8 @@ spec:
         - "--provider=aws"
         - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
         - "--cf-template-bucket=cluster-lifecycle-manager-{{.Cluster.InfrastructureAccountID}}-{{.Cluster.Region}}"
-{{- if index .Cluster.ConfigItems "static_egress_nat_subnets"}}
-{{- range $subnet := split .Cluster.ConfigItems.static_egress_nat_subnets ","}}
+{{- if index .Cluster.ConfigItems "static_egress_cidr_nat_subnets"}}
+{{- range $subnet := split .Cluster.ConfigItems.static_egress_cidr_nat_subnets ","}}
         - "--aws-nat-cidr-block={{ $subnet }}"
 {{- end }}
 {{- else}}
