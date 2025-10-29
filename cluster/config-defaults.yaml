@@ -404,7 +404,7 @@ skipper_open_policy_agent_decision_logs_buffer_type_event_enable: "false"
 skipper_open_policy_agent_decision_logs_buffer_type_event_limit: "10000"
 
 # Open Policy Agent JWT cache configuration
-skipper_open_policy_agent_jwt_cache_enable: "false"
+skipper_open_policy_agent_jwt_cache_enable: "true"
 # Sets default value for maximum number of entries in the Open Policy Agent JWT cache
 skipper_open_policy_agent_jwt_cache_max_num_entries: "1000"
 
@@ -488,7 +488,8 @@ aws_efa_device_plugin_cpu: "10m"
 aws_efa_device_plugin_memory: "20Mi"
 
 # static egress controller settings
-{{- if eq .Cluster.Provider "zalando-eks" }}
+# by default static egress controller is enabled on legacy clusters and disabled on zalando-eks clusters with multiple clusters
+{{- if and (eq .Cluster.Provider "zalando-eks") (gt (len .Cluster.AccountClusters) 1) }}
 static_egress_controller_enabled: "false"
 {{- else }}
 static_egress_controller_enabled: "true"
