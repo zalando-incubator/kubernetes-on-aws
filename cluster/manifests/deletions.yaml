@@ -63,21 +63,6 @@ post_apply:
   namespace: kube-system
   kind: VerticalPodAutoscaler
 {{ end }}
-{{ if ne .Cluster.ConfigItems.spot_node_rescheduler "true" }}
-- name: node-spot-rescheduler
-  namespace: kube-system
-  kind: CronJob
-- name: spot-node-rescheduler
-  namespace: kube-system
-  kind: CronJob
-- name: spot-node-rescheduler
-  namespace: kube-system
-  kind: ServiceAccount
-- name: spot-node-rescheduler
-  kind: ClusterRole
-- name: spot-node-rescheduler
-  kind: ClusterRoleBinding
-{{ end }}
 
 {{ if ne .Cluster.ConfigItems.skipper_ingress_canary_enabled "true" }}
 - name: skipper-ingress-canary
