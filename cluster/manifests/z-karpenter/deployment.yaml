@@ -147,6 +147,15 @@ spec:
                 matchExpressions:
                 - key: karpenter.sh/nodepool
                   operator: DoesNotExist
+{{- if eq .Cluster.Provider "zalando-eks"}}
+            - weight: 100
+              preference:
+                matchExpressions:
+                - key: dedicated
+                  operator: In
+                  values:
+                  - cluster-seed
+{{- else }}
             - weight: 100
               preference:
                 matchExpressions:
@@ -154,6 +163,7 @@ spec:
                   operator: In
                   values:
                   - master
+{{- end }}
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
