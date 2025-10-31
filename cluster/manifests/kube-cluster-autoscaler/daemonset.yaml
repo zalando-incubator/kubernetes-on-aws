@@ -74,14 +74,7 @@ spec:
         env:
           - name: AWS_REGION
             value: "{{ .Cluster.Region }}"
-{{- if eq .Cluster.Provider "zalando-eks"}}
-      nodeSelector:
-        dedicated: cluster-seed
-      tolerations:
-      - key: dedicated
-        value: cluster-seed
-        effect: NoSchedule
-{{- else}}
+{{- if ne .Cluster.Provider "zalando-eks"}}
       nodeSelector:
         node.kubernetes.io/role: master
       tolerations:
