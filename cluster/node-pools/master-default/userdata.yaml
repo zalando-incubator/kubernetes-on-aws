@@ -260,12 +260,14 @@ write_files:
               name: admission-controller-kubeconfig
               readOnly: true
         - name: skipper-admission-webhook
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.127
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.142
           args:
-            - webhook
-            - --address=:9085
-            - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
-            - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
+            - skipper
+            - --validation-webhook-enabled=true
+            - --validation-webhook-address=:9085
+            - --validation-webhook-cert-file=/etc/kubernetes/ssl/admission-controller.pem
+            - --validation-webhook-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
+            - "--enable-advanced-validation={{ .Cluster.ConfigItems.enable_advanced_validation }}"
           lifecycle:
             preStop:
               sleep:
