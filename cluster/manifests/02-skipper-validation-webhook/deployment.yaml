@@ -21,6 +21,26 @@ spec:
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                deployment: skipper-validation-webhook
+            topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                - key: dedicated
+                  operator: In
+                  values:
+                  - cluster-seed
+      tolerations:
+      - key: dedicated
+        value: cluster-seed
+        effect: NoSchedule
       dnsConfig:
         options:
           - name: ndots
