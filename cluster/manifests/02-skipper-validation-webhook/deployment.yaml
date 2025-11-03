@@ -20,6 +20,9 @@ spec:
         component: webhook
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9911"
+        prometheus.io/scrape: "true"
     spec:
       affinity:
         podAntiAffinity:
@@ -56,6 +59,26 @@ spec:
           - --validation-webhook-cert-file=/etc/tls-certs/skipper-validation-webhook.pem
           - --validation-webhook-key-file=/etc/tls-certs/skipper-validation-webhook-key.pem
           - "--enable-advanced-validation={{ .Cluster.ConfigItems.enable_advanced_validation }}"
+          - "-metrics-flavour=prometheus"
+          - "-metrics-exp-decay-sample"
+          - "-enable-prometheus-start-label={{ .Cluster.ConfigItems.skipper_prometheus_start_label_enabled }}"
+          - "-serve-host-metrics"
+          - "-serve-method-metric={{ .Cluster.ConfigItems.skipper_serve_method_metric }}"
+          - "-serve-status-code-metric={{ .Cluster.ConfigItems.skipper_serve_status_code_metric }}"
+          - "-serve-host-counter"
+          - "-combined-response-metrics={{ .Cluster.ConfigItems.skipper_combined_response_metrics }}"
+          - "-backend-host-metrics={{ .Cluster.ConfigItems.skipper_backend_host_metrics }}"
+          - "-disable-metrics-compat"
+          - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
+          - "-disabled-filters={{ .Cluster.ConfigItems.skipper_disabled_filters }}"
+          - "-default-filters-dir=/etc/config/default-filters"
+          - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
+          - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
+          - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
+          - '-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}'
+          - '-kubernetes-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_filters_append }}'
+          - '-kubernetes-east-west-range-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_predicates }}'
+          - '-kubernetes-east-west-range-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_filters_append }}'
         lifecycle:
           preStop:
             sleep:
@@ -73,12 +96,20 @@ spec:
             memory: 100Mi
         ports:
           - containerPort: 9085
+          - name: metrics-port
+            containerPort: 9911
         volumeMounts:
           - mountPath: /etc/tls-certs
             name: tls-certs
             readOnly: true
+          - name: filters
+            mountPath: /etc/config/default-filters
       volumes:
       - name: tls-certs
         secret:
           secretName: skipper-validation-webhook-tls-certs
+      - name: filters
+        configMap:
+          name: skipper-default-filters
+          optional: true
 # {{- end }}
