@@ -69,9 +69,9 @@ cat <<EOFF
       taints: dedicated=cluster-seed:NoSchedule
     discount_strategy: none
     instance_types:
-    - "m6i.xlarge"
-    max_size: 99
-    min_size: 2
+    - "c7g.large"
+    max_size: 2
+    min_size: 1
     name: seed-worker
     profile: worker-combined
 EOFF
