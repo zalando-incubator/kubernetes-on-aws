@@ -21,7 +21,7 @@ spec:
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
         prometheus.io/path: /metrics
-        prometheus.io/port: "9911"
+        prometheus.io/port: "9981"
         prometheus.io/scrape: "true"
     spec:
       affinity:
@@ -54,6 +54,7 @@ spec:
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.142
         args:
           - skipper
+          - -support-listener=:9981
           - --validation-webhook-enabled=true
           - --validation-webhook-address=:9085
           - --validation-webhook-cert-file=/etc/tls-certs/skipper-validation-webhook.pem
@@ -97,7 +98,7 @@ spec:
         ports:
           - containerPort: 9085
           - name: metrics-port
-            containerPort: 9911
+            containerPort: 9981
         volumeMounts:
           - mountPath: /etc/tls-certs
             name: tls-certs
