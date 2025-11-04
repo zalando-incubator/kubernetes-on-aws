@@ -30,6 +30,7 @@ spec:
               matchLabels:
                 deployment: skipper-validation-webhook
             topologyKey: kubernetes.io/hostname
+      # {{- if eq .Cluster.Provider "zalando-eks"}}
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
             - weight: 100
@@ -43,6 +44,7 @@ spec:
       - key: dedicated
         value: cluster-seed
         effect: NoSchedule
+      # {{- if eq .Cluster.Provider "zalando-eks"}}
       dnsConfig:
         options:
           - name: ndots
