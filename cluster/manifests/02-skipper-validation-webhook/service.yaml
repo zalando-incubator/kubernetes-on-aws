@@ -1,4 +1,3 @@
-{{- if eq .Cluster.Provider "zalando-eks"}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -11,7 +10,11 @@ spec:
   selector:
     deployment: skipper-validation-webhook
   ports:
-  - port: 443
+  - name: main
+    port: 443
     targetPort: 9085
     protocol: TCP
-{{- end }}
+  - name: metrics
+    port: 9981
+    targetPort: 9981
+    protocol: TCP
