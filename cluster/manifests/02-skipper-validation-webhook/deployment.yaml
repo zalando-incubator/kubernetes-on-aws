@@ -94,8 +94,11 @@ spec:
           timeoutSeconds: 5
         resources:
           requests:
-            cpu: 30m
-            memory: 100Mi
+            cpu: {{ .Cluster.ConfigItems.skipper_webhook_cpu }}
+            memory: {{ .Cluster.ConfigItems.skipper_webhook_memory }}
+          limits:
+            cpu: {{ .Cluster.ConfigItems.skipper_webhook_cpu }}
+            memory: {{ .Cluster.ConfigItems.skipper_webhook_memory }}
         ports:
           - name: main
             containerPort: 9085

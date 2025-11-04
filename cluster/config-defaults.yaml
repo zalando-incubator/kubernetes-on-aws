@@ -335,6 +335,12 @@ skipper_combined_response_metrics: "false"
 # It enables reporting total serve time metrics for backend
 skipper_backend_host_metrics: "false"
 
+#
+# skipper-ingress validation webhook
+#
+skipper_webhook_cpu: 30m
+skipper_webhook_memory: 100Mi
+
 # disabled|provisioned|enabled routegroup validation via skipper webhook
 # can be one of disabled|provisioned|enabled
 routegroups_validation: "enabled"
@@ -344,6 +350,9 @@ ingresses_validation: "enabled"
 
 enable_advanced_validation: "false"
 
+#
+# skipper-ingress ingress tokeninfo
+#
 # tokeninfo
 {{if eq .Cluster.Environment "production"}}
 # production|bridge|disabled
@@ -359,6 +368,9 @@ skipper_tokeninfo_cache_size: 1000
 # duration, non-zero value limits the lifetime of a cached tokeninfo
 skipper_tokeninfo_cache_ttl: "30s"
 
+#
+# skipper-ingress ingress OAuth2 grant flow
+#
 # oauth2 UI login - grant flow
 {{if eq .Cluster.Environment "e2e"}}
 skipper_oauth2_ui_login: "false"
@@ -370,6 +382,10 @@ skipper_oauth2_ui_login: "true"
 # Comma-separated list of tokeninfo keys to retain
 skipper_oauth2_ui_login_tokeninfo_keys: ""
 
+#
+# skipper-ingress cronjobs to create platformcredentialsset per application
+# for OAuth2 grant flow integration
+#
 skipper_hostname_credentials_controller_cpu: 10m
 skipper_hostname_credentials_controller_memory: 50Mi
 
