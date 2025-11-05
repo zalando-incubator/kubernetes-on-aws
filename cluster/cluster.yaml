@@ -302,6 +302,14 @@ Resources:
       Type: "STANDARD"
       KubernetesGroups:
         - zalando:readonly
+  EKSAccessEntryReadOnlyAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/ReadOnly"
+      Type: "STANDARD"
+      KubernetesGroups:
+        - zalando:readonly
   EKSAddonPodIdentityAgent:
     Type: AWS::EKS::Addon
     Properties:
