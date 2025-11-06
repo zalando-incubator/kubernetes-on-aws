@@ -293,6 +293,15 @@ Resources:
       KubernetesGroups:
       - zalando:administrator
       Type: "STANDARD"
+{{- else }}
+   EKSAccessEntryManualAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/Manual"
+      Type: "STANDARD"
+      KubernetesGroups:
+        - zalando:engineer
 {{- end }}
   EKSAccessEntrySecurityAuth:
     Type: "AWS::EKS::AccessEntry"
@@ -310,14 +319,6 @@ Resources:
       Type: "STANDARD"
       KubernetesGroups:
         - zalando:readonly
-  EKSAccessEntryManualAuth:
-    Type: "AWS::EKS::AccessEntry"
-    Properties:
-      ClusterName: !Ref EKSCluster
-      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/Manual"
-      Type: "STANDARD"
-      KubernetesGroups:
-        - zalando:administrator
   EKSAddonPodIdentityAgent:
     Type: AWS::EKS::Addon
     Properties:
