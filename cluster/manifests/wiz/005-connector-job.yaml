@@ -7,9 +7,9 @@ metadata:
   name: wiz-kubernetes-connector-create-connector
   namespace: "wiz"
   labels:
-    helm.sh/chart: wiz-kubernetes-connector-3.3.11
     application: "wiz"
     component: "connector"
+    version: "2.9"
     job: "wiz-connector-agent"
 spec:
   ttlSecondsAfterFinished: 60
@@ -21,16 +21,16 @@ spec:
   template:
     metadata:
       labels: 
-        helm.sh/chart: wiz-kubernetes-connector-3.3.11
         application: "wiz"
         component: "connector"
+        version: "2.9"
         job: "wiz-connector-agent"
     spec:
       serviceAccountName: wiz-auto-modify-connector
       restartPolicy: "Never"
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
+        runAsUser: 10000
       volumes:
       - name: api-client
         secret:
@@ -39,8 +39,13 @@ spec:
         - name: wiz-connector-creator
           securityContext:
             allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 10000
             runAsNonRoot: true
-            runAsUser: 1000
+            runAsUser: 10000
           image: "container-registry.zalando.net/secops-systems/wiz-broker:2.9.1-main-6"
           imagePullPolicy: IfNotPresent
           command:

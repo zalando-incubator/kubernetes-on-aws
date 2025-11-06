@@ -7,7 +7,8 @@ metadata:
   name: wiz-connector-agent
   namespace: "wiz"
   labels:
-    helm.sh/chart: wiz-broker-2.3.8
+    helm.sh/chart: wiz-broker-2.5.1
+    version: "2.9"
     application: "wiz"
     component: "connector"
     deployment: "wiz-connector-agent"
@@ -19,7 +20,8 @@ spec:
   template:
     metadata:
       labels:
-        helm.sh/chart: wiz-broker-2.3.8
+        helm.sh/chart: wiz-broker-2.5.1
+        version: "2.9"
         application: "wiz"
         component: "connector"
         deployment: "wiz-connector-agent"
@@ -42,8 +44,13 @@ spec:
         - name: wiz-broker
           securityContext:
             allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 10000
             runAsNonRoot: true
-            runAsUser: 1000
+            runAsUser: 10000
           image: "container-registry.zalando.net/secops-systems/wiz-broker:2.9.1-main-6"
           imagePullPolicy: IfNotPresent
           volumeMounts:
@@ -54,7 +61,8 @@ spec:
             mountPath: /etc/connectorData
             readOnly: true
           args:
-            - /etc/connectorData/data
+            - --connector-data-file-path
+            - "/etc/connectorData/data"
           env:
           - name: LOG_LEVEL
             value: info
@@ -66,6 +74,22 @@ spec:
             value: kubernetes.default.svc.cluster.local
           - name: TARGET_PORT
             value: "443"
+          - name: K8S_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: K8S_DEPLOYMENT_NAME
+            value: wiz-connector-agent
+          - name: WIZ_CHART_VERSION
+            value: "2.5.1"
           resources:
             limits:
               cpu: {{ .Cluster.ConfigItems.wiz_connector_cpu }} 
