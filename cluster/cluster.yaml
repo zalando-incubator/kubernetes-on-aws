@@ -294,6 +294,22 @@ Resources:
       - zalando:administrator
       Type: "STANDARD"
 {{- end }}
+  EKSAccessEntrySecurityAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/SecAudit"
+      Type: "STANDARD"
+      KubernetesGroups:
+        - zalando:readonly
+  EKSAccessEntryReadOnlyAuth:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/ReadOnly"
+      Type: "STANDARD"
+      KubernetesGroups:
+        - zalando:readonly
   EKSAddonPodIdentityAgent:
     Type: AWS::EKS::Addon
     Properties:
@@ -306,6 +322,13 @@ Resources:
       AddonName: kube-proxy
       AddonVersion: "v1.33.3-eksbuild.6"
       ClusterName: !Ref EKSCluster
+      ConfigurationValues: |
+        {
+          "podLabels": {
+            "application": "kubernetes",
+            "component": "kube-proxy"
+          }
+        }
   {{ if eq .Cluster.Environment "e2e" }}
   E2EEKSIAMTestRoleReadOnly:
     Properties:

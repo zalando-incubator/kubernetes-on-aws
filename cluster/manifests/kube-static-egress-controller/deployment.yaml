@@ -30,13 +30,19 @@ spec:
       serviceAccountName: kube-static-egress-controller
       containers:
       - name: controller
-        image: container-registry.zalando.net/teapot/kube-static-egress-controller:v0.3.5-master-54
+        image: container-registry.zalando.net/teapot/kube-static-egress-controller:v0.3.6-master-55
         args:
         - "--provider=aws"
         - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
         - "--cf-template-bucket=cluster-lifecycle-manager-{{.Cluster.InfrastructureAccountID}}-{{.Cluster.Region}}"
+{{- if index .Cluster.ConfigItems "static_egress_cidr_nat_subnets"}}
+{{- range $subnet := split .Cluster.ConfigItems.static_egress_cidr_nat_subnets ","}}
+        - "--aws-nat-cidr-block={{ $subnet }}"
+{{- end }}
+{{- else}}
 {{- range $subnet := stupsNATSubnets .Values.vpc_ipv4_cidr }}
         - "--aws-nat-cidr-block={{ $subnet }}"
+{{- end }}
 {{- end }}
 {{ range $zone := .Values.availability_zones }}
         - "--aws-az={{ $zone }}"
@@ -47,6 +53,7 @@ spec:
         - "--additional-stack-tags=InfrastructureComponent=true"
         - "--additional-stack-tags=application=kubernetes"
         - "--additional-stack-tags=component=kube-static-egress-controller"
+        - "--use-platform-credentials"
         env:
         - name: AWS_REGION
           value: {{ .Cluster.Region }}
@@ -60,3 +67,11 @@ spec:
         ports:
           - containerPort: 8000
             protocol: TCP
+        volumeMounts:
+        - name: platform-iam-credentials
+          mountPath: /meta/credentials
+          readOnly: true
+      volumes:
+      - name: platform-iam-credentials
+        secret:
+          secretName: kube-static-egress-controller-credentials

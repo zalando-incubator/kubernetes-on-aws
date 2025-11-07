@@ -1,3 +1,4 @@
+{{- if eq .Cluster.Provider "zalando-aws" }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -23,13 +24,8 @@ spec:
     spec:
       serviceAccountName: audittrail-adapter
       priorityClassName: system-node-critical
-{{- if eq .Cluster.Provider "zalando-eks"}}
-      nodeSelector:
-        dedicated: cluster-seed
-{{- else}}
       nodeSelector:
         node.kubernetes.io/role: master
-{{- end}}
       tolerations:
       - operator: Exists
         effect: NoSchedule
@@ -97,3 +93,4 @@ spec:
         secret:
           secretName: audittrail-adapter-nakadi
       {{- end }}
+{{- end }}

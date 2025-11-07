@@ -335,6 +335,12 @@ skipper_combined_response_metrics: "false"
 # It enables reporting total serve time metrics for backend
 skipper_backend_host_metrics: "false"
 
+#
+# skipper-ingress validation webhook
+#
+skipper_webhook_cpu: 30m
+skipper_webhook_memory: 100Mi
+
 # disabled|provisioned|enabled routegroup validation via skipper webhook
 # can be one of disabled|provisioned|enabled
 routegroups_validation: "enabled"
@@ -342,6 +348,11 @@ routegroups_validation: "enabled"
 # disabled|enabled ingress validation via skipper webhook
 ingresses_validation: "enabled"
 
+enable_advanced_validation: "false"
+
+#
+# skipper-ingress ingress tokeninfo
+#
 # tokeninfo
 {{if eq .Cluster.Environment "production"}}
 # production|bridge|disabled
@@ -357,6 +368,9 @@ skipper_tokeninfo_cache_size: 1000
 # duration, non-zero value limits the lifetime of a cached tokeninfo
 skipper_tokeninfo_cache_ttl: "30s"
 
+#
+# skipper-ingress ingress OAuth2 grant flow
+#
 # oauth2 UI login - grant flow
 {{if eq .Cluster.Environment "e2e"}}
 skipper_oauth2_ui_login: "false"
@@ -368,6 +382,10 @@ skipper_oauth2_ui_login: "true"
 # Comma-separated list of tokeninfo keys to retain
 skipper_oauth2_ui_login_tokeninfo_keys: ""
 
+#
+# skipper-ingress cronjobs to create platformcredentialsset per application
+# for OAuth2 grant flow integration
+#
 skipper_hostname_credentials_controller_cpu: 10m
 skipper_hostname_credentials_controller_memory: 50Mi
 
@@ -488,8 +506,7 @@ aws_efa_device_plugin_cpu: "10m"
 aws_efa_device_plugin_memory: "20Mi"
 
 # static egress controller settings
-# by default static egress controller is enabled on legacy clusters and disabled on zalando-eks clusters with multiple clusters
-{{- if and (eq .Cluster.Provider "zalando-eks") (gt (len .Cluster.AccountClusters) 1) }}
+{{- if eq .Cluster.Provider "zalando-eks" }}
 static_egress_controller_enabled: "false"
 {{- else }}
 static_egress_controller_enabled: "true"
@@ -718,10 +735,6 @@ teapot_admission_controller_runtime_policy_default: "allow-spot"
 teapot_admission_controller_runtime_policy_enforced: ""
 # Enable hard spot assignment. Only relevant when node_lifecycle_provider=zalando
 teapot_admission_controller_runtime_policy_spot_hard_assignment: "false"
-# Enable experimental rescheduling of spot nodes after spot decommission
-spot_node_rescheduler: "false"
-spot_node_rescheduler_memory: "348Mi"
-spot_node_rescheduler_cpu: "50m"
 
 # Enable and configure prevent scale down annotation
 teapot_admission_controller_prevent_scale_down_enabled: "true"
