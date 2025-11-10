@@ -105,6 +105,9 @@ write_files:
           kubernetes-log-watcher/scalyr-parser: |
             [{"container": "webhook", "parser": "json-structured-log"}]
           logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+          prometheus.io/path: /metrics
+          prometheus.io/port: "9981"
+          prometheus.io/scrape: "true"
       spec:
         priorityClassName: system-node-critical
         tolerations:
@@ -219,7 +222,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-286
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-287
           name: admission-controller
           lifecycle:
             preStop:
@@ -258,36 +261,6 @@ write_files:
               readOnly: true
             - mountPath: /etc/kubernetes/admission-controller-kubeconfig
               name: admission-controller-kubeconfig
-              readOnly: true
-        - name: skipper-admission-webhook
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.142
-          args:
-            - skipper
-            - --validation-webhook-enabled=true
-            - --validation-webhook-address=:9085
-            - --validation-webhook-cert-file=/etc/kubernetes/ssl/admission-controller.pem
-            - --validation-webhook-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
-            - "--enable-advanced-validation={{ .Cluster.ConfigItems.enable_advanced_validation }}"
-          lifecycle:
-            preStop:
-              sleep:
-                seconds: 60
-          readinessProbe:
-            httpGet:
-              scheme: HTTPS
-              path: /healthz
-              port: 9085
-            initialDelaySeconds: 5
-            timeoutSeconds: 5
-          resources:
-            requests:
-              cpu: 30m
-              memory: 100Mi
-          ports:
-            - containerPort: 9085
-          volumeMounts:
-            - mountPath: /etc/kubernetes/ssl
-              name: ssl-certs-kubernetes
               readOnly: true
         - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-157
           name: webhook
@@ -511,10 +484,6 @@ write_files:
               -> disableAccessLog()
               -> setPath("/metrics")
               -> "http://127.0.0.1:8081";
-            skipper_admission_webhook: Path("/skipper-admission-webhook")
-              -> disableAccessLog()
-              -> setPath("/metrics")
-              -> "https://127.0.0.1:9085";
             aws_encryption_provider: Path("/aws-encryption-provider")
               -> disableAccessLog()
               -> setPath("/metrics")

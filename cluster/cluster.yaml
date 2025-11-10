@@ -331,6 +331,13 @@ Resources:
       AddonName: kube-proxy
       AddonVersion: "v1.33.3-eksbuild.6"
       ClusterName: !Ref EKSCluster
+      ConfigurationValues: |
+        {
+          "podLabels": {
+            "application": "kubernetes",
+            "component": "kube-proxy"
+          }
+        }
   {{ if eq .Cluster.Environment "e2e" }}
   E2EEKSIAMTestRoleReadOnly:
     Properties:
