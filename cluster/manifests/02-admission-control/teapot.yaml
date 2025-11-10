@@ -634,8 +634,10 @@ webhooks:
       - name: 'allow-routesrv-routes-access'
         expression: |
           !(
-            "okta:common/engineer" in request.userInfo.groups ||
-            "zalando:engineer" in request.userInfo.groups &&
+            (
+              "okta:common/engineer" in request.userInfo.groups ||
+              "zalando:engineer" in request.userInfo.groups
+            ) &&
             request.name == "skipper-ingress-routesrv" &&
             request.resource.resource == "services" &&
             request.subResource == "proxy" &&
