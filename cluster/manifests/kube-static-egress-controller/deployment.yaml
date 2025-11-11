@@ -30,8 +30,11 @@ spec:
       serviceAccountName: kube-static-egress-controller
       containers:
       - name: controller
-        image: container-registry.zalando.net/teapot/kube-static-egress-controller:v0.3.6-master-55
+        image: container-registry-test.zalando.net/teapot/kube-static-egress-controller:multi-cluster-pr-44-1
         args:
+        - "--master=https://kube-1.stups-test.zalan.do"
+        - "--master=https://stups-euc1-test.stups-test.zalan.do"
+        - "--use-platform-credentials"
         - "--provider=aws"
         - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
         - "--cf-template-bucket=cluster-lifecycle-manager-{{.Cluster.InfrastructureAccountID}}-{{.Cluster.Region}}"
@@ -53,7 +56,8 @@ spec:
         - "--additional-stack-tags=InfrastructureComponent=true"
         - "--additional-stack-tags=application=kubernetes"
         - "--additional-stack-tags=component=kube-static-egress-controller"
-        - "--use-platform-credentials"
+        - "--log-level=debug"
+        - "--dry-run"
         env:
         - name: AWS_REGION
           value: {{ .Cluster.Region }}
