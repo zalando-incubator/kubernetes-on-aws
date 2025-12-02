@@ -39,14 +39,14 @@ import (
 )
 
 const (
-	compliantImage1     = "registry.opensource.zalan.do/teapot/skipper:v0.14.0" // these are several compliant images
-	compliantImage2     = "registry.opensource.zalan.do/teapot/skipper:v0.14.1"
-	compliantImage3     = "registry.opensource.zalan.do/teapot/skipper:v0.14.2"
-	compliantImage4     = "registry.opensource.zalan.do/teapot/skipper:v0.14.3"
-	compliantImage5     = "registry.opensource.zalan.do/teapot/skipper:v0.14.4"
-	compliantImage6     = "registry.opensource.zalan.do/teapot/skipper:v0.14.5"
-	compliantImage7     = "registry.opensource.zalan.do/teapot/skipper:v0.14.6"
-	compliantImage8     = "registry.opensource.zalan.do/teapot/skipper:v0.14.7"
+	compliantImage1     = "registry.opensource.zalan.do/teapot/skipper:v0.22.163" // these are several compliant images
+	compliantImage2     = "registry.opensource.zalan.do/teapot/skipper:v0.22.164"
+	compliantImage3     = "registry.opensource.zalan.do/teapot/skipper:v0.22.165"
+	compliantImage4     = "registry.opensource.zalan.do/teapot/skipper:v0.22.166"
+	compliantImage5     = "registry.opensource.zalan.do/teapot/skipper:v0.22.167"
+	compliantImage6     = "registry.opensource.zalan.do/teapot/skipper:v0.22.168"
+	compliantImage7     = "registry.opensource.zalan.do/teapot/skipper:v0.22.169"
+	compliantImage8     = "registry.opensource.zalan.do/teapot/skipper:v0.22.170"
 	nonCompliantImage1  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-2" // these are several non-compliant images
 	nonCompliantImage2  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-3"
 	nonCompliantImage3  = "registry.opensource.zalan.do/teapot/skipper-test:pr-2080-5"
