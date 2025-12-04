@@ -24,6 +24,18 @@ roleRef:
   kind: ClusterRole
   name: kube-static-egress-controller
 subjects:
-- kind: ServiceAccount
-  name: kube-static-egress-controller
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: zalando-iam:zalando:service:stups_kubernetes
+---
+apiVersion: zalando.org/v1
+kind: PlatformCredentialsSet
+metadata:
+  name: kube-static-egress-controller-credentials
   namespace: kube-system
+spec:
+  application: kubernetes
+  token_version: v2
+  tokens:
+    kube-static-egress-controller:
+      privileges: []
