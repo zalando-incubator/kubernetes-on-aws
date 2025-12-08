@@ -53,7 +53,7 @@ spec:
       serviceAccountName: skipper-validation-webhook
       containers:
       - name: skipper-admission-webhook
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.182
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.183
         env:
 {{ if or (eq .Cluster.ConfigItems.skipper_local_tokeninfo "production") (eq .Cluster.ConfigItems.skipper_local_tokeninfo "bridge") }}
         - name: LOCAL_TOKENINFO
@@ -89,16 +89,16 @@ spec:
           - "-validation-webhook-cert-file=/etc/tls-certs/skipper-validation-webhook.pem"
           - "-validation-webhook-key-file=/etc/tls-certs/skipper-validation-webhook-key.pem"
           - "-enable-profile"
-          - "-memory-profile-rate={{ .Cluster.ConfigItems.skipper_memory_profile_rate }}"
-          - "-block-profile-rate={{ .Cluster.ConfigItems.skipper_block_profile_rate }}"
-          - "-mutex-profile-fraction={{ .Cluster.ConfigItems.skipper_mutex_profile_fraction }}"
+          - "-memory-profile-rate=1"
+          - "-block-profile-rate=10"
+          - "-mutex-profile-fraction=10"
           - "-kubernetes"
           - "-kubernetes-in-cluster"
           - "-kubernetes-healthcheck=false" # see -inline-routes
           - "-kubernetes-path-mode=path-prefix"
           - "-enable-kubernetes-endpointslices={{ .Cluster.ConfigItems.skipper_endpointslices_enabled }}"
           - "-enable-advanced-validation={{ .Cluster.ConfigItems.enable_advanced_validation }}"
-          - "-source-poll-timeout=9223372036854775807" # Max Duration
+          - "-source-poll-timeout=2592000000" # 30d
           - "-metrics-flavour=prometheus"
           - "-metrics-exp-decay-sample"
           - "-enable-prometheus-start-label={{ .Cluster.ConfigItems.skipper_prometheus_start_label_enabled }}"
@@ -120,8 +120,8 @@ spec:
           - "-swarm-redis-read-timeout={{ .Cluster.ConfigItems.skipper_redis_read_timeout }}"
           - "-swarm-redis-write-timeout={{ .Cluster.ConfigItems.skipper_redis_write_timeout }}"
           - "-cluster-ratelimit-max-group-shards={{ .Cluster.ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
-          - "-swarm-redis-min-conns={{ .Cluster.ConfigItems.skipper_redis_min_conns }}"
-          - "-swarm-redis-max-conns={{ .Cluster.ConfigItems.skipper_redis_max_conns }}"
+          - "-swarm-redis-min-conns=1"
+          - "-swarm-redis-max-conns=1"
           - "-kubernetes-redis-service-namespace=kube-system"
           - "-kubernetes-redis-service-name=skipper-ingress-redis"
           - "-kubernetes-redis-service-port=6379"
