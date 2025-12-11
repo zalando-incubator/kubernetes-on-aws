@@ -33,7 +33,9 @@ spec:
         image: container-registry.zalando.net/teapot/kube-static-egress-controller:v0.4.0-master-56
         args:
         # {{ range $cluster := .Cluster.AccountClusters }}
+        # {{ if eq $cluster.LifecycleStatus "ready" }}
         - "--master=https://{{ $cluster.LocalID }}.{{ $.Values.hosted_zone }}"
+        # {{ end }}
         # {{ end }}
         - "--provider=aws"
         - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
