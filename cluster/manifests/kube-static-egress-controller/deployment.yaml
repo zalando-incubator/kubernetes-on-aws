@@ -30,8 +30,9 @@ spec:
       serviceAccountName: kube-static-egress-controller
       containers:
       - name: controller
-        image: container-registry.zalando.net/teapot/kube-static-egress-controller:v0.3.6-master-55
+        image: container-registry.zalando.net/teapot/kube-static-egress-controller:v0.4.0-master-56
         args:
+        - "--master=https://{{ .Cluster.LocalID }}.{{ .Values.hosted_zone }}"
         - "--provider=aws"
         - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
         - "--cf-template-bucket=cluster-lifecycle-manager-{{.Cluster.InfrastructureAccountID}}-{{.Cluster.Region}}"
