@@ -506,10 +506,10 @@ aws_efa_device_plugin_cpu: "10m"
 aws_efa_device_plugin_memory: "20Mi"
 
 # static egress controller settings
-{{- if eq .Cluster.Provider "zalando-eks" }}
-static_egress_controller_enabled: "false"
-{{- else }}
+{{- if .Cluster.IsOldestReadyCluster }}
 static_egress_controller_enabled: "true"
+{{- else }}
+static_egress_controller_enabled: "false"
 {{- end }}
 
 # journald reader settings
