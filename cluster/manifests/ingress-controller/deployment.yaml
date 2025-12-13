@@ -1,4 +1,4 @@
-# {{ $image := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/kube-ingress-aws-controller:v0.18.12" }}
+# {{ $image := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/kube-ingress-aws-controller:v0.18.13" }}
 # {{ $version := index (split $image ":") 1 }}
 
 apiVersion: apps/v1
@@ -37,6 +37,7 @@ spec:
         - name: controller
           image: "{{ $image }}"
           args:
+            - --ip-addr-type=dualstack
             - --target-access-mode=HostPort
             - --stack-termination-protection
             - --ssl-policy={{ .Cluster.ConfigItems.kube_aws_ingress_controller_ssl_policy }}
