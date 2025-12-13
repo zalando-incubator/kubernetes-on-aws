@@ -101,6 +101,8 @@ skipper_ingress_memory: "1500Mi"
 skipper_topology_spread_enabled: "true"
 skipper_topology_spread_timeout: "7m"
 
+skipper_copy_stream_pool_enabled: "true"
+
 # PHC
 skipper_ingress_health_check_options: "period=10s,min-requests=10,min-drop-probability=0.05,max-drop-probability=0.9,max-unhealthy-endpoints-ratio=0.9"
 
@@ -338,8 +340,8 @@ skipper_backend_host_metrics: "false"
 #
 # skipper-ingress validation webhook
 #
-skipper_webhook_cpu: 30m
-skipper_webhook_memory: 100Mi
+skipper_webhook_cpu: 100m
+skipper_webhook_memory: 500Mi
 
 # disabled|provisioned|enabled routegroup validation via skipper webhook
 # can be one of disabled|provisioned|enabled
@@ -506,10 +508,10 @@ aws_efa_device_plugin_cpu: "10m"
 aws_efa_device_plugin_memory: "20Mi"
 
 # static egress controller settings
-{{- if eq .Cluster.Provider "zalando-eks" }}
-static_egress_controller_enabled: "false"
-{{- else }}
+{{- if .Cluster.IsOldestReadyCluster }}
 static_egress_controller_enabled: "true"
+{{- else }}
+static_egress_controller_enabled: "false"
 {{- end }}
 
 # journald reader settings
@@ -827,8 +829,10 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_33_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.33.4-amd64-master-378" "861068367966" }}
-kuberuntu_image_v1_33_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.33.4-arm64-master-378" "861068367966" }}
+kuberuntu_image_v1_34_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.34.2-amd64-master-382" "861068367966" }}
+kuberuntu_image_v1_34_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.34.2-arm64-master-382" "861068367966" }}
+# kuberuntu_image_v1_34_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.34.1-amd64-master-380" "861068367966" }}
+# kuberuntu_image_v1_34_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.34.1-arm64-master-380" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
@@ -1143,10 +1147,6 @@ enable_size_memory_backed_volumes: "true"
 
 # enable ImageVolume feature flag
 enable_image_volumes: "false"
-
-# enable StatefulSetAutoDeletePVC feature flag
-# https://kubernetes.io/blog/2021/12/16/kubernetes-1-23-statefulset-pvc-auto-deletion/
-enable_statefulset_autodelete_pvc: "true"
 
 # Allow configuring ingress rules on the Worker security group. This is used for
 # cases where a service needs a Service Type Load Balancer with an NLB and
