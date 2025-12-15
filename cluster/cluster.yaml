@@ -319,6 +319,12 @@ Resources:
       Type: "STANDARD"
       KubernetesGroups:
         - zalando:readonly
+  EKSAddonEFSCSIDriver:
+    Type: AWS::EKS::Addon
+    Properties:
+      AddonName: aws-efs-csi-driver
+      AddonVersion: "v2.1.15-eksbuild.1"
+      ClusterName: !Ref EKSCluster
   EKSAddonPodIdentityAgent:
     Type: AWS::EKS::Addon
     Properties:
@@ -568,6 +574,84 @@ Resources:
       Namespace: kube-system
       RoleArn: !GetAtt EKSAWSNodeIAMRole.Arn
       ServiceAccount: aws-node
+{{- if eq .Cluster.ConfigItems.eks_efs_csi_support_enabled "true" }}
+  EKSEFSCSIDriverIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-aws-efs-csi-driver"
+      AssumeRolePolicyDocument: {
+          "Version": "2012-10-17",
+          "Statement": [
+              {
+                  "Sid": "AllowDescribe",
+                  "Effect": "Allow",
+                  "Action": [
+                      "elasticfilesystem:DescribeAccessPoints",
+                      "elasticfilesystem:DescribeFileSystems",
+                      "elasticfilesystem:DescribeMountTargets",
+                      "ec2:DescribeAvailabilityZones"
+                  ],
+                  "Resource": "*"
+              },
+              {
+                  "Sid": "AllowCreateAccessPoint",
+                  "Effect": "Allow",
+                  "Action": [
+                      "elasticfilesystem:CreateAccessPoint"
+                  ],
+                  "Resource": "*",
+                  "Condition": {
+                      "Null": {
+                          "aws:RequestTag/efs.csi.aws.com/cluster": "false"
+                      },
+                      "ForAllValues:StringEquals": {
+                          "aws:TagKeys": "efs.csi.aws.com/cluster"
+                      }
+                  }
+              },
+              {
+                  "Sid": "AllowTagNewAccessPoints",
+                  "Effect": "Allow",
+                  "Action": [
+                      "elasticfilesystem:TagResource"
+                  ],
+                  "Resource": "*",
+                  "Condition": {
+                      "StringEquals": {
+                          "elasticfilesystem:CreateAction": "CreateAccessPoint"
+                      },
+                      "Null": {
+                          "aws:RequestTag/efs.csi.aws.com/cluster": "false"
+                      },
+                      "ForAllValues:StringEquals": {
+                          "aws:TagKeys": "efs.csi.aws.com/cluster"
+                      }
+                  }
+              },
+              {
+                  "Sid": "AllowDeleteAccessPoint",
+                  "Effect": "Allow",
+                  "Action": "elasticfilesystem:DeleteAccessPoint",
+                  "Resource": "*",
+                  "Condition": {
+                      "Null": {
+                          "aws:ResourceTag/efs.csi.aws.com/cluster": "false"
+                      }
+                  }
+              }
+          ]
+      }
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonEFSCSIDriverPolicy
+  EKSEFSCSIDriverPodIdentity:
+    Type: "AWS::EKS::PodIdentityAssociation"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      Namespace: kube-system
+      RoleArn: !GetAtt EKSEFSCSIDriverIAMRole.Arn
+      ServiceAccount: efs-csi-controller-sa
+{{- end }}
   EKSZalandoIAMProxyIAMRole:
     Type: AWS::IAM::Role
     Properties:
