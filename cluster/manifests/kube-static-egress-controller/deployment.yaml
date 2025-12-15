@@ -30,8 +30,13 @@ spec:
       serviceAccountName: kube-static-egress-controller
       containers:
       - name: controller
-        image: container-registry.zalando.net/teapot/kube-static-egress-controller:v0.3.5-master-54
+        image: container-registry.zalando.net/teapot/kube-static-egress-controller:v0.4.0-master-56
         args:
+        # {{ range $cluster := .Cluster.AccountClusters }}
+        # {{ if eq $cluster.LifecycleStatus "ready" }}
+        - "--master=https://{{ $cluster.LocalID }}.{{ $.Values.hosted_zone }}"
+        # {{ end }}
+        # {{ end }}
         - "--provider=aws"
         - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
         - "--cf-template-bucket=cluster-lifecycle-manager-{{.Cluster.InfrastructureAccountID}}-{{.Cluster.Region}}"
@@ -53,6 +58,7 @@ spec:
         - "--additional-stack-tags=InfrastructureComponent=true"
         - "--additional-stack-tags=application=kubernetes"
         - "--additional-stack-tags=component=kube-static-egress-controller"
+        - "--use-platform-credentials"
         env:
         - name: AWS_REGION
           value: {{ .Cluster.Region }}
@@ -66,3 +72,11 @@ spec:
         ports:
           - containerPort: 8000
             protocol: TCP
+        volumeMounts:
+        - name: platform-iam-credentials
+          mountPath: /meta/credentials
+          readOnly: true
+      volumes:
+      - name: platform-iam-credentials
+        secret:
+          secretName: kube-static-egress-controller-credentials
