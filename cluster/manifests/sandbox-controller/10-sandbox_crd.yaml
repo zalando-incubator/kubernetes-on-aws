@@ -43,7 +43,7 @@ spec:
             properties:
               sourceHosts:
                 description: Traffic to these hosts will be rerouted to the targetHost
-                  if testContext matches.
+                  if testProject matches.
                 items:
                   type: string
                 minItems: 1
@@ -51,15 +51,31 @@ spec:
               target:
                 description: The target host of the sandboxed traffic.
                 type: string
-              testContext:
+                x-kubernetes-validations:
+                - message: target has to be a valid URL, http scheme is only allowed
+                    for *.cluster.local domains
+                  rule: 'isURL(self) && ((url(self).getHostname().endsWith(''cluster.local'')
+                    && url(self).getScheme() ==''http'') || url(self).getScheme()
+                    ==''https'') '
+              testProject:
                 description: |-
                   Specifies the value used to identify requests that can be routed to the sandbox target.
-                  The format of the incoming `X-Zalando-Client-Id` header should be: `test:$testContext:.*`.
+                  The format of the incoming `X-Zalando-Client-Id` header should be: `test:$testProject:.*`.
                 type: string
             required:
             - sourceHosts
             - target
-            - testContext
+            - testProject
+            type: object
+          status:
+            description: |-
+              SandboxStatus is the current state of the Sandbox.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              problems:
+                items:
+                  type: string
+                type: array
             type: object
         required:
         - metadata

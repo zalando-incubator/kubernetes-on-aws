@@ -101,6 +101,8 @@ skipper_ingress_memory: "1500Mi"
 skipper_topology_spread_enabled: "true"
 skipper_topology_spread_timeout: "7m"
 
+skipper_copy_stream_pool_enabled: "true"
+
 # PHC
 skipper_ingress_health_check_options: "period=10s,min-requests=10,min-drop-probability=0.05,max-drop-probability=0.9,max-unhealthy-endpoints-ratio=0.9"
 
@@ -506,10 +508,10 @@ aws_efa_device_plugin_cpu: "10m"
 aws_efa_device_plugin_memory: "20Mi"
 
 # static egress controller settings
-{{- if eq .Cluster.Provider "zalando-eks" }}
-static_egress_controller_enabled: "false"
-{{- else }}
+{{- if .Cluster.IsOldestReadyCluster }}
 static_egress_controller_enabled: "true"
+{{- else }}
+static_egress_controller_enabled: "false"
 {{- end }}
 
 # journald reader settings
