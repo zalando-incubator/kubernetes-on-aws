@@ -41,7 +41,7 @@ const (
 	application  = "e2e-test-application"
 	component    = "e2e-test-component"
 	environment  = "e2e-test-environment"
-	dockerImage  = "registry.k8s.io/busybox"
+	dockerImage  = "public.ecr.aws/docker/library/busybox"
 )
 
 var _ = describe("Admission controller tests", func() {
