@@ -18,7 +18,9 @@ spec:
         application: skipper-ingress
         component: webhook
       annotations:
-        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "skipper-admission-webhook", "parser": "skipper-access-log"}]
+        logging/destination: "{{ .Cluster.ConfigItems.log_destination_local }}"
         prometheus.io/path: /metrics
         prometheus.io/port: "9981"
         prometheus.io/scrape: "true"
@@ -115,10 +117,10 @@ spec:
           - "-enable-ratelimits"
 {{ if eq .Cluster.ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
           - "-enable-swarm"
-          - "-swarm-redis-dial-timeout={{ .Cluster.ConfigItems.skipper_redis_dial_timeout }}"
-          - "-swarm-redis-pool-timeout={{ .Cluster.ConfigItems.skipper_redis_pool_timeout }}"
-          - "-swarm-redis-read-timeout={{ .Cluster.ConfigItems.skipper_redis_read_timeout }}"
-          - "-swarm-redis-write-timeout={{ .Cluster.ConfigItems.skipper_redis_write_timeout }}"
+          - "-swarm-redis-dial-timeout=5s"
+          - "-swarm-redis-pool-timeout=5s"
+          - "-swarm-redis-read-timeout=5s"
+          - "-swarm-redis-write-timeout=5s"
           - "-cluster-ratelimit-max-group-shards={{ .Cluster.ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
           - "-swarm-redis-min-conns=1"
           - "-swarm-redis-max-conns=1"
