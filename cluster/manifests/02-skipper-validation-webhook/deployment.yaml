@@ -53,7 +53,7 @@ spec:
       serviceAccountName: skipper-validation-webhook
       containers:
       - name: skipper-admission-webhook
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.192
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.194
         env:
 {{ if or (eq .Cluster.ConfigItems.skipper_local_tokeninfo "production") (eq .Cluster.ConfigItems.skipper_local_tokeninfo "bridge") }}
         - name: LOCAL_TOKENINFO
@@ -141,8 +141,8 @@ spec:
           - "-oauth2-auth-url={{ .Cluster.ConfigItems.skipper_oauth2_auth_url }}"
           - "-oauth2-token-url={{ .Cluster.ConfigItems.skipper_oauth2_token_url }}"
           - "-oauth2-secret-file=/etc/skipper/secret/encryption-key"
-          - "-oauth2-client-id-file=/etc/skipper/hostname-credentials/{host}-grant-credentials-employee-client-id"
-          - "-oauth2-client-secret-file=/etc/skipper/hostname-credentials/{host}-grant-credentials-employee-client-secret"
+          - "-oauth2-client-id=dummyvalue"
+          - "-oauth2-client-secret=dummyvalue"
           - "-credentials-update-interval=1m"
           - "-oauth2-token-cookie-name={{ .Cluster.ConfigItems.skipper_oauth2_cookie_name }}"
           - "-oauth2-token-cookie-remove-subdomains=0"
@@ -191,9 +191,6 @@ spec:
             readOnly: true
 {{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_oauth2_ui_login "true"}}
-          - name: hostname-credentials
-            mountPath: /etc/skipper/hostname-credentials
-            readOnly: true
           - name: encryption-key
             mountPath: /etc/skipper/secret
             readOnly: true
@@ -218,12 +215,9 @@ spec:
           optional: true
 {{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_oauth2_ui_login "true"}}
-      - name: hostname-credentials
-        secret:
-          secretName: hostname-credentials
       - name: encryption-key
         secret:
-          secretName: skipper-ingress
+          secretName: skipper-validation-webhook-tls-certs
 {{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
       - name: open-policy-agent-config
