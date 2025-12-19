@@ -25,7 +25,7 @@ spec:
         cpu: {{.Cluster.ConfigItems.prometheus_cpu_min}}
 {{- if and (eq .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true") (ne .Cluster.ConfigItems.prometheus_scheduled_scaling_events "") }}
   schedules:
-  {{- range split .Cluster.ConfigItems.skipper_cluster_scaling_schedules "," }}
+  {{- range split .Cluster.ConfigItems.prometheus_scheduled_scaling_events "," }}
   {{- $tuple := split . ":" }} # <name>:<pre-start-minutes>:<cpu>:<memory>
   - name: "{{ index $tuple 0 }}"
     preStartMinutes: {{ index $tuple 1 }}
