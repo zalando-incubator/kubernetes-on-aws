@@ -366,6 +366,20 @@ post_apply:
   kind: ServiceAccount
   namespace: kube-system
 {{- end}}
+{{- if ne .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true"}}
+- name: scheduled-scaling-vpa
+  kind: CronJob
+  namespace: kube-system
+- name: scheduled-scaling-vpa
+  kind: ClusterRole
+- name: scheduled-scaling-vpa
+  kind: ClusterRoleBinding
+- name: scheduled-scaling-vpa
+  kind: ServiceAccount
+  namespace: kube-system
+- name: verticalpodautoscalers.zalando.org
+  kind: CustomResourceDefinition
+{{- end}}
 {{- if eq .Cluster.Provider "zalando-eks"}}
 {{- if ne .Cluster.ConfigItems.aws_vpc_cni_custom_networking "true"}}
 - kind: ENIConfig
