@@ -21,7 +21,6 @@ clusters:
     etcd_scalyr_key: "${ETCD_SCALYR_KEY}"
     etcd_dns_record_prefixes: "etcd-server.etcd"
     docker_meta_url: https://docker-meta.stups-test.zalan.do
-    vpa_enabled: "true"
     lightstep_token: "${LIGHTSTEP_TOKEN}"
     okta_auth_issuer_url: "${OKTA_AUTH_ISSUER_URL}"
     zmon_agent_replicas: '0'
@@ -29,8 +28,6 @@ clusters:
     zmon_redis_replicas: '0'
     zmon_scheduler_replicas: '0'
     zmon_worker_replicas: '0'
-    node_pool_feature_enabled: "true"
-    enable_rbac: "true"
     skipper_ingress_refuse_payload: "refused-pattern-1[cf724afc]refused-pattern-2"
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
