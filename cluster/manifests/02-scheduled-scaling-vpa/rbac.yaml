@@ -1,0 +1,44 @@
+{{ if eq .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true" }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: scheduled-scaling-vpa
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: scheduled-scaling-vpa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: scheduled-scaling-vpa
+  labels:
+    application: kubernetes
+    component: scheduled-scaling-vpa
+rules:
+- apiGroups: ["autoscaling.k8s.io"]
+  resources: ["verticalpodautoscalers"]
+  verbs: ["get", "list", "create", "update", "patch"]
+- apiGroups: ["zalando.org"]
+  resources:
+  - "verticalpodautoscalers"
+  - "scalingschedules"
+  - "clusterscalingschedules"
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: scheduled-scaling-vpa
+  labels:
+    application: kubernetes
+    component: scheduled-scaling-vpa
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: scheduled-scaling-vpa
+subjects:
+- kind: ServiceAccount
+  name: scheduled-scaling-vpa
+  namespace: kube-system
+{{- end }}
