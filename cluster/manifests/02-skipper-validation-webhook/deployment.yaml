@@ -54,8 +54,43 @@ spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: skipper-validation-webhook
       containers:
+      - name: redis-sidecar
+        image: container-registry.zalando.net/library/redis-7-alpine:7.2-alpine-20250805
+        args:
+        - /usr/local/bin/docker-entrypoint.sh
+        - --save
+        - ""  # Disable persistence for sidecar use
+        - --maxmemory
+        - "256mb"
+        - --maxmemory-policy
+        - "allkeys-lru"
+        ports:
+        - containerPort: 6379
+          protocol: TCP
+          name: redis
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 10
       - name: skipper-admission-webhook
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.194
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.201
         env:
 {{ if or (eq .Cluster.ConfigItems.skipper_local_tokeninfo "production") (eq .Cluster.ConfigItems.skipper_local_tokeninfo "bridge") }}
         - name: LOCAL_TOKENINFO
@@ -121,12 +156,11 @@ spec:
           - "-swarm-redis-pool-timeout=5s"
           - "-swarm-redis-read-timeout=5s"
           - "-swarm-redis-write-timeout=5s"
+          - "-swarm-redis-heartbeat-frequency=720h"
           - "-cluster-ratelimit-max-group-shards={{ .Cluster.ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
           - "-swarm-redis-min-conns=1"
           - "-swarm-redis-max-conns=1"
-          - "-kubernetes-redis-service-namespace=kube-system"
-          - "-kubernetes-redis-service-name=skipper-ingress-redis"
-          - "-kubernetes-redis-service-port=6379"
+          - "-swarm-redis-urls=127.0.0.1:6379"
 {{ end }}
           - "-lua-sources={{ .Cluster.ConfigItems.skipper_lua_sources }}"
           - "-default-filters-dir=/etc/config/default-filters"
