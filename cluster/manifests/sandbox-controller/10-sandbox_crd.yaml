@@ -41,6 +41,16 @@ spec:
             type: object
           spec:
             properties:
+              paths:
+                description: Optional paths to further filter the rerouted traffic
+                  along with the sourceHosts.
+                items:
+                  type: string
+                  x-kubernetes-validations:
+                  - message: paths must start with '/'
+                    rule: self.startsWith("/")
+                type: array
+                x-kubernetes-list-type: set
               sourceHosts:
                 description: Traffic to these hosts will be rerouted to the targetHost
                   if testProject matches.
