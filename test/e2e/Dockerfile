@@ -28,7 +28,14 @@ COPY --from=builder /go/bin/ginkgo /usr/local/bin/ginkgo
 COPY --from=container-registry.zalando.net/teapot/cluster-lifecycle-manager:latest /clm /usr/bin/clm
 COPY --from=container-registry.zalando.net/teapot/aws-account-creator:latest /aws-account-creator /usr/bin/aws-account-creator
 
-ADD . /workdir
+ADD test/e2e/build/linux/${TARGETARCH}/e2e.test /workdir/test/e2e/e2e.test
+ADD test/e2e/build/linux/${TARGETARCH}/stackset-e2e /workdir/test/e2e/stackset-e2e
+ADD test/e2e/build/linux/${TARGETARCH}/check-daemonset-updated /workdir/test/e2e/check-daemonset-updated
+COPY test/e2e/*.sh /workdir/test/e2e/
+COPY test/e2e/*.py /workdir/test/e2e/
+ADD test/e2e/apply /workdir/test/e2e/apply
+ADD test/e2e/loadtest /workdir/test/e2e/loadtest
+ADD cluster /workdir/cluster
 
 ENV KUBECTL_PATH=/usr/bin/kubectl
 ENV KUBERNETES_PROVIDER=skeleton
