@@ -4,39 +4,39 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: wiz-sensor
+  name: wiz-connector-wiz-sensor
   labels:
-    helm.sh/chart: wiz-sensor-1.0.6440
+    helm.sh/chart: wiz-sensor-1.0.8831
     application: "wiz"
     component: "sensor"
 rules:
   - apiGroups: [""]
-    resources: ["pods", "namespaces", "nodes", "replicationcontrollers", "serviceaccounts"]
+    resources: ["pods"]
     verbs: ["get", "list", "watch"]
 
-  - apiGroups: ["apps"]
-    resources: ["daemonsets", "replicasets", "deployments", "statefulsets"]
-    verbs: ["get", "list", "watch"]
-
-  - apiGroups: ["batch"]
-    resources: ["cronjobs"]
+  - apiGroups: ["", "apps", "batch"]
+    resources: [
+      "namespaces", "nodes", "daemonsets", "replicasets", "deployments",
+      "jobs", "cronjobs", "statefulsets", "replicationcontrollers", "serviceaccounts",
+      "nodes/proxy"
+    ]
     verbs: ["get", "list", "watch"]
 ---
 # Source: wiz-sensor/templates/clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: wiz-sensor
+  name: wiz-connector-wiz-sensor
   labels:
-    helm.sh/chart: wiz-sensor-1.0.6440
+    helm.sh/chart: wiz-sensor-1.0.8831
     application: "wiz"
     component: "sensor"
 subjects:
 - kind: ServiceAccount
-  name: wiz-sensor
+  name: wiz-connector-wiz-sensor
   namespace: wiz
 roleRef:
   kind: ClusterRole
-  name: wiz-sensor
+  name: wiz-connector-wiz-sensor
   apiGroup: rbac.authorization.k8s.io
 {{end}}
