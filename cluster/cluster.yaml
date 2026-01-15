@@ -1631,6 +1631,9 @@ Resources:
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-lifecycle-manager-entrypoint"
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/Shibboleth-Administrator"
                   - !Sub "arn:aws:iam::${AWS::AccountId}:role/Administrator"
+                  {{- if eq .Cluster.Name "playground" }}
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/cluster-cleaner-nuke-entrypoint"
+                  {{- end }}
   DeploymentControllerRole:
     Type: AWS::IAM::Role
     Properties:

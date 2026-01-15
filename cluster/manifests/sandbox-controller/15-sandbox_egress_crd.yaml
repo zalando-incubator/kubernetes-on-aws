@@ -156,8 +156,14 @@ spec:
                 type: array
               stackRef:
                 type: string
+              testProject:
+                description: |-
+                  Specifies the value used to identify requests that can be altered while proxying through egress sidecar.
+                  The format of the header `X-Zalando-Client-Id` of the incoming requests  should be: `test:$testProject:.*`.
+                type: string
             required:
             - routes
+            - testProject
             type: object
             x-kubernetes-validations:
             - message: At least one of stackRef or configMapRef must be set
@@ -165,7 +171,7 @@ spec:
                 && self.configMapRef != ""
           status:
             description: |-
-              Status is the current state of the EgressSandbox.
+              SandboxEgressStatus is the current state of the EgressSandbox.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
             properties:
               problems:
