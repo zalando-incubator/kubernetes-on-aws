@@ -29,7 +29,6 @@ spec:
         component: "sensor"
         daemonset: "wiz-sensor"
       annotations:
-        container.apparmor.security.beta.kubernetes.io/wiz-sensor: unconfined
         cluster-autoscaler.kubernetes.io/enable-ds-eviction: "true"
     spec:
       serviceAccountName: wiz-connector-wiz-sensor
@@ -75,6 +74,8 @@ spec:
           runAsUser: 2202
           runAsGroup: 2202
           readOnlyRootFilesystem: true
+          appArmorProfile:
+            type: Unconfined
           seccompProfile:
             type: Unconfined
           seLinuxOptions:
