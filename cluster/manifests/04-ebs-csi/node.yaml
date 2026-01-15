@@ -47,8 +47,11 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
           volumeMounts:
-            - name: kubelet-dir
+            - name: kubelet-dir-legacy
               mountPath: /opt/podruntime/kubelet
+              mountPropagation: Bidirectional
+            - name: kubelet-dir
+              mountPath: /var/lib/kubelet
               mountPropagation: Bidirectional
             - name: plugin-dir
               mountPath: /csi
@@ -131,9 +134,13 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
       volumes:
-        - name: kubelet-dir
+        - name: kubelet-dir-legacy
           hostPath:
             path: /opt/podruntime/kubelet
+            type: Directory
+        - name: kubelet-dir
+          hostPath:
+            path: /var/lib/kubelet
             type: Directory
         - name: plugin-dir
           hostPath:
