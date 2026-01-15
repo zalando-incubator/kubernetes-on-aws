@@ -1,6 +1,6 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.22.194-1297" }}
+{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.22.202-1304" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.22.216-1318" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
@@ -91,48 +91,6 @@ spec:
             matchLabels:
               component: ingress
               application: skipper-ingress
-{{- end }}
-{{- if eq .Cluster.ConfigItems.skipper_karpenter_node_pools_enabled "true" }}
-      affinity:
-       podAntiAffinity:
-         requiredDuringSchedulingIgnoredDuringExecution:
-         - labelSelector:
-             matchExpressions:
-             - key: application
-               operator: In
-               values:
-               - skipper-ingress
-             - key: component
-               operator: In
-               values:
-               - ingress
-           topologyKey: kubernetes.io/hostname
-       nodeAffinity:
-         preferredDuringSchedulingIgnoredDuringExecution:
-         - weight: 100
-           preference:
-             matchExpressions:
-             - key: node.kubernetes.io/instance-type
-               operator: In
-               values:
-               - c7g.large
-               - c7g.xlarge
-               - c7g.2xlarge
-               - c7g.4xlarge
-               - c7g.8xlarge
-               - m7g.large
-         - weight: 50
-           preference:
-             matchExpressions:
-             - key: node.kubernetes.io/instance-type
-               operator: In
-               values:
-               - c6g.large
-               - c6g.xlarge
-               - c6g.2xlarge
-               - c6g.4xlarge
-               - c6g.8xlarge
-               - m6g.large
 {{- end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
@@ -514,21 +472,12 @@ spec:
             name: open-policy-agent-config
 {{ end }}
 {{ if eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true"}}
-{{- if eq .Cluster.ConfigItems.skipper_karpenter_node_pools_enabled "true" }}
-      nodeSelector:
-        zalando.org/dedicated: skipper-ingress
-      tolerations:
-      - key: "zalando.org/dedicated"
-        operator: Exists
-        effect: NoSchedule
-{{ else }}
       nodeSelector:
         dedicated: skipper-ingress
       tolerations:
       - effect: NoSchedule
         key: dedicated
         value: skipper-ingress
-{{ end}}
 {{ end }}
 {{ end }}
 
