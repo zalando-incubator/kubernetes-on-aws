@@ -146,6 +146,9 @@ webhooks:
         - key: eks.amazonaws.com/component
           operator: NotIn
           values: ["kube-proxy"]
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values: ["aws-node"]
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
@@ -254,6 +257,12 @@ webhooks:
         apiVersions: ["v1"]
         resources: ["statefulsets"]
   - name: crd-admitter.teapot.zalan.do
+{{- if eq .Cluster.Provider "zalando-eks"}}
+    # avoid admission-control applying to eks managed addon resources
+    matchConditions:
+    - name: "exclude-by-name"
+      expression: "oldObject == null || oldObject.metadata.name != 'eniconfigs.crd.k8s.amazonaws.com'"
+{{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
@@ -341,7 +350,7 @@ webhooks:
           values: ["admission-controller", "aws-node", "coredns"]
         - key: k8s-app
           operator: NotIn
-          values: ["kube-proxy"]
+          values: ["kube-proxy", "aws-node"]
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
