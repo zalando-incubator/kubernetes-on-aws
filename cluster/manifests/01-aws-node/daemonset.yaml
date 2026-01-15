@@ -113,7 +113,7 @@ spec:
               apiVersion: v1
               fieldPath: metadata.name
         image: 602401143452.dkr.ecr.{{.Cluster.Region}}.amazonaws.com/amazon-k8s-cni:v1.19.5-eksbuild.1
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         livenessProbe:
           exec:
             command:
@@ -181,7 +181,7 @@ spec:
               apiVersion: v1
               fieldPath: spec.nodeName
         image: 602401143452.dkr.ecr.{{.Cluster.Region}}.amazonaws.com/amazon/aws-network-policy-agent:v1.2.1-eksbuild.1
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         name: aws-eks-nodeagent
         ports:
         - containerPort: 8162
@@ -215,7 +215,7 @@ spec:
         - name: ENABLE_IPv6
           value: "{{ if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}false{{else}}true{{end}}"
         image: 602401143452.dkr.ecr.{{.Cluster.Region}}.amazonaws.com/amazon-k8s-cni-init:v1.19.5-eksbuild.1
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         name: aws-vpc-cni-init
         resources:
           requests:
