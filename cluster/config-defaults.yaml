@@ -128,7 +128,6 @@ worker_sg_legacy_cluster: ""
 # skipper node-pool
 enable_dedicate_nodepool_skipper: "true"
 skipper_attach_only_to_skipper_node_pool: "true"
-skipper_karpenter_node_pools_enabled: "false"
 
 skipper_suppress_route_update_logs: "true"
 skipper_validate_query: "true"
@@ -234,12 +233,11 @@ kasada_api_key: ""
 # - "exec" - routesrv is deployed, skipper uses routesrv
 skipper_routesrv_enabled: "exec"
 skipper_routesrv_memory: "1Gi"
+skipper_routesrv_min_replicas: 2
 {{if eq .Cluster.Environment "production"}}
 skipper_routesrv_cpu: "1000m"
-skipper_routesrv_min_replicas: 2
 {{else}}
 skipper_routesrv_cpu: "100m"
-skipper_routesrv_min_replicas: 1
 {{end}}
 
 skipper_routesrv_node_affinity_enabled: "false"
