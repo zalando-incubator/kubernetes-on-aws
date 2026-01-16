@@ -174,7 +174,7 @@ Resources:
 {{- end }}
     Properties:
       Name: "{{.Cluster.Name}}"
-      Version: "1.33"
+      Version: "1.34"
       RoleArn: !GetAtt EKSClusterRole.Arn
       KubernetesNetworkConfig:
         IpFamily: "{{.Cluster.ConfigItems.eks_ip_family}}"
@@ -330,11 +330,46 @@ Resources:
         - RoleArn: !GetAtt EKSEFSCSIDriverIAMRole.Arn
           ServiceAccount: efs-csi-controller-sa
 {{- end }}
+  EKSAddonAmazonVPCCNI:
+    Type: AWS::EKS::Addon
+    Properties:
+      AddonName: vpc-cni
+      AddonVersion: "v1.19.5-eksbuild.1"
+      ClusterName: !Ref EKSCluster
+      ConfigurationValues: !Sub |
+{{- if eq .Cluster.ConfigItems.aws_vpc_cni_custom_networking "true" }}
+        eniConfig:
+          create: true
+          region: "{{.Cluster.Region}}"
+          subnets:
+{{- range $az := .Values.availability_zones }}
+            "{{$az}}":
+              id: "{{ index $.Values.pod_subnets $az }}"
+              securityGroups:
+                - ${EKSWorkerSecurityGroup}
+{{- end}}
+{{- end}}
+        podLabels:
+          application: "kubernetes"
+          component: "aws-node"
+        enableNetworkPolicy: "{{.Cluster.ConfigItems.aws_vpc_cni_enable_network_policy}}"
+        env:
+          NETWORK_POLICY_ENFORCING_MODE: "{{.Cluster.ConfigItems.aws_vpc_cni_network_policy_enforcing_mode}}"
+{{- if eq .Cluster.ConfigItems.eks_ip_family "ipv4" }}
+          ENABLE_PREFIX_DELEGATION: "{{.Cluster.ConfigItems.aws_vpc_cni_prefix_delegation}}"
+{{- end }}
+          AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG: "{{.Cluster.ConfigItems.aws_vpc_cni_custom_networking}}"
+{{- if eq .Cluster.ConfigItems.aws_vpc_cni_custom_networking "true" }}
+          ENI_CONFIG_LABEL_DEF: "topology.kubernetes.io/zone"
+{{- end }}
+      # PodIdentityAssociations:
+      #   - RoleArn: !GetAtt EKSAWSNodeIAMRole.Arn
+      #     ServiceAccount: aws-node
   EKSAddonPodIdentityAgent:
     Type: AWS::EKS::Addon
     Properties:
       AddonName: eks-pod-identity-agent
-      AddonVersion: "v1.3.10-eksbuild.1"
+      AddonVersion: "v1.3.10-eksbuild.2"
       ClusterName: !Ref EKSCluster
       ConfigurationValues: |
         {
@@ -347,7 +382,7 @@ Resources:
     Type: AWS::EKS::Addon
     Properties:
       AddonName: kube-proxy
-      AddonVersion: "v1.33.3-eksbuild.6"
+      AddonVersion: "v1.34.1-eksbuild.2"
       ClusterName: !Ref EKSCluster
       ConfigurationValues: |
         {
