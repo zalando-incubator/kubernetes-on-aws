@@ -326,6 +326,10 @@ Resources:
       AddonName: aws-efs-csi-driver
       AddonVersion: "v2.1.15-eksbuild.1"
       ClusterName: !Ref EKSCluster
+      PodIdentityAssociations:
+        - RoleArn: !GetAtt EKSEFSCSIDriverIAMRole.Arn
+          ServiceAccount: efs-csi-controller-sa
+          Namespace: kube-system
 {{- end }}
   EKSAddonAmazonVPCCNI:
     Type: AWS::EKS::Addon
@@ -634,13 +638,6 @@ Resources:
       Path: /
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AmazonEFSCSIDriverPolicy
-  EKSEFSCSIDriverPodIdentity:
-    Type: "AWS::EKS::PodIdentityAssociation"
-    Properties:
-      ClusterName: !Ref EKSCluster
-      Namespace: kube-system
-      RoleArn: !GetAtt EKSEFSCSIDriverIAMRole.Arn
-      ServiceAccount: efs-csi-controller-sa
 {{- end }}
   EKSZalandoIAMProxyIAMRole:
     Type: AWS::IAM::Role
