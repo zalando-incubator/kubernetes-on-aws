@@ -167,6 +167,11 @@ spec:
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
+{{ if .Cluster.ConfigItems.skipper_edit_route_placeholders }}
+          {{ range $placeholder := split .Cluster.ConfigItems.skipper_edit_route_placeholders "[cf724afc]" }}
+          - '-edit-route={{ $placeholder }}'
+          {{ end }}
+{{ end }}
           - '-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}'
           - '-kubernetes-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_filters_append }}'
           - '-kubernetes-east-west-range-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_predicates }}'
