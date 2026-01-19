@@ -4,7 +4,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: wiz-connector-wiz-sensor
+  name: wiz-sensor
   labels:
     helm.sh/chart: wiz-sensor-1.0.8831
     image/tag: v1
@@ -31,7 +31,7 @@ spec:
       annotations:
         cluster-autoscaler.kubernetes.io/enable-ds-eviction: "true"
     spec:
-      serviceAccountName: wiz-connector-wiz-sensor
+      serviceAccountName: wiz-sensor
       {{- if eq .Cluster.ConfigItems.wiz_priority "true" }}
       priorityClassName: system-node-critical
       {{- end }}
