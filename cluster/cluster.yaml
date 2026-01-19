@@ -319,6 +319,17 @@ Resources:
       Type: "STANDARD"
       KubernetesGroups:
         - zalando:readonly
+{{- if eq .Cluster.ConfigItems.eks_efs_csi_support_enabled "true" }}
+  EKSAddonEFSCSIDriver:
+    Type: AWS::EKS::Addon
+    Properties:
+      AddonName: aws-efs-csi-driver
+      AddonVersion: "v2.1.15-eksbuild.1"
+      ClusterName: !Ref EKSCluster
+      PodIdentityAssociations:
+        - RoleArn: !GetAtt EKSEFSCSIDriverIAMRole.Arn
+          ServiceAccount: efs-csi-controller-sa
+{{- end }}
   EKSAddonAmazonVPCCNI:
     Type: AWS::EKS::Addon
     Properties:
@@ -603,6 +614,30 @@ Resources:
       Namespace: kube-system
       RoleArn: !GetAtt EKSAWSNodeIAMRole.Arn
       ServiceAccount: aws-node
+{{- if eq .Cluster.ConfigItems.eks_efs_csi_support_enabled "true" }}
+  EKSEFSCSIDriverIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-aws-efs-csi-driver"
+      AssumeRolePolicyDocument: {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "pods.eks.amazonaws.com"
+                },
+                "Action": [
+                    "sts:AssumeRole",
+                    "sts:TagSession"
+                ]
+            }
+        ]
+      }
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonEFSCSIDriverPolicy
+{{- end }}
   EKSZalandoIAMProxyIAMRole:
     Type: AWS::IAM::Role
     Properties:
