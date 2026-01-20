@@ -214,13 +214,12 @@ if [ "$e2e" = true ]; then
             "Mirror pods should be created for the main Kubernetes components \[Zalando\]"
             "Should audit API calls to create, update, patch, delete pods. \[Audit\] \[Zalando\]"
             "should validate permissions for \[Authorization\] \[RBAC\] \[Zalando\]" # TODO: Remains skipped until we remove the older RBAC setup
-            "should creating a working mysql cluster" # upstream test which does not work with IPv6
         )
     fi
 
     mkdir -p junit_reports
     ginkgo -procs=25 -flake-attempts=2 \
-        -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\]|\[Opa\])" \
+        -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Zalando\]|\[Opa\])" \
         -skip="($(IFS="|" ; echo "${SKIPPED_TESTS[*]}"))" \
         "e2e.test" -- \
         -delete-namespace-on-failure=false \
