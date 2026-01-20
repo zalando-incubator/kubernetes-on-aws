@@ -633,6 +633,12 @@ webhooks:
         expression: '!(request.userInfo.username in ["system:kube-controller-manager", "system:kube-scheduler", "zalando-iam:zalando:service:k8sapi_credentials-provider"])'
       - name: 'exclude-eks-components'
         expression: '!request.userInfo.username.startsWith("eks:")'
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      - name: 'exclude-eks-kro-capability'
+        expression: '!request.userInfo.username.startsWith("arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.Alias}}-KRO-CapabilityRole/")'
+      - name: 'exclude-eks-ack-capability'
+        expression: '!request.userInfo.username.startsWith("arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.Alias}}-ACK-CapabilityRole/")'
+      {{- end }}
       - name: 'allow-api-monitoring-controller-access'
         expression: |
           !(
