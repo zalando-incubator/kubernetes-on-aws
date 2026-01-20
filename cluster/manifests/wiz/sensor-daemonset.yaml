@@ -6,8 +6,8 @@ kind: DaemonSet
 metadata:
   name: wiz-sensor
   labels:
-    helm.sh/chart: wiz-sensor-1.0.6440
-    image/tag: 1.0.6572
+    helm.sh/chart: wiz-sensor-1.0.8831
+    image/tag: v1
     application: "wiz"
     component: "sensor"
     daemonset: "wiz-sensor"
@@ -23,13 +23,12 @@ spec:
   template:
     metadata:
       labels:
-        helm.sh/chart: wiz-sensor-1.0.6440
-        image/tag: 1.0.6572
+        helm.sh/chart: wiz-sensor-1.0.8831
+        image/tag: v1
         application: "wiz"
         component: "sensor"
         daemonset: "wiz-sensor"
       annotations:
-        container.apparmor.security.beta.kubernetes.io/wiz-sensor: unconfined
         cluster-autoscaler.kubernetes.io/enable-ds-eviction: "true"
     spec:
       serviceAccountName: wiz-sensor
@@ -51,17 +50,8 @@ spec:
       restartPolicy: Always
       containers:
       - name: wiz-sensor
-        image: container-registry.zalando.net/secops-systems/wiz-sensor:1.0.6572-main-4
+        image: container-registry.zalando.net/secops-systems/wiz-sensor:1.0.8831-main-8
         imagePullPolicy: IfNotPresent
-        startupProbe:
-            exec:
-              command:
-              - "/usr/src/app/wiz-sensor"
-              - "version"
-            initialDelaySeconds: 15
-            periodSeconds: 60
-            timeoutSeconds: 30
-            failureThreshold: 5
         securityContext:
           capabilities:
             add:
@@ -84,6 +74,8 @@ spec:
           runAsUser: 2202
           runAsGroup: 2202
           readOnlyRootFilesystem: true
+          appArmorProfile:
+            type: Unconfined
           seccompProfile:
             type: Unconfined
           seLinuxOptions:
@@ -122,7 +114,7 @@ spec:
               fieldPath: metadata.namespace
         - name: MY_APIKEY_SECRET_NAME
           value: wiz-sensor-apikey
-        - name: AWS_EC2_METADATA_DISABLED
+        - name: AWS_EC2_METADATA_DISABLED # don't use AWS ISDS for IAM
           value: "true"
         - name: CRI_SOCKET_CUSTOM_PATH
           value: 
@@ -160,6 +152,12 @@ spec:
               divisor: "1m"
         - name: DISALLOW_RUNTIME_RESPONSE
           value: "true"
+        - name: HELM_CHART_VERSION
+          value: 1.0.8831
+        - name: ALLOW_KUBELET_COMMUNICATION
+          value: "false"
+        - name: FORCE_KUBELET_COMMUNICATION
+          value: "false"
         volumeMounts:
         - name: sensor-host-cache
           mountPath: /wiz-host-cache/
@@ -178,9 +176,7 @@ spec:
           requests:
             cpu: {{ .Cluster.ConfigItems.wiz_sensor_cpu }}
             memory: {{ .Cluster.ConfigItems.wiz_sensor_memory }} 
-      terminationGracePeriodSeconds: 90
-      # imagePullSecrets:
-      #   - name: wiz-sensor-imagepullkey
+      terminationGracePeriodSeconds: 25
       volumes:
       - name: sensor-host-cache
         hostPath:
@@ -188,7 +184,7 @@ spec:
           type: DirectoryOrCreate
       - name: api-client-secret
         secret:
-          secretName: wiz-sensor-apikey
+          secretName: custom-wiz-sensor-api-token
           items:
             - key: clientId
               path: clientId
@@ -196,7 +192,7 @@ spec:
               path: clientToken
       - name: api-endpoint-name-secret
         secret:
-          secretName: wiz-sensor-apikey
+          secretName: custom-wiz-sensor-api-token
           optional: true
           items:
             - key: clientEndpoint
