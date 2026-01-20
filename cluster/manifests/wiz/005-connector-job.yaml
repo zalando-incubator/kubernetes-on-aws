@@ -7,7 +7,7 @@ metadata:
   name: wiz-kubernetes-connector-create-connector
   namespace: "wiz"
   labels:
-    helm.sh/chart: wiz-kubernetes-connector-3.3.11
+    helm.sh/chart: wiz-kubernetes-connector-4.0.3
     application: "wiz"
     component: "connector"
     job: "wiz-connector-agent"
@@ -21,7 +21,7 @@ spec:
   template:
     metadata:
       labels: 
-        helm.sh/chart: wiz-kubernetes-connector-3.3.11
+        helm.sh/chart: wiz-kubernetes-connector-4.0.3
         application: "wiz"
         component: "connector"
         job: "wiz-connector-agent"
@@ -39,9 +39,14 @@ spec:
         - name: wiz-connector-creator
           securityContext:
             allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 10000
             runAsNonRoot: true
-            runAsUser: 1000
-          image: "container-registry.zalando.net/secops-systems/wiz-broker:2.7-main-4"
+            runAsUser: 10000
+          image: "container-registry.zalando.net/secops-systems/wiz-broker:3.0.3-main-8"
           imagePullPolicy: IfNotPresent
           command:
             - "wiz-broker"
@@ -68,6 +73,10 @@ spec:
             value: info
           - name: WIZ_ENV
             value: 
+          - name: WIZ_USE_HATUNNEL
+            value: "1"
+          - name: WIZ_BROKER_HEARTBEAT_DISABLE_CLUSTER_ID
+            value: "1"
           resources:
             limits:
               cpu: {{ .Cluster.ConfigItems.wiz_connector_cpu }} 
