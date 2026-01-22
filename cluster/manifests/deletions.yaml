@@ -16,6 +16,10 @@ post_apply:
 - name: fis-experiment
   kind: ClusterRole
 {{- end }}
+{{- if ne .Cluster.ConfigItems.eks_efs_filesystem_deployed "true" }}
+- name: efs-sc
+  kind: StorageClass
+{{- end }}
 {{- end }}
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
