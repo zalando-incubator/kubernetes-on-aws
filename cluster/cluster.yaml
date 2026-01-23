@@ -637,7 +637,6 @@ Resources:
       Path: /
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AmazonEFSCSIDriverPolicy
-{{- if eq .Cluster.ConfigItems.eks_efs_filesystem_deployed "true" }}
   EFSFileSystem:
     Type: AWS::EFS::FileSystem
     Properties:
@@ -656,7 +655,6 @@ Resources:
       - !Ref EKSWorkerSecurityGroup
   {{ end }}
   {{ end }}
-{{- end }}
 {{- end }}
   EKSZalandoIAMProxyIAMRole:
     Type: AWS::IAM::Role
@@ -4007,7 +4005,7 @@ Outputs:
   #   Export:
   #     Name: "{{.Cluster.ID}}:eks-certificate-authority-data"
   #   Value: !GetAtt EKSCluster.CertificateAuthorityData
-  {{- if eq .Cluster.ConfigItems.eks_efs_filesystem_deployed "true" }}
+  {{- if eq .Cluster.ConfigItems.eks_efs_csi_support_enabled "true" }}
   EFSFileSystemID:
     Export:
       Name: '{{ .Cluster.ID}}:efs-filesystem-id'
