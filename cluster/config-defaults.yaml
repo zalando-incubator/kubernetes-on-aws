@@ -224,6 +224,10 @@ datadome_api_key: ""
 ## kasada poc
 kasada_api_key: ""
 
+# skipper request and response size buckets
+skipper_ingress_response_size_buckets: ""
+skipper_ingress_request_size_buckets: ""
+
 #
 # skipper routesrv settings
 #
@@ -1313,9 +1317,15 @@ wiz_enable_runtime_connector_broker: "false"
 wiz_enable_runtime_connector: "true"
 wiz_enable_runtime_connector_broker: "true"
 {{ end }}
+{{if eq .Cluster.Environment "e2e"}}
+wiz_enable_runtime_sensor: "true"
+wiz_sensor_cpu: "200m"
+wiz_sensor_memory: "300Mi"
+{{ else }}
 wiz_enable_runtime_sensor: "false"
 wiz_sensor_cpu: "200m"
 wiz_sensor_memory: "300Mi"
+{{ end }}
 wiz_connector_cpu: "50m"
 wiz_connector_memory: "150Mi"
 wiz_priority: "true"
@@ -1334,7 +1344,12 @@ eks_zalando_iam_aws_proxy_hpa_cpu_target: "80"
 eks_zalando_iam_aws_proxy_hpa_memory_target: "80"
 eks_okta_identity_provider: "true"
 eks_fis_support_enabled: "false"
+{{ if eq .Cluster.Environment "e2e" }}
+# Enables the Amazon EFS CSI driver addon and sets up the default EFS
+eks_efs_csi_support_enabled: "true"
+{{ else }}
 eks_efs_csi_support_enabled: "false"
+{{ end }}
 
 # prefix delegation can only be configured for ipv4. For ipv6 it can only be true.
 aws_vpc_cni_prefix_delegation: "false"
@@ -1350,6 +1365,7 @@ aws_vpc_cni_network_policy_enforcing_mode: "standard"
 # aws-load-balancer-controller resource settings
 aws_load_balancer_controller_cpu: "100m"
 aws_load_balancer_controller_mem_max: "4Gi"
+aws_load_balancer_controller_default_target_type: "instance"
 
 # configure if sandbox-controller should be deployed
 sandbox_controller_enabled: "false"
