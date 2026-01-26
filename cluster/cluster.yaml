@@ -637,6 +637,24 @@ Resources:
       Path: /
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AmazonEFSCSIDriverPolicy
+  EFSFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      FileSystemTags:
+      - Key: Name
+        Value: "Default EFS for {{.Cluster.Alias}}"
+  {{ with $values := .Values }}
+  {{ range $index, $az := $values.availability_zones }}
+  EFSMountTargetZone{{$index}}:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SubnetId: "{{ index $values.subnets $az }}"
+      SecurityGroups:
+      - !Ref EKSWorkerSecurityGroup
+  {{ end }}
+  {{ end }}
 {{- end }}
   EKSZalandoIAMProxyIAMRole:
     Type: AWS::IAM::Role
@@ -1149,6 +1167,10 @@ Resources:
                 Effect: Allow
                 Resource: '*'
               - Action: 'ec2:DetachVolume'
+                Effect: Allow
+                Resource: '*'
+              # Required by AWS EFS CSI Driver
+              - Action: 'elasticfilesystem:DescribeMountTargets'
                 Effect: Allow
                 Resource: '*'
               - Action: 'kms:Decrypt'
@@ -3983,6 +4005,12 @@ Outputs:
   #   Export:
   #     Name: "{{.Cluster.ID}}:eks-certificate-authority-data"
   #   Value: !GetAtt EKSCluster.CertificateAuthorityData
+  {{- if eq .Cluster.ConfigItems.eks_efs_csi_support_enabled "true" }}
+  EFSFileSystemID:
+    Export:
+      Name: '{{ .Cluster.ID}}:efs-filesystem-id'
+    Value: !Ref EFSFileSystem
+  {{- end}}
 {{- else }}
   MasterIAMRole:
     Export:
