@@ -124,7 +124,7 @@ EOFF
     - "m6g.large"
     - "m7g.large"
     min_size: 0
-    max_size: 9
+    max_size: 18
     profile: worker-splitaz
     name: skipper-ingress-node
     config_items:
