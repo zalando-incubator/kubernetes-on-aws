@@ -38,7 +38,7 @@ clusters:
     routegroups_validation: "enabled"
     stackset_routegroup_support_enabled: "true"
     stackset_ingress_source_switch_ttl: "1m"
-    teapot_admission_controller_daemonset_reserved_cpu: "518m"
+    teapot_admission_controller_daemonset_reserved_cpu: "718m"
     okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
     teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
     eks_okta_identity_provider: "false" # disabled to speed up EKS cluster creation for e2e.
@@ -124,7 +124,7 @@ EOFF
     - "m6g.large"
     - "m7g.large"
     min_size: 0
-    max_size: 9
+    max_size: 18
     profile: worker-splitaz
     name: skipper-ingress-node
     config_items:
