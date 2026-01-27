@@ -92,6 +92,56 @@ spec:
               component: ingress
               application: skipper-ingress
 {{- end }}
+{{ if eq .Cluster.ConfigItems.skipper_karpenter_node_pools_enabled "false" }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: zalando.org/ingress-karpenter-managed
+                operator: DoesNotExist
+{{ else }}
+      affinity:
+       podAntiAffinity:
+         requiredDuringSchedulingIgnoredDuringExecution:
+         - labelSelector:
+             matchExpressions:
+             - key: application
+               operator: In
+               values:
+               - skipper-ingress
+             - key: component
+               operator: In
+               values:
+               - ingress
+           topologyKey: kubernetes.io/hostname
+       nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values:
+                - c7g.large
+                - c7g.xlarge
+                - c7g.2xlarge
+                - c7g.4xlarge
+                - c7g.8xlarge
+                - m7g.large
+          - weight: 50
+            preference:
+              matchExpressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values:
+                - c6g.large
+                - c6g.xlarge
+                - c6g.2xlarge
+                - c6g.4xlarge
+                - c6g.8xlarge
+                - m6g.large
+{{ end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
       terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
@@ -480,6 +530,9 @@ spec:
 {{ if eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true"}}
       nodeSelector:
         dedicated: skipper-ingress
+{{- if eq .Cluster.ConfigItems.skipper_karpenter_node_pools_enabled "true" }}
+        zalando.org/ingress-karpenter-managed: "true"
+{{- end }}
       tolerations:
       - effect: NoSchedule
         key: dedicated
