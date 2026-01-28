@@ -4,7 +4,7 @@
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.5-1333" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
-{{ $canary_args := print "-enable-kubernetes-external-names=" .Cluster.ConfigItems.skipper_externalname_service_enabled "[cf724afc]-enable-lua=" .Cluster.ConfigItems.skipper_lua_scripts_enabled  }}
+{{ $canary_args := "-enable-kubernetes-external-names={{ .Cluster.ConfigItems.skipper_externalname_service_enabled }}[cf724afc]-enable-lua={{ .Cluster.ConfigItems.skipper_lua_scripts_enabled }}" }}
 
 {{ $cluster_internal_cidrs := list "10.2.0.0/15" .Values.vpc_ipv4_cidr }}
 {{ if eq .Cluster.Provider "zalando-eks" }}
