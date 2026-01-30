@@ -90,7 +90,7 @@ spec:
             sleep:
               seconds: 10
       - name: skipper-admission-webhook
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.211
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.24.6
         env:
 {{ if or (eq .Cluster.ConfigItems.skipper_local_tokeninfo "production") (eq .Cluster.ConfigItems.skipper_local_tokeninfo "bridge") }}
         - name: LOCAL_TOKENINFO
@@ -196,6 +196,8 @@ spec:
           - "-open-policy-agent-envoy-metadata=/etc/skipper/open-policy-agent/envoymetadata.json"
           - "-enable-open-policy-agent-data-preprocessing-optimization={{ .Cluster.ConfigItems.skipper_open_policy_agent_data_preprocessing_optimization_enabled }}"
           - "-enable-open-policy-agent-preloading={{ .Cluster.ConfigItems.skipper_open_policy_agent_preloading_enabled }}"
+          - "-enable-lua=true"
+          - "-enable-kubernetes-external-names={{ .Cluster.ConfigItems.skipper_externalname_service_enabled }}"
 {{ end }}
         lifecycle:
           preStop:

@@ -6,6 +6,15 @@ metadata:
   labels:
     application: skipper-ingress
     component: webhook
+# {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "true" }}
+  # Note: if the role extends beyond OPA use, this condition can be removed
+  annotations:
+    # {{- if eq .Cluster.Provider "zalando-eks" }}
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccountID}}:role/{{ .Cluster.LocalID }}-app-skipper-validation-webhook"
+    # {{- else}}
+    iam.amazonaws.com/role: "{{ .Cluster.LocalID }}-app-skipper-validation-webhook"
+    # {{- end}}
+# {{ end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
