@@ -384,3 +384,27 @@ post_apply:
 - name: verticalpodautoscalers.zalando.org
   kind: CustomResourceDefinition
 {{- end}}
+{{ if not (index .Cluster.ConfigItems "efs_id") }}
+- name: efs-provisioner
+  kind: Deployment
+  namespace: kube-system
+- name: efs-provisioner
+  kind: ConfigMap
+  namespace: kube-system
+- name: efs-provisioner
+  kind: ServiceAccount
+  namespace: kube-system
+- name: efs-provisioner-runner
+  kind: ClusterRole
+- name: leader-locking-efs-provisioner
+  kind: Role
+  namespace: kube-system
+- name: leader-locking-efs-provisioner
+  kind: RoleBinding
+  namespace: kube-system
+- name: efs-provisioner-privileged-psp
+  kind: RoleBinding
+  namespace: kube-system
+- name: aws-efs
+  kind: StorageClass
+{{ end }}
