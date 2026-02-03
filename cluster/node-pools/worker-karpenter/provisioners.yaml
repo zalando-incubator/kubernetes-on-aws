@@ -192,6 +192,12 @@ spec:
 #    {{ end}}
 #  {{ end}}
 #{{ end}}
+#{{ if eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule" }}
+        - key: zalando.org/ingress-karpenter-managed
+          operator: In
+          values:
+            - "true"
+#{{ end }}
 
 #{{ if (eq .NodePool.KarpenterInstanceTypeStrategy "default-for-karpenter" )  }}
         - key: "karpenter.k8s.aws/instance-family"
