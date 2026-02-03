@@ -16,6 +16,10 @@ post_apply:
 - name: fis-experiment
   kind: ClusterRole
 {{- end }}
+{{- if ne .Cluster.ConfigItems.eks_efs_csi_support_enabled "true" }}
+- name: efs-sc
+  kind: StorageClass
+{{- end }}
 {{- end }}
 {{ if eq .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
 - name: limits
@@ -62,21 +66,6 @@ post_apply:
 - name: kube-downscaler
   namespace: kube-system
   kind: VerticalPodAutoscaler
-{{ end }}
-{{ if ne .Cluster.ConfigItems.spot_node_rescheduler "true" }}
-- name: node-spot-rescheduler
-  namespace: kube-system
-  kind: CronJob
-- name: spot-node-rescheduler
-  namespace: kube-system
-  kind: CronJob
-- name: spot-node-rescheduler
-  namespace: kube-system
-  kind: ServiceAccount
-- name: spot-node-rescheduler
-  kind: ClusterRole
-- name: spot-node-rescheduler
-  kind: ClusterRoleBinding
 {{ end }}
 
 {{ if ne .Cluster.ConfigItems.skipper_ingress_canary_enabled "true" }}
@@ -381,11 +370,41 @@ post_apply:
   kind: ServiceAccount
   namespace: kube-system
 {{- end}}
-{{- if eq .Cluster.Provider "zalando-eks"}}
-{{- if ne .Cluster.ConfigItems.aws_vpc_cni_custom_networking "true"}}
-- kind: ENIConfig
-  labels:
-    application: kubernetes
-    component: aws-node
-{{- end }}
-{{- end }}
+{{- if ne .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true"}}
+- name: scheduled-scaling-vpa
+  kind: CronJob
+  namespace: kube-system
+- name: scheduled-scaling-vpa
+  kind: ClusterRole
+- name: scheduled-scaling-vpa
+  kind: ClusterRoleBinding
+- name: scheduled-scaling-vpa
+  kind: ServiceAccount
+  namespace: kube-system
+- name: verticalpodautoscalers.zalando.org
+  kind: CustomResourceDefinition
+{{- end}}
+{{ if not (index .Cluster.ConfigItems "efs_id") }}
+- name: efs-provisioner
+  kind: Deployment
+  namespace: kube-system
+- name: efs-provisioner
+  kind: ConfigMap
+  namespace: kube-system
+- name: efs-provisioner
+  kind: ServiceAccount
+  namespace: kube-system
+- name: efs-provisioner-runner
+  kind: ClusterRole
+- name: leader-locking-efs-provisioner
+  kind: Role
+  namespace: kube-system
+- name: leader-locking-efs-provisioner
+  kind: RoleBinding
+  namespace: kube-system
+- name: efs-provisioner-privileged-psp
+  kind: RoleBinding
+  namespace: kube-system
+- name: aws-efs
+  kind: StorageClass
+{{ end }}

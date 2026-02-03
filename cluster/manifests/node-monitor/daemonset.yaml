@@ -30,7 +30,7 @@ spec:
       priorityClassName: system-node-critical
       serviceAccountName: node-monitor
       containers:
-        - image: container-registry.zalando.net/teapot/prometheus-node-exporter:v1.9.1-master-25
+        - image: container-registry.zalando.net/teapot/prometheus-node-exporter:v1.10.2-master-26
           args:
 {{- if eq .Cluster.ConfigItems.node_exporter_experimental_metrics "true" }}
             - --collector.ethtool
@@ -42,7 +42,7 @@ spec:
             - --no-collector.wifi
             - --no-collector.hwmon
             - --no-collector.btrfs
-            - --collector.filesystem.mount-points-exclude=^/(dev|proc|run|sys|host|var/lib/lxcfs|opt/podruntime/containerd/.+|opt/podruntime/kubelet/.+)($|/)
+            - --collector.filesystem.mount-points-exclude=^/(dev|proc|run|sys|host|var/lib/lxcfs|opt/podruntime/containerd/.+|opt/podruntime/kubelet/.+|var/lib/kubelet/.+)($|/)
             - --collector.netdev.device-exclude=^veth.*$
             - --collector.netclass.ignored-devices=^veth.*$
           name: prometheus-node-exporter

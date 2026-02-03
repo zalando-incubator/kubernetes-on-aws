@@ -51,7 +51,7 @@ spec:
             capabilities:
               drop:
                 - ALL
-          image: "container-registry.zalando.net/teapot/karpenter:1.7.1-main-42.patched"
+          image: "container-registry.zalando.net/teapot/karpenter:1.8.2-main-47.patched"
           imagePullPolicy: IfNotPresent
           env:
             - name: KUBERNETES_MIN_VERSION
@@ -95,7 +95,7 @@ spec:
                   divisor: "0"
                   resource: limits.memory
             - name: FEATURE_GATES
-              value: "ReservedCapacity=false,SpotToSpotConsolidation=true,NodeRepair=false,NodeOverlay=false"
+              value: "ReservedCapacity=true,SpotToSpotConsolidation=true,NodeRepair=false,NodeOverlay=false,StaticCapacity=false"
             - name: BATCH_MAX_DURATION
               value: "10s"
             - name: BATCH_IDLE_DURATION
@@ -110,6 +110,8 @@ spec:
               value: "0.075"
             - name: RESERVED_ENIS
               value: "0"
+            - name: IGNORE_DRA_REQUESTS
+              value: "true"
             {{ $pod_cidr_size := "15" }}
             - name: MAX_NODE_CLAIMS
               value: "{{ nodeCIDRMaxNodesPodCIDR (parseInt64 $pod_cidr_size) (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}"
@@ -147,6 +149,15 @@ spec:
                 matchExpressions:
                 - key: karpenter.sh/nodepool
                   operator: DoesNotExist
+{{- if eq .Cluster.Provider "zalando-eks"}}
+            - weight: 100
+              preference:
+                matchExpressions:
+                - key: dedicated
+                  operator: In
+                  values:
+                  - cluster-seed
+{{- else }}
             - weight: 100
               preference:
                 matchExpressions:
@@ -154,6 +165,7 @@ spec:
                   operator: In
                   values:
                   - master
+{{- end }}
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:

@@ -19,7 +19,6 @@ write_files:
       # https://github.com/kubernetes/kubernetes/blob/v1.30.0/staging/src/k8s.io/kubelet/config/v1beta1/types.go
       apiVersion: kubelet.config.k8s.io/v1beta1
       kind: KubeletConfiguration
-      cgroupDriver: systemd
       containerLogMaxSize: "50Mi"
       containerLogMaxFiles: 2
       staticPodPath: "/etc/kubernetes/manifests"
@@ -105,6 +104,9 @@ write_files:
           kubernetes-log-watcher/scalyr-parser: |
             [{"container": "webhook", "parser": "json-structured-log"}]
           logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+          prometheus.io/path: /metrics
+          prometheus.io/port: "9981"
+          prometheus.io/scrape: "true"
       spec:
         priorityClassName: system-node-critical
         tolerations:
@@ -155,7 +157,7 @@ write_files:
           - "--oidc-username-prefix=okta:"
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
-          - --feature-gates=HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }},MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}},KMSv1=true{{if eq .Cluster.ConfigItems.enable_image_volumes "true"}},ImageVolume=true{{end}}{{if eq .Cluster.ConfigItems.horizontal_pod_autoscaler_configurable_tolerance "true"}},HPAConfigurableTolerance=true{{end}}
+          - --feature-gates=HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}},KMSv1=true{{if eq .Cluster.ConfigItems.enable_image_volumes "true"}},ImageVolume=true{{end}}{{if eq .Cluster.ConfigItems.horizontal_pod_autoscaler_configurable_tolerance "true"}},HPAConfigurableTolerance=true{{end}}
           - --service-account-key-file=/etc/kubernetes/ssl/service-account-public-key.pem
           - --service-account-signing-key-file=/etc/kubernetes/ssl/service-account-private-key.pem
           - --service-account-issuer={{ .Cluster.APIServerURL }}
@@ -219,7 +221,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-284
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-293
           name: admission-controller
           lifecycle:
             preStop:
@@ -259,35 +261,7 @@ write_files:
             - mountPath: /etc/kubernetes/admission-controller-kubeconfig
               name: admission-controller-kubeconfig
               readOnly: true
-        - name: skipper-admission-webhook
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.127
-          args:
-            - webhook
-            - --address=:9085
-            - --tls-cert-file=/etc/kubernetes/ssl/admission-controller.pem
-            - --tls-key-file=/etc/kubernetes/ssl/admission-controller-key.pem
-          lifecycle:
-            preStop:
-              sleep:
-                seconds: 60
-          readinessProbe:
-            httpGet:
-              scheme: HTTPS
-              path: /healthz
-              port: 9085
-            initialDelaySeconds: 5
-            timeoutSeconds: 5
-          resources:
-            requests:
-              cpu: 30m
-              memory: 100Mi
-          ports:
-            - containerPort: 9085
-          volumeMounts:
-            - mountPath: /etc/kubernetes/ssl
-              name: ssl-certs-kubernetes
-              readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-152
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-166
           name: webhook
           ports:
           - containerPort: 8081
@@ -437,7 +411,7 @@ write_files:
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
         - name: skipper-proxy
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.127
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.24.6
           args:
           - skipper
           - -access-log-strip-query
@@ -488,7 +462,7 @@ write_files:
             name: ssl-certs-kubernetes
             readOnly: true
         - name: skipper-metrics
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.22.127
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.24.6
           args:
           - skipper
           - -access-log-strip-query
@@ -509,10 +483,6 @@ write_files:
               -> disableAccessLog()
               -> setPath("/metrics")
               -> "http://127.0.0.1:8081";
-            skipper_admission_webhook: Path("/skipper-admission-webhook")
-              -> disableAccessLog()
-              -> setPath("/metrics")
-              -> "https://127.0.0.1:9085";
             aws_encryption_provider: Path("/aws-encryption-provider")
               -> disableAccessLog()
               -> setPath("/metrics")
@@ -620,7 +590,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=external
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=StatefulSetAutoDeletePVC={{ .Cluster.ConfigItems.enable_statefulset_autodelete_pvc }},MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}}{{if eq .Cluster.ConfigItems.enable_image_volumes "true"}},ImageVolume=true{{end}}{{if eq .Cluster.ConfigItems.horizontal_pod_autoscaler_configurable_tolerance "true"}},HPAConfigurableTolerance=true{{end}}
+          - --feature-gates=MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}}{{if eq .Cluster.ConfigItems.enable_image_volumes "true"}},ImageVolume=true{{end}}{{if eq .Cluster.ConfigItems.horizontal_pod_autoscaler_configurable_tolerance "true"}},HPAConfigurableTolerance=true{{end}}
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
           - --allocate-node-cidrs=true

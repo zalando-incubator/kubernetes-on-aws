@@ -1,0 +1,37 @@
+{{- if eq .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true" }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scheduled-scaling-vpa
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: scheduled-scaling-vpa
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 30
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      labels:
+        application: kubernetes
+        component: scheduled-scaling-vpa
+    spec:
+      activeDeadlineSeconds: 30
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            application: kubernetes
+            component: scheduled-scaling-vpa
+          annotations:
+            logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        spec:
+          serviceAccountName: scheduled-scaling-vpa
+          restartPolicy: Never
+          containers:
+          - name: main
+            image: container-registry.zalando.net/cloud-platform/scheduled-scaling-vpa:main-2
+{{- end }}

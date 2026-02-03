@@ -20,14 +20,10 @@ webhooks:
           values:
           - kube-system
     clientConfig:
-      # {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "skipper-validation-webhook"
         namespace: "kube-system"
         path: "/routegroups"
-      # {{- else }}
-      url: "https://localhost:9085/routegroups"
-      # {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1"]
     sideEffects: None
@@ -47,14 +43,10 @@ webhooks:
           values:
           - kube-system
     clientConfig:
-      # {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
         name: "skipper-validation-webhook"
         namespace: "kube-system"
         path: "/ingresses"
-      # {{- else }}
-      url: "https://localhost:9085/ingresses"
-      # {{- end }}
       caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
     admissionReviewVersions: ["v1"]
     sideEffects: None

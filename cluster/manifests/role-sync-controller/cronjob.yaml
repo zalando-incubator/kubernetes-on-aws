@@ -33,12 +33,13 @@ spec:
           restartPolicy: Never
           containers:
           - name: role-sync-controller
-            image: container-registry.zalando.net/teapot/role-sync-controller:main-14
+            image: container-registry.zalando.net/teapot/role-sync-controller:main-17
             args:
               - --subject-group=PowerUser
               - --subject-group=Manual
               - --subject-group=Emergency
               - --subject-group=okta:common/engineer
+              - --subject-group=zalando:engineer
               - --subject-serviceaccount=default/cdp
               - --subject-user=zalando-iam:zalando:service:k8sapi-local_deployment-service-executor
               {{- if eq .Cluster.Environment "test"}}

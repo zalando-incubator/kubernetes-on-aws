@@ -64,8 +64,6 @@ kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06
 kube_aws_ingress_controller_idle_timeout: "1m"
 kube_aws_ingress_controller_deregistration_delay_timeout: "10s"
 # allow using NLBs for ingress
-# This opens skipper-ingress ports 9998 and 9999 on all worker nodes
-kube_aws_ingress_controller_nlb_enabled: "true"
 kube_aws_ingress_controller_nlb_cross_zone: "true"
 kube_aws_ingress_controller_nlb_zone_affinity: "any_availability_zone"
 kube_aws_ingress_controller_cert_polling_interval: "2m"
@@ -103,6 +101,8 @@ skipper_ingress_memory: "1500Mi"
 skipper_topology_spread_enabled: "true"
 skipper_topology_spread_timeout: "7m"
 
+skipper_copy_stream_pool_enabled: "true"
+
 # PHC
 skipper_ingress_health_check_options: "period=10s,min-requests=10,min-drop-probability=0.05,max-drop-probability=0.9,max-unhealthy-endpoints-ratio=0.9"
 
@@ -128,6 +128,7 @@ worker_sg_legacy_cluster: ""
 # skipper node-pool
 enable_dedicate_nodepool_skipper: "true"
 skipper_attach_only_to_skipper_node_pool: "true"
+skipper_karpenter_node_pools_enabled: "true"
 
 skipper_suppress_route_update_logs: "true"
 skipper_validate_query: "true"
@@ -143,6 +144,7 @@ skipper_edit_route_placeholders: ""
 skipper_ingress_inline_routes: ""
 skipper_ingress_refuse_payload: ""
 skipper_endpointslices_enabled: "true"
+skipper_externalname_service_enabled: "true"
 
 skipper_kubernetes_annotation_predicates: ''
 skipper_kubernetes_annotation_filters_append: ''
@@ -218,11 +220,15 @@ skipper_ingress_redis_hpa_scale_down_wait: "600"
 skipper_cluster_ratelimit_max_group_shards: 1
 
 # webhook protection poc
-skipper_lua_scripts_enabled: ""
+skipper_lua_scripts_enabled: "false"
 ## datadome poc
 datadome_api_key: ""
 ## kasada poc
 kasada_api_key: ""
+
+# skipper request and response size buckets
+skipper_ingress_response_size_buckets: ""
+skipper_ingress_request_size_buckets: ""
 
 #
 # skipper routesrv settings
@@ -233,12 +239,11 @@ kasada_api_key: ""
 # - "exec" - routesrv is deployed, skipper uses routesrv
 skipper_routesrv_enabled: "exec"
 skipper_routesrv_memory: "1Gi"
+skipper_routesrv_min_replicas: 2
 {{if eq .Cluster.Environment "production"}}
 skipper_routesrv_cpu: "1000m"
-skipper_routesrv_min_replicas: 2
 {{else}}
 skipper_routesrv_cpu: "100m"
-skipper_routesrv_min_replicas: 1
 {{end}}
 
 skipper_routesrv_node_affinity_enabled: "false"
@@ -337,6 +342,12 @@ skipper_combined_response_metrics: "false"
 # It enables reporting total serve time metrics for backend
 skipper_backend_host_metrics: "false"
 
+#
+# skipper-ingress validation webhook
+#
+skipper_webhook_cpu: 100m
+skipper_webhook_memory: 500Mi
+
 # disabled|provisioned|enabled routegroup validation via skipper webhook
 # can be one of disabled|provisioned|enabled
 routegroups_validation: "enabled"
@@ -344,6 +355,11 @@ routegroups_validation: "enabled"
 # disabled|enabled ingress validation via skipper webhook
 ingresses_validation: "enabled"
 
+enable_advanced_validation: "false"
+
+#
+# skipper-ingress ingress tokeninfo
+#
 # tokeninfo
 {{if eq .Cluster.Environment "production"}}
 # production|bridge|disabled
@@ -359,6 +375,9 @@ skipper_tokeninfo_cache_size: 1000
 # duration, non-zero value limits the lifetime of a cached tokeninfo
 skipper_tokeninfo_cache_ttl: "30s"
 
+#
+# skipper-ingress ingress OAuth2 grant flow
+#
 # oauth2 UI login - grant flow
 {{if eq .Cluster.Environment "e2e"}}
 skipper_oauth2_ui_login: "false"
@@ -370,6 +389,10 @@ skipper_oauth2_ui_login: "true"
 # Comma-separated list of tokeninfo keys to retain
 skipper_oauth2_ui_login_tokeninfo_keys: ""
 
+#
+# skipper-ingress cronjobs to create platformcredentialsset per application
+# for OAuth2 grant flow integration
+#
 skipper_hostname_credentials_controller_cpu: 10m
 skipper_hostname_credentials_controller_memory: 50Mi
 
@@ -404,6 +427,11 @@ skipper_open_policy_agent_styra_response_header_timeout: "2"
 skipper_open_policy_agent_decision_logs_buffer_type_event_enable: "false"
 # Decision logging sets the maximum number of decision log events that can be buffered before being dropped
 skipper_open_policy_agent_decision_logs_buffer_type_event_limit: "10000"
+
+# Open Policy Agent JWT cache configuration
+skipper_open_policy_agent_jwt_cache_enable: "true"
+# Sets default value for maximum number of entries in the Open Policy Agent JWT cache
+skipper_open_policy_agent_jwt_cache_max_num_entries: "1000"
 
 #
 # FabricGateway controller config
@@ -485,10 +513,10 @@ aws_efa_device_plugin_cpu: "10m"
 aws_efa_device_plugin_memory: "20Mi"
 
 # static egress controller settings
-{{- if eq .Cluster.Provider "zalando-eks" }}
-static_egress_controller_enabled: "false"
-{{- else }}
+{{- if .Cluster.IsOldestReadyClusterInTheRegion }}
 static_egress_controller_enabled: "true"
+{{- else }}
+static_egress_controller_enabled: "false"
 {{- end }}
 
 # journald reader settings
@@ -529,6 +557,13 @@ prometheus_remote_max_backoff: "10s"
 
 # Comma-separated list of user ids allowed to access Prometheus UI
 prometheus_ui_users: ""
+
+# Scheduled scaling events for Prometheus VPA (in the format
+# <name>:<pre-start-min>:<cpu>:<memory>, multiple events separated by commas)
+prometheus_scheduled_scaling_events: ""
+
+# Enable scheduled scaling for VPA
+scheduled_scaling_vpa_enabled: "false"
 
 metrics_service_cpu: "100m"
 metrics_service_mem_max: "4Gi"
@@ -714,10 +749,6 @@ teapot_admission_controller_runtime_policy_default: "allow-spot"
 teapot_admission_controller_runtime_policy_enforced: ""
 # Enable hard spot assignment. Only relevant when node_lifecycle_provider=zalando
 teapot_admission_controller_runtime_policy_spot_hard_assignment: "false"
-# Enable experimental rescheduling of spot nodes after spot decommission
-spot_node_rescheduler: "false"
-spot_node_rescheduler_memory: "348Mi"
-spot_node_rescheduler_cpu: "50m"
 
 # Enable and configure prevent scale down annotation
 teapot_admission_controller_prevent_scale_down_enabled: "true"
@@ -810,8 +841,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_33_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.33.4-amd64-master-378" "861068367966" }}
-kuberuntu_image_v1_33_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.33.4-arm64-master-378" "861068367966" }}
+kuberuntu_image_v1_34_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.34.3-amd64-master-386" "861068367966" }}
+kuberuntu_image_v1_34_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.34.3-arm64-master-386" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
@@ -1127,10 +1158,6 @@ enable_size_memory_backed_volumes: "true"
 # enable ImageVolume feature flag
 enable_image_volumes: "false"
 
-# enable StatefulSetAutoDeletePVC feature flag
-# https://kubernetes.io/blog/2021/12/16/kubernetes-1-23-statefulset-pvc-auto-deletion/
-enable_statefulset_autodelete_pvc: "true"
-
 # Allow configuring ingress rules on the Worker security group. This is used for
 # cases where a service needs a Service Type Load Balancer with an NLB and
 # require the port and optional CIDR range to be added to the worker node
@@ -1292,9 +1319,15 @@ wiz_enable_runtime_connector_broker: "false"
 wiz_enable_runtime_connector: "true"
 wiz_enable_runtime_connector_broker: "true"
 {{ end }}
+{{if eq .Cluster.Environment "e2e"}}
+wiz_enable_runtime_sensor: "true"
+wiz_sensor_cpu: "200m"
+wiz_sensor_memory: "300Mi"
+{{ else }}
 wiz_enable_runtime_sensor: "false"
 wiz_sensor_cpu: "200m"
 wiz_sensor_memory: "300Mi"
+{{ end }}
 wiz_connector_cpu: "50m"
 wiz_connector_memory: "150Mi"
 wiz_priority: "true"
@@ -1302,6 +1335,8 @@ wiz_priority: "true"
 # to deploy the sensor and connector on specific nodes, by manually setting the node selector label on the nodes.
 # This is useful when you want to deploy the sensor and connector on specific nodes.
 wiz_node_feature_rollout : "false"
+# Enable runtime sensor response capabilities such as KILL
+wiz_enable_runtime_sensor_response_capabilities: "false"
 
 # EKS specific configuration
 eks_control_plane_logging: "true"
@@ -1313,6 +1348,12 @@ eks_zalando_iam_aws_proxy_hpa_cpu_target: "80"
 eks_zalando_iam_aws_proxy_hpa_memory_target: "80"
 eks_okta_identity_provider: "true"
 eks_fis_support_enabled: "false"
+{{ if eq .Cluster.Environment "e2e" }}
+# Enables the Amazon EFS CSI driver addon and sets up the default EFS
+eks_efs_csi_support_enabled: "true"
+{{ else }}
+eks_efs_csi_support_enabled: "false"
+{{ end }}
 
 # prefix delegation can only be configured for ipv4. For ipv6 it can only be true.
 aws_vpc_cni_prefix_delegation: "false"
@@ -1328,6 +1369,7 @@ aws_vpc_cni_network_policy_enforcing_mode: "standard"
 # aws-load-balancer-controller resource settings
 aws_load_balancer_controller_cpu: "100m"
 aws_load_balancer_controller_mem_max: "4Gi"
+aws_load_balancer_controller_default_target_type: "instance"
 
 # configure if sandbox-controller should be deployed
 sandbox_controller_enabled: "false"

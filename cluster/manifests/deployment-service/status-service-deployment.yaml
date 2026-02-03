@@ -1,4 +1,4 @@
-# {{ $image   := "container-registry.zalando.net/teapot/deployment-status-service:master-275" }}
+# {{ $image   := "container-registry.zalando.net/teapot/deployment-status-service:master-291" }}
 # {{ $version := index (split $image ":") 1 }}
 
 apiVersion: apps/v1
@@ -26,6 +26,7 @@ spec:
         prometheus.io/port: "9090"
         prometheus.io/scrape: "true"
         config/hash: '{{"01-config.yaml" | manifestHash}}'
+        zalando.org/topology-spread: 'true'
     spec:
       serviceAccountName: "deployment-service-status-service"
       containers:

@@ -28,6 +28,9 @@ webhooks:
         - key: application
           operator: NotIn
           values: ["kube-ingress-aws-controller"]
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values: ["aws-efs-csi-driver"]
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
@@ -71,6 +74,9 @@ webhooks:
         - key: application
           operator: NotIn
           values: ["kube-ingress-aws-controller"]
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values: ["aws-efs-csi-driver"]
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
@@ -146,6 +152,9 @@ webhooks:
         - key: eks.amazonaws.com/component
           operator: NotIn
           values: ["kube-proxy"]
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values: ["aws-node"]
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
@@ -254,6 +263,12 @@ webhooks:
         apiVersions: ["v1"]
         resources: ["statefulsets"]
   - name: crd-admitter.teapot.zalan.do
+{{- if eq .Cluster.Provider "zalando-eks"}}
+    # avoid admission-control applying to eks managed addon resources
+    matchConditions:
+    - name: "exclude-by-name"
+      expression: "oldObject == null || oldObject.metadata.name != 'eniconfigs.crd.k8s.amazonaws.com'"
+{{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
       service:
@@ -341,7 +356,10 @@ webhooks:
           values: ["admission-controller", "aws-node", "coredns"]
         - key: k8s-app
           operator: NotIn
-          values: ["kube-proxy"]
+          values: ["kube-proxy", "aws-node"]
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values: ["aws-efs-csi-driver"]
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
@@ -377,6 +395,9 @@ webhooks:
         - key: app.kubernetes.io/name
           operator: NotIn
           values: ["eks-pod-identity-agent"]
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values: ["aws-efs-csi-driver"]
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
@@ -624,6 +645,13 @@ webhooks:
         expression: '!(request.userInfo.username in ["system:kube-controller-manager", "system:kube-scheduler", "zalando-iam:zalando:service:k8sapi_credentials-provider"])'
       - name: 'exclude-eks-components'
         expression: '!request.userInfo.username.startsWith("eks:")'
+      # Restricted to cloud-euc1-test until we decide to make it production ready
+      {{- if eq .Cluster.Alias "cloud-euc1-test"}}
+      - name: 'exclude-eks-kro-capability'
+        expression: '!request.userInfo.username.startsWith("arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.Alias}}-KRO-CapabilityRole/")'
+      - name: 'exclude-eks-ack-capability'
+        expression: '!request.userInfo.username.startsWith("arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.Alias}}-ACK-CapabilityRole/")'
+      {{- end }}
       - name: 'allow-api-monitoring-controller-access'
         expression: |
           !(
@@ -634,7 +662,10 @@ webhooks:
       - name: 'allow-routesrv-routes-access'
         expression: |
           !(
-            "okta:common/engineer" in request.userInfo.groups &&
+            (
+              "okta:common/engineer" in request.userInfo.groups ||
+              "zalando:engineer" in request.userInfo.groups
+            ) &&
             request.name == "skipper-ingress-routesrv" &&
             request.resource.resource == "services" &&
             request.subResource == "proxy" &&

@@ -26,7 +26,8 @@ Features
 
 * Highly available master nodes (ASG) behind ELB
 * Worker Auto Scaling Group with node pools support
-* Flannel overlay networking
+* Flannel overlay networking (zalando-aws cluster)
+* aws-vpc-cni network (zalando-eks cluster)
 * Cluster autoscaling (using cluster-autoscaler_)
 * Kubernetes DNS with node-local dnsmasq as daemonset and CoreDNS resolver for cluster.local domain running in the same pod.
 * Route53 DNS integration via `External DNS`_
@@ -36,6 +37,7 @@ Features
 * Emergency Access via internal emergency-access-service, that grant roles "Manual" and "Emergency" with 4 eyes principle and audit logging
 * Log shipping via Scalyr
 * Full Ingress support with ALB/NLB and TLS integration via kube-ingress-aws-controller_ and HTTP routing via skipper_
+* Ingress east-west setup via coredns template and fixed IP in a service type clusterIP.
 * Enhanced usability with managed stacks and blue green deployments via stackset-controller_ and skipper_
 * `Fabric API Gateway`_, which can be used in combination with stackset-controller_
 * Static Egress IPs to route through NAT Gateways with Elastic IPs via kube-static-egress-controller_
@@ -50,7 +52,7 @@ Features
 * Fallback node pools
 * Spot node pool integration
 * automated PDB creation with pdb-controller_
-
+* configuration management is based on ConfigItems, which are overridden via an internal configitems repository and a cluster-registry CRUD service.
 
 Notes
 =====
@@ -66,8 +68,8 @@ Assumptions
 
 * The AWS account has one or more hosted zones in Route53 including a proper SSL cert (you can use the free ACM service)
 * The VPC has at least one public subnet per AZ (either AWS default VPC setup or public subnet named "dmz-<REGION>-<AZ>")
-* The VPC is in region eu-central-1 or eu-west-1
-* etcd cluster is available via DNS discovery (SRV records) at etcd.<YOUR-HOSTED-ZONE>
+* The VPC is in region eu-central-1 or eu-west-1 or eu-north-1
+* etcd cluster is available via DNS discovery (SRV records) at etcd.<YOUR-HOSTED-ZONE> (zalando-aws cluster)
 * `OAuth Token Info`_ is available to validate user tokens
 
 

@@ -28,11 +28,7 @@ spec:
       terminationGracePeriodSeconds: 40
       initContainers:
       - name: ensure-apiserver
-{{- if eq .Cluster.Provider "zalando-eks" }}
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/ensure-apiserver:master-6
-{{- else }}
-        image: container-registry.zalando.net/teapot/ensure-apiserver:master-6
-{{- end }}
         resources:
           requests:
             cpu: 1m
@@ -43,21 +39,17 @@ spec:
             memory: 50Mi
       containers:
       - name: unbound
-{{- if eq .Cluster.Provider "zalando-eks" }}
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound:1.23.1-master-11
-{{- else }}
-        image: container-registry.zalando.net/teapot/unbound:1.23.1-master-11
-{{- end }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound:1.24.2-master-15
         args:
         - -d
         - -c
         - /etc/unbound/unbound.conf
         ports:
         - containerPort: 53
-          name: dns-udp
+          name: dns-cache-udp
           protocol: UDP
         - containerPort: 53
-          name: dns-tcp
+          name: dns-cache-tcp
           protocol: TCP
 {{- if eq .Cluster.ConfigItems.expirimental_dns_unbound_liveness_probe "true" }}
         livenessProbe:
@@ -94,7 +86,7 @@ spec:
           name: unbound-socket
           readOnly: false
       - name: unbound-exporter
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound_exporter:v0.4.6-main-2.custom
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound_exporter:v0.5.0-main-3.custom
         args:
         - -unbound.ca
         - ""
@@ -119,11 +111,7 @@ spec:
           name: unbound-socket
           readOnly: false
       - name: coredns
-        {{- if eq .Cluster.Provider "zalando-eks" }}
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/coredns:1.12.4-master-29
-        {{- else }}
-        image: container-registry.zalando.net/teapot/coredns:1.12.4-master-29
-        {{- end }}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/coredns:1.14.1-master-32
         args: [ "-conf", "/etc/coredns/Corefile" ]
         env:
         - name: ZONE

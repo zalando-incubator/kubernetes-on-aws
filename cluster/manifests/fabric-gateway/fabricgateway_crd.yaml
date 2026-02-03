@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: fabricgateways.zalando.org
 spec:
   group: zalando.org
@@ -578,6 +578,30 @@ spec:
                   - serviceName
                   type: object
                 type: array
+              x-fabric-shadow-traffic:
+                description: |-
+                  If present, all traffic is tee'd to the target URL specified in the shadow traffic object using the
+                  Skipper tee filter. When using a versioned FabricGateway, this field is not stored in the ControllerRevision
+                  and thus not subject to versioning. The shadow traffic configuration can be modified and the current
+                  configuration is applied to all versions of the gateway. It is applied to all routes as the first filter in the
+                  filter chain.
+                properties:
+                  targetURL:
+                    description: the URL to which the shadow traffic should be sent
+                    type: string
+                  trafficShare:
+                    description: |-
+                      trafficShare specifies the share of traffic to be shadowed, as a string representing a float between 0 (none) and 1 (all).
+                      Example: "0.5" for 50% of traffic. If not set, defaults to "1" (all traffic is shadowed).
+                      Must be a valid float string between 0 and 1 (inclusive).
+                    pattern: ^(0(\.\d+)?|1(\.0*)?)$
+                    type: string
+                required:
+                - targetURL
+                type: object
+                x-kubernetes-validations:
+                - message: targetURL has to be a valid URL
+                  rule: isURL(self.targetURL)
               x-fabric-whitelist:
                 description: |-
                   UID of a service which will be allowed access to the API if it matches all other authorization

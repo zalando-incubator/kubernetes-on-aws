@@ -7,8 +7,8 @@ spec:
   amiFamily: Custom
   amiSelectorTerms:
     # Select on any AMI that has any of the following IDs
-    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_33_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
-    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_33_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_34_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_34_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
   metadataOptions:
     httpEndpoint: enabled
     # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
@@ -71,6 +71,12 @@ spec:
     node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
     zalando.org/pod-max-pids: "{{ .NodePool.ConfigItems.pod_max_pids }}"
     'zalando.de/cluster-local-id/{{ .Cluster.LocalID }}': owned
+#{{ if index .NodePool.ConfigItems "tags" }}
+#  {{ range split .NodePool.ConfigItems.tags "," }}
+#    {{ $tag := split . "=" }}
+    '{{index $tag 0}}': "{{index $tag 1}}"
+#  {{ end }}
+#{{ end }}
 #{{ if and (eq .Cluster.ConfigItems.skipper_attach_only_to_skipper_node_pool "true") (eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule") }}
     zalando.org/ingress-enabled: "true"
   # only node pools without taints should be attached to Ingress Load balancer
@@ -186,6 +192,12 @@ spec:
 #    {{ end}}
 #  {{ end}}
 #{{ end}}
+#{{ if eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule" }}
+        - key: zalando.org/ingress-karpenter-managed
+          operator: In
+          values:
+            - "true"
+#{{ end }}
 
 #{{ if (eq .NodePool.KarpenterInstanceTypeStrategy "default-for-karpenter" )  }}
         - key: "karpenter.k8s.aws/instance-family"
@@ -209,6 +221,7 @@ spec:
             - "c7i"
             - "m7i"
             - "r7i"
+            - "c8i"
             - "m8i"
             - "r8i"
 #{{ else if (eq .NodePool.KarpenterInstanceTypeStrategy "custom" ) }}
@@ -231,6 +244,7 @@ spec:
         - key: "node.kubernetes.io/instance-type"
           operator: "NotIn"
           values:
+            - "c6id.large"
             - "c5d.large"
             - "m5d.large"
             - "r5d.large"

@@ -21,7 +21,6 @@ clusters:
     etcd_scalyr_key: "${ETCD_SCALYR_KEY}"
     etcd_dns_record_prefixes: "etcd-server.etcd"
     docker_meta_url: https://docker-meta.stups-test.zalan.do
-    vpa_enabled: "true"
     lightstep_token: "${LIGHTSTEP_TOKEN}"
     okta_auth_issuer_url: "${OKTA_AUTH_ISSUER_URL}"
     zmon_agent_replicas: '0'
@@ -29,12 +28,9 @@ clusters:
     zmon_redis_replicas: '0'
     zmon_scheduler_replicas: '0'
     zmon_worker_replicas: '0'
-    node_pool_feature_enabled: "true"
-    enable_rbac: "true"
     skipper_ingress_refuse_payload: "refused-pattern-1[cf724afc]refused-pattern-2"
     efs_id: ${EFS_ID}
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
-    kube_aws_ingress_controller_nlb_enabled: "true"
     nlb_switch: "pre"
     vm_dirty_bytes: 134217728
     vm_dirty_background_bytes: 67108864
@@ -42,7 +38,7 @@ clusters:
     routegroups_validation: "enabled"
     stackset_routegroup_support_enabled: "true"
     stackset_ingress_source_switch_ttl: "1m"
-    teapot_admission_controller_daemonset_reserved_cpu: "518m"
+    teapot_admission_controller_daemonset_reserved_cpu: "718m"
     okta_auth_client_id: "kubernetes.cluster.teapot-e2e"
     teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
     eks_okta_identity_provider: "false" # disabled to speed up EKS cluster creation for e2e.
@@ -70,9 +66,9 @@ cat <<EOFF
       taints: dedicated=cluster-seed:NoSchedule
     discount_strategy: none
     instance_types:
-    - "m6i.xlarge"
-    max_size: 99
-    min_size: 2
+    - "c7g.large"
+    max_size: 2
+    min_size: 1
     name: seed-worker
     profile: worker-combined
 EOFF
@@ -128,9 +124,19 @@ EOFF
     - "m6g.large"
     - "m7g.large"
     min_size: 0
-    max_size: 9
+    max_size: 18
     profile: worker-splitaz
     name: skipper-ingress-node
+    config_items:
+      labels: dedicated=skipper-ingress
+      taints: dedicated=skipper-ingress:NoSchedule
+  - discount_strategy: spot
+    instance_types:
+    - "not-specified"
+    min_size: 0
+    max_size: 0
+    profile: worker-karpenter
+    name: skipper-ingress-karpenter-catch-all
     config_items:
       labels: dedicated=skipper-ingress
       taints: dedicated=skipper-ingress:NoSchedule

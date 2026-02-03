@@ -47,7 +47,7 @@ spec:
             fieldRef:
               fieldPath: spec.nodeName
         - name: HOST_PLUGIN_DIR
-          value: /opt/podruntime/kubelet/plugins/s3.csi.aws.com/
+          value: /var/lib/kubelet/plugins/s3.csi.aws.com/
         image: container-registry.zalando.net/teapot/aws-mountpoint-s3-csi-driver:v2.0.0-master-32
         resources:
           requests:
@@ -73,7 +73,7 @@ spec:
         securityContext:
           privileged: false
         volumeMounts:
-        - mountPath: /opt/podruntime/kubelet
+        - mountPath: /var/lib/kubelet
           name: kubelet-dir
         - mountPath: /csi
           name: plugin-dir
@@ -90,7 +90,7 @@ spec:
         - name: ADDRESS
           value: /csi/csi.sock
         - name: DRIVER_REG_SOCK_PATH
-          value: /opt/podruntime/kubelet/plugins/s3.csi.aws.com/csi.sock
+          value: /var/lib/kubelet/plugins/s3.csi.aws.com/csi.sock
         - name: KUBE_NODE_NAME
           valueFrom:
             fieldRef:
@@ -166,15 +166,15 @@ spec:
           type: Socket
         name: systemd-bus
       - hostPath:
-          path: /opt/podruntime/kubelet
+          path: /var/lib/kubelet
           type: Directory
         name: kubelet-dir
       - hostPath:
-          path: /opt/podruntime/kubelet/plugins_registry/
+          path: /var/lib/kubelet/plugins_registry/
           type: Directory
         name: registration-dir
       - hostPath:
-          path: /opt/podruntime/kubelet/plugins/s3.csi.aws.com/
+          path: /var/lib/kubelet/plugins/s3.csi.aws.com/
           type: DirectoryOrCreate
         name: plugin-dir
 {{- end }}

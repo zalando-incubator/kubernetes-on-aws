@@ -1,10 +1,10 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.22.141-1245" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.22.141-1245" }}
+{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.22.223-1325" }}
+{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.5-1333" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
-{{ $canary_args := "" }}
+{{ $canary_args := print "-enable-kubernetes-external-names=" .Cluster.ConfigItems.skipper_externalname_service_enabled "[cf724afc]-enable-lua=" .Cluster.ConfigItems.skipper_lua_scripts_enabled  }}
 
 {{ $cluster_internal_cidrs := list "10.2.0.0/15" .Values.vpc_ipv4_cidr }}
 {{ if eq .Cluster.Provider "zalando-eks" }}
@@ -92,6 +92,56 @@ spec:
               component: ingress
               application: skipper-ingress
 {{- end }}
+{{ if eq .Cluster.ConfigItems.skipper_karpenter_node_pools_enabled "true" }}
+      affinity:
+       podAntiAffinity:
+         requiredDuringSchedulingIgnoredDuringExecution:
+         - labelSelector:
+             matchExpressions:
+             - key: application
+               operator: In
+               values:
+               - skipper-ingress
+             - key: component
+               operator: In
+               values:
+               - ingress
+           topologyKey: kubernetes.io/hostname
+       nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values:
+                - c7g.large
+                - c7g.xlarge
+                - c7g.2xlarge
+                - c7g.4xlarge
+                - c7g.8xlarge
+                - m7g.large
+          - weight: 50
+            preference:
+              matchExpressions:
+              - key: node.kubernetes.io/instance-type
+                operator: In
+                values:
+                - c6g.large
+                - c6g.xlarge
+                - c6g.2xlarge
+                - c6g.4xlarge
+                - c6g.8xlarge
+                - m6g.large
+{{ else }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: zalando.org/ingress-karpenter-managed
+                operator: DoesNotExist
+{{ end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
       terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
@@ -163,6 +213,7 @@ spec:
         args:
           - "run.sh"
           - "skipper"
+          - "-enable-copy-stream-pool={{ .Cluster.ConfigItems.skipper_copy_stream_pool_enabled }}"
           - "-validate-query={{ .Cluster.ConfigItems.skipper_validate_query }}"
           - "-validate-query-log={{ .Cluster.ConfigItems.skipper_validate_query_log }}"
 {{ if eq .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
@@ -236,6 +287,12 @@ spec:
 {{ end }}
 {{ end }}
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
+{{if ne .Cluster.ConfigItems.skipper_ingress_response_size_buckets ""}}
+          - "-response-size-buckets={{ .Cluster.ConfigItems.skipper_ingress_response_size_buckets }}"
+{{ end }}
+{{if ne .Cluster.ConfigItems.skipper_ingress_request_size_buckets ""}}
+          - "-request-size-buckets={{ .Cluster.ConfigItems.skipper_ingress_request_size_buckets }}"
+{{ end }}
           - >-
             -opentracing=lightstep
             component-name=skipper-ingress
@@ -473,6 +530,9 @@ spec:
 {{ if eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true"}}
       nodeSelector:
         dedicated: skipper-ingress
+{{ if eq .Cluster.ConfigItems.skipper_karpenter_node_pools_enabled "true" }}
+        zalando.org/ingress-karpenter-managed: "true"
+{{ end }}
       tolerations:
       - effect: NoSchedule
         key: dedicated

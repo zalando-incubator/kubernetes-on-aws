@@ -1,4 +1,8 @@
+{{- if eq .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true" }}
+apiVersion: zalando.org/v1
+{{- else }}
 apiVersion: autoscaling.k8s.io/v1
+{{- end }}
 kind: VerticalPodAutoscaler
 metadata:
   name: prometheus-vpa
@@ -12,10 +16,24 @@ spec:
     kind: StatefulSet
     name: prometheus
   updatePolicy:
-    updateMode: Auto
+    updateMode: Recreate
   resourcePolicy:
     containerPolicies:
     - containerName: prometheus
       minAllowed:
         memory: {{.Cluster.ConfigItems.prometheus_mem_min}}
         cpu: {{.Cluster.ConfigItems.prometheus_cpu_min}}
+{{- if and (eq .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true") (ne .Cluster.ConfigItems.prometheus_scheduled_scaling_events "") }}
+  schedules:
+  {{- range split .Cluster.ConfigItems.prometheus_scheduled_scaling_events "," }}
+  {{- $tuple := split . ":" }} # <name>:<pre-start-minutes>:<cpu>:<memory>
+  - name: "{{ index $tuple 0 }}"
+    preStartMinutes: {{ index $tuple 1 }}
+    resourcePolicy:
+      containerPolicies:
+      - containerName: prometheus
+        unitResource:
+          cpu: {{ index $tuple 2 }}
+          memory: {{ index $tuple 3 }}
+  {{- end }}
+{{- end }}

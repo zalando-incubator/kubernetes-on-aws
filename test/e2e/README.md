@@ -26,7 +26,7 @@ examples of how to write the tests or checkout the files already defined e.g.
   ```bash
   KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org CLUSTER_ALIAS=example \
     ginkgo -procs=1 -flake-attempts=2 \
-    -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Feature:StatefulSet\]\s\[Slow\].*mysql|\[Zalando\])" \
+    -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Zalando\])" \
     -skip="(\[Serial\])" \
     "e2e.test" -- -delete-namespace-on-failure=false -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated
   ```
