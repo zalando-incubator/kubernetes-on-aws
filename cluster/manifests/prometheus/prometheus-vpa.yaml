@@ -23,16 +23,27 @@ spec:
       minAllowed:
         memory: {{.Cluster.ConfigItems.prometheus_mem_min}}
         cpu: {{.Cluster.ConfigItems.prometheus_cpu_min}}
-{{- if and (eq .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true") (ne .Cluster.ConfigItems.prometheus_scheduled_scaling_events "") }}
+{{- if and (eq .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true") (or (ne .Cluster.ConfigItems.prometheus_scheduled_scaling_events "") (ne .Cluster.ConfigItems.prometheus_static_scheduled_scaling_events "")) }}
   schedules:
   {{- range split .Cluster.ConfigItems.prometheus_scheduled_scaling_events "," }}
-  {{- $tuple := split . ":" }} # <name>:<pre-start-minutes>:<cpu>:<memory>
+  {{- $tuple := split . ":" }} # <event-name>:<pre-start-minutes>:<cpu>:<memory>
   - name: "{{ index $tuple 0 }}"
     preStartMinutes: {{ index $tuple 1 }}
     resourcePolicy:
       containerPolicies:
       - containerName: prometheus
         unitResource:
+          cpu: {{ index $tuple 2 }}
+          memory: {{ index $tuple 3 }}
+  {{- end }}
+  {{- range split .Cluster.ConfigItems.prometheus_static_scheduled_scaling_events "," }}
+  {{- $tuple := split . ":" }} # <event-name>:<pre-start-minutes>:<cpu>:<memory>
+  - name: "{{ index $tuple 0 }}"
+    preStartMinutes: {{ index $tuple 1 }}
+    resourcePolicy:
+      containerPolicies:
+      - containerName: prometheus
+        minAllowed:
           cpu: {{ index $tuple 2 }}
           memory: {{ index $tuple 3 }}
   {{- end }}

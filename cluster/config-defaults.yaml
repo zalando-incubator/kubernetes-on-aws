@@ -558,9 +558,18 @@ prometheus_remote_max_backoff: "10s"
 # Comma-separated list of user ids allowed to access Prometheus UI
 prometheus_ui_users: ""
 
-# Scheduled scaling events for Prometheus VPA (in the format
-# <name>:<pre-start-min>:<cpu>:<memory>, multiple events separated by commas)
+# Dynamic Scheduled scaling events for Prometheus VPA (in the format
+# <event-name>:<pre-start-min>:<cpu>:<memory>, multiple events separated by commas)
+# <cpu> and <memory> must be a scaling function which takes scalingValue as a
+# parameter. Example for linear regression function:
+# ("<coef> * scalingValue + <constant>")
 prometheus_scheduled_scaling_events: ""
+
+# Static scheduled scaling events for Prometheus VPA (in the format 
+# <event-name>:<pre-start-min>:<cpu>:<memory>, multiple events separated by commas)
+# <cpu> and <memory> must be fixed values like "10" or "20Gi" this is for static
+# pre-scaling during scheduled scaling event.
+prometheus_static_scheduled_scaling_events: ""
 
 # Enable scheduled scaling for VPA
 scheduled_scaling_vpa_enabled: "false"
