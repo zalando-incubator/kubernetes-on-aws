@@ -532,6 +532,9 @@ spec:
         dedicated: skipper-ingress
 {{ if eq .Cluster.ConfigItems.skipper_karpenter_node_pools_enabled "true" }}
         zalando.org/ingress-karpenter-managed: "true"
+{{ if eq .Cluster.Environment "production" }}
+        karpenter.sh/capacity-type: on-demand
+{{ end }}
 {{ end }}
       tolerations:
       - effect: NoSchedule
