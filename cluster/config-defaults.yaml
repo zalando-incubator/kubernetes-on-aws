@@ -1,4 +1,5 @@
 # Autoscaling settings
+cluster_autoscaler_enabled: "true"
 autoscaling_scale_down_enabled: "true"
 autoscaling_buffer_cpu: "1m"
 autoscaling_buffer_memory: "10Mi"
@@ -1351,8 +1352,11 @@ eks_fis_support_enabled: "false"
 {{ if eq .Cluster.Environment "e2e" }}
 # Enables the Amazon EFS CSI driver addon and sets up the default EFS
 eks_efs_csi_support_enabled: "true"
+# Enables the EKS Node Monitoring Agent
+eks_node_monitoring_enabled: "true"
 {{ else }}
 eks_efs_csi_support_enabled: "false"
+eks_node_monitoring_enabled: "false"
 {{ end }}
 
 # prefix delegation can only be configured for ipv4. For ipv6 it can only be true.
