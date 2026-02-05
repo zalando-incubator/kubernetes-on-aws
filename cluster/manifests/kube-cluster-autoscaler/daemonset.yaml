@@ -1,3 +1,4 @@
+{{- if eq .Cluster.ConfigItems.cluster_autoscaler_enabled "true" }}
 apiVersion: apps/v1
 {{- if eq .Cluster.Provider "zalando-eks"}}
 kind: Deployment
@@ -81,4 +82,5 @@ spec:
       - key: node.kubernetes.io/role
         value: master
         effect: NoSchedule
+{{- end}}
 {{- end}}
