@@ -1,10 +1,8 @@
 module github.com/zalando-incubator/kubernetes-on-aws/test/e2e/stackset
 
-go 1.24.0
+go 1.25.6
 
-toolchain go1.24.4
-
-require github.com/zalando-incubator/stackset-controller v1.4.123
+require github.com/zalando-incubator/stackset-controller v1.4.126
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -33,7 +31,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
-	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/szuecs/routegroup-client v0.34.1 // indirect
