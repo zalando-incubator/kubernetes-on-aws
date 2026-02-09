@@ -47,9 +47,6 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
           volumeMounts:
-            - name: kubelet-dir-legacy
-              mountPath: /opt/podruntime/kubelet
-              mountPropagation: Bidirectional
             - name: kubelet-dir
               mountPath: /var/lib/kubelet
               mountPropagation: Bidirectional
@@ -89,7 +86,7 @@ spec:
             - name: ADDRESS
               value: /csi/csi.sock
             - name: DRIVER_REG_SOCK_PATH
-              value: /opt/podruntime/kubelet/plugins/ebs.csi.aws.com/csi.sock
+              value: /var/lib/kubelet/plugins/ebs.csi.aws.com/csi.sock
           livenessProbe:
             exec:
               command:
@@ -105,7 +102,7 @@ spec:
             - name: registration-dir
               mountPath: /registration
             - name: probe-dir
-              mountPath: /opt/podruntime/kubelet/plugins/ebs.csi.aws.com/
+              mountPath: /var/lib/kubelet/plugins/ebs.csi.aws.com/
           resources:
             requests:
               cpu: 10m
@@ -134,21 +131,17 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
       volumes:
-        - name: kubelet-dir-legacy
-          hostPath:
-            path: /opt/podruntime/kubelet
-            type: Directory
         - name: kubelet-dir
           hostPath:
             path: /var/lib/kubelet
             type: Directory
         - name: plugin-dir
           hostPath:
-            path: /opt/podruntime/kubelet/plugins/ebs.csi.aws.com/
+            path: /var/lib/kubelet/plugins/ebs.csi.aws.com/
             type: DirectoryOrCreate
         - name: registration-dir
           hostPath:
-            path: /opt/podruntime/kubelet/plugins_registry/
+            path: /var/lib/kubelet/plugins_registry/
             type: Directory
         - name: device-dir
           hostPath:

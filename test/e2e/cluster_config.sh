@@ -132,6 +132,16 @@ EOFF
       taints: dedicated=skipper-ingress:NoSchedule
   - discount_strategy: spot
     instance_types:
+    - "not-specified"
+    min_size: 0
+    max_size: 0
+    profile: worker-karpenter
+    name: skipper-ingress-karpenter-catch-all
+    config_items:
+      labels: dedicated=skipper-ingress
+      taints: dedicated=skipper-ingress:NoSchedule
+  - discount_strategy: spot
+    instance_types:
     - "default-for-karpenter"
     min_size: 0
     max_size: 0
