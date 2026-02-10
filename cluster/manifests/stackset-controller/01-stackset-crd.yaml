@@ -744,26 +744,26 @@ spec:
                         description: PodTemplate describes the pods that will be created.
                         properties:
                           metadata:
-                            description: Object's metadata.
+                            description: |-
+                              Standard object's metadata.
+                              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
                             properties:
                               annotations:
                                 additionalProperties:
                                   type: string
-                                description: |-
-                                  Annotations is an unstructured key value map stored with a resource that may be
-                                  set by external tools to store and retrieve arbitrary metadata. They are not
-                                  queryable and should be preserved when modifying objects.
-                                  More info: http://kubernetes.io/docs/user-guide/annotations
                                 type: object
+                              finalizers:
+                                items:
+                                  type: string
+                                type: array
                               labels:
                                 additionalProperties:
                                   type: string
-                                description: |-
-                                  Map of string keys and values that can be used to organize and categorize
-                                  (scope and select) objects. May match selectors of replication controllers
-                                  and services.
-                                  More info: http://kubernetes.io/docs/user-guide/labels
                                 type: object
+                              name:
+                                type: string
+                              namespace:
+                                type: string
                             type: object
                           spec:
                             description: |-
@@ -2337,13 +2337,6 @@ spec:
                                             localhostProfile:
                                               type: string
                                             type:
-                                              description: |-
-                                                type indicates which kind of seccomp profile will be applied.
-                                                Valid options are:
-
-                                                Localhost - a profile defined in a file on the node should be used.
-                                                RuntimeDefault - the container runtime default profile should be used.
-                                                Unconfined - no profile should be applied.
                                               type: string
                                           required:
                                           - type
@@ -5149,6 +5142,13 @@ spec:
                                             localhostProfile:
                                               type: string
                                             type:
+                                              description: |-
+                                                type indicates which kind of seccomp profile will be applied.
+                                                Valid options are:
+
+                                                Localhost - a profile defined in a file on the node should be used.
+                                                RuntimeDefault - the container runtime default profile should be used.
+                                                Unconfined - no profile should be applied.
                                               type: string
                                           required:
                                           - type
@@ -6700,6 +6700,23 @@ spec:
                                                 May contain labels and annotations that will be copied into the PVC
                                                 when creating it. No other fields are allowed and will be rejected during
                                                 validation.
+                                              properties:
+                                                annotations:
+                                                  additionalProperties:
+                                                    type: string
+                                                  type: object
+                                                finalizers:
+                                                  items:
+                                                    type: string
+                                                  type: array
+                                                labels:
+                                                  additionalProperties:
+                                                    type: string
+                                                  type: object
+                                                name:
+                                                  type: string
+                                                namespace:
+                                                  type: string
                                               type: object
                                             spec:
                                               description: |-
