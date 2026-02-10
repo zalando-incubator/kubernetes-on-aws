@@ -358,6 +358,22 @@ post_apply:
   kind: ServiceAccount
   namespace: kube-system
 {{- end}}
+{{- if ne .Cluster.ConfigItems.eks_node_monitoring_enabled "true"}}
+- name: eks-node-monitoring-agent
+  kind: DaemonSet
+  namespace: kube-system
+- name: eks-node-monitoring-agent
+  kind: ServiceAccount
+  namespace: kube-system
+- name: eks-node-monitoring-agent
+  kind: ClusterRole
+- name: eks-node-monitoring-agent
+  kind: ClusterRoleBinding
+- name: eks-node-monitoring-agent-extended
+  kind: ClusterRole
+- name: eks-node-monitoring-agent-extended
+  kind: ClusterRoleBinding
+{{- end}}
 {{- if ne .Cluster.ConfigItems.kube_node_decommissioner_enabled "true"}}
 - name: kube-node-decommissioner
   kind: CronJob
@@ -408,3 +424,34 @@ post_apply:
 - name: aws-efs
   kind: StorageClass
 {{ end }}
+{{- if ne .Cluster.ConfigItems.cluster_autoscaler_enabled "true" }}
+- name: cluster-autoscaler
+  namespace: kube-system
+  kind: ServiceAccount
+- name: cluster-autoscaler
+  kind: ClusterRole
+- name: cluster-autoscaler
+  namespace: kube-system
+  kind: Role
+- name: cluster-autoscaler
+  kind: ClusterRoleBinding
+- name: cluster-autoscaler
+  namespace: kube-system
+  kind: RoleBinding
+- name: autoscaling-buffer-nonpreempting
+  kind: PriorityClass
+- name: kube-cluster-autoscaler
+  namespace: kube-system
+  kind: DaemonSet
+- name: kube-cluster-autoscaler
+  namespace: kube-system
+  kind: Deployment
+- name: autoscaling-buffer
+  namespace: kube-system
+  kind: PodDisruptionBudget
+- kind: Deployment
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: autoscaling-buffer
+{{- end }}
