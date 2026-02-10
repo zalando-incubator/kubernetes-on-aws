@@ -356,7 +356,9 @@ webhooks:
           values: ["kube-proxy", "aws-node"]
         - key: app.kubernetes.io/name
           operator: NotIn
-          values: ["aws-efs-csi-driver"]
+          values:
+            - "aws-efs-csi-driver"
+            - "eks-node-monitoring-agent"
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
@@ -391,7 +393,10 @@ webhooks:
           values: ["kube-proxy"]
         - key: app.kubernetes.io/name
           operator: NotIn
-          values: ["eks-pod-identity-agent", "aws-efs-csi-driver"]
+          values:
+            - "eks-pod-identity-agent"
+            - "aws-efs-csi-driver"
+            - "eks-node-monitoring-agent"
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
