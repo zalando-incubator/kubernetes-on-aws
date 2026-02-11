@@ -271,7 +271,7 @@ func createSkipperPodSpec(route string, port int32) v1.PodSpec {
 		Containers: []v1.Container{
 			{
 				Name:  "skipper",
-				Image: "container-registry.zalando.net/teapot/skipper:v0.16.154",
+				Image: "container-registry.zalando.net/teapot/skipper:v0.24.14",
 				Args: []string{
 					"skipper",
 					"-inline-routes",
