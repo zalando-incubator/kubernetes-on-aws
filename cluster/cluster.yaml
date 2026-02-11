@@ -391,6 +391,15 @@ Resources:
             "component": "kube-proxy"
           }
         }
+  {{ if eq .Cluster.ConfigItems.eks_node_monitoring_enabled "true" }}
+  EKSAddonNodeMonitoringAgent:
+    Type: AWS::EKS::Addon
+    Properties:
+      AddonName: eks-node-monitoring-agent
+      AddonVersion: "v1.4.3-eksbuild.2"
+      ClusterName: !Ref EKSCluster
+  {{ end }}
+
   {{ if eq .Cluster.Environment "e2e" }}
   E2EEKSIAMTestRoleUnprivileged:
     Properties:
