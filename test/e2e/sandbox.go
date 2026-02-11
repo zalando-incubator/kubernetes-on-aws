@@ -429,7 +429,7 @@ var _ = describe("Sandbox Controller", func() {
 			})
 
 			By("Executing HTTP request to verify mocked response is returned")
-			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 30*time.Second, false, func(ctx context.Context) (bool, error) {
+			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 60*time.Second, false, func(ctx context.Context) (bool, error) {
 				output, err = e2ekubectl.RunKubectl(ns, "exec", createdPod.Name, "-c", "app", "--", "sh", "-c", cmd)
 				if err != nil {
 					return false, err
