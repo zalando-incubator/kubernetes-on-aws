@@ -428,13 +428,15 @@ var _ = describe("Sandbox Controller", func() {
 				return false, nil
 			})
 
-			time.Sleep(2 * time.Second) // small delay to ensure Skipper picks up the new routes
-
 			By("Executing HTTP request to verify mocked response is returned")
-			output, err = e2ekubectl.RunKubectl(ns, "exec", createdPod.Name, "-c", "app", "--", "sh", "-c", cmd)
+			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 30*time.Second, false, func(ctx context.Context) (bool, error) {
+				output, err = e2ekubectl.RunKubectl(ns, "exec", createdPod.Name, "-c", "app", "--", "sh", "-c", cmd)
+				if err != nil {
+					return false, err
+				}
+				return string(output) == "intercepted response", nil
+			})
 			framework.ExpectNoError(err)
-			framework.Logf("Mocked response: %s", output)
-			Expect(output).To(Equal("intercepted response"))
 		})
 	})
 
