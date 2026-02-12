@@ -264,7 +264,7 @@ webhooks:
     # avoid admission-control applying to eks managed addon resources
     matchConditions:
     - name: "exclude-by-name"
-      expression: "oldObject == null || oldObject.metadata.name != 'eniconfigs.crd.k8s.amazonaws.com'"
+      expression: "oldObject == null || oldObject.metadata.name != 'eniconfigs.crd.k8s.amazonaws.com' || oldObject.metadata.name != 'nodediagnostics.eks.amazonaws.com'"
 {{- end }}
     clientConfig:
       {{- if eq .Cluster.Provider "zalando-eks"}}
