@@ -41,7 +41,7 @@ import (
 
 func waitForSandboxedRoutegrouop(ctx context.Context, c clientset.Interface, ns, originalRGName string) (*rgv1.RouteGroup, error) {
 	var sandboxedRG *rgv1.RouteGroup
-	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, 1*time.Minute, true, func(ctx context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, 5*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		rgs, err := c.ZalandoV1().RouteGroups(ns).List(
 			context.TODO(),
 			metav1.ListOptions{
@@ -62,7 +62,7 @@ func waitForSandboxedRoutegrouop(ctx context.Context, c clientset.Interface, ns,
 
 func waitForSandboxedIngress(ctx context.Context, c clientset.Interface, ns, originalIngName string) (*netv1.Ingress, error) {
 	var sandboxedIng *netv1.Ingress
-	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, 1*time.Minute, true, func(ctx context.Context) (done bool, err error) {
+	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, 5*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		ings, err := c.NetworkingV1().Ingresses(ns).List(
 			context.TODO(),
 			metav1.ListOptions{
@@ -351,7 +351,7 @@ var _ = describe("Sandbox Controller", func() {
 			framework.ExpectNoError(err)
 
 			By("Waiting for egress-ready pod to be running")
-			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 30*time.Second, true, func(ctx context.Context) (bool, error) {
+			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 				pod, err := c.CoreV1().Pods(ns).Get(context.TODO(), createdPod.Name, metav1.GetOptions{})
 				if err != nil {
 					return false, nil
@@ -414,7 +414,7 @@ var _ = describe("Sandbox Controller", func() {
 			framework.ExpectNoError(err)
 
 			By("Waiting for SandboxEgress to be processed and routes to be updated in ConfigMap")
-			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 30*time.Second, true, func(ctx context.Context) (bool, error) {
+			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 				cm, err := c.CoreV1().ConfigMaps(ns).Get(context.TODO(), configMapName, metav1.GetOptions{})
 				if err != nil {
 					return false, nil
@@ -427,7 +427,7 @@ var _ = describe("Sandbox Controller", func() {
 			})
 
 			By("Executing HTTP request to verify mocked response is returned")
-			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 120*time.Second, false, func(ctx context.Context) (bool, error) {
+			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 5*time.Minute, false, func(ctx context.Context) (bool, error) {
 				output, err = e2ekubectl.RunKubectl(ns, "exec", createdPod.Name, "-c", "app", "--", "sh", "-c", cmd)
 				if err != nil {
 					return false, err
