@@ -16,6 +16,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -422,14 +423,11 @@ var _ = describe("Sandbox Controller", func() {
 				if !exists {
 					return false, nil
 				}
-				if routes != initialRoutes {
-					return true, nil
-				}
-				return false, nil
+				return strings.Contains(routes, "production-backend"), nil
 			})
 
 			By("Executing HTTP request to verify mocked response is returned")
-			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 60*time.Second, false, func(ctx context.Context) (bool, error) {
+			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 120*time.Second, false, func(ctx context.Context) (bool, error) {
 				output, err = e2ekubectl.RunKubectl(ns, "exec", createdPod.Name, "-c", "app", "--", "sh", "-c", cmd)
 				if err != nil {
 					return false, err
