@@ -54,10 +54,10 @@ spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: skipper-validation-webhook
       containers:
-      - name: redis-sidecar
-        image: container-registry.zalando.net/library/redis-7-alpine:7.2-alpine-20250805
+      - name: valkey-sidecar
+        image: container-registry.zalando.net/library/valkey-9-alpine:9-alpine3.22-20260302
         args:
-        - /usr/local/bin/docker-entrypoint.sh
+        - valkey-server
         - --save
         - ""  # Disable persistence for sidecar use
         - --maxmemory
@@ -67,11 +67,11 @@ spec:
         ports:
         - containerPort: 6379
           protocol: TCP
-          name: redis
+          name: valkey
         readinessProbe:
           exec:
             command:
-            - redis-cli
+            - valkey-cli
             - ping
           failureThreshold: 3
           initialDelaySeconds: 5
@@ -150,18 +150,11 @@ spec:
           - "-disabled-filters={{ .Cluster.ConfigItems.skipper_disabled_filters }}"
           - "-compress-encodings={{ .Cluster.ConfigItems.skipper_compress_encodings }}"
           - "-enable-ratelimits"
-{{ if eq .Cluster.ConfigItems.skipper_ingress_redis_swarm_enabled "true" }}
           - "-enable-swarm"
-          - "-swarm-redis-dial-timeout=5s"
-          - "-swarm-redis-pool-timeout=5s"
-          - "-swarm-redis-read-timeout=5s"
-          - "-swarm-redis-write-timeout=5s"
-          - "-swarm-redis-heartbeat-frequency=720h"
+          - "-swarm-valkey-conn-timeout=5s"
+          - "-swarm-valkey-update-interval=720h"
           - "-cluster-ratelimit-max-group-shards={{ .Cluster.ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
-          - "-swarm-redis-min-conns=1"
-          - "-swarm-redis-max-conns=1"
-          - "-swarm-redis-urls=127.0.0.1:6379"
-{{ end }}
+          - "-swarm-valkey-urls=127.0.0.1:6379"
           - "-lua-sources={{ .Cluster.ConfigItems.skipper_lua_sources }}"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
