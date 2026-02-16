@@ -149,6 +149,11 @@ data:
 {{ if eq .Cluster.ConfigItems.coredns_log_svc_names "true"}}
         log svc.svc.cluster.local.
 {{ end }}
+{{ if eq .Cluster.ConfigItems.coredns_log_failed_cluster_local_lookups "true"}}
+        log cluster.local "Failed cluster.local lookup, {proto} Request: {name} {type} {>id}" {
+          class error denial
+        }
+{{ end }}
         prometheus :9153
         ready :9155
     }
