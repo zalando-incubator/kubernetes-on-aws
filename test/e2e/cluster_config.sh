@@ -116,22 +116,6 @@ EOFF
       taints: kubernetes.io/arch=arm64:NoSchedule
   - discount_strategy: spot
     instance_types:
-    - "c7g.large"
-    - "c6i.large"
-    - "c6a.large"
-    - "m6i.large"
-    - "m6a.large"
-    - "m6g.large"
-    - "m7g.large"
-    min_size: 0
-    max_size: 18
-    profile: worker-splitaz
-    name: skipper-ingress-node
-    config_items:
-      labels: dedicated=skipper-ingress
-      taints: dedicated=skipper-ingress:NoSchedule
-  - discount_strategy: spot
-    instance_types:
     - "not-specified"
     min_size: 0
     max_size: 0
