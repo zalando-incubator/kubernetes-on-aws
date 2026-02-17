@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.18-1346" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.18-1346" }}
+{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.5-1333" }}
+{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.23-1351" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -92,7 +92,6 @@ spec:
               component: ingress
               application: skipper-ingress
 {{- end }}
-{{ if eq .Cluster.ConfigItems.skipper_karpenter_node_pools_enabled "true" }}
       affinity:
        podAntiAffinity:
          requiredDuringSchedulingIgnoredDuringExecution:
@@ -133,15 +132,6 @@ spec:
                 - c6g.4xlarge
                 - c6g.8xlarge
                 - m6g.large
-{{ else }}
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: zalando.org/ingress-karpenter-managed
-                operator: DoesNotExist
-{{ end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress
       terminationGracePeriodSeconds: {{ .Cluster.ConfigItems.skipper_termination_grace_period }}
@@ -532,13 +522,10 @@ spec:
 {{ if eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true"}}
       nodeSelector:
         dedicated: skipper-ingress
-{{ if eq .Cluster.ConfigItems.skipper_karpenter_node_pools_enabled "true" }}
-        zalando.org/ingress-karpenter-managed: "true"
 {{ if eq .Cluster.Environment "production" }}
         karpenter.sh/capacity-type: on-demand
 {{ else }}
         karpenter.sh/capacity-type: spot
-{{ end }}
 {{ end }}
       tolerations:
       - effect: NoSchedule

@@ -84,24 +84,13 @@ EOFF
   fi)
   - discount_strategy: spot
     instance_types:
-    - "c6i.xlarge"
-    - "m6i.xlarge"
-    - "r6i.xlarge"
-    - "c7i.xlarge"
-    - "m7i.xlarge"
-    - "r7i.xlarge"
-    - "c6i.2xlarge"
-    - "m6i.2xlarge"
-    - "r6i.2xlarge"
-    - "c7i.2xlarge"
-    - "m7i.2xlarge"
-    - "r7i.2xlarge"
+    - default-for-karpenter
     config_items:
       availability_zones: "eu-central-1c"
       labels: dedicated=worker-limit-az
       taints: dedicated=worker-limit-az:NoSchedule
     name: worker-limit-az
-    profile: worker-splitaz
+    profile: worker-karpenter
     min_size: 0
     max_size: 21
   - name: karpenter-arm
@@ -114,22 +103,6 @@ EOFF
     config_items:
       requirements: "- key: kubernetes.io/arch\n  operator: In\n  values:\n  - arm64\n"
       taints: kubernetes.io/arch=arm64:NoSchedule
-  - discount_strategy: spot
-    instance_types:
-    - "c7g.large"
-    - "c6i.large"
-    - "c6a.large"
-    - "m6i.large"
-    - "m6a.large"
-    - "m6g.large"
-    - "m7g.large"
-    min_size: 0
-    max_size: 18
-    profile: worker-splitaz
-    name: skipper-ingress-node
-    config_items:
-      labels: dedicated=skipper-ingress
-      taints: dedicated=skipper-ingress:NoSchedule
   - discount_strategy: spot
     instance_types:
     - "not-specified"
