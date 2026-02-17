@@ -428,9 +428,17 @@ post_apply:
   kind: StorageClass
 {{ end }}
 {{- if ne .Cluster.ConfigItems.cluster_autoscaler_enabled "true" }}
-- name: cluster-autoscaler
+- name: kube-cluster-autoscaler
   namespace: kube-system
-  kind: ServiceAccount
+  kind: DaemonSet
+- name: kube-cluster-autoscaler
+  namespace: kube-system
+  kind: Deployment
+- kind: Deployment
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: autoscaling-buffer
 - name: cluster-autoscaler
   kind: ClusterRole
 - name: cluster-autoscaler
@@ -443,18 +451,10 @@ post_apply:
   kind: RoleBinding
 - name: autoscaling-buffer-nonpreempting
   kind: PriorityClass
-- name: kube-cluster-autoscaler
-  namespace: kube-system
-  kind: DaemonSet
-- name: kube-cluster-autoscaler
-  namespace: kube-system
-  kind: Deployment
 - name: autoscaling-buffer
   namespace: kube-system
   kind: PodDisruptionBudget
-- kind: Deployment
+- name: cluster-autoscaler
   namespace: kube-system
-  labels:
-    application: kubernetes
-    component: autoscaling-buffer
+  kind: ServiceAccount
 {{- end }}
