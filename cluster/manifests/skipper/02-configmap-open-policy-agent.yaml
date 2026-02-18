@@ -4,8 +4,8 @@ kind: ConfigMap
 metadata:
   labels:
     application: skipper-ingress
-    component: webhook
-  name: webhook-open-policy-agent-config
+    component: ingress
+  name: open-policy-agent-config
   namespace: kube-system
 data:
   opaconfig.yaml: |-
@@ -18,6 +18,12 @@ data:
       kubernetes-cluster-alias: {{ .Cluster.Alias }}
       aws-account-id: "{{ .Cluster.InfrastructureAccountID }}"
     services:
+    - credentials:
+        bearer:
+          token: "{{ `{{ .Env.STYRA_TOKEN }}` }}"
+      name: styra
+      url: "{{ .Cluster.ConfigItems.skipper_open_policy_agent_observability_url }}"
+      response_header_timeout_seconds: {{ .Cluster.ConfigItems.skipper_open_policy_agent_styra_response_header_timeout }}
     - credentials:
         s3_signing:
           web_identity_credentials:
