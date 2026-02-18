@@ -28,6 +28,10 @@ spec:
   securityGroupSelectorTerms:
     - tags:
         karpenter.sh/discovery: "{{ .Cluster.ID }}/WorkerNodeSecurityGroup"
+    #{{ if eq (index .NodePool.ConfigItems "taints") "dedicated=skipper-ingress:NoSchedule" }}
+    - tags:
+        karpenter.sh/discovery: "{{ .Cluster.ID }}/SkipperIngressNodeSecurityGroup"
+    #{{ end }}
   # {{ if and (eq .NodePool.ConfigItems.associate_public_ip_on_launch "true") (ne .NodePool.ConfigItems.internal_node_subnets_enabled "true") }}
   associatePublicIPAddress: true
   # {{ end }}
