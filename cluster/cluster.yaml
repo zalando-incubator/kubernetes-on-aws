@@ -83,24 +83,6 @@ Resources:
           ToPort: {{ $element.ToPort }}
 {{- end }}
 {{- end }}
-        - CidrIp: "0.0.0.0/0"
-          FromPort: 9998
-          IpProtocol: tcp
-          ToPort: 9999
-        - CidrIpv6: "::/0"
-          FromPort: 9998
-          IpProtocol: tcp
-          ToPort: 9999
-{{- if eq .Cluster.ConfigItems.skipper_ingress_redis_swim_enabled "true" }}
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-          FromPort: 9990
-          IpProtocol: tcp
-          ToPort: 9990
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-          FromPort: 9990
-          IpProtocol: udp
-          ToPort: 9990
-{{- end }}
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 10248
           IpProtocol: tcp
@@ -1048,20 +1030,6 @@ Resources:
           IpProtocol: {{ $element.Protocol }}
           ToPort: {{ $element.ToPort }}
 {{- end }}
-{{- end }}
-        - CidrIp: "0.0.0.0/0"
-          FromPort: 9998
-          IpProtocol: tcp
-          ToPort: 9999
-{{- if eq .Cluster.ConfigItems.skipper_ingress_redis_swim_enabled "true" }}
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-          FromPort: 9990
-          IpProtocol: tcp
-          ToPort: 9990
-        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
-          FromPort: 9990
-          IpProtocol: udp
-          ToPort: 9990
 {{- end }}
         - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
           FromPort: 10248
