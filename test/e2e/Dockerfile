@@ -1,12 +1,12 @@
 # builder image
-FROM golang:1.25 AS builder
+FROM golang:1.26 AS builder
 
 RUN CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.25.1
 
 # final image
 # TODO get rid of python dependencies
 # * wait-for-update.py
-FROM container-registry.zalando.net/library/python-3.13-slim:latest
+FROM container-registry.zalando.net/library/python-3.14-slim:latest
 
 ARG TARGETARCH
 
