@@ -132,6 +132,33 @@ Resources:
         - Key: 'karpenter.sh/discovery'
           Value: '{{ .Cluster.ID }}/WorkerNodeSecurityGroup'
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
+  EKSIngressWorkerSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "{{ .Cluster.ID }}-ingress-worker-sg"
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 9998
+          IpProtocol: tcp
+          ToPort: 9999
+        - CidrIpv6: "::/0"
+          FromPort: 9998
+          IpProtocol: tcp
+          ToPort: 9999
+{{- if eq .Cluster.ConfigItems.skipper_ingress_redis_swim_enabled "true" }}
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9990
+          IpProtocol: tcp
+          ToPort: 9990
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9990
+          IpProtocol: udp
+          ToPort: 9990
+{{- end }}
+      Tags:
+        - Key: 'karpenter.sh/discovery'
+          Value: '{{ .Cluster.ID }}/SkipperIngressNodeSecurityGroup'
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
   EKSSelfWorkerSecurityIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -1077,6 +1104,33 @@ Resources:
           Value: '{{ .Cluster.ID }}/WorkerNodeSecurityGroup'
       VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
     Type: 'AWS::EC2::SecurityGroup'
+  IngressWorkerSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "{{ .Cluster.ID }}-ingress-worker-sg"
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 9998
+          IpProtocol: tcp
+          ToPort: 9999
+        - CidrIpv6: "::/0"
+          FromPort: 9998
+          IpProtocol: tcp
+          ToPort: 9999
+{{- if eq .Cluster.ConfigItems.skipper_ingress_redis_swim_enabled "true" }}
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9990
+          IpProtocol: tcp
+          ToPort: 9990
+        - CidrIp: "{{.Values.vpc_ipv4_cidr}}"
+          FromPort: 9990
+          IpProtocol: udp
+          ToPort: 9990
+{{- end }}
+      Tags:
+        - Key: 'karpenter.sh/discovery'
+          Value: '{{ .Cluster.ID }}/SkipperIngressNodeSecurityGroup'
+      VpcId: "{{.Cluster.ConfigItems.vpc_id}}"
   WorkerSecurityGroupIngressFromMasterToFlannel:
     Properties:
       FromPort: 8472
