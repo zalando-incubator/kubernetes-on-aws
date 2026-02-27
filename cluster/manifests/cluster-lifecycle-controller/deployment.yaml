@@ -50,12 +50,7 @@ spec:
         - name: AWS_REGION
           value: "{{ .Cluster.Region }}"
 {{- if eq .Cluster.Provider "zalando-eks"}}
-      nodeSelector:
-        dedicated: cluster-seed
       tolerations:
-      - key: dedicated
-        value: cluster-seed
-        effect: NoSchedule
       - key: node.kubernetes.io/not-ready
         operator: Exists
 {{- else}}
