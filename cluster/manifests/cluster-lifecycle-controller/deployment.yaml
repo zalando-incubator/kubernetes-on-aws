@@ -51,6 +51,9 @@ spec:
           value: "{{ .Cluster.Region }}"
 {{- if eq .Cluster.Provider "zalando-eks"}}
       tolerations:
+      - key: dedicated
+        value: cluster-seed
+        effect: NoSchedule
       - key: node.kubernetes.io/not-ready
         operator: Exists
 {{- else}}
