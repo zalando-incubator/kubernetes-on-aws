@@ -7,14 +7,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"net/http"
+	"time"
+
 	netv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/framework/ingress"
 	admissionapi "k8s.io/pod-security-admission/api"
-	"net/http"
-	"time"
 )
 
 var _ = Describe("Ingress tests for OPA filters", func() {
@@ -59,6 +60,7 @@ var _ = Describe("Ingress tests for OPA filters", func() {
 
 		url := "https://" + hostName + authorizationEnforcedPath
 		req, err := http.NewRequest("GET", url, nil)
+		framework.ExpectNoError(err)
 		resp, err := getAndWaitResponseWithInterval(rt, req, 60*time.Second, 5*time.Second, http.StatusForbidden)
 		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
@@ -91,6 +93,7 @@ var _ = Describe("Ingress tests for OPA filters", func() {
 
 		url := "https://" + hostName + serveResponsePath
 		req, err := http.NewRequest("GET", url, nil)
+		framework.ExpectNoError(err)
 		resp, err := getAndWaitResponseWithInterval(rt, req, 60*time.Second, 5*time.Second, http.StatusForbidden)
 		framework.ExpectNoError(err)
 		Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
@@ -145,7 +148,20 @@ func updateIngressAndWait(serviceName, hostName, path, ingressRoute string, port
 		},
 		port,
 	)
-	ingressUpdate, err := cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+
+	var (
+		err           error
+		ingressUpdate *netv1.Ingress
+	)
+	// skipper validation webhook fails very often with status code 500, maybe it's not ready for some reason
+	for range 10 {
+		ingressUpdate, err = cs.NetworkingV1().Ingresses(ingressCreate.ObjectMeta.Namespace).Update(context.TODO(), updatedIng, metav1.UpdateOptions{})
+		if err != nil {
+			time.Sleep(30 * time.Second)
+			continue
+		}
+		break
+	}
 	framework.ExpectNoError(err)
 	time.Sleep(2 * time.Minute) // wait for routing change propagation
 
