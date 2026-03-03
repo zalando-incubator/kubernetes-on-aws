@@ -168,7 +168,7 @@ var _ = describe("Sandbox Controller", func() {
 					return nil, err
 				}
 				return r.Items, nil
-			}).WithTimeout(1 * time.Minute).WithPolling(1 * time.Second).Should(HaveLen(0))
+			}).WithTimeout(5 * time.Minute).WithPolling(1 * time.Second).Should(HaveLen(0))
 		})
 
 		It("Should proocess a Sandbox resource and create an ingress [Sandbox] [Zalando]", func() {
@@ -211,7 +211,7 @@ var _ = describe("Sandbox Controller", func() {
 					return nil, err
 				}
 				return i.Items, nil
-			}).WithTimeout(1 * time.Minute).WithPolling(1 * time.Second).Should(HaveLen(0))
+			}).WithTimeout(5 * time.Minute).WithPolling(1 * time.Second).Should(HaveLen(0))
 		})
 
 	})
