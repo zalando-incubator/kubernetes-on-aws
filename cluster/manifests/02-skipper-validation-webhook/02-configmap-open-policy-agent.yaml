@@ -25,12 +25,15 @@ data:
             session_name: open-policy-agent-instance
       name: styra-bundles
       url: "{{ .Cluster.ConfigItems.skipper_open_policy_agent_bundles_url }}"
-    {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_decision_logs_buffer_type_event_enable "true" }}
     decision_logs:
-      reporting:
-        buffer_type: "event"
-        buffer_size_limit_events: {{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_logs_buffer_type_event_limit }}
-    {{ end }}
+      console: true
+      # Disable decision logging for the validation webhook
+      service: ""
+    status:
+      # This ensures we disable status reporting for the validation webhook
+      console: false
+      prometheus: true
+      service: ""
     {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_jwt_cache_enable "true" }}
     caching: 
       inter_query_builtin_value_cache:
