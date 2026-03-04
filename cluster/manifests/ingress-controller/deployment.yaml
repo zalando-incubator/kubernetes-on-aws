@@ -38,6 +38,15 @@ spec:
           image: "{{ $image }}"
           args:
             - --target-access-mode=HostPort
+{{- if eq .Cluster.Provider "zalando-eks" }}
+            - --ip-addr-type={{ .Cluster.ConfigItems.kube_aws_ingress_controller_lb_ip_addr_type }}
+            - --target-group-ip-addr-type={{ .Cluster.ConfigItems.kube_aws_ingress_controller_target_group_ip_addr_type }}
+{{- if eq .Cluster.ConfigItems.kube_aws_ingress_controller_enable_cni_mode "true" }}
+            - --target-access-mode=AWSCNI
+            - --target-cni-namespace=kube-system
+            - --target-cni-pod-labelselector=application=skipper-ingress,component=ingress
+{{- end }}
+{{- end }}
             - --stack-termination-protection
             - --ssl-policy={{ .Cluster.ConfigItems.kube_aws_ingress_controller_ssl_policy }}
             - --idle-connection-timeout={{ .Cluster.ConfigItems.kube_aws_ingress_controller_idle_timeout }}
