@@ -36,6 +36,32 @@ data:
       reporting:
         buffer_type: "event"
         buffer_size_limit_events: {{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_logs_buffer_type_event_limit }}
+    {{ else if eq .Cluster.ConfigItems.skipper_open_policy_agent_decision_log_export_enabled "true" }}
+    status:
+      prometheus: true
+    decision_logs:
+      plugin: eopa_dl
+    plugins:
+      eopa_dl:
+        buffer:
+          type: memory
+          max_bytes: 15728640
+          flush_at_bytes: 10485760
+          flush_at_period: 15s
+        output:
+        {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_console_logs_enabled "true" }}
+        - type: console
+        {{ end }}
+        - type: s3
+          bucket: {{ `{{ .bundlename }}` }}
+          timeout: "2s"
+          endpoint: "{{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_log_s3_endpoint }}/{{ .Cluster.InfrastructureAccountID }}/{{ .Cluster.Alias }}/"
+          force_path: true
+          region: "{{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_log_s3_region }}"
+          batching:
+            compress: true
+            at_bytes: 1048576
+            at_period: 10s
     {{ end }}
     {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_jwt_cache_enable "true" }}
     caching: 
