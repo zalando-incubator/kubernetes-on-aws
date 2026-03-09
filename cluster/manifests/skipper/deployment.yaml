@@ -1,6 +1,6 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.39-1369" }}
+{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.43-1373" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.43-1373" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
@@ -240,6 +240,7 @@ spec:
           - "-combined-response-metrics={{ .Cluster.ConfigItems.skipper_combined_response_metrics }}"
           - "-backend-host-metrics={{ .Cluster.ConfigItems.skipper_backend_host_metrics }}"
           - "-disable-metrics-compat"
+          - "-disable-metrics-compression"
           - "-enable-profile"
           - "-memory-profile-rate={{ .Cluster.ConfigItems.skipper_memory_profile_rate }}"
           - "-block-profile-rate={{ .Cluster.ConfigItems.skipper_block_profile_rate }}"
