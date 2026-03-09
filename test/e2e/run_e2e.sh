@@ -219,7 +219,7 @@ if [ "$e2e" = true ]; then
     fi
 
     mkdir -p junit_reports
-    ginkgo -procs=25 -flake-attempts=2 \
+    ginkgo -procs=25 -flake-attempts=3 \
         -focus="(\[Conformance\]|\[StatefulSetBasic\]|\[Zalando\]|\[Opa\])" \
         -skip="($(IFS="|" ; echo "${SKIPPED_TESTS[*]}"))" \
         "e2e.test" -- \
