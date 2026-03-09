@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: "deployment-service-controller"
   namespace: "kube-system"
@@ -8,6 +8,8 @@ metadata:
     component: "controller"
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       application: "deployment-service"
