@@ -2082,6 +2082,11 @@ Resources:
               - Action: 'ec2:DescribeVpcs'
                 Effect: Allow
                 Resource: '*'
+{{- if eq .Cluster.Provider "zalando-eks" }}
+              - Action: 'ec2:DescribeVpcPeeringConnections'
+                Effect: Allow
+                Resource: '*'
+{{- end }}
               - Action: 'iam:CreateServiceLinkedRole'
                 Effect: Allow
                 Resource: '*'
