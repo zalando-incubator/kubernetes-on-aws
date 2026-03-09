@@ -248,6 +248,12 @@ spec:
           values:
             - "amd"
         # {{ end }}
+        # {{ if ne .NodePool.ConfigItems.karpenter_flex_types_enabled "true" }}
+        - key: "karpenter.k8s.aws/instance-capability-flex"
+          operator: "NotIn"
+          values:
+            - "true"
+        # {{ end }}
 #{{end}}
 
 #{{ if (index .NodePool.ConfigItems "requirements") }}

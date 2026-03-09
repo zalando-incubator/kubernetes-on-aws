@@ -69,6 +69,18 @@ karpenter_amd_cpu_types_enabled: "false"
 karpenter_amd_cpu_types_enabled: "true"
 {{end}}
 
+# configure whether we allow flex instance types for Karpenter nodes
+# flex instance types have a baseline CPU performance with burst capability.
+# This provides an unpredictable performance, hence we want to avoid running
+# those by default in production.
+{{if eq .Cluster.Environment "production"}}
+karpenter_flex_types_enabled: "false"
+{{else}}
+karpenter_flex_types_enabled: "true"
+{{end}}
+
+
+
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
 
