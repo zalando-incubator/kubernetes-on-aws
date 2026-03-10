@@ -102,8 +102,13 @@ skipper_ingress_max_replicas: "300"
 skipper_ingress_min_replicas: "2"
 skipper_ingress_max_replicas: "50"
 {{end}}
+{{if eq .Cluster.Environment "production"}}
 skipper_ingress_cpu: "1000m"
 skipper_ingress_memory: "1500Mi"
+{{else}}
+skipper_ingress_cpu: "500m"
+skipper_ingress_memory: "750Mi"
+{{end}}
 
 skipper_topology_spread_enabled: "true"
 skipper_topology_spread_timeout: "7m"
