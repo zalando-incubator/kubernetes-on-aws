@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: "deployment-service-controller"
   namespace: "kube-system"
@@ -8,11 +8,12 @@ metadata:
     component: "controller"
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       application: "deployment-service"
       component: "controller"
-  serviceName: "deployment-service-controller"
   template:
     metadata:
       labels:
@@ -46,11 +47,11 @@ spec:
               name: deployment-credentials
           resources:
             requests:
-              cpu: "{{.Cluster.ConfigItems.deployment_service_controller_cpu}}"
-              memory: "{{.Cluster.ConfigItems.deployment_service_controller_memory}}"
+              cpu: "100m"
+              memory: "1Gi"
             limits:
-              cpu: "{{.Cluster.ConfigItems.deployment_service_controller_cpu}}"
-              memory: "{{.Cluster.ConfigItems.deployment_service_controller_memory}}"
+              cpu: "100m"
+              memory: "1Gi"
           ports:
             - containerPort: 8080
               name: http
