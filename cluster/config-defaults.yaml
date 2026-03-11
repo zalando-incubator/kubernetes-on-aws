@@ -64,6 +64,8 @@ karpenter_instance_family_g6f_enabled: "false"
 # their lower performance compared to Intel-based instances.
 {{if eq .Cluster.Environment "production"}}
 karpenter_excluded_instance_families: "c5a,m5a,r5a,c5ad,m5ad,r5ad"
+{{ else if eq .Cluster.Environment "e2e" }}
+karpenter_excluded_instance_families: "c5a,m5a,r5a,c5ad,m5ad,r5ad"
 {{else}}
 karpenter_excluded_instance_families: ""
 {{end}}
