@@ -72,7 +72,13 @@ kube_aws_ingress_controller_cert_polling_interval: "2m"
 kube_aws_ingress_default_lb_type: "application"
 # cert filter
 kube_aws_ingress_controller_cert_filter_tag: "kubernetes=enabled"
-
+# ip address type for LB, can be "ipv4", "dualstack"
+kube_aws_ingress_controller_lb_ip_addr_type: "ipv4"
+# ip address type for target group, can be "ipv4" or "ipv6"
+# Note: if LB ip address type is "ipv4", target group ip address type must be "ipv4".
+kube_aws_ingress_controller_target_group_ip_addr_type: "ipv4"
+# when enabled, the ingress controller will use AWS CNI to attach ENIs to the ingress controller pods and use pod IPs as targets in the target group.
+kube_aws_ingress_controller_enable_cni_mode: "false"
 # ALB to NLB switch
 # "pre":
 # - kube-ingress-aws-controller will configure NLB to forward HTTPS requests
@@ -103,6 +109,12 @@ skipper_topology_spread_enabled: "true"
 skipper_topology_spread_timeout: "7m"
 
 skipper_copy_stream_pool_enabled: "true"
+
+# haproxy protocol: cidrs are a comma seperated list of CIDRs, for example "::0/0,0.0.0.0/0" for all IPs
+skipper_enable_proxy_protocol: "false"
+skipper_proxy_allow_cidrs: ""
+skipper_proxy_deny_cidrs: ""
+skipper_proxy_skip_cidrs: ""
 
 # PHC
 skipper_ingress_health_check_options: "period=10s,min-requests=10,min-drop-probability=0.05,max-drop-probability=0.9,max-unhealthy-endpoints-ratio=0.9"
@@ -310,6 +322,7 @@ skipper_max_tcp_listener_concurrency: "-1"
 skipper_max_tcp_listener_queue: "-1"
 
 # opentracing
+skipper_ingress_opentracing_client_trace_by_tag: "true"
 skipper_ingress_opentracing_excluded_proxy_tags: ""
 skipper_ingress_opentracing_backend_name_tag: "true"
 skipper_opentracing_disable_filter_spans: "true"
@@ -419,6 +432,10 @@ skipper_open_policy_agent_enabled: "false"
 skipper_open_policy_agent_styra_token: ""
 skipper_open_policy_agent_data_preprocessing_optimization_enabled: "true"
 skipper_open_policy_agent_preloading_enabled: "false"
+skipper_open_policy_agent_decision_log_export_enabled: "false"
+skipper_open_policy_agent_console_logs_enabled: "false"
+skipper_open_policy_agent_decision_log_s3_endpoint: ""
+skipper_open_policy_agent_decision_log_s3_region: ""
 
 # Default timeout value in seconds for outgoing http calls from Open Policy Agent in a skipper filter
 skipper_open_policy_agent_styra_response_header_timeout: "2"
@@ -1319,22 +1336,19 @@ wiz_enable_runtime_connector_broker: "false"
 wiz_enable_runtime_connector: "true"
 wiz_enable_runtime_connector_broker: "true"
 {{ end }}
-{{if eq .Cluster.Environment "e2e"}}
+
 wiz_enable_runtime_sensor: "true"
 wiz_sensor_cpu: "200m"
 wiz_sensor_memory: "300Mi"
-{{ else }}
-wiz_enable_runtime_sensor: "false"
-wiz_sensor_cpu: "200m"
-wiz_sensor_memory: "300Mi"
-{{ end }}
 wiz_connector_cpu: "50m"
 wiz_connector_memory: "150Mi"
 wiz_priority: "true"
+
 # Please note when this is set to true it allows the use of the node selector feature
 # to deploy the sensor and connector on specific nodes, by manually setting the node selector label on the nodes.
 # This is useful when you want to deploy the sensor and connector on specific nodes.
 wiz_node_feature_rollout : "false"
+
 # Enable runtime sensor response capabilities such as KILL
 wiz_enable_runtime_sensor_response_capabilities: "false"
 
@@ -1354,10 +1368,13 @@ eks_fis_support_enabled: "false"
 {{ if eq .Cluster.Environment "e2e" }}
 # Enables the Amazon EFS CSI driver addon and sets up the default EFS
 eks_efs_csi_support_enabled: "true"
+# Enables the Amazon S3 CSI driver addon
+eks_s3_csi_support_enabled: "true"
 # Enables the EKS Node Monitoring Agent
 eks_node_monitoring_enabled: "true"
 {{ else }}
 eks_efs_csi_support_enabled: "false"
+eks_s3_csi_support_enabled: "false"
 eks_node_monitoring_enabled: "false"
 {{ end }}
 
