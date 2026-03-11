@@ -1,0 +1,20 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: "deployment-service-controller"
+  namespace: "kube-system"
+  labels:
+    application: "deployment-service"
+    component: "controller"
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: "deployment-service-controller"
+  updatePolicy:
+    updateMode: Recreate
+  resourcePolicy:
+    containerPolicies:
+    - containerName: "deployment-service-controller"
+      minAllowed:
+        memory: "{{.Cluster.ConfigItems.deployment_service_controller_memory_min}}"
