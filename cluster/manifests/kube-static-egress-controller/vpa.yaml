@@ -1,0 +1,20 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: "kube-static-egress-controller"
+  namespace: "kube-system"
+  labels:
+    application: kubernetes
+    component: kube-static-egress-controller
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: "kube-static-egress-controller"
+  updatePolicy:
+    updateMode: Recreate
+  resourcePolicy:
+    containerPolicies:
+    - containerName: "controller"
+      minAllowed:
+        memory: "{{.Cluster.ConfigItems.static_egress_controller_memory_min}}"
