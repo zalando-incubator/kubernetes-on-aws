@@ -330,6 +330,17 @@ Resources:
         - RoleArn: !GetAtt EKSEFSCSIDriverIAMRole.Arn
           ServiceAccount: efs-csi-controller-sa
 {{- end }}
+{{- if eq .Cluster.ConfigItems.eks_s3_csi_support_enabled "true" }}
+  EKSAddonS3CSIDriver:
+    Type: AWS::EKS::Addon
+    Properties:
+      AddonName: aws-mountpoint-s3-csi-driver
+      AddonVersion: "v2.3.0-eksbuild.1"
+      ClusterName: !Ref EKSCluster
+      PodIdentityAssociations:
+        - RoleArn: !GetAtt EKSS3CSIDriverIAMRole.Arn
+          ServiceAccount: s3-csi-driver-sa
+{{- end }}
   EKSAddonAmazonVPCCNI:
     Type: AWS::EKS::Addon
     Properties:
@@ -633,6 +644,30 @@ Resources:
       - !Ref EKSWorkerSecurityGroup
   {{ end }}
   {{ end }}
+{{- end }}
+{{- if eq .Cluster.ConfigItems.eks_s3_csi_support_enabled "true" }}
+  EKSS3CSIDriverIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: "{{.Cluster.LocalID}}-aws-mountpoint-s3-csi-driver"
+      AssumeRolePolicyDocument: {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "pods.eks.amazonaws.com"
+                },
+                "Action": [
+                    "sts:AssumeRole",
+                    "sts:TagSession"
+                ]
+            }
+        ]
+      }
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonS3FullAccess
 {{- end }}
   EKSZalandoIAMProxyIAMRole:
     Type: AWS::IAM::Role
@@ -2051,6 +2086,11 @@ Resources:
               - Action: 'ec2:DescribeVpcs'
                 Effect: Allow
                 Resource: '*'
+{{- if eq .Cluster.Provider "zalando-eks" }}
+              - Action: 'ec2:DescribeVpcPeeringConnections'
+                Effect: Allow
+                Resource: '*'
+{{- end }}
               - Action: 'iam:CreateServiceLinkedRole'
                 Effect: Allow
                 Resource: '*'
