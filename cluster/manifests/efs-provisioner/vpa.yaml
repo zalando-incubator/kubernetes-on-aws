@@ -1,0 +1,22 @@
+{{ if index .Cluster.ConfigItems "efs_id" }}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: efs-provisioner
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: efs-provisioner
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: efs-provisioner
+  updatePolicy:
+    updateMode: Recreate
+  resourcePolicy:
+    containerPolicies:
+    - containerName: efs-provisioner
+      minAllowed:
+        memory: {{.Cluster.ConfigItems.efs_provisioner_memory_min}}
+{{ end }}
