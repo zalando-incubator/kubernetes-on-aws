@@ -57,8 +57,34 @@ karpenter_instance_family_t_enabled: "false"
 # scheduling issues, we need to properly test and support it later if needed
 karpenter_instance_family_g6f_enabled: "false"
 
+
+# List of instance families to exclude from Karpenter node pools. This is a
+# comma separated list of instance family names, e.g. "c5a,m5a,r5a". By default,
+# we exclude 5th gen AMD-based instance families in production clusters due to
+# their lower performance compared to Intel-based instances.
+{{if eq .Cluster.Environment "production"}}
+karpenter_excluded_instance_families: "c5a,m5a,r5a,c5ad,m5ad,r5ad"
+{{ else if eq .Cluster.Environment "e2e" }}
+karpenter_excluded_instance_families: "c5a,m5a,r5a,c5ad,m5ad,r5ad"
+{{else}}
+karpenter_excluded_instance_families: ""
+{{end}}
+
+# configure whether we allow flex instance types for Karpenter nodes
+# flex instance types have a baseline CPU performance with burst capability.
+# This provides an unpredictable performance, hence we want to avoid running
+# those by default in production.
+{{if eq .Cluster.Environment "production"}}
+karpenter_flex_types_enabled: "false"
+{{else}}
+karpenter_flex_types_enabled: "true"
+{{end}}
+
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
+
+# cluster lifecycle controller
+cluster_lifecycle_controller_memory_min: "10Mi"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
@@ -431,7 +457,7 @@ skipper_ingress_routegroup_crd_require_hosts: "true"
 skipper_open_policy_agent_enabled: "false"
 skipper_open_policy_agent_styra_token: ""
 skipper_open_policy_agent_data_preprocessing_optimization_enabled: "true"
-skipper_open_policy_agent_preloading_enabled: "false"
+skipper_open_policy_agent_preloading_enabled: "true"
 skipper_open_policy_agent_decision_log_export_enabled: "false"
 skipper_open_policy_agent_console_logs_enabled: "false"
 skipper_open_policy_agent_decision_log_s3_endpoint: ""
@@ -1114,8 +1140,7 @@ experimental_nlb_alpn_h2_enabled: "true"
 exec_probe_timeout_enabled: "true"
 
 # Settings for the deployment service
-deployment_service_controller_cpu: "100m"
-deployment_service_controller_memory: "1Gi"
+deployment_service_controller_memory_min: "50Mi"
 deployment_service_api_role_arn: ""
 deployment_service_tokeninfo_url: ""
 deployment_service_lightstep_token: ""

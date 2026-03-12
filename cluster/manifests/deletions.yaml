@@ -1,5 +1,9 @@
 # everything defined under here will be deleted before applying the manifests
-pre_apply: []
+# adding the StatefulSet temporary to migrate to Deployment with VPA
+pre_apply:
+- name: deployment-service-controller
+  kind: StatefulSet
+  namespace: kube-system
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
