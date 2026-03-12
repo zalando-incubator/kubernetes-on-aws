@@ -2205,7 +2205,9 @@ Resources:
 {{- end }}
       Path: /
       Policies:
-        - PolicyDocument:
+        - PolicyName: s3-access-for-opa
+          PolicyDocument:
+            Version: 2012-10-17
             Statement:
               - Effect: "Allow"
                 Action:
@@ -2217,8 +2219,6 @@ Resources:
                   - "s3:PutObject"
                 Resource:
                   - "{{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_log_bucket_arn }}/*"
-            Version: 2012-10-17
-          PolicyName: s3-access-for-opa
       RoleName: "{{.Cluster.LocalID}}-app-skipper-ingress"
     Type: 'AWS::IAM::Role'
   # Note: this is not strictly specific to Open Policy Agent and can be extend
@@ -2255,7 +2255,9 @@ Resources:
 {{- end }}
       Path: /
       Policies:
-        - PolicyDocument:
+        - PolicyName: s3-access-for-opa
+          PolicyDocument:
+            Version: 2012-10-17
             Statement:
               - Effect: "Allow"
                 Action:
@@ -2267,8 +2269,6 @@ Resources:
                   - "s3:PutObject"
                 Resource:
                   - "{{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_log_bucket_arn }}/*"
-            Version: 2012-10-17
-          PolicyName: s3-access-for-opa
       RoleName: "{{.Cluster.LocalID}}-app-skipper-validation-webhook"
     Type: 'AWS::IAM::Role'
   ClusterLifecycleControllerIAMRole:
