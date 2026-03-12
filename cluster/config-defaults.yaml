@@ -64,6 +64,8 @@ karpenter_instance_family_g6f_enabled: "false"
 # their lower performance compared to Intel-based instances.
 {{if eq .Cluster.Environment "production"}}
 karpenter_excluded_instance_families: "c5a,m5a,r5a,c5ad,m5ad,r5ad"
+{{ else if eq .Cluster.Environment "e2e" }}
+karpenter_excluded_instance_families: "c5a,m5a,r5a,c5ad,m5ad,r5ad"
 {{else}}
 karpenter_excluded_instance_families: ""
 {{end}}
@@ -80,6 +82,9 @@ karpenter_flex_types_enabled: "true"
 
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
+
+# cluster lifecycle controller
+cluster_lifecycle_controller_memory_min: "10Mi"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
