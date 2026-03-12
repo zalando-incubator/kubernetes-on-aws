@@ -64,6 +64,8 @@ karpenter_instance_family_g6f_enabled: "false"
 # their lower performance compared to Intel-based instances.
 {{if eq .Cluster.Environment "production"}}
 karpenter_excluded_instance_families: "c5a,m5a,r5a,c5ad,m5ad,r5ad"
+{{ else if eq .Cluster.Environment "e2e" }}
+karpenter_excluded_instance_families: "c5a,m5a,r5a,c5ad,m5ad,r5ad"
 {{else}}
 karpenter_excluded_instance_families: ""
 {{end}}
@@ -559,6 +561,7 @@ static_egress_controller_enabled: "true"
 {{- else }}
 static_egress_controller_enabled: "false"
 {{- end }}
+static_egress_controller_memory_min: "10Mi"
 
 # journald reader settings
 journald_reader_enabled: "true"
@@ -1394,6 +1397,7 @@ eks_efs_csi_support_enabled: "false"
 eks_s3_csi_support_enabled: "false"
 eks_node_monitoring_enabled: "false"
 {{ end }}
+efs_provisioner_memory_min: "10Mi"
 
 # prefix delegation can only be configured for ipv4. For ipv6 it can only be true.
 aws_vpc_cni_prefix_delegation: "false"
