@@ -337,9 +337,6 @@ Resources:
       AddonName: aws-mountpoint-s3-csi-driver
       AddonVersion: "v2.3.0-eksbuild.1"
       ClusterName: !Ref EKSCluster
-      PodIdentityAssociations:
-        - RoleArn: !GetAtt EKSS3CSIDriverIAMRole.Arn
-          ServiceAccount: s3-csi-driver-sa
 {{- end }}
   EKSAddonAmazonVPCCNI:
     Type: AWS::EKS::Addon
@@ -675,30 +672,6 @@ Resources:
       - !Ref EKSWorkerSecurityGroup
   {{ end }}
   {{ end }}
-{{- end }}
-{{- if eq .Cluster.ConfigItems.eks_s3_csi_support_enabled "true" }}
-  EKSS3CSIDriverIAMRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: "{{.Cluster.LocalID}}-aws-mountpoint-s3-csi-driver"
-      AssumeRolePolicyDocument: {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-                "Effect": "Allow",
-                "Principal": {
-                    "Service": "pods.eks.amazonaws.com"
-                },
-                "Action": [
-                    "sts:AssumeRole",
-                    "sts:TagSession"
-                ]
-            }
-        ]
-      }
-      Path: /
-      ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AmazonS3FullAccess
 {{- end }}
   EKSZalandoIAMProxyIAMRole:
     Type: AWS::IAM::Role
