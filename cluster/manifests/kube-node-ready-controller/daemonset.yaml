@@ -14,11 +14,8 @@ spec:
   selector:
     matchLabels:
       daemonset: kube-node-ready-controller
-{{- if ne .Cluster.Provider "zalando-eks"}}
-  updateStrategy:
-    type: RollingUpdate
-{{- else }}
-  replicas: 2
+{{- if eq .Cluster.Provider "zalando-eks"}}
+  replicas: 1
 {{- end}}
   template:
     metadata:
@@ -47,22 +44,6 @@ spec:
             cpu: {{.Cluster.ConfigItems.kube_node_ready_controller_cpu}}
             memory: {{.Cluster.ConfigItems.kube_node_ready_controller_memory}}
 {{- if eq .Cluster.Provider "zalando-eks"}}
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchLabels:
-                daemonset: kube-node-ready-controller
-            topologyKey: kubernetes.io/hostname
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                - key: dedicated
-                  operator: In
-                  values:
-                  - cluster-seed
       tolerations:
       - key: dedicated
         value: cluster-seed
