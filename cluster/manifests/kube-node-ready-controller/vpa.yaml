@@ -1,0 +1,22 @@
+{{- if eq .Cluster.Provider "zalando-eks"}}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: kube-node-ready-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: kube-node-ready-controller
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: kube-node-ready-controller
+  updatePolicy:
+    updateMode: Recreate
+  resourcePolicy:
+    containerPolicies:
+    - containerName: controller
+      minAllowed:
+        memory: "{{.Cluster.ConfigItems.kube_node_ready_controller_memory_min}}"
+{{- end}}
