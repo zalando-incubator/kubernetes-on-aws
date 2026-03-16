@@ -1,0 +1,42 @@
+# {{ $image := "container-registry-test.zalando.net/gwproxy/shadow-traffic-controller:main-10" }}
+# {{ $version := index (split $image ":") 1 }}
+# {{ if eq .Cluster.ConfigItems.shadow_traffic_controller_enabled "true" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shadow-traffic-controller
+  namespace: kube-system
+  labels:
+    application: shadow-traffic-controller
+    version: "{{ $version }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: shadow-traffic-controller
+  template:
+    metadata:
+      labels:
+        application: shadow-traffic-controller
+        version: "{{ $version }}"
+      annotations:
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "controller", "parser": "keyValue"}]
+        logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "7979"
+        prometheus.io/scrape: "true"
+    spec:
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
+      serviceAccountName: shadow-traffic-controller
+      containers:
+        - name: controller
+          image: "{{ $image }}"
+          resources:
+            limits:
+              cpu: 50m
+              memory: 300Mi
+            requests:
+              cpu: 50m
+              memory: 300Mi
+# {{ end }}
