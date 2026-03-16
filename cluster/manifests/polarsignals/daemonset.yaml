@@ -93,11 +93,11 @@ spec:
       serviceAccountName: polarsignals-agent
       nodeSelector:
         kubernetes.io/os: linux
-        dedicated: skipper-ingress
+        dedicated: "{{ .Cluster.ConfigItems.polarsignals_node_selector }}"
       tolerations:
         - effect: NoSchedule
           key: dedicated
-          value: skipper-ingress
+          value: "{{ .Cluster.ConfigItems.polarsignals_node_selector }}"
       volumes:
         - name: parca-config-volume
           configMap:
