@@ -1,26 +1,28 @@
-# {{ $image := "container-registry.zalando.net/library/redis-7-alpine:7.2-alpine-20250805" }}
+# {{ $image := "container-registry.zalando.net/library/valkey-9-alpine:9-alpine3.22-20260302" }}
 # {{ $version := index (split $image ":") 1 }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   labels:
-    application: skipper-ingress-redis
+    application: skipper-ingress
+    component: valkey
     version: "{{ $version }}"
   annotations:
-    zalando.org/update-using-hpa-replicas: skipper-ingress-redis
-  name: skipper-ingress-redis
+    zalando.org/update-using-hpa-replicas: skipper-ingress-valkey
+  name: skipper-ingress-valkey
   namespace: kube-system
 spec:
   podManagementPolicy: Parallel
   selector:
     matchLabels:
-      statefulset: skipper-ingress-redis
-  serviceName: skipper-ingress-redis
+      statefulset: skipper-ingress-valkey
+  serviceName: skipper-ingress-valkey
   template:
     metadata:
       labels:
-        statefulset: skipper-ingress-redis
-        application: skipper-ingress-redis
+        statefulset: skipper-ingress-valkey
+        application: skipper-ingress
+        component: valkey
         version: "{{ $version }}"
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
@@ -38,7 +40,7 @@ spec:
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              statefulset: skipper-ingress-redis
+              statefulset: skipper-ingress-valkey
 {{- end }}
       affinity:
         podAntiAffinity:
@@ -49,7 +51,11 @@ spec:
               - key: application
                 operator: In
                 values:
-                - skipper-ingress-redis
+                - skipper-ingress
+              - key: component
+                operator: In
+                values:
+                - valkey
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           - weight: 100
@@ -72,9 +78,9 @@ spec:
       terminationGracePeriodSeconds: 45
       containers:
       - image: "{{ $image }}"
-        name: skipper-ingress-redis
+        name: skipper-ingress-valkey
         args:
-        - /usr/local/bin/docker-entrypoint.sh
+        - valkey-server
         - --save
         - ""
         ports:
@@ -83,7 +89,7 @@ spec:
         readinessProbe:
           exec:
             command:
-            - redis-cli
+            - valkey-cli
             - ping
           failureThreshold: 3
           initialDelaySeconds: 10
@@ -92,8 +98,8 @@ spec:
           timeoutSeconds: 1
         resources:
           limits:
-            cpu: {{ .Cluster.ConfigItems.skipper_redis_cpu }}
-            memory: {{ .Cluster.ConfigItems.skipper_redis_memory }}
+            cpu: {{ .Cluster.ConfigItems.skipper_valkey_cpu }}
+            memory: {{ .Cluster.ConfigItems.skipper_valkey_memory }}
         lifecycle:
           preStop:
             sleep:
