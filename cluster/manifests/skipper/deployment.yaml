@@ -263,7 +263,7 @@ spec:
           - "-max-audit-body=0"
           - "-enable-swarm"
           - "-cluster-ratelimit-max-group-shards={{ .Cluster.ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
-{{ if .Cluster.ConfigItems.skipper_ingress_swarm_type "redis" }}
+{{ if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "redis" }}
           - "-swarm-redis-dial-timeout={{ .Cluster.ConfigItems.skipper_redis_dial_timeout }}"
           - "-swarm-redis-pool-timeout={{ .Cluster.ConfigItems.skipper_redis_pool_timeout }}"
           - "-swarm-redis-read-timeout={{ .Cluster.ConfigItems.skipper_redis_read_timeout }}"
@@ -271,7 +271,7 @@ spec:
           - "-swarm-redis-min-conns={{ .Cluster.ConfigItems.skipper_redis_min_conns }}"
           - "-swarm-redis-max-conns={{ .Cluster.ConfigItems.skipper_redis_max_conns }}"
           - "-swarm-redis-remote=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/redis/shards"
-{{ else if .Cluster.ConfigItems.skipper_ingress_swarm_type "valkey" }}
+{{ else if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "valkey" }}
           - "-swarm-valkey-conn-timeout={{ .Cluster.ConfigItems.skipper_valkey_conn_timeout }}"
           - "-swarm-valkey-remote=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/valkey/shards"
 {{ end }}
@@ -643,11 +643,11 @@ spec:
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
           - "-enable-swarm"
-{{ if .Cluster.ConfigItems.skipper_ingress_swarm_type "redis" }}
+{{ if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "redis" }}
           - "-kubernetes-redis-service-namespace=kube-system"
           - "-kubernetes-redis-service-name=skipper-ingress-redis"
           - "-kubernetes-redis-service-port=6379"
-{{ else if .Cluster.ConfigItems.skipper_ingress_swarm_type "valkey" }}
+{{ else if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "valkey" }}
           - "-kubernetes-valkey-service-namespace=kube-system"
           - "-kubernetes-valkey-service-name=skipper-ingress-valkey"
           - "-kubernetes-valkey-service-port=6379"
