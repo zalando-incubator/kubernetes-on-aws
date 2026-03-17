@@ -404,8 +404,15 @@ Resources:
     Type: AWS::EKS::Addon
     Properties:
       AddonName: eks-node-monitoring-agent
-      AddonVersion: "v1.5.2-eksbuild.1"
+      AddonVersion: "v1.6.0-eksbuild.1"
       ClusterName: !Ref EKSCluster
+      ConfigurationValues: |
+        {
+          "podLabels": {
+            "application": "kubernetes",
+            "component": "eks-node-monitoring-agent"
+          }
+        }
   {{ end }}
 
   {{ if eq .Cluster.Environment "e2e" }}
