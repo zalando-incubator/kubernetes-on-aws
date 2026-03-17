@@ -23,20 +23,34 @@ spec:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "controller", "parser": "keyValue"}]
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
-        prometheus.io/path: /metrics
-        prometheus.io/port: "7979"
-        prometheus.io/scrape: "true"
     spec:
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: shadow-traffic-controller
       containers:
         - name: controller
           image: "{{ $image }}"
+          args:
+            - "--log-level={{ .Cluster.ConfigItems.shadow_traffic_controller_log_level }}"
+            - "--address=:8080"
+          ports:
+            - name: server
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: server
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
           resources:
-            limits:
-              cpu: 50m
-              memory: 300Mi
             requests:
-              cpu: 50m
-              memory: 300Mi
+              cpu: "{{ .Cluster.ConfigItems.shadow_traffic_controller_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.shadow_traffic_controller_memory }}"
+            limits:
+              cpu: "{{ .Cluster.ConfigItems.shadow_traffic_controller_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.shadow_traffic_controller_memory }}"
 # {{ end }}
