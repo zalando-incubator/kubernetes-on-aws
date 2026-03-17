@@ -4,6 +4,14 @@ pre_apply:
 - name: deployment-service-controller
   kind: StatefulSet
   namespace: kube-system
+{{- if eq .Cluster.ConfigItems.skipper_redis_cleanup_enabled "true" }}
+- kind: StatefulSet
+  name: skipper-ingress-redis
+- kind: HorizontalPodAutoscaler
+  name: skipper-ingress-redis
+- kind: Service
+  name: skipper-ingress-redis
+{{- end }}
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
