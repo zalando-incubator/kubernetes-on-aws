@@ -331,8 +331,24 @@ skipper_pod_deletion_cost_controller_resync_enable: "true"
 skipper_pod_deletion_cost_controller_resync_interval: "1h"
 
 # polarsignals - only enabled for some clusters
-# right now only installed on skipper-ingress nodes
 polarsignals_enabled: "false"
+# Comma separated list of workloads for which polarsignals is enabled, only used
+# if polarsignals_enabled is true, right now only skipper-ingress is configured
+# by default
+#
+# Note:
+#   skipper-ingress is treated as a special case assuming a _dedicated_ node
+#   pool
+#   For all other workloads it's assumed they use scheduling annotations
+#   abstraction which sets:
+#
+#   nodeSelector:
+#     zalando.org/dedicated: <workload>
+#   tolerations:
+#     - effect: NoSchedule
+#       key: zalando.org/dedicated
+#       operator: Exists
+polarsignals_workloads: "skipper-ingress"
 polarsignals_oom_prof_enable: "false"
 polarsignals_oom_prof_allocs_enable: "false"
 polarsignals_apikey: ""
