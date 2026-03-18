@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.48-1378" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.52-1381" }}
+{{ $main_image_updated_manually := "container-registry-test.zalando.net/teapot/skipper-internal-test:pr-3117-16-pr-55-1" }}
+{{ $canary_image := "container-registry-test.zalando.net/teapot/skipper-internal-test:pr-3117-16-pr-55-1" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
@@ -609,7 +609,7 @@ spec:
 {{- end }}
       containers:
       - name: routesrv
-        image: container-registry.zalando.net/teapot/skipper:{{ $main_version }}
+        image: container-registry-test.zalando.net/teapot/skipper-internal-test:pr-3117-16-pr-55-1
         terminationMessagePolicy: FallbackToLogsOnError
         ports:
         - name: ingress-port
