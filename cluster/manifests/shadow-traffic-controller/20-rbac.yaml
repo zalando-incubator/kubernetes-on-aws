@@ -1,0 +1,78 @@
+# {{ if eq .Cluster.ConfigItems.shadow_traffic_controller_enabled "true" }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: shadow-traffic-controller
+  namespace: kube-system
+  labels:
+    application: shadow-traffic-controller
+    component: shadow-traffic-controller
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: shadow-traffic-controller
+  labels:
+    application: shadow-traffic-controller
+    component: shadow-traffic-controller
+rules:
+  - apiGroups:
+      - zalando.org
+    resources:
+      - shadowtraffics
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+      - patch
+  - apiGroups:
+      - zalando.org
+    resources:
+      - routegroups
+    verbs:
+      - list
+      - watch
+      - get
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - zalando.org
+    resources:
+      - stacks
+    verbs:
+      - list
+      - get
+  - apiGroups:
+      - zalando.org
+    resources:
+      - stacksets
+    verbs:
+      - list
+      - get
+  - apiGroups:
+      - zalando.org
+    resources:
+      - fabricgateways
+    verbs:
+      - list
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: shadow-traffic-controller
+  labels:
+    application: shadow-traffic-controller
+    component: shadow-traffic-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: shadow-traffic-controller
+subjects:
+  - kind: ServiceAccount
+    name: shadow-traffic-controller
+    namespace: kube-system
+# {{ end }}

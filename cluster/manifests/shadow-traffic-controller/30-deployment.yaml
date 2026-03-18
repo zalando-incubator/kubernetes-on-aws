@@ -1,0 +1,56 @@
+# {{ $image := "container-registry-test.zalando.net/gwproxy/shadow-traffic-controller:main-12" }}
+# {{ $version := index (split $image ":") 1 }}
+# {{ if eq .Cluster.ConfigItems.shadow_traffic_controller_enabled "true" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shadow-traffic-controller
+  namespace: kube-system
+  labels:
+    application: shadow-traffic-controller
+    version: "{{ $version }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: shadow-traffic-controller
+  template:
+    metadata:
+      labels:
+        application: shadow-traffic-controller
+        version: "{{ $version }}"
+      annotations:
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "controller", "parser": "keyValue"}]
+        logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
+    spec:
+      priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
+      serviceAccountName: shadow-traffic-controller
+      containers:
+        - name: controller
+          image: "{{ $image }}"
+          args:
+            - "--log-level={{ .Cluster.ConfigItems.shadow_traffic_controller_log_level }}"
+            - "--address=:8080"
+          ports:
+            - name: server
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: server
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "{{ .Cluster.ConfigItems.shadow_traffic_controller_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.shadow_traffic_controller_memory }}"
+            limits:
+              cpu: "{{ .Cluster.ConfigItems.shadow_traffic_controller_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.shadow_traffic_controller_memory }}"
+# {{ end }}
