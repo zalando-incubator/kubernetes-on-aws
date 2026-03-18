@@ -181,6 +181,18 @@ rules:
   - deletecollection
   - patch
   - update
+# {{ if eq .Cluster.ConfigItems.access_control_poweruser_modify_endpointslices "true" }}
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - patch
+  - update
+# {{ end }}
 - apiGroups:
   - metacontroller.k8s.io
   resources:
