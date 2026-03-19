@@ -328,6 +328,18 @@ post_apply:
   namespace: kube-system
   kind: Deployment
 {{ end }}
+{{ if ne .Cluster.ConfigItems.shadow_traffic_controller_enabled "true" }}
+- name: shadow-traffic-controller
+  namespace: kube-system
+  kind: Deployment
+- name: shadow-traffic-controller
+  kind: ServiceAccount
+  namespace: kube-system
+- name: shadow-traffic-controller
+  kind : ClusterRole
+- name: shadow-traffic-controller
+  kind : ClusterRoleBinding
+{{ end }}
 {{- if and (ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true") (ne .Cluster.ConfigItems.wiz_enable_runtime_connector "true") }}
 - name: wiz-connector-connector
   kind : Secret

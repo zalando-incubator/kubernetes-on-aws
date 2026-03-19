@@ -39,6 +39,12 @@ spec:
           args:
             - --ip-addr-type={{ .Cluster.ConfigItems.kube_aws_ingress_controller_lb_ip_addr_type }}
             - --target-group-ip-addr-type={{ .Cluster.ConfigItems.kube_aws_ingress_controller_target_group_ip_addr_type }}
+{{- if eq .Cluster.ConfigItems.kube_aws_ingress_controller_nlb_preserve_client_ip "false" }}
+            - --nlb-preserve-client-ip-disabled
+{{- end }}
+{{- if eq .Cluster.ConfigItems.kube_aws_ingress_controller_nlb_proxy_protocol_v2 "true" }}
+            - --nlb-proxy-protocol-v2-enabled
+{{- end }}
 {{- if eq .Cluster.ConfigItems.kube_aws_ingress_controller_enable_cni_mode "true" }}
             - --target-access-mode=AWSCNI
             - --target-cni-namespace=kube-system
