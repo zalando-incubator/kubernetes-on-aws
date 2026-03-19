@@ -1,4 +1,5 @@
 {{ if eq .Cluster.ConfigItems.polarsignals_enabled "true" }}
+{{- range $workload := split .Cluster.ConfigItems.polarsignals_workloads "," }}
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -6,7 +7,11 @@ metadata:
   labels:
     component: agent
     application: polarsignals
+  {{- if eq $workload "skipper-ingress" }}
   name: polarsignals-agent
+  {{- else }}
+  name: polarsignals-agent-{{ $workload }}
+  {{- end }}
   namespace: polarsignals
   annotations:
     node-ready.cluster.zalando.org/exclude: "true"
@@ -93,11 +98,19 @@ spec:
       serviceAccountName: polarsignals-agent
       nodeSelector:
         kubernetes.io/os: linux
+  {{- if eq $workload "skipper-ingress" }}
         dedicated: skipper-ingress
       tolerations:
         - effect: NoSchedule
           key: dedicated
           value: skipper-ingress
+  {{- else }}
+        zalando.org/dedicated: {{ $workload }}
+      tolerations:
+      - effect: NoSchedule
+        key: zalando.org/dedicated
+        operator: Exists
+  {{- end }}
       volumes:
         - name: parca-config-volume
           configMap:
@@ -129,4 +142,5 @@ spec:
         - secret:
             secretName: polarsignals-agent
           name: token
+{{- end }}
 {{ end }}
