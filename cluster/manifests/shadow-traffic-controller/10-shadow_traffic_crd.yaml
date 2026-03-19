@@ -1,0 +1,207 @@
+# {{ if eq .Cluster.ConfigItems.shadow_traffic_controller_enabled "true" }}
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.0
+  name: shadowtraffics.zalando.org
+spec:
+  group: zalando.org
+  names:
+    categories:
+      - all
+    kind: ShadowTraffic
+    listKind: ShadowTrafficList
+    plural: shadowtraffics
+    shortNames:
+      - st
+    singular: shadowtraffic
+  scope: Namespaced
+  versions:
+    - name: v1
+      schema:
+        openAPIV3Schema:
+          properties:
+            apiVersion:
+              description: |-
+                APIVersion defines the versioned schema of this representation of an object.
+                Servers should convert recognized schemas to the latest internal value, and
+                may reject unrecognized values.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+              type: string
+            kind:
+              description: |-
+                Kind is a string value representing the REST resource this object represents.
+                Servers may infer this from the endpoint the client submits requests to.
+                Cannot be updated.
+                In CamelCase.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: Spec describes the desired behavior of the ShadowTraffic
+              properties:
+                routeMatchers:
+                  description: |-
+                    RouteMatchers defines the criteria for selecting routes for shadowing. If not specified,
+                    all the routes in the reference route object will be selected for shadowing.
+                  items:
+                    description: |-
+                      RouteMatcher defines the criteria for selecting routes for shadowing. It supports matching routes based on
+                      their path, HTTP method, and Header predicates. At least one of Path or Headers must be specified.
+                      Methods can optionally be used alongside Path or Headers for further filtering.
+                    properties:
+                      headers:
+                        description: |-
+                          Headers should match with the route's Header predicates to select the route for shadowing.
+                          If specified, all the headers should match to be an eligible route for shadowing.
+                          If not specified, routes will be selected regardless of their headers.
+                        items:
+                          description: |-
+                            Header represents a Skipper Header Predicate. It should be in the format Header("key", "value")
+                            or HeaderRegexp("key", "regex").
+                          pattern: ^Header\((.+)\)$|^HeaderRegexp\((.+)\)$
+                          type: string
+                        type: array
+                      methods:
+                        description: |-
+                          Methods should match with the route's Method/Methods predicate values to select the route for shadowing.
+                          If specified, all the methods should match to be an eligible route for shadowing.
+                          If not specified, routes will be selected regardless of their method.
+                        items:
+                          description: HTTPMethod represents an HTTP method in uppercase
+                          enum:
+                            - GET
+                            - POST
+                            - PUT
+                            - DELETE
+                            - PATCH
+                            - HEAD
+                            - OPTIONS
+                            - CONNECT
+                            - TRACE
+                          type: string
+                        type: array
+                      path:
+                        description:
+                          Path should match with the route's path predicate
+                          value to select the route for shadowing
+                        properties:
+                          type:
+                            description:
+                              Type is the type of the Skipper path Predicate.
+                              It can be Path or PathSubtree.
+                            enum:
+                              - Path
+                              - PathSubtree
+                            type: string
+                          value:
+                            description:
+                              Value is the path value of the above mentioned
+                              Skipper Predicate type
+                            type: string
+                        required:
+                          - type
+                          - value
+                        type: object
+                    type: object
+                    x-kubernetes-validations:
+                      - message:
+                          at least one of path or headers must be specified in
+                          a route matcher
+                        rule:
+                          (has(self.path) && has(self.path.type)) || (has(self.headers)
+                          && size(self.headers) > 0)
+                  minItems: 1
+                  type: array
+                shadowBackend:
+                  description:
+                    ShadowBackend is the backend that the shadow traffic
+                    should be proxied to
+                  properties:
+                    address:
+                      description: Address is required for type "network"
+                      type: string
+                    name:
+                      description: Name is the name of the shadow backend
+                      type: string
+                    serviceName:
+                      description: ServiceName is required for type "service"
+                      type: string
+                    servicePort:
+                      description: ServicePort is required for type "service"
+                      type: integer
+                    type:
+                      description: Type is the backend type (network or service)
+                      enum:
+                        - network
+                        - service
+                      type: string
+                  required:
+                    - name
+                    - type
+                  type: object
+                sourceObjectReferences:
+                  description:
+                    SourceObjectReferences describes the reference route
+                    objects
+                  items:
+                    description:
+                      SourceObjectReference references a Kubernetes route
+                      object
+                    properties:
+                      kind:
+                        description:
+                          Kind is the Kubernetes resource kind of the reference
+                          route object
+                        enum:
+                          - RouteGroup
+                          - FabricGateway
+                          - StackSet
+                        type: string
+                      name:
+                        description: Name is the name of the reference route object
+                        type: string
+                      namespace:
+                        description:
+                          Namespace is the namespace of the reference route
+                          object
+                        type: string
+                    required:
+                      - kind
+                      - name
+                      - namespace
+                    type: object
+                  type: array
+                trafficShare:
+                  description:
+                    TrafficShare is the percentage (0 - 1] of traffic that
+                    should be shadowed
+                  pattern: ^0(\.[0-9]+)?$|^1(\.0+)?$
+                  type: string
+              required:
+                - shadowBackend
+                - sourceObjectReferences
+                - trafficShare
+              type: object
+            status:
+              description: Status describes the current state of the ShadowTraffic
+              properties:
+                problems:
+                  description: |-
+                    Problems are errors encountered while processing the ShadowTraffic object
+                    or reference route object
+                  items:
+                    type: string
+                  type: array
+              type: object
+          required:
+            - metadata
+            - spec
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+# {{ end }}
