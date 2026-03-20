@@ -220,15 +220,5 @@ Follow up code, that waits for creations to be happen:
   -allowed-not-ready-nodes=-1
   ```
 
-* **Why is the go modules such a mess?**
-  Because `Kubernetes` uses symlinks in its own vendor folder (e.g. `ln -s
-  staging/src/k8s.io/client-go k8s.io/client-go`) we need to do something
-  similar to make go modules understand what is going on.  We do this by
-  `replace` directives in the `go.mod` file and the script `setup_modules.sh`
-  to setup the replaces.
-
-  > Just run `make` when you clone this repo and it should all work.
-  >
-  > - Mikkel Larsen
 
 [ginkgo]: https://onsi.github.io/ginkgo/
