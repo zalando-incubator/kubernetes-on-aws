@@ -40,11 +40,11 @@ spec:
             - --debuginfo-strip
             - --debuginfo-temp-dir=/tmp
             - --debuginfo-upload-cache-duration=5m
-            - --metadata-external-labels=cluster={{ .Cluster.Alias }};environment={{ .Cluster.Environment }};zone=$(ZONE_NAME);region=$(REGION_NAME)
-            - --profiling-probabilistic-interval={{ .Cluster.ConfigItems.polarsignals_probabilistic_profiling_interval }}
-            - --profiling-probabilistic-threshold={{ .Cluster.ConfigItems.polarsignals_probabilistic_profiling_perc }}
-            - --enable-oom-prof={{ .Cluster.ConfigItems.polarsignals_oom_prof_enable }}
-            - --enable-oom-prof-allocs={{ .Cluster.ConfigItems.polarsignals_oom_prof_allocs_enable }}
+            - --metadata-external-labels=cluster={{ $.Cluster.Alias }};environment={{ $.Cluster.Environment }};zone=$(ZONE_NAME);region=$(REGION_NAME)
+            - --profiling-probabilistic-interval={{ $.Cluster.ConfigItems.polarsignals_probabilistic_profiling_interval }}
+            - --profiling-probabilistic-threshold={{ $.Cluster.ConfigItems.polarsignals_probabilistic_profiling_perc }}
+            - --enable-oom-prof={{ $.Cluster.ConfigItems.polarsignals_oom_prof_enable }}
+            - --enable-oom-prof-allocs={{ $.Cluster.ConfigItems.polarsignals_oom_prof_allocs_enable }}
             - --config-path=/parca/parca-agent.yml
           env:
             - name: ZONE_NAME
@@ -56,7 +56,7 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
             - name: REGION_NAME
-              value: "{{ .Cluster.Region }}"
+              value: "{{ $.Cluster.Region }}"
           image: container-registry.zalando.net/gwproxy/parca-agent:v0.45.1-main-6
           name: polarsignals-agent
           ports:
@@ -64,11 +64,11 @@ spec:
               name: http
           resources:
             limits:
-              cpu: "{{ .Cluster.ConfigItems.polarsignals_cpu}}"
-              memory: "{{ .Cluster.ConfigItems.polarsignals_memory}}"
+              cpu: "{{ $.Cluster.ConfigItems.polarsignals_cpu}}"
+              memory: "{{ $.Cluster.ConfigItems.polarsignals_memory}}"
             requests:
-              cpu: "{{ .Cluster.ConfigItems.polarsignals_cpu}}"
-              memory: "{{ .Cluster.ConfigItems.polarsignals_memory}}"
+              cpu: "{{ $.Cluster.ConfigItems.polarsignals_cpu}}"
+              memory: "{{ $.Cluster.ConfigItems.polarsignals_memory}}"
           securityContext:
             privileged: true
             readOnlyRootFilesystem: true
