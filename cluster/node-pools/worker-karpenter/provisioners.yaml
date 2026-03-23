@@ -320,6 +320,10 @@ spec:
     consolidationPolicy: WhenEmptyOrUnderutilized
     consolidateAfter: {{ or (index .NodePool.ConfigItems "consolidate_after") "0s" }}
 #{{  end }}
+    # Minimum number of instance types for spot-to-spot consolidation
+#{{ if index .NodePool.ConfigItems "min_instance_types_for_spot_to_spot_consolidation"}}
+    minInstanceTypesForSpotToSpotConsolidation: {{.NodePool.ConfigItems.min_instance_types_for_spot_to_spot_consolidation}}
+#{{  end }}
   # Priority given to the NodePool when the scheduler considers which NodePool
   # to select. Higher weights indicate higher priority when comparing NodePools.
   # Specifying no weight is equivalent to specifying a weight of 0.
