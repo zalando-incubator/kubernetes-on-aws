@@ -45,6 +45,7 @@ clusters:
     skipper_open_policy_agent_enabled: "${SKIPPER_OPA_ENABLED}"
     skipper_open_policy_agent_styra_token: "${STYRA_TOKEN}"
     skipper_open_policy_agent_bucket_arn: "${SKIPPER_OPA_BUCKET_ARN}"
+    skipper_open_policy_agent_decision_log_bucket_arn: "${SKIPPER_OPA_DECISION_LOGS_BUCKET_ARN}"
     skipper_open_policy_agent_observability_url: "${SKIPPER_OPA_OBSERVABILITY_URL}"
     skipper_open_policy_agent_bundles_url: "${SKIPPER_OPA_BUNDLES_URL}"
     eks_ip_family: "ipv6"
