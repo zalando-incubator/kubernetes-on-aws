@@ -1,33 +1,3 @@
-# Autoscaling settings
-cluster_autoscaler_enabled: "false"
-autoscaling_scale_down_enabled: "true"
-autoscaling_buffer_cpu: "1m"
-autoscaling_buffer_memory: "10Mi"
-autoscaling_buffer_pods: "1"
-cluster_autoscaler_cpu: "100m"
-cluster_autoscaler_memory: "300Mi"
-autoscaling_utilization_threshold: "1.0"
-autoscaling_max_empty_bulk_delete: "10"
-autoscaling_scale_down_unneeded_time: "2m"
-autoscaling_unremovable_node_recheck_timeout: "5m"
-# configure the log level for the autoscaler. Setting this to 4 gives enough
-# verbosity to understand why a certain node pool is not picked for scheduling a
-# pod.
-autoscaling_autoscaler_log_level: "1"
-
-# How long to wait for pod eviction when scaling down.
-{{if eq .Cluster.Environment "production"}}
-cluster_autoscaler_max_pod_eviction_time: "1h"
-{{else}}
-cluster_autoscaler_max_pod_eviction_time: "3h"
-{{end}}
-
-# Override terminationGracePeriodSeconds when evicting pods for scale down, if the pods' value is higher than this one
-cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
-
-# Prevent CA lock-ups caused by large amounts of pending pods. Can be disabled completely by setting to 0.
-cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
-
 # karpenter settings
 
 karpenter_controller_cpu: "25m"
@@ -503,7 +473,7 @@ skipper_open_policy_agent_preloading_enabled: "true"
 skipper_open_policy_agent_decision_log_export_enabled: "false"
 skipper_open_policy_agent_console_logs_enabled: "false"
 skipper_open_policy_agent_decision_log_s3_endpoint: ""
-skipper_open_policy_agent_decision_log_s3_region: ""
+skipper_open_policy_agent_decision_log_s3_region: "eu-central-1"
 
 # Default timeout value in seconds for outgoing http calls from Open Policy Agent in a skipper filter
 skipper_open_policy_agent_styra_response_header_timeout: "2"
