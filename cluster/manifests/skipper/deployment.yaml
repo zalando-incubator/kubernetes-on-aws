@@ -383,8 +383,13 @@ spec:
           - "-enable-open-policy-agent-preloading={{ .Cluster.ConfigItems.skipper_open_policy_agent_preloading_enabled }}"
 {{ end }}
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
+{{- if eq .Cluster.ConfigItems.skipper_enable_proxy_protocol "true" }}
+          - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Port=443"
+          - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
+{{- else }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
+{{- end }}
 {{ end }}
           - "-inline-routes"
           - |
