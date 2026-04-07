@@ -19,6 +19,10 @@ spec:
         component: vpa-updater
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        prometheus.io/port: "8943"
+        prometheus.io/path: "/metrics"
+        prometheus.io/scheme: "http"
+        prometheus.io/scrape: "true"
     spec:
       serviceAccountName: vpa-updater
       containers:
@@ -43,5 +47,5 @@ spec:
             cpu: {{.Cluster.ConfigItems.vpa_cpu}}
             memory: {{.Cluster.ConfigItems.vpa_mem}}
         ports:
-        - containerPort: 8080
+        - containerPort: 8943
           protocol: TCP
