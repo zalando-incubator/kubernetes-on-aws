@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry-test.zalando.net/teapot/skipper-internal-test:pr-3945-15-pr-56-9" }}
-{{ $canary_image := "container-registry-test.zalando.net/teapot/skipper-internal-test:pr-3945-15-pr-56-9" }}
+{{ $main_image_updated_manually := "container-registry-test.zalando.net/teapot/skipper-internal-test:pr-3945-18-pr-56-10" }}
+{{ $canary_image := "container-registry-test.zalando.net/teapot/skipper-internal-test:pr-3945-18-pr-56-10" }}
 
 {{/* Allow to override manually canary image by config item */}}
 {{ if ne .Cluster.ConfigItems.skipper_ingress_canary_image "" }}
@@ -225,7 +225,6 @@ spec:
           - "-enable-kubernetes-endpointslices={{ .Cluster.ConfigItems.skipper_endpointslices_enabled }}"
 {{ end }}
           - "-address=:9999"
-          - "-insecure-address=:9998"
           - "-wait-first-route-load"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
@@ -353,6 +352,7 @@ spec:
           - "-proxy-allow-cidrs={{ .Cluster.ConfigItems.skipper_proxy_allow_cidrs }}"
           - "-proxy-deny-cidrs={{ .Cluster.ConfigItems.skipper_proxy_deny_cidrs }}"
           - "-proxy-skip-cidrs={{ .Cluster.ConfigItems.skipper_proxy_skip_cidrs }}"
+          - "-insecure-address=:9998"
 {{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_local_tokeninfo "bridge" }}
           - "-oauth2-tokeninfo-url=http://127.0.0.1:9000/oauth2/tokeninfo"
