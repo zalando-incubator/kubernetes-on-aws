@@ -5,6 +5,7 @@ metadata:
   annotations:
     external-dns.alpha.kubernetes.io/hostname: skipper-ingress-eks.{{ .Values.hosted_zone }}
     service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: application=skipper-ingress,component=ingress
+    service.beta.kubernetes.io/aws-load-balancer-attributes: dns_record.client_routing_policy=availability_zone_affinity,load_balancing.cross_zone.enabled=false
     service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
     # SG of the old cluster worker nodes
     service.beta.kubernetes.io/aws-load-balancer-extra-security-groups: {{ .Cluster.ConfigItems.worker_sg_legacy_cluster }}
