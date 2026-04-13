@@ -381,6 +381,9 @@ spec:
           - "-open-policy-agent-envoy-metadata=/etc/skipper/open-policy-agent/envoymetadata.json"
           - "-enable-open-policy-agent-data-preprocessing-optimization={{ .Cluster.ConfigItems.skipper_open_policy_agent_data_preprocessing_optimization_enabled }}"
           - "-enable-open-policy-agent-preloading={{ .Cluster.ConfigItems.skipper_open_policy_agent_preloading_enabled }}"
+{{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_print_tracing_enabled "true" }}
+          - "-enable-open-policy-agent-print-tracing"
+{{ end }}
 {{ end }}
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
