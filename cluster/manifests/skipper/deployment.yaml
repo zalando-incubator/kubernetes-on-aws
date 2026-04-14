@@ -353,11 +353,6 @@ spec:
           - "-proxy-deny-cidrs={{ .Cluster.ConfigItems.skipper_proxy_deny_cidrs }}"
           - "-proxy-skip-cidrs={{ .Cluster.ConfigItems.skipper_proxy_skip_cidrs }}"
 {{ end }}
-{{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
-{{ if eq .Cluster.ConfigItems.skipper_enable_proxy_protocol "true" }}
-          - "-insecure-address=:9998"
-{{ end }}
-{{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_local_tokeninfo "bridge" }}
           - "-oauth2-tokeninfo-url=http://127.0.0.1:9000/oauth2/tokeninfo"
           - "-status-checks=http://127.0.0.1:9021/health,http://127.0.0.1:9121/health,http://127.0.0.1:9000/healthz"
@@ -389,7 +384,7 @@ spec:
 {{ end }}
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
 {{ if eq .Cluster.ConfigItems.skipper_enable_proxy_protocol "true" }}
-          - "-forwarded-headers=X-Forwarded-Proto=auto,X-Forwarded-Port=443"
+          - "-forwarded-headers=X-Forwarded-Proto=https,X-Forwarded-Port=443"
 {{ else }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
