@@ -356,6 +356,9 @@ skipper_eastwest_dns_log_enabled: "false"
 # if enabled adds port 8080 as svc port to eastwest svc
 skipper_ingress_eastwest_additional_port: "false"
 
+# if enabled adds service.kubernetes.io/topology-mode: auto to the eastwest service
+skipper_ingress_eastwest_topology_mode_auto: "true"
+
 # skipper tcp lifo
 # See: https://opensource.zalando.com/skipper/operation/operation/#tcp-lifo
 skipper_enable_tcp_queue: "true"                    # TODO(sszuecs): cleanup candidate to reduce amount of branches in deployment
@@ -783,7 +786,7 @@ teapot_admission_controller_postgresql_owning_application_check_enabled: "false"
 teapot_admission_controller_resolve_vanity_images: "true"
 
 {{if eq .Cluster.Environment "e2e"}}
-teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota|limitrange|sysctl|node-tests|e2e-kubelet-etc-hosts|csiinlinevolumes|job|dns)-.*)$"
+teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pods|pod-network|scope-selectors|resourcequota|limitrange|sysctl|node-tests|e2e-kubelet-etc-hosts|csiinlinevolumes|job|dns)-.*)$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "false"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
@@ -903,8 +906,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_34_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.34.3-amd64-master-386" "861068367966" }}
-kuberuntu_image_v1_34_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.34.3-arm64-master-386" "861068367966" }}
+kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.2-amd64-master-393" "861068367966" }}
+kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.2-arm64-master-393" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
@@ -1154,10 +1157,6 @@ deploy_allow_ram: "false"
 
 experimental_nlb_alpn_h2_enabled: "true"
 
-# Enable/Disable ExecProbeTimeout (default in v1.20)
-# Can be disabled in case some workloads depends on the old behavior.
-exec_probe_timeout_enabled: "true"
-
 # Settings for the deployment service
 deployment_service_controller_memory_min: "50Mi"
 deployment_service_api_role_arn: ""
@@ -1212,12 +1211,6 @@ hyped_article_lifecycle_management: "false"
 # Add ClusterRole for clusters required by business-partner and config-provider controller
 business_partner_service: "false"
 config_provider_service: "false"
-
-# enable SizeMemoryBackedVolumes feature flag
-enable_size_memory_backed_volumes: "true"
-
-# enable ImageVolume feature flag
-enable_image_volumes: "false"
 
 # Allow configuring ingress rules on the Worker security group. This is used for
 # cases where a service needs a Service Type Load Balancer with an NLB and
