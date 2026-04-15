@@ -199,7 +199,6 @@ if [ "$e2e" = true ]; then
         "\[Serial\]"
         "validates.that.there.is.no.conflict.between.pods.with.same.hostPort.but.different.hostIP.and.protocol"
         "Should.create.gradual.traffic.routes"
-        "Pod InPlace Resize Container"
     )
 
     if [ "$CLUSTER_PROVIDER" == "zalando-aws" ]; then
