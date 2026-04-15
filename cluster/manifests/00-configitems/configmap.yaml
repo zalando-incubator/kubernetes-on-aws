@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configitems
+  namespace: kube-system
+  labels:
+    application: kubernetes
+data:
+  {{- range $key, $value := .Cluster.ConfigItems }}
+  '{{ $key }}': '{{ $value }}'
+  {{- end }}
