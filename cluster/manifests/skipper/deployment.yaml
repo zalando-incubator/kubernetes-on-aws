@@ -268,18 +268,8 @@ spec:
           - "-max-audit-body=0"
           - "-enable-swarm"
           - "-cluster-ratelimit-max-group-shards={{ .Cluster.ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
-{{ if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "redis" }}
-          - "-swarm-redis-dial-timeout={{ .Cluster.ConfigItems.skipper_redis_dial_timeout }}"
-          - "-swarm-redis-pool-timeout={{ .Cluster.ConfigItems.skipper_redis_pool_timeout }}"
-          - "-swarm-redis-read-timeout={{ .Cluster.ConfigItems.skipper_redis_read_timeout }}"
-          - "-swarm-redis-write-timeout={{ .Cluster.ConfigItems.skipper_redis_write_timeout }}"
-          - "-swarm-redis-min-conns={{ .Cluster.ConfigItems.skipper_redis_min_conns }}"
-          - "-swarm-redis-max-conns={{ .Cluster.ConfigItems.skipper_redis_max_conns }}"
-          - "-swarm-redis-remote=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/redis/shards"
-{{ else if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "valkey" }}
           - "-swarm-valkey-conn-timeout={{ .Cluster.ConfigItems.skipper_valkey_conn_timeout }}"
           - "-swarm-valkey-remote=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/valkey/shards"
-{{ end }}
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
 {{if ne .Cluster.ConfigItems.skipper_ingress_response_size_buckets ""}}
           - "-response-size-buckets={{ .Cluster.ConfigItems.skipper_ingress_response_size_buckets }}"
@@ -649,15 +639,9 @@ spec:
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
           - "-enable-swarm"
-{{ if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "redis" }}
-          - "-kubernetes-redis-service-namespace=kube-system"
-          - "-kubernetes-redis-service-name=skipper-ingress-redis"
-          - "-kubernetes-redis-service-port=6379"
-{{ else if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "valkey" }}
           - "-kubernetes-valkey-service-namespace=kube-system"
           - "-kubernetes-valkey-service-name=skipper-ingress-valkey"
           - "-kubernetes-valkey-service-port=6379"
-{{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_oauth2_ui_login "true" }}
           - "-enable-oauth2-grant-flow"
           - "-oauth2-callback-path={{ .Cluster.ConfigItems.skipper_oauth2_redirect_uri_path }}"
