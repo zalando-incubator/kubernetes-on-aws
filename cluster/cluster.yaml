@@ -319,6 +319,69 @@ Resources:
       Type: "STANDARD"
       KubernetesGroups:
         - zalando:readonly
+{{- if eq .Cluster.ConfigItems.kro_enabled "true"}}
+  KROEKSAccessEntry:
+    Type: "AWS::EKS::AccessEntry"
+    Properties:
+      ClusterName: !Ref EKSCluster
+      PrincipalArn: !GetAtt KROCapabilityRole.Arn
+      Type: "STANDARD"
+      KubernetesGroups:
+        - zalando:engineer
+  KROCapabilityRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: "{{.Cluster.Alias}}-KRO-CapabilityRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'capabilities.eks.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+              - 'sts:TagSession'
+  KROCapability:
+    Type: 'AWS::EKS::Capability'
+    Properties:
+      ClusterName: "{{.Cluster.Alias}}"
+      CapabilityName: "{{.Cluster.Alias}}-KRO"
+      Type: 'KRO'
+      RoleArn: !GetAtt KROCapabilityRole.Arn
+      DeletePropagationPolicy: 'RETAIN'
+{{- end }}
+{{- if eq .Cluster.ConfigItems.ack_enabled "true"}}
+  ACKCapabilityRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub "{{.Cluster.Alias}}-ACK-CapabilityRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'capabilities.eks.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+              - 'sts:TagSession'
+      ManagedPolicyArns:
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyEc2UsApSa"
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyModifyShibboleth"
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
+      {{- if eq .Cluster.Name "playground" }}
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser-Playground"
+      {{- end }}
+  ACKCapability:
+    Type: 'AWS::EKS::Capability'
+    Properties:
+      ClusterName: "{{.Cluster.Alias}}"
+      CapabilityName: "{{.Cluster.Alias}}-ACK"
+      Type: 'ACK'
+      RoleArn: !GetAtt KROCapabilityRole.Arn
+      DeletePropagationPolicy: 'RETAIN'
+{{- end }}
 {{- if eq .Cluster.ConfigItems.eks_efs_csi_support_enabled "true" }}
   EKSAddonEFSCSIDriver:
     Type: AWS::EKS::Addon
