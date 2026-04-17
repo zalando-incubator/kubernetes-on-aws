@@ -320,14 +320,6 @@ Resources:
       KubernetesGroups:
         - zalando:readonly
 {{- if eq .Cluster.ConfigItems.capability_kro_enabled "true"}}
-  EKSAccessEntryKRO:
-    Type: "AWS::EKS::AccessEntry"
-    Properties:
-      ClusterName: !Ref EKSCluster
-      PrincipalArn: !GetAtt EKSCapabilityKRORole.Arn
-      Type: "STANDARD"
-      KubernetesGroups:
-        - zalando:engineer
   EKSCapabilityKRORole:
     Type: 'AWS::IAM::Role'
     Properties:
