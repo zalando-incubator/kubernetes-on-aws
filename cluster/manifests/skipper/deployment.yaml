@@ -183,6 +183,10 @@ spec:
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
         - name: HTTP_REDIRECT
           value: "true"
+{{ if eq .Cluster.ConfigItems.skipper_enable_proxy_protocol "true" }}
+        - name: ENABLE_PROXY_PROTOCOL_REDIRECT
+          value: "true"
+{{ end }}
 {{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_lua_scripts_enabled "true" }}
         - name: LUA_PATH
