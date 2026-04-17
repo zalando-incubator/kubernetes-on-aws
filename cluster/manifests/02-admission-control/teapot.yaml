@@ -647,7 +647,6 @@ webhooks:
         expression: '!(request.userInfo.username in ["system:kube-controller-manager", "system:kube-scheduler", "zalando-iam:zalando:service:k8sapi_credentials-provider"])'
       - name: 'exclude-eks-components'
         expression: '!request.userInfo.username.startsWith("eks:")'
-      # Restricted to cloud-euc1-test until we decide to make it production ready
       {{- if eq .Cluster.ConfigItems.capability_kro_enabled "true"}}
       - name: 'exclude-eks-kro-capability'
         expression: '!request.userInfo.username.startsWith("arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.Alias}}-KRO-CapabilityRole/")'
