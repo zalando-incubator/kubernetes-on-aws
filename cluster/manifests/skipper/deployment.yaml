@@ -9,7 +9,10 @@
 {{ end }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
-{{ $canary_args := "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes/$(KUBE_NODE_ZONE)" }}
+{{ $canary_args := "" }}
+{{ if eq .Cluster.ConfigItems.skipper_ingress_zone_aware_routing_enabled "true" }}
+{{ $canary_args = "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes/$(KUBE_NODE_ZONE)" }}
+{{ end }}
 
 {{ $cluster_internal_cidrs := list "10.2.0.0/15" .Values.vpc_ipv4_cidr }}
 {{ if eq .Cluster.Provider "zalando-eks" }}
