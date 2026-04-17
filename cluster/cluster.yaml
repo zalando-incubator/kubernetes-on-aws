@@ -319,16 +319,16 @@ Resources:
       Type: "STANDARD"
       KubernetesGroups:
         - zalando:readonly
-{{- if eq .Cluster.ConfigItems.kro_enabled "true"}}
-  KROEKSAccessEntry:
+{{- if eq .Cluster.ConfigItems.capability_kro_enabled "true"}}
+  EKSAccessEntryKRO:
     Type: "AWS::EKS::AccessEntry"
     Properties:
       ClusterName: !Ref EKSCluster
-      PrincipalArn: !GetAtt KROCapabilityRole.Arn
+      PrincipalArn: !GetAtt EKSCapabilityKRORole.Arn
       Type: "STANDARD"
       KubernetesGroups:
         - zalando:engineer
-  KROCapabilityRole:
+  EKSCapabilityKRORole:
     Type: 'AWS::IAM::Role'
     Properties:
       RoleName: "{{.Cluster.Alias}}-KRO-CapabilityRole"
@@ -341,17 +341,17 @@ Resources:
             Action:
               - 'sts:AssumeRole'
               - 'sts:TagSession'
-  KROCapability:
+  EKSCapabilityKRO:
     Type: 'AWS::EKS::Capability'
     Properties:
       ClusterName: "{{.Cluster.Alias}}"
       CapabilityName: "{{.Cluster.Alias}}-KRO"
       Type: 'KRO'
-      RoleArn: !GetAtt KROCapabilityRole.Arn
+      RoleArn: !GetAtt EKSCapabilityKRORole.Arn
       DeletePropagationPolicy: 'RETAIN'
 {{- end }}
-{{- if eq .Cluster.ConfigItems.ack_enabled "true"}}
-  ACKCapabilityRole:
+{{- if eq .Cluster.ConfigItems.capability_ack_enabled "true"}}
+  EKSCapabilityACKRole:
     Type: 'AWS::IAM::Role'
     Properties:
       RoleName: !Sub "{{.Cluster.Alias}}-ACK-CapabilityRole"
@@ -373,13 +373,13 @@ Resources:
       {{- if eq .Cluster.Name "playground" }}
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser-Playground"
       {{- end }}
-  ACKCapability:
+  EKSCapabilityACK:
     Type: 'AWS::EKS::Capability'
     Properties:
       ClusterName: "{{.Cluster.Alias}}"
       CapabilityName: "{{.Cluster.Alias}}-ACK"
       Type: 'ACK'
-      RoleArn: !GetAtt KROCapabilityRole.Arn
+      RoleArn: !GetAtt EKSCapabilityACKRole.Arn
       DeletePropagationPolicy: 'RETAIN'
 {{- end }}
 {{- if eq .Cluster.ConfigItems.eks_efs_csi_support_enabled "true" }}
