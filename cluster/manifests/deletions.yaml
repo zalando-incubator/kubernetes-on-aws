@@ -252,20 +252,6 @@ post_apply:
 - name: skipper-canary-conrtroller
   kind: CronJob
   namespace: kube-system
-{{- if and (ne .Cluster.ConfigItems.s3_csi_driver "true") (ne .Cluster.ConfigItems.eks_s3_csi_support_enabled "true") }}
-- name: s3.csi.aws.com
-  kind: CSIDriver
-- name: s3-csi-driver
-  kind: ServiceAccount
-  namespace: kube-system
-- name: s3-csi-driver-cluster-role
-  kind: ClusterRole
-- name: mountpoint-s3-csi-node-binding
-  kind: ClusterRoleBinding
-- name: s3-csi-node
-  kind: DaemonSet
-  namespace: kube-system
-{{- end }}
 {{- if ne .Cluster.ConfigItems.role_sync_controller_enabled "true" }}
 - name: role-sync-controller
   kind: CronJob
