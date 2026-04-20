@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
 {{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.74-1406" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.75-1407" }}
+{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.76-1408" }}
 
 {{/* Allow to override manually canary image by config item */}}
 {{ if ne .Cluster.ConfigItems.skipper_ingress_canary_image "" }}
@@ -634,7 +634,7 @@ spec:
           - "routesrv"
 {{ if eq .Cluster.ConfigItems.skipper_eks_migration_enabled "true" }}
 {{- if ne .Cluster.ConfigItems.skipper_ingress_migration_forward_backend_url_custom "" }}
-          - "-forward-backend-url={{ .Cluster.ConfigItems.skipper_ingress_migration_forward_backend_url }}"
+          - "-forward-backend-url={{ .Cluster.ConfigItems.skipper_ingress_migration_forward_backend_url_custom }}"
 {{- else }}
           - "-forward-backend-url=http://skipper-ingress-eks.{{ .Values.hosted_zone }}"
 {{- end }}
