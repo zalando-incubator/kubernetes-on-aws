@@ -319,6 +319,63 @@ Resources:
       Type: "STANDARD"
       KubernetesGroups:
         - zalando:readonly
+{{- if eq .Cluster.ConfigItems.capability_kro_enabled "true"}}
+  EKSCapabilityKRORole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: "{{.Cluster.Alias}}-KRO-CapabilityRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'capabilities.eks.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+              - 'sts:TagSession'
+  EKSCapabilityKRO:
+    Type: 'AWS::EKS::Capability'
+    Properties:
+      ClusterName: !Ref EKSCluster
+      CapabilityName: "KRO"
+      Type: 'KRO'
+      RoleArn: !GetAtt EKSCapabilityKRORole.Arn
+      # The only option available at the moment
+      DeletePropagationPolicy: 'RETAIN'
+{{- end }}
+{{- if eq .Cluster.ConfigItems.capability_ack_enabled "true"}}
+  EKSCapabilityACKRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: "{{.Cluster.Alias}}-ACK-CapabilityRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'capabilities.eks.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+              - 'sts:TagSession'
+      ManagedPolicyArns:
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyEc2UsApSa"
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyModifyShibboleth"
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
+      {{- if eq .Cluster.Name "playground" }}
+      - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser-Playground"
+      {{- end }}
+  EKSCapabilityACK:
+    Type: 'AWS::EKS::Capability'
+    Properties:
+      ClusterName: !Ref EKSCluster
+      CapabilityName: "ACK"
+      Type: 'ACK'
+      RoleArn: !GetAtt EKSCapabilityACKRole.Arn
+      # The only option available at the moment
+      DeletePropagationPolicy: 'RETAIN'
+{{- end }}
 {{- if eq .Cluster.ConfigItems.eks_efs_csi_support_enabled "true" }}
   EKSAddonEFSCSIDriver:
     Type: AWS::EKS::Addon
