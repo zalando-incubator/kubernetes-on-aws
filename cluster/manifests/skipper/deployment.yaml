@@ -190,6 +190,10 @@ spec:
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
         - name: HTTP_REDIRECT
           value: "true"
+{{ if eq .Cluster.ConfigItems.skipper_enable_proxy_protocol "true" }}
+        - name: ENABLE_PROXY_PROTOCOL_REDIRECT
+          value: "true"
+{{ end }}
 {{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_lua_scripts_enabled "true" }}
         - name: LUA_PATH
@@ -634,7 +638,7 @@ spec:
           - "routesrv"
 {{ if eq .Cluster.ConfigItems.skipper_eks_migration_enabled "true" }}
 {{- if ne .Cluster.ConfigItems.skipper_ingress_migration_forward_backend_url_custom "" }}
-          - "-forward-backend-url={{ .Cluster.ConfigItems.skipper_ingress_migration_forward_backend_url }}"
+          - "-forward-backend-url={{ .Cluster.ConfigItems.skipper_ingress_migration_forward_backend_url_custom }}"
 {{- else }}
           - "-forward-backend-url=http://skipper-ingress-eks.{{ .Values.hosted_zone }}"
 {{- end }}
