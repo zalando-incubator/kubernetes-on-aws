@@ -121,55 +121,6 @@ post_apply:
   kind: PlatformCredentialsSet
   namespace: kube-system
 {{- end }}
-{{- if eq .Cluster.ConfigItems.network_monitoring_check_unschedulable_nodes "true" }}
-- kind: ClusterRole
-  name: kubenurse
-- kind: ClusterRoleBinding
-  name: kubenurse
-{{- end }}
-{{- if eq .Cluster.ConfigItems.network_monitoring_separate_prometheus "false"}}
-- kind: ClusterRole
-  name: kubenurse-prometheus
-- kind: ClusterRoleBinding
-  name: kubenurse-prometheus
-- kind: StatefulSet
-  name: prometheus
-  namespace: kubenurse
-- kind: VerticalPodAutoscaler
-  name: kubenurse-prometheus-vpa
-  namespace: kubenurse
-- kind: ConfigMap
-  name: prometheus-conf
-  namespace: kubenurse
-- kind: ServiceAccount
-  name: prometheus
-  namespace: kubenurse
-{{- end }}
-{{- if eq .Cluster.ConfigItems.network_monitoring_enabled "false" }}
-- kind: Namespace
-  name: kubenurse
-- kind: ClusterRole
-  name: kubenurse
-- kind: ClusterRoleBinding
-  name: kubenurse
-- kind: ClusterRole
-  name: kubenurse-prometheus
-- kind: ClusterRoleBinding
-  name: kubenurse-prometheus
-{{- end }}
-{{- if or (eq .Cluster.ConfigItems.network_monitoring_enabled "false") (eq .Cluster.ConfigItems.network_monitoring_check_kubenurse_ingress "false")}}
-- name: kubenurse
-  namespace: kubenurse
-  kind: Ingress
-{{- end }}
-{{- if or
-  (eq .Cluster.ConfigItems.network_monitoring_enabled "false")
-  (and (eq .Cluster.ConfigItems.network_monitoring_check_kubenurse_service "false") (eq .Cluster.ConfigItems.network_monitoring_check_kubenurse_ingress "false"))
-}}
-- name: kubenurse
-  namespace: kubenurse
-  kind: Service
-{{- end }}
 {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_enabled "false" }}
 - kind: ConfigMap
   name: open-policy-agent-config
@@ -444,3 +395,9 @@ post_apply:
 - name: aws-efs
   kind: StorageClass
 {{ end }}
+{{- if ne .Cluster.ConfigItems.capability_kro_enabled "true"}}
+- name: kro-poweruser
+  kind: ClusterRoleBinding
+- name: kro-poweruser-secret-read
+  kind: ClusterRoleBinding
+{{- end }}
