@@ -220,33 +220,9 @@ skipper_idle_timeout_server: "352s"
 skipper_termination_grace_period: "392"
 
 # skipper redis settings
-skipper_redis_cleanup_enabled: "false" # if set to true we should be able to cleanup all of the cfg items below
-skipper_redis_cpu: "100m"
-skipper_redis_memory: "512Mi"
-skipper_redis_dial_timeout: "25ms"
-skipper_redis_pool_timeout: "250ms"
-skipper_redis_read_timeout: "25ms"
-skipper_redis_write_timeout: "25ms"
-skipper_redis_min_conns: 25
-skipper_redis_max_conns: 100
-skipper_ingress_redis_swarm_enabled: "true"
-skipper_ingress_redis_target_average_utilization_cpu: "30"
-skipper_ingress_redis_target_average_utilization_memory: "60"
-skipper_ingress_redis_min_replicas: "1"
-skipper_ingress_redis_max_replicas: "100"
-skipper_ingress_redis_cluster_scaling_schedules: ""
-skipper_ingress_redis_hpa_scale_down_wait: "600"
+skipper_redis_cleanup_enabled: "true"
 # requires cleanup in cluster.yaml
 skipper_ingress_redis_swim_enabled: "false"
-
-# to switch redis/valkey force and back
-# switch to redis: "redis"
-# switch to valkey: "valkey"
-{{if eq .Cluster.Environment "production"}}
-skipper_ingress_swarm_type: "redis"
-{{else}}
-skipper_ingress_swarm_type: "valkey"
-{{end}}
 
 # skipper valkey settings
 skipper_valkey_cpu: "100m"
