@@ -32,6 +32,7 @@ spec:
         - --resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments
         - --metric-labels-allowlist=pods=[{{.Cluster.ConfigItems.observability_metrics_pods_labels}}],ingresses=[{{.Cluster.ConfigItems.observability_metrics_ingresses_labels}}],nodes=[topology.kubernetes.io/zone,node.kubernetes.io/instance-type,node.kubernetes.io/node-pool,node.kubernetes.io/role,node.kubernetes.io/profile,dedicated]
         - --metric-annotations-allowlist=pods=[{{.Cluster.ConfigItems.observability_metrics_pods_annotations}}]
+        - --custom-resource-state-config-file=/etc/config/stackset-metrics-config.yaml
         ports:
         - containerPort: 8080
           name: http-metrics
@@ -52,9 +53,16 @@ spec:
           requests:
             cpu: "{{.Cluster.ConfigItems.kube_state_metrics_cpu}}"
             memory: "{{.Cluster.ConfigItems.kube_state_metrics_mem_max}}"
+        volumeMounts:
+        - name: stackset-metrics-config
+          mountPath: /etc/config
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
           runAsUser: 65534
           capabilities:
             drop: ["ALL"]
+      volumes:
+      - name: stackset-metrics-config
+        configMap:
+          name: stackset-metrics-config
