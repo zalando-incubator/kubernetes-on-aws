@@ -54,45 +54,8 @@ spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: skipper-validation-webhook
       containers:
-{{- if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "redis" }}
-      - name: redis-sidecar
-        image: container-registry.zalando.net/library/redis-7-alpine:7.2-alpine-20250805
-        args:
-        - /usr/local/bin/docker-entrypoint.sh
-        - --save
-        - ""  # Disable persistence for sidecar use
-        - --maxmemory
-        - "256mb"
-        - --maxmemory-policy
-        - "allkeys-lru"
-        ports:
-        - containerPort: 6379
-          protocol: TCP
-          name: redis
-        readinessProbe:
-          exec:
-            command:
-            - redis-cli
-            - ping
-          failureThreshold: 3
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "128Mi"
-          limits:
-            cpu: "100m"
-            memory: "128Mi"
-        lifecycle:
-          preStop:
-            sleep:
-              seconds: 10
-{{- else if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "valkey" }}
       - name: valkey-sidecar
-        image: container-registry.zalando.net/library/valkey-9-alpine:9-alpine3.22-20260420
+        image: container-registry.zalando.net/library/valkey-9-alpine:9-alpine3.22-20260423
         args:
         - valkey-server
         - --save
@@ -126,7 +89,6 @@ spec:
           preStop:
             sleep:
               seconds: 10
-{{ end }}
       - name: skipper-admission-webhook
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.24.71
         env:
@@ -190,20 +152,9 @@ spec:
           - "-enable-ratelimits"
           - "-enable-swarm"
           - "-cluster-ratelimit-max-group-shards={{ .Cluster.ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
-{{- if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "valkey" }}
           - "-swarm-valkey-conn-timeout=5s"
           - "-swarm-valkey-update-interval=720h"
           - "-swarm-valkey-urls=127.0.0.1:6379"
-{{- else if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "redis" }}
-          - "-swarm-redis-dial-timeout=5s"
-          - "-swarm-redis-pool-timeout=5s"
-          - "-swarm-redis-read-timeout=5s"
-          - "-swarm-redis-write-timeout=5s"
-          - "-swarm-redis-heartbeat-frequency=720h"
-          - "-swarm-redis-min-conns=1"
-          - "-swarm-redis-max-conns=1"
-          - "-swarm-redis-urls=127.0.0.1:6379"
-{{ end }}
           - "-lua-sources={{ .Cluster.ConfigItems.skipper_lua_sources }}"
           - "-default-filters-dir=/etc/config/default-filters"
           - '-default-filters-prepend={{ .Cluster.ConfigItems.skipper_default_filters }}'
