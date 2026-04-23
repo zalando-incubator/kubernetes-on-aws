@@ -7,8 +7,8 @@ spec:
   amiFamily: Custom
   amiSelectorTerms:
     # Select on any AMI that has any of the following IDs
-    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_34_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
-    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_34_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_35_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_35_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
   metadataOptions:
     httpEndpoint: enabled
     # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
@@ -234,6 +234,11 @@ spec:
           operator: "NotIn"
           values:
             - "metal"
+            # {{ if ne .NodePool.ConfigItems.karpenter_excluded_instance_sizes ""}}
+            # {{ range $size := split .NodePool.ConfigItems.karpenter_excluded_instance_sizes "," }}
+            - "{{ $size }}"
+            # {{ end }}
+            # {{ end }}
         # exclude instance-types with slow SSD
         - key: "node.kubernetes.io/instance-type"
           operator: "NotIn"

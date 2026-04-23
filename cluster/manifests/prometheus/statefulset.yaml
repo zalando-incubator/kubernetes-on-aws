@@ -57,7 +57,7 @@ spec:
           mountPath: /prometheus
       containers:
       - name: prometheus
-        image: container-registry.zalando.net/teapot/prometheus:v3.10.0-master-76
+        image: container-registry.zalando.net/teapot/prometheus:v3.11.2-master-79
         args:
         - "--config.file=/prometheus/prometheus.yaml"
         - "--storage.tsdb.path=/prometheus/"
@@ -65,9 +65,6 @@ spec:
         - "--storage.tsdb.retention.time={{ .Cluster.ConfigItems.prometheus_retention_time }}"
         - "--storage.tsdb.wal-compression"
         - "--storage.tsdb.min-block-duration=30m"
-{{if eq .Cluster.ConfigItems.network_monitoring_separate_prometheus "true"}}
-        - "--web.enable-remote-write-receiver"
-{{end}}
         ports:
         - name: ingress-port
           containerPort: 9090

@@ -1,4 +1,4 @@
-# {{ $image   := "container-registry.zalando.net/teapot/deployment-status-service:master-302" }}
+# {{ $image   := "container-registry.zalando.net/teapot/deployment-status-service:master-309" }}
 # {{ $version := index (split $image ":") 1 }}
 
 apiVersion: apps/v1
@@ -10,7 +10,7 @@ metadata:
     application: "deployment-service"
     component: "status-service"
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       application: "deployment-service"
@@ -73,11 +73,11 @@ spec:
               name: http
           resources:
             requests:
-              cpu: "10m"
-              memory: "7Gi"
+              cpu: "100m"
+              memory: "1Gi"
             limits:
-              cpu: "10m"
-              memory: "7Gi"
+              cpu: "100m"
+              memory: "1Gi"
           readinessProbe:
             httpGet:
               port: 8080

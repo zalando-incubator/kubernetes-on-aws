@@ -1,8 +1,10 @@
 kind: Service
 apiVersion: v1
 metadata:
+{{- if eq .Cluster.ConfigItems.skipper_ingress_eastwest_topology_mode_auto "true" }}
   annotations:
     service.kubernetes.io/topology-mode: auto
+{{- end}}
   name: skipper-internal
   namespace: kube-system
   labels:
@@ -10,6 +12,9 @@ metadata:
     component: ingress
 spec:
   type: ClusterIP
+{{- if eq .Cluster.ConfigItems.skipper_ingress_eastwest_zone_aware_clusterip "true" }}
+  trafficDistribution: PreferSameZone
+{{- end}}
 {{- if eq .Cluster.Provider "zalando-eks" }}
   clusterIP: {{ nthAddressFromCIDR .Cluster.ConfigItems.service_cidr 50 }}
 {{- else}}

@@ -1,33 +1,3 @@
-# Autoscaling settings
-cluster_autoscaler_enabled: "false"
-autoscaling_scale_down_enabled: "true"
-autoscaling_buffer_cpu: "1m"
-autoscaling_buffer_memory: "10Mi"
-autoscaling_buffer_pods: "1"
-cluster_autoscaler_cpu: "100m"
-cluster_autoscaler_memory: "300Mi"
-autoscaling_utilization_threshold: "1.0"
-autoscaling_max_empty_bulk_delete: "10"
-autoscaling_scale_down_unneeded_time: "2m"
-autoscaling_unremovable_node_recheck_timeout: "5m"
-# configure the log level for the autoscaler. Setting this to 4 gives enough
-# verbosity to understand why a certain node pool is not picked for scheduling a
-# pod.
-autoscaling_autoscaler_log_level: "1"
-
-# How long to wait for pod eviction when scaling down.
-{{if eq .Cluster.Environment "production"}}
-cluster_autoscaler_max_pod_eviction_time: "1h"
-{{else}}
-cluster_autoscaler_max_pod_eviction_time: "3h"
-{{end}}
-
-# Override terminationGracePeriodSeconds when evicting pods for scale down, if the pods' value is higher than this one
-cluster_autoscaler_max_graceful_termination_sec: "1209600" # 2 weeks
-
-# Prevent CA lock-ups caused by large amounts of pending pods. Can be disabled completely by setting to 0.
-cluster_autoscaler_max_usnchedulable_pods_considered: "1000"
-
 # karpenter settings
 
 karpenter_controller_cpu: "25m"
@@ -69,6 +39,11 @@ karpenter_excluded_instance_families: "c5a,m5a,r5a,c5ad,m5ad,r5ad,c6a,m6a,r6a,c6
 {{else}}
 karpenter_excluded_instance_families: ""
 {{end}}
+
+# List of instance sizes to exclude from Karptenter node pools.
+# This is a comma seprated list of instance sizes, e.g. "large,xlarge"
+# By default we don't exclude any instance size.
+karpenter_excluded_instance_sizes: ""
 
 # configure whether we allow flex instance types for Karpenter nodes
 # flex instance types have a baseline CPU performance with burst capability.
@@ -166,6 +141,9 @@ skipper_ingress_binpack: "false"
 
 # skipper EKS migration support
 skipper_eks_migration_enabled: "false"
+# allow setting a custom forward-backend-url
+# If not set, falls back to the default "http://skipper-ingress-eks.<hosted_zone>
+skipper_ingress_migration_forward_backend_url_custom: ""
 skipper_eks_migration_svc_enabled: "false"
 worker_sg_legacy_cluster: ""
 
@@ -181,12 +159,13 @@ skipper_default_filters: 'disableAccessLog(2,3,404,429) -> fifo(2000,20,"1s")'
 # skipper_default_filters_authentication defines filters that implement default request authentication
 skipper_default_filters_authentication: ''
 skipper_default_filters_append: 'stateBagToTag("auth-user", "client.uid")'
-skipper_disabled_filters: "static,bearerinjector,setRequestHeaderFromSecret,basicAuth"
+skipper_disabled_filters: "clusterLeakyBucketRatelimit,static,bearerinjector,setRequestHeaderFromSecret,basicAuth"
 skipper_lua_sources: "file"
 skipper_edit_route_placeholders: ""
 skipper_ingress_inline_routes: ""
 skipper_ingress_refuse_payload: ""
 skipper_endpointslices_enabled: "true"
+skipper_ingress_zone_aware_routing_enabled: "true"
 skipper_externalname_service_enabled: "true"
 
 skipper_kubernetes_annotation_predicates: ''
@@ -241,33 +220,9 @@ skipper_idle_timeout_server: "352s"
 skipper_termination_grace_period: "392"
 
 # skipper redis settings
-skipper_redis_cleanup_enabled: "false" # if set to true we should be able to cleanup all of the cfg items below
-skipper_redis_cpu: "100m"
-skipper_redis_memory: "512Mi"
-skipper_redis_dial_timeout: "25ms"
-skipper_redis_pool_timeout: "250ms"
-skipper_redis_read_timeout: "25ms"
-skipper_redis_write_timeout: "25ms"
-skipper_redis_min_conns: 25
-skipper_redis_max_conns: 100
-skipper_ingress_redis_swarm_enabled: "true"
-skipper_ingress_redis_target_average_utilization_cpu: "30"
-skipper_ingress_redis_target_average_utilization_memory: "60"
-skipper_ingress_redis_min_replicas: "1"
-skipper_ingress_redis_max_replicas: "100"
-skipper_ingress_redis_cluster_scaling_schedules: ""
-skipper_ingress_redis_hpa_scale_down_wait: "600"
+skipper_redis_cleanup_enabled: "true"
 # requires cleanup in cluster.yaml
 skipper_ingress_redis_swim_enabled: "false"
-
-# to switch redis/valkey force and back
-# switch to redis: "redis"
-# switch to valkey: "valkey"
-{{if eq .Cluster.Environment "production"}}
-skipper_ingress_swarm_type: "redis"
-{{else}}
-skipper_ingress_swarm_type: "valkey"
-{{end}}
 
 # skipper valkey settings
 skipper_valkey_cpu: "100m"
@@ -380,6 +335,11 @@ skipper_eastwest_dns_log_enabled: "false"
 
 # if enabled adds port 8080 as svc port to eastwest svc
 skipper_ingress_eastwest_additional_port: "false"
+
+# if enabled adds service.kubernetes.io/topology-mode: auto to the eastwest service, tries to add safety automatically by enabling/disabling zone awareness
+skipper_ingress_eastwest_topology_mode_auto: "false"
+# if enabled adds trafficDistribution: PreferSameZone, ignore all magic just make it zone aware
+skipper_ingress_eastwest_zone_aware_clusterip: "true"
 
 # skipper tcp lifo
 # See: https://opensource.zalando.com/skipper/operation/operation/#tcp-lifo
@@ -503,7 +463,7 @@ skipper_open_policy_agent_preloading_enabled: "true"
 skipper_open_policy_agent_decision_log_export_enabled: "false"
 skipper_open_policy_agent_console_logs_enabled: "false"
 skipper_open_policy_agent_decision_log_s3_endpoint: ""
-skipper_open_policy_agent_decision_log_s3_region: ""
+skipper_open_policy_agent_decision_log_s3_region: "eu-central-1"
 
 # Default timeout value in seconds for outgoing http calls from Open Policy Agent in a skipper filter
 skipper_open_policy_agent_styra_response_header_timeout: "2"
@@ -808,7 +768,7 @@ teapot_admission_controller_postgresql_owning_application_check_enabled: "false"
 teapot_admission_controller_resolve_vanity_images: "true"
 
 {{if eq .Cluster.Environment "e2e"}}
-teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pod-network|scope-selectors|resourcequota|limitrange|sysctl|node-tests|e2e-kubelet-etc-hosts|csiinlinevolumes|job|dns)-.*)$"
+teapot_admission_controller_ignore_namespaces: "^kube-system|((downward-api|kubectl|projected|statefulset|pods|pod-network|scope-selectors|resourcequota|limitrange|sysctl|node-tests|e2e-kubelet-etc-hosts|csiinlinevolumes|job|dns)-.*)$"
 teapot_admission_controller_crd_ensure_no_resources_on_delete: "false"
 {{else}}
 teapot_admission_controller_ignore_namespaces: "^kube-system$"
@@ -928,8 +888,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_34_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.34.3-amd64-master-386" "861068367966" }}
-kuberuntu_image_v1_34_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.34.3-arm64-master-386" "861068367966" }}
+kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.2-amd64-master-393" "861068367966" }}
+kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.2-arm64-master-393" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
@@ -1179,10 +1139,6 @@ deploy_allow_ram: "false"
 
 experimental_nlb_alpn_h2_enabled: "true"
 
-# Enable/Disable ExecProbeTimeout (default in v1.20)
-# Can be disabled in case some workloads depends on the old behavior.
-exec_probe_timeout_enabled: "true"
-
 # Settings for the deployment service
 deployment_service_controller_memory_min: "50Mi"
 deployment_service_api_role_arn: ""
@@ -1238,12 +1194,6 @@ hyped_article_lifecycle_management: "false"
 business_partner_service: "false"
 config_provider_service: "false"
 
-# enable SizeMemoryBackedVolumes feature flag
-enable_size_memory_backed_volumes: "true"
-
-# enable ImageVolume feature flag
-enable_image_volumes: "false"
-
 # Allow configuring ingress rules on the Worker security group. This is used for
 # cases where a service needs a Service Type Load Balancer with an NLB and
 # require the port and optional CIDR range to be added to the worker node
@@ -1282,29 +1232,6 @@ open_sg_ingress_ranges: ""
 # Each DNS label (subdomain) can be 63 octets or less (https://datatracker.ietf.org/doc/html/rfc1035#section-2.3.4)
 # This custom value sets the subdomain max allowed length taking into consideration the 'cname-' prefix added by external-dns
 subdomain_max_length: "57"
-
-# Network monitoring
-network_monitoring_enabled: "false"
-network_monitoring_daemonset_cpu: "40m"
-network_monitoring_daemonset_memory: "100Mi"
-network_monitoring_check_api_server_direct: "false"
-network_monitoring_check_api_server_dns: "false"
-network_monitoring_check_kubenurse_service: "false"
-network_monitoring_check_kubenurse_ingress: "false"
-network_monitoring_check_neighborhood: "true"
-network_monitoring_check_unschedulable_nodes: "true"
-network_monitoring_check_interval: "1m"
-network_monitoring_separate_prometheus: "false"
-
-# Enable/Disable the s3-csi-driver daemonset:
-# https://github.com/awslabs/mountpoint-s3-csi-driver
-s3_csi_driver: "false"
-# When set to true this will add a node-selector `s3-csi-driver: enabled` to the
-# s3-csi-driver daemonset such that only node/node-pools with that label will
-# have the driver running. This allows enabling in a subset of a cluster for
-# testing.
-s3_csi_driver_node_selector_restricted: "true"
-
 
 # Percent of master node instance memory to allocate to the kube-apiserver
 # container. If this value is non-zero it will set the memory limit for the
@@ -1476,3 +1403,9 @@ shadow_traffic_controller_enabled: "true"
 shadow_traffic_controller_log_level: "info"
 shadow_traffic_controller_cpu: "100m"
 shadow_traffic_controller_memory: "300Mi"
+
+# Capability EKS KRO enabled
+capability_kro_enabled: "false"
+
+# Capability EKS ACK enabled
+capability_ack_enabled: "false"

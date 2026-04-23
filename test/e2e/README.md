@@ -205,8 +205,13 @@ Follow up code, that waits for creations to be happen:
   make
   ```
 
-  This will setup the go modules correctly and build a binary
-  `e2e.test`.
+  This will build a binary `e2e.test`.
+
+  Install `ginkgo` if you haven't already:
+
+  ```bash
+  make deps
+  ```
 
   Run all Zalando tests from your local build:
 
@@ -219,6 +224,21 @@ Follow up code, that waits for creations to be happen:
   e2e.test -- -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated \
   -allowed-not-ready-nodes=-1
   ```
+
+  To run a _single test_ often the most useful, you can do it like this:
+
+  ```bash
+  # S3_AWS_IAM_BUCKET and AWS_IAM_ROLE is required for the AWS-IAM tests.
+  KUBECONFIG=~/.kube/config HOSTED_ZONE=example.org CLUSTER_ALIAS=example \
+  S3_AWS_IAM_BUCKET=zalando-e2e-aws-iam-test-12345678912-kube-1 \
+  AWS_IAM_ROLE=kube-1-e2e-aws-iam-test \
+  ginkgo -procs=1 -flake-attempts=2 -focus="name of test" \
+  e2e.test -- -non-blocking-taints=node.kubernetes.io/role,nvidia.com/gpu,dedicated \
+  -allowed-not-ready-nodes=-1
+  ```
+
+  Note that the flag `-procs` is set to `1` in this case. If it's set to `25` but
+  only focusing on one test it will just hang.
 
 
 [ginkgo]: https://onsi.github.io/ginkgo/

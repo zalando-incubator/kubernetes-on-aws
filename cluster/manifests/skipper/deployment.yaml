@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.48-1378" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.52-1381" }}
+{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.74-1406" }}
+{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.74-1406" }}
 
 {{/* Allow to override manually canary image by config item */}}
 {{ if ne .Cluster.ConfigItems.skipper_ingress_canary_image "" }}
@@ -10,6 +10,9 @@
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
+{{ if eq .Cluster.ConfigItems.skipper_ingress_zone_aware_routing_enabled "true" }}
+{{ $canary_args = "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes/$(KUBE_NODE_ZONE)" }}
+{{ end }}
 
 {{ $cluster_internal_cidrs := list "10.2.0.0/15" .Values.vpc_ipv4_cidr }}
 {{ if eq .Cluster.Provider "zalando-eks" }}
@@ -158,6 +161,10 @@ spec:
           protocol: TCP
 {{ end }}
         env:
+        - name: KUBE_NODE_ZONE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['topology.kubernetes.io/zone']
         - name: LIGHTSTEP_TOKEN
           valueFrom:
             secretKeyRef:
@@ -183,6 +190,10 @@ spec:
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
         - name: HTTP_REDIRECT
           value: "true"
+{{ if eq .Cluster.ConfigItems.skipper_enable_proxy_protocol "true" }}
+        - name: ENABLE_PROXY_PROTOCOL_REDIRECT
+          value: "true"
+{{ end }}
 {{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_lua_scripts_enabled "true" }}
         - name: LUA_PATH
@@ -212,7 +223,9 @@ spec:
           - "-validate-query={{ .Cluster.ConfigItems.skipper_validate_query }}"
           - "-validate-query-log={{ .Cluster.ConfigItems.skipper_validate_query_log }}"
 {{ if eq .Cluster.ConfigItems.skipper_routesrv_enabled "exec" }}
+{{ if ne "{{ .name }}" "skipper-ingress-canary" }}
           - "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes"
+{{ end }}
           - "-normalize-host"
 {{ else }}
           - "-kubernetes"
@@ -268,18 +281,8 @@ spec:
           - "-max-audit-body=0"
           - "-enable-swarm"
           - "-cluster-ratelimit-max-group-shards={{ .Cluster.ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
-{{ if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "redis" }}
-          - "-swarm-redis-dial-timeout={{ .Cluster.ConfigItems.skipper_redis_dial_timeout }}"
-          - "-swarm-redis-pool-timeout={{ .Cluster.ConfigItems.skipper_redis_pool_timeout }}"
-          - "-swarm-redis-read-timeout={{ .Cluster.ConfigItems.skipper_redis_read_timeout }}"
-          - "-swarm-redis-write-timeout={{ .Cluster.ConfigItems.skipper_redis_write_timeout }}"
-          - "-swarm-redis-min-conns={{ .Cluster.ConfigItems.skipper_redis_min_conns }}"
-          - "-swarm-redis-max-conns={{ .Cluster.ConfigItems.skipper_redis_max_conns }}"
-          - "-swarm-redis-remote=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/redis/shards"
-{{ else if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "valkey" }}
           - "-swarm-valkey-conn-timeout={{ .Cluster.ConfigItems.skipper_valkey_conn_timeout }}"
           - "-swarm-valkey-remote=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/valkey/shards"
-{{ end }}
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
 {{if ne .Cluster.ConfigItems.skipper_ingress_response_size_buckets ""}}
           - "-response-size-buckets={{ .Cluster.ConfigItems.skipper_ingress_response_size_buckets }}"
@@ -296,6 +299,7 @@ spec:
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
+            tag=k8s.cluster.name={{ .Cluster.Alias }}
             tag=artifact={{ .image }}
             max-buffered-spans={{ .Cluster.ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .Cluster.ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
@@ -623,7 +627,11 @@ spec:
         args:
           - "routesrv"
 {{ if eq .Cluster.ConfigItems.skipper_eks_migration_enabled "true" }}
+{{- if ne .Cluster.ConfigItems.skipper_ingress_migration_forward_backend_url_custom "" }}
+          - "-forward-backend-url={{ .Cluster.ConfigItems.skipper_ingress_migration_forward_backend_url_custom }}"
+{{- else }}
           - "-forward-backend-url=http://skipper-ingress-eks.{{ .Values.hosted_zone }}"
+{{- end }}
 {{ end }}
           - "-application-log-level={{ .Cluster.ConfigItems.skipper_routesrv_log_level }}"
           - "-enable-profile"
@@ -648,15 +656,9 @@ spec:
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_authentication }}'
           - '-default-filters-append={{ .Cluster.ConfigItems.skipper_default_filters_append }}'
           - "-enable-swarm"
-{{ if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "redis" }}
-          - "-kubernetes-redis-service-namespace=kube-system"
-          - "-kubernetes-redis-service-name=skipper-ingress-redis"
-          - "-kubernetes-redis-service-port=6379"
-{{ else if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "valkey" }}
           - "-kubernetes-valkey-service-namespace=kube-system"
           - "-kubernetes-valkey-service-name=skipper-ingress-valkey"
           - "-kubernetes-valkey-service-port=6379"
-{{ end }}
 {{ if eq .Cluster.ConfigItems.skipper_oauth2_ui_login "true" }}
           - "-enable-oauth2-grant-flow"
           - "-oauth2-callback-path={{ .Cluster.ConfigItems.skipper_oauth2_redirect_uri_path }}"
