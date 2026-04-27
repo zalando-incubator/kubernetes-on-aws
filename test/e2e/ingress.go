@@ -488,7 +488,7 @@ var ___ = describe("Ingress tests paths", func() {
 	})
 })
 
-var ____ = describe("Ingress tests custom routes", func() {
+var ____ = describe("Ingress tests custom routes - 1", func() {
 	f := framework.NewDefaultFramework("skipper-ingress-custom")
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
