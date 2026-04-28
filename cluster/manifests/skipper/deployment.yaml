@@ -12,6 +12,8 @@
 {{ $canary_args := "" }}
 {{ if eq .Cluster.ConfigItems.skipper_ingress_zone_aware_routing_enabled "true" }}
 {{ $canary_args = "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes/$(KUBE_NODE_ZONE)" }}
+{{else}}
+{{ $canary_args = "-routes-urls=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes" }}
 {{ end }}
 
 {{ $cluster_internal_cidrs := list "10.2.0.0/15" .Values.vpc_ipv4_cidr }}
