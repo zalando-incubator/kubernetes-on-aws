@@ -11,7 +11,7 @@ DOCKERFILE   ?= Dockerfile
 default: build
 
 deps:
-	CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.27.2
+	CGO_ENABLED=0 go install github.com/onsi/ginkgo/v2/ginkgo@v2.25.1
 
 e2e.test: go.mod $(SOURCES)
 	CGO_ENABLED=0 go test -v -c -o e2e.test

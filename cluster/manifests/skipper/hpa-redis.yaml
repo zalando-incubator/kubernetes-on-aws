@@ -1,34 +1,33 @@
-{{- if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "valkey" }}
+{{- if eq .Cluster.ConfigItems.skipper_ingress_swarm_type "redis" }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: skipper-ingress-valkey
+  name: skipper-ingress-redis
   namespace: kube-system
   labels:
-    application: skipper-ingress
-    component: valkey
+    application: skipper-ingress-redis
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: StatefulSet
-    name: skipper-ingress-valkey
-  minReplicas: {{ .Cluster.ConfigItems.skipper_ingress_valkey_min_replicas }}
-  maxReplicas: {{ .Cluster.ConfigItems.skipper_ingress_valkey_max_replicas }}
+    name: skipper-ingress-redis
+  minReplicas: {{ .Cluster.ConfigItems.skipper_ingress_redis_min_replicas }}
+  maxReplicas: {{ .Cluster.ConfigItems.skipper_ingress_redis_max_replicas }}
   metrics:
   - type: Resource
     resource:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: {{ .Cluster.ConfigItems.skipper_ingress_valkey_target_average_utilization_cpu }}
+        averageUtilization: {{ .Cluster.ConfigItems.skipper_ingress_redis_target_average_utilization_cpu }}
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: {{ .Cluster.ConfigItems.skipper_ingress_valkey_target_average_utilization_memory }}
-{{ if .Cluster.ConfigItems.skipper_ingress_valkey_cluster_scaling_schedules }}
-  {{ range split .Cluster.ConfigItems.skipper_ingress_valkey_cluster_scaling_schedules "," }}
+        averageUtilization: {{ .Cluster.ConfigItems.skipper_ingress_redis_target_average_utilization_memory }}
+{{ if .Cluster.ConfigItems.skipper_ingress_redis_cluster_scaling_schedules }}
+  {{ range split .Cluster.ConfigItems.skipper_ingress_redis_cluster_scaling_schedules "," }}
   {{ $name_target := split . "=" }}
   - type: Object
     object:
@@ -45,7 +44,7 @@ spec:
 {{ end }}
   behavior:
     scaleDown:
-      stabilizationWindowSeconds: {{ .Cluster.ConfigItems.skipper_ingress_valkey_hpa_scale_down_wait }}
+      stabilizationWindowSeconds: {{ .Cluster.ConfigItems.skipper_ingress_redis_hpa_scale_down_wait }}
       policies:
       - type: Pods
         value: 10
