@@ -304,7 +304,7 @@ post_apply:
 - name: wiz-sensor
   kind: ServiceAccount
   namespace: wiz
-- name: wiz-sensor-apikey
+- name: wiz-sensor-api-token
   kind: Secret
   namespace: wiz
 - name: wiz-sensor
@@ -314,6 +314,13 @@ post_apply:
   kind : ClusterRoleBinding
   namespace: wiz
 {{- end }}
+# cleanup unused wiz secrets, regardless of sensor/connector status
+- name: wiz-sensor-apikey
+  kind: Secret
+  namespace: wiz
+- name: custom-wiz-sensor-api-token
+  kind: Secret
+  namespace: wiz
 {{- if and (ne .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true") (ne .Cluster.ConfigItems.wiz_enable_runtime_sensor "true") }}
 - name: wiz
   kind: Namespace
