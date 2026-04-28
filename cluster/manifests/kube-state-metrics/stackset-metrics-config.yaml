@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stackset-metrics-config
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: kube-state-metrics
+data:
+  stackset-metrics-config.yaml: |
+    kind: CustomResourceStateMetrics
+    spec:
+      resources:
+      - groupVersionKind:
+          group: zalando.org
+          version: "v1"
+          kind: StackSet
+        metrics:
+        - name: stackset_labels
+          help: "Kubernetes labels converted to Prometheus labels for StackSet"
+          each:
+            type: Info
+            info:
+              labelsFromPath:
+                "label_*": [metadata, labels]
+        - name: stackset_info
+          help: "StackSet identity and version"
+          each:
+            type: Info
+            info:
+              labelsFromPath:
+                stackset: [metadata, name]
+                namespace: [metadata, namespace]
+                version: [spec, stackTemplate, spec, version]
+      - groupVersionKind:
+          group: zalando.org
+          version: "v1"
+          kind: Stack
+        metrics:
+        - name: stack_labels
+          help: "Kubernetes labels converted to Prometheus labels for Stack"
+          each:
+            type: Info
+            info:
+              labelsFromPath:
+                "label_*": [metadata, labels]
+        - name: stack_info
+          help: "Stack identity and version"
+          each:
+            type: Info
+            info:
+              labelsFromPath:
+                stack: [metadata, name]
+                namespace: [metadata, namespace]
+                version: [metadata, labels, "stack-version"]
+        - name: stack_owner
+          help: "Information about Stackset that owns Stack"
+          each:
+            type: Info
+            info:
+              path: [metadata, ownerReferences]
+              labelsFromPath:
+                owner_kind: [kind]
+                owner_name: [name]
+                owner_uid: [uid]
