@@ -301,6 +301,9 @@ spec:
             tag=cluster={{ .Cluster.Alias }}
             tag=k8s.cluster.name={{ .Cluster.Alias }}
             tag=artifact={{ .image }}
+{{ if eq .Cluster.ConfigItems.skipper_ingress_version_tag_enabled "true" }}
+            tag=skipper_version={{ index (split .image ":") 1 }}
+{{ end }}
             max-buffered-spans={{ .Cluster.ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .Cluster.ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .Cluster.ConfigItems.skipper_ingress_lightstep_max_period }}
