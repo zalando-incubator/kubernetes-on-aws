@@ -31,16 +31,18 @@ data:
             session_name: open-policy-agent-instance
       name: styra-bundles
       url: "{{ .Cluster.ConfigItems.skipper_open_policy_agent_bundles_url }}"
+    {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_prometheus_metrics_enabled "true" }}
+    status:
+      prometheus: true
+      # Setting empty status service name to avoid OPA trying to export metrics to Styra
+      service: ""
+    {{ end }}
     {{ if eq .Cluster.ConfigItems.skipper_open_policy_agent_decision_logs_buffer_type_event_enable "true" }}
     decision_logs:
       reporting:
         buffer_type: "event"
         buffer_size_limit_events: {{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_logs_buffer_type_event_limit }}
     {{ else if eq .Cluster.ConfigItems.skipper_open_policy_agent_decision_log_export_enabled "true" }}
-    status:
-      prometheus: true
-      # Setting empty status service name to avoid OPA trying to export metrics to Styra
-      service: ""
     decision_logs:
       plugin: eopa_dl
     plugins:
