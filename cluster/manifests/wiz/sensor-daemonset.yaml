@@ -1,13 +1,14 @@
 {{ if eq .Cluster.ConfigItems.wiz_enable_runtime_sensor "true"}}
 ---
-# Source: wiz-sensor/templates/daemonset.yaml
+# Source: wiz-kubernetes-integration/charts/wiz-sensor/templates/daemonset.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: wiz-sensor
   labels:
-    helm.sh/chart: wiz-sensor-1.0.8831
+    helm.sh/chart: wiz-sensor-1.0.10341
     image/tag: v1
+    dsimage/tag: v1
     application: "wiz"
     component: "sensor"
     daemonset: "wiz-sensor"
@@ -23,7 +24,7 @@ spec:
   template:
     metadata:
       labels:
-        helm.sh/chart: wiz-sensor-1.0.8831
+        helm.sh/chart: wiz-sensor-1.0.10341
         image/tag: v1
         application: "wiz"
         component: "sensor"
@@ -50,7 +51,7 @@ spec:
       restartPolicy: Always
       containers:
       - name: wiz-sensor
-        image: container-registry.zalando.net/secops-systems/wiz-sensor:1.0.8831-main-8
+        image: container-registry.zalando.net/secops-systems/wiz-sensor:1.0.10314-main-9
         imagePullPolicy: IfNotPresent
         securityContext:
           capabilities:
@@ -161,7 +162,7 @@ spec:
           value: "true"
           {{- end }}
         - name: HELM_CHART_VERSION
-          value: 1.0.8831
+          value: 1.0.10341
         - name: ALLOW_KUBELET_COMMUNICATION
           value: "false"
         - name: FORCE_KUBELET_COMMUNICATION
@@ -192,7 +193,7 @@ spec:
           type: DirectoryOrCreate
       - name: api-client-secret
         secret:
-          secretName: custom-wiz-sensor-api-token
+          secretName: wiz-sensor-api-token
           items:
             - key: clientId
               path: clientId
@@ -200,7 +201,7 @@ spec:
               path: clientToken
       - name: api-endpoint-name-secret
         secret:
-          secretName: custom-wiz-sensor-api-token
+          secretName: wiz-sensor-api-token
           optional: true
           items:
             - key: clientEndpoint
