@@ -4,11 +4,16 @@ kind: EC2NodeClass
 metadata:
   name: "{{ .NodePool.Name }}"
 spec:
+#{{ if eq .NodePool.ConfigItems.karpenter_ami_family "AL2023" }}
+  amiFamily: AL2023
+  # AL2023: Karpenter auto-selects the EKS-optimized AMI via SSM — no amiSelectorTerms needed.
+#{{ else }}
   amiFamily: Custom
   amiSelectorTerms:
     # Select on any AMI that has any of the following IDs
     - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_35_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
     - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_35_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
+#{{ end }}
   metadataOptions:
     httpEndpoint: enabled
     # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
@@ -33,7 +38,11 @@ spec:
   # {{ end }}
   instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
   blockDeviceMappings:
+#{{ if eq .NodePool.ConfigItems.karpenter_ami_family "AL2023" }}
+    - deviceName: /dev/xvda
+#{{ else }}
     - deviceName: /dev/sda1
+#{{ end }}
       ebs:
         deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination }}
         volumeSize: {{ .NodePool.ConfigItems.ebs_root_volume_size }}Gi
@@ -92,8 +101,12 @@ spec:
 #    {{ end}}
 #  {{ end}}
 #{{ end}}
+#{{ if ne .NodePool.ConfigItems.karpenter_ami_family "AL2023" }}
+  # AL2023 amiFamily: Karpenter generates EKS bootstrap userdata automatically.
+  # For Custom amiFamily (Ubuntu), inject the rendered cloud-init userdata.
   userData: |
 {{ .Values.UserData | indent 4 }}
+#{{ end }}
 ---
 apiVersion: karpenter.sh/v1
 kind: NodePool
