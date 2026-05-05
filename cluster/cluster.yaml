@@ -195,16 +195,6 @@ Resources:
             - ParameterName: Delimiter
               ParameterValue: "\\n"
 
-      # HttpEndpointDestinationConfiguration:
-      #   EndpointConfiguration:
-      #     AccessKey: "{{.Cluster.ConfigItems.eks_siem_key}}"
-      #     Url: "{{.Cluster.ConfigItems.eks_siem_endpoint}}"
-      #   RetryOptions:
-      #     DurationInSeconds: 300
-      #   S3BackupMode: "AllData"
-      #   S3Configuration:
-      #     BucketARN: "{{.Cluster.ConfigItems.eks_siem_bucket}}"
-      #     RoleARN: !GetAtt EKSControlPlaneFirehoseS3Role.Arn
   EKSControlPlaneFirehoseS3Role:
     Type: AWS::IAM::Role
     Properties:
@@ -226,11 +216,8 @@ Resources:
               - Effect: Allow
                 Action:
                   - 's3:PutObject'
-                  - 's3:GetObject'
                   - 's3:ListBucketMultipartUploads'
                   - 's3:AbortMultipartUpload'
-                  - 's3:ListBucket'
-                  - 's3:GetBucketLocation'
                 Resource:
                   - "{{.Cluster.ConfigItems.eks_siem_bucket}}"
                   - "{{.Cluster.ConfigItems.eks_siem_bucket}}/*"

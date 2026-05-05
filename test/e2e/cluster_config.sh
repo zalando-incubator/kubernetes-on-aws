@@ -50,8 +50,6 @@ clusters:
     skipper_open_policy_agent_bundles_url: "${SKIPPER_OPA_BUNDLES_URL}"
     eks_ip_family: "ipv6"
     eks_siem_logging: "true"
-    eks_siem_key: "${EKS_SIEM_KEY}"
-    eks_siem_endpoint: "${EKS_SIEM_ENDPOINT}"
     eks_siem_bucket: "${EKS_SIEM_BUCKET}"
     consolidation_policy: "WhenEmpty"
     consolidate_after: "5m"
