@@ -10,7 +10,6 @@
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
-{{ end }}
 
 {{ $cluster_internal_cidrs := list "10.2.0.0/15" .Values.vpc_ipv4_cidr }}
 {{ if eq .Cluster.Provider "zalando-eks" }}
@@ -24,6 +23,7 @@
 {{ template "skipper-ingress" dict
   "name" "skipper-ingress"
   "image" $main_image_updated_manually
+  "routes_urls" .Cluster.ConfigItems.skipper_ingress_routes_urls
 
   "Cluster" .Cluster
   "Values" .Values
@@ -37,6 +37,7 @@
   "image" $canary_image
   "replicas" 1
   "args" $canary_args
+  "routes_urls" .Cluster.ConfigItems.skipper_ingress_canary_routes_urls
 
   "Cluster" .Cluster
   "Values" .Values
@@ -226,7 +227,7 @@ spec:
           - "-enable-copy-stream-pool={{ .Cluster.ConfigItems.skipper_copy_stream_pool_enabled }}"
           - "-validate-query={{ .Cluster.ConfigItems.skipper_validate_query }}"
           - "-validate-query-log={{ .Cluster.ConfigItems.skipper_validate_query_log }}"
-          - "-routes-urls={{ .Cluster.ConfigItems.skipper_ingress_routes_url }}"
+          - '-routes-urls="{{ .routes_urls }}"'
           - "-normalize-host"
           - "-address=:9999"
           - "-wait-first-route-load"
