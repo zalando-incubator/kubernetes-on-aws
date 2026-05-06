@@ -165,6 +165,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['topology.kubernetes.io/zone']
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         - name: LIGHTSTEP_TOKEN
           valueFrom:
             secretKeyRef:
@@ -301,6 +305,8 @@ spec:
             tag=cluster={{ .Cluster.Alias }}
             tag=k8s.cluster.name={{ .Cluster.Alias }}
             tag=artifact={{ .image }}
+            tag=k8s.pod.name=$(POD_NAME)
+            tag=cloud.availability_zone=$(KUBE_NODE_ZONE)
             max-buffered-spans={{ .Cluster.ConfigItems.skipper_ingress_tracing_buffer }}
             grpc-max-msg-size={{ .Cluster.ConfigItems.skipper_ingress_lightstep_grpc_max_msg_size }}
             max-period={{ .Cluster.ConfigItems.skipper_ingress_lightstep_max_period }}
