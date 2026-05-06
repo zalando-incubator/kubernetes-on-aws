@@ -100,6 +100,7 @@ skipper_ingress_target_average_utilization_cpu: "60"
 skipper_ingress_target_average_utilization_memory: "80"
 skipper_ingress_hpa_scale_down_wait: "600"
 skipper_ingress_hpa_scale_up_max_perc: "100"
+skipper_ingress_routes_url: "http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes"
 {{if eq .Cluster.Environment "production"}}
 skipper_ingress_min_replicas: "3"
 skipper_ingress_max_replicas: "300"
@@ -251,11 +252,6 @@ skipper_ingress_request_size_buckets: ""
 #
 # skipper routesrv settings
 #
-# skipper_routesrv_enabled is a three state switch:
-# - "false" - routesrv deployment is removed, skipper uses own k8s dataclient
-# - "pre" - routesrv is deployed, skipper uses own k8s dataclient
-# - "exec" - routesrv is deployed, skipper uses routesrv
-skipper_routesrv_enabled: "exec"
 skipper_routesrv_memory: "1Gi"
 skipper_routesrv_min_replicas: 2
 {{if eq .Cluster.Environment "production"}}
