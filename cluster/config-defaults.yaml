@@ -1054,12 +1054,23 @@ external_dns_mem: "4Gi"
 expirimental_dns_unbound_liveness_probe: "true"
 
 # DNS container resources
-dns_unbound_cpu: "100m"
-dns_unbound_mem: "50Mi"
-dns_unbound_exporter_cpu: "10m"
-dns_unbound_exporter_mem: "45Mi"
-dns_coredns_cpu: "50m"
-dns_coredns_mem: "100Mi"
+dns_coredns_cpu: "160m"
+dns_coredns_mem: "195Mi"
+
+# Roll out of static dns interface
+#
+# The rollout needs to be in multiple stages to avoid disruption of node local
+# DNS. Each stage must fully complete i.e. all CoreDNS pods must rotate (thus
+# all nodes must rotate) before going to the next stage.
+#
+# stages:
+#
+#  interface - static interface container runs
+#  listening - dns cache listens to static interface
+#  kubelet - kubelet configures static dns IP address
+#  only_interface - dns cache listens _only_ on the static interface
+#
+dns_static_interface: "interface"
 
 # special roles for test/pet clusters
 {{if eq .Cluster.Environment "e2e"}}
