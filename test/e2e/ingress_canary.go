@@ -16,9 +16,12 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	v1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
@@ -53,7 +56,7 @@ var _ = describe("Ingress canary test", func() {
 		cs kubernetes.Interface
 	)
 
-	It("Should create simple ingress canary with ServiceTypeLoadBalancer", func() {
+	It("Should create simple application with ServiceTypeLoadBalancer", func() {
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-canary-test"
 		ns := f.Namespace.Name
@@ -62,40 +65,43 @@ var _ = describe("Ingress canary test", func() {
 			"app": serviceName,
 		}
 		port := 8080
-		targetPort := 9090
-		response := "canary_test_ok"
-		route := fmt.Sprintf(`* -> inlineContent("%s") -> <shunt>`, response)
+		targetPort := 9999
 
-		// Create a pod with skipper backend
-		By("Creating a backend pod with " + serviceName + " in namespace " + ns)
-		pod := createSkipperPod(serviceName, ns, route, labels, targetPort)
-		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		framework.ExpectNoError(err)
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
-
-		//Create a service with type LoadBalancer
+		// Create a service with type LoadBalancer targeting only skipper-ingress-canary pod
 		loadBalancerServiceName := serviceName + "-lb"
 		externalHostName := fmt.Sprintf("%s.%s", loadBalancerServiceName, E2EHostedZone())
 		lbAnnotations := map[string]string{
 			"external-dns.alpha.kubernetes.io/hostname": externalHostName,
 		}
+		selectors := map[string]string{
+			"deployment": "skipper-ingress-canary",
+		}
 		By("Creating service with " + loadBalancerServiceName + " of ServiceTypeLoadBalancer in namespace " + ns)
-		service := createServiceTypeLoadBalancer(loadBalancerServiceName, labels, lbAnnotations, port, targetPort)
-		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
+		service := createServiceTypeLoadBalancer(loadBalancerServiceName, labels, lbAnnotations, selectors, port, targetPort)
+		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
 		framework.ExpectNoError(err)
 
 		lb, err := waitForServiceLoadBalancer(context.TODO(), loadBalancerServiceName, ns, cs)
 		framework.ExpectNoError(err)
 		framework.Logf("Service LoadBalancer Ingress: %v", lb)
 
-		//Create ClusterIP service for Ingress backend
+		// Create a pod with skipper backend
+		response := "canary_test_ok"
+		route := fmt.Sprintf(`* -> inlineContent("%s") -> status(200) -> <shunt>`, response)
+		By("Creating a backend pod with " + serviceName + " in namespace " + ns)
+		pod := createSkipperPod(serviceName, ns, route, labels, targetPort)
+		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
+		framework.ExpectNoError(err)
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
+
+		// Create ClusterIP service for Ingress backend
 		clusterIPServiceName := serviceName + "-clusterip"
 		By("Creating service with " + clusterIPServiceName + " of ServiceTypeClusterIP type in namespace " + ns)
 		clusterIPService := createServiceTypeClusterIP(clusterIPServiceName, labels, port, targetPort)
 		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), clusterIPService, metav1.CreateOptions{})
 		framework.ExpectNoError(err)
 
-		// Create an Ingress with the opt-out annotation
+		// Create an Ingress with the opt-out annotation so that no AWS Load Balancer is provisioned for it
 		ingAnnotations := map[string]string{
 			"zalando.org/aws-load-balancer-type": "none",
 		}
@@ -107,7 +113,15 @@ var _ = describe("Ingress canary test", func() {
 		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		framework.ExpectNoError(err)
 
-		// TODO: Send requests to the LoadBalancer and Ingress endpoints and assert the responses are as expected.
-
+		// Send requests and assert the responses are as expected.
+		By("Sending test requests to the LoadBalancer endpoint with Header 'Host: " + hostName + "'  and asserting the response")
+		req, err := http.NewRequest("GET", fmt.Sprintf("https://%s", externalHostName), nil)
+		framework.ExpectNoError(err)
+		req.Header.Set("Host", hostName)
+		resp, err := waitForResponseReturnResponse(req, 5*time.Minute, isSuccess, true)
+		framework.ExpectNoError(err)
+		respB, err := io.ReadAll(resp.Body)
+		framework.ExpectNoError(err)
+		Expect(string(respB)).To(Equal(response))
 	})
 })
