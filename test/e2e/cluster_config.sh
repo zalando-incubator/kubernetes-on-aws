@@ -49,8 +49,6 @@ clusters:
     skipper_open_policy_agent_observability_url: "${SKIPPER_OPA_OBSERVABILITY_URL}"
     skipper_open_policy_agent_bundles_url: "${SKIPPER_OPA_BUNDLES_URL}"
     eks_ip_family: "ipv6"
-    eks_siem_logging: "true"
-    eks_siem_bucket: "${EKS_SIEM_BUCKET}"
     consolidation_policy: "WhenEmpty"
     consolidate_after: "5m"
     wiz_api_client_id: "${WIZ_API_CLIENT_ID}"
