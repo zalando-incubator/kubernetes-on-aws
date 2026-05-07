@@ -166,6 +166,88 @@ Resources:
     Properties:
       LogGroupName: "/aws/eks/{{.Cluster.Name}}/cluster"
       RetentionInDays: 545
+{{- if eq .Cluster.ConfigItems.eks_siem_logging "true" }}
+  EKSControlPlaneSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      LogGroupName: !Ref ControlPlaneLogGroup
+      RoleArn: !GetAtt EKSControlPlaneCWtoFirehoseRole.Arn
+      FilterName: "EKSCtrlPlaneLogs-{{.Cluster.Name}}"
+      FilterPattern: ""
+      DestinationArn: !GetAtt EKSControlPlaneLogsDataFirehose.Arn
+  EKSControlPlaneLogsDataFirehose:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: "EKSCtrlPlaneDeliveryStream-{{.Cluster.Name}}"
+      DeliveryStreamType: DirectPut
+      ExtendedS3DestinationConfiguration:
+        BucketARN: "{{.Cluster.ConfigItems.eks_siem_bucket}}"
+        RoleARN: !GetAtt EKSControlPlaneFirehoseS3Role.Arn
+        FileExtension: ".json.gz"
+        BufferingHints:
+          SizeInMBs: 64
+          IntervalInSeconds: 300
+        ProcessingConfiguration:
+          Enabled: true
+          Processors:
+          - Type: AppendDelimiterToRecord
+            Parameters:
+            - ParameterName: Delimiter
+              ParameterValue: "\\n"
+
+  EKSControlPlaneFirehoseS3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - firehose.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:PutObject'
+                  - 's3:ListBucketMultipartUploads'
+                  - 's3:AbortMultipartUpload'
+                Resource:
+                  - "{{.Cluster.ConfigItems.eks_siem_bucket}}"
+                  - "{{.Cluster.ConfigItems.eks_siem_bucket}}/*"
+      RoleName: "EKSCtrlPlaneFirehosetoS3-{{.Cluster.Name}}"
+  EKSControlPlaneCWtoFirehoseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "logs.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "firehose:PutRecord"
+                  - "firehose:PutRecordBatch"
+                Resource:
+                  - "arn:aws:firehose:*:{{.Cluster.InfrastructureAccountID}}:deliverystream/EKSCtrlPlaneDeliveryStream-{{.Cluster.Name}}"
+      RoleName: "EKSCtrlPlaneCWtoFirehose-{{.Cluster.Name}}"
+{{- end }}
 {{- end }}
   EKSCluster:
     Type: AWS::EKS::Cluster
