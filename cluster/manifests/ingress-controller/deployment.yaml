@@ -1,4 +1,4 @@
-# {{ $image := "registry.opensource.zalan.do/teapot/kube-ingress-aws-controller-test:pr-795-2" }}
+# {{ $image := "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/kube-ingress-aws-controller:v0.20.7" }}
 # {{ $version := index (split $image ":") 1 }}
 
 apiVersion: apps/v1
@@ -8,7 +8,7 @@ metadata:
   namespace: kube-system
   labels:
     application: kube-ingress-aws-controller
-    version: "{{ $version }}"
+    version: "pr-795-2"
 spec:
   replicas: 1
   selector:
@@ -18,7 +18,7 @@ spec:
     metadata:
       labels:
         application: kube-ingress-aws-controller
-        version: "{{ $version }}"
+        version: "pr-795-2"
       annotations:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "controller", "parser": "keyValue"}]
@@ -35,7 +35,7 @@ spec:
       serviceAccountName: kube-ingress-aws-controller
       containers:
         - name: controller
-          image: "{{ $image }}"
+          image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/teapot/kube-ingress-aws-controller:pr-795-2"
           args:
             - --ip-addr-type={{ .Cluster.ConfigItems.kube_aws_ingress_controller_lb_ip_addr_type }}
             - --target-group-ip-addr-type={{ .Cluster.ConfigItems.kube_aws_ingress_controller_target_group_ip_addr_type }}
