@@ -611,7 +611,7 @@ spec:
           - "-address=:9990"
           - "-wait-for-healthcheck-interval={{ .Cluster.ConfigItems.skipper_wait_for_healthcheck_interval }}"
           - "-kubernetes-east-west-range-domains=ingress.cluster.local"
-          - '-kubernetes-east-west-range-predicates=ClientIP("{{ $cluster_internal_cidrs | join `","` }}")'
+          - '-kubernetes-east-west-range-predicates=ClientIP("{{ .cluster_internal_cidrs | join `","` }}")'
           - '-kubernetes-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_predicates }}'
           - '-kubernetes-annotation-filters-append={{ .Cluster.ConfigItems.skipper_kubernetes_annotation_filters_append }}'
           - '-kubernetes-east-west-range-annotation-predicates={{ .Cluster.ConfigItems.skipper_kubernetes_east_west_range_annotation_predicates }}'
@@ -635,7 +635,7 @@ spec:
 {{ end }}
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
-          - '-forwarded-headers-exclude-cidrs={{ $cluster_internal_cidrs | join "," }}'
+          - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
 {{ end }}
           - >-
             -opentracing=lightstep
