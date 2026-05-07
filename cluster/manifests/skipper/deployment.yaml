@@ -3,6 +3,9 @@
 {{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.86-1417" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.86-1417" }}
 
+{{ $routesrv_main_version := index (split (index (split $main_image_updated_manually ":") 1) "-") 0 }}
+{{ $routesrv_canary_version := index (split (index (split $canary_image ":") 1) "-") 0 }}
+
 {{/* Allow to override manually canary image by config item */}}
 {{ if ne .Cluster.ConfigItems.skipper_ingress_canary_image "" }}
 {{ $canary_image = .Cluster.ConfigItems.skipper_ingress_canary_image }}
@@ -23,6 +26,7 @@
 {{ template "skipper-ingress" dict
   "name" "skipper-ingress"
   "image" $main_image_updated_manually
+  "routesrv_image": $routesrv_main_version
   "routes_urls" .Cluster.ConfigItems.skipper_ingress_routes_urls
 
   "Cluster" .Cluster
@@ -35,6 +39,7 @@
 {{ template "skipper-ingress" dict
   "name" "skipper-ingress-canary"
   "image" $canary_image
+  "routesrv_image": $routesrv_canary_version
   "replicas" 1
   "args" $canary_args
   "routes_urls" .Cluster.ConfigItems.skipper_ingress_canary_routes_urls
@@ -583,7 +588,7 @@ spec:
 {{- end }}
       containers:
       - name: routesrv
-        image: {{ .image }}
+        image: {{ .routesrv_image }}
         terminationMessagePolicy: FallbackToLogsOnError
         ports:
         - name: ingress-port
@@ -648,9 +653,9 @@ spec:
             tag=account={{ .Cluster.Alias }}
             tag=cluster={{ .Cluster.Alias }}
             tag=k8s.cluster.name={{ .Cluster.Alias }}
-            tag=artifact={{ .image }}
-            tag=container.image.name={{ index (split .image ":") 0 }}
-            tag=container.image.tags={{ index (split .image ":") 1 }}
+            tag=artifact={{ .routesrv_image }}
+            tag=container.image.name={{ index (split .routesrv_image ":") 0 }}
+            tag=container.image.tags={{ index (split .routesrv_image ":") 1 }}
             tag=k8s.pod.name=$(POD_NAME)
             tag=cloud.availability_zone=$(KUBE_NODE_ZONE)
             max-buffered-spans={{ .Cluster.ConfigItems.skipper_ingress_tracing_buffer }}
