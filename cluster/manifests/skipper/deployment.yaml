@@ -305,6 +305,8 @@ spec:
             tag=cluster={{ .Cluster.Alias }}
             tag=k8s.cluster.name={{ .Cluster.Alias }}
             tag=artifact={{ .image }}
+            tag=container.image.name={{ index (split .image ":") 0 }}
+            tag=container.image.tags={{ index (split .image ":") 1 }}
             tag=k8s.pod.name=$(POD_NAME)
             tag=cloud.availability_zone=$(KUBE_NODE_ZONE)
             max-buffered-spans={{ .Cluster.ConfigItems.skipper_ingress_tracing_buffer }}
