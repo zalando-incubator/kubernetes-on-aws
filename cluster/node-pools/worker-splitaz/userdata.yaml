@@ -132,14 +132,10 @@ write_files:
       protectKernelDefaults: true
       # variables are replaced on instance start-up.
       providerID: __PROVIDER_ID__
-{{- if or (eq .Cluster.ConfigItems.dns_static_interface "kubelet") (eq .Cluster.ConfigItems.dns_static_interface "only_interface") }}
 {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
       clusterDNS: ["fd00:1:2:3::5"]
 {{- else }}
       clusterDNS: ["169.254.20.10"]
-{{- end }}
-{{- else }}
-      clusterDNS: [__CLUSTER_DNS__]
 {{- end }}
 {{- if or (.NodePool.Taints) (eq .NodePool.Profile "worker-karpenter") }}
       registerWithTaints:

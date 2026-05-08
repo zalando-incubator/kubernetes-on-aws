@@ -36,7 +36,6 @@ spec:
         resources:
           requests:
             ephemeral-storage: 256Mi
-{{- if ne .Cluster.ConfigItems.dns_static_interface "" }}
       - name: static-interface
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/cloud-platform/dnscache-interface:pr-1-4
         restartPolicy: Always
@@ -56,7 +55,6 @@ spec:
           capabilities:
             add:
               - NET_ADMIN
-{{- end }}
       containers:
       - name: unbound
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound:1.25.1-master-19
@@ -78,17 +76,9 @@ spec:
             - dig
             - "+short"
 {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
-{{- if ne .Cluster.ConfigItems.dns_static_interface "interface" }}
             - "@fd00:1:2:3::5"
 {{- else }}
-            - "@::1"
-{{- end }}
-{{- else }}
-{{- if ne .Cluster.ConfigItems.dns_static_interface "interface" }}
             - "@169.254.20.10"
-{{- else }}
-            - "@127.0.0.1"
-{{- end }}
 {{- end }}
             - "kubernetes.default.svc.cluster.local"
           initialDelaySeconds: 60

@@ -11,22 +11,9 @@ data:
     server:
       directory: "/etc/unbound/"
 {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
-{{- if ne .Cluster.ConfigItems.dns_static_interface "only_interface" }}
-      interface: "::0"
-{{- end }}
-{{- if ne .Cluster.ConfigItems.dns_static_interface "interface" }}
       interface: "fd00:1:2:3::5"
-{{- end }}
 {{- else }}
-{{- if ne .Cluster.ConfigItems.dns_static_interface "only_interface" }}
-      interface: 0.0.0.0
-{{- end }}
-{{- if ne .Cluster.ConfigItems.dns_static_interface "interface" }}
       interface: 169.254.20.10
-{{- end }}
-{{- end }}
-{{- if ne .Cluster.ConfigItems.dns_static_interface "only_interface" }}
-      interface-automatic: yes
 {{- end }}
       # Drop user privileges after binding the port.
       username: "_unbound"
