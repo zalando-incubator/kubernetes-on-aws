@@ -60,6 +60,20 @@ karpenter_flex_types_enabled: "false"
 karpenter_flex_types_enabled: "true"
 {{end}}
 
+# Define Karpenter AMI family alias. This is used to determine the AMI used for
+# Karpenter nodes.
+#
+# The default is custom which is the Zalando Kubernetes on Ubuntu AMI.
+#
+# alternatives:
+#  - al2023@latest
+#  - bottlerocket@latest
+{{- if eq .Cluster.Provider "zalando-eks" }}
+karpenter_ami_family_alias: "bottlerocket@latest"
+{{- else }}
+karpenter_ami_family_alias: "custom"
+{{- end }}
+
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
 
@@ -585,7 +599,7 @@ static_egress_controller_enabled: "false"
 static_egress_controller_memory_min: "10Mi"
 
 # journald reader settings
-journald_reader_enabled: "true"
+journald_reader_enabled: "false"
 journald_reader_cpu: "1m"
 journald_reader_memory: "30Mi"
 
