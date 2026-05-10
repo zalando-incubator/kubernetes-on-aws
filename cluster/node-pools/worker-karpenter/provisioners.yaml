@@ -4,11 +4,16 @@ kind: EC2NodeClass
 metadata:
   name: "{{ .NodePool.Name }}"
 spec:
+  # {{ if eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom" }}
   amiFamily: Custom
   amiSelectorTerms:
     # Select on any AMI that has any of the following IDs
     - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_35_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
     - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_35_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
+  # {{ else }}
+  amiSelectorTerms:
+    - alias: "{{ .NodePool.ConfigItems.karpenter_ami_family_alias }}"
+  # {{ end }}
   metadataOptions:
     httpEndpoint: enabled
     # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
@@ -96,8 +101,24 @@ spec:
 #    {{ end}}
 #  {{ end}}
 #{{ end}}
+{{- if eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom" }}
   userData: |
 {{ .Values.UserData | indent 4 }}
+{{- else if hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "al2023" }}
+  userData: |
+    ---
+    apiVersion: node.eks.aws/v1alpha1
+    kind: NodeConfig
+    spec:
+      kubelet:
+        flags:
+          # hack to pass admission-controller requirements
+          - "--node-labels=node.kubernetes.io/role=worker"
+{{- else if hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket" }}
+  userData: |
+      [settings.kubernetes]
+      node-labels = {"node.kubernetes.io/role" = "worker"}
+{{- end }}
 ---
 apiVersion: karpenter.sh/v1
 kind: NodePool
