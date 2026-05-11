@@ -802,6 +802,11 @@ teapot_admission_controller_runtime_policy_spot_hard_assignment: "false"
 
 # Enable and configure prevent scale down annotation
 teapot_admission_controller_prevent_scale_down_enabled: "true"
+{{if eq .Cluster.Environment "production"}}
+teapot_admission_controller_prevent_scale_down_grace_period_default: "30m"
+{{else}}
+teapot_admission_controller_prevent_scale_down_grace_period_default: "15m"
+{{end}}
 {{if or (eq .Cluster.Environment "production") (eq .Cluster.Environment "e2e")}}
 teapot_admission_controller_prevent_scale_down_allowed: "true"
 {{else}}
@@ -1327,6 +1332,10 @@ role_sync_controller_enabled: "false"
 # Access control configs
 # Enable users with the poweruser role to modify EndpointSlices.
 access_control_poweruser_modify_endpointslices: "false"
+
+# Enable users with the poweruser role to modify NetworkPolicies. This is a
+# potentially dangerous permission, so it is disabled by default.
+access_control_poweruser_modify_networkpolicies: "false"
 
 #Wiz Configs
 # When wiz_enable_runtime_sensor and wiz_enable_runtime_connector are set to true,
