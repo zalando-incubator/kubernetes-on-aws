@@ -474,8 +474,21 @@ Resources:
     Type: AWS::EKS::Addon
     Properties:
       AddonName: aws-mountpoint-s3-csi-driver
-      AddonVersion: "v2.3.0-eksbuild.1"
+      AddonVersion: "v2.5.0-eksbuild.1"
       ClusterName: !Ref EKSCluster
+      ConfigurationValues: |
+        controller:
+          podLabels:
+            application: "kubernetes"
+            component: "s3-csi-driver"
+        mountpointPod:
+          podLabels:
+            application: "kubernetes"
+            component: "s3-csi-driver"
+        node:
+          podLabels:
+            application: "kubernetes"
+            component: "s3-csi-driver"
 {{- end }}
   EKSAddonAmazonVPCCNI:
     Type: AWS::EKS::Addon

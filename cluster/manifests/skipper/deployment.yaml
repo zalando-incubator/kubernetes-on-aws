@@ -1,11 +1,11 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.80-1412" }}
+{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.86-1417" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.88-1419" }}
 
 {{/* Allow to override manually canary image by config item */}}
 {{ if ne .Cluster.ConfigItems.skipper_ingress_canary_image "" }}
-{{ $canary_image := .Cluster.ConfigItems.skipper_ingress_canary_image }}
+{{ $canary_image = .Cluster.ConfigItems.skipper_ingress_canary_image }}
 {{ end }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
