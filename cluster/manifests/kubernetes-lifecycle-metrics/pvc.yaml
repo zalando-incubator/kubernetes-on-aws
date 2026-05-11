@@ -1,0 +1,17 @@
+{{- if eq .Cluster.ConfigItems.kubernetes_lifecycle_metrics_state_file "true" }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubernetes-lifecycle-metrics
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: lifecycle-metrics
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 1Gi
+{{- end }}
