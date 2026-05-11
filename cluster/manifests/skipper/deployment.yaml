@@ -3,6 +3,11 @@
 {{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.86-1417" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.86-1417" }}
 
+{{/* Allow to override manually main image by config item */}}
+{{ if ne .Cluster.ConfigItems.skipper_ingress_main_image "" }}
+{{ $main_image_updated_manually = .Cluster.ConfigItems.skipper_ingress_main_image }}
+{{ end }}
+
 {{/* Allow to override manually canary image by config item */}}
 {{ if ne .Cluster.ConfigItems.skipper_ingress_canary_image "" }}
 {{ $canary_image = .Cluster.ConfigItems.skipper_ingress_canary_image }}
@@ -564,6 +569,11 @@ spec:
 
 {{ if ne .Cluster.ConfigItems.skipper_routesrv_enabled "false" }}
 {{ $main_version := index (split (index (split $main_image_updated_manually ":") 1) "-") 0 }}
+{{ end }}
+
+{{ if ne .Cluster.ConfigItems.skipper_ingress_routesrv_image "" }}
+{{ $main_version = index (split (index (split $skipper_ingress_routesrv_image ":") 1) "-") 0 }}
+{{ end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
