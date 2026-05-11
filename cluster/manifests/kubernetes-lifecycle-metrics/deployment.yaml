@@ -18,7 +18,9 @@ spec:
         application: kubernetes
         component: lifecycle-metrics
       annotations:
+{{- if ne .Cluster.ConfigItems.kubernetes_lifecycle_metrics_state_file "true" }}
         karpenter.sh/do-not-disrupt: "true"
+{{- end }}
         prometheus.io/path: /metrics
         prometheus.io/port: "9090"
         prometheus.io/scrape: "true"
@@ -32,7 +34,11 @@ spec:
       serviceAccountName: kubernetes-lifecycle-metrics
       containers:
         - name: kubernetes-lifecycle-metrics
-          image: "container-registry.zalando.net/teapot/kubernetes-lifecycle-metrics:master-49"
+          image: "container-registry.zalando.net/teapot/kubernetes-lifecycle-metrics:master-50"
+{{- if eq .Cluster.ConfigItems.kubernetes_lifecycle_metrics_state_file "true" }}
+          args:
+            - --state-file=/state/state.json
+{{- end }}
           ports:
             - containerPort: 9090
               protocol: TCP
@@ -48,3 +54,12 @@ spec:
               path: /healthz
               port: 9090
               scheme: HTTP
+{{- if eq .Cluster.ConfigItems.kubernetes_lifecycle_metrics_state_file "true" }}
+          volumeMounts:
+          - mountPath: /state
+            name: state
+      volumes:
+      - name: state
+        persistentVolumeClaim:
+          claimName: kubernetes-lifecycle-metrics
+{{- end }}
