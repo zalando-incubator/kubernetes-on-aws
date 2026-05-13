@@ -3,14 +3,14 @@
 {{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.24.86-1417" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.24.86-1417" }}
 
-{{ $routesrv_main_version := index (split (index (split $main_image_updated_manually ":") 1) "-") 0 }}
-{{ $routesrv_canary_version := index (split (index (split $canary_image ":") 1) "-") 0 }}
-{{ $routesrv_image_without_tag := "container-registry.zalando.net/teapot/skipper" }}
-
 {{/* Allow to override manually canary image by config item */}}
 {{ if ne .Cluster.ConfigItems.skipper_ingress_canary_image "" }}
 {{ $canary_image = .Cluster.ConfigItems.skipper_ingress_canary_image }}
 {{ end }}
+
+{{ $routesrv_main_version := index (split (index (split $main_image_updated_manually ":") 1) "-") 0 }}
+{{ $routesrv_canary_version := index (split (index (split $canary_image ":") 1) "-") 0 }}
+{{ $routesrv_image_without_tag := "container-registry.zalando.net/teapot/skipper" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
