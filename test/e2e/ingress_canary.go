@@ -36,7 +36,7 @@ import (
 func waitForServiceLoadBalancer(ctx context.Context, serviceName, ns string, cs kubernetes.Interface) (*v1.LoadBalancerIngress, error) {
 	var lbIngress *v1.LoadBalancerIngress
 	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, 10*time.Minute, true, func(_ context.Context) (done bool, err error) {
-		svc, err := cs.CoreV1().Services(ns).Get(context.TODO(), serviceName, metav1.GetOptions{})
+		svc, err := cs.CoreV1().Services(ns).Get(ctx, serviceName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -66,6 +66,7 @@ var _ = describe("Ingress canary test", func() {
 		}
 		port := 8080
 		targetPort := 9999
+		ctx := context.Background()
 
 		// Create a service with type LoadBalancer targeting only skipper-ingress-canary pod
 		loadBalancerServiceName := serviceName + "-lb"
@@ -78,10 +79,10 @@ var _ = describe("Ingress canary test", func() {
 		}
 		By("Creating service with " + loadBalancerServiceName + " of ServiceTypeLoadBalancer in namespace " + ns)
 		service := createServiceTypeLoadBalancer(loadBalancerServiceName, labels, lbAnnotations, selectors, port, targetPort)
-		_, err := cs.CoreV1().Services(ns).Create(context.TODO(), service, metav1.CreateOptions{})
+		_, err := cs.CoreV1().Services(ns).Create(ctx, service, metav1.CreateOptions{})
 		framework.ExpectNoError(err)
 
-		lb, err := waitForServiceLoadBalancer(context.TODO(), loadBalancerServiceName, ns, cs)
+		lb, err := waitForServiceLoadBalancer(ctx, loadBalancerServiceName, ns, cs)
 		framework.ExpectNoError(err)
 		framework.Logf("Service LoadBalancer Ingress: %v", lb)
 
@@ -90,15 +91,15 @@ var _ = describe("Ingress canary test", func() {
 		route := fmt.Sprintf(`* -> inlineContent("%s") -> status(200) -> <shunt>`, response)
 		By("Creating a backend pod with " + serviceName + " in namespace " + ns)
 		pod := createSkipperPod(serviceName, ns, route, labels, targetPort)
-		_, err = cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
+		_, err = cs.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
 		framework.ExpectNoError(err)
-		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
+		framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(ctx, f.ClientSet, pod.Name, pod.Namespace))
 
 		// Create ClusterIP service for Ingress backend
 		clusterIPServiceName := serviceName + "-clusterip"
 		By("Creating service with " + clusterIPServiceName + " of ServiceTypeClusterIP type in namespace " + ns)
 		clusterIPService := createServiceTypeClusterIP(clusterIPServiceName, labels, port, targetPort)
-		_, err = cs.CoreV1().Services(ns).Create(context.TODO(), clusterIPService, metav1.CreateOptions{})
+		_, err = cs.CoreV1().Services(ns).Create(ctx, clusterIPService, metav1.CreateOptions{})
 		framework.ExpectNoError(err)
 
 		// Create an Ingress with the opt-out annotation so that no AWS Load Balancer is provisioned for it
@@ -107,11 +108,12 @@ var _ = describe("Ingress canary test", func() {
 		}
 		By("Creating an ingress with " + clusterIPServiceName + " in namespace " + ns)
 		ing := createIngress(serviceName, hostName, ns, "/", netv1.PathTypeImplementationSpecific, labels, ingAnnotations, port)
-		_, err = cs.NetworkingV1().Ingresses(ns).Create(context.TODO(), ing, metav1.CreateOptions{})
+		_, err = cs.NetworkingV1().Ingresses(ns).Create(ctx, ing, metav1.CreateOptions{})
 		framework.ExpectNoError(err)
 
-		_, err = cs.NetworkingV1().Ingresses(ns).Get(context.TODO(), ing.Name, metav1.GetOptions{ResourceVersion: "0"})
+		ing, err = cs.NetworkingV1().Ingresses(ns).Get(ctx, ing.Name, metav1.GetOptions{ResourceVersion: "0"})
 		framework.ExpectNoError(err)
+		Expect(ing.Status.LoadBalancer.Ingress).To(BeEmpty(), "Expected no LoadBalancer Ingress for the Ingress resource")
 
 		// Send requests and assert the responses are as expected.
 		By("Sending test requests to the LoadBalancer endpoint with Header 'Host: " + hostName + "'  and asserting the response")
@@ -120,6 +122,7 @@ var _ = describe("Ingress canary test", func() {
 		req.Header.Set("Host", hostName)
 		resp, err := waitForResponseReturnResponse(req, 5*time.Minute, isSuccess, true)
 		framework.ExpectNoError(err)
+		defer resp.Body.Close()
 		respB, err := io.ReadAll(resp.Body)
 		framework.ExpectNoError(err)
 		Expect(string(respB)).To(Equal(response))
