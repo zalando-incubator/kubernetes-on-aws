@@ -558,6 +558,24 @@ func createServiceTypeClusterIP(serviceName string, labels map[string]string, po
 	}
 }
 
+func createServiceTypeLoadBalancer(serviceName string, labels, annotations, selectors map[string]string, port, targetPort int) *v1.Service {
+	return &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        serviceName,
+			Labels:      labels,
+			Annotations: annotations,
+		},
+		Spec: v1.ServiceSpec{
+			Type:     v1.ServiceTypeLoadBalancer,
+			Selector: selectors,
+			Ports: []v1.ServicePort{{
+				Port:       int32(port),
+				TargetPort: intstr.FromInt(targetPort),
+			}},
+		},
+	}
+}
+
 func waitForSuccessfulResponse(hostname string, timeout time.Duration) error {
 	client := http.Client{
 		Transport: &http.Transport{},
