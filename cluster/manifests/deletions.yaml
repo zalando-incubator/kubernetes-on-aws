@@ -4,6 +4,10 @@ pre_apply:
 - name: deployment-service-controller
   kind: StatefulSet
   namespace: kube-system
+# we need to do this in order to re-create the deployment with different spec.selector
+- name: skipper-ingress-routesrv
+  namespace: kube-system
+  kind: Deployment
 {{- if eq .Cluster.ConfigItems.skipper_redis_cleanup_enabled "true" }}
 - kind: StatefulSet
   name: skipper-ingress-redis
