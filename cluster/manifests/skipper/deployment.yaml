@@ -24,6 +24,19 @@
 {{ end }}
 {{ end }}
 
+{{if eq .Cluster.ConfigItems.skipper_ingress_zone_aware_routing "true"}}
+{{ template "skipper-ingress" dict
+  "name" "skipper-ingress"
+  "image" $main_image_updated_manually
+  "routesrv_image" $routesrv_image_without_tag
+  "routesrv_version" $routesrv_main_version
+  "routes_urls" .Cluster.ConfigItems.skipper_ingress_zone_aware_routes_urls
+
+  "Cluster" .Cluster
+  "Values" .Values
+  "cluster_internal_cidrs" $cluster_internal_cidrs
+}}
+{{ else }}
 {{ template "skipper-ingress" dict
   "name" "skipper-ingress"
   "image" $main_image_updated_manually
@@ -35,8 +48,24 @@
   "Values" .Values
   "cluster_internal_cidrs" $cluster_internal_cidrs
 }}
+{{ end }}
 
 {{ if eq .Cluster.ConfigItems.skipper_ingress_canary_enabled "true" }}
+{{if eq .Cluster.ConfigItems.skipper_ingress_zone_aware_routing "true"}}
+{{ template "skipper-ingress" dict
+  "name" "skipper-ingress-canary"
+  "image" $canary_image
+  "routesrv_image" $routesrv_image_without_tag
+  "routesrv_version" $routesrv_canary_version
+  "replicas" 1
+  "args" $canary_args
+  "routes_urls" .Cluster.ConfigItems.sskipper_ingress_zone_aware_routes_urls
+
+  "Cluster" .Cluster
+  "Values" .Values
+  "cluster_internal_cidrs" $cluster_internal_cidrs
+}}
+{{ else }}
 {{ template "skipper-ingress" dict
   "name" "skipper-ingress-canary"
   "image" $canary_image
@@ -50,6 +79,7 @@
   "Values" .Values
   "cluster_internal_cidrs" $cluster_internal_cidrs
 }}
+{{ end }}
 {{ end }}
 
 {{ define "skipper-ingress" }}
