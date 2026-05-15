@@ -41,8 +41,6 @@ spec:
             type: object
           spec:
             properties:
-              configMapRef:
-                type: string
               routes:
                 description: A list of routes for which requests should be intercepted
                   by Egress and either mocked or forwarded to the test host.
@@ -155,6 +153,8 @@ spec:
                 minItems: 1
                 type: array
               stackRef:
+                description: StackRef is the name of the Stack that owns this egress
+                  and whose pods should receive the egress annotation.
                 type: string
               testProject:
                 description: |-
@@ -163,12 +163,12 @@ spec:
                 type: string
             required:
             - routes
+            - stackRef
             - testProject
             type: object
             x-kubernetes-validations:
-            - message: At least one of stackRef or configMapRef must be set
-              rule: has(self.stackRef) && self.stackRef != "" || has(self.configMapRef)
-                && self.configMapRef != ""
+            - message: stackRef is immutable
+              rule: self.stackRef == oldSelf.stackRef
           status:
             description: |-
               SandboxEgressStatus is the current state of the EgressSandbox.
