@@ -33,7 +33,6 @@ import (
 	e2ekubectl "k8s.io/kubernetes/test/e2e/framework/kubectl"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 	admissionapi "k8s.io/pod-security-admission/api"
-	"k8s.io/utils/ptr"
 
 	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	sandboxv1 "github.com/zalando-build/sandbox-controller/pkg/apis/zalando.org/v1"
@@ -288,13 +287,13 @@ var _ = describe("Sandbox Controller", func() {
 				},
 				Spec: stackv1.StackSetSpec{
 					StackLifecycle: stackv1.StackLifecycle{
-						Limit: ptr.To(int32(1)),
+						Limit: new(int32(1)),
 					},
 					StackTemplate: stackv1.StackTemplate{
 						Spec: stackv1.StackSpecTemplate{
 							Version: stackVersion,
 							StackSpec: stackv1.StackSpec{
-								Replicas: ptr.To(int32(1)),
+								Replicas: new(int32(1)),
 								PodTemplate: corev1.PodTemplateSpec{
 									ObjectMeta: metav1.ObjectMeta{
 										Labels: egressAppLabels,
