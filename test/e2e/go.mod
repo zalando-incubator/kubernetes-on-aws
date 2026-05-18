@@ -22,6 +22,7 @@ require (
 	github.com/szuecs/routegroup-client v0.34.1
 	github.com/zalando-build/sandbox-controller v0.0.0-20260515150223-2323c481ce08
 	github.com/zalando-build/shadow-traffic-controller v0.0.0-20260414075214-82e694032451
+	github.com/zalando-incubator/stackset-controller v1.4.126
 	k8s.io/api v0.35.3
 	k8s.io/apimachinery v0.35.3
 	k8s.io/apiserver v0.35.2
@@ -161,7 +162,6 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/zalando-build/fabric-gateway v0.0.0-20260312131053-eb84f1bc3521 // indirect
-	github.com/zalando-incubator/stackset-controller v1.4.126 // indirect
 	go.etcd.io/etcd/api/v3 v3.6.5 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.6.5 // indirect
 	go.etcd.io/etcd/client/v3 v3.6.5 // indirect
