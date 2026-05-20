@@ -27,7 +27,7 @@ require (
 	k8s.io/apimachinery v0.35.3
 	k8s.io/apiserver v0.35.2
 	k8s.io/client-go v0.35.3
-	k8s.io/kubernetes v1.35.2
+	k8s.io/kubernetes v1.35.5
 	k8s.io/pod-security-admission v0.0.0
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
 	sigs.k8s.io/aws-iam-authenticator v0.6.28
