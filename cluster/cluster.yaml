@@ -172,13 +172,13 @@ Resources:
     Properties:
       LogGroupName: !Ref ControlPlaneLogGroup
       RoleArn: !GetAtt EKSControlPlaneCWtoFirehoseRole.Arn
-      FilterName: "EKSCtrlPlaneLogs-{{.Cluster.Name}}"
+      FilterName: "EKS-{{.Cluster.Name}}"
       FilterPattern: ""
       DestinationArn: !GetAtt EKSControlPlaneLogsDataFirehose.Arn
   EKSControlPlaneLogsDataFirehose:
     Type: AWS::KinesisFirehose::DeliveryStream
     Properties:
-      DeliveryStreamName: "EKSCtrlPlaneDeliveryStream-{{.Cluster.Name}}"
+      DeliveryStreamName: "EKS-{{.Cluster.Name}}"
       DeliveryStreamType: DirectPut
       ExtendedS3DestinationConfiguration:
         BucketARN: "{{.Cluster.ConfigItems.eks_siem_bucket}}"
@@ -221,7 +221,7 @@ Resources:
                 Resource:
                   - "{{.Cluster.ConfigItems.eks_siem_bucket}}"
                   - "{{.Cluster.ConfigItems.eks_siem_bucket}}/*"
-      RoleName: "EKSCtrlPlaneFirehosetoS3-{{.Cluster.Name}}"
+      RoleName: "EKSFirehoseS3-{{.Cluster.Name}}"
   EKSControlPlaneCWtoFirehoseRole:
     Type: AWS::IAM::Role
     Properties:
@@ -245,8 +245,8 @@ Resources:
                   - "firehose:PutRecord"
                   - "firehose:PutRecordBatch"
                 Resource:
-                  - "arn:aws:firehose:*:{{.Cluster.InfrastructureAccountID}}:deliverystream/EKSCtrlPlaneDeliveryStream-{{.Cluster.Name}}"
-      RoleName: "EKSCtrlPlaneCWtoFirehose-{{.Cluster.Name}}"
+                  - "arn:aws:firehose:*:{{.Cluster.InfrastructureAccountID}}:deliverystream/EKS-{{.Cluster.Name}}"
+      RoleName: "EKSCWtoFirehose-{{.Cluster.Name}}"
 {{- end }}
 {{- end }}
   EKSCluster:

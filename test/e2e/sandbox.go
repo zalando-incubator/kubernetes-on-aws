@@ -37,6 +37,8 @@ import (
 	rgv1 "github.com/szuecs/routegroup-client/apis/zalando.org/v1"
 	sandboxv1 "github.com/zalando-build/sandbox-controller/pkg/apis/zalando.org/v1"
 	"github.com/zalando-build/sandbox-controller/pkg/clientset"
+	stackv1 "github.com/zalando-incubator/stackset-controller/pkg/apis/zalando.org/v1"
+	stackv1client "github.com/zalando-incubator/stackset-controller/pkg/client/clientset/versioned/typed/zalando.org/v1"
 )
 
 func waitForSandboxedRoutegrouop(ctx context.Context, c clientset.Interface, ns, originalRGName string) (*rgv1.RouteGroup, error) {
@@ -221,7 +223,6 @@ var _ = describe("Sandbox Controller", func() {
 			ns := f.Namespace.Name
 			labels := map[string]string{"app": "production-backend"}
 
-			// Step 1: Create a simple production backend pod that serves responses
 			By("Creating production backend pod")
 
 			route := `* -> inlineContent("production backend pod") -> <shunt>`
@@ -231,10 +232,6 @@ var _ = describe("Sandbox Controller", func() {
 
 			By("Waiting for production backend pod to be running")
 			framework.ExpectNoError(e2epod.WaitForPodNameRunningInNamespace(context.TODO(), f.ClientSet, backendPod.Name, ns), "failed to wait for pod: %s in namespace: %s", backendPod.Name, ns)
-
-			By("Finding production backend pod IP")
-			// createdBackendPod, err := c.CoreV1().Pods(ns).Get(context.TODO(), backendPod.Name, metav1.GetOptions{})
-			// backendUrl := fmt.Sprintf("http://%s:9990", createdBackendPod.Status.PodIP)
 
 			productionService := &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
@@ -257,8 +254,13 @@ var _ = describe("Sandbox Controller", func() {
 			_, err = c.CoreV1().Services(ns).Create(context.TODO(), productionService, metav1.CreateOptions{})
 			framework.ExpectNoError(err)
 
+			stacksetName := "test-egress-app-" + string(uuid.NewUUID())
+			stackVersion := "v1"
+			stackName := stacksetName + "-" + stackVersion
+			configMapName := stackName + "-egress-sandbox-routes"
+			egressAppLabels := map[string]string{"app": stacksetName}
+
 			By("Creating ConfigMap for egress routes")
-			configMapName := "test-egress-routes-" + string(uuid.NewUUID())
 			initialRoutes := `
         catchAllLocal: Host(".*[.]cluster[.]local$") -> <dynamic>;
         catchAll: * -> setDynamicBackendScheme("https") -> <dynamic>;
@@ -267,7 +269,7 @@ var _ = describe("Sandbox Controller", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      configMapName,
 					Namespace: ns,
-					Labels:    map[string]string{"app": "test-egress-app"},
+					Labels:    egressAppLabels,
 				},
 				Data: map[string]string{
 					"routes.eskip": initialRoutes,
@@ -276,70 +278,88 @@ var _ = describe("Sandbox Controller", func() {
 			_, err = c.CoreV1().ConfigMaps(ns).Create(context.TODO(), cm, metav1.CreateOptions{})
 			framework.ExpectNoError(err)
 
-			By("Creating egress-ready pod with Skipper sidecar")
-			egressReadyPod := &corev1.Pod{
+			By("Creating egress-ready StackSet with Skipper sidecar")
+			egressStackSet := &stackv1.StackSet{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-egress-pod-" + string(uuid.NewUUID()),
+					Name:      stacksetName,
 					Namespace: ns,
-					Labels:    map[string]string{"app": "test-egress-app"},
+					Labels:    egressAppLabels,
 				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:    "app",
-							Image:   "curlimages/curl:latest",
-							Command: []string{"sleep"},
-							Args:    []string{"3600"},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "http_proxy", // curl requires lowercase
-									Value: "http://localhost:9090",
-								},
-							},
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("50m"),
-									corev1.ResourceMemory: resource.MustParse("64Mi"),
-								},
-							},
-						},
-						{
-							Name:  "egress-proxy",
-							Image: "registry.opensource.zalan.do/teapot/skipper:latest",
-							Ports: []corev1.ContainerPort{
-								{ContainerPort: 9090, Name: "egress"},
-							},
-							Args: []string{
-								"skipper",
-								"-address=:9090",
-								"-routes-file=/config/routes.eskip",
-								"-wait-first-route-load",
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "egress-config",
-									MountPath: "/config",
-									ReadOnly:  true,
-								},
-							},
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("100m"),
-									corev1.ResourceMemory: resource.MustParse("100Mi"),
-								},
-								Limits: corev1.ResourceList{
-									corev1.ResourceMemory: resource.MustParse("100Mi"),
-								},
-							},
-						},
+				Spec: stackv1.StackSetSpec{
+					StackLifecycle: stackv1.StackLifecycle{
+						Limit: new(int32(1)),
 					},
-					Volumes: []corev1.Volume{
-						{
-							Name: "egress-config",
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: configMapName,
+					StackTemplate: stackv1.StackTemplate{
+						Spec: stackv1.StackSpecTemplate{
+							Version: stackVersion,
+							StackSpec: stackv1.StackSpec{
+								Replicas: new(int32(1)),
+								PodTemplate: corev1.PodTemplateSpec{
+									ObjectMeta: metav1.ObjectMeta{
+										Labels: egressAppLabels,
+									},
+									Spec: corev1.PodSpec{
+										Containers: []corev1.Container{
+											{
+												Name:    "app",
+												Image:   "curlimages/curl:latest",
+												Command: []string{"sleep"},
+												Args:    []string{"3600"},
+												Env: []corev1.EnvVar{
+													{
+														Name:  "http_proxy", // curl requires lowercase
+														Value: "http://localhost:9090",
+													},
+												},
+												Resources: corev1.ResourceRequirements{
+													Requests: corev1.ResourceList{
+														corev1.ResourceCPU:    resource.MustParse("50m"),
+														corev1.ResourceMemory: resource.MustParse("64Mi"),
+													},
+												},
+											},
+											{
+												Name:  "egress-proxy",
+												Image: "registry.opensource.zalan.do/teapot/skipper:latest",
+												Ports: []corev1.ContainerPort{
+													{ContainerPort: 9090, Name: "egress"},
+												},
+												Args: []string{
+													"skipper",
+													"-address=:9090",
+													"-routes-file=/config/routes.eskip",
+													"-wait-first-route-load",
+												},
+												VolumeMounts: []corev1.VolumeMount{
+													{
+														Name:      "egress-config",
+														MountPath: "/config",
+														ReadOnly:  true,
+													},
+												},
+												Resources: corev1.ResourceRequirements{
+													Requests: corev1.ResourceList{
+														corev1.ResourceCPU:    resource.MustParse("100m"),
+														corev1.ResourceMemory: resource.MustParse("100Mi"),
+													},
+													Limits: corev1.ResourceList{
+														corev1.ResourceMemory: resource.MustParse("100Mi"),
+													},
+												},
+											},
+										},
+										Volumes: []corev1.Volume{
+											{
+												Name: "egress-config",
+												VolumeSource: corev1.VolumeSource{
+													ConfigMap: &corev1.ConfigMapVolumeSource{
+														LocalObjectReference: corev1.LocalObjectReference{
+															Name: configMapName,
+														},
+													},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -347,28 +367,29 @@ var _ = describe("Sandbox Controller", func() {
 					},
 				},
 			}
-			createdPod, err := c.CoreV1().Pods(ns).Create(context.TODO(), egressReadyPod, metav1.CreateOptions{})
+			_, err = c.ZalandoV1().(stackv1client.StackSetsGetter).StackSets(ns).Create(context.TODO(), egressStackSet, metav1.CreateOptions{})
 			framework.ExpectNoError(err)
 
-			By("Waiting for egress-ready pod to be running")
-			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
-				pod, err := c.CoreV1().Pods(ns).Get(context.TODO(), createdPod.Name, metav1.GetOptions{})
-				if err != nil {
-					return false, nil
-				}
-				if pod.Status.Phase == corev1.PodRunning {
-					return true, nil
-				}
-				return false, nil
-			})
+			By("Waiting for egress-ready StackSet pod to be running")
+			podList, err := e2epod.WaitForPods(
+				context.TODO(),
+				f.ClientSet,
+				ns,
+				metav1.ListOptions{LabelSelector: "app=" + stacksetName},
+				e2epod.Range{MinMatching: 1},
+				5*time.Minute,
+				"running",
+				func(pod *corev1.Pod) bool { return pod.Status.Phase == corev1.PodRunning },
+			)
 			framework.ExpectNoError(err)
+			createdPodName := podList.Items[0].Name
 
 			By("Executing HTTP request to production backend (should reach production)")
 			testProject := "test-project-" + string(uuid.NewUUID())
 			productionURL := fmt.Sprintf("http://production-backend.%s.svc.cluster.local", ns)
 			cmd := fmt.Sprintf(`curl -s -H "X-Zalando-Client-Id: test:%s:dummy" %s`, testProject, productionURL)
 
-			output, err := e2ekubectl.RunKubectl(ns, "exec", createdPod.Name, "-c", "app", "--", "sh", "-c", cmd)
+			output, err := e2ekubectl.RunKubectl(ns, "exec", createdPodName, "-c", "app", "--", "sh", "-c", cmd)
 			framework.ExpectNoError(err)
 			framework.Logf("Production backend response: %s", output)
 			Expect(output).To(ContainSubstring("production"))
@@ -401,12 +422,12 @@ var _ = describe("Sandbox Controller", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-egress-mock-" + string(uuid.NewUUID()),
 					Namespace: ns,
-					Labels:    map[string]string{"app": "test-egress-app"},
+					Labels:    egressAppLabels,
 				},
 				Spec: sandboxv1.SandboxEgressSpec{
-					TestProject:  testProject,
-					ConfigMapRef: configMapName,
-					Routes:       mockRoutes,
+					TestProject: testProject,
+					StackRef:    stackName,
+					Routes:      mockRoutes,
 				},
 			}
 
@@ -428,7 +449,7 @@ var _ = describe("Sandbox Controller", func() {
 
 			By("Executing HTTP request to verify mocked response is returned")
 			err = wait.PollUntilContextTimeout(context.TODO(), 2*time.Second, 5*time.Minute, false, func(ctx context.Context) (bool, error) {
-				output, err = e2ekubectl.RunKubectl(ns, "exec", createdPod.Name, "-c", "app", "--", "sh", "-c", cmd)
+				output, err = e2ekubectl.RunKubectl(ns, "exec", createdPodName, "-c", "app", "--", "sh", "-c", cmd)
 				if err != nil {
 					return false, err
 				}
