@@ -526,7 +526,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "{{ .name }}-routesrv2"
+  name: "{{ .name }}-routesrv"
   namespace: kube-system
   labels:
     application: skipper-ingress
@@ -542,11 +542,11 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      deployment: "{{ .name }}-routesrv2"
+      deployment: "{{ .name }}-routesrv"
   template:
     metadata:
       labels:
-        deployment: "{{ .name }}-routesrv2"
+        deployment: "{{ .name }}-routesrv"
         application: skipper-ingress
         version: "{{ .routesrv_version }}"
         component: routesrv
@@ -569,7 +569,7 @@ spec:
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              deployment: "{{ .name }}-routesrv2"
+              deployment: "{{ .name }}-routesrv"
 {{- end }}
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: skipper-ingress-routesrv
