@@ -4,17 +4,28 @@ pre_apply:
 - name: deployment-service-controller
   kind: StatefulSet
   namespace: kube-system
-{{- if eq .Cluster.ConfigItems.skipper_redis_cleanup_enabled "true" }}
 - kind: StatefulSet
   name: skipper-ingress-redis
+  namespace: kube-system
 - kind: HorizontalPodAutoscaler
   name: skipper-ingress-redis
+  namespace: kube-system
 - kind: Service
   name: skipper-ingress-redis
-{{- end }}
+  namespace: kube-system
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
+# we deploy skipper-ingress-routesrv2 and need to delete the old
+# routesrv deployment in order to change the spec.selector. In a
+# second step we will rename it back to without 2, deleting the
+# deployments with "2"
+# - name: skipper-ingress-routesrv2
+#   namespace: kube-system
+#   kind: Deployment
+# - name: skipper-ingress-canary-routesrv2
+#   namespace: kube-system
+#   kind: Deployment
 {{- if eq .Cluster.Provider "zalando-eks"}}
 - name: coredns
   kind: Deployment
@@ -84,15 +95,6 @@ post_apply:
 - name: skipper-ingress-canary
   namespace: kube-system
   kind: Deployment
-{{ end }}
-
-{{ if eq .Cluster.ConfigItems.skipper_routesrv_enabled "false" }}
-- name: skipper-ingress-routesrv
-  namespace: kube-system
-  kind: Deployment
-- name: skipper-ingress-routesrv
-  namespace: kube-system
-  kind: Service
 {{ end }}
 
 {{- if ne .Cluster.ConfigItems.skipper_oauth2_ui_login "true" }}
