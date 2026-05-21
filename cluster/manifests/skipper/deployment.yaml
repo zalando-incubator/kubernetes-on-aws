@@ -24,17 +24,27 @@
 {{ end }}
 {{ end }}
 
+{{ $routes_url := .Cluster.ConfigItems.skipper_ingress_routes_urls }}
+{{ if eq .Cluster.ConfigItems.skipper_ingress_zone_aware_routing "true" }}
+{{ $routes_url = http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes/${KUBE_NODE_ZONE} }}
+{{ end }}
+
 {{ template "skipper-ingress" dict
   "name" "skipper-ingress"
   "image" $main_image_updated_manually
   "routesrv_image" $routesrv_image_without_tag
   "routesrv_version" $routesrv_main_version
-  "routes_urls" .Cluster.ConfigItems.skipper_ingress_routes_urls
+  "routes_urls" $routes_url
 
   "Cluster" .Cluster
   "Values" .Values
   "cluster_internal_cidrs" $cluster_internal_cidrs
 }}
+
+{{ $canary_routes_url := .Cluster.ConfigItems.skipper_ingress_canary_routes_urls }}
+{{ if eq .Cluster.ConfigItems.skipper_ingress_canary_zone_aware_routing "true" }}
+{{ $canary_routes_url = http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/routes/${KUBE_NODE_ZONE} }}
+{{ end }}
 
 {{ if eq .Cluster.ConfigItems.skipper_ingress_canary_enabled "true" }}
 {{ template "skipper-ingress" dict
@@ -44,7 +54,7 @@
   "routesrv_version" $routesrv_canary_version
   "replicas" 1
   "args" $canary_args
-  "routes_urls" .Cluster.ConfigItems.skipper_ingress_canary_routes_urls
+  "routes_urls" $canary_routes_url
 
   "Cluster" .Cluster
   "Values" .Values
