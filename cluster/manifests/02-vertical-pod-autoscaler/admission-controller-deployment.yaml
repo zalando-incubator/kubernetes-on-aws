@@ -25,10 +25,10 @@ spec:
       serviceAccountName: vpa-admission-controller
       containers:
       - name: admission-controller
-        {{if eq .Cluster.ConfigItems.vertical_pod_autoscaler_version "current"}}
+        {{if eq .Cluster.ConfigItems.vertical_pod_autoscaler_version "new"}}
+        image: container-registry.zalando.net/teapot/vpa-admission-controller:v1.6.0-main-13-custom
+        {{else if eq .Cluster.ConfigItems.vertical_pod_autoscaler_version "stable"}}
         image: container-registry.zalando.net/teapot/vpa-admission-controller:v1.6.0-main-12-custom
-        {{else if eq .Cluster.ConfigItems.vertical_pod_autoscaler_version "legacy"}}
-        image: container-registry.zalando.net/teapot/vpa-admission-controller:v1.5.1-main-11-custom
         {{end}}
         command:
           - /admission-controller

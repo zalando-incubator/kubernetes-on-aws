@@ -130,6 +130,10 @@ skipper_ingress_canary_image: ""
 skipper_ingress_test_single_pod: "false"
 skipper_canary_controller_enabled: "false"
 
+skipper_ingress_canary_routes_urls: http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/routes
+skipper_ingress_routes_urls: http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes
+
+
 # When set to true (and dedicated node pool for skipper is also true) the
 # daemonset overhead will be subtracted from the cpu settings such
 # that skipper will perfectly fit on the node.
@@ -250,11 +254,6 @@ skipper_ingress_request_size_buckets: ""
 #
 # skipper routesrv settings
 #
-# skipper_routesrv_enabled is a three state switch:
-# - "false" - routesrv deployment is removed, skipper uses own k8s dataclient
-# - "pre" - routesrv is deployed, skipper uses own k8s dataclient
-# - "exec" - routesrv is deployed, skipper uses routesrv
-skipper_routesrv_enabled: "exec"
 skipper_routesrv_memory: "1Gi"
 skipper_routesrv_min_replicas: 2
 {{if eq .Cluster.Environment "production"}}
@@ -269,9 +268,6 @@ skipper_routesrv_target_average_utilization_cpu: "80"
 skipper_routesrv_target_average_utilization_memory: "80"
 skipper_ingress_routesrv_scaling_schedules: ""
 skipper_routesrv_log_level: "INFO"
-
-skipper_routes_url: "http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes"
-skipper_canary_routes_url: ""
 
 # skipper-ingress component pod-deletion-cost-controller
 skipper_pod_deletion_cost_controller_memory: 200Mi
@@ -666,10 +662,10 @@ horizontal_pod_downscale_stabilization: "5m0s"
 # https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#tolerance
 horizontal_pod_autoscaler_configurable_tolerance: "false"
 
-# Vertical pod autoscaler version for controlling roll-out, can be "current" or "legacy"
-# current => v1.0.0-internal.20
-# legacy => v0.12.0-internal.19
-vertical_pod_autoscaler_version: "current"
+# Vertical pod autoscaler version for controlling roll-out, can be "new" or "stable"
+# new => v1.6.0-main-13-custom
+# stable => v1.6.0-main-12-custom
+vertical_pod_autoscaler_version: "stable"
 
 # Cluster update settings
 {{if eq .Cluster.Environment "production"}}
@@ -899,8 +895,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.2-amd64-master-393" "861068367966" }}
-kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.2-arm64-master-393" "861068367966" }}
+kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.5-amd64-master-405" "861068367966" }}
+kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.5-arm64-master-405" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
