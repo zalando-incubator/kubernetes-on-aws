@@ -30,6 +30,7 @@
   "routesrv_image" $routesrv_image_without_tag
   "routesrv_version" $routesrv_main_version
   "routes_urls" .Cluster.ConfigItems.skipper_ingress_routes_urls
+  "valkey_remote" .Cluster.ConfigItems.skipper_ingress_swarm_valkey_remote
 
   "Cluster" .Cluster
   "Values" .Values
@@ -45,6 +46,7 @@
   "replicas" 1
   "args" $canary_args
   "routes_urls" .Cluster.ConfigItems.skipper_ingress_canary_routes_urls
+  "valkey_remote" .Cluster.ConfigItems.skipper_ingress_canary_swarm_valkey_remote
 
   "Cluster" .Cluster
   "Values" .Values
@@ -270,7 +272,7 @@ spec:
           - "-enable-swarm"
           - "-cluster-ratelimit-max-group-shards={{ .Cluster.ConfigItems.skipper_cluster_ratelimit_max_group_shards }}"
           - "-swarm-valkey-conn-timeout={{ .Cluster.ConfigItems.skipper_valkey_conn_timeout }}"
-          - "-swarm-valkey-remote=http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/valkey/shards"
+          - "-swarm-valkey-remote={{ .valkey_remote }}"
           - "-histogram-metric-buckets=.0001,.00025,.0005,.00075,.001,.0025,.005,.0075,.01,.025,.05,.075,.1,.2,.3,.4,.5,.75,1,2,3,4,5,7,10,15,20,30,60,120,300,600"
 {{if ne .Cluster.ConfigItems.skipper_ingress_response_size_buckets ""}}
           - "-response-size-buckets={{ .Cluster.ConfigItems.skipper_ingress_response_size_buckets }}"
