@@ -133,6 +133,9 @@ skipper_canary_controller_enabled: "false"
 skipper_ingress_canary_routes_urls: http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/routes
 skipper_ingress_routes_urls: http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes
 
+skipper_ingress_canary_swarm_valkey_remote: http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/swarm/valkey/shards
+skipper_ingress_swarm_valkey_remote: http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/valkey/shards
+
 
 # When set to true (and dedicated node pool for skipper is also true) the
 # daemonset overhead will be subtracted from the cpu settings such
@@ -163,7 +166,7 @@ skipper_default_filters: 'disableAccessLog(2,3,404,429) -> fifo(2000,20,"1s")'
 # skipper_default_filters_authentication defines filters that implement default request authentication
 skipper_default_filters_authentication: ''
 skipper_default_filters_append: 'stateBagToTag("auth-user", "client.uid")'
-skipper_disabled_filters: "clusterLeakyBucketRatelimit,static,bearerinjector,setRequestHeaderFromSecret,basicAuth"
+skipper_disabled_filters: "static,bearerinjector,setRequestHeaderFromSecret,basicAuth,setDynamicBackendUrlFromHeader"
 skipper_lua_sources: "file"
 skipper_edit_route_placeholders: ""
 skipper_ingress_inline_routes: ""
@@ -1363,7 +1366,7 @@ wiz_priority: "true"
 wiz_node_feature_rollout : "false"
 
 # Enable runtime sensor response capabilities such as KILL
-wiz_enable_runtime_sensor_response_capabilities: "false"
+wiz_enable_runtime_sensor_response_capabilities: "true"
 
 # Configure legacy EFS connectivity from the entire VPC. This allows EKS clusters to connect to the legacy EFS file system.
 efs_allow_vpc_connection: "false"
