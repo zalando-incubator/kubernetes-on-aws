@@ -23,6 +23,9 @@ spec:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "controller", "parser": "keyValue"}]
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
     spec:
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: shadow-traffic-controller
