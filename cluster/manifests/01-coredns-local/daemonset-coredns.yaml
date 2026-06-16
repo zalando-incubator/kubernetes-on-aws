@@ -25,18 +25,17 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9153"
     spec:
+      resources:
+        limits:
+          cpu: {{.Cluster.ConfigItems.dns_coredns_cpu}}
+          memory: {{.Cluster.ConfigItems.dns_coredns_mem}}
       terminationGracePeriodSeconds: 40
       initContainers:
       - name: ensure-apiserver
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/ensure-apiserver:master-6
         resources:
           requests:
-            cpu: 1m
-            memory: 50Mi
             ephemeral-storage: 256Mi
-          limits:
-            cpu: 1m
-            memory: 50Mi
       containers:
       - name: unbound
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/unbound:1.25.1-master-19
@@ -74,9 +73,6 @@ spec:
         resources:
           requests:
             ephemeral-storage: 256Mi
-          limits:
-            cpu: {{.Cluster.ConfigItems.dns_unbound_cpu}}
-            memory: {{.Cluster.ConfigItems.dns_unbound_mem}}
         volumeMounts:
         - mountPath: /etc/unbound/unbound.conf
           name: config-volume
@@ -103,9 +99,6 @@ spec:
         resources:
           requests:
             ephemeral-storage: 256Mi
-          limits:
-            cpu: {{.Cluster.ConfigItems.dns_unbound_exporter_cpu}}
-            memory: {{.Cluster.ConfigItems.dns_unbound_exporter_mem}}
         volumeMounts:
         - mountPath: /run/unbound
           name: unbound-socket
@@ -149,9 +142,6 @@ spec:
         resources:
           requests:
             ephemeral-storage: 256Mi
-          limits:
-            cpu: {{.Cluster.ConfigItems.dns_coredns_cpu}}
-            memory: {{.Cluster.ConfigItems.dns_coredns_mem}}
         lifecycle:
           preStop:
             sleep:
