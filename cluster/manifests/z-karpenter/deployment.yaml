@@ -51,7 +51,7 @@ spec:
             capabilities:
               drop:
                 - ALL
-          image: container-registry.zalando.net/teapot/karpenter:1.12.0-main-53.patched
+          image: container-registry-test.zalando.net/teapot/karpenter:1.13.0-pr-57-2.patched
           imagePullPolicy: IfNotPresent
           env:
             - name: KUBERNETES_MIN_VERSION
@@ -114,6 +114,10 @@ spec:
               value: "0"
             - name: IGNORE_DRA_REQUESTS
               value: "true"
+            - name: AMI_REFRESH_INTERVAL
+              value: "1m"
+            - name: SUBNET_REFRESH_INTERVAL
+              value: "1m"
             {{ $pod_cidr_size := "15" }}
             - name: MAX_NODE_CLAIMS
               value: "{{ nodeCIDRMaxNodesPodCIDR (parseInt64 $pod_cidr_size) (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}"
