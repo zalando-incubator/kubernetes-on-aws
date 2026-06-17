@@ -394,3 +394,8 @@ post_apply:
 - name: kro-poweruser-secret-read
   kind: ClusterRoleBinding
 {{- end }}
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.SiblingCluster nil) }}
+- name: skipper-internal-eks
+  namespace: kube-system
+  kind: Service
+{{- end }}

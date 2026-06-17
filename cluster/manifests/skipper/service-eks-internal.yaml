@@ -1,4 +1,4 @@
-# {{ if eq .Cluster.ConfigItems.skipper_eks_migration_svc_enabled "true" }}
+# {{ if and (eq .Cluster.Provider "zalando-eks") (ne .Cluster.SiblingCluster nil) }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -7,8 +7,6 @@ metadata:
     service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: application=skipper-ingress,component=ingress
     service.beta.kubernetes.io/aws-load-balancer-attributes: dns_record.client_routing_policy=availability_zone_affinity,load_balancing.cross_zone.enabled=false
     service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
-    # SG of the old cluster worker nodes
-    service.beta.kubernetes.io/aws-load-balancer-security-groups: {{ .Cluster.ConfigItems.worker_sg_legacy_cluster }}
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: /kube-system/healthz
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: http
     service.beta.kubernetes.io/aws-load-balancer-scheme: internal
@@ -30,4 +28,6 @@ spec:
     application: skipper-ingress
     component: ingress
   type: LoadBalancer
+  loadBalancerSourceRanges:
+  - "{{ .Values.vpc_ipv4_cidr }}"
 # {{ end }}
