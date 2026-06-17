@@ -147,11 +147,19 @@ skipper_ingress_binpack: "false"
 {{end}}
 
 # skipper EKS migration support
+{{- if and (eq .Cluster.Provider "zalando-aws") (ne .Cluster.SiblingCluster nil) }}
+skipper_eks_migration_enabled: "true"
+{{- else }}
 skipper_eks_migration_enabled: "false"
+{{- end }}
 # allow setting a custom forward-backend-url
 # If not set, falls back to the default "http://skipper-ingress-eks.<hosted_zone>
 skipper_ingress_migration_forward_backend_url_custom: ""
+{{- if and (eq .Cluster.Provider "zalando-eks") (ne .Cluster.SiblingCluster nil) }}
+skipper_eks_migration_svc_enabled: "true"
+{{- else }}
 skipper_eks_migration_svc_enabled: "false"
+{{- end }}
 
 # skipper node-pool
 enable_dedicate_nodepool_skipper: "true"
