@@ -1,4 +1,4 @@
-# {{ $image := "container-registry.zalando.net/gwproxy/shadow-traffic-controller:main-30" }}
+# {{ $image := "container-registry.zalando.net/gwproxy/shadow-traffic-controller:main-32" }}
 # {{ $version := index (split $image ":") 1 }}
 # {{ if eq .Cluster.ConfigItems.shadow_traffic_controller_enabled "true" }}
 apiVersion: apps/v1
@@ -23,6 +23,9 @@ spec:
         kubernetes-log-watcher/scalyr-parser: |
           [{"container": "controller", "parser": "keyValue"}]
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
     spec:
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: shadow-traffic-controller
