@@ -8,9 +8,9 @@
 {{ $canary_image = .Cluster.ConfigItems.skipper_ingress_canary_image }}
 {{ end }}
 
-{{ $routesrv_main_version := pr-4049-7-pr-60-1 }}
-{{ $routesrv_canary_version := pr-4049-7-pr-60-1}}
-{{ $routesrv_image_without_tag := "container-registry-test.zalando.net/teapot/skipper-internal-test" }}
+{{ $routesrv_main_version := index (split (index (split registry.opensource.zalan.do/teapot/skipper-test:pr-4049-7 ":") 1) "-") 0 }}
+{{ $routesrv_canary_version := index (split (index (split registry.opensource.zalan.do/teapot/skipper-test:pr-4049-7 ":") 1) "-") 0 }}
+{{ $routesrv_image_without_tag := "container-registry.zalando.net/teapot/skipper-test" }}
 
 {{/* Optional canary arguments separated by "[cf724afc]" to allow whitespaces, e.g. "-foo=has a whitespace[cf724afc]-baz=qux" */}}
 {{ $canary_args := "" }}
