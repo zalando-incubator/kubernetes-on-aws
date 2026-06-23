@@ -1,0 +1,21 @@
+Metadata:
+  StackName: "testing-deletions"
+  Tags:
+    application: "kubernetes"
+    component: "testing-deletions"
+
+Resources:
+  Role:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: "{{.Cluster.AccountName}}-testing-deletions"
+      Path: "/"
+      Policies:
+        - PolicyName: "testing"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "ec2:List*"
+                Effect: "Allow"
+                Resource: "*"
