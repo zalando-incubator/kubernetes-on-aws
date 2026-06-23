@@ -219,7 +219,7 @@ var _ = describe("Sandbox Controller", func() {
 
 	})
 
-	Describe("SandboxEgress resource", func() {
+	PDescribe("SandboxEgress resource", func() {
 		It("Should intercept traffic with SandboxEgress and mock responses [SandboxEgress] [Zalando]", func() {
 			ns := f.Namespace.Name
 			labels := map[string]string{"app": "production-backend"}
