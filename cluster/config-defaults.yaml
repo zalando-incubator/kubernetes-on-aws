@@ -1113,6 +1113,16 @@ stackset_controller_sync_interval: "10s"
 stackset_controller_mem_min: "120Mi"
 stackset_controller_mem_max: "4Gi"
 
+# Stackset controller per-stack public hostname
+# This feature enables automatic injection of per stack public hostnames
+# It's disabled in EKS clusters by default as it's not compatible in both
+# non-EKS and EKS during migration.
+{{- if eq .Cluster.Provider "zalando-aws" }}
+stackset_per_stack_public_hostname_enabled: "true"
+{{- else }}
+stackset_per_stack_public_hostname_enabled: "false"
+{{- end }}
+
 # EBS settings for the root volume
 ebs_master_root_volume_size: "50"
 ebs_root_volume_size: "100"
