@@ -16,6 +16,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -27,6 +28,10 @@ import (
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 	admissionapi "k8s.io/pod-security-admission/api"
 )
+
+func init() {
+	os.Setenv("KUBE_AWS_IAM_CONTROLLER_ENABLED", "true")
+}
 
 var _ = describe("AWS IAM Integration (kube2iam + kube-aws-iam-controller)", func() {
 	f := framework.NewDefaultFramework("aws-iam")
