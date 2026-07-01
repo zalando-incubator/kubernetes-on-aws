@@ -399,3 +399,21 @@ post_apply:
   namespace: kube-system
   kind: Service
 {{- end }}
+{{- if ne .Cluster.ConfigItems.kube_aws_iam_controller_enabled "true" }}
+- name: kube-aws-iam-controller
+  namespace: kube-system
+  kind: Deployment
+- name: kube-aws-iam-controller
+  namespace: kube-system
+  kind: ServiceAccount
+- name: kube-aws-iam-controller
+  kind: ClusterRole
+- name: kube-aws-iam-controller
+  kind: ClusterRoleBinding
+- name: kube-aws-iam-controller-privileged-psp
+  namespace: kube-system
+  kind: RoleBinding
+- name: kube-aws-iam-controller
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
+{{- end }}
