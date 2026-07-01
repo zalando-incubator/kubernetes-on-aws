@@ -400,6 +400,10 @@ post_apply:
   kind: Service
 {{- end }}
 {{- if ne .Cluster.ConfigItems.kube_aws_iam_controller_enabled "true" }}
+# TODO: Since this removes resources deployed by the users,
+# let's play it safe and uncomment this at a later time.
+# - name: awsiamroles.zalando.org
+#   kind: CustomResourceDefinition
 - name: kube-aws-iam-controller
   namespace: kube-system
   kind: Deployment
