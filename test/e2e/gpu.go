@@ -37,41 +37,63 @@ var _ = describe("GPU job processing", func() {
 		cs = f.ClientSet
 	})
 
-	f.It("Should run a job on a gpu node [Zalando] [GPU]", f.WithSlow(), func(ctx context.Context) {
-		ns := f.Namespace.Name
-		nameprefix := "gpu-test-"
-		labels := map[string]string{
-			"application": "vector-add",
-		}
+	f.It("Should run a vector-add job on a gpu node [Zalando] [GPU]", f.WithSlow(), func(ctx context.Context) {
+		runGPUTest(ctx, f, cs, "gpu-test-", "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0-ubi8", nil, "PASSED")
+	})
 
-		By("Creating a vector pod which runs on a GPU node")
-		pod := createVectorPod(nameprefix, ns, labels)
-		_, err := cs.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
-		framework.ExpectNoError(err, "Could not create POD %s", pod.Name)
-		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespaceTimeout(ctx, f.ClientSet, pod.Name, pod.Namespace, 15*time.Minute))
-		for {
-			p, err := cs.CoreV1().Pods(ns).Get(ctx, pod.Name, metav1.GetOptions{})
-			if err != nil {
-				framework.ExpectNoError(err, "Could not get POD %s", pod.Name)
-				return
-			}
-			if p.Status.ContainerStatuses[0].State.Terminated == nil {
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			n := p.Status.ContainerStatuses[0].State.Terminated.ExitCode
-			if n != 0 {
-				framework.ExpectNoError(fmt.Errorf("expected POD %s to terminate with exit code 0", pod.Name))
-				return
-			}
-			logs, err := getPodLogs(cs, ns, pod.Name, "cuda-vector-add", false)
-			framework.ExpectNoError(err, "Should be able to get logs for pod %v", pod.Name)
-			regex := regexp.MustCompile("PASSED")
-			if regex.MatchString(logs) {
-				return
-			}
-			framework.ExpectNoError(err, "Expected vector job to succeed")
-			return
-		}
+	f.It("Should compile and run a CUDA kernel on a gpu node [Zalando] [GPU]", f.WithSlow(), func(ctx context.Context) {
+		runGPUTest(ctx, f, cs, "gpu-test-", "nvidia/cuda:13.2.1-devel-ubuntu24.04", []string{"bash", "-c", `cat > /tmp/t.cu <<EOF
+#include <cstdio>
+__global__ void add(int *a){ *a += 41; }
+int main(){int *d,h=1; cudaMalloc(&d,4); cudaMemcpy(d,&h,4,cudaMemcpyHostToDevice);add<<<1,1>>>(d); cudaDeviceSynchronize();cudaError_t e=cudaGetLastError();if(e){ printf("FAIL: %s\n", cudaGetErrorString(e)); return 1; }cudaMemcpy(&h,d,4,cudaMemcpyDeviceToHost);printf("%s (result=%d)\n", h==42?"PASS":"FAIL", h); return h==42?0:1;}
+EOF
+nvcc --version | grep release
+nvcc -o /tmp/t /tmp/t.cu && /tmp/t`}, "PASS")
+	})
+
+	f.It("Should run a PyTorch CUDA job on a gpu node [Zalando] [GPU]", f.WithSlow(), func(ctx context.Context) {
+		runGPUTest(ctx, f, cs, "gpu-test-", "pytorch/pytorch:2.12.1-cuda13.2-cudnn9-runtime", []string{"python", "-c",
+			"import torch; v=torch.version.cuda; assert torch.cuda.is_available(); " +
+				"assert tuple(map(int,v.split('.')))>=(13,2), f'CUDA {v} < 13.2'; " +
+				"x=torch.rand(3,device='cuda'); torch.cuda.synchronize(); " +
+				"print(f'PASS: torch {torch.__version__}, CUDA {v}, {torch.cuda.get_device_name()}')",
+		}, "PASS")
 	})
 })
+
+func runGPUTest(ctx context.Context, f *framework.Framework, cs kubernetes.Interface, nameprefix, image string, command []string, logPattern string) {
+	ns := f.Namespace.Name
+	labels := map[string]string{
+		"application": "vector-add",
+	}
+
+	By("Creating a vector pod which runs on a GPU node")
+	pod := createVectorPod(nameprefix, ns, labels, image, command)
+	_, err := cs.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
+	framework.ExpectNoError(err, "Could not create POD %s", pod.Name)
+	framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespaceTimeout(ctx, f.ClientSet, pod.Name, pod.Namespace, 15*time.Minute))
+	for {
+		p, err := cs.CoreV1().Pods(ns).Get(ctx, pod.Name, metav1.GetOptions{})
+		if err != nil {
+			framework.ExpectNoError(err, "Could not get POD %s", pod.Name)
+			return
+		}
+		if p.Status.ContainerStatuses[0].State.Terminated == nil {
+			time.Sleep(10 * time.Second)
+			continue
+		}
+		n := p.Status.ContainerStatuses[0].State.Terminated.ExitCode
+		if n != 0 {
+			framework.ExpectNoError(fmt.Errorf("expected POD %s to terminate with exit code 0", pod.Name))
+			return
+		}
+		logs, err := getPodLogs(cs, ns, pod.Name, "main", false)
+		framework.ExpectNoError(err, "Should be able to get logs for pod %v", pod.Name)
+		regex := regexp.MustCompile(logPattern)
+		if regex.MatchString(logs) {
+			return
+		}
+		framework.ExpectNoError(err, "Expected vector job to succeed")
+		return
+	}
+}
