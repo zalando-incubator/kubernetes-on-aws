@@ -912,7 +912,21 @@ func createVegetaDeployment(hostPath string, rate int) *appsv1.Deployment {
 
 const NVIDIAGPUResourceName v1.ResourceName = "nvidia.com/gpu"
 
-func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1.Pod {
+func createVectorPod(nameprefix, namespace string, labels map[string]string, image string, command []string) *v1.Pod {
+	container := v1.Container{
+		Name:  "main",
+		Image: image,
+		Resources: v1.ResourceRequirements{
+			Limits: v1.ResourceList{
+				v1.ResourceCPU:        resource.MustParse("100m"),
+				v1.ResourceMemory:     resource.MustParse("1Gi"),
+				NVIDIAGPUResourceName: *resource.NewQuantity(1, resource.DecimalSI),
+			},
+		},
+	}
+	if len(command) > 0 {
+		container.Command = command
+	}
 	return &v1.Pod{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Pod",
@@ -925,17 +939,7 @@ func createVectorPod(nameprefix, namespace string, labels map[string]string) *v1
 		},
 		Spec: v1.PodSpec{
 			RestartPolicy: v1.RestartPolicyNever,
-			Containers: []v1.Container{
-				{
-					Name:  "cuda-vector-add",
-					Image: "registry.k8s.io/cuda-vector-add:v0.1",
-					Resources: v1.ResourceRequirements{
-						Limits: v1.ResourceList{
-							NVIDIAGPUResourceName: *resource.NewQuantity(1, resource.DecimalSI),
-						},
-					},
-				},
-			},
+			Containers:    []v1.Container{container},
 			NodeSelector: map[string]string{
 				"kubernetes.io/arch": "amd64",
 			},
