@@ -400,16 +400,12 @@ post_apply:
   kind: Service
 {{- end }}
 {{- if ne .Cluster.ConfigItems.kube_aws_iam_controller_enabled "true" }}
-# TODO: Since this removes resources deployed by the users,
-# let's play it safe and uncomment this at a later time.
-# - name: awsiamroles.zalando.org
-#   kind: CustomResourceDefinition
+- name: kube-aws-iam-controller
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
 - name: kube-aws-iam-controller
   namespace: kube-system
   kind: Deployment
-- name: kube-aws-iam-controller
-  namespace: kube-system
-  kind: ServiceAccount
 - name: kube-aws-iam-controller
   kind: ClusterRole
 - name: kube-aws-iam-controller
@@ -419,5 +415,9 @@ post_apply:
   kind: RoleBinding
 - name: kube-aws-iam-controller
   namespace: kube-system
-  kind: VerticalPodAutoscaler
+  kind: ServiceAccount
+# TODO: Since this removes resources deployed by the users,
+# let's play it safe and uncomment this at a later time.
+# - name: awsiamroles.zalando.org
+#   kind: CustomResourceDefinition
 {{- end }}
