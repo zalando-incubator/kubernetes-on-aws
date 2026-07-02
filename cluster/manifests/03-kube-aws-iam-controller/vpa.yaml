@@ -1,3 +1,4 @@
+{{- if eq .Cluster.ConfigItems.kube_aws_iam_controller_enabled "true"}}
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
@@ -25,3 +26,4 @@ spec:
         memory: {{ scaleQuantity ( instanceTypeMemoryQuantity ( index .InstanceTypes 0 )) 0.003 }}
         {{ end }}
         {{ end }}
+{{- end }}
