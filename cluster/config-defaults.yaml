@@ -4,6 +4,11 @@ karpenter_controller_cpu: "25m"
 karpenter_controller_memory: "256Mi"
 # set log level of karpenter: error|debug
 karpenter_log_level: "error"
+# enable Karpenter's native capacity-reservation support. When true, Karpenter launches every node with
+# CapacityReservationPreference=none, which opts it OUT of open EC2 On-Demand Capacity Reservations; a
+# reservation is then only usable if a NodeClass selects it explicitly. Set false to let open ODCRs be
+# consumed automatically, as they are for any other EC2 instance.
+karpenter_feature_reserved_capacity: "true"
 # restrict the maximum number of pods for karpenter nodes
 karpenter_max_pods_per_node: "32"
 
