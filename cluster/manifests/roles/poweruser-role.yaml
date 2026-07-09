@@ -94,6 +94,13 @@ rules:
   - admissionregistration.k8s.io
   resources:
   - validatingwebhookconfigurations
+{{- if eq .Cluster.ConfigItems.role_grant_mutatingwebhookconfigurations_permission "true" }}
+  - mutatingwebhookconfigurations
+{{- end }}
+{{- if eq .Cluster.ConfigItems.access_control_poweruser_modify_validatingadmissionpolicies "true" }}
+  - validatingadmissionpolicies
+  - validatingadmissionpolicybindings
+{{- end }}
   verbs:
   - create
   - delete
