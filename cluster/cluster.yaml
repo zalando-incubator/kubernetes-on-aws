@@ -445,9 +445,32 @@ Resources:
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyDefault"
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
+      - !Ref EKSCapabilityACKAccessEntryPolicy
       {{- if eq .Cluster.Name "playground" }}
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser-Playground"
       {{- end }}
+  # ZalandoCloud-AllowPowerUser restricts the capability role's eks:* actions to
+  # AccessKubernetesApi/*PodIdentityAssociation/Describe*/List*, which excludes the
+  # EKS Access Entry API. Grant exactly the Access Entry + Access Policy actions the
+  # ACK EKS controller needs to reconcile AccessEntry resources (create/read/update/
+  # delete and access-policy association), scoped narrowly rather than via eks:*.
+  EKSCapabilityACKAccessEntryPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Action:
+          - "eks:CreateAccessEntry"
+          - "eks:DescribeAccessEntry"
+          - "eks:UpdateAccessEntry"
+          - "eks:DeleteAccessEntry"
+          - "eks:ListAccessEntries"
+          - "eks:AssociateAccessPolicy"
+          - "eks:DisassociateAccessPolicy"
+          - "eks:ListAssociatedAccessPolicies"
+          Resource: "*"
   EKSCapabilityACK:
     Type: 'AWS::EKS::Capability'
     Properties:
@@ -3021,6 +3044,9 @@ Resources:
                 Effect: Allow
                 Resource: '*'
               - Action: 'servicequotas:ListServiceQuotas'
+                Effect: Allow
+                Resource: '*'
+              - Action: 'servicequotas:GetServiceQuota'
                 Effect: Allow
                 Resource: '*'
               - Action: 'sts:AssumeRole'
