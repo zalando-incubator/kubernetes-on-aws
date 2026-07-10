@@ -92,6 +92,17 @@ spec:
 #    {{ end}}
 #  {{ end}}
 #{{ end}}
+  # Discover EC2 Capacity Reservations (ODCRs, Capacity Blocks for ML) tagged for this cluster, so
+  # Karpenter can launch into them explicitly (karpenter.sh/capacity-type: reserved). Tag-scoped like
+  # securityGroupSelectorTerms: inert until a reservation carries the tag, so consuming a reservation
+  # is self-service (tag it at purchase), with no per-cluster configuration. Rendered only where the
+  # ReservedCapacity feature gate is on, so a gate-off cluster's NodeClass carries no reservation
+  # config at all.
+#{{ if eq .Cluster.ConfigItems.karpenter_feature_reserved_capacity "true" }}
+  capacityReservationSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "{{ .Cluster.ID }}/CapacityReservation"
+#{{ end }}
   userData: |
 {{ .Values.UserData | indent 4 }}
 ---
@@ -281,6 +292,12 @@ spec:
             - "spot"
 #{{ end }}
             - "on-demand"
+#{{ if eq .Cluster.ConfigItems.karpenter_feature_reserved_capacity "true" }}
+            # reserved = Capacity Reservations discovered via the NodeClass's
+            # capacityReservationSelectorTerms. Karpenter prefers a matching reservation (priced as
+            # already-paid) and falls back to on-demand when it is exhausted.
+            - "reserved"
+#{{ end }}
         - key: "kubernetes.io/arch"
           operator: In
           values: ["arm64", "amd64"]
