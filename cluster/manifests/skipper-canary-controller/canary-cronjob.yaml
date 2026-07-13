@@ -19,6 +19,9 @@ spec:
             application: skipper-ingress
             component: canary
           annotations:
+            prometheus.io/path: /metrics
+            prometheus.io/port: "9911"
+            prometheus.io/scrape: "true"
             kubernetes-log-watcher/scalyr-parser: |
               [{"container": "controller", "parser": "keyValue"}]
             logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
@@ -68,6 +71,7 @@ spec:
               - "--run-once=true"
               - "--use-mem-query"
               - "--use-status-query"
+              - "--metrics-addr=:9911"
             resources:
               limits:
                 memory: "128Mi"
