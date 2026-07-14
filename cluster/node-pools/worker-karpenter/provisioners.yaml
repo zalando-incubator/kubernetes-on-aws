@@ -133,6 +133,9 @@ spec:
     metadata:
       # Labels are arbitrary key-values that are applied to all nodes
       labels:
+# {{ if hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket" }}
+        ami-family: "bottlerocket"
+# {{ end }}
         lifecycle-status: ready
         node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
         node.kubernetes.io/role: worker
