@@ -12,18 +12,18 @@ spec:
   selector:
     matchLabels:
       application: skipper-ingress
-      component: canary
+      component: canary-controller
   template:
     metadata:
       labels:
         application: skipper-ingress
-        component: canary
+        component: canary-controller
       annotations:
         prometheus.io/path: /metrics
         prometheus.io/port: "9911"
         prometheus.io/scrape: "true"
         kubernetes-log-watcher/scalyr-parser: |
-          [{"container": "controller", "parser": "keyValue"}]
+          [{"container": "skipper-canary-controller", "parser": "keyValue"}]
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
     spec:
       serviceAccountName: skipper-canary-controller
