@@ -458,3 +458,17 @@ pipeline:
     - stable
   sources:
   - dir: _deploy_event
+
+- id: llm-code-review
+  depends_on: []
+  when:
+    event: pull_request
+  type: script
+  vm_config:
+    type: linux
+  authenticate_hosts:
+    - zllm.data.zalan.do
+  commands:
+    - desc: "LLM Review"
+      cmd: |
+        llm-code-review -read-from-github -write-to-github
