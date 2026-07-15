@@ -215,6 +215,7 @@ if [ "$e2e" = true ]; then
             "Mirror pods should be created for the main Kubernetes components \[Zalando\]"
             "Should audit API calls to create, update, patch, delete pods. \[Audit\] \[Zalando\]"
             "should validate permissions for \[Authorization\] \[RBAC\] \[Zalando\]" # TODO: Remains skipped until we remove the older RBAC setup
+            "Should react to spot termination notices \[Zalando\] \[Spot\]" # not compatible with bottlerocket AMI
         )
     fi
 
