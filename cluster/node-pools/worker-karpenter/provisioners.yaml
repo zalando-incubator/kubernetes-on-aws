@@ -21,8 +21,13 @@ spec:
     # {{ else }}
     httpProtocolIPv6: disabled
     # {{ end }}
+    # {{ if or (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "al2023") }}
+    httpPutResponseHopLimit: 1
+    httpTokens: required
+    # {{ else }}
     httpPutResponseHopLimit: 2
     httpTokens: optional
+    # {{ end }}
   subnetSelectorTerms:
     - tags:
         # {{ if eq .NodePool.ConfigItems.internal_node_subnets_enabled "true" }}
