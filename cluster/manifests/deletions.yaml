@@ -371,9 +371,6 @@ post_apply:
 - name: efs-provisioner
   kind: ConfigMap
   namespace: kube-system
-- name: efs-provisioner
-  kind: ServiceAccount
-  namespace: kube-system
 - name: efs-provisioner-runner
   kind: ClusterRole
 - name: leader-locking-efs-provisioner
@@ -387,6 +384,9 @@ post_apply:
   namespace: kube-system
 - name: aws-efs
   kind: StorageClass
+- name: efs-provisioner
+  kind: ServiceAccount
+  namespace: kube-system
 {{ end }}
 {{- if ne .Cluster.ConfigItems.capability_kro_enabled "true"}}
 - name: kro-poweruser
