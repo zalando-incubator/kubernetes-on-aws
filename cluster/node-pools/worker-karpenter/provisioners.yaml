@@ -46,7 +46,11 @@ spec:
   # Karpenter provides the ability to specify a few additional Kubelet args.
   # These are all optional and provide support for additional customization and use cases.
   kubelet:
-    clusterDNS: [ "10.0.1.100" ]
+    # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+    clusterDNS: ["fd00:1:2:3::5"]
+    # {{ else }}
+    clusterDNS: ["169.254.20.10"]
+    # {{ end }}
     cpuCFSQuota: false
 #{{ if ne .Cluster.Provider "zalando-eks" }}
 # {{ if ne .Cluster.ConfigItems.karpenter_max_pods_per_node "" }}
