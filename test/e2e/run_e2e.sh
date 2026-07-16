@@ -216,7 +216,6 @@ if [ "$e2e" = true ]; then
             "Should audit API calls to create, update, patch, delete pods. \[Audit\] \[Zalando\]"
             "should validate permissions for \[Authorization\] \[RBAC\] \[Zalando\]" # TODO: Remains skipped until we remove the older RBAC setup
             "Should react to spot termination notices \[Zalando\] \[Spot\]" # not compatible with bottlerocket AMI
-            "Should handle node restart \[Zalando\]" # not compatible with bottlerocket AMI
             "Should get AWS IAM credentials \(kube2iam\) \[AWS-IAM\] \[Zalando\]" # not compatible with bottlerocket AMI
         )
     fi
