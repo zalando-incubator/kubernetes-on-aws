@@ -439,7 +439,6 @@ Resources:
             Action:
               - 'sts:AssumeRole'
               - 'sts:TagSession'
-              - 'eks:TagResource'
       ManagedPolicyArns:
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyEc2UsApSa"
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyModifyShibboleth"
@@ -487,7 +486,7 @@ Resources:
     Type: AWS::EKS::Addon
     Properties:
       AddonName: aws-efs-csi-driver
-      AddonVersion: "v2.3.0-eksbuild.2"
+      AddonVersion: "v3.3.0-eksbuild.1"
       ClusterName: !Ref EKSCluster
       PodIdentityAssociations:
         - RoleArn: !GetAtt EKSEFSCSIDriverIAMRole.Arn
@@ -3423,6 +3422,34 @@ Resources:
           Status: Enabled
       VersioningConfiguration:
         Status: Suspended
+  E2EAWSIAMTestBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref E2EAWSIAMTestBucket
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:ListBucket
+              - s3:PutObject
+              - s3:GetObject
+              - s3:DeleteObject
+            Effect: Allow
+            Resource:
+              - !Sub "arn:aws:s3:::${E2EAWSIAMTestBucket}"
+              - !Sub "arn:aws:s3:::${E2EAWSIAMTestBucket}/*"
+            Principal:
+              AWS:
+                - !GetAtt E2EAWSIAMTestRole.Arn
+          - Action: "s3:*"
+            Effect: Deny
+            Resource:
+              - !Sub "arn:aws:s3:::${E2EAWSIAMTestBucket}"
+              - !Sub "arn:aws:s3:::${E2EAWSIAMTestBucket}/*"
+            Principal: "*"
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn:
+                  - !GetAtt E2EAWSIAMTestRole.Arn
 {{ end }}
 
   AuditTrailBucket:

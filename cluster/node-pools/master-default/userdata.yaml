@@ -71,7 +71,11 @@ write_files:
 {{- end }}
       # variables are replaced on instance start-up.
       providerID: __PROVIDER_ID__
+{{- if or (eq .Cluster.ConfigItems.dns_static_interface "kubelet") (eq .Cluster.ConfigItems.dns_static_interface "only_interface") }}
+      clusterDNS: ["169.254.20.10"]
+{{- else }}
       clusterDNS: [__CLUSTER_DNS__]
+{{- end }}
       registerWithTaints:
         - key: node.kubernetes.io/role
           value: master
@@ -256,7 +260,7 @@ write_files:
             - mountPath: /etc/kubernetes/admission-controller-kubeconfig
               name: admission-controller-kubeconfig
               readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-186
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-188
           name: webhook
           ports:
           - containerPort: 8081
