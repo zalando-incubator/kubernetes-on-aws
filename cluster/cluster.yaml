@@ -3392,6 +3392,23 @@ Resources:
           Status: Enabled
       VersioningConfiguration:
         Status: Suspended
+  E2EAWSIAMTestBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref E2EAWSIAMTestBucket
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:PutObject
+            Effect: Deny
+            Resource:
+              - !Sub "arn:aws:s3:::${E2EAWSIAMTestBucket}"
+              - !Sub "arn:aws:s3:::${E2EAWSIAMTestBucket}/*"
+            Principal: "*"
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn:
+                  - !GetAtt E2EAWSIAMTestRole.Arn
 {{ end }}
 
   AuditTrailBucket:
