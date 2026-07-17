@@ -71,7 +71,11 @@ write_files:
 {{- end }}
       # variables are replaced on instance start-up.
       providerID: __PROVIDER_ID__
+{{- if or (eq .Cluster.ConfigItems.dns_static_interface "kubelet") (eq .Cluster.ConfigItems.dns_static_interface "only_interface") }}
+      clusterDNS: ["169.254.20.10"]
+{{- else }}
       clusterDNS: [__CLUSTER_DNS__]
+{{- end }}
       registerWithTaints:
         - key: node.kubernetes.io/role
           value: master
