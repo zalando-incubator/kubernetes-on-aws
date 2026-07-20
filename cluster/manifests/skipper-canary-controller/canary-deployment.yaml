@@ -1,0 +1,50 @@
+# {{ if eq .Cluster.ConfigItems.skipper_canary_controller_enabled "true" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skipper-canary-controller
+  namespace: kube-system
+  labels:
+    application: skipper-ingress
+    component: canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: skipper-ingress
+      component: canary-controller
+  template:
+    metadata:
+      labels:
+        application: skipper-ingress
+        component: canary-controller
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9911"
+        prometheus.io/scrape: "true"
+        kubernetes-log-watcher/scalyr-parser: |
+          [{"container": "skipper-canary-controller", "parser": "keyValue"}]
+        logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
+    spec:
+      serviceAccountName: skipper-canary-controller
+      containers:
+      - name: skipper-canary-controller
+        terminationMessagePolicy: FallbackToLogsOnError
+        image: container-registry.zalando.net/gwproxy/skipper-canary-controller:main-40
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        args:
+          - "--dry-mode=true"
+          - "--prometheus-url=http://prometheus.kube-system.svc.cluster.local"
+          - "--log-level=debug"
+          - "--use-mem-query"
+          - "--use-status-query"
+          - "--metrics-addr=:9911"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+# {{ end }}
