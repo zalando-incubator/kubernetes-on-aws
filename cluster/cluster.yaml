@@ -439,7 +439,6 @@ Resources:
             Action:
               - 'sts:AssumeRole'
               - 'sts:TagSession'
-              - 'eks:TagResource'
       ManagedPolicyArns:
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyEc2UsApSa"
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-DenyModifyShibboleth"
@@ -566,7 +565,7 @@ Resources:
     Type: AWS::EKS::Addon
     Properties:
       AddonName: kube-proxy
-      AddonVersion: "v1.35.3-eksbuild.5"
+      AddonVersion: "v1.35.3-eksbuild.13"
       ClusterName: !Ref EKSCluster
       ConfigurationValues: |
         {
@@ -1558,7 +1557,8 @@ Resources:
                     "arn:${AWS::Partition}:ec2:${AWS::Region}::snapshot/*",
                     "arn:${AWS::Partition}:ec2:${AWS::Region}:*:security-group/*",
                     "arn:${AWS::Partition}:ec2:${AWS::Region}:*:subnet/*",
-                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:capacity-reservation/*"
+                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:capacity-reservation/*",
+                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:placement-group/*"
                   ],
                   "Action": [
                     "ec2:RunInstances",
@@ -1591,8 +1591,7 @@ Resources:
                     "arn:${AWS::Partition}:ec2:${AWS::Region}:*:volume/*",
                     "arn:${AWS::Partition}:ec2:${AWS::Region}:*:network-interface/*",
                     "arn:${AWS::Partition}:ec2:${AWS::Region}:*:launch-template/*",
-                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:spot-instances-request/*",
-                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:capacity-reservation/*"
+                    "arn:${AWS::Partition}:ec2:${AWS::Region}:*:spot-instances-request/*"
                   ],
                   "Action": [
                     "ec2:RunInstances",
@@ -1687,9 +1686,11 @@ Resources:
                     "ec2:DescribeCapacityReservations",
                     "ec2:DescribeImages",
                     "ec2:DescribeInstances",
+                    "ec2:DescribeInstanceStatus",
                     "ec2:DescribeInstanceTypeOfferings",
                     "ec2:DescribeInstanceTypes",
                     "ec2:DescribeLaunchTemplates",
+                    "ec2:DescribePlacementGroups",
                     "ec2:DescribeSecurityGroups",
                     "ec2:DescribeSpotPriceHistory",
                     "ec2:DescribeSubnets"
@@ -3430,18 +3431,7 @@ Resources:
       PolicyDocument:
         Statement:
           - Action:
-              - s3:ListBucket
               - s3:PutObject
-              - s3:GetObject
-              - s3:DeleteObject
-            Effect: Allow
-            Resource:
-              - !Sub "arn:aws:s3:::${E2EAWSIAMTestBucket}"
-              - !Sub "arn:aws:s3:::${E2EAWSIAMTestBucket}/*"
-            Principal:
-              AWS:
-                - !GetAtt E2EAWSIAMTestRole.Arn
-          - Action: "s3:*"
             Effect: Deny
             Resource:
               - !Sub "arn:aws:s3:::${E2EAWSIAMTestBucket}"
