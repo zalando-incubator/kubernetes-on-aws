@@ -9,6 +9,13 @@ karpenter_log_level: "error"
 # reservation is then only usable if a NodeClass selects it explicitly. Set false to let open ODCRs be
 # consumed automatically, as they are for any other EC2 instance.
 karpenter_feature_reserved_capacity: "true"
+
+# enable Karpenter's node repair feature. When true, Karpenter will attempt to
+# repair nodes that are unhealthy.
+# Only works in EKS where we have eks-node-monitoring-agent running.
+# https://karpenter.sh/docs/concepts/disruption/#node-auto-repair
+karpenter_feature_node_repair: "false"
+
 # restrict the maximum number of pods for karpenter nodes
 karpenter_max_pods_per_node: "32"
 
@@ -135,7 +142,7 @@ skipper_ingress_canary_image: ""
 skipper_ingress_test_single_pod: "false"
 skipper_canary_controller_enabled: "false"
 
-skipper_ingress_canary_routes_urls: http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/routes
+skipper_ingress_canary_routes_urls: http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/routes/$(KUBE_NODE_ZONE)
 skipper_ingress_routes_urls: http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes
 
 skipper_ingress_canary_swarm_valkey_remote: http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/swarm/valkey/shards
@@ -1062,12 +1069,23 @@ external_dns_mem: "4Gi"
 expirimental_dns_unbound_liveness_probe: "true"
 
 # DNS container resources
-dns_unbound_cpu: "100m"
-dns_unbound_mem: "50Mi"
-dns_unbound_exporter_cpu: "10m"
-dns_unbound_exporter_mem: "45Mi"
-dns_coredns_cpu: "50m"
-dns_coredns_mem: "100Mi"
+dns_coredns_cpu: "160m"
+dns_coredns_mem: "195Mi"
+
+# Roll out of static dns interface
+#
+# The rollout needs to be in multiple stages to avoid disruption of node local
+# DNS. Each stage must fully complete i.e. all CoreDNS pods must rotate (thus
+# all nodes must rotate) before going to the next stage.
+#
+# stages:
+#
+#  interface - static interface container runs
+#  listening - dns cache listens to static interface
+#  kubelet - kubelet configures static dns IP address - worker node rotation!
+#  only_interface - dns cache listens _only_ on the static interface
+#
+dns_static_interface: "listening"
 
 # special roles for test/pet clusters
 {{if eq .Cluster.Environment "e2e"}}

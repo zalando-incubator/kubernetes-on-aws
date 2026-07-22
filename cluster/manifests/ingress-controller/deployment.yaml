@@ -37,6 +37,8 @@ spec:
         - name: controller
           image: "{{ $image }}"
           args:
+            - "--cluster-id={{.Cluster.Name}}"
+            - "--vpc-id={{.Cluster.ConfigItems.vpc_id}}"
             - --ip-addr-type={{ .Cluster.ConfigItems.kube_aws_ingress_controller_lb_ip_addr_type }}
             - --target-group-ip-addr-type={{ .Cluster.ConfigItems.kube_aws_ingress_controller_target_group_ip_addr_type }}
 {{- if eq .Cluster.ConfigItems.kube_aws_ingress_controller_nlb_preserve_client_ip "false" }}

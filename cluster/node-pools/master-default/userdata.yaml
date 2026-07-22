@@ -71,7 +71,11 @@ write_files:
 {{- end }}
       # variables are replaced on instance start-up.
       providerID: __PROVIDER_ID__
+{{- if or (eq .Cluster.ConfigItems.dns_static_interface "kubelet") (eq .Cluster.ConfigItems.dns_static_interface "only_interface") }}
+      clusterDNS: ["169.254.20.10"]
+{{- else }}
       clusterDNS: [__CLUSTER_DNS__]
+{{- end }}
       registerWithTaints:
         - key: node.kubernetes.io/role
           value: master
@@ -216,7 +220,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-324
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-328
           name: admission-controller
           lifecycle:
             preStop:
@@ -256,7 +260,7 @@ write_files:
             - mountPath: /etc/kubernetes/admission-controller-kubeconfig
               name: admission-controller-kubeconfig
               readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-188
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-189
           name: webhook
           ports:
           - containerPort: 8081
