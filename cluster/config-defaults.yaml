@@ -306,6 +306,15 @@ skipper_pod_deletion_cost_controller_poll_timeout: "60s"
 skipper_pod_deletion_cost_controller_resync_enable: "true"
 skipper_pod_deletion_cost_controller_resync_interval: "1h"
 
+{{if eq .Cluster.Environment "production"}}
+skipper_resources_validate_application_label: "true"
+skipper_resources_application_label_in_scope_resources: "ingresses,routegroups,fabricgateways"
+{{else}}
+skipper_resources_validate_application_label: "false"
+skipper_resources_application_label_in_scope_resources: "ingresses,routegroups,fabricgateways"
+{{end}}
+skipper_resources_application_label_min_creation_time: "2026-07-22T10:00:00Z"
+
 # polarsignals - only enabled for some clusters
 polarsignals_enabled: "false"
 # Comma separated list of workloads for which polarsignals is enabled, only used
