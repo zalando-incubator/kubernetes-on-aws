@@ -26,7 +26,7 @@ var _ = describe("Instance storage", func() {
 	It("Should schedule a pod with ephemeral storage [Zalando]", func(ctx context.Context) {
 		ns := f.Namespace.Name
 
-		By("Creating a pod requesting 500Gi ephemeral storage on the worker-instance-storage pool")
+		By("Creating a pod requesting 500Gi ephemeral storage")
 		pod := createInstanceStorageTestPod("instance-storage-", ns)
 		_, err := cs.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "Could not create pod %s", pod.Name)
