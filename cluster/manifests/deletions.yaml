@@ -414,3 +414,18 @@ post_apply:
 # - name: awsiamroles.zalando.org
 #   kind: CustomResourceDefinition
 {{- end }}
+{{- if ne .Cluster.ConfigItems.kube2iam_enabled "true" }}
+- name: kube2iam
+  namespace: kube-system
+  kind: DaemonSet
+- name: kube2iam
+  namespace: kube-system
+  kind: ServiceAccount
+- name: kube2iam
+  kind: ClusterRole
+- name: kube2iam
+  kind: ClusterRoleBinding
+- name: kube2iam-privileged-psp
+  namespace: kube-system
+  kind: RoleBinding
+{{- end }}
