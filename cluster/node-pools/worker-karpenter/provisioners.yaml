@@ -53,11 +53,13 @@ spec:
     # {{ end }}
     cpuCFSQuota: false
 #{{ if ne .Cluster.Provider "zalando-eks" }}
-# {{ if ne .Cluster.ConfigItems.karpenter_max_pods_per_node "" }}
+#   {{ if ne .Cluster.ConfigItems.karpenter_max_pods_per_node "" }}
     maxPods: {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
-# {{ else }}
+#   {{ else }}
     maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
-# {{ end }}
+#   {{ end }}
+#{{ else }}
+    maxPods: {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
 #{{ end }}
     systemReserved:
       cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
