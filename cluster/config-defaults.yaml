@@ -17,7 +17,14 @@ karpenter_feature_reserved_capacity: "true"
 karpenter_feature_node_repair: "false"
 
 # restrict the maximum number of pods for karpenter nodes
+{{ if eq .Cluster.Provider "zalando-aws" }}
 karpenter_max_pods_per_node: "32"
+
+{{ else if eq .Cluster.Provider "zalando-eks" }}
+# number of Pods must not exceed the maximum number of Pods per node supported by Kubernetes
+karpenter_max_pods_per_node: "110"
+
+{{ end }}
 
 # configure whether karpenter should assume instances with local storage use
 # RAID0 for ephemeral pod storage.
