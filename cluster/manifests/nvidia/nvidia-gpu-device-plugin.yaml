@@ -45,9 +45,17 @@ spec:
                 operator: In
                 values:
                 - nvidia
+              - key: ami-family
+                operator: NotIn
+                values:
+                - bottlerocket
             - matchExpressions:
               - key: zalando.org/nvidia-gpu
                 operator: Exists
+              - key: ami-family
+                operator: NotIn
+                values:
+                - bottlerocket
       priorityClassName: system-node-critical
       volumes:
       - name: device-plugin
