@@ -30,7 +30,7 @@ spec:
       priorityClassName: system-node-critical
       serviceAccountName: node-monitor
       containers:
-        - image: container-registry.zalando.net/teapot/prometheus-node-exporter:v1.12.0-master-29
+        - image: container-registry.zalando.net/teapot/prometheus-node-exporter:v1.12.1-master-30
           args:
 {{- if eq .Cluster.ConfigItems.node_exporter_experimental_metrics "true" }}
             - --collector.ethtool
@@ -89,6 +89,74 @@ spec:
               name: usr
               readOnly: true
 {{- end }}
+{{- if eq .Cluster.ConfigItems.journald_reader_fluentbit_enabled "true" }}
+        - image: 906394416424.dkr.ecr.{{.Cluster.Region}}.amazonaws.com/aws-for-fluent-bit:3.4.9
+          name: fluent-bit-journald-reader
+          command:
+            - /fluent-bit/bin/fluent-bit
+          args:
+            - -q
+            - -i
+            - systemd
+            - -p
+            - Path=/var/log/journal
+            - -p
+            - DB=/fluent-bit-state/fluent-bit.db
+            - -p
+            - Read_From_Tail=false
+            - -p
+            - Tag=host.journald
+            - -F
+            - record_modifier
+            - -m
+            - host.journald
+            - -p
+            - Allowlist_key=MESSAGE
+            - -p
+            - Allowlist_key=_SYSTEMD_UNIT
+            - -p
+            - Allowlist_key=_BOOT_ID
+            - -p
+            - Allowlist_key=_MACHINE_ID
+            - -p
+            - Allowlist_key=_PID
+            - -F
+            - modify
+            - -m
+            - host.journald
+            - -p
+            - Rename=MESSAGE message
+            - -p
+            - Rename=_SYSTEMD_UNIT unit
+            - -p
+            - Rename=_BOOT_ID boot_id
+            - -p
+            - Rename=_MACHINE_ID machine_id
+            - -p
+            - Rename=_PID pid
+            - -o
+            - stdout
+            - -p
+            - format=json_lines
+            - -p
+            - json_date_format=iso8601
+            - -f
+            - "1"
+          resources:
+            requests:
+              cpu: {{.Cluster.ConfigItems.journald_reader_cpu}}
+              memory: {{.Cluster.ConfigItems.journald_reader_memory}}
+              ephemeral-storage: 256Mi
+            limits:
+              cpu: {{.Cluster.ConfigItems.journald_reader_cpu}}
+              memory: {{.Cluster.ConfigItems.journald_reader_memory}}
+          volumeMounts:
+            - mountPath: /var/log/journal
+              name: journald-logs
+              readOnly: true
+            - mountPath: /fluent-bit-state
+              name: journald-reader-state
+{{- end }}
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
       volumes:
@@ -110,7 +178,7 @@ spec:
         - name: kmsg
           hostPath:
             path: /dev/kmsg
-{{- if eq .Cluster.ConfigItems.journald_reader_enabled "true" }}
+{{- if or (eq .Cluster.ConfigItems.journald_reader_enabled "true") (eq .Cluster.ConfigItems.journald_reader_fluentbit_enabled "true") }}
         - name: journald-logs
           hostPath:
             path: /var/log/journal

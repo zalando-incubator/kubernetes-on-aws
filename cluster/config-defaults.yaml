@@ -17,7 +17,14 @@ karpenter_feature_reserved_capacity: "true"
 karpenter_feature_node_repair: "false"
 
 # restrict the maximum number of pods for karpenter nodes
+{{ if eq .Cluster.Provider "zalando-aws" }}
 karpenter_max_pods_per_node: "32"
+
+{{ else if eq .Cluster.Provider "zalando-eks" }}
+# number of Pods must not exceed the maximum number of Pods per node supported by Kubernetes
+karpenter_max_pods_per_node: "110"
+
+{{ end }}
 
 # configure whether karpenter should assume instances with local storage use
 # RAID0 for ephemeral pod storage.
@@ -66,6 +73,16 @@ karpenter_flex_types_enabled: "false"
 {{else}}
 karpenter_flex_types_enabled: "true"
 {{end}}
+
+# Define Karpenter AMI family alias. This is used to determine the AMI used for
+# Karpenter nodes.
+#
+# The default is custom which is the Zalando Kubernetes on Ubuntu AMI.
+#
+# alternatives:
+#  - al2023@latest
+#  - bottlerocket@latest
+karpenter_ami_family_alias: "custom"
 
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
@@ -305,6 +322,14 @@ skipper_pod_deletion_cost_controller_poll_timeout: "60s"
 # enable re-sync
 skipper_pod_deletion_cost_controller_resync_enable: "true"
 skipper_pod_deletion_cost_controller_resync_interval: "1h"
+
+{{if eq .Cluster.Environment "production"}}
+skipper_resources_validate_application_label: "true"
+{{else}}
+skipper_resources_validate_application_label: "false"
+{{end}}
+skipper_resources_application_label_in_scope_resources: "ingresses,routegroups,fabricgateways"
+skipper_resources_application_label_min_creation_time: "2026-07-22T10:00:00Z"
 
 # polarsignals - only enabled for some clusters
 polarsignals_enabled: "false"
@@ -592,7 +617,8 @@ static_egress_controller_enabled: "false"
 static_egress_controller_memory_min: "10Mi"
 
 # journald reader settings
-journald_reader_enabled: "true"
+journald_reader_enabled: "false"
+journald_reader_fluentbit_enabled: "true"
 journald_reader_cpu: "1m"
 journald_reader_memory: "30Mi"
 
@@ -922,8 +948,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.5-amd64-master-405" "861068367966" }}
-kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.5-arm64-master-405" "861068367966" }}
+kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-amd64-master-435" "861068367966" }}
+kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-arm64-master-435" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
@@ -958,6 +984,7 @@ audit_webhook_batch_max_size: "250"
 
 kube2iam_cpu: "25m"
 kube2iam_memory: "100Mi"
+kube2iam_enabled: "true"
 
 # configure whether kube2iam should only run on worker nodes.
 kube2iam_worker_only: "true"
@@ -1085,7 +1112,7 @@ dns_coredns_mem: "195Mi"
 #  kubelet - kubelet configures static dns IP address - worker node rotation!
 #  only_interface - dns cache listens _only_ on the static interface
 #
-dns_static_interface: "kubelet"
+dns_static_interface: "only_interface"
 
 # special roles for test/pet clusters
 {{if eq .Cluster.Environment "e2e"}}

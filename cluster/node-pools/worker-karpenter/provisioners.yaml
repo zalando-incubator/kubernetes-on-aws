@@ -4,11 +4,16 @@ kind: EC2NodeClass
 metadata:
   name: "{{ .NodePool.Name }}"
 spec:
+  # {{ if eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom" }}
   amiFamily: Custom
   amiSelectorTerms:
     # Select on any AMI that has any of the following IDs
     - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_35_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
     - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_35_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
+  # {{ else }}
+  amiSelectorTerms:
+    - alias: "{{ .NodePool.ConfigItems.karpenter_ami_family_alias }}"
+  # {{ end }}
   metadataOptions:
     httpEndpoint: enabled
     # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
@@ -16,8 +21,13 @@ spec:
     # {{ else }}
     httpProtocolIPv6: disabled
     # {{ end }}
+    # {{ if or (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "al2023") }}
+    httpPutResponseHopLimit: 1
+    httpTokens: required
+    # {{ else }}
     httpPutResponseHopLimit: 2
     httpTokens: optional
+    # {{ end }}
   subnetSelectorTerms:
     - tags:
         # {{ if eq .NodePool.ConfigItems.internal_node_subnets_enabled "true" }}
@@ -52,13 +62,11 @@ spec:
     clusterDNS: ["169.254.20.10"]
     # {{ end }}
     cpuCFSQuota: false
-#{{ if ne .Cluster.Provider "zalando-eks" }}
 # {{ if ne .Cluster.ConfigItems.karpenter_max_pods_per_node "" }}
     maxPods: {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
 # {{ else }}
     maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
 # {{ end }}
-#{{ end }}
     systemReserved:
       cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
       memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
@@ -96,8 +104,24 @@ spec:
 #    {{ end}}
 #  {{ end}}
 #{{ end}}
+{{- if eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom" }}
   userData: |
 {{ .Values.UserData | indent 4 }}
+{{- else if hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "al2023" }}
+  userData: |
+    ---
+    apiVersion: node.eks.aws/v1alpha1
+    kind: NodeConfig
+    spec:
+      kubelet:
+        flags:
+          # hack to pass admission-controller requirements
+          - "--node-labels=node.kubernetes.io/role=worker"
+{{- else if hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket" }}
+  userData: |
+      [settings.kubernetes]
+      node-labels = {"node.kubernetes.io/role" = "worker"}
+{{- end }}
 ---
 apiVersion: karpenter.sh/v1
 kind: NodePool
@@ -112,6 +136,9 @@ spec:
     metadata:
       # Labels are arbitrary key-values that are applied to all nodes
       labels:
+# {{ if hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket" }}
+        ami-family: "bottlerocket"
+# {{ end }}
         lifecycle-status: ready
         node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
         node.kubernetes.io/role: worker
