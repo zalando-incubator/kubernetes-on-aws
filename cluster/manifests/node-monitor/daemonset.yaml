@@ -66,11 +66,13 @@ spec:
               mountPath: /host
               readOnly: true
 {{- if eq .Cluster.ConfigItems.journald_reader_enabled "true" }}
-        - image: container-registry.zalando.net/teapot/journald-reader:master-20
+        - image: container-registry.zalando.net/teapot/journald-reader:master-21
           name: journald-reader
           env:
             - name: JOURNALD_READER_CHECKPOINT_FILE
               value: /journald-reader-state/cursor
+            - name: LD_LIBRARY_PATH
+              value: /host/x86_64-bottlerocket-linux-gnu/sys-root/usr/lib64:/host/x86_64-bottlerocket-linux-gnu/sys-root/usr/lib:/host/x86_64-bottlerocket-linux-gnu/sys-root/lib64:/host/aarch64-bottlerocket-linux-gnu/sys-root/usr/lib64:/host/aarch64-bottlerocket-linux-gnu/sys-root/usr/lib:/host/aarch64-bottlerocket-linux-gnu/sys-root/lib64:/usr/lib/systemd
           resources:
             requests:
               cpu: {{.Cluster.ConfigItems.journald_reader_cpu}}
@@ -87,6 +89,8 @@ spec:
               name: journald-reader-state
             - mountPath: /usr
               name: usr
+            - name: rootfs
+              mountPath: /host
               readOnly: true
 {{- end }}
       automountServiceAccountToken: false
@@ -98,18 +102,12 @@ spec:
         - name: var-run
           hostPath:
             path: /var/run
-        - name: sys
-          hostPath:
-            path: /sys
         - name: usr
           hostPath:
             path: /usr
         - name: containerd
           hostPath:
             path: /opt/podruntime/containerd
-        - name: kmsg
-          hostPath:
-            path: /dev/kmsg
 {{- if eq .Cluster.ConfigItems.journald_reader_enabled "true" }}
         - name: journald-logs
           hostPath:
