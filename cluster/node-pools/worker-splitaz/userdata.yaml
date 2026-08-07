@@ -85,7 +85,11 @@ write_files:
 {{- if eq .Cluster.Provider "zalando-eks" }}
       # replaced with dynamic value based on instance type during instance
       # start-up.
+{{- if or (eq .Cluster.ConfigItems.eks_ip_family "ipv6") (eq .Cluster.ConfigItems.aws_vpc_cni_prefix_delegation "true") }}
+      maxPods: {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
+{{- else }}
       maxPods: __MAX_PODS__
+{{- end }}
 {{- else }}
       maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
 {{- end }}
