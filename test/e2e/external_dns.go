@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
-	"k8s.io/kubernetes/test/e2e/framework/ingress"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 	e2eservice "k8s.io/kubernetes/test/e2e/framework/service"
 	admissionapi "k8s.io/pod-security-admission/api"
@@ -44,13 +43,13 @@ var _ = describe("External DNS creation", func() {
 	var (
 		cs   kubernetes.Interface
 		jigs *e2eservice.TestJig
-		jigi *ingress.TestJig
+		jigi *ingressTestJig
 	)
 
 	BeforeEach(func() {
 		cs = f.ClientSet
 		jigs = e2eservice.NewTestJig(cs, f.Namespace.Name, serviceName)
-		jigi = ingress.NewIngressTestJig(f.ClientSet)
+		jigi = newIngressTestJig(f.ClientSet)
 	})
 
 	f.It("Should create DNS entry via Service [Zalando]", f.WithSlow(), func(ctx context.Context) {
