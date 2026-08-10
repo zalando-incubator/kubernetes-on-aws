@@ -43,7 +43,7 @@ spec:
   # {{ end }}
   instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
   blockDeviceMappings:
-    # {{ if eq .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket" }}
+    # {{ if hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket" }}
     - deviceName: /dev/xvdb
       ebs:
         deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination }}
