@@ -30,7 +30,7 @@ spec:
       priorityClassName: system-node-critical
       serviceAccountName: node-monitor
       containers:
-        - image: container-registry.zalando.net/teapot/prometheus-node-exporter:v1.12.1-master-30
+        - image: container-registry.zalando.net/teapot/prometheus-node-exporter:v1.12.1-master-31.patched
           args:
 {{- if eq .Cluster.ConfigItems.node_exporter_experimental_metrics "true" }}
             - --collector.ethtool
@@ -66,11 +66,13 @@ spec:
               mountPath: /host
               readOnly: true
 {{- if eq .Cluster.ConfigItems.journald_reader_enabled "true" }}
-        - image: container-registry.zalando.net/teapot/journald-reader:master-20
+        - image: container-registry.zalando.net/teapot/journald-reader:master-21
           name: journald-reader
           env:
             - name: JOURNALD_READER_CHECKPOINT_FILE
               value: /journald-reader-state/cursor
+            - name: LD_LIBRARY_PATH
+              value: /host/x86_64-bottlerocket-linux-gnu/sys-root/usr/lib64:/host/x86_64-bottlerocket-linux-gnu/sys-root/usr/lib:/host/x86_64-bottlerocket-linux-gnu/sys-root/lib64:/host/aarch64-bottlerocket-linux-gnu/sys-root/usr/lib64:/host/aarch64-bottlerocket-linux-gnu/sys-root/usr/lib:/host/aarch64-bottlerocket-linux-gnu/sys-root/lib64:/usr/lib/systemd
           resources:
             requests:
               cpu: {{.Cluster.ConfigItems.journald_reader_cpu}}
@@ -87,75 +89,9 @@ spec:
               name: journald-reader-state
             - mountPath: /usr
               name: usr
+            - name: rootfs
+              mountPath: /host
               readOnly: true
-{{- end }}
-{{- if eq .Cluster.ConfigItems.journald_reader_fluentbit_enabled "true" }}
-        - image: 906394416424.dkr.ecr.{{.Cluster.Region}}.amazonaws.com/aws-for-fluent-bit:3.4.9
-          name: fluent-bit-journald-reader
-          command:
-            - /fluent-bit/bin/fluent-bit
-          args:
-            - -q
-            - -i
-            - systemd
-            - -p
-            - Path=/var/log/journal
-            - -p
-            - DB=/fluent-bit-state/fluent-bit.db
-            - -p
-            - Read_From_Tail=false
-            - -p
-            - Tag=host.journald
-            - -F
-            - record_modifier
-            - -m
-            - host.journald
-            - -p
-            - Allowlist_key=MESSAGE
-            - -p
-            - Allowlist_key=_SYSTEMD_UNIT
-            - -p
-            - Allowlist_key=_BOOT_ID
-            - -p
-            - Allowlist_key=_MACHINE_ID
-            - -p
-            - Allowlist_key=_PID
-            - -F
-            - modify
-            - -m
-            - host.journald
-            - -p
-            - Rename=MESSAGE message
-            - -p
-            - Rename=_SYSTEMD_UNIT unit
-            - -p
-            - Rename=_BOOT_ID boot_id
-            - -p
-            - Rename=_MACHINE_ID machine_id
-            - -p
-            - Rename=_PID pid
-            - -o
-            - stdout
-            - -p
-            - format=json_lines
-            - -p
-            - json_date_format=iso8601
-            - -f
-            - "1"
-          resources:
-            requests:
-              cpu: {{.Cluster.ConfigItems.journald_reader_cpu}}
-              memory: {{.Cluster.ConfigItems.journald_reader_memory}}
-              ephemeral-storage: 256Mi
-            limits:
-              cpu: {{.Cluster.ConfigItems.journald_reader_cpu}}
-              memory: {{.Cluster.ConfigItems.journald_reader_memory}}
-          volumeMounts:
-            - mountPath: /var/log/journal
-              name: journald-logs
-              readOnly: true
-            - mountPath: /fluent-bit-state
-              name: journald-reader-state
 {{- end }}
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 30
@@ -166,19 +102,13 @@ spec:
         - name: var-run
           hostPath:
             path: /var/run
-        - name: sys
-          hostPath:
-            path: /sys
         - name: usr
           hostPath:
             path: /usr
         - name: containerd
           hostPath:
             path: /opt/podruntime/containerd
-        - name: kmsg
-          hostPath:
-            path: /dev/kmsg
-{{- if or (eq .Cluster.ConfigItems.journald_reader_enabled "true") (eq .Cluster.ConfigItems.journald_reader_fluentbit_enabled "true") }}
+{{- if eq .Cluster.ConfigItems.journald_reader_enabled "true" }}
         - name: journald-logs
           hostPath:
             path: /var/log/journal

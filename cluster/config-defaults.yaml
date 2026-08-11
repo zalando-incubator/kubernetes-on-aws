@@ -617,8 +617,7 @@ static_egress_controller_enabled: "false"
 static_egress_controller_memory_min: "10Mi"
 
 # journald reader settings
-journald_reader_enabled: "false"
-journald_reader_fluentbit_enabled: "true"
+journald_reader_enabled: "true"
 journald_reader_cpu: "1m"
 journald_reader_memory: "30Mi"
 
@@ -925,8 +924,8 @@ etcd_instance_type: "t3.medium"
 
 etcd_scalyr_key: ""
 
-etcd_ami_amd64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.31-amd64-main-42" "861068367966"}}
-etcd_ami_arm64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.31-arm64-main-42" "861068367966"}}
+etcd_ami_amd64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-amd64-main-48" "861068367966"}}
+etcd_ami_arm64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-arm64-main-48" "861068367966"}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -948,8 +947,13 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
+{{if eq .Cluster.Provider "zalando-eks"}}
+kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-amd64-master-436" "861068367966" }}
+kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-arm64-master-436" "861068367966" }}
+{{else}}
 kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-amd64-master-435" "861068367966" }}
 kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-arm64-master-435" "861068367966" }}
+{{end}}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
@@ -1386,7 +1390,7 @@ kube_janitor_enabled: "true"
 {{end}}
 
 # scheduling_controls
-teapot_admission_controller_scheduling_controls_enabled: "false"
+teapot_admission_controller_scheduling_controls_enabled: "true"
 teapot_admission_controller_scheduling_controls_default_architecture: "amd64"
 
 # master-node-autoscaler configuration
