@@ -4,7 +4,7 @@ kind: EC2NodeClass
 metadata:
   name: "{{ .NodePool.Name }}"
 spec:
-  # {{ if eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom" }}
+  # {{ if or (eq .Cluster.Provider "zalando-aws") (eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom") }}
   amiFamily: Custom
   amiSelectorTerms:
     # Select on any AMI that has any of the following IDs
@@ -21,7 +21,7 @@ spec:
     # {{ else }}
     httpProtocolIPv6: disabled
     # {{ end }}
-    # {{ if or (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "al2023") }}
+    # {{ if and (eq .Cluster.Provider "zalando-eks") (or (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "al2023")) }}
     httpPutResponseHopLimit: 1
     httpTokens: required
     # {{ else }}
@@ -43,7 +43,7 @@ spec:
   # {{ end }}
   instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
   blockDeviceMappings:
-    # {{ if hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket" }}
+    # {{ if and (eq .Cluster.Provider "zalando-eks") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket") }}
     - deviceName: /dev/xvdb
       ebs:
         deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination }}
@@ -112,10 +112,10 @@ spec:
 #    {{ end}}
 #  {{ end}}
 #{{ end}}
-{{- if eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom" }}
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom") }}
   userData: |
 {{ .Values.UserData | indent 4 }}
-{{- else if hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "al2023" }}
+{{- else if and (eq .Cluster.Provider "zalando-eks") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "al2023") }}
   userData: |
     ---
     apiVersion: node.eks.aws/v1alpha1
@@ -125,7 +125,7 @@ spec:
         flags:
           # hack to pass admission-controller requirements
           - "--node-labels=node.kubernetes.io/role=worker"
-{{- else if hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket" }}
+{{- else if and (eq .Cluster.Provider "zalando-eks") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket") }}
   userData: |
       [settings.kubernetes]
       node-labels = {"node.kubernetes.io/role" = "worker"}
@@ -144,7 +144,7 @@ spec:
     metadata:
       # Labels are arbitrary key-values that are applied to all nodes
       labels:
-# {{ if hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket" }}
+# {{ if and (eq .Cluster.Provider "zalando-eks") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket") }}
         ami-family: "bottlerocket"
 # {{ end }}
         lifecycle-status: ready
