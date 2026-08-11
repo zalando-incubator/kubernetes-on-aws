@@ -17,7 +17,14 @@ karpenter_feature_reserved_capacity: "true"
 karpenter_feature_node_repair: "false"
 
 # restrict the maximum number of pods for karpenter nodes
+{{ if eq .Cluster.Provider "zalando-aws" }}
 karpenter_max_pods_per_node: "32"
+
+{{ else if eq .Cluster.Provider "zalando-eks" }}
+# number of Pods must not exceed the maximum number of Pods per node supported by Kubernetes
+karpenter_max_pods_per_node: "110"
+
+{{ end }}
 
 # configure whether karpenter should assume instances with local storage use
 # RAID0 for ephemeral pod storage.
@@ -66,6 +73,16 @@ karpenter_flex_types_enabled: "false"
 {{else}}
 karpenter_flex_types_enabled: "true"
 {{end}}
+
+# Define Karpenter AMI family alias. This is used to determine the AMI used for
+# Karpenter nodes.
+#
+# The default is custom which is the Zalando Kubernetes on Ubuntu AMI.
+#
+# alternatives:
+#  - al2023@latest
+#  - bottlerocket@latest
+karpenter_ami_family_alias: "custom"
 
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
@@ -915,8 +932,8 @@ etcd_instance_type: "t3.medium"
 
 etcd_scalyr_key: ""
 
-etcd_ami_amd64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.31-amd64-main-42" "861068367966"}}
-etcd_ami_arm64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.31-arm64-main-42" "861068367966"}}
+etcd_ami_amd64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-amd64-main-48" "861068367966"}}
+etcd_ami_arm64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-arm64-main-48" "861068367966"}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -938,8 +955,13 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_36_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.1-amd64-master-427" "861068367966" }}
-kuberuntu_image_v1_36_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.1-arm64-master-427" "861068367966" }}
+{{if eq .Cluster.Provider "zalando-eks"}}
+kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-amd64-master-436" "861068367966" }}
+kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-arm64-master-436" "861068367966" }}
+{{else}}
+kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-amd64-master-435" "861068367966" }}
+kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-arm64-master-435" "861068367966" }}
+{{end}}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
@@ -1376,7 +1398,7 @@ kube_janitor_enabled: "true"
 {{end}}
 
 # scheduling_controls
-teapot_admission_controller_scheduling_controls_enabled: "false"
+teapot_admission_controller_scheduling_controls_enabled: "true"
 teapot_admission_controller_scheduling_controls_default_architecture: "amd64"
 
 # master-node-autoscaler configuration

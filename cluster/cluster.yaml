@@ -470,6 +470,10 @@ Resources:
           - "eks:AssociateAccessPolicy"
           - "eks:DisassociateAccessPolicy"
           - "eks:ListAssociatedAccessPolicies"
+          - "bedrock:CreateInferenceProfile"
+          - "bedrock:GetInferenceProfile"
+          - "bedrock:DeleteInferenceProfile"
+          - "bedrock:ListInferenceProfiles"
           Resource: "*"
   EKSCapabilityACK:
     Type: 'AWS::EKS::Capability'
@@ -517,7 +521,7 @@ Resources:
     Type: AWS::EKS::Addon
     Properties:
       AddonName: vpc-cni
-      AddonVersion: "v1.21.1-eksbuild.7"
+      AddonVersion: "v1.23.0-eksbuild.1"
       ClusterName: !Ref EKSCluster
       ConfigurationValues: !Sub |
 {{- if eq .Cluster.ConfigItems.aws_vpc_cni_custom_networking "true" }}
@@ -764,6 +768,7 @@ Resources:
           - "ec2:DescribeTags"
           - "ec2:DescribeNetworkInterfaces"
           - "ec2:DescribeInstanceTypes"
+          - "ec2:DescribeSubnets"
           Resource: "*"
         - Effect: Allow
           Action:
