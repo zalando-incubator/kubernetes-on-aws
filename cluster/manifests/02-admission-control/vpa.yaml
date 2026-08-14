@@ -1,0 +1,22 @@
+{{- if eq .Cluster.Provider "zalando-eks"}}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: teapot-admission-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: admission-controller
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: teapot-admission-controller
+  updatePolicy:
+    updateMode: Off
+  resourcePolicy:
+    containerPolicies:
+    - containerName: admission-controller
+      minAllowed:
+        memory: "{{.Cluster.ConfigItems.teapot_admission_controller_memory_min}}"
+{{- end }}
