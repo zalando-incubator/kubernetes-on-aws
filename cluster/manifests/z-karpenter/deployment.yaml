@@ -159,6 +159,10 @@ spec:
                 matchExpressions:
                 - key: karpenter.sh/nodepool
                   operator: DoesNotExist
+                - key: lifecycle-status
+                  operator: In
+                  values:
+                  - ready
 {{- if eq .Cluster.Provider "zalando-eks"}}
             - weight: 100
               preference:
@@ -187,6 +191,9 @@ spec:
           operator: Exists
         - key: node.kubernetes.io/role
           value: master
+          effect: NoSchedule
+        - key: decommission-pending
+          operator: Exists
           effect: NoSchedule
 {{- if eq .Cluster.Provider "zalando-eks"}}
         - key: dedicated
