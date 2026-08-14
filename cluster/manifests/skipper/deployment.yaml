@@ -1,6 +1,6 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.27.39-1491" }}
+{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.27.50-1502" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.27.50-1502" }}
 
 {{/* Allow to override manually canary image by config item */}}
@@ -281,11 +281,38 @@ spec:
 {{if ne .Cluster.ConfigItems.skipper_ingress_request_size_buckets ""}}
           - "-request-size-buckets={{ .Cluster.ConfigItems.skipper_ingress_request_size_buckets }}"
 {{ end }}
+{{ if eq .Cluster.ConfigItems.skipper_ingress_open_telemetry_enabled "true" }}
+          - -open-telemetry
+          - |
+            tracesExporter: otlp
+            exporterOtlp:
+              protocol: http/protobuf
+              endpoint: "https://{{ .Cluster.ConfigItems.tracing_collector_host }}:{{ .Cluster.ConfigItems.tracing_collector_port }}"
+            resourceAttributes:
+              service.name: skipper-ingress
+              application: skipper-ingress
+              component: ingress
+              account: {{ .Cluster.Alias }}
+              cluster: {{ .Cluster.Alias }}
+              k8s.cluster.name: {{ .Cluster.Alias }}
+              artifact: {{ .image }}
+              container.image.name: {{ index (split .image ":") 0 }}
+              container.image.tags: {{ index (split .image ":") 1 }}
+              k8s.pod.name: $(POD_NAME)
+              cloud.availability_zone: $(KUBE_NODE_ZONE)
+              otel-exporter: true
+            propagators: [tracecontext, ottrace, b3multi, baggage]
+            batchSpanProcessor:
+              maxQueueSize: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_max_queue_size }}
+              maxExportBatchSize: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_max_export_batch_size }}
+              scheduleDelay: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_schedule_delay }}
+              exportTimeout: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_export_timeout }}
+{{ else }}
           - >-
             -opentracing=lightstep
             component-name=skipper-ingress
             token=$(LIGHTSTEP_TOKEN)
-            collector={{ .Cluster.ConfigItems.tracing_collector_host }}:8444
+            collector={{ .Cluster.ConfigItems.tracing_collector_host }}:{{ .Cluster.ConfigItems.tracing_collector_port }}
             cmd-line=skipper-ingress
             tag=application=skipper-ingress
             tag=account={{ .Cluster.Alias }}
@@ -305,6 +332,7 @@ spec:
             max-logs-per-span={{ .Cluster.ConfigItems.skipper_ingress_lightstep_max_logs_per_span }}
             propagators={{ .Cluster.ConfigItems.skipper_ingress_lightstep_propagators }}
             {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
+{{ end }}
           - "-opentracing-excluded-proxy-tags={{ .Cluster.ConfigItems.skipper_ingress_opentracing_excluded_proxy_tags }}"
 {{ if eq .Cluster.ConfigItems.skipper_ingress_opentracing_client_trace_by_tag "true" }}
           - "-opentracing-client-trace-by-tag"
@@ -650,11 +678,38 @@ spec:
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
 {{ end }}
+{{ if eq .Cluster.ConfigItems.skipper_ingress_open_telemetry_enabled "true" }}
+          - -open-telemetry
+          - |
+            tracesExporter: otlp
+            exporterOtlp:
+              protocol: http/protobuf
+              endpoint: "https://{{ .Cluster.ConfigItems.tracing_collector_host }}:{{ .Cluster.ConfigItems.tracing_collector_port }}"
+            resourceAttributes:
+              service.name: routesrv
+              application: skipper-ingress
+              component: routesrv
+              account: {{ .Cluster.Alias }}
+              cluster: {{ .Cluster.Alias }}
+              k8s.cluster.name: {{ .Cluster.Alias }}
+              artifact: {{ print .routesrv_image ":" .routesrv_version }}
+              container.image.name: {{ .routesrv_image }}
+              container.image.tags: {{ .routesrv_version }}
+              k8s.pod.name: $(POD_NAME)
+              cloud.availability_zone: $(KUBE_NODE_ZONE)
+              otel-exporter: true
+            propagators: [tracecontext, ottrace, b3multi, baggage]
+            batchSpanProcessor:
+              maxQueueSize: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_max_queue_size }}
+              maxExportBatchSize: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_max_export_batch_size }}
+              scheduleDelay: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_schedule_delay }}
+              exportTimeout: {{ .Cluster.ConfigItems.skipper_ingress_open_telemetry_bsp_export_timeout }}
+{{ else }}
           - >-
             -opentracing=lightstep
             component-name=routesrv
             token=$(LIGHTSTEP_TOKEN)
-            collector={{ .Cluster.ConfigItems.tracing_collector_host }}:8444
+            collector={{ .Cluster.ConfigItems.tracing_collector_host }}:{{ .Cluster.ConfigItems.tracing_collector_port }}
             cmd-line=routesrv
             tag=application=skipper-ingress
             tag=component=routesrv
@@ -675,6 +730,7 @@ spec:
             max-logs-per-span={{ .Cluster.ConfigItems.skipper_ingress_lightstep_max_logs_per_span }}
             propagators={{ .Cluster.ConfigItems.skipper_ingress_lightstep_propagators }}
             {{ .Cluster.ConfigItems.skipper_ingress_lightstep_log_events }}
+{{ end }}
         env:
         - name: KUBE_NODE_ZONE
           valueFrom:

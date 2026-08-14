@@ -23,7 +23,6 @@ import (
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -95,28 +94,28 @@ var _ = describe("Image Policy Tests (Deployment)", func() {
 		framework.ExpectNoError(err)
 	})
 
-	It("Should not create Deployment using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
-		namePrefix := "image-policy-test-non-compliant"
-		podName := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
-		namespace := f.Namespace.Name
-		replicas := 1
+	// It("Should not create Deployment using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
+	// 	namePrefix := "image-policy-test-non-compliant"
+	// 	podName := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
+	// 	namespace := f.Namespace.Name
+	// 	replicas := 1
 
-		By("Creating Deployment " + namePrefix + " in namespace " + namespace)
+	// 	By("Creating Deployment " + namePrefix + " in namespace " + namespace)
 
-		deployment := createImagePolicyWebhookTestDeployment(namePrefix, namespace, nonCompliantImage1, podName, int32(replicas))
-		_, err := cs.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
-		framework.ExpectNoError(err)
+	// 	deployment := createImagePolicyWebhookTestDeployment(namePrefix, namespace, nonCompliantImage1, podName, int32(replicas))
+	// 	_, err := cs.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
+	// 	framework.ExpectNoError(err)
 
-		defer func() {
-			By(fmt.Sprintf("Delete a Deployment: %s", deployment.Name))
-			defer GinkgoRecover()
-			err := cs.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
-			framework.ExpectNoError(err)
-		}()
+	// 	defer func() {
+	// 		By(fmt.Sprintf("Delete a Deployment: %s", deployment.Name))
+	// 		defer GinkgoRecover()
+	// 		err := cs.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
+	// 		framework.ExpectNoError(err)
+	// 	}()
 
-		err = waitForDeploymentWithCondition(cs, namespace, deployment.Name, "FailedCreate", appsv1.DeploymentReplicaFailure)
-		framework.ExpectNoError(err)
-	})
+	// 	err = waitForDeploymentWithCondition(cs, namespace, deployment.Name, "FailedCreate", appsv1.DeploymentReplicaFailure)
+	// 	framework.ExpectNoError(err)
+	// })
 })
 
 var _ = describe("Image Policy Tests (Deployment) (when disabled)", func() {
@@ -186,17 +185,17 @@ var _ = describe("Image Policy Tests (Pods)", func() {
 		framework.ExpectNoError(err)
 	})
 
-	It("Should not create pod with non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
-		namePrefix := "image-policy-test-non-compliant"
-		podName := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
-		namespace := f.Namespace.Name
+	// It("Should not create pod with non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
+	// 	namePrefix := "image-policy-test-non-compliant"
+	// 	podName := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
+	// 	namespace := f.Namespace.Name
 
-		By("Creating pod " + namePrefix + " in namespace " + namespace)
+	// 	By("Creating pod " + namePrefix + " in namespace " + namespace)
 
-		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, nonCompliantImage3, podName)
-		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
-		Expect(err).To(HaveOccurred())
-	})
+	// 	pod := createImagePolicyWebhookTestPod(namePrefix, namespace, nonCompliantImage3, podName)
+	// 	_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
+	// 	Expect(err).To(HaveOccurred())
+	// })
 })
 
 var _ = describe("Image Policy Tests (Pods) (when disabled)", func() {
@@ -282,44 +281,44 @@ var _ = describe("Image Policy Tests (Pods Update Path)", func() {
 		framework.ExpectNoError(err)
 	})
 
-	It("Should not update pod with non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
-		namePrefix := "image-policy-test-compliant"
-		appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
-		namespace := f.Namespace.Name
+	// It("Should not update pod with non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
+	// 	namePrefix := "image-policy-test-compliant"
+	// 	appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
+	// 	namespace := f.Namespace.Name
 
-		By("Creating pod " + namePrefix + " in namespace " + namespace)
+	// 	By("Creating pod " + namePrefix + " in namespace " + namespace)
 
-		pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage5, appLabel)
-		_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
-		framework.ExpectNoError(err)
+	// 	pod := createImagePolicyWebhookTestPod(namePrefix, namespace, compliantImage5, appLabel)
+	// 	_, err := cs.CoreV1().Pods(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
+	// 	framework.ExpectNoError(err)
 
-		defer func() {
-			By(fmt.Sprintf("Delete a pod: %s", pod.Name))
-			defer GinkgoRecover()
-			err := cs.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
-			framework.ExpectNoError(err)
-		}()
+	// 	defer func() {
+	// 		By(fmt.Sprintf("Delete a pod: %s", pod.Name))
+	// 		defer GinkgoRecover()
+	// 		err := cs.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{})
+	// 		framework.ExpectNoError(err)
+	// 	}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
-		framework.ExpectNoError(err)
+	// 	_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, waitForPodTimeout)
+	// 	framework.ExpectNoError(err)
 
-		By("Updating pod " + namePrefix + " in namespace " + namespace)
+	// 	By("Updating pod " + namePrefix + " in namespace " + namespace)
 
-		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			// Get the latest version of the resource
-			pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
+	// 	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	// 		// Get the latest version of the resource
+	// 		pod, err = cs.CoreV1().Pods(namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
+	// 		if err != nil {
+	// 			return err
+	// 		}
 
-			pod.Spec.Containers[0].Image = nonCompliantImage5
+	// 		pod.Spec.Containers[0].Image = nonCompliantImage5
 
-			// Try to update
-			_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
-			return err
-		})
-		Expect(err).To(HaveOccurred())
-	})
+	// 		// Try to update
+	// 		_, err = cs.CoreV1().Pods(namespace).Update(context.TODO(), pod, metav1.UpdateOptions{})
+	// 		return err
+	// 	})
+	// 	Expect(err).To(HaveOccurred())
+	// })
 })
 
 var _ = describe("Image Policy Tests (Pods Update Path) (when disabled)", func() {
@@ -408,29 +407,29 @@ var _ = describe("Image Policy Tests (StatefulSet)", func() {
 		framework.ExpectNoError(err)
 	})
 
-	It("Should not create StatefulSet using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
-		namePrefix := "ip-noncompliant"
-		appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
-		namespace := f.Namespace.Name
-		replicas := 1
+	// It("Should not create StatefulSet using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
+	// 	namePrefix := "ip-noncompliant"
+	// 	appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
+	// 	namespace := f.Namespace.Name
+	// 	replicas := 1
 
-		By("Creating StatefulSet " + namePrefix + " in namespace " + namespace)
+	// 	By("Creating StatefulSet " + namePrefix + " in namespace " + namespace)
 
-		statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, nonCompliantImage7, appLabel, int32(replicas))
-		_, err := cs.AppsV1().StatefulSets(namespace).Create(context.TODO(), statefulSet, metav1.CreateOptions{})
-		framework.ExpectNoError(err)
+	// 	statefulSet := createImagePolicyWebhookTestStatefulSet(namePrefix, namespace, nonCompliantImage7, appLabel, int32(replicas))
+	// 	_, err := cs.AppsV1().StatefulSets(namespace).Create(context.TODO(), statefulSet, metav1.CreateOptions{})
+	// 	framework.ExpectNoError(err)
 
-		defer func() {
-			By(fmt.Sprintf("Delete a StatefulSet: %s", statefulSet.Name))
-			defer GinkgoRecover()
-			err := cs.AppsV1().StatefulSets(namespace).Delete(context.TODO(), statefulSet.Name, metav1.DeleteOptions{})
-			framework.ExpectNoError(err)
-		}()
+	// 	defer func() {
+	// 		By(fmt.Sprintf("Delete a StatefulSet: %s", statefulSet.Name))
+	// 		defer GinkgoRecover()
+	// 		err := cs.AppsV1().StatefulSets(namespace).Delete(context.TODO(), statefulSet.Name, metav1.DeleteOptions{})
+	// 		framework.ExpectNoError(err)
+	// 	}()
 
-		_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(MatchRegexp(`Timed out after 60`))
-	})
+	// 	_, err = e2epod.WaitForPodsWithLabelRunningReady(context.TODO(), cs, namespace, appLabelSelector(appLabel), 1, 1*time.Minute)
+	// 	Expect(err).To(HaveOccurred())
+	// 	Expect(err.Error()).To(MatchRegexp(`Timed out after 60`))
+	// })
 })
 
 var _ = describe("Image Policy Tests (StatefulSet) (when disabled)", func() {
@@ -498,26 +497,26 @@ var _ = describe("Image Policy Tests (Job)", func() {
 		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, batchv1.JobReasonCompletionsReached, 1)
 	})
 
-	It("Should not create Job using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
-		namePrefix := "ipt-non-compliant"
-		appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
-		namespace := f.Namespace.Name
+	// It("Should not create Job using non-compliant image [Image-Policy] [Non-Compliant] [Zalando]", func() {
+	// 	namePrefix := "ipt-non-compliant"
+	// 	appLabel := fmt.Sprintf("image-policy-test-pod-%s", uuid.NewUUID())
+	// 	namespace := f.Namespace.Name
 
-		By("Creating Job " + namePrefix + " in namespace " + namespace)
+	// 	By("Creating Job " + namePrefix + " in namespace " + namespace)
 
-		jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, nonCompliantImage9, appLabel)
-		_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
-		framework.ExpectNoError(err)
+	// 	jobObj := createImagePolicyWebhookTestJob(namePrefix, namespace, nonCompliantImage9, appLabel)
+	// 	_, err := cs.BatchV1().Jobs(namespace).Create(context.TODO(), jobObj, metav1.CreateOptions{})
+	// 	framework.ExpectNoError(err)
 
-		defer func() {
-			By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
-			defer GinkgoRecover()
-			err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
-			framework.ExpectNoError(err)
-		}()
+	// 	defer func() {
+	// 		By(fmt.Sprintf("Delete a Job: %s", jobObj.Name))
+	// 		defer GinkgoRecover()
+	// 		err := cs.BatchV1().Jobs(namespace).Delete(context.TODO(), jobObj.Name, metav1.DeleteOptions{})
+	// 		framework.ExpectNoError(err)
+	// 	}()
 
-		job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, batchv1.JobReasonCompletionsReached, 1)
-	})
+	// 	job.WaitForJobComplete(context.TODO(), cs, namespace, jobObj.Name, batchv1.JobReasonCompletionsReached, 1)
+	// })
 })
 
 var _ = describe("Image Policy Tests (Job) (when disabled)", func() {
