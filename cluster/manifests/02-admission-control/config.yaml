@@ -38,9 +38,11 @@ data:
   pod.env-inject.variable._PLATFORM_ACCOUNT: "{{ .Cluster.Alias }}"
   pod.env-inject.variable._PLATFORM_CLUSTER_ID: "{{ .Cluster.ID }}"
   pod.env-inject.variable._PLATFORM_OPENTRACING_TAG_ACCOUNT: "{{ .Cluster.Alias }}"
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_lightstep_variables "true" }}
   pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_PORT: "8443"
   pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_COLLECTOR_HOST: "{{ .Cluster.ConfigItems.tracing_collector_host }}"
   pod.env-inject.variable._PLATFORM_OPENTRACING_LIGHTSTEP_ACCESS_TOKEN: "{{ .Cluster.ConfigItems.lightstep_token }}"
+{{- end }}
   pod.env-inject.variable._PLATFORM_OBSERVABILITY_COLLECTOR_ENDPOINT: "{{ .Cluster.ConfigItems.observability_collector_endpoint }}"
   pod.env-inject.variable._PLATFORM_OBSERVABILITY_COLLECTOR_PORT: "{{ .Cluster.ConfigItems.observability_collector_port }}"
   pod.env-inject.variable._PLATFORM_OBSERVABILITY_COLLECTOR_SCHEME: "{{ .Cluster.ConfigItems.observability_collector_scheme }}"
