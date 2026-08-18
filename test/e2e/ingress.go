@@ -26,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
-	"k8s.io/kubernetes/test/e2e/framework/ingress"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 	admissionapi "k8s.io/pod-security-admission/api"
 )
@@ -36,10 +35,10 @@ var _ = describe("Ingress ALB creation", func() {
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
-		jig *ingress.TestJig
+		jig *ingressTestJig
 	)
 	BeforeEach(func() {
-		jig = ingress.NewIngressTestJig(f.ClientSet)
+		jig = newIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 	})
 
@@ -121,11 +120,11 @@ var __ = describe("Ingress tests simple", func() {
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
-		jig *ingress.TestJig
+		jig *ingressTestJig
 	)
 
 	It("Should create simple ingress [Ingress]", func() {
-		jig = ingress.NewIngressTestJig(f.ClientSet)
+		jig = newIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test"
 		ns := f.Namespace.Name
@@ -320,11 +319,11 @@ var ___ = describe("Ingress tests paths", func() {
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
-		jig *ingress.TestJig
+		jig *ingressTestJig
 	)
 
 	It("Should create path routes ingress [Ingress]", func() {
-		jig = ingress.NewIngressTestJig(f.ClientSet)
+		jig = newIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test-pr"
 		serviceName2 := "skipper-ingress-test-pr2"
@@ -493,11 +492,11 @@ var ____ = describe("Ingress tests custom routes - 1", func() {
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
-		jig *ingress.TestJig
+		jig *ingressTestJig
 	)
 
 	It("Should create custom routes ingress [Ingress]", func() {
-		jig = ingress.NewIngressTestJig(f.ClientSet)
+		jig = newIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test-custom"
 		ns := f.Namespace.Name
@@ -616,11 +615,11 @@ var _____ = describe("Ingress tests paths", func() {
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
-		jig *ingress.TestJig
+		jig *ingressTestJig
 	)
 
 	It("Should create path routes ingress v1 [Ingress]", func() {
-		jig = ingress.NewIngressTestJig(f.ClientSet)
+		jig = newIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test-pr"
 		serviceName2 := "skipper-ingress-test-pr2"
@@ -805,11 +804,11 @@ var _______ = describe("Ingress tests simple NLB", func() {
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var (
 		cs  kubernetes.Interface
-		jig *ingress.TestJig
+		jig *ingressTestJig
 	)
 
 	It("Should create simple NLB ingress [Ingress]", func() {
-		jig = ingress.NewIngressTestJig(f.ClientSet)
+		jig = newIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		serviceName := "skipper-ingress-test"
 		ns := f.Namespace.Name
