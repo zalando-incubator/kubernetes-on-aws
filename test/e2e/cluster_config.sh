@@ -63,7 +63,7 @@ clusters:
   $(if [ "${CLUSTER_PROVIDER}" == "zalando-eks" ]; then
 cat <<EOFF
 - config_items:
-      labels: dedicated=cluster-seed
+      labels: dedicated=cluster-seed,cluster-lifecycle-controller.zalan.do/decommission-priority=999
       taints: dedicated=cluster-seed:NoSchedule
     discount_strategy: none
     instance_types:
