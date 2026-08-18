@@ -214,7 +214,7 @@ func onDeleteDaemonsets(ctx context.Context, client kubernetes.Interface) (map[d
 func decommissionNode(ctx context.Context, client kubernetes.Interface, node *Node) error {
 	taint := v1.Taint{
 		Key:    "decommission-pending",
-		Value:  "spot-replacement",
+		Value:  "daemonset-update",
 		Effect: v1.TaintEffectNoSchedule,
 	}
 
