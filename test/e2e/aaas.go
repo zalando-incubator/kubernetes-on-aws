@@ -11,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
-	"k8s.io/kubernetes/test/e2e/framework/ingress"
 	admissionapi "k8s.io/pod-security-admission/api"
 	"net/http"
 	"time"
@@ -23,7 +22,7 @@ var _ = Describe("Ingress tests for OPA filters", func() {
 
 	var (
 		cs            kubernetes.Interface
-		jig           *ingress.TestJig
+		jig           *ingressTestJig
 		ingressCreate *netv1.Ingress
 		ns            string
 		hostName      string
@@ -33,7 +32,7 @@ var _ = Describe("Ingress tests for OPA filters", func() {
 	)
 
 	BeforeEach(func() {
-		jig = ingress.NewIngressTestJig(f.ClientSet)
+		jig = newIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 		ns = f.Namespace.Name
 		hostName = fmt.Sprintf("%s-%d.%s", serviceName, time.Now().UTC().Unix(), E2EHostedZone())
@@ -107,7 +106,7 @@ var _ = Describe("Ingress tests for OPA filters", func() {
 
 })
 
-func createIngressWithInfo(serviceName, hostName, ns string, port int, cs kubernetes.Interface, jig *ingress.TestJig) *netv1.Ingress {
+func createIngressWithInfo(serviceName, hostName, ns string, port int, cs kubernetes.Interface, jig *ingressTestJig) *netv1.Ingress {
 	labels := map[string]string{"app": serviceName}
 	waitTime := 10 * time.Minute
 
