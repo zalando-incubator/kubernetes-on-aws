@@ -766,6 +766,7 @@ teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
 teapot_admission_controller_parent_resource_hash: "true"
+teapot_admission_controller_stackset_inject_topology_spread_enable: "false"
 
 ## Defaults are set per-cluster
 teapot_admission_controller_check_daemonset_resources: "true"
@@ -956,13 +957,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-{{if eq .Cluster.Provider "zalando-eks"}}
-kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-amd64-master-436" "861068367966" }}
-kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-arm64-master-436" "861068367966" }}
-{{else}}
-kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-amd64-master-435" "861068367966" }}
-kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.7-arm64-master-435" "861068367966" }}
-{{end}}
+kuberuntu_image_v1_36_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.3-amd64-master-436" "861068367966" }}
+kuberuntu_image_v1_36_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.3-arm64-master-436" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
@@ -1105,6 +1101,11 @@ external_dns_zones_cache_duration: "1h"
 
 # resource configuration
 external_dns_mem: "4Gi"
+
+# define the external-dns version to use. Supported values:
+# - new
+# - stable
+external_dns_version: "new"
 
 expirimental_dns_unbound_liveness_probe: "true"
 

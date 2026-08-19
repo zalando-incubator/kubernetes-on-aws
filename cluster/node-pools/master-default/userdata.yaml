@@ -143,7 +143,7 @@ write_files:
           {{- end }}
           - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
           - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
-          - --runtime-config=authorization.k8s.io/v1beta1=true,scheduling.k8s.io/v1alpha1=true,admissionregistration.k8s.io/v1beta1=true
+          - --runtime-config=authorization.k8s.io/v1beta1=true,admissionregistration.k8s.io/v1beta1=true
           - --authentication-token-webhook-config-file=/etc/kubernetes/config/authn.yaml
           - --authentication-token-webhook-cache-ttl=10s
           - --authorization-mode=Node,Webhook,RBAC
@@ -220,7 +220,7 @@ write_files:
             limits:
               memory: {{ .Values.InstanceInfo.MemoryFraction (parseInt64 .Cluster.ConfigItems.apiserver_memory_limit_percent)}}
 {{- end }}
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-339
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-341
           name: admission-controller
           lifecycle:
             preStop:
@@ -260,7 +260,7 @@ write_files:
             - mountPath: /etc/kubernetes/admission-controller-kubeconfig
               name: admission-controller-kubeconfig
               readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-194
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/k8s-authnz-webhook:master-197
           name: webhook
           ports:
           - containerPort: 8081
@@ -410,7 +410,7 @@ write_files:
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
         - name: skipper-proxy
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.27.50
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.27.57
           args:
           - skipper
           - -access-log-strip-query
@@ -461,7 +461,7 @@ write_files:
             name: ssl-certs-kubernetes
             readOnly: true
         - name: skipper-metrics
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.27.50
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.27.57
           args:
           - skipper
           - -access-log-strip-query
@@ -589,7 +589,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=external
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}}{{if eq .Cluster.ConfigItems.horizontal_pod_autoscaler_configurable_tolerance "true"}},HPAConfigurableTolerance=true{{end}}
+          - --feature-gates=MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}}{{if eq .Cluster.ConfigItems.horizontal_pod_autoscaler_configurable_tolerance "true"}},HPAConfigurableTolerance=true{{end}},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }}
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
           - --allocate-node-cidrs=true
