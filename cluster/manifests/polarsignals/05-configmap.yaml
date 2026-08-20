@@ -34,4 +34,16 @@ data:
       replacement: ${1}
     - action: labeldrop
       regex: apps_kubernetes_io_pod_index|controller_revision_hash|statefulset_kubernetes_io_pod_name|pod_template_hash
+{{ if eq .Cluster.ConfigItems.polarsignals_memory_profiling_enabled "true" }}
+  scrape_configs:
+  - job_name: memory-scraper
+    profiling_config:
+      pprof_config:
+        process_cpu:
+          enabled: false
+        memory:
+          keep_sample_type:
+          - type: inuse_space
+            unit: bytes
+{{ end }}
 {{ end }}
