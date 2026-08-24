@@ -56,6 +56,9 @@ spec:
         - --aws-zones-cache-duration={{ .Cluster.ConfigItems.external_dns_zones_cache_duration }}
         - --annotation-filter=external-dns.alpha.kubernetes.io/exclude notin (true)
         - --policy={{ .Cluster.ConfigItems.external_dns_policy }}
+{{- if ne .Cluster.ConfigItems.external_dns_aaaa_records_enabled "true" }}
+        - --exclude-record-types=AAAA
+{{- end }}
         resources:
           requests:
             cpu: 50m
