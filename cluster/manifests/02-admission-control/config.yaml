@@ -60,6 +60,11 @@ data:
   pod.env-inject.variable.LOG4J_FORMAT_MSG_NO_LOOKUPS: "true"
 {{- end}}
 
+{{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_pod_aws_region "true" }}
+  pod.env-inject.variable.AWS_REGION: "{{ .Cluster.Region }}"
+  pod.env-inject.variable.AWS_DEFAULT_REGION: "{{ .Cluster.Region }}"
+{{- end}}
+
   pod.env-inject.node-options.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_inject_node_options_environment_variable }}"
   pod.scheduling-controls.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_scheduling_controls_enabled }}"
   pod.scheduling-controls.default-architecture: "{{ .Cluster.ConfigItems.teapot_admission_controller_scheduling_controls_default_architecture }}"
