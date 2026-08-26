@@ -3104,7 +3104,21 @@ Resources:
                 Resource: '*'
               - Action: 'secretsmanager:GetSecretValue'
                 Effect: Allow
-                Resource: "arn:aws:secretsmanager:{{.Cluster.Region}}:{{.Cluster.InfrastructureAccountID}}:secret:*.zmon-db-user.credentials*"
+                Resource: 'arn:aws:secretsmanager:{{.Cluster.Region}}:{{.Cluster.InfrastructureAccountID}}:secret:*.zmon-db-user.credentials*'
+              - Action: 'secretsmanager:GetSecretValue'
+                Effect: Allow
+                {{- if eq .Cluster.Environment "production" }}
+                Resource: 'arn:aws:secretsmanager:eu-central-1:646484729607:secret:databricks_service_principal_token_derived=app_zmon-databricks+prod@zalando.de*'
+                {{- else }}
+                Resource: 'arn:aws:secretsmanager:eu-central-1:413296879872:secret:databricks_service_principal_token_derived=app_zmon-databricks+dev@zalando.de*'
+                {{- end }}
+              - Action: 'kms:Decrypt'
+                Effect: Allow
+                {{- if eq .Cluster.Environment "production" }}
+                Resource: 'arn:aws:kms:eu-central-1:646484729607:key/dbaeb7bf-4d7b-4a62-a29c-dffa8fe0f929'
+                {{- else }}
+                Resource: 'arn:aws:kms:eu-central-1:413296879872:key/d0a6f24b-afbe-4c02-976f-ead172279448'
+                {{- end }}
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-zmon"
