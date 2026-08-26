@@ -59,6 +59,23 @@ post_apply:
 - name: polarsignals
   kind: Namespace
 {{ end }}
+{{ if ne .Cluster.ConfigItems.polarsignals_memory_profiling_enabled "true" }}
+- name: polarsignals-scraper-config
+  namespace: polarsignals
+  kind: ConfigMap
+- name: polarsignals-scraper
+  namespace: polarsignals
+  kind: Deployment
+- name: polarsignals-scraper
+  namespace: polarsignals
+  kind: ServiceAccount
+- name: polarsignals-scraper
+  kind: ClusterRole
+- name: polarsignals-scraper
+  kind: ClusterRoleBinding
+- name: polarsignals
+  kind: Namespace
+{{ end }}
 {{ if ne .Cluster.ConfigItems.downscaler_enabled "true" }}
 - name: kube-downscaler
   namespace: kube-system
