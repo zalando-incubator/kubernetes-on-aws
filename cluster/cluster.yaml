@@ -3119,6 +3119,15 @@ Resources:
                 {{- else }}
                 Resource: 'arn:aws:kms:eu-central-1:413296879872:key/d0a6f24b-afbe-4c02-976f-ead172279448'
                 {{- end }}
+                Condition:
+                  StringEquals:
+                    'kms:ViaService': 'secretsmanager.eu-central-1.amazonaws.com'
+                  StringLike:
+                    {{- if eq .Cluster.Environment "production" }}
+                    'kms:EncryptionContext:aws:secretsmanager:arn': 'arn:aws:secretsmanager:eu-central-1:646484729607:secret:databricks_service_principal_token_derived=app_zmon-databricks+prod@zalando.de*'
+                    {{- else }}
+                    'kms:EncryptionContext:aws:secretsmanager:arn': 'arn:aws:secretsmanager:eu-central-1:413296879872:secret:databricks_service_principal_token_derived=app_zmon-databricks+dev@zalando.de*'
+                    {{- end }}
             Version: 2012-10-17
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-zmon"
