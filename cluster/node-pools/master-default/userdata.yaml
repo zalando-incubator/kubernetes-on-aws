@@ -343,7 +343,7 @@ write_files:
           - mountPath: /etc/kubernetes/k8s-authnz-webhook-kubeconfig
             name: k8s-authnz-webhook-kubeconfig
             readOnly: true
-        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-217
+        - image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-219
           name: tokeninfo
           ports:
             - containerPort: 9021
@@ -374,7 +374,7 @@ write_files:
               value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ if ne .Cluster.Environment "production" }}
         - name: tokeninfo-sandbox
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-217
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/foundation/platform-iam-tokeninfo:master-219
           ports:
           - containerPort: 9022
           lifecycle:
@@ -410,7 +410,7 @@ write_files:
             value: {{ .Cluster.ConfigItems.apiserver_business_partner_ids }}
 {{ end }}
         - name: skipper-proxy
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.27.61
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.27.71
           args:
           - skipper
           - -access-log-strip-query
@@ -461,7 +461,7 @@ write_files:
             name: ssl-certs-kubernetes
             readOnly: true
         - name: skipper-metrics
-          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.27.61
+          image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/skipper:v0.27.71
           args:
           - skipper
           - -access-log-strip-query
