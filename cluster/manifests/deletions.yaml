@@ -59,6 +59,23 @@ post_apply:
 - name: polarsignals
   kind: Namespace
 {{ end }}
+{{ if ne .Cluster.ConfigItems.polarsignals_memory_profiling_enabled "true" }}
+- name: polarsignals-scraper-config
+  namespace: polarsignals
+  kind: ConfigMap
+- name: polarsignals-scraper
+  namespace: polarsignals
+  kind: Deployment
+- name: polarsignals-scraper
+  namespace: polarsignals
+  kind: ServiceAccount
+- name: polarsignals-scraper
+  kind: ClusterRole
+- name: polarsignals-scraper
+  kind: ClusterRoleBinding
+- name: polarsignals
+  kind: Namespace
+{{ end }}
 {{ if ne .Cluster.ConfigItems.downscaler_enabled "true" }}
 - name: kube-downscaler
   namespace: kube-system
@@ -406,11 +423,11 @@ post_apply:
 - name: kube-aws-iam-controller-privileged-psp
   namespace: kube-system
   kind: RoleBinding
-- name: kube-aws-iam-controller
-  namespace: kube-system
-  kind: ServiceAccount
-# TODO: Since this removes resources deployed by the users,
-# let's play it safe and uncomment this at a later time.
+# For now we keep the ServiceAccount to ease the rollout.
+# - name: kube-aws-iam-controller
+#   namespace: kube-system
+#   kind: ServiceAccount
+# Deletion of CRDs isn't supported right now, see https://github.com/zalando-incubator/cluster-lifecycle-manager/pull/961
 # - name: awsiamroles.zalando.org
 #   kind: CustomResourceDefinition
 {{- end }}
