@@ -39,6 +39,8 @@ spec:
         env:
         - name: AWS_DEFAULT_REGION
           value: "{{ .Cluster.Region }}"
+        - name: AWS_REGION
+          value: "{{ .Cluster.Region }}"
         resources:
           limits:
             cpu: 15m
@@ -46,9 +48,6 @@ spec:
           requests:
             cpu: 15m
             memory: 250Mi
-        env:
-        - name: AWS_REGION
-          value: "{{ .Cluster.Region }}"
 {{- if eq .Cluster.Provider "zalando-eks"}}
       tolerations:
       - key: dedicated
