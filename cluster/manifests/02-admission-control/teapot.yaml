@@ -798,3 +798,77 @@ webhooks:
       {{- end }}
   {{- end }}
 {{- end }}
+{{- if eq .Cluster.ConfigItems.granular_access_enabled "true" }}
+  - name: aaas-admitter.teapot.zalan.do
+    clientConfig:
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/aaas"
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    matchPolicy: Equivalent
+    sideEffects: "None"
+    timeoutSeconds: 5
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: [ "kube-system" ]
+    rules:
+      - operations: [ "CREATE", "UPDATE", "DELETE", "CONNECT" ]
+        apiGroups: ["*"]
+        # "*" (not "v1") so CRDs with v1alpha1/v1beta1 versions are covered.
+        apiVersions: ["*"]
+        # "*/*" covers subresources too. CONNECT is what pods/exec,
+        # pods/attach and pods/portforward use; for those the controller
+        # passes the target pod's labels to the policy as input.context.targetPod.
+        resources: ["*/*"]
+        # Namespaced-only excludes cluster-scoped types without an explicit list.
+        scope: "Namespaced"
+    # Known non-human/system callers (incl. EKS control-plane components such
+    # as eks:kms-storage-migrator) never reach the policy.
+    matchConditions:
+      - name: 'exclude-known-system-callers'
+        expression: >-
+          !(
+            request.userInfo.username.startsWith('system:serviceaccount:') ||
+            request.userInfo.username.startsWith('zalando-iam:zalando:service:') ||
+            request.userInfo.username.startsWith('system:node:') ||
+            request.userInfo.username.startsWith('eks:') ||
+            request.userInfo.username in [
+              'system:kube-scheduler',
+              'system:kube-controller-manager',
+              'system:kube-proxy'
+            ]
+          )
+      # Kubernetes control-plane and administrator access must never be blocked
+      # by the AaaS ownership policy, which only adds restrictions on top of RBAC.
+      - name: 'exclude-privileged-groups'
+        expression: '!(request.userInfo.groups.exists(g, g in ["system:masters", "okta:common/administrator", "zalando:administrator"]))'
+      {{- if eq .Cluster.ConfigItems.capability_kro_enabled "true"}}
+      # EKS capability roles are controllers, not humans: the policy cannot
+      # resolve an actor for assumed-role ARNs and would deny every request.
+      - name: 'exclude-eks-kro-capability'
+        expression: 'request.userInfo.username != "arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.Alias}}-KRO-CapabilityRole/KRO"'
+      {{- end }}
+      {{- if eq .Cluster.ConfigItems.capability_ack_enabled "true"}}
+      - name: 'exclude-eks-ack-capability'
+        expression: '!request.userInfo.username.startsWith("arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.Alias}}-ACK-CapabilityRole/")'
+      {{- end }}
+{{- if eq .Cluster.Environment "e2e" }}
+      # The IAM authorization tests use dedicated roles with varying session names.
+      # Exempt only this cluster's test roles; impersonated AaaS test users still
+      # go through policy evaluation.
+      - name: 'exclude-e2e-eks-iam-test-roles'
+        expression: >-
+          !(
+            request.userInfo.username.startsWith('arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.LocalID}}-e2e-eks-iam-test-administrator-role/') ||
+            request.userInfo.username.startsWith('arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.LocalID}}-e2e-eks-iam-test-collaborator-role/') ||
+            request.userInfo.username.startsWith('arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.LocalID}}-e2e-eks-iam-test-engineer-role/') ||
+            request.userInfo.username.startsWith('arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.LocalID}}-e2e-eks-iam-test-read-only-role/') ||
+            request.userInfo.username.startsWith('arn:aws:sts::{{.Cluster.InfrastructureAccountID}}:assumed-role/{{.Cluster.LocalID}}-e2e-eks-iam-test-postgres-admin-role/')
+          )
+{{- end }}
+{{- end }}

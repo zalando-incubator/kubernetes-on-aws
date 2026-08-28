@@ -114,6 +114,11 @@ data:
   #
   # DO NOT USE THIS IN PRODUCTION CLUSTERS
 
+  {{- if eq .Cluster.ConfigItems.granular_access_enabled "true" }}
+  # Exact user/application exception for the Granular Access positive e2e tests.
+  aaas.static-user-applications: '{"granular-access-positive-test-user":["granular-access-e2e-app"]}'
+  {{- end }}
+
   # The e2e test suite runs arbitrary, non-compliant test case images across namespaces, so only
   # enforce compliance where it can be checked reliably: kube-system and visibility (to catch
   # regressions there) and the image-policy-test-enabled-* namespaces, which are deliberately set up

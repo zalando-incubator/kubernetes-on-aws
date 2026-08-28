@@ -206,6 +206,7 @@ if [ "$e2e" = true ]; then
         # some tests are skipped for zalando-aws because they only apply to zalando-eks
         SKIPPED_TESTS+=(
             "Authorization via admission-controller \[RBAC\] \[Zalando\]"
+            "Granular Access admission webhook \[Zalando\]"
         )
     fi
 

@@ -166,6 +166,11 @@ post_apply:
   name: priority-routes-config
   namespace: kube-system
 {{ end }}
+{{ if eq .Cluster.ConfigItems.granular_access_enabled "false" }}
+- kind: ConfigMap
+  name: aaas-opa-config
+  namespace: kube-system
+{{ end }}
 {{ if eq .Cluster.ConfigItems.hyped_article_lifecycle_management "false" }}
 - name: hyped-articles-lifecycle-management
   kind: ClusterRole
