@@ -1,0 +1,22 @@
+{{ if eq .Cluster.ConfigItems.opa_admission_enabled "true" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: opa-admission-webhook
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: opa-admission-webhook
+spec:
+  selector:
+    deployment: opa-admission-webhook
+  ports:
+  - name: main
+    port: 443
+    targetPort: 8443
+    protocol: TCP
+  - name: metrics
+    port: 8181
+    targetPort: 8181
+    protocol: TCP
+{{ end }}

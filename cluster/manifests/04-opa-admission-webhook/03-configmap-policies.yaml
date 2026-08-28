@@ -1,0 +1,81 @@
+{{ if eq .Cluster.ConfigItems.opa_admission_enabled "true" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    application: kubernetes
+    component: opa-admission-webhook
+  name: opa-admission-policies
+  namespace: kube-system
+data:
+  kubernetes-admission.rego: |-
+    package kubernetes.admission
+
+    change_operations := {"CREATE", "UPDATE", "DELETE"}
+
+    target := object.get(input.request, "object", object.get(input.request, "oldObject", {}))
+
+    target_labels := object.get(object.get(target, "metadata", {}), "labels", {})
+
+    deny contains msg if {
+      input.request.operation in change_operations
+      application := object.get(target_labels, "application", "")
+      application == ""
+      msg := "missing application label"
+    }
+
+    deny contains msg if {
+      input.request.operation in change_operations
+      application := object.get(target_labels, "application", "")
+      application != ""
+      not data.ownership.app_to_team[application]
+      msg := sprintf("unknown application %q", [application])
+    }
+
+    deny contains msg if {
+      input.request.operation in change_operations
+      application := object.get(target_labels, "application", "")
+      expected_team := data.ownership.app_to_team[application]
+      expected_team != ""
+      not caller_belongs_to_team(expected_team)
+      msg := sprintf("user %q is not allowed to manage application %q owned by team %q", [input.request.userInfo.username, application, expected_team])
+    }
+
+    caller_belongs_to_team(team) if {
+      some group in input.request.userInfo.groups
+      group in data.ownership.teams[team].groups
+    }
+
+  system-main.rego: |-
+    package system
+
+    import data.kubernetes.admission
+
+    default uid := ""
+
+    uid := input.request.uid
+
+    response := {
+      "allowed": false,
+      "uid": uid,
+      "status": {
+        "message": reason,
+      },
+    } if {
+      reason := concat(", ", admission.deny)
+      reason != ""
+    }
+
+    response := {
+      "allowed": true,
+      "uid": uid,
+    } if {
+      count(admission.deny) == 0
+    }
+
+    main := {
+      "apiVersion": "admission.k8s.io/v1",
+      "kind": "AdmissionReview",
+      "response": response,
+    }
+{{ end }}

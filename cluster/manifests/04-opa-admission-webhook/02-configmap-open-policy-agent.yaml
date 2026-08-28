@@ -1,0 +1,36 @@
+{{ if eq .Cluster.ConfigItems.opa_admission_enabled "true" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    application: kubernetes
+    component: opa-admission-webhook
+  name: opa-admission-open-policy-agent-config
+  namespace: kube-system
+data:
+  opaconfig.yaml: |-
+    discovery:
+      name: discovery
+      resource: v2/bundles/zalando-apps/{{ `{{ .bundlename }}` }}/discovery.tgz
+      service: styra-bundles
+    labels:
+      environment: {{ .Cluster.Environment }}
+      kubernetes-cluster-alias: {{ .Cluster.Alias }}
+      aws-account-id: "{{ .Cluster.InfrastructureAccountID }}"
+    services:
+    - credentials:
+        s3_signing:
+          web_identity_credentials:
+            aws_region: {{ .Cluster.Region }}
+            session_name: open-policy-agent-instance
+      name: styra-bundles
+      url: "{{ .Cluster.ConfigItems.skipper_open_policy_agent_bundles_url }}"
+    decision_logs:
+      console: false
+      # Disable decision logging for the admission webhook
+      service: ""
+    status:
+      # This ensures we disable status reporting for the admission webhook
+      console: false
+      service: ""
+{{ end }}
