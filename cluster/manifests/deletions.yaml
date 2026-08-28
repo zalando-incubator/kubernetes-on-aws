@@ -132,6 +132,31 @@ post_apply:
   name: webhook-open-policy-agent-config
   namespace: kube-system
 {{ end }}
+{{ if eq .Cluster.ConfigItems.opa_admission_enabled "false" }}
+- kind: ValidatingWebhookConfiguration
+  name: opa-admission.teapot.zalan.do
+- kind: Deployment
+  name: opa-admission-webhook
+  namespace: kube-system
+- kind: VerticalPodAutoscaler
+  name: opa-admission-webhook
+  namespace: kube-system
+- kind: Service
+  name: opa-admission-webhook
+  namespace: kube-system
+- kind: Secret
+  name: opa-admission-webhook-tls-certs
+  namespace: kube-system
+- kind: ConfigMap
+  name: opa-admission-open-policy-agent-config
+  namespace: kube-system
+- kind: ConfigMap
+  name: opa-admission-policies
+  namespace: kube-system
+- kind: ServiceAccount
+  name: opa-admission-webhook
+  namespace: kube-system
+{{ end }}
 {{ if eq .Cluster.ConfigItems.hyped_article_lifecycle_management "false" }}
 - name: hyped-articles-lifecycle-management
   kind: ClusterRole

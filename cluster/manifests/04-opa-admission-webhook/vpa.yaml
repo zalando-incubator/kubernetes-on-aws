@@ -1,0 +1,22 @@
+{{ if eq .Cluster.ConfigItems.opa_admission_enabled "true" }}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: opa-admission-webhook
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: opa-admission-webhook
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: opa-admission-webhook
+  updatePolicy:
+    updateMode: InPlaceOrRecreate
+  resourcePolicy:
+    containerPolicies:
+    - containerName: opa
+      minAllowed:
+        memory: "{{.Cluster.ConfigItems.opa_admission_webhook_memory_min}}"
+{{ end }}

@@ -1,0 +1,103 @@
+{{ if eq .Cluster.ConfigItems.opa_admission_enabled "true" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa-admission-webhook
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: opa-admission-webhook
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      deployment: opa-admission-webhook
+  template:
+    metadata:
+      labels:
+        deployment: opa-admission-webhook
+        application: kubernetes
+        component: opa-admission-webhook
+      annotations:
+        logging/destination: "{{ .Cluster.ConfigItems.log_destination_local }}"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8181"
+        prometheus.io/scrape: "true"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                deployment: opa-admission-webhook
+            topologyKey: kubernetes.io/hostname
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      priorityClassName: system-cluster-critical
+      serviceAccountName: opa-admission-webhook
+      containers:
+      - name: opa
+        image: openpolicyagent/opa:v1.18.2
+        args:
+          - run
+          - --server
+          - --addr=0.0.0.0:8443
+          - --addr=http://127.0.0.1:8181
+          - --tls-cert-file=/etc/tls-certs/opa-admission-webhook.pem
+          - --tls-private-key-file=/etc/tls-certs/opa-admission-webhook-key.pem
+          - --config-file=/etc/opa-config/opaconfig.yaml
+          - --ignore=.*
+          - /policies
+        lifecycle:
+          preStop:
+            sleep:
+              seconds: 20
+        readinessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /health/ready
+            port: 8181
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /health/live
+            port: 8181
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: {{ .Cluster.ConfigItems.opa_admission_webhook_cpu }}
+            memory: {{ .Cluster.ConfigItems.opa_admission_webhook_memory }}
+          limits:
+            cpu: {{ .Cluster.ConfigItems.opa_admission_webhook_cpu }}
+            memory: {{ .Cluster.ConfigItems.opa_admission_webhook_memory }}
+        ports:
+          - name: https
+            containerPort: 8443
+          - name: http
+            containerPort: 8181
+        volumeMounts:
+          - mountPath: /etc/tls-certs
+            name: tls-certs
+            readOnly: true
+          - name: opa-policy
+            mountPath: /policies
+            readOnly: true
+          - name: opa-config
+            mountPath: /etc/opa-config
+            readOnly: true
+      volumes:
+      - name: tls-certs
+        secret:
+          secretName: opa-admission-webhook-tls-certs
+      - name: opa-policy
+        configMap:
+          name: opa-admission-policies
+      - name: opa-config
+        configMap:
+          name: opa-admission-open-policy-agent-config
+{{ end }}

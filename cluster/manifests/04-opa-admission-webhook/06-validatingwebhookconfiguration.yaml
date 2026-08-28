@@ -1,0 +1,41 @@
+{{ if eq .Cluster.ConfigItems.opa_admission_enabled "true" }}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: opa-admission.teapot.zalan.do
+  labels:
+    application: kubernetes
+    component: opa-admission-webhook
+webhooks:
+  - name: opa-admission.teapot.zalan.do
+    failurePolicy: Fail
+    matchPolicy: Equivalent
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["*"]
+        apiVersions: ["v1"]
+        resources:
+          - deployments
+          - statefulsets
+          - daemonsets
+          - services
+          - ingresses
+          - configmaps
+          - secrets
+          - jobs
+          - routegroups
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
+    clientConfig:
+      service:
+        name: "opa-admission-webhook"
+        namespace: "kube-system"
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    timeoutSeconds: 5
+{{ end }}

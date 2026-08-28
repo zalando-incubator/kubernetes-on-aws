@@ -1,0 +1,16 @@
+{{ if eq .Cluster.ConfigItems.opa_admission_enabled "true" }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: opa-admission-webhook
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: opa-admission-webhook
+  annotations:
+    # {{- if eq .Cluster.Provider "zalando-eks" }}
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccountID}}:role/{{ .Cluster.LocalID }}-app-opa-admission-webhook"
+    # {{- else}}
+    iam.amazonaws.com/role: "{{ .Cluster.LocalID }}-app-opa-admission-webhook"
+    # {{- end}}
+{{ end }}
