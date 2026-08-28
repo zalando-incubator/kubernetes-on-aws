@@ -563,6 +563,28 @@ skipper_open_policy_agent_jwt_cache_enable: "true"
 skipper_open_policy_agent_jwt_cache_max_num_entries: "1000"
 
 #
+# OPA Kubernetes admission webhook
+# Reuses the same OPA bundle S3 infrastructure (skipper_open_policy_agent_bucket_arn /
+# skipper_open_policy_agent_bundles_url) to serve policy bundles for Kubernetes access decisions.
+#
+granular_access_enabled: "false"
+granular_access_opa_bundle_version: "pr-1-6"
+# TODO: fix this/remove it
+# Name of the OPA bundle/service registration used for Styra discovery. The discovery
+# object is published at `v2/bundles/zalando-apps/<name>/discovery.tgz`; this can
+# differ from the bundle name used by Skipper or the bundle service's legacy defaults.
+opa_admission_bundle_name: "kubernetes-admission"
+
+# Disabled by default: AdmissionReview input can contain full Kubernetes objects
+# (including Secrets, since the webhook is registered for the `secrets` resource),
+# so exporting decision logs requires the policy bundle to mask sensitive fields
+# via a `system.log.mask` rule before enabling this. Reuses the same S3 decision
+# log infrastructure as skipper_open_policy_agent_decision_log_export_enabled
+# (skipper_open_policy_agent_decision_log_bucket_arn / *_s3_endpoint / *_s3_region),
+# under its own bundle-name path prefix.
+granular_access_decision_log_export_enabled: "false"
+
+#
 # FabricGateway controller config
 #
 # fabric_gateway_controller_enabled:
