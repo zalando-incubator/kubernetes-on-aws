@@ -94,14 +94,13 @@ data:
             compress: true
             at_bytes: 1048576
             at_period: 10s
-{{- else }}
-    decision_logs:
-      console: false
-      # Disable decision logging for the admission webhook
-      service: ""
 {{- end }}
-    status:
-      # This ensures we disable status reporting for the admission webhook
-      console: false
-      service: ""
+    # Deliberately no `decision_logs:`/`status:` block at all when the export
+    # feature above is disabled (and status is never enabled - there is no
+    # config item for it): setting `service: ""` does NOT disable these
+    # plugins - OPA still starts them and falls back to using the only
+    # configured service, which then fails every upload/report with an HTTP
+    # error from that service (e.g. "405 Method Not Allowed" from S3, or a
+    # redirect from a bucket that doesn't accept POST at that path). Omitting
+    # the section entirely is what actually turns them off.
 {{ end }}

@@ -19,6 +19,7 @@ spec:
         application: kubernetes
         component: opa-admission-webhook
       annotations:
+        config/hash: {{"02-configmap-open-policy-agent.yaml" | manifestHash}}
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_local }}"
         prometheus.io/path: /metrics
         prometheus.io/port: "8181"
@@ -55,14 +56,19 @@ spec:
         readinessProbe:
           httpGet:
             scheme: HTTP
-            path: /health/ready
+            # `/health/ready` isn't a stock endpoint - `/health/<suffix>` evaluates
+            # `data.system.health.<suffix>` (here: system.health.ready), which our
+            # bundle doesn't define, so it 500s. Use the built-in bundles=true
+            # query param instead: no custom policy needed, and it correctly waits
+            # for the bundle to be loaded/activated before reporting ready.
+            path: /health?bundles=true
             port: 8181
           initialDelaySeconds: 5
           timeoutSeconds: 5
         livenessProbe:
           httpGet:
             scheme: HTTP
-            path: /health/live
+            path: /health
             port: 8181
           initialDelaySeconds: 5
           timeoutSeconds: 5
