@@ -48,8 +48,6 @@ spec:
           - --tls-cert-file=/etc/tls-certs/opa-admission-webhook.pem
           - --tls-private-key-file=/etc/tls-certs/opa-admission-webhook-key.pem
           - --config-file=/etc/opa-config/opaconfig.yaml
-          - --ignore=.*
-          - /policies
         lifecycle:
           preStop:
             sleep:
@@ -84,9 +82,6 @@ spec:
           - mountPath: /etc/tls-certs
             name: tls-certs
             readOnly: true
-          - name: opa-policy
-            mountPath: /policies
-            readOnly: true
           - name: opa-config
             mountPath: /etc/opa-config
             readOnly: true
@@ -94,9 +89,6 @@ spec:
       - name: tls-certs
         secret:
           secretName: opa-admission-webhook-tls-certs
-      - name: opa-policy
-        configMap:
-          name: opa-admission-policies
       - name: opa-config
         configMap:
           name: opa-admission-open-policy-agent-config
