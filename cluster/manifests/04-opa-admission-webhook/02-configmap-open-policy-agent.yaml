@@ -9,9 +9,11 @@ metadata:
   namespace: kube-system
 data:
   opaconfig.yaml: |-
+    # Discovery bundle points at the policy+data bundle for Kubernetes admission decisions;
+    # unlike skipper's per-route filter usage there is no runtime-templated bundle name here.
     discovery:
       name: discovery
-      resource: v2/bundles/zalando-apps/{{ `{{ .bundlename }}` }}/discovery.tgz
+      resource: v2/bundles/zalando-apps/{{ .Cluster.ConfigItems.opa_admission_bundle_name }}/discovery.tgz
       service: styra-bundles
     labels:
       environment: {{ .Cluster.Environment }}
