@@ -547,6 +547,32 @@ opa_admission_webhook_memory_min: 100Mi
 # that contains both the Kubernetes admission policy logic and its datasources.
 opa_admission_bundle_name: "kubernetes-admission"
 
+# Disabled by default: AdmissionReview input can contain full Kubernetes objects
+# (including Secrets, since the webhook is registered for the `secrets` resource),
+# so exporting decision logs requires the policy bundle to mask sensitive fields
+# via a `system.log.mask` rule before enabling this. Reuses the same S3 decision
+# log infrastructure as skipper_open_policy_agent_decision_log_export_enabled
+# (skipper_open_policy_agent_decision_log_bucket_arn / *_s3_endpoint / *_s3_region),
+# under its own bundle-name path prefix.
+opa_admission_decision_log_export_enabled: "false"
+
+# Disabled by default: e2e-testing switch. When "true", the admission webhook
+# skips Styra's `discovery:` mechanism entirely and instead loads a single,
+# self-built OPA bundle directly from opa_admission_direct_bundle_service_url
+# (see examples/kubernetes-admission-policies/test/e2e in the aaas org for how
+# to build one with fixture/mock data, bypassing Saviynt/the IGA). Do not
+# enable this in a real sandbox/production cluster - it is only meant for
+# scratch e2e test clusters.
+opa_admission_direct_bundle_enabled: "false"
+# Base URL of the test S3 bucket, e.g.
+# https://zalando-kubernetes-opa-admission-tests.s3.eu-central-1.amazonaws.com
+opa_admission_direct_bundle_service_url: ""
+# Object key of the bundle within that bucket.
+opa_admission_direct_bundle_resource: "kubernetes-admission/bundle.tar.gz"
+# ARN of the test bucket; the opa-admission-webhook IAM role is granted
+# s3:GetObject on this ARN so it can fetch the bundle above.
+opa_admission_direct_bundle_bucket_arn: ""
+
 #
 # FabricGateway controller config
 #

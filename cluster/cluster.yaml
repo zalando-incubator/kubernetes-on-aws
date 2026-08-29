@@ -2508,6 +2508,28 @@ Resources:
                   - "{{ .Cluster.ConfigItems.skipper_open_policy_agent_bucket_arn }}/*"
             Version: 2012-10-17
           PolicyName: read-opa-bundles
+{{- if eq .Cluster.ConfigItems.opa_admission_decision_log_export_enabled "true" }}
+        - PolicyDocument:
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:PutObject"
+                Resource:
+                  - "{{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_log_bucket_arn }}/*"
+            Version: 2012-10-17
+          PolicyName: write-opa-decisions
+{{- end }}
+{{- if eq .Cluster.ConfigItems.opa_admission_direct_bundle_enabled "true" }}
+        - PolicyDocument:
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                Resource:
+                  - "{{ .Cluster.ConfigItems.opa_admission_direct_bundle_bucket_arn }}/*"
+            Version: 2012-10-17
+          PolicyName: read-opa-direct-test-bundle
+{{- end }}
       RoleName: "{{.Cluster.LocalID}}-app-opa-admission-webhook"
     Type: 'AWS::IAM::Role'
   ClusterLifecycleControllerIAMRole:
