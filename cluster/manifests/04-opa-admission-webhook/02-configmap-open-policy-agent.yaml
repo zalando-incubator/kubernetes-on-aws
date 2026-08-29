@@ -9,16 +9,43 @@ metadata:
   namespace: kube-system
 data:
   opaconfig.yaml: |-
+    # The ValidatingWebhookConfiguration posts the AdmissionReview to the root
+    # document endpoint ("/", no path set in clientConfig.service). Kubernetes
+    # expects the raw AdmissionReview{response: ...} object back, not OPA's
+    # normal `{"result": ...}` wrapper, so we point the default decision at the
+    # rule that builds that full response object. Must reference the `main`
+    # rule itself, not just the `system.main` package (which would return the
+    # whole package document - every rule in it - instead of just `main`).
+    # See policy `system.main.main` in the kubernetes-admission policy bundle.
+    default_decision: /system/main/main
+
+{{- if eq .Cluster.ConfigItems.opa_admission_direct_bundle_enabled "true" }}
+    # e2e-test mode: bypass Styra's discovery mechanism entirely and load a
+    # single, self-built bundle directly from a scratch S3 bucket. Do not use
+    # this outside of scratch test clusters - see opa_admission_direct_bundle_*
+    # config items and examples/kubernetes-admission-policies/test/e2e.
+    services:
+    - credentials:
+        s3_signing:
+          web_identity_credentials:
+            aws_region: {{ .Cluster.Region }}
+            session_name: open-policy-agent-instance
+      name: test-bucket
+      url: "{{ .Cluster.ConfigItems.opa_admission_direct_bundle_service_url }}"
+    bundles:
+      kubernetes-admission:
+        service: test-bucket
+        resource: "{{ .Cluster.ConfigItems.opa_admission_direct_bundle_resource }}"
+        polling:
+          min_delay_seconds: 10
+          max_delay_seconds: 20
+{{- else }}
     # Discovery bundle points at the policy+data bundle for Kubernetes admission decisions;
     # unlike skipper's per-route filter usage there is no runtime-templated bundle name here.
     discovery:
       name: discovery
       resource: v2/bundles/zalando-apps/{{ .Cluster.ConfigItems.opa_admission_bundle_name }}/discovery.tgz
       service: styra-bundles
-    labels:
-      environment: {{ .Cluster.Environment }}
-      kubernetes-cluster-alias: {{ .Cluster.Alias }}
-      aws-account-id: "{{ .Cluster.InfrastructureAccountID }}"
     services:
     - credentials:
         s3_signing:
@@ -27,10 +54,52 @@ data:
             session_name: open-policy-agent-instance
       name: styra-bundles
       url: "{{ .Cluster.ConfigItems.skipper_open_policy_agent_bundles_url }}"
+{{- end }}
+    labels:
+      # Unlike skipper-ingress's OPA filter usage, there is no sandbox/production
+      # split for the admission webhook: team/application ownership data is
+      # real organizational data, not a per-cluster-environment concept, so
+      # this is always "production" regardless of the cluster's own
+      # environment (test clusters enforce admission decisions against the
+      # same real ownership data as production clusters do). This also
+      # ensures Styra always serves the `production:` variant of the
+      # `applications` resource-type/datasources configured in the policy's
+      # authorization.yaml, never the `sandbox:` one.
+      environment: production
+      kubernetes-cluster-alias: {{ .Cluster.Alias }}
+      aws-account-id: "{{ .Cluster.InfrastructureAccountID }}"
+{{- if eq .Cluster.ConfigItems.opa_admission_decision_log_export_enabled "true" }}
+    # Exports decision logs (including the full AdmissionReview `input`) to the
+    # same central S3 decision log bucket used by skipper-ingress, under its own
+    # path prefix (bundle name). Requires the policy bundle to mask sensitive
+    # fields (e.g. Secret data) via a `system.log.mask` rule - see
+    # examples/open-policy-agent-control-plane-policies for the pattern.
+    decision_logs:
+      plugin: eopa_dl
+    plugins:
+      eopa_dl:
+        buffer:
+          type: event
+          max_bytes: 15728640
+          flush_at_bytes: 10485760
+          flush_at_period: 15s
+        output:
+        - type: s3
+          bucket: {{ .Cluster.ConfigItems.opa_admission_bundle_name }}
+          timeout: 2s
+          endpoint: "{{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_log_s3_endpoint }}/{{ .Cluster.InfrastructureAccountID }}/{{ .Cluster.Alias }}/"
+          force_path: true
+          region: "{{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_log_s3_region }}"
+          batching:
+            compress: true
+            at_bytes: 1048576
+            at_period: 10s
+{{- else }}
     decision_logs:
       console: false
       # Disable decision logging for the admission webhook
       service: ""
+{{- end }}
     status:
       # This ensures we disable status reporting for the admission webhook
       console: false
