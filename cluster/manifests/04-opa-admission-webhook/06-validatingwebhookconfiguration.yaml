@@ -11,19 +11,46 @@ webhooks:
     failurePolicy: Fail
     matchPolicy: Equivalent
     rules:
-      - operations: ["CREATE", "UPDATE"]
+      - operations: ["CREATE", "UPDATE", "CONNECT"]
         apiGroups: ["*"]
-        apiVersions: ["v1"]
-        resources:
-          - deployments
-          - statefulsets
-          - daemonsets
-          - services
-          - ingresses
-          - configmaps
-          - secrets
-          - jobs
-          - routegroups
+        # "*" here (not the literal string "v1") is what makes new CRDs
+        # covered automatically - most CRDs use versions like v1alpha1/v1beta1,
+        # so restricting to "v1" would silently miss them.
+        apiVersions: ["*"]
+        # "*/*" matches all resources AND subresources (pods/status,
+        # pods/exec, deployments/scale, ...). CONNECT above is specifically
+        # what pods/exec, pods/attach, and pods/portforward use (not
+        # CREATE/UPDATE) - see system.main's caveat on why these can't
+        # actually be gated by application ownership yet, despite being
+        # covered here. Known non-human/system callers (kubelets, core
+        # control-plane components, ...) are exempted below via
+        # matchConditions, which must stay in lockstep with this.
+        resources: ["*/*"]
+        # Namespaced-only is what excludes cluster-scoped types like Nodes,
+        # PersistentVolumes, ClusterRoles/Bindings, Namespaces themselves,
+        # StorageClasses, CustomResourceDefinitions, ... automatically and
+        # without needing an explicit exclusion list - team/application
+        # ownership is a namespaced-resource concept to begin with.
+        scope: "Namespaced"
+    # Skips calling the webhook entirely for known non-human/system callers -
+    # no network round-trip, and no dependency on OPA being up for these
+    # requests at all. system.main has no corresponding allow-list of its
+    # own (removed deliberately): if a matchCondition ever fails to evaluate
+    # or a caller slips through anyway, it's just treated as an unresolvable
+    # identity there and denied, same as any other unknown caller.
+    matchConditions:
+      - name: "exclude-known-system-callers"
+        expression: >-
+          !(
+            request.userInfo.username.startsWith('system:serviceaccount:') ||
+            request.userInfo.username.startsWith('zalando-iam:zalando:service:') ||
+            request.userInfo.username.startsWith('system:node:') ||
+            request.userInfo.username in [
+              'system:kube-scheduler',
+              'system:kube-controller-manager',
+              'system:kube-proxy'
+            ]
+          )
     namespaceSelector:
       matchExpressions:
         - key: kubernetes.io/metadata.name
