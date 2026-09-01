@@ -95,6 +95,11 @@ data:
   pod.image-check.namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_namespaces }}"
 {{- end }}
 
+{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_ignore_namespaces" }}
+  # Exclude the namespaces matching this regular expression from container image checks, defaults to none.
+  pod.image-check.ignore-namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_ignore_namespaces }}"
+{{- end }}
+
 {{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_ignored_images" }}
   # Always allow certain container images regardless of namespace, defaults to none.
   pod.image-check.ignored-images: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_ignored_images }}"
