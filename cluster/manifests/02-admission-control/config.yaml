@@ -90,14 +90,27 @@ data:
   pod.image-check.soft-fail-namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_soft_fail_namespaces }}"
 {{- end }}
 
-{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_namespaces" }}
-  # Limit the namespaces where container image checks are required, defaults to all namespaces.
-  pod.image-check.namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_namespaces }}"
+{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_ignored_namespaces" }}
+  # Exclude the namespaces matching this regular expression from container image checks, defaults to none.
+  # Note: the admission-controller flag itself is "ignore-namespaces" (no "d"), unlike our config item name.
+  pod.image-check.ignore-namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_ignored_namespaces }}"
 {{- end }}
 
 {{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_ignored_images" }}
   # Always allow certain container images regardless of namespace, defaults to none.
   pod.image-check.ignored-images: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_ignored_images }}"
+{{- end }}
+
+{{- if eq .Cluster.Environment "e2e" }}
+  # Special setting only configured for e2e clusters
+  #
+  # DO NOT USE THIS IN PRODUCTION CLUSTERS
+
+  # The e2e test suite runs arbitrary, non-compliant test case images across namespaces, so only
+  # enforce compliance where it can be checked reliably: kube-system and visibility (to catch
+  # regressions there) and the image-policy-test-enabled-* namespaces, which are deliberately set up
+  # for reliable image policy tests.
+  pod.image-check.namespaces: "^(image-policy-test-enabled-.*|kube-system|visibility)$"
 {{- end }}
 
   # This setting enables and disables replacement of vanity images with ECR images during pod admission (during create and update)
