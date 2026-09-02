@@ -29,7 +29,7 @@ spec:
       serviceAccountName: cluster-lifecycle-controller
       containers:
       - name: cluster-lifecycle-controller
-        image: container-registry.zalando.net/teapot/cluster-lifecycle-controller:master-80
+        image: container-registry.zalando.net/teapot/cluster-lifecycle-controller:master-91
         args:
             - --drain-grace-period={{.Cluster.ConfigItems.drain_grace_period}}
             - --drain-min-pod-lifetime={{.Cluster.ConfigItems.drain_min_pod_lifetime}}
@@ -39,6 +39,8 @@ spec:
         env:
         - name: AWS_DEFAULT_REGION
           value: "{{ .Cluster.Region }}"
+        - name: AWS_REGION
+          value: "{{ .Cluster.Region }}"
         resources:
           limits:
             cpu: 15m
@@ -46,9 +48,6 @@ spec:
           requests:
             cpu: 15m
             memory: 250Mi
-        env:
-        - name: AWS_REGION
-          value: "{{ .Cluster.Region }}"
 {{- if eq .Cluster.Provider "zalando-eks"}}
       tolerations:
       - key: dedicated

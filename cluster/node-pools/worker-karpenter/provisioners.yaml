@@ -4,11 +4,16 @@ kind: EC2NodeClass
 metadata:
   name: "{{ .NodePool.Name }}"
 spec:
+  # {{ if or (eq .Cluster.Provider "zalando-aws") (eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom") }}
   amiFamily: Custom
   amiSelectorTerms:
     # Select on any AMI that has any of the following IDs
-    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_35_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
-    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_35_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_36_" .NodePool.ConfigItems.kuberuntu_ami_version "_amd64") }}
+    - id: {{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_36_" .NodePool.ConfigItems.kuberuntu_ami_version "_arm64") }}
+  # {{ else }}
+  amiSelectorTerms:
+    - alias: "{{ .NodePool.ConfigItems.karpenter_ami_family_alias }}"
+  # {{ end }}
   metadataOptions:
     httpEndpoint: enabled
     # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
@@ -16,8 +21,13 @@ spec:
     # {{ else }}
     httpProtocolIPv6: disabled
     # {{ end }}
+    # {{ if and (eq .Cluster.Provider "zalando-eks") (or (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "al2023")) }}
+    httpPutResponseHopLimit: 1
+    httpTokens: required
+    # {{ else }}
     httpPutResponseHopLimit: 2
     httpTokens: optional
+    # {{ end }}
   subnetSelectorTerms:
     - tags:
         # {{ if eq .NodePool.ConfigItems.internal_node_subnets_enabled "true" }}
@@ -33,11 +43,19 @@ spec:
   # {{ end }}
   instanceProfile: "{{ .Cluster.ID | awsValidID }}-WorkerKarpenter-InstanceProfile"
   blockDeviceMappings:
+    # {{ if and (eq .Cluster.Provider "zalando-eks") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket") }}
+    - deviceName: /dev/xvdb
+      ebs:
+        deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination }}
+        volumeSize: {{ .NodePool.ConfigItems.ebs_root_volume_size }}Gi
+        volumeType: gp3
+    # {{ else }}
     - deviceName: /dev/sda1
       ebs:
         deleteOnTermination: {{ .NodePool.ConfigItems.ebs_root_volume_delete_on_termination }}
         volumeSize: {{ .NodePool.ConfigItems.ebs_root_volume_size }}Gi
         volumeType: gp3
+    # {{ end }}
   # {{ if eq .NodePool.ConfigItems.karpenter_instance_storage_raid0 "true" }}
   instanceStorePolicy: RAID0
   # {{ end }}
@@ -46,15 +64,17 @@ spec:
   # Karpenter provides the ability to specify a few additional Kubelet args.
   # These are all optional and provide support for additional customization and use cases.
   kubelet:
-    clusterDNS: [ "10.0.1.100" ]
+    # {{ if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+    clusterDNS: ["fd00:1:2:3::5"]
+    # {{ else }}
+    clusterDNS: ["169.254.20.10"]
+    # {{ end }}
     cpuCFSQuota: false
-#{{ if ne .Cluster.Provider "zalando-eks" }}
 # {{ if ne .Cluster.ConfigItems.karpenter_max_pods_per_node "" }}
     maxPods: {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
 # {{ else }}
     maxPods: {{ nodeCIDRMaxPods (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.node_max_pods_extra_capacity) }}
 # {{ end }}
-#{{ end }}
     systemReserved:
       cpu: "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
       memory: "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
@@ -92,19 +112,33 @@ spec:
 #    {{ end}}
 #  {{ end}}
 #{{ end}}
-  # Discover EC2 Capacity Reservations (ODCRs, Capacity Blocks for ML) tagged for this cluster, so
-  # Karpenter can launch into them explicitly (karpenter.sh/capacity-type: reserved). Tag-scoped like
-  # securityGroupSelectorTerms: inert until a reservation carries the tag, so consuming a reservation
-  # is self-service (tag it at purchase), with no per-cluster configuration. Rendered only where the
-  # ReservedCapacity feature gate is on, so a gate-off cluster's NodeClass carries no reservation
-  # config at all.
-#{{ if eq .Cluster.ConfigItems.karpenter_feature_reserved_capacity "true" }}
+  # An EC2 Capacity Reservation tagged `karpenter.sh/discovery: <cluster-id>/CapacityReservation` (the securityGroupSelectorTerms
+  # convention) becomes a `reserved` offering of every pool using this class: Karpenter launches into it by id ahead of on-demand and
+  # consolidates a matching on-demand node into it. Inert until a reservation carries the tag, and inert while
+  # `karpenter_feature_reserved_capacity` is false (the reconciler is skipped); the two modes are documented on that config item.
   capacityReservationSelectorTerms:
     - tags:
         karpenter.sh/discovery: "{{ .Cluster.ID }}/CapacityReservation"
-#{{ end }}
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom") }}
   userData: |
 {{ .Values.UserData | indent 4 }}
+{{- else if and (eq .Cluster.Provider "zalando-eks") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "al2023") }}
+  userData: |
+    ---
+    apiVersion: node.eks.aws/v1alpha1
+    kind: NodeConfig
+    spec:
+      kubelet:
+        flags:
+          # hack to pass admission-controller requirements
+          - "--node-labels=node.kubernetes.io/role=worker"
+{{- else if and (eq .Cluster.Provider "zalando-eks") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket") }}
+  userData: |
+      [settings.kubernetes]
+      node-labels = {"node.kubernetes.io/role" = "worker"}
+      [settings.host-containers.admin]
+      source = "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/cloud-platform/bottlerocket-admin:v0.21.4-main-2"
+{{- end }}
 ---
 apiVersion: karpenter.sh/v1
 kind: NodePool
@@ -119,6 +153,9 @@ spec:
     metadata:
       # Labels are arbitrary key-values that are applied to all nodes
       labels:
+# {{ if and (eq .Cluster.Provider "zalando-eks") (hasPrefix .NodePool.ConfigItems.karpenter_ami_family_alias "bottlerocket") }}
+        ami-family: "bottlerocket"
+# {{ end }}
         lifecycle-status: ready
         node.kubernetes.io/node-pool: "{{ .NodePool.Name }}"
         node.kubernetes.io/role: worker
@@ -292,12 +329,9 @@ spec:
             - "spot"
 #{{ end }}
             - "on-demand"
-#{{ if eq .Cluster.ConfigItems.karpenter_feature_reserved_capacity "true" }}
-            # reserved = Capacity Reservations discovered via the NodeClass's
-            # capacityReservationSelectorTerms. Karpenter prefers a matching reservation (priced as
-            # already-paid) and falls back to on-demand when it is exhausted.
+            # A capacity reservation the NodeClass discovered (capacityReservationSelectorTerms). Karpenter prices it at 1/10^7 of
+            # on-demand, so it wins any pod allowed here, and falls back to on-demand once it is full.
             - "reserved"
-#{{ end }}
         - key: "kubernetes.io/arch"
           operator: In
           values: ["arm64", "amd64"]

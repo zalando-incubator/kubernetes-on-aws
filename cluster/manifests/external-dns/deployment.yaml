@@ -33,7 +33,11 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
+        {{if eq .Cluster.ConfigItems.external_dns_version "new"}}
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/external-dns:v0.21.0-master-45
+        {{else if eq .Cluster.ConfigItems.external_dns_version "stable"}}
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/external-dns:v0.15.1-master-44
+        {{end}}
         args:
         - --source=service
         - --source=ingress
@@ -52,6 +56,9 @@ spec:
         - --aws-zones-cache-duration={{ .Cluster.ConfigItems.external_dns_zones_cache_duration }}
         - --annotation-filter=external-dns.alpha.kubernetes.io/exclude notin (true)
         - --policy={{ .Cluster.ConfigItems.external_dns_policy }}
+{{- if ne .Cluster.ConfigItems.external_dns_aaaa_records_enabled "true" }}
+        - --exclude-record-types=AAAA
+{{- end }}
         resources:
           requests:
             cpu: 50m

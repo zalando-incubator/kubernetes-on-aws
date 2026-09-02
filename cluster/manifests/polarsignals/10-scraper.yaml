@@ -1,0 +1,176 @@
+# {{ if eq .Cluster.ConfigItems.polarsignals_enabled "true" }}
+# {{ if eq .Cluster.ConfigItems.polarsignals_memory_profiling_enabled "true" }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    component: scraper
+    application: polarsignals
+  name: polarsignals-scraper
+  namespace: polarsignals
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    component: scraper
+    application: polarsignals
+  name: polarsignals-scraper
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    component: scraper
+    application: polarsignals
+  name: polarsignals-scraper
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: polarsignals-scraper
+subjects:
+  - kind: ServiceAccount
+    name: polarsignals-scraper
+    namespace: polarsignals
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    component: scraper
+    application: polarsignals
+  name: polarsignals-scraper-config
+  namespace: polarsignals
+data:
+  polarsignals-scraper.yaml: |-
+    object_storage:
+      bucket:
+        type: "FILESYSTEM"
+        config:
+          directory: "./data"
+    scrape_configs:
+    - job_name: 'skipper-ingress-memory'
+      kubernetes_sd_configs:
+      - role: pod
+      profiling_config:
+        pprof_config:
+          process_cpu:
+            enabled: false
+          memory:
+            keep_sample_type:
+              - type: inuse_space
+                unit: bytes
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_application]
+        action: keep
+        regex: skipper-ingress
+      # ipv6 __address__ normalization (see https://github.com/prometheus/prometheus/issues/14656)
+      - source_labels: [__address__]
+        regex: '\[?([0-9a-fA-F:]+:[0-9a-fA-F:]+)\]?(:\d+)?'
+        action: replace
+        target_label: __address__
+        replacement: '[$1]$2'
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([0-9.]+|\[?[0-9a-fA-F:]+\]?)(:?\d+)?;(\d+)
+        replacement: $1:$3
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_pod_container_name]
+        target_label: container
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    component: scraper
+    application: polarsignals
+  name: polarsignals-scraper
+  namespace: polarsignals
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: scraper
+      application: polarsignals
+  template:
+    metadata:
+      labels:
+        component: scraper
+        application: polarsignals
+    spec:
+      securityContext:
+        fsGroup: 65534
+        runAsUser: 65534
+      serviceAccountName: polarsignals-scraper
+      containers:
+        - args:
+            - --config-path=/var/polarsignals-scraper/polarsignals-scraper.yaml
+            - --store-address=grpc.polarsignals.com:443
+            - --bearer-token-file=/var/polarsignals-secret/token
+            - --mode=scraper-only
+          image: container-registry.zalando.net/gwproxy/parca:v0.28.0-main-10
+          name: polarsignals-scraper
+          ports:
+            - containerPort: 7070
+              name: http
+          livenessProbe:
+            exec:
+              command:
+                - /grpc_health_probe
+                - -v
+                - -addr=:7070
+            initialDelaySeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - /grpc_health_probe
+                - -v
+                - -addr=:7070
+            initialDelaySeconds: 10
+          resources:
+            limits:
+              cpu: "{{ .Cluster.ConfigItems.polarsignals_scraper_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.polarsignals_scraper_memory }}"
+            requests:
+              cpu: "{{ .Cluster.ConfigItems.polarsignals_scraper_cpu }}"
+              memory: "{{ .Cluster.ConfigItems.polarsignals_scraper_memory }}"
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /var/polarsignals-scraper
+              name: polarsignals-scraper-config
+            - mountPath: /var/polarsignals-secret
+              name: token
+      nodeSelector:
+        kubernetes.io/os: linux
+      volumes:
+        - emptyDir: {}
+          name: tmp
+        - configMap:
+            name: polarsignals-scraper-config
+          name: polarsignals-scraper-config
+        - secret:
+            secretName: polarsignals-agent
+          name: token
+# {{ end }}
+# {{ end }}

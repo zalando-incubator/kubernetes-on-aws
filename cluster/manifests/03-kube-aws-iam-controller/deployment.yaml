@@ -28,7 +28,7 @@ spec:
       hostNetwork: true
       containers:
       - name: kube-aws-iam-controller
-        image: container-registry.zalando.net/teapot/kube-aws-iam-controller:v0.4.0-16-g8ee1c41
+        image: container-registry.zalando.net/teapot/kube-aws-iam-controller:v0.4.0-30-g50dd2e2
         env:
         - name: AWS_DEFAULT_REGION
           value: "{{.Cluster.Region}}"
@@ -45,8 +45,6 @@ spec:
             cpu: "{{.Cluster.ConfigItems.kube_aws_iam_controller_cpu}}"
             memory: "{{.Cluster.ConfigItems.kube_aws_iam_controller_mem}}"
 {{- if eq .Cluster.Provider "zalando-eks"}}
-      nodeSelector:
-        dedicated: cluster-seed
       tolerations:
       - key: dedicated
         value: cluster-seed

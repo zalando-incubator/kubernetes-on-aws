@@ -4,13 +4,30 @@ karpenter_controller_cpu: "25m"
 karpenter_controller_memory: "256Mi"
 # set log level of karpenter: error|debug
 karpenter_log_level: "error"
-# enable Karpenter's native capacity-reservation support. When true, Karpenter launches every node with
-# CapacityReservationPreference=none, which opts it OUT of open EC2 On-Demand Capacity Reservations; a
-# reservation is then only usable if a NodeClass selects it explicitly. Set false to let open ODCRs be
-# consumed automatically, as they are for any other EC2 instance.
+# How Karpenter consumes an EC2 Capacity Reservation (ODCR) of a matching instance type + AZ; the two modes exclude each other.
+# true: Karpenter models reservations tagged `karpenter.sh/discovery: <cluster-id>/CapacityReservation` (the worker-karpenter
+#   NodeClass selects them), launches into them by id ahead of on-demand, consolidates a matching on-demand node into them and labels
+#   the node `karpenter.sh/capacity-type: reserved`. Every other launch opts out (CapacityReservationPreference=none), so an untagged
+#   reservation is never used; `require-on-demand` pods need an admission controller that admits `reserved`.
+# false: Karpenter ignores reservations and launches with CapacityReservationPreference=open, so an OPEN reservation is consumed by
+#   whichever matching instance in the account launches first, cluster or not; nothing prefers, consolidates into, or reports on it.
 karpenter_feature_reserved_capacity: "true"
+
+# enable Karpenter's node repair feature. When true, Karpenter will attempt to
+# repair nodes that are unhealthy.
+# Only works in EKS where we have eks-node-monitoring-agent running.
+# https://karpenter.sh/docs/concepts/disruption/#node-auto-repair
+karpenter_feature_node_repair: "false"
+
 # restrict the maximum number of pods for karpenter nodes
+{{ if eq .Cluster.Provider "zalando-aws" }}
 karpenter_max_pods_per_node: "32"
+
+{{ else if eq .Cluster.Provider "zalando-eks" }}
+# number of Pods must not exceed the maximum number of Pods per node supported by Kubernetes
+karpenter_max_pods_per_node: "110"
+
+{{ end }}
 
 # configure whether karpenter should assume instances with local storage use
 # RAID0 for ephemeral pod storage.
@@ -59,6 +76,16 @@ karpenter_flex_types_enabled: "false"
 {{else}}
 karpenter_flex_types_enabled: "true"
 {{end}}
+
+# Define Karpenter AMI family alias. This is used to determine the AMI used for
+# Karpenter nodes.
+#
+# The default is custom which is the Zalando Kubernetes on Ubuntu AMI.
+#
+# alternatives:
+#  - al2023@latest
+#  - bottlerocket@latest
+karpenter_ami_family_alias: "custom"
 
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
@@ -118,7 +145,11 @@ skipper_ingress_memory: "1500Mi"
 skipper_topology_spread_enabled: "true"
 skipper_topology_spread_timeout: "7m"
 
-skipper_copy_stream_pool_enabled: "true"
+{{if eq .Cluster.Environment "production"}}
+skipper_h2c_enabled: "false"
+{{else}}
+skipper_h2c_enabled: "true"
+{{end}}
 
 # haproxy protocol: cidrs are a comma seperated list of CIDRs, for example "::0/0,0.0.0.0/0" for all IPs
 skipper_enable_proxy_protocol: "false"
@@ -135,7 +166,7 @@ skipper_ingress_canary_image: ""
 skipper_ingress_test_single_pod: "false"
 skipper_canary_controller_enabled: "false"
 
-skipper_ingress_canary_routes_urls: http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/routes
+skipper_ingress_canary_routes_urls: http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/routes/$(KUBE_NODE_ZONE)
 skipper_ingress_routes_urls: http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes
 
 skipper_ingress_canary_swarm_valkey_remote: http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/swarm/valkey/shards
@@ -299,8 +330,18 @@ skipper_pod_deletion_cost_controller_poll_timeout: "60s"
 skipper_pod_deletion_cost_controller_resync_enable: "true"
 skipper_pod_deletion_cost_controller_resync_interval: "1h"
 
+{{if eq .Cluster.Environment "production"}}
+skipper_resources_validate_application_label: "true"
+{{else}}
+skipper_resources_validate_application_label: "false"
+{{end}}
+skipper_resources_application_label_in_scope_resources: "ingresses,routegroups,fabricgateways"
+skipper_resources_application_label_min_creation_time: "2026-07-22T10:00:00Z"
+
 # polarsignals - only enabled for some clusters
 polarsignals_enabled: "false"
+# enable memory profiling by default everywhere where polarsignals is enabled
+polarsignals_memory_profiling_enabled: "true"
 # Comma separated list of workloads for which polarsignals is enabled, only used
 # if polarsignals_enabled is true, right now only skipper-ingress is configured
 # by default
@@ -323,6 +364,8 @@ polarsignals_oom_prof_allocs_enable: "false"
 polarsignals_apikey: ""
 polarsignals_memory: 400Mi
 polarsignals_cpu: 50m
+polarsignals_scraper_memory: 400Mi
+polarsignals_scraper_cpu: 50m
 polarsignals_probabilistic_profiling_interval: 1m
 {{if eq .Cluster.Environment "production"}}
 polarsignals_probabilistic_profiling_perc: "75"
@@ -378,22 +421,22 @@ skipper_ingress_lightstep_propagators: "lightstep"
 # set to "log-events" to enable
 skipper_ingress_lightstep_log_events: ""
 lightstep_token: ""
+# otel collector endpoint
 tracing_collector_host: "tracing.platform-infrastructure.zalan.do"
+tracing_collector_port: "8443"
+# OpenTelemetry
+skipper_ingress_open_telemetry_enabled: "true"
+skipper_ingress_open_telemetry_bsp_max_queue_size: 2048
+skipper_ingress_open_telemetry_bsp_max_export_batch_size: 512
+skipper_ingress_open_telemetry_bsp_schedule_delay: "5s"
+skipper_ingress_open_telemetry_bsp_export_timeout: "5s"
 
-# skipper_serve_method_metric sets the flag -serve-method-metric. It
-# defines if the http method is included in the dimension
-# of the skipper_serve_host_duration_seconds_bucket metric.
-skipper_serve_method_metric: "false"
-# skipper_serve_status_code_metric sets the flag -serve-status-code-metric. It
-# defines if the http response status code is included in the dimension
-# of the skipper_serve_host_duration_seconds_bucket metric.
-skipper_serve_status_code_metric: "false"
 # skipper_combined_response_metrics sets the flag -combined-response-metrics.
 # It enables reporting combined response time metrics
-skipper_combined_response_metrics: "false"
-# skipper_backend_host_metrics sets the flag -backend-host-metrics.
-# It enables reporting total serve time metrics for backend
-skipper_backend_host_metrics: "false"
+skipper_combined_response_metrics: "true"
+# skipper_backend_zone_metrics sets the flag -backend-zone-metrics.
+# It enables reporting total serve time metrics for backend by zone
+skipper_backend_zone_metrics: "true"
 
 #
 # skipper-ingress validation webhook
@@ -633,7 +676,7 @@ metrics_server_metric_resolution: "15s"
 
 kube_aws_iam_controller_cpu: "5m"
 kube_aws_iam_controller_mem: "50Mi"
-kube_aws_iam_controller_enabled: "true"
+kube_aws_iam_controller_enabled: "false"
 
 kube_state_metrics_cpu: "100m"
 kube_state_metrics_mem_max: "4Gi"
@@ -706,6 +749,7 @@ decommission_node_no_schedule_taint: "true"
 # Teapot admission controller
 teapot_admission_controller_default_cpu_request: "25m"
 teapot_admission_controller_default_memory_request: "100Mi"
+teapot_admission_controller_memory_min: "100Mi"
 teapot_admission_controller_process_resources: "true"
 teapot_admission_controller_process_resource_ephemeral_storage: "false"
 teapot_admission_controller_default_ephemeral_storage_request: "25Mi"
@@ -713,6 +757,7 @@ teapot_admission_controller_max_ephemeral_storage_request: "5Gi"
 teapot_admission_controller_application_min_creation_time: "2019-06-03T12:00:00Z"
 teapot_admission_controller_ndots: "2"
 teapot_admission_controller_inject_environment_variables: "true"
+teapot_admission_controller_inject_pod_aws_region: "false"
 {{ if eq .Cluster.Environment "test" }}
 teapot_admission_controller_inject_node_options_environment_variable: "true"
 {{ else }}
@@ -722,6 +767,7 @@ teapot_admission_controller_deployment_default_max_surge: "5%"
 teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
 teapot_admission_controller_parent_resource_hash: "true"
+teapot_admission_controller_stackset_inject_topology_spread_enable: "false"
 
 ## Defaults are set per-cluster
 teapot_admission_controller_check_daemonset_resources: "true"
@@ -752,6 +798,12 @@ teapot_admission_controller_validate_pod_images: "true"
 # if docker-meta is down, do not reject container images running in `kube-system`
 # teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
 
+# As a temporary escape hatch during incidents, you can exclude certain namespaces from the
+# checks (defaults to none) and/or always allow certain container images regardless of namespace
+# (defaults to none), e.g.:
+# teapot_admission_controller_validate_pod_images_ignored_namespaces: "^kube-system$"
+# teapot_admission_controller_validate_pod_images_ignored_images: "^k8s.gcr.io/external-dns:.+$"
+
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
@@ -761,8 +813,13 @@ teapot_admission_controller_postgresql_owning_application_check_enabled: "true"
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
 
-# Check container image compliance in e2e clusters. There are some exceptions to allow the e2e test suite to run.
+# Check container image compliance in e2e clusters. There are some exceptions to allow the e2e test suite to run,
+# see the "e2e" special-case block in cluster/manifests/02-admission-control/config.yaml.
 teapot_admission_controller_validate_pod_images: "true"
+
+# The upstream e2e test suite runs test cases using the pause image in kube-system, which is
+# otherwise subject to image compliance checks, so it needs to be allowed explicitly.
+teapot_admission_controller_validate_pod_images_ignored_images: "^k8s.gcr.io/pause:.+$"
 
 teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
@@ -889,8 +946,8 @@ etcd_instance_type: "t3.medium"
 
 etcd_scalyr_key: ""
 
-etcd_ami_amd64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.31-amd64-main-42" "861068367966"}}
-etcd_ami_arm64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.31-arm64-main-42" "861068367966"}}
+etcd_ami_amd64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-amd64-main-48" "861068367966"}}
+etcd_ami_arm64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-arm64-main-48" "861068367966"}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -912,8 +969,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_35_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.5-amd64-master-405" "861068367966" }}
-kuberuntu_image_v1_35_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.35.5-arm64-master-405" "861068367966" }}
+kuberuntu_image_v1_36_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.3-amd64-master-436" "861068367966" }}
+kuberuntu_image_v1_36_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.3-arm64-master-436" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
@@ -948,6 +1005,7 @@ audit_webhook_batch_max_size: "250"
 
 kube2iam_cpu: "25m"
 kube2iam_memory: "100Mi"
+kube2iam_enabled: "true"
 
 # configure whether kube2iam should only run on worker nodes.
 kube2iam_worker_only: "true"
@@ -1056,15 +1114,35 @@ external_dns_zones_cache_duration: "1h"
 # resource configuration
 external_dns_mem: "4Gi"
 
+# define the external-dns version to use. Supported values:
+# - new
+# - stable
+external_dns_version: "new"
+
+# enable creation of AAAA records for IPv6 support along with A records.
+# This should only be enabled if the cluster is fully IPv6 capable.
+external_dns_aaaa_records_enabled: "false"
+
 expirimental_dns_unbound_liveness_probe: "true"
 
 # DNS container resources
-dns_unbound_cpu: "100m"
-dns_unbound_mem: "50Mi"
-dns_unbound_exporter_cpu: "10m"
-dns_unbound_exporter_mem: "45Mi"
-dns_coredns_cpu: "50m"
-dns_coredns_mem: "100Mi"
+dns_coredns_cpu: "160m"
+dns_coredns_mem: "195Mi"
+
+# Roll out of static dns interface
+#
+# The rollout needs to be in multiple stages to avoid disruption of node local
+# DNS. Each stage must fully complete i.e. all CoreDNS pods must rotate (thus
+# all nodes must rotate) before going to the next stage.
+#
+# stages:
+#
+#  interface - static interface container runs
+#  listening - dns cache listens to static interface
+#  kubelet - kubelet configures static dns IP address - worker node rotation!
+#  only_interface - dns cache listens _only_ on the static interface
+#
+dns_static_interface: "only_interface"
 
 # special roles for test/pet clusters
 {{if eq .Cluster.Environment "e2e"}}
@@ -1338,7 +1416,7 @@ kube_janitor_enabled: "true"
 {{end}}
 
 # scheduling_controls
-teapot_admission_controller_scheduling_controls_enabled: "false"
+teapot_admission_controller_scheduling_controls_enabled: "true"
 teapot_admission_controller_scheduling_controls_default_architecture: "amd64"
 
 # master-node-autoscaler configuration
