@@ -32,7 +32,7 @@ data:
   pod.service-account-iam.enable: "true"
   pod.service-account-iam.base-aws-account-id: "{{ .Cluster.InfrastructureAccountID }}"
 {{- if eq .Cluster.ConfigItems.teapot_admission_controller_inject_aws_waiter "true" }}
-  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-317"
+  pod.aws-waiter.image: "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/automata/aws-credentials-waiter:master-318"
 {{- end }}
   pod.env-inject.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_inject_environment_variables }}"
   pod.env-inject.variable._PLATFORM_ACCOUNT: "{{ .Cluster.Alias }}"
@@ -90,14 +90,27 @@ data:
   pod.image-check.soft-fail-namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_soft_fail_namespaces }}"
 {{- end }}
 
-{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_namespaces" }}
-  # Limit the namespaces where container image checks are required, defaults to all namespaces.
-  pod.image-check.namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_namespaces }}"
+{{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_ignored_namespaces" }}
+  # Exclude the namespaces matching this regular expression from container image checks, defaults to none.
+  # Note: the admission-controller flag itself is "ignore-namespaces" (no "d"), unlike our config item name.
+  pod.image-check.ignore-namespaces: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_ignored_namespaces }}"
 {{- end }}
 
 {{- if index .Cluster.ConfigItems "teapot_admission_controller_validate_pod_images_ignored_images" }}
   # Always allow certain container images regardless of namespace, defaults to none.
   pod.image-check.ignored-images: "{{ .Cluster.ConfigItems.teapot_admission_controller_validate_pod_images_ignored_images }}"
+{{- end }}
+
+{{- if eq .Cluster.Environment "e2e" }}
+  # Special setting only configured for e2e clusters
+  #
+  # DO NOT USE THIS IN PRODUCTION CLUSTERS
+
+  # The e2e test suite runs arbitrary, non-compliant test case images across namespaces, so only
+  # enforce compliance where it can be checked reliably: kube-system and visibility (to catch
+  # regressions there) and the image-policy-test-enabled-* namespaces, which are deliberately set up
+  # for reliable image policy tests.
+  pod.image-check.namespaces: "^(image-policy-test-enabled-.*|kube-system|visibility)$"
 {{- end }}
 
   # This setting enables and disables replacement of vanity images with ECR images during pod admission (during create and update)
@@ -234,7 +247,7 @@ data:
 
   pod.graceful-termination.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_graceful_termination }}"
 {{ if eq .Cluster.ConfigItems.sandbox_controller_enabled "true" }}
-  pod.sandbox-egress.skipper-image: "container-registry.zalando.net/teapot/skipper-internal:v0.27.73-1523"
+  pod.sandbox-egress.skipper-image: "container-registry.zalando.net/teapot/skipper-internal:v0.27.83-1533"
   pod.sandbox-egress.nftables-image: "container-registry.zalando.net/gwproxy/nftables:main-118"
 {{ end }}
   stackset.inject-topology-spread.enable: "{{ .Cluster.ConfigItems.teapot_admission_controller_stackset_inject_topology_spread_enable }}"
