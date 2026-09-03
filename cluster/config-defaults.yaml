@@ -5,10 +5,11 @@ karpenter_controller_memory: "256Mi"
 # set log level of karpenter: error|debug
 karpenter_log_level: "error"
 # How Karpenter consumes an EC2 Capacity Reservation (ODCR) of a matching instance type + AZ; the two modes exclude each other.
-# true: Karpenter models reservations tagged `karpenter.sh/discovery: <cluster-id>/CapacityReservation` (the worker-karpenter
-#   NodeClass selects them), launches into them by id ahead of on-demand, consolidates a matching on-demand node into them and labels
-#   the node `karpenter.sh/capacity-type: reserved`. Every other launch opts out (CapacityReservationPreference=none), so an untagged
-#   reservation is never used; `require-on-demand` pods need an admission controller that admits `reserved`.
+# true: Karpenter models reservations tagged `zalando.org/kubernetes: "true"` (the worker-karpenter NodeClass selects them, with no
+#   cluster id, so one reservation serves every cluster in the account), launches into them by id ahead of on-demand, consolidates a
+#   matching on-demand node into them and labels the node `karpenter.sh/capacity-type: reserved`. Every other launch opts out
+#   (CapacityReservationPreference=none), so an untagged reservation is never used; `require-on-demand` pods need an admission
+#   controller that admits `reserved`.
 # false: Karpenter ignores reservations and launches with CapacityReservationPreference=open, so an OPEN reservation is consumed by
 #   whichever matching instance in the account launches first, cluster or not; nothing prefers, consolidates into, or reports on it.
 karpenter_feature_reserved_capacity: "true"
