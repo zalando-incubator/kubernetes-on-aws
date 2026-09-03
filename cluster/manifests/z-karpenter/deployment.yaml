@@ -96,10 +96,9 @@ spec:
                   containerName: controller
                   divisor: "0"
                   resource: limits.memory
-            # ReservedCapacity flips Karpenter to LaunchModeTargeted, which writes
-            # CapacityReservationPreference=none into every launch template and so opts the node out of
-            # every OPEN capacity reservation (upstream pkg/providers/launchtemplate/types.go). Cluster
-            # operators who just want an open ODCR consumed turn it off.
+            # ReservedCapacity=true launches into reservations the NodeClass selects and opts every other launch out of open ones
+            # (upstream pkg/providers/launchtemplate/types.go); false consumes open reservations blindly. Trade-off documented on
+            # the `karpenter_feature_reserved_capacity` config item.
             - name: FEATURE_GATES
               value: "ReservedCapacity={{ .Cluster.ConfigItems.karpenter_feature_reserved_capacity }},SpotToSpotConsolidation=true,NodeRepair={{ .Cluster.ConfigItems.karpenter_feature_node_repair }},NodeOverlay=false,StaticCapacity=false"
             - name: BATCH_MAX_DURATION
