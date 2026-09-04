@@ -795,6 +795,12 @@ teapot_admission_controller_validate_pod_images: "true"
 # if docker-meta is down, do not reject container images running in `kube-system`
 # teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
 
+# As a temporary escape hatch during incidents, you can limit the namespaces where container image
+# checks are required (defaults to all namespaces) and/or always allow certain container images
+# regardless of namespace (defaults to none), e.g.:
+# teapot_admission_controller_validate_pod_images_namespaces: "^visibility$"
+# teapot_admission_controller_validate_pod_images_ignored_images: "^k8s.gcr.io/external-dns:.+$"
+
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
@@ -806,6 +812,16 @@ teapot_admission_controller_validate_base_images: "false"
 
 # Check container image compliance in e2e clusters. There are some exceptions to allow the e2e test suite to run.
 teapot_admission_controller_validate_pod_images: "true"
+
+# The upstream e2e test suite runs test cases using the pause image in kube-system, which is
+# otherwise subject to image compliance checks, so it needs to be allowed explicitly.
+teapot_admission_controller_validate_pod_images_ignored_images: "^k8s.gcr.io/pause:.+$"
+
+# The e2e test suite runs arbitrary, non-compliant test case images across namespaces, so only
+# enforce compliance where it can be checked reliably: kube-system and visibility (to catch
+# regressions there) and the image-policy-test-enabled-* namespaces, which are deliberately set up
+# for reliable image policy tests.
+teapot_admission_controller_validate_pod_images_namespaces: "^(image-policy-test-enabled-.*|kube-system|visibility)$"
 
 teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
