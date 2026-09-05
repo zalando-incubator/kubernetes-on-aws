@@ -36,6 +36,11 @@ spec:
             - --drain-min-healthy-sibling-lifetime={{.Cluster.ConfigItems.drain_min_healthy_sibling_lifetime}}
             - --drain-min-unhealthy-sibling-lifetime={{.Cluster.ConfigItems.drain_min_unhealthy_sibling_lifetime}}
             - --drain-force-evict-interval={{.Cluster.ConfigItems.drain_force_evict_interval}}
+            {{- if eq .Cluster.ConfigItems.karpenter_drift_disruption_enabled "true" }}
+            {{- range split .Cluster.ConfigItems.cluster_lifecycle_controller_excluded_node_selectors "," }}
+            - --excluded-node-selector={{.}}
+            {{- end }}
+            {{- end }}
         env:
         - name: AWS_DEFAULT_REGION
           value: "{{ .Cluster.Region }}"

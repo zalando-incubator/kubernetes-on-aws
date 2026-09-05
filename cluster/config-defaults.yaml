@@ -98,8 +98,33 @@ bottlerocket_ami_version: "1.67.0"
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
 
+# Enable Karpenter to disrupt (replace) drifted nodes (e.g.
+# NodePool/EC2NodeClass spec changed, AMI updated).
+# When true, this implicitly enables the workload-disruption-controller to work
+# in conjunction with Karpenter to evict pods from drifted nodes accorind to the
+# defined disruption SLA.
+karpenter_drift_disruption_enabled: "false"
+
 # cluster lifecycle controller
 cluster_lifecycle_controller_memory_min: "10Mi"
+# exclude nodes from CLC based on nodeSelector, comma separated list of
+# key=value pairs. Used with OR semantics in CLC.
+# Only enabled if karpenter_drift_disruption_enabled is true.
+cluster_lifecycle_controller_excluded_node_selectors: "node.kubernetes.io/profile=worker-karpenter"
+
+# workload disruption controller
+# (force-eviction-* args reuse the existing drain_* config items below, since
+# they replicate cluster-lifecycle-controller's force-eviction behaviour)
+workload_disruption_controller_cpu: "15m"
+workload_disruption_controller_memory: "250Mi"
+workload_disruption_controller_memory_min: "10Mi"
+workload_disruption_controller_num_workers: "10"
+workload_disruption_controller_resync_period: "10m"
+workload_disruption_controller_stuck_pod_min_age: "5m"
+# Pods matching any of these label groups are never force-terminated.
+# Groups are separated by ";"; labels within a group are comma-separated and
+# must all match, e.g. "app=a,tier=backend;keep-alive". Empty disables.
+workload_disruption_controller_force_eviction_exclude_pod_labels: "application=spilo"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
