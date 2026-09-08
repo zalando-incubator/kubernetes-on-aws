@@ -1,0 +1,99 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
+  name: agentsandboxes.zalando.org
+spec:
+  group: zalando.org
+  names:
+    categories:
+    - all
+    kind: AgentSandbox
+    listKind: AgentSandboxList
+    plural: agentsandboxes
+    shortNames:
+    - as
+    singular: agentsandbox
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              allowedURIs:
+                description: |-
+                  AllowedURIs is an allowlist of URIs (scheme + host). Egress traffic to any other host will be denied with 403.
+                  Accepted schemes: https (any host), http or h2c (*.cluster.local hosts only).
+                items:
+                  type: string
+                  x-kubernetes-validations:
+                  - message: URI must use https (any host) or http/h2c (*.cluster.local
+                      hosts only)
+                    rule: isURL(self) && (url(self).getScheme() == 'https' || ((url(self).getScheme()
+                      == 'http' || url(self).getScheme() == 'h2c') && url(self).getHostname().endsWith('.cluster.local')))
+                maxItems: 6
+                minItems: 1
+                type: array
+              targetRef:
+                description: TargetRef identifies the resource (Stack or Deployment)
+                  whose pods should receive the egress annotation.
+                properties:
+                  kind:
+                    enum:
+                    - Stack
+                    - Deployment
+                    type: string
+                  name:
+                    type: string
+                required:
+                - kind
+                - name
+                type: object
+            required:
+            - allowedURIs
+            - targetRef
+            type: object
+            x-kubernetes-validations:
+            - message: targetRef is immutable
+              rule: self.targetRef == oldSelf.targetRef
+          status:
+            description: |-
+              AgentSandboxStatus is the current state of the AgentSandbox.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+            properties:
+              configMapName:
+                description: ConfigMapName is the name of the managed ConfigMap created
+                  for this egress.
+                type: string
+              problems:
+                items:
+                  type: string
+                type: array
+            type: object
+        required:
+        - metadata
+        - spec
+        type: object
+    served: true
+    storage: true

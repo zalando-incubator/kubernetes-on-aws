@@ -31,7 +31,9 @@ spec:
       priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: sandbox-controller
       containers:
-        - name: controller
+        - args:
+            - -enable-agent-sandbox="{{ .Cluster.ConfigItems.agent_sandbox_enabled }}"
+          name: controller
           image: "{{ $image }}"
           resources:
             limits:
