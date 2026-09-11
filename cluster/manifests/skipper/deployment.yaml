@@ -408,7 +408,7 @@ spec:
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
 {{ end }}
-{{ if not (contains .Cluster.ConfigItems.skipper_disabled_filters "cache") }}
+{{ if not (index .Cluster.ConfigItems.skipper_disabled_filters "cache") }}
           - "-cache-l1-ttl=60s"
           - "-enable-l2-cache"
 {{ end }}
