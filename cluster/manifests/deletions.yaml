@@ -4,19 +4,12 @@ pre_apply:
 - name: deployment-service-controller
   kind: StatefulSet
   namespace: kube-system
+- name: skipper-canary-controller
+  kind: CronJob
+  namespace: kube-system
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
-# we deploy skipper-ingress-routesrv2 and need to delete the old
-# routesrv deployment in order to change the spec.selector. In a
-# second step we will rename it back to without 2, deleting the
-# deployments with "2"
-- name: skipper-ingress-routesrv2
-  namespace: kube-system
-  kind: Deployment
-- name: skipper-ingress-canary-routesrv2
-  namespace: kube-system
-  kind: Deployment
 {{- if eq .Cluster.Provider "zalando-eks"}}
 - name: coredns
   kind: Deployment
@@ -62,6 +55,23 @@ post_apply:
 - name: polarsignals-agent
   kind: ClusterRole
 - name: polarsignals-agent
+  kind: ClusterRoleBinding
+- name: polarsignals
+  kind: Namespace
+{{ end }}
+{{ if ne .Cluster.ConfigItems.polarsignals_memory_profiling_enabled "true" }}
+- name: polarsignals-scraper-config
+  namespace: polarsignals
+  kind: ConfigMap
+- name: polarsignals-scraper
+  namespace: polarsignals
+  kind: Deployment
+- name: polarsignals-scraper
+  namespace: polarsignals
+  kind: ServiceAccount
+- name: polarsignals-scraper
+  kind: ClusterRole
+- name: polarsignals-scraper
   kind: ClusterRoleBinding
 - name: polarsignals
   kind: Namespace
@@ -371,9 +381,6 @@ post_apply:
 - name: efs-provisioner
   kind: ConfigMap
   namespace: kube-system
-- name: efs-provisioner
-  kind: ServiceAccount
-  namespace: kube-system
 - name: efs-provisioner-runner
   kind: ClusterRole
 - name: leader-locking-efs-provisioner
@@ -387,6 +394,9 @@ post_apply:
   namespace: kube-system
 - name: aws-efs
   kind: StorageClass
+- name: efs-provisioner
+  kind: ServiceAccount
+  namespace: kube-system
 {{ end }}
 {{- if ne .Cluster.ConfigItems.capability_kro_enabled "true"}}
 - name: kro-poweruser
@@ -413,11 +423,29 @@ post_apply:
 - name: kube-aws-iam-controller-privileged-psp
   namespace: kube-system
   kind: RoleBinding
-- name: kube-aws-iam-controller
+# For now we keep the ServiceAccount to ease the rollout.
+# - name: kube-aws-iam-controller
+#   namespace: kube-system
+#   kind: ServiceAccount
+- name: awsiamroles.zalando.org
+  kind: CustomResourceDefinition
+{{- end }}
+{{- if ne .Cluster.ConfigItems.kube2iam_enabled "true" }}
+- name: kube2iam
+  namespace: kube-system
+  kind: DaemonSet
+- name: kube2iam
   namespace: kube-system
   kind: ServiceAccount
-# TODO: Since this removes resources deployed by the users,
-# let's play it safe and uncomment this at a later time.
-# - name: awsiamroles.zalando.org
-#   kind: CustomResourceDefinition
+- name: kube2iam
+  kind: ClusterRole
+- name: kube2iam
+  kind: ClusterRoleBinding
+- name: kube2iam-privileged-psp
+  namespace: kube-system
+  kind: RoleBinding
 {{- end }}
+- name: zmon-external-check
+  kind: ClusterRole
+- name: zmon-external-check
+  kind: ClusterRoleBinding

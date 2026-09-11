@@ -458,3 +458,20 @@ pipeline:
     - stable
   sources:
   - dir: _deploy_event
+
+- id: llm-code-review
+  depends_on: []
+  when:
+    target_branch: dev
+    event: pull_request
+    CDP_ACCOUNTABLE_USER:
+        exclude: "k8s-on-aws-manager-app[bot]"
+  type: script
+  vm_config:
+    type: linux
+  authenticate_hosts:
+    - zllm.data.zalan.do
+  commands:
+    - desc: "LLM Review"
+      cmd: |
+        llm-code-review -read-from-github -write-to-github -no-feedback-checklist -C 20

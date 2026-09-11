@@ -18,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
-	"k8s.io/kubernetes/test/e2e/framework/ingress"
 	admissionapi "k8s.io/pod-security-admission/api"
 )
 
@@ -31,14 +30,14 @@ var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metri
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
 	var rgcs rgclient.Interface
-	var jig *ingress.TestJig
+	var jig *ingressTestJig
 
 	const (
 		DeploymentName = "sample-custom-metrics-autoscaling-e2e"
 	)
 
 	BeforeEach(func() {
-		jig = ingress.NewIngressTestJig(f.ClientSet)
+		jig = newIngressTestJig(f.ClientSet)
 		cs = f.ClientSet
 
 		// setup RouteGroup clientset
@@ -173,7 +172,7 @@ type CustomMetricTestCase struct {
 	hpa             *autoscaling.HorizontalPodAutoscaler
 	kubeClient      kubernetes.Interface
 	rgClient        rgclient.Interface
-	jig             *ingress.TestJig
+	jig             *ingressTestJig
 	deployment      *appsv1.Deployment
 	initialReplicas int
 	scaledReplicas  int

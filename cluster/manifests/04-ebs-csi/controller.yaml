@@ -23,8 +23,6 @@ spec:
       serviceAccountName: ebs-csi-controller-sa
       priorityClassName: system-cluster-critical
 {{- if eq .Cluster.Provider "zalando-eks"}}
-      nodeSelector:
-        dedicated: cluster-seed
       tolerations:
       - key: dedicated
         value: cluster-seed
@@ -44,7 +42,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: ebs-plugin
-          image: container-registry.zalando.net/teapot/aws-ebs-csi-driver:v1.58.0-master-34
+          image: container-registry.zalando.net/teapot/aws-ebs-csi-driver:v1.64.0-master-35
           args:
             - controller
             - --endpoint=$(CSI_ENDPOINT)
@@ -91,7 +89,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-provisioner
-          image: container-registry.zalando.net/teapot/csi-provisioner:v6.2.0-eksbuild.3-master-34
+          image: container-registry.zalando.net/teapot/csi-provisioner:v6.3.0-eksbuild.5-master-35
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -116,7 +114,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-attacher
-          image: container-registry.zalando.net/teapot/csi-attacher:v4.11.0-eksbuild.4-master-34
+          image: container-registry.zalando.net/teapot/csi-attacher:v4.12.0-eksbuild.6-master-35
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -138,7 +136,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-resizer
-          image: container-registry.zalando.net/teapot/csi-resizer:v2.1.0-eksbuild.4-master-34
+          image: container-registry.zalando.net/teapot/csi-resizer:v2.2.1-eksbuild.4-master-35
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -160,7 +158,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: liveness-probe
-          image: container-registry.zalando.net/teapot/livenessprobe:v2.18.0-eksbuild.4-master-34
+          image: container-registry.zalando.net/teapot/livenessprobe:v2.19.0-eksbuild.6-master-35
           args:
             - --csi-address=/csi/csi.sock
           resources:

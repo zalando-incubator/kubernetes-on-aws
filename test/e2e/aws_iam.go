@@ -20,7 +20,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	awsiamrole "github.com/zalando-incubator/kube-aws-iam-controller/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -28,11 +27,10 @@ import (
 	admissionapi "k8s.io/pod-security-admission/api"
 )
 
-var _ = describe("AWS IAM Integration (kube2iam + kube-aws-iam-controller)", func() {
+var _ = describe("AWS IAM Integration (kube2iam)", func() {
 	f := framework.NewDefaultFramework("aws-iam")
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelBaseline
 	var cs kubernetes.Interface
-	var zcs awsiamrole.Interface
 
 	BeforeEach(func() {
 		cs = f.ClientSet
@@ -45,32 +43,6 @@ var _ = describe("AWS IAM Integration (kube2iam + kube-aws-iam-controller)", fun
 		if f.Options.GroupVersion != nil {
 			config.GroupVersion = f.Options.GroupVersion
 		}
-		zcs, err = awsiamrole.NewForConfig(config)
-		framework.ExpectNoError(err)
-	})
-
-	It("Should get AWS IAM credentials (kube-aws-iam-controller) [AWS-IAM] [Zalando]", func() {
-		awsIAMRoleRS := "aws-iam-test"
-		ns := f.Namespace.Name
-
-		By("Creating a awscli POD in namespace " + ns)
-		pod := createAWSIAMPod("aws-iam-", ns, E2ES3AWSIAMBucket())
-		_, err := cs.CoreV1().Pods(ns).Create(context.TODO(), pod, metav1.CreateOptions{})
-		framework.ExpectNoError(err)
-
-		// AWSIAMRole
-		By("Creating AWSIAMRole " + awsIAMRoleRS + " in namespace " + ns)
-		rs := createAWSIAMRole(awsIAMRoleRS, ns, E2EAWSIAMRole())
-		defer func() {
-			By("deleting the AWSIAMRole")
-			defer GinkgoRecover()
-			err2 := zcs.ZalandoV1().AWSIAMRoles(ns).Delete(context.TODO(), rs.Name, metav1.DeleteOptions{})
-			Expect(err2).NotTo(HaveOccurred())
-		}()
-		_, err = zcs.ZalandoV1().AWSIAMRoles(ns).Create(context.TODO(), rs, metav1.CreateOptions{})
-		framework.ExpectNoError(err)
-
-		framework.ExpectNoError(e2epod.WaitForPodSuccessInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace))
 	})
 
 	It("Should get AWS IAM credentials (kube2iam) [AWS-IAM] [Zalando]", func() {

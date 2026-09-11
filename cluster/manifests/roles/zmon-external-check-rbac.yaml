@@ -1,28 +1,19 @@
-# This role is used to check coredns endpoints of a cluster from the outside.
+# This gives zmon read access to clusters from the outside. This allows checking
+# various core functionality like coredns availability and Karpenter
+# availability from a zmon-worker in another cluster.
+#
 # The intention is to monitor a cluster from the outside in case DNS is broken
 # and ZMON inside the cluster would not work.
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: zmon-external-check
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - endpoints
-  resourceNames:
-  - coredns
-  verbs:
-  - get
----
+# Or Karpenter is not working and can't scale up nodes, so ZMON inside the
+# cluster would not work.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: zmon-external-check
+  name: zmon-external-reader
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: zmon-external-check
+  name: readonly
 subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User

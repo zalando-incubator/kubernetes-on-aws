@@ -29,7 +29,7 @@ clusters:
     zmon_scheduler_replicas: '0'
     zmon_worker_replicas: '0'
     skipper_ingress_refuse_payload: "refused-pattern-1[cf724afc]refused-pattern-2"
-    efs_id: ${EFS_ID}
+    $(if [ "${CLUSTER_PROVIDER}" == "zalando-aws" ]; then echo -n "efs_id: ${EFS_ID}"; else echo -n ""; fi)
     webhook_id: ${INFRASTRUCTURE_ACCOUNT}:${REGION}:kube-aws-test
     nlb_switch: "pre"
     vm_dirty_bytes: 134217728
@@ -63,7 +63,7 @@ clusters:
   $(if [ "${CLUSTER_PROVIDER}" == "zalando-eks" ]; then
 cat <<EOFF
 - config_items:
-      labels: dedicated=cluster-seed
+      labels: dedicated=cluster-seed,cluster-lifecycle-controller.zalan.do/decommission-priority=999
       taints: dedicated=cluster-seed:NoSchedule
     discount_strategy: none
     instance_types:
