@@ -56,6 +56,7 @@ data:
       # disable the default protection in unbound to allow reverse lookup
       # queries to pass through to CoreDNS
       # https://github.com/NLnetLabs/unbound/blob/5c84bb573f9728c10bcb3592dbd12be403d362de/doc/example.conf.in#L804-L850
+{{- if eq .Cluster.ConfigItems.eks_ip_family "ipv6" }}
       local-zone: "d.f.ip6.arpa." nodefault
       local-zone: "8.e.f.ip6.arpa." nodefault
       local-zone: "9.e.f.ip6.arpa." nodefault
@@ -63,8 +64,10 @@ data:
       local-zone: "b.e.f.ip6.arpa." nodefault
       local-zone: "8.b.d.0.1.0.0.2.ip6.arpa." nodefault
       local-zone: "ip6.arpa." transparent
+{{- else }}
       local-zone: "10.in-addr.arpa." nodefault
       local-zone: "in-addr.arpa." transparent
+{{- end }}
 {{- else }}
       local-zone: "2.10.in-addr.arpa." transparent
       local-zone: "3.10.in-addr.arpa." transparent
@@ -78,12 +81,15 @@ data:
       name: "."
       forward-addr: 127.0.0.1@9254 # coredns
 {{- if eq .Cluster.Provider "zalando-eks" }}
+{{- if eq .Cluster.ConfigItems.eks_ip_family "ipv6" }}
     forward-zone:
       name: "ip6.arpa."
       forward-addr: 127.0.0.1@9254 # coredns
+{{- else }}
     forward-zone:
       name: "in-addr.arpa."
       forward-addr: 127.0.0.1@9254 # coredns
+{{- end }}
 {{- else }}
     forward-zone:
       name: "2.10.in-addr.arpa."
@@ -144,7 +150,7 @@ data:
 
     # Defines that this server is authority for reverse
     # lookups for these ranges.
-    cluster.local:9254 {{if eq .Cluster.Provider "zalando-eks"}}in-addr.arpa:9254 ip6.arpa:9254{{else}}10.2.0.0/15:9254 10.5.0.0/16:9254{{end}} {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ range $src := split .Cluster.ConfigItems.tracing_coredns_global_traces_endpoint  "," }}{{ $src }}:9254 {{ end }} {{ end }} {
+    cluster.local:9254 {{if eq .Cluster.Provider "zalando-eks"}}{{if eq .Cluster.ConfigItems.eks_ip_family "ipv6"}}ip6.arpa:9254{{else}}in-addr.arpa:9254{{end}}{{else}}10.2.0.0/15:9254 10.5.0.0/16:9254{{end}} {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}{{ range $src := split .Cluster.ConfigItems.tracing_coredns_global_traces_endpoint  "," }}{{ $src }}:9254 {{ end }} {{ end }} {
         errors
         {{ if eq .Cluster.ConfigItems.tracing_coredns_route_traces_to_local_zone "true"}}
           {{- with $cluster := .Cluster }}
@@ -156,9 +162,17 @@ data:
         kubernetes {
             pods insecure
             {{- if eq .Cluster.Provider "zalando-eks"}}
-            fallthrough in-addr.arpa ip6.arpa
+            {{- if eq .Cluster.ConfigItems.eks_ip_family "ipv6"}}
+            fallthrough ip6.arpa
+            {{- else}}
+            fallthrough in-addr.arpa
+            {{- end}}
             {{- end}}
         }
+{{- if eq .Cluster.Provider "zalando-eks"}}
+        # Reverse records outside the Kubernetes-owned ranges must be resolved upstream.
+        forward . /etc/resolv.conf
+{{- end}}
         cache 30
 {{ if eq .Cluster.ConfigItems.coredns_log_svc_names "true"}}
         log svc.svc.cluster.local.
