@@ -409,11 +409,10 @@ spec:
           - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
 {{ end }}
 {{- $filters := split .Cluster.ConfigItems.skipper_disabled_filters ","}}
-  {{ if not (index $filters "cache") }}
+{{ if not (index $filters "cache") }}
           - "-cache-l1-ttl=60s"
           - "-enable-l2-cache"
-  {{ end }}
-{{- end}}
+{{ end }}
           - "-inline-routes"
           - |
             kube__healthz_down: Path("/kube-system/healthz") && Shutdown()
