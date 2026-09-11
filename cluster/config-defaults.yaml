@@ -92,6 +92,7 @@ cluster_lifecycle_controller_memory_min: "10Mi"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
+kube_aws_ingress_controller_alpn_policy: "None"
 kube_aws_ingress_controller_idle_timeout: "1m"
 kube_aws_ingress_controller_deregistration_delay_timeout: "10s"
 # allow using NLBs for ingress
@@ -142,7 +143,11 @@ skipper_ingress_memory: "1500Mi"
 skipper_topology_spread_enabled: "true"
 skipper_topology_spread_timeout: "7m"
 
-skipper_copy_stream_pool_enabled: "true"
+{{if eq .Cluster.Environment "production"}}
+skipper_h2c_enabled: "false"
+{{else}}
+skipper_h2c_enabled: "true"
+{{end}}
 
 # haproxy protocol: cidrs are a comma seperated list of CIDRs, for example "::0/0,0.0.0.0/0" for all IPs
 skipper_enable_proxy_protocol: "false"
@@ -333,6 +338,8 @@ skipper_resources_application_label_min_creation_time: "2026-07-22T10:00:00Z"
 
 # polarsignals - only enabled for some clusters
 polarsignals_enabled: "false"
+# enable memory profiling by default everywhere where polarsignals is enabled
+polarsignals_memory_profiling_enabled: "true"
 # Comma separated list of workloads for which polarsignals is enabled, only used
 # if polarsignals_enabled is true, right now only skipper-ingress is configured
 # by default
@@ -355,6 +362,8 @@ polarsignals_oom_prof_allocs_enable: "false"
 polarsignals_apikey: ""
 polarsignals_memory: 400Mi
 polarsignals_cpu: 50m
+polarsignals_scraper_memory: 400Mi
+polarsignals_scraper_cpu: 50m
 polarsignals_probabilistic_profiling_interval: 1m
 {{if eq .Cluster.Environment "production"}}
 polarsignals_probabilistic_profiling_perc: "75"
@@ -420,20 +429,9 @@ skipper_ingress_open_telemetry_bsp_max_export_batch_size: 512
 skipper_ingress_open_telemetry_bsp_schedule_delay: "5s"
 skipper_ingress_open_telemetry_bsp_export_timeout: "5s"
 
-# skipper_serve_method_metric sets the flag -serve-method-metric. It
-# defines if the http method is included in the dimension
-# of the skipper_serve_host_duration_seconds_bucket metric.
-skipper_serve_method_metric: "false"
-# skipper_serve_status_code_metric sets the flag -serve-status-code-metric. It
-# defines if the http response status code is included in the dimension
-# of the skipper_serve_host_duration_seconds_bucket metric.
-skipper_serve_status_code_metric: "false"
 # skipper_combined_response_metrics sets the flag -combined-response-metrics.
 # It enables reporting combined response time metrics
-skipper_combined_response_metrics: "false"
-# skipper_backend_host_metrics sets the flag -backend-host-metrics.
-# It enables reporting total serve time metrics for backend
-skipper_backend_host_metrics: "false"
+skipper_combined_response_metrics: "true"
 # skipper_backend_zone_metrics sets the flag -backend-zone-metrics.
 # It enables reporting total serve time metrics for backend by zone
 skipper_backend_zone_metrics: "true"
@@ -676,7 +674,7 @@ metrics_server_metric_resolution: "15s"
 
 kube_aws_iam_controller_cpu: "5m"
 kube_aws_iam_controller_mem: "50Mi"
-kube_aws_iam_controller_enabled: "true"
+kube_aws_iam_controller_enabled: "false"
 
 kube_state_metrics_cpu: "100m"
 kube_state_metrics_mem_max: "4Gi"
@@ -798,6 +796,12 @@ teapot_admission_controller_validate_pod_images: "true"
 # if docker-meta is down, do not reject container images running in `kube-system`
 # teapot_admission_controller_validate_pod_images_soft_fail_namespaces: "^kube-system$"
 
+# As a temporary escape hatch during incidents, you can exclude certain namespaces from the
+# checks (defaults to none) and/or always allow certain container images regardless of namespace
+# (defaults to none), e.g.:
+# teapot_admission_controller_validate_pod_images_ignored_namespaces: "^kube-system$"
+# teapot_admission_controller_validate_pod_images_ignored_images: "^k8s.gcr.io/external-dns:.+$"
+
 teapot_admission_controller_validate_pod_template_resources: "true"
 teapot_admission_controller_preemption_enabled: "true"
 teapot_admission_controller_postgresql_delete_protection_enabled: "true"
@@ -807,8 +811,13 @@ teapot_admission_controller_postgresql_owning_application_check_enabled: "true"
 teapot_admission_controller_validate_application_label: "false"
 teapot_admission_controller_validate_base_images: "false"
 
-# Check container image compliance in e2e clusters. There are some exceptions to allow the e2e test suite to run.
+# Check container image compliance in e2e clusters. There are some exceptions to allow the e2e test suite to run,
+# see the "e2e" special-case block in cluster/manifests/02-admission-control/config.yaml.
 teapot_admission_controller_validate_pod_images: "true"
+
+# The upstream e2e test suite runs test cases using the pause image in kube-system, which is
+# otherwise subject to image compliance checks, so it needs to be allowed explicitly.
+teapot_admission_controller_validate_pod_images_ignored_images: "^k8s.gcr.io/pause:.+$"
 
 teapot_admission_controller_validate_pod_template_resources: "false"
 teapot_admission_controller_preemption_enabled: "true"
