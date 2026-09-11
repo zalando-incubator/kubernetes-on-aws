@@ -408,8 +408,8 @@ spec:
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
 {{ end }}
-{{- $filters := split .Cluster.ConfigItems.skipper_disabled_filters ","}}
-{{ if not (index $filters "cache") }}
+{{- $filters := split .Cluster.ConfigItems.skipper_disabled_filters "cache" | join "" }}
+{{ if eq $filters .Cluster.ConfigItems.skipper_disabled_filters }}
           - "-cache-l1-ttl=60s"
           - "-enable-l2-cache"
 {{ end }}
