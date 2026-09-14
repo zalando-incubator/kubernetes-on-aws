@@ -1,6 +1,6 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.27.71-1521" }}
+{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.27.85-1535" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.27.92-1542" }}
 
 {{/* Allow to override manually canary image by config item */}}
@@ -407,6 +407,11 @@ spec:
 {{ if or (eq .Cluster.ConfigItems.nlb_switch "pre") (eq .Cluster.ConfigItems.nlb_switch "exec") }}
           - "-forwarded-headers=X-Forwarded-For,X-Forwarded-Proto=https,X-Forwarded-Port=443"
           - '-forwarded-headers-exclude-cidrs={{ .cluster_internal_cidrs | join "," }}'
+{{ end }}
+{{- $filters := split .Cluster.ConfigItems.skipper_disabled_filters "cache" | join "" }}
+{{ if eq $filters .Cluster.ConfigItems.skipper_disabled_filters }}
+          - "-cache-l1-ttl=60s"
+          - "-enable-l2-cache"
 {{ end }}
           - "-inline-routes"
           - |
