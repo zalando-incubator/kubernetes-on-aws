@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spiffe-helper
+  namespace: spire
+  annotations:
+    downscaler/exclude: "true"
+  labels:
+    app: spiffe-helper
+spec:
+  selector:
+    matchLabels:
+      app: spiffe-helper
+  template:
+    metadata:
+      labels:
+        app: spiffe-helper
+    spec:
+      serviceAccountName: spiffe-helper
+      containers:
+      - name: skipper
+        image: ghcr.io/zalando/skipper:v0.27.15
+        imagePullPolicy: IfNotPresent
+        args:
+          - skipper
+          - "-address=:8443"
+        securityContext:
+          seLinuxOptions:
+            type: "spc_t"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100Mi
+          limits:
+            cpu: 50m
+            memory: 100Mi
+        volumeMounts:
+        - name: shared-data
+          mountPath: /data
+        - name: spire-agent-socket
+          mountPath: /tmp/spire-agent/public/
+          readOnly: true
+        - name: helper-config
+          mountPath: /config
+      - name: spiffe-helper
+        image: ghcr.io/spiffe/spiffe-helper:0.11.0
+        args:
+        - "-config"
+        - "/config/helper.conf"
+        securityContext:
+          seLinuxOptions:
+            type: "spc_t"
+        volumeMounts:
+        - name: shared-data
+          mountPath: /data
+        - name: spire-agent-socket
+          mountPath: /tmp/spire-agent/public/
+          readOnly: true
+        - name: helper-config
+          mountPath: /config
+        resources:
+          requests:
+            cpu: 50m
+            memory: 100Mi
+          limits:
+            cpu: 50m
+            memory: 100Mi
+      volumes:
+      - name: spire-agent-socket
+        csi:
+          driver: "csi.spiffe.io"
+          readOnly: true
+      - name: helper-config
+        configMap:
+          name: spiffe-helper
+      - name: shared-data
+        emptyDir: {}
