@@ -82,7 +82,11 @@ karpenter_flex_types_enabled: "true"
 # alternatives:
 #  - al2023@latest
 #  - bottlerocket@latest
+{{- if eq .Cluster.Provider "zalando-eks" }}
+karpenter_ami_family_alias: "bottlerocket@latest"
+{{- else }}
 karpenter_ami_family_alias: "custom"
+{{- end }}
 
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
