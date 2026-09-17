@@ -768,6 +768,12 @@ teapot_admission_controller_deployment_default_max_unavailable: "1"
 teapot_admission_controller_inject_aws_waiter: "true"
 teapot_admission_controller_parent_resource_hash: "true"
 teapot_admission_controller_stackset_inject_topology_spread_enable: "false"
+{{ if eq .Cluster.Environment "test" }}
+# Comma-separated list of image registries denied in test clusters.
+teapot_admission_controller_deny_listed_registries: "pierone.stups.zalan.do"
+{{ else }}
+teapot_admission_controller_deny_listed_registries: ""
+{{ end }}
 
 ## Defaults are set per-cluster
 teapot_admission_controller_check_daemonset_resources: "true"
