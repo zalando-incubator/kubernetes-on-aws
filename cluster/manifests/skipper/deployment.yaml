@@ -102,7 +102,9 @@ spec:
 {{- if eq .Cluster.ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:
         - maxSkew: 1
-          minDomains: 3
+{{- if eq .Cluster.ConfigItems.skipper_topology_enable_min_domain "true" }}
+          minDomains: {{ .Cluster.ConfigItems.skipper_topology_min_domains }}
+{{- end }}
           topologyKey: topology.kubernetes.io/zone
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
