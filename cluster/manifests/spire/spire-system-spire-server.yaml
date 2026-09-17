@@ -15,12 +15,14 @@ metadata:
 rules:
 - apiGroups: [""]
   resources: ["nodes"]
-  verbs: ["get"]
-  # allow TokenReview requests (to verify service account tokens for PSAT
-  # attestation)
+  verbs:  ["get"]
+  # allow TokenReview requests (to verify service account tokens for PSAT attestation)
 - apiGroups: ["authentication.k8s.io"]
   resources: ["tokenreviews"]
-  verbs: ["get", "create"]
+  verbs: ["get","create"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get","list","watch","create","update","patch","delete"]
 
 ---
 
