@@ -1,0 +1,32 @@
+[settings.kubernetes]
+cluster-name = "{{.Cluster.Name}}"
+api-server = "{{.Cluster.ConfigItems.eks_endpoint}}"
+cluster-certificate = "{{.Cluster.ConfigItems.eks_certificate_authority_data}}"
+{{- if eq .Cluster.ConfigItems.eks_ip_family "ipv6" }}
+cluster-dns-ip = "fd00:1:2:3::5"
+max-pods = {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
+{{- end }}
+
+[settings.kubernetes.node-labels]
+"node.kubernetes.io/role" = "worker"
+"node.kubernetes.io/node-pool" = "{{.NodePool.Name}}"
+"node.kubernetes.io/profile" = "{{.NodePool.Profile}}"
+"lifecycle-status" = "ready"
+"ami-family" = "bottlerocket"
+"asg-lifecycle-hook" = "true"
+{{- if index .NodePool.ConfigItems "labels"}}
+{{- range split .NodePool.ConfigItems.labels ","}}
+{{- $label := split . "="}}
+"{{index $label 0}}" = "{{index $label 1}}"
+{{- end}}
+{{- end}}
+
+
+[settings.kubernetes.node-taints]
+"zalando.org/node-not-ready" = [":NoSchedule"]
+{{- range .NodePool.Taints}}
+"{{.Key}}" = ["{{if .Value}}{{.Value}}:{{.Effect}}{{else}}:{{.Effect}}{{end}}"]
+{{- end}}
+
+[settings.host-containers.admin]
+source = "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/cloud-platform/bottlerocket-admin:v0.21.4-main-2"
