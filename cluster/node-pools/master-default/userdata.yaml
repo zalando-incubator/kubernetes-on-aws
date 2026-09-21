@@ -589,7 +589,7 @@ write_files:
           - --root-ca-file=/etc/kubernetes/ssl/ca.pem
           - --cloud-provider=external
           - --cloud-config=/etc/kubernetes/cloud-config.ini
-          - --feature-gates=MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}}{{if eq .Cluster.ConfigItems.horizontal_pod_autoscaler_configurable_tolerance "true"}},HPAConfigurableTolerance=true{{end}}
+          - --feature-gates=MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}}{{if eq .Cluster.ConfigItems.horizontal_pod_autoscaler_configurable_tolerance "true"}},HPAConfigurableTolerance=true{{end}},HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }}
           - --use-service-account-credentials=true
           - --configure-cloud-routes=false
           - --allocate-node-cidrs=true
