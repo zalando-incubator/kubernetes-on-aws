@@ -140,7 +140,7 @@ var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metri
 		initialReplicas := 0
 		scaledReplicas := 1
 		metricValue := 10
-		metricTarget := int64(metricValue) * 2
+		metricTarget := int64(metricValue)
 		labels := map[string]string{
 			"application": DeploymentName,
 		}
@@ -436,8 +436,8 @@ func externalHPA(deploymentName string, metricNameTargets map[string]int64, anno
 					},
 				},
 				Target: autoscaling.MetricTarget{
-					Type:         autoscaling.AverageValueMetricType,
-					AverageValue: resource.NewQuantity(target, resource.DecimalSI),
+					Type:  autoscaling.ValueMetricType,
+					Value: resource.NewQuantity(target, resource.DecimalSI),
 				},
 			},
 		})
