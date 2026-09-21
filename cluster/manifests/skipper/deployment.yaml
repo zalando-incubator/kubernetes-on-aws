@@ -133,6 +133,12 @@ spec:
               matchExpressions:
               - key: node.kubernetes.io/instance-type
                 operator: In
+{{ if and (eq .Cluster.ConfigItems.skipper_ingress_desired_instance_types_enabled "true") (ne .Cluster.ConfigItems.skipper_ingress_desired_instance_types "") }}
+                values:
+{{ range $instance_type := split .Cluster.ConfigItems.skipper_ingress_desired_instance_types "," }}
+                - "{{ $instance_type }}"
+{{ end }}
+{{ else }}
                 values:
                 - c7g.large
                 - c7g.xlarge
@@ -140,6 +146,7 @@ spec:
                 - c7g.4xlarge
                 - c7g.8xlarge
                 - m7g.large
+{{ end }}
           - weight: 50
             preference:
               matchExpressions:
