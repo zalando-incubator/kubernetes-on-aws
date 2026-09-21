@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
 {{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.27.85-1535" }}
-{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.27.95-1545" }}
+{{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.27.106-1556" }}
 
 {{/* Allow to override manually canary image by config item */}}
 {{ if ne .Cluster.ConfigItems.skipper_ingress_canary_image "" }}
@@ -102,6 +102,9 @@ spec:
 {{- if eq .Cluster.ConfigItems.skipper_topology_spread_enabled "true" }}
       topologySpreadConstraints:
         - maxSkew: 1
+{{- if eq .Cluster.ConfigItems.skipper_topology_min_domains_enabled "true" }}
+          minDomains: {{ .Cluster.ConfigItems.skipper_topology_min_domains }}
+{{- end }}
           topologyKey: topology.kubernetes.io/zone
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
