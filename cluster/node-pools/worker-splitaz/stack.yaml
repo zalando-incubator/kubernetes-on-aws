@@ -171,7 +171,9 @@ Resources:
           # {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
           Ipv6AddressCount: 1
           PrimaryIpv6: true
-          # {{- end}}
+          # {{- else if eq .Cluster.ConfigItems.disable_ipv6_address_assignment "true" }}
+          Ipv6AddressCount: 0
+          # {{- end }}
           Groups:
           - !ImportValue '{{ .Cluster.ID }}:worker-security-group'
         EbsOptimized: false

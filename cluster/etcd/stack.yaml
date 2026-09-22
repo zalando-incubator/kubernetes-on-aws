@@ -50,9 +50,12 @@ Resources:
           - Key: Name
             Value: 'etcd-cluster'
         NetworkInterfaces:
-          - DeviceIndex: 0
-            AssociatePublicIpAddress: true
-            Groups:
+           - DeviceIndex: 0
+             AssociatePublicIpAddress: true
+             # {{ if eq .Cluster.ConfigItems.disable_ipv6_address_assignment "true" }}
+             Ipv6AddressCount: 0
+             # {{ end }}
+             Groups:
               - !GetAtt EtcdClusterSecurityGroup.GroupId
         EbsOptimized: false
         IamInstanceProfile:
