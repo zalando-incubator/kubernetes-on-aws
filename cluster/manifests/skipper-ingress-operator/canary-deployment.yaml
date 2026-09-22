@@ -1,36 +1,36 @@
-# {{ if eq .Cluster.ConfigItems.skipper_canary_controller_enabled "true" }}
+# {{ if eq .Cluster.ConfigItems.skipper_ingress_operator_enabled "true" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: skipper-canary-controller
+  name: skipper-ingress-operator
   namespace: kube-system
   labels:
     application: skipper-ingress
-    component: canary
+    component: operator
 spec:
   replicas: 1
   selector:
     matchLabels:
       application: skipper-ingress
-      component: canary-controller
+      component: operator
   template:
     metadata:
       labels:
         application: skipper-ingress
-        component: canary-controller
+        component: operator
       annotations:
         prometheus.io/path: /metrics
         prometheus.io/port: "9911"
         prometheus.io/scrape: "true"
         kubernetes-log-watcher/scalyr-parser: |
-          [{"container": "skipper-canary-controller", "parser": "keyValue"}]
+          [{"container": "skipper-ingress-operator", "parser": "keyValue"}]
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
     spec:
-      serviceAccountName: skipper-canary-controller
+      serviceAccountName: skipper-ingress-operator
       containers:
-      - name: skipper-canary-controller
+      - name: skipper-ingress-operator
         terminationMessagePolicy: FallbackToLogsOnError
-        image: container-registry.zalando.net/gwproxy/skipper-canary-controller:main-40
+        image: container-registry.zalando.net/gwproxy/skipper-ingress-operator:main-40
         env:
         - name: POD_NAME
           valueFrom:
