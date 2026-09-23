@@ -86,7 +86,7 @@ Our Skipper_ setup has changed over time. Skipper directly comes with a Kubernet
 Today, Skipper is running as a ``Deployment`` with ``HorizontalPodAutoscaler`` (HPA) on dedicated worker nodes.
 We run Skipper_ by a split of control plane components and data plane components.
 The data plane has 2 deployments skipper-ingress-canary that runs a single replica in all clusters and skipper-ingress that runs by a deployment with HPA. We also have a fleet of autoscaled redis running in the clusters to support cluster wide ratelimit features in the data plane.
-The control plane consists of routesrv, sandbox-controller, fabric-gateway, pod-deletion-cost-controller, api-monitoring-controller and skipper-ingress-operator.
+The control plane consists of routesrv, sandbox-controller, fabric-gateway, pod-deletion-cost-controller, api-monitoring-controller, shadowtraffic-controller and skipper-ingress-operator.
 Routesrv_ preprocesses the routing table for the dataplane. Routesrv polls regularly kube-apiserver to get all Ingress_ and RouteGroup_ and exposes an API to fetch skipper routes as eskip_ file. Eskip is the routing language of Skipper.
 Sandbox-controller and fabric-gateway are special routing objects to provide platform capabilities like e2e testing and a secure by default API resource. Both components read their CRDs and write Ingress_ and/or RouteGroup_ resources to orchestrate skipper-ingress data plane.
 Pod-deletion-cost-controller fixes zone aware downscaling see also https://github.com/kubernetes/kubernetes/issues/124149 .
