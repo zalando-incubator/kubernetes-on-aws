@@ -1424,6 +1424,14 @@ kube_janitor_enabled: "true"
 # scheduling_controls
 teapot_admission_controller_scheduling_controls_enabled: "true"
 teapot_admission_controller_scheduling_controls_default_architecture: "amd64"
+{{ if eq .Cluster.Environment "test" }}
+# In test clusters we don't set a preferred instance generation. We care less
+# about performance and want to optimize for spot usage.
+teapot_admission_controller_scheduling_controls_preferred_instance_generations: ""
+{{ else }}
+teapot_admission_controller_scheduling_controls_preferred_instance_generations: "9,8,7"
+{{ end }}
+teapot_admission_controller_scheduling_controls_allowed_instance_generations: "9,8,7,6"
 
 # master-node-autoscaler configuration
 
