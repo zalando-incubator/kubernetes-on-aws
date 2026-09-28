@@ -84,6 +84,13 @@ karpenter_flex_types_enabled: "true"
 #  - bottlerocket@latest
 karpenter_ami_family_alias: "custom"
 
+# Define the AMI family which controls if nodes utilise the Ubunutu AMI
+# or Bottlerocket. An empty string will result in running Ubuntu while the
+# value "bottlerocket" will enable Bottlerocket.
+node_ami_family: ""
+
+bottlerocket_ami_version: "1.65.0"
+
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
 
@@ -409,23 +416,11 @@ skipper_ingress_opentracing_client_trace_by_tag: "true"
 skipper_ingress_opentracing_excluded_proxy_tags: ""
 skipper_ingress_opentracing_backend_name_tag: "true"
 skipper_opentracing_disable_filter_spans: "true"
-# lightstep
-skipper_ingress_tracing_buffer: "32768"
-skipper_ingress_lightstep_grpc_max_msg_size: 16384000
-skipper_ingress_lightstep_min_period: "500ms"
-skipper_ingress_lightstep_max_period: "2500ms"
-skipper_ingress_lightstep_max_log_key_len: 20
-skipper_ingress_lightstep_max_log_value_len: 128
-skipper_ingress_lightstep_max_logs_per_span: 20
-skipper_ingress_lightstep_propagators: "lightstep"
-# set to "log-events" to enable
-skipper_ingress_lightstep_log_events: ""
 lightstep_token: ""
 # otel collector endpoint
 tracing_collector_host: "tracing.platform-infrastructure.zalan.do"
 tracing_collector_port: "8443"
 # OpenTelemetry
-skipper_ingress_open_telemetry_enabled: "true"
 skipper_ingress_open_telemetry_bsp_max_queue_size: 2048
 skipper_ingress_open_telemetry_bsp_max_export_batch_size: 512
 skipper_ingress_open_telemetry_bsp_schedule_delay: "5s"
