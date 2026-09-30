@@ -11,7 +11,7 @@ data:
       bind_address = "0.0.0.0"
       bind_port = "8081"
       trust_domain = "pg9-euc1-test.test.k8s.zalando.com"
-      # trust_domain = "{{ .Cluster.Environment }}.k8s.zalando.com"
+      # trust_domain = "{{ .Cluster.Alias }}.{{ .Cluster.Environment }}.k8s.zalando.com"
       data_dir = "/run/spire/server/data"
       log_level = "DEBUG"
       federation {
@@ -33,6 +33,7 @@ data:
       NodeAttestor "k8s_psat" {
         plugin_data {
           clusters = {
+            # {{ .Cluster.Alias }} = {
             pg9-euc1-test = {
               service_account_allow_list = ["spire:spire-agent"]
             }
