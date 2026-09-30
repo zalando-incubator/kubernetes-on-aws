@@ -4,9 +4,8 @@ metadata:
   name: spiff-helper
   namespace: spire
 spec:
-  spiffeIDTemplate: "spiffe://pg9-euc1-test.test.k8s.zalando.com/spiffe-helper/cmp/api"
-  #spiffeIDTemplate: "spiffe://apps.pg9-euc1-test.test.k8s.zalando.com/{{ index .PodMeta.Labels \"application\" }}/cmp/{{ index .PodMeta.Labels \"component\" }}"
-  #spiffeIDTemplate: "spiffe://apps.{{ .Cluster.Alias }}.test.k8s.zalando.com/\{\{ index .PodMeta.Labels \"application\" \}\}/cmp/\{\{ index .PodMeta.Labels \"component\" \}\}"
+  spiffeIDTemplate: "spiffe://pg9-euc1-test.test.k8s.zalando.com/app/{{ index .PodMeta.Labels \"application\" }}/cmp/{{ index .PodMeta.Labels \"component\" }}"
+  #spiffeIDTemplate: "spiffe://{{ .Cluster.Alias }}.{{ .Cluster.Environment }}.k8s.zalando.com/app/\{\{ index .PodMeta.Labels \"application\" \}\}/cmp/\{\{ index .PodMeta.Labels \"component\" \}\}"
   podSelector:
     matchExpressions:
       - key: application
@@ -17,7 +16,7 @@ spec:
     # matchLabels:
     #   application: spiffe-helper
     #   component: api
-  # optional: namespace restriction
-  # namespaceSelector:
-  #   matchLabels:
-  #     spire-enabled: "true"
+  # namespace restriction by label
+  namespaceSelector:
+    matchLabels:
+      spire-enabled: "true"
