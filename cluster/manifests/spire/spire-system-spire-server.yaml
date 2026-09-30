@@ -10,7 +10,7 @@ metadata:
     application: spire-server
     component: server
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       application: spire-server
@@ -22,6 +22,31 @@ spec:
         application: spire-server
         component: server
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          minDomains: 3
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              application: spire-server
+              component: server
+      affinity:
+       podAntiAffinity:
+         requiredDuringSchedulingIgnoredDuringExecution:
+         - labelSelector:
+             matchExpressions:
+             - key: application
+               operator: In
+               values:
+               - spire-server
+             - key: component
+               operator: In
+               values:
+               - server
+           topologyKey: kubernetes.io/hostname
+      priorityClassName: cluster-critical-nonpreempting
+      # priorityClassName: "{{ .Cluster.ConfigItems.system_priority_class }}"
       serviceAccountName: spire-server
       shareProcessNamespace: true
       containers:
