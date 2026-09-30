@@ -1,80 +1,4 @@
 ---
-
-# ConfigMap containing the latest trust bundle for the trust domain. It is
-# updated by SPIRE using the k8sbundle notifier plugin. SPIRE agents mount
-# this config map and use the certificate to bootstrap trust with the SPIRE
-# server during attestation.
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: spire-bundle
-  namespace: spire
-
----
-
-# ConfigMap containing the SPIRE server configuration.
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: spire-server
-  namespace: spire
-data:
-  server.conf: |
-    server {
-      bind_address = "0.0.0.0"
-      bind_port = "8081"
-      trust_domain = "example.org"
-      data_dir = "/run/spire/server/data"
-      log_level = "DEBUG"
-      federation {
-        bundle_endpoint {
-          address = "0.0.0.0"
-          port = 8443
-        }
-      }
-    }
-
-    plugins {
-      DataStore "sql" {
-        plugin_data {
-          database_type = "sqlite3"
-          connection_string = "/run/spire/server/data/datastore.sqlite3"
-        }
-      }
-
-      NodeAttestor "k8s_psat" {
-        plugin_data {
-          clusters = {
-            example = {
-              service_account_allow_list = ["spire:spire-agent"]
-            }
-          }
-        }
-      }
-
-      KeyManager "disk" {
-        plugin_data {
-          keys_path = "/run/spire/server/data/keys.json"
-        }
-      }
-
-      Notifier "k8sbundle" {
-        plugin_data {
-          namespace = "spire"
-        }
-      }
-    }
-
-    health_checks {
-      listener_enabled = true
-      bind_address = "0.0.0.0"
-      bind_port = "8080"
-      live_path = "/live"
-      ready_path = "/ready"
-    }
-
----
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -83,17 +7,20 @@ metadata:
   name: spire-server
   namespace: spire
   labels:
-    app: spire-server
+    application: spire-server
+    component: server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: spire-server
+      application: spire-server
+      component: server
   template:
     metadata:
       namespace: spire
       labels:
-        app: spire-server
+        application: spire-server
+        component: server
     spec:
       serviceAccountName: spire-server
       shareProcessNamespace: true
@@ -170,7 +97,8 @@ spec:
       targetPort: 8081
       protocol: TCP
   selector:
-    app: spire-server
+    application: spire-server
+    component: server
 
 ---
 
@@ -187,7 +115,8 @@ spec:
       port: 8443
       protocol: TCP
   selector:
-    app: spire-server
+    application: spire-server
+    component: server
 
 
 ---
@@ -204,4 +133,5 @@ spec:
       protocol: TCP
       targetPort: 9443
   selector:
-    app: spire-server
+    application: spire-server
+    component: server
