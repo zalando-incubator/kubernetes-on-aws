@@ -82,7 +82,11 @@ karpenter_flex_types_enabled: "true"
 # alternatives:
 #  - al2023@latest
 #  - bottlerocket@latest
+{{- if eq .Cluster.Provider "zalando-eks" }}
+karpenter_ami_family_alias: "bottlerocket@latest"
+{{- else }}
 karpenter_ami_family_alias: "custom"
+{{- end }}
 
 # Define the AMI family which controls if nodes utilise the Ubunutu AMI
 # or Bottlerocket. An empty string will result in running Ubuntu while the
