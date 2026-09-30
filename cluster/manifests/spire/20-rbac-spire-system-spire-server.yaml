@@ -1,3 +1,12 @@
+# ServiceAccount used by the SPIRE server.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spire-server
+  namespace: spire
+
+---
+
 # Required cluster role to allow spire-server to query k8s API server
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -16,11 +25,15 @@ rules:
 - apiGroups: [""]
   resources: ["configmaps"]
   verbs: ["get","list","watch","create","update","patch","delete"]
+  # allow controller-manager to access automated registration
+- apiGroups: ["spire.spiffe.io"]
+  resources: ["clusterspiffeids", "clusterspiffeids/status"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   # allow TokenReview requests (to verify service account tokens for PSAT attestation)
 - apiGroups: ["authentication.k8s.io"]
   resources: ["tokenreviews"]
   verbs: ["get","list","watch","create"]
-  # maybe not needed
+  # required for HA setup (not done yet)
 - apiGroups: ["coordination.k8s.io"]
   resources: ["leases"]
   verbs: ["get","list","watch","create","update","patch","delete"]
