@@ -24,7 +24,6 @@ max-pods = {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
 
 
 [settings.kubernetes.node-taints]
-"zalando.org/node-not-ready" = [":NoSchedule"]
 {{- range .NodePool.Taints}}
 "{{.Key}}" = ["{{if .Value}}{{.Value}}:{{.Effect}}{{else}}:{{.Effect}}{{end}}"]
 {{- end}}
