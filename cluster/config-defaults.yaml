@@ -84,6 +84,13 @@ karpenter_flex_types_enabled: "true"
 #  - bottlerocket@latest
 karpenter_ami_family_alias: "custom"
 
+# Define the AMI family which controls if nodes utilise the Ubunutu AMI
+# or Bottlerocket. An empty string will result in running Ubuntu while the
+# value "bottlerocket" will enable Bottlerocket.
+node_ami_family: ""
+
+bottlerocket_ami_version: "1.65.0"
+
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
 
@@ -164,10 +171,10 @@ skipper_ingress_health_check_options: "period=10s,min-requests=10,min-drop-proba
 skipper_ingress_canary_enabled: "true"
 skipper_ingress_canary_image: ""
 skipper_ingress_test_single_pod: "false"
-skipper_canary_controller_enabled: "false"
+skipper_ingress_operator_enabled: "false"
 
 skipper_ingress_canary_routes_urls: http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/routes/$(KUBE_NODE_ZONE)
-skipper_ingress_routes_urls: http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes
+skipper_ingress_routes_urls: http://skipper-ingress-routesrv.kube-system.svc.cluster.local/routes/$(KUBE_NODE_ZONE)
 
 skipper_ingress_canary_swarm_valkey_remote: http://skipper-ingress-canary-routesrv.kube-system.svc.cluster.local/swarm/valkey/shards
 skipper_ingress_swarm_valkey_remote: http://skipper-ingress-routesrv.kube-system.svc.cluster.local/swarm/valkey/shards
@@ -409,23 +416,11 @@ skipper_ingress_opentracing_client_trace_by_tag: "true"
 skipper_ingress_opentracing_excluded_proxy_tags: ""
 skipper_ingress_opentracing_backend_name_tag: "true"
 skipper_opentracing_disable_filter_spans: "true"
-# lightstep
-skipper_ingress_tracing_buffer: "32768"
-skipper_ingress_lightstep_grpc_max_msg_size: 16384000
-skipper_ingress_lightstep_min_period: "500ms"
-skipper_ingress_lightstep_max_period: "2500ms"
-skipper_ingress_lightstep_max_log_key_len: 20
-skipper_ingress_lightstep_max_log_value_len: 128
-skipper_ingress_lightstep_max_logs_per_span: 20
-skipper_ingress_lightstep_propagators: "lightstep"
-# set to "log-events" to enable
-skipper_ingress_lightstep_log_events: ""
 lightstep_token: ""
 # otel collector endpoint
 tracing_collector_host: "tracing.platform-infrastructure.zalan.do"
 tracing_collector_port: "8443"
 # OpenTelemetry
-skipper_ingress_open_telemetry_enabled: "true"
 skipper_ingress_open_telemetry_bsp_max_queue_size: 2048
 skipper_ingress_open_telemetry_bsp_max_export_batch_size: 512
 skipper_ingress_open_telemetry_bsp_schedule_delay: "5s"
@@ -1424,6 +1419,14 @@ kube_janitor_enabled: "true"
 # scheduling_controls
 teapot_admission_controller_scheduling_controls_enabled: "true"
 teapot_admission_controller_scheduling_controls_default_architecture: "amd64"
+{{ if eq .Cluster.Environment "test" }}
+# In test clusters we don't set a preferred instance generation. We care less
+# about performance and want to optimize for spot usage.
+teapot_admission_controller_scheduling_controls_preferred_instance_generations: ""
+{{ else }}
+teapot_admission_controller_scheduling_controls_preferred_instance_generations: "9,8,7"
+{{ end }}
+teapot_admission_controller_scheduling_controls_allowed_instance_generations: "9,8,7,6"
 
 # master-node-autoscaler configuration
 
