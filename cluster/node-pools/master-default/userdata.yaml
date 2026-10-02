@@ -152,8 +152,8 @@ write_files:
           - --token-auth-file=/etc/kubernetes/config/tokenfile.csv
           - --oidc-issuer-url={{.Cluster.ConfigItems.okta_auth_issuer_url}}
           - --oidc-client-id={{.Cluster.ConfigItems.okta_auth_client_id}}
-          - --oidc-username-claim=email
-          - "--oidc-username-prefix=okta:"
+          - --oidc-username-claim={{.Cluster.ConfigItems.okta_username_claim}}
+          - "--oidc-username-prefix={{.Cluster.ConfigItems.okta_username_claim_prefix}}"
           - --oidc-groups-claim=groups
           - "--oidc-groups-prefix=okta:"
           - --feature-gates=HPAScaleToZero={{ .Cluster.ConfigItems.enable_hpa_scale_to_zero }},MaxUnavailableStatefulSet={{.Cluster.ConfigItems.max_unavailable_statefulset_enabled}},KMSv1=true{{if eq .Cluster.ConfigItems.horizontal_pod_autoscaler_configurable_tolerance "true"}},HPAConfigurableTolerance=true{{end}}
