@@ -7,11 +7,13 @@ Metadata:
     component: "shared-resource"
     "kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
 
+{{- if ne .NodePool.ConfigItems.node_ami_family "bottlerocket" }}
 Mappings:
   Images:
     {{.Cluster.Region}}:
       # Use the node pool's architecture to construct the config item name that we're using to get the AMI name.
       MachineImage: '{{ index .NodePool.ConfigItems (print "kuberuntu_image_v1_36_" .NodePool.ConfigItems.kuberuntu_ami_version "_" .Values.InstanceInfo.Architecture) }}'
+{{- end }}
 
 Resources:
   AutoScalingGroup:
@@ -79,6 +81,11 @@ Resources:
       - Key: k8s.io/cluster-autoscaler/node-template/label/lifecycle-status
         PropagateAtLaunch: true
         Value: ready
+{{- if eq .NodePool.ConfigItems.node_ami_family "bottlerocket" }}
+      - Key: k8s.io/cluster-autoscaler/node-template/label/ami-family
+        PropagateAtLaunch: true
+        Value: bottlerocket
+{{- end }}
       - Key: k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot
         PropagateAtLaunch: true
         Value: {{if .NodePool.IsSpot }}true{{else}}false{{end}}
@@ -132,7 +139,15 @@ Resources:
     Properties:
       LaunchTemplateName: '{{.Cluster.LocalID}}-{{ .NodePool.Name }}'
       LaunchTemplateData:
+{{- if eq .NodePool.ConfigItems.node_ami_family "bottlerocket" }}
+        MetadataOptions:
+          HttpEndpoint: enabled
+          HttpTokens: required
+          HttpPutResponseHopLimit: 1
 {{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+          HttpProtocolIpv6: enabled
+{{- end }}
+{{- else if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
         MetadataOptions:
           HttpEndpoint: enabled
           HttpProtocolIpv6: enabled
@@ -153,7 +168,11 @@ Resources:
           - Key: Name
             Value: "{{ .NodePool.Name }} ({{ .Cluster.ID }})"
         BlockDeviceMappings:
+{{- if eq .NodePool.ConfigItems.node_ami_family "bottlerocket" }}
+        - DeviceName: /dev/xvdb
+{{- else }}
         - DeviceName: /dev/sda1
+{{- end }}
           Ebs:
             DeleteOnTermination: {{.NodePool.ConfigItems.ebs_root_volume_delete_on_termination}}
             VolumeSize: {{.NodePool.ConfigItems.ebs_root_volume_size}}
@@ -173,10 +192,14 @@ Resources:
         IamInstanceProfile:
           Name: !Ref AutoScalingInstanceProfile
         InstanceInitiatedShutdownBehavior: terminate
+{{- if eq .NodePool.ConfigItems.node_ami_family "bottlerocket" }}
+        ImageId: '{{ "{{" }}resolve:ssm:/aws/service/bottlerocket/aws-k8s-1.36/{{if eq .Values.InstanceInfo.Architecture "amd64"}}x86_64{{else}}arm64{{end}}/{{.Cluster.ConfigItems.bottlerocket_ami_version}}/image_id{{ "}}" }}'
+{{- else }}
         ImageId: !FindInMap
         - Images
         - !Ref 'AWS::Region'
         - MachineImage
+{{- end }}
         InstanceType: "{{ index .NodePool.InstanceTypes 0 }}"
 {{- if and .NodePool.IsSpot (eq (len .NodePool.InstanceTypes) 1) }}
         InstanceMarketOptions:
