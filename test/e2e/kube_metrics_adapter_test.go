@@ -71,6 +71,26 @@ var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metri
 
 	})
 
+	// With a metric value equal to the target, the HPA should scale up to 1 replica
+	It("should scale up from 0 replicas with Custom Metric of type Pod from kube-metrics-adapter [CustomMetricsAutoscaling] [Zalando]", func() {
+		initialReplicas := 0
+		scaledReplicas := 1
+		metricValue := int64(10)
+		metricName := "queue-count"
+		metricTarget := metricValue // must be same as the metric value
+
+		tc := CustomMetricTestCase{
+			framework:       f,
+			kubeClient:      cs,
+			initialReplicas: initialReplicas,
+			scaledReplicas:  scaledReplicas,
+			deployment:      simplePodMetricDeployment(DeploymentName, int32(initialReplicas), metricName, metricValue),
+			hpa:             podMetricHPA(DeploymentName, map[string]int64{metricName: metricTarget}, 0),
+		}
+		tc.Run()
+
+	})
+
 	It("should scale down with Custom Metric of type Object from Skipper (networking.k8s.io) [Ingress] [CustomMetricsAutoscaling] [Zalando]", func() {
 		hostName := fmt.Sprintf("%s-%d.%s", DeploymentName, time.Now().UTC().Unix(), E2EHostedZone())
 
@@ -364,11 +384,10 @@ func podMetricContainerSpec(container CustomMetricContainerSpec) corev1.Containe
 }
 
 func simplePodMetricHPA(deploymentName string, metricName string, metricTarget int64) *autoscaling.HorizontalPodAutoscaler {
-	return podMetricHPA(deploymentName, map[string]int64{metricName: metricTarget})
+	return podMetricHPA(deploymentName, map[string]int64{metricName: metricTarget}, 1)
 }
 
-func podMetricHPA(deploymentName string, metricTargets map[string]int64) *autoscaling.HorizontalPodAutoscaler {
-	var minReplicas int32 = 1
+func podMetricHPA(deploymentName string, metricTargets map[string]int64, minReplicas int32) *autoscaling.HorizontalPodAutoscaler {
 	metrics := []autoscaling.MetricSpec{}
 	metricName := ""
 	for metric, target := range metricTargets {
