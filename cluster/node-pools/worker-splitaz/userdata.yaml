@@ -8,6 +8,14 @@ cluster-dns-ip = "fd00:1:2:3::5"
 max-pods = {{ .Cluster.ConfigItems.karpenter_max_pods_per_node }}
 {{- end }}
 
+[settings.kubernetes.kube-reserved]
+cpu = "{{ .Cluster.ConfigItems.kubelet_kube_reserved_cpu }}"
+memory = "{{ .Cluster.ConfigItems.kubelet_kube_reserved_memory }}"
+
+[settings.kubernetes.system-reserved]
+cpu = "{{ .Cluster.ConfigItems.kubelet_system_reserved_cpu }}"
+memory = "{{ .Cluster.ConfigItems.kubelet_system_reserved_memory }}"
+
 [settings.kubernetes.node-labels]
 "node.kubernetes.io/role" = "worker"
 "node.kubernetes.io/node-pool" = "{{.NodePool.Name}}"
