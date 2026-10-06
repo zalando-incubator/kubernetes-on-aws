@@ -405,6 +405,23 @@ func podMetricHPA(deploymentName string, metricTargets map[string]int64, minRepl
 		})
 		metricName = metric
 	}
+
+	// needed for test cases for scaling up from 0 replicas
+	if minReplicas == 0 {
+		metrics = append(metrics, autoscaling.MetricSpec{
+			Type: autoscaling.ExternalMetricSourceType,
+			External: &autoscaling.ExternalMetricSource{
+				Metric: autoscaling.MetricIdentifier{
+					Name: "dummy-metric",
+				},
+				Target: autoscaling.MetricTarget{
+					Type:         autoscaling.AverageValueMetricType,
+					AverageValue: resource.NewQuantity(1, resource.DecimalSI),
+				},
+			},
+		})
+	}
+
 	return &autoscaling.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "custom-metrics-pods-hpa",
