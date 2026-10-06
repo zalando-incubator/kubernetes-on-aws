@@ -1461,11 +1461,11 @@ access_control_poweruser_modify_validatingadmissionpolicies: "false"
 # potentially dangerous permission, so it is disabled by default.
 access_control_poweruser_create_tokenreviews: "false"
 
-#Wiz Configs
+# Wiz Configs
 # When wiz_enable_runtime_sensor and wiz_enable_runtime_connector are set to true,
 # this enables WIZ runtime monitoring. A DaemonSet called Sensor and a Deployment
 # called Connector will be deployed into the cluster.
-{{ if eq .Cluster.Provider "zalando-eks" }}
+{{ if or (eq .Cluster.Provider "zalando-eks") (eq .Cluster.Environment "e2e") }}
 wiz_enable_runtime_connector: "false"
 wiz_enable_runtime_connector_broker: "false"
 {{ else }}
@@ -1473,12 +1473,16 @@ wiz_enable_runtime_connector: "true"
 wiz_enable_runtime_connector_broker: "true"
 {{ end }}
 
+{{ if eq .Cluster.Environment "e2e" }}
+wiz_enable_runtime_sensor: "false"
+{{ else }}
 wiz_enable_runtime_sensor: "true"
 wiz_sensor_cpu: "200m"
 wiz_sensor_memory: "300Mi"
 wiz_connector_cpu: "50m"
 wiz_connector_memory: "150Mi"
 wiz_priority: "true"
+{{ end }}
 
 # Please note when this is set to true it allows the use of the node selector feature
 # to deploy the sensor and connector on specific nodes, by manually setting the node selector label on the nodes.
