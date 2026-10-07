@@ -31,12 +31,6 @@ data:
             increase(skipper_serve_host_count{application="skipper-ingress",version!="",code=~"4[0-9][0-9]"}[{{ $window }}])
           )
           or on (version) (0 * version:skipper_requests:increase{{ $window }})
-      - record: version:skipper_3xx_requests:increase{{ $window }}
-        expr: >-
-          sum by (version) (
-            increase(skipper_serve_host_count{application="skipper-ingress",version!="",code=~"3[0-9][0-9]"}[{{ $window }}])
-          )
-          or on (version) (0 * version:skipper_requests:increase{{ $window }})
 {{ end }}
 {{ end }}
     - name: skipper code by host
