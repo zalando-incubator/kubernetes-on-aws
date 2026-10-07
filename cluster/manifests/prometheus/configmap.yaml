@@ -9,6 +9,36 @@ metadata:
 data:
   prometheus.rules.yml: |-
     groups:
+{{ if eq .Cluster.ConfigItems.skipper_ingress_operator_enabled "true" }}
+    - name: skipper request counts by version
+      interval: 5m
+      rules:
+{{ range $window := list "5m" "1h" "24h" }}
+      - record: version:skipper_requests:increase{{ $window }}
+        expr: >-
+          sum by (version) (
+            increase(skipper_serve_host_count{application="skipper-ingress",version!=""}[{{ $window }}])
+          )
+      - record: version:skipper_5xx_requests:increase{{ $window }}
+        expr: >-
+          sum by (version) (
+            increase(skipper_serve_host_count{application="skipper-ingress",version!="",code=~"5[0-9][0-9]"}[{{ $window }}])
+          )
+          or on (version) (0 * version:skipper_requests:increase{{ $window }})
+      - record: version:skipper_4xx_requests:increase{{ $window }}
+        expr: >-
+          sum by (version) (
+            increase(skipper_serve_host_count{application="skipper-ingress",version!="",code=~"4[0-9][0-9]"}[{{ $window }}])
+          )
+          or on (version) (0 * version:skipper_requests:increase{{ $window }})
+      - record: version:skipper_3xx_requests:increase{{ $window }}
+        expr: >-
+          sum by (version) (
+            increase(skipper_serve_host_count{application="skipper-ingress",version!="",code=~"3[0-9][0-9]"}[{{ $window }}])
+          )
+          or on (version) (0 * version:skipper_requests:increase{{ $window }})
+{{ end }}
+{{ end }}
     - name: skipper code by host
       rules:
       - record: job:skipper_code_by_host:sum
