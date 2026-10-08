@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.5
+    controller-gen.kubebuilder.io/version: v0.19.0
   name: scalingschedules.zalando.org
 spec:
   group: zalando.org
@@ -119,6 +119,17 @@ spec:
                       - startTime
                       - timezone
                       type: object
+                    scheduleGroups:
+                      description: |-
+                        ScheduleGroups associates this schedule with one or more schedule groups.
+                        HPAs can select groups using the "schedule-group" metric label. When
+                        omitted, the schedule applies to all HPAs, including those selecting a group.
+                      items:
+                        type: string
+                        enum:
+                        - load-test
+                        - cyberweek
+                      type: array
                     type:
                       description: |-
                         Defines if the schedule is a OneTime schedule or
