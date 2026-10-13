@@ -1860,6 +1860,7 @@ Resources:
           {
             "Version": "2012-10-17",
             "Statement": [
+{{- if eq .Cluster.ConfigItems.deployment_role_allow_worker_assuming  "true" }}
               {
                 "Effect": "Allow",
                 "Action": [
@@ -1880,6 +1881,7 @@ Resources:
                   "AWS": "arn:aws:iam::${AWS::AccountId}:role/${WorkerIAMRole}"
                 }
               },
+{{- end }}
               {
                 "Effect": "Allow",
                 "Principal": {
