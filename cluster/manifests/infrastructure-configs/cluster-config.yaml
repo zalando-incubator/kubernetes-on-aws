@@ -6,4 +6,8 @@ metadata:
 data:
   cluster-alias: "{{.Cluster.Alias}}"
 {{ $pod_cidr_size := "15" }}
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+  max-nodes: "{{ .Values.node_subnets_max_nodes }}"
+{{- else }}
   max-nodes: "{{ nodeCIDRMaxNodesPodCIDR (parseInt64 $pod_cidr_size) (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}"
+{{- end }}

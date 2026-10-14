@@ -123,7 +123,11 @@ spec:
               value: "1m"
             {{ $pod_cidr_size := "15" }}
             - name: MAX_NODE_CLAIMS
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.eks_ip_family "ipv6") }}
+              value: "{{ .Values.node_subnets_max_nodes }}"
+{{- else }}
               value: "{{ nodeCIDRMaxNodesPodCIDR (parseInt64 $pod_cidr_size) (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}"
+{{- end }}
           ports:
             - name: http-metrics
               containerPort: 8080
