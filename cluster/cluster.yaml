@@ -446,6 +446,7 @@ Resources:
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser"
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUserCustom"
       - !Ref EKSCapabilityACKAccessEntryPolicy
+      - !Ref EKSCapabilityACKS3Policy
       {{- if eq .Cluster.Name "playground" }}
       - !Sub "arn:aws:iam::${AWS::AccountId}:policy/ZalandoCloud-AllowPowerUser-Playground"
       {{- end }}
@@ -475,6 +476,21 @@ Resources:
           - "bedrock:DeleteInferenceProfile"
           - "bedrock:ListInferenceProfiles"
           Resource: "*"
+  # Temporary PoC permissions for ACK S3 controller.
+  # Revisit scope after PoC is complete; remove or tighten before GA.
+  EKSCapabilityACKS3Policy:
+  Type: AWS::IAM::ManagedPolicy
+  Properties:
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+      - Effect: Allow
+        Action:
+        - "s3:CreateBucket"
+        - "s3:PutBucket*"
+        - "s3:ListBuckets"
+        - "s3:DeleteBucket*"
+        Resource: "*"
   EKSCapabilityACK:
     Type: 'AWS::EKS::Capability'
     Properties:
