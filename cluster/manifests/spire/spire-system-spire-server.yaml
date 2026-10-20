@@ -58,6 +58,17 @@ spec:
             - /run/spire/server/config/server.conf
           ports:
             - containerPort: 8081
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: spire.spire-pg-cluster.credentials.postgresql.acid.zalan.do
+                  key: username
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: spire.spire-pg-cluster.credentials.postgresql.acid.zalan.do
+                  key: password
           resources:
             limits:
               memory: 100Mi
