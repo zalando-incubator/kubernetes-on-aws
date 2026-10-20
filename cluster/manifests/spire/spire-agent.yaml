@@ -12,7 +12,7 @@ data:
   agent.conf: |
     agent {
       data_dir = "/run/spire"
-      log_level = "INFO"
+      log_level = "DEBUG"
       # https://spiffe.io/docs/latest/deploying/spire_agent/#rebootstrapping
       rebootstrap_mode = "auto"
       rebootstrap_delay = "1m"
@@ -39,8 +39,19 @@ data:
 
       WorkloadAttestor "k8s" {
         plugin_data {
-          skip_kubelet_verification = true
-          node_name_env = "HOSTNAME"
+            # Disable insecure skipping
+            # skip_kubelet_verification = false
+            # insecure
+            skip_kubelet_verification = true
+
+            # # Path to the CA bundle that signed the Kubelet's serving certificate
+            # kubelet_ca_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+
+            # # Optional: defaults to 10250 if omitted
+            # kubelet_secure_port = 10250
+
+            # Environment variable containing the node name or host IP
+            node_name_env = "MY_NODE_NAME"
         }
       }
     }
@@ -82,7 +93,7 @@ spec:
           - name: MY_NODE_NAME
             valueFrom:
               fieldRef:
-                fieldPath: status.podIP
+                fieldPath: spec.nodeName
           volumeMounts:
             - name: spire-config
               mountPath: /run/spire/config
