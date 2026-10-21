@@ -2468,8 +2468,8 @@ Resources:
           PolicyName: read-opa-bundles
       RoleName: "{{.Cluster.LocalID}}-app-skipper-validation-webhook"
     Type: 'AWS::IAM::Role'
-  # Reuses the same OPA bundle S3 infrastructure as skipper-ingress/skipper-validation-webhook
-  OpaAdmissionWebhookIAMRole:
+  # Grants the admission controller access to OPA bundles and optional decision logs.
+  AdmissionControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument: !Sub
         - |
@@ -2488,7 +2488,7 @@ Resources:
                 ],
                 "Condition": {
                   "StringEquals": {
-                    "${OIDC}:sub": "system:serviceaccount:kube-system:opa-admission-webhook"
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:admission-controller"
                   }
                 }
               }
@@ -2532,7 +2532,7 @@ Resources:
             Version: 2012-10-17
           PolicyName: read-opa-direct-test-bundle
 {{- end }}
-      RoleName: "{{.Cluster.LocalID}}-app-opa-admission-webhook"
+      RoleName: "{{.Cluster.LocalID}}-app-admission-controller"
     Type: 'AWS::IAM::Role'
   ClusterLifecycleControllerIAMRole:
     Properties:

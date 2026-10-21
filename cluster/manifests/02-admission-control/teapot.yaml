@@ -798,3 +798,49 @@ webhooks:
       {{- end }}
   {{- end }}
 {{- end }}
+{{- if and (eq .Cluster.Provider "zalando-eks") (eq .Cluster.ConfigItems.opa_admission_enabled "true") }}
+  - name: aaas-admitter.teapot.zalan.do
+    clientConfig:
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/aaas"
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    matchPolicy: Equivalent
+    sideEffects: "None"
+    timeoutSeconds: 5
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: [ "kube-system" ]
+    rules:
+      - operations: [ "CREATE", "UPDATE", "CONNECT" ]
+        apiGroups: ["*"]
+        # "*" (not "v1") so CRDs with v1alpha1/v1beta1 versions are covered.
+        apiVersions: ["*"]
+        # "*/*" covers subresources too. CONNECT is what pods/exec,
+        # pods/attach and pods/portforward use; for those the controller
+        # passes the target pod's labels to the policy as input.context.targetPod.
+        resources: ["*/*"]
+        # Namespaced-only excludes cluster-scoped types without an explicit list.
+        scope: "Namespaced"
+    # Known non-human/system callers (incl. EKS control-plane components such
+    # as eks:kms-storage-migrator) never reach the policy.
+    matchConditions:
+      - name: 'exclude-known-system-callers'
+        expression: >-
+          !(
+            request.userInfo.username.startsWith('system:serviceaccount:') ||
+            request.userInfo.username.startsWith('zalando-iam:zalando:service:') ||
+            request.userInfo.username.startsWith('system:node:') ||
+            request.userInfo.username.startsWith('eks:') ||
+            request.userInfo.username in [
+              'system:kube-scheduler',
+              'system:kube-controller-manager',
+              'system:kube-proxy'
+            ]
+          )
+{{- end }}
