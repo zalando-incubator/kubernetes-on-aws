@@ -49,7 +49,8 @@ spec:
       priorityClassName: system-cluster-critical
       containers:
       - name: admission-controller
-        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-360
+        # image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/admission-controller:master-360
+        image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/teapot/admission-controller:pr-440-2
         lifecycle:
           preStop:
             sleep:
@@ -76,14 +77,31 @@ spec:
 {{- if index .Cluster.ConfigItems "docker_meta_url" }}
           - --docker-meta-url={{.Cluster.ConfigItems.docker_meta_url}}
 {{- end }}
+{{- if eq .Cluster.ConfigItems.opa_admission_enabled "true" }}
+          - --aaas-bundle=-
+          - --aaas-opa-config=/etc/aaas/opaconfig.yaml
+{{- end }}
         ports:
           - containerPort: 8085
         volumeMounts:
           - mountPath: /etc/tls-certs
             name: tls-certs
             readOnly: true
+{{- if eq .Cluster.ConfigItems.opa_admission_enabled "true" }}
+          - mountPath: /etc/aaas
+            name: aaas-opa-config
+            readOnly: true
+{{- end }}
       volumes:
       - name: tls-certs
         secret:
           secretName: admission-controller-tls-certs
+{{- if eq .Cluster.ConfigItems.opa_admission_enabled "true" }}
+      - name: aaas-opa-config
+        configMap:
+          name: aaas-opa-config
+          items:
+          - key: opaconfig.yaml
+            path: opaconfig.yaml
+{{- end }}
 {{- end }}

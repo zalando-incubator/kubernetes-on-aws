@@ -6,6 +6,10 @@ metadata:
   labels:
     application: kubernetes
     component: admission-controller
+{{- if eq .Cluster.ConfigItems.opa_admission_enabled "true" }}
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccountID}}:role/{{ .Cluster.LocalID }}-app-admission-controller"
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
