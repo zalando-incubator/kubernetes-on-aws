@@ -1032,6 +1032,14 @@ node_cidr_mask_size: "24"
 # Note that this only affects CA settings, someone can still scale up the ASGs manually.
 reserved_nodes: "5"
 
+# For clusters where pods don't get a per-node CIDR carved out of a pod CIDR
+# (EKS clusters with `eks_ip_family: "ipv6"`) the maximum number of nodes is
+# limited by the IPv4 addresses available in the node subnets instead.
+# This is the percentage of those addresses which can be used by nodes, the rest
+# is left for other consumers of the subnets. The number of nodes is calculated
+# by cluster-lifecycle-manager from the subnets it selected for the nodes.
+node_subnet_usable_percent: "90"
+
 # How much extra capacity to add when calculating the maximum number of pods per node. This can be increased if some
 # pods don't consume the IP space on the node, but it's fairly dangerous since it has to be absolutely correct. Use
 # in emergencies only, and pay extra attention when adding, removing or updating daemonsets.
