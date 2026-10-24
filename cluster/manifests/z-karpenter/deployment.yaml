@@ -51,7 +51,7 @@ spec:
             capabilities:
               drop:
                 - ALL
-          image: container-registry.zalando.net/teapot/karpenter:1.14.1-main-59.patched
+          image: container-registry-test.zalando.net/teapot/karpenter:1.15.1-pr-63-1.patched
           imagePullPolicy: IfNotPresent
           env:
             - name: KUBERNETES_MIN_VERSION
@@ -100,7 +100,9 @@ spec:
             # (upstream pkg/providers/launchtemplate/types.go); false consumes open reservations blindly. Trade-off documented on
             # the `karpenter_feature_reserved_capacity` config item.
             - name: FEATURE_GATES
-              value: "ReservedCapacity={{ .Cluster.ConfigItems.karpenter_feature_reserved_capacity }},SpotToSpotConsolidation=true,NodeRepair={{ .Cluster.ConfigItems.karpenter_feature_node_repair }},NodeOverlay=false,StaticCapacity=false"
+              value: "ReservedCapacity={{ .Cluster.ConfigItems.karpenter_feature_reserved_capacity }},SpotToSpotConsolidation=true,NodeRepair={{ .Cluster.ConfigItems.karpenter_feature_node_repair }},NodeOverlay=false,StaticCapacity=false,CapacityBuffer=false,TerminateFirstDrift=false,TerminateFirstRepair=false,PodDeletionCostManagement=false"
+            - name: AWS_FEATURE_GATES
+              value: "NodeClassCEL=false,DRANVIDIAGPU=false,DRAEFA=false,RebootForRepair=false"
             - name: BATCH_MAX_DURATION
               value: "10s"
             - name: BATCH_IDLE_DURATION
@@ -120,6 +122,8 @@ spec:
             - name: AMI_REFRESH_INTERVAL
               value: "1m"
             - name: SUBNET_REFRESH_INTERVAL
+              value: "1m"
+            - name: SECURITY_GROUP_REFRESH_INTERVAL
               value: "1m"
             {{ $pod_cidr_size := "15" }}
             - name: MAX_NODE_CLAIMS
