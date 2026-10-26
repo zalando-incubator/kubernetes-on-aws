@@ -53,6 +53,7 @@ clusters:
     consolidate_after: "5m"
     wiz_api_client_id: "${WIZ_API_CLIENT_ID}"
     wiz_api_client_token: "${WIZ_API_CLIENT_TOKEN}"
+    karpenter_node_pool_kubectl_apply_inline: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}
