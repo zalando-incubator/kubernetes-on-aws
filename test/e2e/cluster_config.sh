@@ -51,6 +51,7 @@ clusters:
     eks_ip_family: "ipv6"
     consolidation_policy: "WhenEmpty"
     consolidate_after: "5m"
+    karpenter_node_pool_kubectl_apply_inline: "true"
   criticality_level: 1
   environment: e2e
   id: ${CLUSTER_ID}

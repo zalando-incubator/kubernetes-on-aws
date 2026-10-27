@@ -212,13 +212,6 @@ spec:
           values:
               # the ARM architecture is too old and flannel breaks
             - "a1"
-#{{ if eq .Cluster.ConfigItems.karpenter_instance_family_t_enabled "false"}}
-              # t type instances have burstable CPU, undesired in production
-            - "t4g"
-            - "t3a"
-            - "t3"
-            - "t2"
-#{{ end }}
 #{{ if eq .NodePool.ConfigItems.karpenter_instance_family_g6f_enabled "false"}}
               # g6f has fractional GPU count which is also mislabeled by Karpenter and causes scheduling issues
             - "g6f"
@@ -229,6 +222,12 @@ spec:
           operator: In
           values:
             - "true"
+#{{ end }}
+#{{ if eq .Cluster.ConfigItems.karpenter_instance_family_t_enabled "false"}}
+        - key: "karpenter.k8s.aws/instance-category"
+          operator: NotIn
+          values:
+            - "t"
 #{{ end }}
 #{{ if $taints }}
 #  {{ range $taints }}

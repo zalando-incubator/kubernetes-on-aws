@@ -16,26 +16,22 @@ spec:
   resourcePolicy:
     containerPolicies:
     - containerName: ebs-plugin
-      mode: "Off"
+      minAllowed:
+        cpu: {{ .Cluster.ConfigItems.ebs_csi_plugin_cpu }}
+        memory: {{ .Cluster.ConfigItems.ebs_csi_plugin_memory }}
     - containerName: liveness-probe
-      mode: "Off"
+      minAllowed:
+        cpu: {{ .Cluster.ConfigItems.ebs_csi_liveness_cpu }}
+        memory: {{ .Cluster.ConfigItems.ebs_csi_liveness_memory }}
     - containerName: csi-provisioner
-    {{ range $NodePool := .Cluster.NodePools }}
-    {{ if eq $NodePool.Name "default-master" }}
-    # Scaling is relative to r6g.large (smallest master node)
-    # 0.006 -> ~90Mi memory, 0.0061 -> ~11m CPU (per container)
-    {{ $scaledCPU := scaleQuantity ( instanceTypeCPUQuantity ( index .InstanceTypes 0 )) 0.0061 }}
-    {{ $scaledMemory := scaleQuantity ( instanceTypeMemoryQuantity ( index .InstanceTypes 0 )) 0.006 }}
-      maxAllowed:
-        cpu: {{ $scaledCPU }}
-        memory: {{ $scaledMemory }}
+      minAllowed:
+        cpu: {{ .Cluster.ConfigItems.ebs_csi_controller_sidecar_cpu }}
+        memory: {{ .Cluster.ConfigItems.ebs_csi_controller_sidecar_memory }}
     - containerName: csi-attacher
-      maxAllowed:
-        cpu: {{ $scaledCPU }}
-        memory: {{ $scaledMemory }}
+      minAllowed:
+        cpu: {{ .Cluster.ConfigItems.ebs_csi_controller_sidecar_cpu }}
+        memory: {{ .Cluster.ConfigItems.ebs_csi_controller_sidecar_memory }}
     - containerName: csi-resizer
-      maxAllowed:
-        cpu: {{ $scaledCPU }}
-        memory: {{ $scaledMemory }}
-    {{ end }}
-    {{ end }}
+      minAllowed:
+        cpu: {{ .Cluster.ConfigItems.ebs_csi_controller_sidecar_cpu }}
+        memory: {{ .Cluster.ConfigItems.ebs_csi_controller_sidecar_memory }}
