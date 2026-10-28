@@ -137,6 +137,10 @@ spec:
         image: 926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/teapot/coredns:1.15.0-master-38
         args: [ "-conf", "/etc/coredns/Corefile" ]
         env:
+{{- if ne .Cluster.ConfigItems.coredns_gomaxprocs "0" }}
+        - name: GOMAXPROCS
+          value: "{{ .Cluster.ConfigItems.coredns_gomaxprocs }}"
+{{- end }}
         - name: ZONE
           valueFrom:
             fieldRef:
