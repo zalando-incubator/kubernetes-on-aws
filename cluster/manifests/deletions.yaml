@@ -157,6 +157,12 @@ post_apply:
 - name: config-provider-service
   kind: ClusterRoleBinding
 {{ end }}
+{{- if ne .Cluster.ConfigItems.kubernetes_mcp_enabled "true" }}
+- name: kubernetes-mcp
+  kind: ClusterRoleBinding
+- name: kubernetes-mcp
+  kind: ClusterRole
+{{- end }}
 {{ if ne .Cluster.ConfigItems.kubelet_summary_metrics_enabled "true" }}
 - name: kubelet-summary-metrics
   kind: ClusterRole
