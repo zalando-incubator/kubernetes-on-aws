@@ -217,6 +217,46 @@ subjects:
 # {{ end }}
 ---
 {{- end }}
+{{- if eq .Cluster.ConfigItems.deployment_service_accountable_user_impersonation_enabled "true" }}
+# Lets the deployment identity impersonate a task's accountable_user (Impersonate-User only) when deploying.
+# API-gated: only callers with the impersonation scope (CDP) may set accountable_user.
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "deployment-service-executor-impersonator"
+  labels:
+    application: "deployment-service"
+    component: "controller"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - users
+    verbs:
+      - impersonate
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "deployment-service-executor-impersonator"
+  labels:
+    application: "deployment-service"
+    component: "controller"
+roleRef:
+  kind: ClusterRole
+  name: "deployment-service-executor-impersonator"
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: zalando-iam:zalando:service:k8sapi-local_deployment-service-executor
+  # {{ if eq .Cluster.Provider "zalando-eks" }}
+  - kind: ServiceAccount
+    name: "deployment-service-controller"
+    namespace: "kube-system"
+  # {{ end }}
+---
+{{- end }}
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
