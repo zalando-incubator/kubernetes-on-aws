@@ -13,24 +13,40 @@ data:
     - name: skipper request counts by version
       interval: 5m
       rules:
+{{ range $deployment := list "skipper-ingress" "skipper-ingress-canary" }}
 {{ range $window := list "5m" "1h" "24h" }}
       - record: version:skipper_requests:increase{{ $window }}
+        labels:
+          deployment: "{{ $deployment }}"
         expr: >-
           sum by (version) (
-            increase(skipper_serve_host_count{application="skipper-ingress",version!=""}[{{ $window }}])
+            increase(skipper_serve_host_count{application="skipper-ingress",component="ingress",version!="",pod_name=~"{{ $deployment }}-.*"{{ if eq $deployment "skipper-ingress" }},pod_name!~"skipper-ingress-canary-.*"{{ end }}}[{{ $window }}])
           )
       - record: version:skipper_5xx_requests:increase{{ $window }}
+        labels:
+          deployment: "{{ $deployment }}"
         expr: >-
           sum by (version) (
-            increase(skipper_serve_host_count{application="skipper-ingress",version!="",code=~"5[0-9][0-9]"}[{{ $window }}])
+            increase(skipper_serve_host_count{application="skipper-ingress",component="ingress",version!="",pod_name=~"{{ $deployment }}-.*"{{ if eq $deployment "skipper-ingress" }},pod_name!~"skipper-ingress-canary-.*"{{ end }},code=~"5[0-9][0-9]"}[{{ $window }}])
           )
-          or on (version) (0 * version:skipper_requests:increase{{ $window }})
+          or on (version) (
+            0 * version:skipper_requests:increase{{ $window }}{
+              deployment="{{ $deployment }}"
+            }
+          )
       - record: version:skipper_4xx_requests:increase{{ $window }}
+        labels:
+          deployment: "{{ $deployment }}"
         expr: >-
           sum by (version) (
-            increase(skipper_serve_host_count{application="skipper-ingress",version!="",code=~"4[0-9][0-9]"}[{{ $window }}])
+            increase(skipper_serve_host_count{application="skipper-ingress",component="ingress",version!="",pod_name=~"{{ $deployment }}-.*"{{ if eq $deployment "skipper-ingress" }},pod_name!~"skipper-ingress-canary-.*"{{ end }},code=~"4[0-9][0-9]"}[{{ $window }}])
           )
-          or on (version) (0 * version:skipper_requests:increase{{ $window }})
+          or on (version) (
+            0 * version:skipper_requests:increase{{ $window }}{
+              deployment="{{ $deployment }}"
+            }
+          )
+{{ end }}
 {{ end }}
 {{ end }}
     - name: skipper code by host
