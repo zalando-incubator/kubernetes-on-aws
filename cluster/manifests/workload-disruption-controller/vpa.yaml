@@ -1,0 +1,22 @@
+{{- if eq .Cluster.ConfigItems.karpenter_drift_disruption_enabled "true" }}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: "workload-disruption-controller"
+  namespace: "kube-system"
+  labels:
+    application: kubernetes
+    component: workload-disruption-controller
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: "workload-disruption-controller"
+  updatePolicy:
+    updateMode: InPlaceOrRecreate
+  resourcePolicy:
+    containerPolicies:
+    - containerName: "workload-disruption-controller"
+      minAllowed:
+        memory: "{{.Cluster.ConfigItems.workload_disruption_controller_memory_min}}"
+{{- end}}

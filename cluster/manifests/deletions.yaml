@@ -99,6 +99,22 @@ post_apply:
   kind: VerticalPodAutoscaler
 {{ end }}
 
+{{ if ne .Cluster.ConfigItems.karpenter_drift_disruption_enabled "true" }}
+- name: workload-disruption-controller
+  namespace: kube-system
+  kind: Deployment
+- name: workload-disruption-controller
+  namespace: kube-system
+  kind: ServiceAccount
+- name: workload-disruption-controller
+  kind: ClusterRole
+- name: workload-disruption-controller
+  kind: ClusterRoleBinding
+- name: workload-disruption-controller
+  namespace: kube-system
+  kind: VerticalPodAutoscaler
+{{ end }}
+
 {{ if ne .Cluster.ConfigItems.skipper_ingress_canary_enabled "true" }}
 - name: skipper-ingress-canary
   namespace: kube-system

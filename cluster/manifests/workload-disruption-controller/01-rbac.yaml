@@ -1,0 +1,50 @@
+{{- if eq .Cluster.ConfigItems.karpenter_drift_disruption_enabled "true" }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: workload-disruption-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: workload-disruption-controller
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: workload-disruption-controller
+  labels:
+    application: kubernetes
+    component: workload-disruption-controller
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch", "update"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "update", "delete"]
+- apiGroups: [""]
+  resources: ["pods/eviction"]
+  verbs: ["create"]
+- apiGroups: ["policy"]
+  resources: ["poddisruptionbudgets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["karpenter.sh"]
+  resources: ["nodeclaims"]
+  verbs: ["get", "list", "watch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: workload-disruption-controller
+  labels:
+    application: kubernetes
+    component: workload-disruption-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: workload-disruption-controller
+subjects:
+- kind: ServiceAccount
+  name: workload-disruption-controller
+  namespace: kube-system
+{{- end}}
