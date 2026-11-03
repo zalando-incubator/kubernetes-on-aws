@@ -104,6 +104,16 @@ data:
       - record: job:skipper_count_by_host_code:sum
         expr: sum(rate(skipper_serve_host_count{}[1m])) by (host,code)
 
+    - name: skipper sum rate backend_duration by zone bucket
+      rules:
+      - record: job:skipper_backend_duration_zone_bucket:sum
+        expr: sum(rate(skipper_backend_duration_seconds_bucket{zone!=""}[1m])) by (le,zone)
+
+    - name: skipper sum rate backend count by zone
+      rules:
+      - record: job:skipper_backend_count_by_zone:sum
+        expr: sum(rate(skipper_backend_duration_seconds_count{zone!=""}[1m])) by (zone)
+
   prometheus.yml: |-
     global:
       scrape_interval: 15s
