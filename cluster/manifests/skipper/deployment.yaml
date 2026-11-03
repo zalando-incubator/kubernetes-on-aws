@@ -1,7 +1,7 @@
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
 
-{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.28.29-1588" }}
+{{ $main_image_updated_manually := "container-registry.zalando.net/teapot/skipper-internal:v0.28.56-1615" }}
 {{ $canary_image := "container-registry.zalando.net/teapot/skipper-internal:v0.28.56-1615" }}
 
 {{/* Allow to override manually canary image by config item */}}
@@ -390,6 +390,9 @@ spec:
           - "-cache-l1-ttl=60s"
           - "-enable-l2-cache"
 {{ end }}
+{{ if eq .Cluster.ConfigItems.skipper_priority_routes_enabled "true" }}
+          - "-priority-routes-file=/etc/skipper/priority-routes/routes.eskip"
+{{ end }}
           - "-inline-routes"
           - |
             kube__healthz_down: Path("/kube-system/healthz") && Shutdown()
@@ -499,6 +502,11 @@ spec:
             mountPath: /etc/skipper/open-policy-agent
             readOnly: true
 {{ end }}
+{{ if eq .Cluster.ConfigItems.skipper_priority_routes_enabled "true" }}
+          - name: priority-routes-config
+            mountPath: /etc/skipper/priority-routes
+            readOnly: true
+{{ end }}
       volumes:
         - name: routes-cache
           emptyDir: {}
@@ -525,6 +533,11 @@ spec:
         - name: open-policy-agent-config
           configMap:
             name: open-policy-agent-config
+{{ end }}
+{{ if eq .Cluster.ConfigItems.skipper_priority_routes_enabled "true" }}
+        - name: priority-routes-config
+          configMap:
+            name: priority-routes-config
 {{ end }}
 {{ if eq .Cluster.ConfigItems.enable_dedicate_nodepool_skipper "true"}}
       nodeSelector:
