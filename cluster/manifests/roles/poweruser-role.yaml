@@ -115,10 +115,10 @@ rules:
   verbs:
   - create
 {{- end }}
-{{- if eq .Cluster.ConfigItems.access_control_poweruser_substrate_certificates "true" }}
-# Needed to deploy the Agent Substrate pod-certificate controller ClusterRoles.
-# ClusterTrustBundles and signers are cluster-wide trust material, hence the
-# config item.
+{{- if eq .Cluster.ConfigItems.access_control_poweruser_manage_certificates "true" }}
+# Needed to deploy ClusterRoles granting pod-certificate controllers (e.g. Agent
+# Substrate) access to ClusterTrustBundles and signers. This is cluster-wide
+# trust material, hence the config item.
 - apiGroups:
   - certificates.k8s.io
   resources:
