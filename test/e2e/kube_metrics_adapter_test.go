@@ -157,7 +157,39 @@ var _ = describe("[HPA] Horizontal pod autoscaling (scale resource: Custom Metri
 			scaledReplicas:  scaledReplicas,
 			deployment:      simplePodDeployment(DeploymentName, int32(initialReplicas)),
 			routegroup:      routegroup,
-			hpa:             externalRPSHPA(DeploymentName, hostName, "100", metricTarget),
+			hpa:             externalRPSHPA(DeploymentName, hostName, "100", metricTarget, 1),
+			service:         createServiceTypeClusterIP(DeploymentName, labels, 80, targetPort),
+			auxDeployments: []*appsv1.Deployment{
+				createVegetaDeployment(targetUrl, metricValue),
+			},
+		}
+		tc.Run()
+	})
+
+	It("should scale up from 0 replicas with external metric based on hostname RPS [CustomMetricsAutoscaling] [Zalando]", func() {
+		hostName := fmt.Sprintf("%s-%d.%s", DeploymentName, time.Now().UTC().Unix(), E2EHostedZone())
+
+		initialReplicas := 0
+		scaledReplicas := 1
+		metricValue := 10
+		metricTarget := int64(metricValue)
+		labels := map[string]string{
+			"application": DeploymentName,
+		}
+		port := 80
+		targetPort := 8000
+		targetUrl := hostName + "/metrics"
+		routegroup := createRouteGroup(DeploymentName, hostName, f.Namespace.Name, labels, nil, port)
+		tc := CustomMetricTestCase{
+			framework:       f,
+			kubeClient:      cs,
+			rgClient:        rgcs,
+			jig:             jig,
+			initialReplicas: initialReplicas,
+			scaledReplicas:  scaledReplicas,
+			deployment:      simplePodDeployment(DeploymentName, int32(initialReplicas)),
+			routegroup:      routegroup,
+			hpa:             externalRPSHPA(DeploymentName, hostName, "100", metricTarget, int32(initialReplicas)),
 			service:         createServiceTypeClusterIP(DeploymentName, labels, 80, targetPort),
 			auxDeployments: []*appsv1.Deployment{
 				createVegetaDeployment(targetUrl, metricValue),
@@ -411,7 +443,7 @@ func podMetricHPA(deploymentName string, metricTargets map[string]int64) *autosc
 	}
 }
 
-func externalRPSHPA(deploymentName, host, weight string, target int64) *autoscaling.HorizontalPodAutoscaler {
+func externalRPSHPA(deploymentName, host, weight string, target int64, minReplicas int32) *autoscaling.HorizontalPodAutoscaler {
 	return externalHPA(
 		deploymentName,
 		map[string]int64{"foo": target},
@@ -419,11 +451,11 @@ func externalRPSHPA(deploymentName, host, weight string, target int64) *autoscal
 			"metric-config.external.foo.requests-per-second/hostnames": host,
 			"metric-config.external.foo.requests-per-second/weight":    weight,
 		},
+		minReplicas,
 	)
 }
 
-func externalHPA(deploymentName string, metricNameTargets map[string]int64, annotations map[string]string) *autoscaling.HorizontalPodAutoscaler {
-	var minReplicas int32 = 1
+func externalHPA(deploymentName string, metricNameTargets map[string]int64, annotations map[string]string, minReplicas int32) *autoscaling.HorizontalPodAutoscaler {
 	metrics := []autoscaling.MetricSpec{}
 	for metricName, target := range metricNameTargets {
 		metrics = append(metrics, autoscaling.MetricSpec{
