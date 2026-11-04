@@ -21,6 +21,7 @@ clusters:
     etcd_scalyr_key: "${ETCD_SCALYR_KEY}"
     etcd_dns_record_prefixes: "etcd-server.etcd"
     docker_meta_url: https://docker-meta.stups-test.zalan.do
+    karpenter_drift_disruption_enabled: "true"
     lightstep_token: "${LIGHTSTEP_TOKEN}"
     okta_auth_issuer_url: "${OKTA_AUTH_ISSUER_URL}"
     zmon_agent_replicas: '0'
