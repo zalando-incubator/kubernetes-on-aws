@@ -115,6 +115,57 @@ rules:
   verbs:
   - create
 {{- end }}
+{{- if eq .Cluster.ConfigItems.access_control_poweruser_substrate_certificates "true" }}
+# Needed to deploy the Agent Substrate pod-certificate controller ClusterRoles.
+# ClusterTrustBundles and signers are cluster-wide trust material, hence the
+# config item.
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - clustertrustbundles
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - podcertificaterequests
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - podcertificaterequests/status
+  verbs:
+  - update
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - signers
+  resourceNames:
+  - servicedns.podcert.ate.dev/*
+  - podidentity.podcert.ate.dev/*
+  - postgres.podcert.ate.dev/*
+  verbs:
+  - attest
+  - sign
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - signers
+  resourceNames:
+  - egress-mitm.ate.dev/*
+  verbs:
+  - attest
+{{- end }}
 - apiGroups:
   - apiextensions.k8s.io
   resources:
