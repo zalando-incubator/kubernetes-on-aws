@@ -16,7 +16,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qq bc curl
 
 ARG KUBE_VERSION
 RUN curl -L -s --fail "https://dl.k8s.io/${KUBE_VERSION}/kubernetes-client-linux-${TARGETARCH}.tar.gz" -o "kubernetes-client-linux-${TARGETARCH}.tar.gz" && \
-    printf "f68e81568b0356e81d27073876356f5516b84f3bc55ddfd7ebab199045b82a720e2adbac7124e800b8b705d1647721b1a529ba524b982d4ff433f62f26f5cdc9 kubernetes-client-linux-amd64.tar.gz\n81c427328605de156d45c0378ef6949c74255b34a22c370f11d16ded14202be463968e17be5334327df600fa40c1f42d6d27766968d8a57f85c0d25f240695b5 kubernetes-client-linux-arm64.tar.gz" | grep "${TARGETARCH}" | sha512sum -c - && \
+    printf "b09ee8f473b44ecd1689e80392dae203e4a0cce49fcd622e47e3b48c98afc78ce0600b6694d13903af4cffb059f90e0309772c4919de166bca30eacf40ee4273 kubernetes-client-linux-amd64.tar.gz\n6a224e4787d1877577a58cad1524b132229e1ccc9bd0eb588d0c1764ceba652280223fd1f693196a8d04f2792bbe50cb22b468b7b65b1bf97cf9a7d22263a3f4 kubernetes-client-linux-arm64.tar.gz" | grep "${TARGETARCH}" | sha512sum -c - && \
     tar xvf "kubernetes-client-linux-${TARGETARCH}.tar.gz" --strip-components 3 kubernetes/client/bin/ && \
     rm "kubernetes-client-linux-${TARGETARCH}.tar.gz" && \
     mv kubectl /usr/bin/kubectl
