@@ -98,8 +98,33 @@ bottlerocket_ami_version: "1.67.0"
 # configure whether spot instances should be enabled in Karpenter's capacity-types
 karpenter_enable_spot: "true"
 
+# Enable Karpenter to disrupt (replace) drifted nodes (e.g.
+# NodePool/EC2NodeClass spec changed, AMI updated).
+# When true, this implicitly enables the workload-disruption-controller to work
+# in conjunction with Karpenter to evict pods from drifted nodes accorind to the
+# defined disruption SLA.
+karpenter_drift_disruption_enabled: "false"
+
 # cluster lifecycle controller
 cluster_lifecycle_controller_memory_min: "10Mi"
+# exclude nodes from CLC based on nodeSelector, comma separated list of
+# key=value pairs. Used with OR semantics in CLC.
+# Only enabled if karpenter_drift_disruption_enabled is true.
+cluster_lifecycle_controller_excluded_node_selectors: "node.kubernetes.io/profile=worker-karpenter"
+
+# workload disruption controller
+# (force-eviction-* args reuse the existing drain_* config items below, since
+# they replicate cluster-lifecycle-controller's force-eviction behaviour)
+workload_disruption_controller_cpu: "15m"
+workload_disruption_controller_memory: "250Mi"
+workload_disruption_controller_memory_min: "10Mi"
+workload_disruption_controller_num_workers: "10"
+workload_disruption_controller_resync_period: "10m"
+workload_disruption_controller_stuck_pod_min_age: "5m"
+# Pods matching any of these label groups are never force-terminated.
+# Groups are separated by ";"; labels within a group are comma-separated and
+# must all match, e.g. "app=a,tier=backend;keep-alive". Empty disables.
+workload_disruption_controller_force_eviction_exclude_pod_labels: "application=spilo"
 
 # ALB config created by kube-aws-ingress-controller
 kube_aws_ingress_controller_ssl_policy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
@@ -225,6 +250,7 @@ skipper_lua_sources: "file"
 skipper_edit_route_placeholders: ""
 skipper_ingress_inline_routes: ""
 skipper_ingress_refuse_payload: ""
+skipper_priority_routes_enabled: "false"
 skipper_endpointslices_enabled: "true"
 skipper_externalname_service_enabled: "true"
 
@@ -956,8 +982,8 @@ etcd_instance_type: "t3.medium"
 
 etcd_scalyr_key: ""
 
-etcd_ami_amd64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-amd64-main-48" "861068367966"}}
-etcd_ami_arm64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-arm64-main-48" "861068367966"}}
+etcd_ami_amd64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-amd64-main-49" "861068367966"}}
+etcd_ami_arm64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-arm64-main-49" "861068367966"}}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -982,8 +1008,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_36_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.3-amd64-master-436" "861068367966" }}
-kuberuntu_image_v1_36_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.3-arm64-master-436" "861068367966" }}
+kuberuntu_image_v1_36_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.6-amd64-master-447" "861068367966" }}
+kuberuntu_image_v1_36_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.6-arm64-master-447" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
