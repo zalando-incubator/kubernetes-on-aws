@@ -49,6 +49,12 @@ post_apply:
 - name: "fabricgateway-policy.zalando.org"
   kind: ValidatingAdmissionPolicyBinding
 {{ end }}
+{{ if ne .Cluster.ConfigItems.deployment_service_accountable_user_impersonation_enabled "true" }}
+- name: deployment-service-executor-impersonator
+  kind: ClusterRoleBinding
+- name: deployment-service-executor-impersonator
+  kind: ClusterRole
+{{ end }}
 {{ if ne .Cluster.ConfigItems.polarsignals_enabled "true" }}
 - name: polarsignals
   namespace: polarsignals
