@@ -112,14 +112,15 @@ spec:
 #    {{ end}}
 #  {{ end}}
 #{{ end}}
-  # An EC2 Capacity Reservation tagged `zalando.org/kubernetes: "true"` becomes a `reserved` offering of every pool using this class:
-  # Karpenter launches into it by id ahead of on-demand and consolidates a matching on-demand node into it. The tag carries no cluster
-  # id, unlike the securityGroupSelectorTerms above, because a reservation is an account-level resource: buying one takes no cluster
-  # lookup and several clusters in the account can share it. Inert until a reservation carries the tag, and inert while
-  # `karpenter_feature_reserved_capacity` is false (the reconciler is skipped); the two modes are documented on that config item.
+  # Open and targeted EC2 Capacity Reservations become `reserved` offerings of every pool using this class.
+  # Karpenter launches into them by id ahead of on-demand and consolidates matching on-demand nodes into them.
+  # Selection is inert while `karpenter_feature_reserved_capacity` is false (the reconciler is skipped).
   capacityReservationSelectorTerms:
-    - tags:
-        zalando.org/kubernetes: "true"
+    - instanceMatchCriteria: open
+    - instanceMatchCriteria: targeted
+{{- if and (eq .NodePool.ConfigItems.karpenter_feature_reserved_capacity "true") (eq .NodePool.ConfigItems.karpenter_capacity_reservation_preference_open "true") }}
+  capacityReservationPreference: open
+{{- end }}
 {{- if or (eq .Cluster.Provider "zalando-aws") (eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom") }}
   userData: |
 {{ .Values.UserData | indent 4 }}
