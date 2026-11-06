@@ -120,6 +120,9 @@ spec:
   capacityReservationSelectorTerms:
     - tags:
         zalando.org/kubernetes: "true"
+{{- if and (eq .NodePool.ConfigItems.karpenter_feature_reserved_capacity "true") (eq .NodePool.ConfigItems.karpenter_capacity_reservation_preference_open "true") }}
+  capacityReservationPreference: open
+{{- end }}
 {{- if or (eq .Cluster.Provider "zalando-aws") (eq .NodePool.ConfigItems.karpenter_ami_family_alias "custom") }}
   userData: |
 {{ .Values.UserData | indent 4 }}
