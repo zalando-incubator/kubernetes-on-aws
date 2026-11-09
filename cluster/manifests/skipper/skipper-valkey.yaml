@@ -25,8 +25,9 @@ spec:
         component: valkey
         version: "{{ $version }}"
       annotations:
-        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+{{- if ne .Cluster.Environment "e2e" }}
         karpenter.sh/do-not-disrupt: "true"
+{{- end }}
         logging/destination: "{{ .Cluster.ConfigItems.log_destination_both }}"
 {{- if eq .Cluster.ConfigItems.skipper_topology_spread_enabled "true" }}
         zalando.org/topology-spread-timeout: 7m
