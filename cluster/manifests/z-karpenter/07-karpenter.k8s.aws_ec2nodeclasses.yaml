@@ -253,6 +253,17 @@ spec:
                   x-kubernetes-validations:
                     - message: must have only one blockDeviceMappings with rootVolume
                       rule: self.filter(x, has(x.rootVolume)?x.rootVolume==true:false).size() <= 1
+                capacityReservationPreference:
+                  description: |-
+                    CapacityReservationPreference controls whether instances launched from this EC2NodeClass
+                    can consume matching open On-Demand Capacity Reservations without selecting them explicitly.
+                    When unset, Karpenter's existing behavior is used: explicitly selected reservations are
+                    targeted, while other instances do not use open reservations when ReservedCapacity is enabled.
+                    This setting applies to on-demand and spot instances only; reserved-capacity launches
+                    always target the selected reservation.
+                  enum:
+                    - open
+                  type: string
                 capacityReservationSelectorTerms:
                   description: |-
                     CapacityReservationSelectorTerms is a list of capacity reservation selector terms. Each term is ORed together to
