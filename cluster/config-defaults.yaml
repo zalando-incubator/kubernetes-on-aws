@@ -4,15 +4,24 @@ karpenter_controller_cpu: "25m"
 karpenter_controller_memory: "256Mi"
 # set log level of karpenter: error|debug
 karpenter_log_level: "error"
-# How Karpenter consumes an EC2 Capacity Reservation (ODCR) of a matching instance type + AZ; the two modes exclude each other.
-# true: Karpenter models reservations tagged `zalando.org/kubernetes: "true"` (the worker-karpenter NodeClass selects them, with no
-#   cluster id, so one reservation serves every cluster in the account), launches into them by id ahead of on-demand, consolidates a
-#   matching on-demand node into them and labels the node `karpenter.sh/capacity-type: reserved`. Every other launch opts out
-#   (CapacityReservationPreference=none), so an untagged reservation is never used; `require-on-demand` pods need an admission
-#   controller that admits `reserved`.
-# false: Karpenter ignores reservations and launches with CapacityReservationPreference=open, so an OPEN reservation is consumed by
-#   whichever matching instance in the account launches first, cluster or not; nothing prefers, consolidates into, or reports on it.
+# How Karpenter consumes an EC2 Capacity Reservation (ODCR) of a matching
+# instance type + AZ; the two modes exclude each other. true: Karpenter models
+# open and targeted reservations selected by the worker-karpenter NodeClass,
+# launches into them by id ahead of on-demand,
+# consolidates a matching on-demand node into them and labels the node
+# `karpenter.sh/capacity-type: reserved`. Every other launch opts out
+# (CapacityReservationPreference=none); `require-on-demand` pods need an
+# admission controller that admits `reserved`. false: Karpenter ignores reservations and launches with
+# CapacityReservationPreference=open, so an OPEN reservation is consumed by
+# whichever matching instance in the account launches first, cluster or not;
+# nothing prefers, consolidates into, or reports on it.
 karpenter_feature_reserved_capacity: "true"
+# Special version of karpenter_feature_reserved_capacity where all instances
+# launch with CapacityReservationPreference=open, meaning they will target
+# available ODCRs by default. Karpenter will still use the
+# capacityReservationSelectorTerms during scheduling to prioritize ODCRs when
+# scaling out.
+karpenter_capacity_reservation_preference_open: "false"
 
 # enable Karpenter's node repair feature. When true, Karpenter will attempt to
 # repair nodes that are unhealthy.
@@ -1011,8 +1020,8 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # AMI id given the image name and the Image AWS account owner.
 #
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
-kuberuntu_image_v1_37_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.37.2-amd64-master-447" "861068367966" }}
-kuberuntu_image_v1_37_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.37.2-arm64-master-447" "861068367966" }}
+kuberuntu_image_v1_37_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.37.2-amd64-master-448" "861068367966" }}
+kuberuntu_image_v1_37_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.37.2-arm64-master-448" "861068367966" }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'
