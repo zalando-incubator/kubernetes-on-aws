@@ -24,6 +24,7 @@ clusters:
     karpenter_drift_disruption_enabled: "true"
     lightstep_token: "${LIGHTSTEP_TOKEN}"
     okta_auth_issuer_url: "${OKTA_AUTH_ISSUER_URL}"
+    $(if [ "${CLUSTER_PROVIDER}" == "zalando-eks" ]; then echo -n "granular_access_enabled: \"true\""; else echo -n ""; fi)
     zmon_agent_replicas: '0'
     zmon_aws_agent_replicas: '0'
     zmon_redis_replicas: '0'

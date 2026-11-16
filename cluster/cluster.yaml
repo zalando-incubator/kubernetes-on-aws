@@ -2469,6 +2469,61 @@ Resources:
           PolicyName: read-opa-bundles
       RoleName: "{{.Cluster.LocalID}}-app-skipper-validation-webhook"
     Type: 'AWS::IAM::Role'
+  # Grants the admission controller access to OPA bundles and optional decision logs.
+  AdmissionControllerIAMRole:
+    Properties:
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": [
+                    "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                  ]
+                },
+                "Action": [
+                  "sts:AssumeRoleWithWebIdentity"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:admission-controller"
+                  }
+                }
+              }
+            ]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                Resource:
+                  - "{{ .Cluster.ConfigItems.skipper_open_policy_agent_bucket_arn }}/*"
+            Version: 2012-10-17
+          PolicyName: read-opa-bundles
+{{- if eq .Cluster.ConfigItems.granular_access_decision_log_export_enabled "true" }}
+        - PolicyDocument:
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "s3:PutObject"
+                Resource:
+                  - "{{ .Cluster.ConfigItems.skipper_open_policy_agent_decision_log_bucket_arn }}/*"
+            Version: 2012-10-17
+          PolicyName: write-opa-decisions
+{{- end }}
+      RoleName: "{{.Cluster.LocalID}}-app-admission-controller"
+    Type: 'AWS::IAM::Role'
   ClusterLifecycleControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument: !Sub
