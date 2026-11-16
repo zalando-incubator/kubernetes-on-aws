@@ -29,6 +29,13 @@ karpenter_capacity_reservation_preference_open: "false"
 # https://karpenter.sh/docs/concepts/disruption/#node-auto-repair
 karpenter_feature_node_repair: "false"
 
+# Experimental EC2 bandwidth DRA driver and PVC admission webhook.
+# Enable only after publishing the compatible Karpenter and driver images and
+# supplying the base64-encoded webhook serving certificate, key, and CA bundle.
+ec2_resource_dra_enabled: "false"
+# Select the API-free node plugin instead of the ResourceClaim-reading plugin.
+ec2_resource_dra_minimal_node_plugin_enabled: "false"
+
 # restrict the maximum number of pods for karpenter nodes
 {{ if eq .Cluster.Provider "zalando-aws" }}
 karpenter_max_pods_per_node: "32"

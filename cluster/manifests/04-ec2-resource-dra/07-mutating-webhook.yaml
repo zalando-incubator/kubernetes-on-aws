@@ -1,0 +1,39 @@
+{{- if eq .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: ec2-resource-dra-webhook
+  labels:
+    application: kubernetes
+    component: ec2-resource-dra-webhook
+webhooks:
+  - name: pods.ec2-resource.dra.example.com
+    admissionReviewVersions: ["v1"]
+    sideEffects: NoneOnDryRun
+    failurePolicy: Fail
+    matchPolicy: Equivalent
+    reinvocationPolicy: IfNeeded
+    timeoutSeconds: 10
+    # The webhook must be able to start even when it has no ready endpoints.
+    matchConditions:
+      - name: exclude-webhook-pods
+        expression: >-
+          !(request.namespace == "kube-system" &&
+            has(object.spec.serviceAccountName) &&
+            object.spec.serviceAccountName == "ec2-resource-dra-webhook" &&
+            has(object.metadata.labels) &&
+            "component" in object.metadata.labels &&
+            object.metadata.labels["component"] == "ec2-resource-dra-webhook")
+    clientConfig:
+      service:
+        name: ec2-resource-dra-webhook
+        namespace: kube-system
+        path: /mutate-pods
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    rules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE"]
+        resources: ["pods"]
+        scope: Namespaced
+{{- end }}

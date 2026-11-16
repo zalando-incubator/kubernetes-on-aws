@@ -2469,6 +2469,42 @@ Resources:
           PolicyName: read-opa-bundles
       RoleName: "{{.Cluster.LocalID}}-app-skipper-validation-webhook"
     Type: 'AWS::IAM::Role'
+{{- if eq .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+  EC2ResourceDRAWebhookIAMRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Principal": {"Federated": "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"},
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {"StringEquals": {
+                "${OIDC}:aud": "sts.amazonaws.com",
+                "${OIDC}:sub": "system:serviceaccount:kube-system:ec2-resource-dra-webhook"
+              }}
+            }]
+          }
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else }}
+        - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
+{{- end }}
+      Path: /
+      Policies:
+        - PolicyName: describe-ebs-volumes
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeVolumes
+                  - ec2:DescribeVolumesModifications
+                Resource: '*'
+      RoleName: "{{.Cluster.LocalID}}-app-ec2-dra-webhook"
+{{- end }}
   ClusterLifecycleControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument: !Sub

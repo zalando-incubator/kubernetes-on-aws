@@ -1,0 +1,69 @@
+{{- if and (eq .Cluster.ConfigItems.ec2_resource_dra_enabled "true") (ne .Cluster.ConfigItems.ec2_resource_dra_minimal_node_plugin_enabled "true") }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ec2-resource-dra-node
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ec2-resource-dra-node
+spec:
+  selector:
+    matchLabels:
+      daemonset: ec2-resource-dra-node
+  template:
+    metadata:
+      labels:
+        application: kubernetes
+        component: ec2-resource-dra-node
+        daemonset: ec2-resource-dra-node
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        zalando.org/compute-instance-architecture: any
+    spec:
+      serviceAccountName: ec2-resource-dra-node
+      priorityClassName: system-node-critical
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: node-plugin
+          image: mikkeloscar/ec2-resource-dra-node-plugin:3
+          # image: container-registry.zalando.net/cloud-platform/ec2-resource-dra-node:REPLACE_ME
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - name: plugins
+              mountPath: /var/lib/kubelet/plugins/ec2-resource.dra.example.com
+            - name: registry
+              mountPath: /var/lib/kubelet/plugins_registry
+      volumes:
+        - name: plugins
+          hostPath:
+            path: /var/lib/kubelet/plugins/ec2-resource.dra.example.com
+            type: DirectoryOrCreate
+        - name: registry
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
+            type: Directory
+{{- end }}

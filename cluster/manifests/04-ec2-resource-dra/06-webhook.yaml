@@ -1,0 +1,127 @@
+{{- if eq .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ec2-resource-dra-webhook
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ec2-resource-dra-webhook
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      deployment: ec2-resource-dra-webhook
+  template:
+    metadata:
+      labels:
+        application: kubernetes
+        component: ec2-resource-dra-webhook
+        deployment: ec2-resource-dra-webhook
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        zalando.org/compute-instance-architecture: any
+    spec:
+      serviceAccountName: ec2-resource-dra-webhook
+      priorityClassName: system-cluster-critical
+      affinity:
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: dedicated
+                    operator: In
+                    values: ["cluster-seed"]
+{{- end }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    deployment: ec2-resource-dra-webhook
+                topologyKey: kubernetes.io/hostname
+      tolerations:
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - key: dedicated
+          value: cluster-seed
+          effect: NoSchedule
+{{- else }}
+        - key: node.kubernetes.io/role
+          value: master
+          effect: NoSchedule
+{{- end }}
+      containers:
+        - name: webhook
+          image: mikkeloscar/ec2-resource-dra-webhook:5
+          # image: container-registry.zalando.net/cloud-platform/ec2-resource-dra-webhook:REPLACE_ME
+          env:
+            - name: AWS_REGION
+              value: "{{.Cluster.Region}}"
+          ports:
+            - name: webhook
+              containerPort: 9443
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /readyz
+              port: webhook
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+      volumes:
+        - name: tls
+          secret:
+            secretName: ec2-resource-dra-webhook-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ec2-resource-dra-webhook
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ec2-resource-dra-webhook
+spec:
+  selector:
+    deployment: ec2-resource-dra-webhook
+  ports:
+    - name: webhook
+      port: 443
+      targetPort: webhook
+      protocol: TCP
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ec2-resource-dra-webhook
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ec2-resource-dra-webhook
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      deployment: ec2-resource-dra-webhook
+{{- end }}

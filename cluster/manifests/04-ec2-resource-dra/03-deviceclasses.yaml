@@ -1,0 +1,19 @@
+{{- if eq .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: network.ec2-resource.dra.example.com
+spec:
+  selectors:
+    - cel:
+        expression: 'device.driver == "ec2-resource.dra.example.com" && device.attributes["ec2-resource.dra.example.com"].kind == "network"'
+---
+apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: ebs.ec2-resource.dra.example.com
+spec:
+  selectors:
+    - cel:
+        expression: 'device.driver == "ec2-resource.dra.example.com" && device.attributes["ec2-resource.dra.example.com"].kind == "ebs"'
+{{- end }}

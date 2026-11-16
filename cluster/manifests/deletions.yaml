@@ -1,6 +1,11 @@
 # everything defined under here will be deleted before applying the manifests
 # adding the StatefulSet temporary to migrate to Deployment with VPA
 pre_apply:
+{{- if ne .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+# Remove admission before the webhook Deployment is removed below.
+- name: ec2-resource-dra-webhook
+  kind: MutatingWebhookConfiguration
+{{- end }}
 - name: deployment-service-controller
   kind: StatefulSet
   namespace: kube-system
@@ -17,6 +22,54 @@ pre_apply:
 
 # everything defined under here will be deleted after applying the manifests
 post_apply:
+{{- if ne .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+- name: ec2-resource-dra-webhook
+  namespace: kube-system
+  kind: Deployment
+- name: ec2-resource-dra-webhook
+  namespace: kube-system
+  kind: Service
+- name: ec2-resource-dra-webhook
+  namespace: kube-system
+  kind: PodDisruptionBudget
+- name: ec2-resource-dra-webhook-tls
+  namespace: kube-system
+  kind: Secret
+- name: ec2-resource-dra-controller
+  namespace: kube-system
+  kind: Deployment
+- name: ec2-resource-dra-node
+  namespace: kube-system
+  kind: DaemonSet
+- name: network.ec2-resource.dra.example.com
+  kind: DeviceClass
+- name: ebs.ec2-resource.dra.example.com
+  kind: DeviceClass
+- name: ec2-resource-dra-webhook
+  namespace: kube-system
+  kind: ServiceAccount
+- name: ec2-resource-dra-controller
+  namespace: kube-system
+  kind: ServiceAccount
+- name: ec2-resource-dra-node
+  namespace: kube-system
+  kind: ServiceAccount
+- name: ec2-resource-dra-node-minimal
+  namespace: kube-system
+  kind: ServiceAccount
+- name: ec2-resource-dra-webhook
+  kind: ClusterRole
+- name: ec2-resource-dra-webhook
+  kind: ClusterRoleBinding
+- name: ec2-resource-dra-controller
+  kind: ClusterRole
+- name: ec2-resource-dra-controller
+  kind: ClusterRoleBinding
+- name: ec2-resource-dra-node
+  kind: ClusterRole
+- name: ec2-resource-dra-node
+  kind: ClusterRoleBinding
+{{- end }}
 {{- if eq .Cluster.Provider "zalando-eks"}}
 - name: coredns
   kind: Deployment

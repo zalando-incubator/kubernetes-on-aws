@@ -51,7 +51,11 @@ spec:
             capabilities:
               drop:
                 - ALL
+{{- if eq .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+          image: container-registry-test.zalando.net/teapot/karpenter:1.15.1-pr-65-2.patched
+{{- else }}
           image: container-registry.zalando.net/teapot/karpenter:1.15.1-main-61.patched
+{{- end }}
           imagePullPolicy: IfNotPresent
           env:
             - name: KUBERNETES_MIN_VERSION
@@ -102,7 +106,11 @@ spec:
             - name: FEATURE_GATES
               value: "ReservedCapacity={{ .Cluster.ConfigItems.karpenter_feature_reserved_capacity }},SpotToSpotConsolidation=true,NodeRepair={{ .Cluster.ConfigItems.karpenter_feature_node_repair }},NodeOverlay=false,StaticCapacity=false,CapacityBuffer=false,TerminateFirstDrift=false,TerminateFirstRepair=false,PodDeletionCostManagement=false"
             - name: AWS_FEATURE_GATES
+{{- if eq .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+              value: "NodeClassCEL=false,DRANVIDIAGPU=false,DRAEFA=false,DRABandwidth=true,RebootForRepair=false"
+{{- else }}
               value: "NodeClassCEL=false,DRANVIDIAGPU=false,DRAEFA=false,RebootForRepair=false"
+{{- end }}
             - name: BATCH_MAX_DURATION
               value: "10s"
             - name: BATCH_IDLE_DURATION
@@ -118,7 +126,11 @@ spec:
             - name: RESERVED_ENIS
               value: "0"
             - name: IGNORE_DRA_REQUESTS
+{{- if eq .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+              value: "false"
+{{- else }}
               value: "true"
+{{- end }}
             - name: AMI_REFRESH_INTERVAL
               value: "1m"
             - name: SUBNET_REFRESH_INTERVAL

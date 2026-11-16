@@ -136,6 +136,11 @@ data:
   pod.pod-security-policy.privileged-service-accounts.kube-system_kube-aws-iam-controller: ""
   pod.pod-security-policy.privileged-service-accounts.kube-system_kube2iam: ""
   pod.pod-security-policy.privileged-service-accounts.kube-system_ebs-csi-node-sa: ""
+{{- if eq .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+  # The DRA node plugin must access kubelet's host socket directories.
+  pod.pod-security-policy.privileged-service-accounts.kube-system_ec2-resource-dra-node: ""
+  pod.pod-security-policy.privileged-service-accounts.kube-system_ec2-resource-dra-node-minimal: ""
+{{- end }}
   pod.pod-security-policy.privileged-service-accounts.kube-system_flannel: ""
   pod.pod-security-policy.privileged-service-accounts.kube-system_etcd-backup: ""
   pod.pod-security-policy.privileged-service-accounts.kube-system_coredns: ""

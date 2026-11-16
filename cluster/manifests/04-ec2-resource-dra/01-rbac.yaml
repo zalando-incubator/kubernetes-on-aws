@@ -1,0 +1,119 @@
+{{- if eq .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ec2-resource-dra-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ec2-resource-dra-controller
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ec2-resource-dra-controller
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["resource.k8s.io"]
+  resources: ["resourceslices"]
+  verbs: ["get", "create", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ec2-resource-dra-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ec2-resource-dra-controller
+subjects:
+- kind: ServiceAccount
+  name: ec2-resource-dra-controller
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ec2-resource-dra-node
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ec2-resource-dra-node
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ec2-resource-dra-node
+rules:
+- apiGroups: ["resource.k8s.io"]
+  resources: ["resourceclaims"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ec2-resource-dra-node
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ec2-resource-dra-node
+subjects:
+- kind: ServiceAccount
+  name: ec2-resource-dra-node
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ec2-resource-dra-node-minimal
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ec2-resource-dra-node
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ec2-resource-dra-webhook
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ec2-resource-dra-webhook
+  annotations:
+{{- if eq .Cluster.Provider "zalando-eks" }}
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccountID}}:role/{{.Cluster.LocalID}}-app-ec2-dra-webhook"
+{{- else }}
+    iam.amazonaws.com/role: "{{.Cluster.LocalID}}-app-ec2-dra-webhook"
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ec2-resource-dra-webhook
+rules:
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims", "persistentvolumes"]
+  verbs: ["get"]
+- apiGroups: ["storage.k8s.io"]
+  resources: ["storageclasses"]
+  verbs: ["get", "list"]
+- apiGroups: ["resource.k8s.io"]
+  resources: ["resourceclaimtemplates"]
+  verbs: ["get", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ec2-resource-dra-webhook
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ec2-resource-dra-webhook
+subjects:
+- kind: ServiceAccount
+  name: ec2-resource-dra-webhook
+  namespace: kube-system
+{{- end }}

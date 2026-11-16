@@ -1,0 +1,72 @@
+{{- if eq .Cluster.ConfigItems.ec2_resource_dra_enabled "true" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ec2-resource-dra-controller
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ec2-resource-dra-controller
+spec:
+  # This controller does not implement leader election.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      deployment: ec2-resource-dra-controller
+  template:
+    metadata:
+      labels:
+        application: kubernetes
+        component: ec2-resource-dra-controller
+        deployment: ec2-resource-dra-controller
+      annotations:
+        logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
+        zalando.org/compute-instance-architecture: any
+    spec:
+      serviceAccountName: ec2-resource-dra-controller
+      priorityClassName: system-cluster-critical
+{{- if eq .Cluster.Provider "zalando-eks" }}
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: dedicated
+                    operator: In
+                    values: ["cluster-seed"]
+{{- end }}
+      tolerations:
+{{- if eq .Cluster.Provider "zalando-eks" }}
+        - key: dedicated
+          value: cluster-seed
+          effect: NoSchedule
+{{- else }}
+        - key: node.kubernetes.io/role
+          value: master
+          effect: NoSchedule
+{{- end }}
+      containers:
+        - name: controller
+          image: mikkeloscar/ec2-resource-dra-controller:3
+          # image: container-registry.zalando.net/cloud-platform/ec2-resource-dra-controller:REPLACE_ME
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+{{- end }}
