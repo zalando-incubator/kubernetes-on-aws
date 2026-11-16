@@ -44,6 +44,18 @@ spec:
                   If set to true, the controller should stop processing the deployment task and change its
                   phase to Aborted.
                 type: boolean
+{{- if eq .Cluster.ConfigItems.deployment_service_accountable_user_impersonation_enabled "true" }}
+              accountableUser:
+                description: Accountable user for this deployment. When set, the controller
+                  impersonates this user when applying resources.
+                type: string
+              accountableUserGroups:
+                description: Groups resolved for the accountable user when the task
+                  was created. Used only when impersonating that user.
+                items:
+                  type: string
+                type: array
+{{- end }}
               changeCause:
                 description: |-
                   A human-readable description of the current deployment, to be used as the change cause in deployments and other
