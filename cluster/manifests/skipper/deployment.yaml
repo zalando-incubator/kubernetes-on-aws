@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{/* image-updater-bot detects *image variables so use name with suffix to disable it for the main image */}}
 
 
@@ -55,6 +56,7 @@
 }}
 {{ end }}
 
+{{- end }}
 {{ define "skipper-ingress" }}
 {{ $version := index (split (index (split .image ":") 1) "-") 0 }}
 ---

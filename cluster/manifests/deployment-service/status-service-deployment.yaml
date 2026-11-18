@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # {{ $image   := "container-registry.zalando.net/teapot/deployment-status-service:master-341" }}
 # {{ $version := index (split $image ":") 1 }}
 
@@ -82,3 +83,4 @@ spec:
             httpGet:
               port: 8080
               path: /healthz
+{{- end }}

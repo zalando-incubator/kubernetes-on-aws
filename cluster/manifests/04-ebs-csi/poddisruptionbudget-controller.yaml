@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -11,3 +12,4 @@ spec:
     matchLabels:
       deployment: ebs-csi-controller
   maxUnavailable: 1
+{{- end }}

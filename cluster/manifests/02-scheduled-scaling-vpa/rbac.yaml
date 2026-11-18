@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if eq .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true" }}
 apiVersion: v1
 kind: ServiceAccount
@@ -41,4 +42,5 @@ subjects:
 - kind: ServiceAccount
   name: scheduled-scaling-vpa
   namespace: kube-system
+{{- end }}
 {{- end }}

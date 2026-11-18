@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if eq .Cluster.ConfigItems.wiz_enable_runtime_connector "true"}}
 ---
 # Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/templates/job-create-connector.yaml
@@ -89,3 +90,4 @@ spec:
             mountPath: /var/api-client
             readOnly: true
 {{end}}
+{{- end }}

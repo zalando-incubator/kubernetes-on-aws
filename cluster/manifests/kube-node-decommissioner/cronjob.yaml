@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # {{ if eq .Cluster.ConfigItems.kube_node_decommissioner_enabled "true" }}
 apiVersion: batch/v1
 kind: CronJob
@@ -38,3 +39,4 @@ spec:
                 cpu: "{{.Cluster.ConfigItems.kube_node_decommissioner_cpu}}"
                 memory: "{{.Cluster.ConfigItems.kube_node_decommissioner_memory}}"
 # {{ end }}
+{{- end }}

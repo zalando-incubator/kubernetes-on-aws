@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if eq .Cluster.ConfigItems.polarsignals_enabled "true" }}
 {{- range $workload := split .Cluster.ConfigItems.polarsignals_workloads "," }}
 ---
@@ -145,3 +146,4 @@ spec:
           name: token
 {{- end }}
 {{ end }}
+{{- end }}

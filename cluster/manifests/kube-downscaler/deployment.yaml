@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if eq .Cluster.ConfigItems.downscaler_enabled "true" }}
 apiVersion: apps/v1
 kind: Deployment
@@ -51,3 +52,4 @@ spec:
           runAsNonRoot: true
           runAsUser: 1000
 {{ end }}
+{{- end }}

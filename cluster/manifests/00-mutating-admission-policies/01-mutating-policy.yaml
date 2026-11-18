@@ -1,0 +1,105 @@
+{{- if eq .Cluster.Provider "zalando-nebius" }}
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: pod-mutations
+spec:
+  reinvocationPolicy: IfNeeded
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["pods"]
+  mutations:
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: |
+        Object{
+          spec: Object.spec{
+            containers: object.spec.containers.map(container,
+              Object.spec.containers{
+                name: container.name,
+                image: container.image.startsWith("container-registry-test.zalando.net/")
+                  ? "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/" + container.image.substring(size("container-registry-test.zalando.net/"))
+                  : container.image.startsWith("container-registry.zalando.net/")
+                    ? "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/" + container.image.substring(size("container-registry.zalando.net/"))
+                    : container.image
+              }
+            )
+          }
+        }
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: |
+        has(object.spec.initContainers)
+        ? Object{
+            spec: Object.spec{
+              initContainers: object.spec.initContainers.map(container,
+                Object.spec.initContainers{
+                  name: container.name,
+                  image: container.image.startsWith("container-registry-test.zalando.net/")
+                    ? "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/" + container.image.substring(size("container-registry-test.zalando.net/"))
+                    : container.image.startsWith("container-registry.zalando.net/")
+                      ? "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/" + container.image.substring(size("container-registry.zalando.net/"))
+                      : container.image
+                }
+              )
+            }
+          }
+        : Object{}
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: |
+        has(object.spec.ephemeralContainers)
+        ? Object{
+            spec: Object.spec{
+              ephemeralContainers: object.spec.ephemeralContainers.map(container,
+                Object.spec.ephemeralContainers{
+                  name: container.name,
+                  image: container.image.startsWith("container-registry-test.zalando.net/")
+                    ? "926694233939.dkr.ecr.eu-central-1.amazonaws.com/staging_namespace/" + container.image.substring(size("container-registry-test.zalando.net/"))
+                    : container.image.startsWith("container-registry.zalando.net/")
+                      ? "926694233939.dkr.ecr.eu-central-1.amazonaws.com/production_namespace/" + container.image.substring(size("container-registry.zalando.net/"))
+                      : container.image
+                }
+              )
+            }
+          }
+        : Object{}
+  - patchType: JSONPatch
+    jsonPatch:
+      expression: |
+        (
+          object.spec.containers.exists(c,
+            c.image.startsWith("container-registry.zalando.net/") ||
+            c.image.startsWith("container-registry-test.zalando.net/") ||
+            c.image.startsWith("926694233939.dkr.ecr.eu-central-1.amazonaws.com/"))
+          || (has(object.spec.initContainers) &&
+            object.spec.initContainers.exists(c,
+              c.image.startsWith("container-registry.zalando.net/") ||
+              c.image.startsWith("container-registry-test.zalando.net/") ||
+              c.image.startsWith("926694233939.dkr.ecr.eu-central-1.amazonaws.com/")))
+          || (has(object.spec.ephemeralContainers) &&
+            object.spec.ephemeralContainers.exists(c,
+              c.image.startsWith("container-registry.zalando.net/") ||
+              c.image.startsWith("container-registry-test.zalando.net/") ||
+              c.image.startsWith("926694233939.dkr.ecr.eu-central-1.amazonaws.com/")))
+        )
+        ? (
+            !has(object.spec.imagePullSecrets)
+            ? [JSONPatch{
+                op: "add",
+                path: "/spec/imagePullSecrets",
+                value: [{"name": "ecr-registry-credentials"}]
+              }]
+            : object.spec.imagePullSecrets.exists(s, s.name == "ecr-registry-credentials")
+              ? []
+              : [JSONPatch{
+                  op: "add",
+                  path: "/spec/imagePullSecrets/-",
+                  value: {"name": "ecr-registry-credentials"}
+                }]
+          )
+        : []
+{{- end }}

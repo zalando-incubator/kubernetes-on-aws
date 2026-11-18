@@ -1,0 +1,18 @@
+{{- if eq .Cluster.Provider "zalando-nebius" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+  labels:
+    application: skipper
+    component: ingress
+data:
+  ingress.override: |
+    # Nebius imports this into the managed CoreDNS server block.
+    # Keep the managed coredns ConfigMap and its upstream DNS unchanged.
+    # Resolve through Kubernetes Service discovery; no ClusterIP is hard-coded.
+    # The 29 September CoreDNS drift and the one-time recovery procedure are documented in [docs/coredns.md](docs/coredns.md).
+    # The recovery is **not** part of CDP: it repairs a previously modified provider-managed ConfigMap, while CDP owns only `coredns-custom` going forward.
+    rewrite stop name regex ^.*[.]ingress[.]cluster[.]local[.]?$ internal-skipper.kube-system.svc.cluster.local answer auto
+{{- end }}

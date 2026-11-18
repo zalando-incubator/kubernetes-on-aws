@@ -1,4 +1,4 @@
-{{- if eq .Cluster.Provider "zalando-eks"}}
+{{- if or (eq .Cluster.Provider "zalando-eks") (eq .Cluster.Provider "zalando-nebius") }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,13 +21,19 @@ spec:
       annotations:
         logging/destination: "{{.Cluster.ConfigItems.log_destination_infra}}"
     spec:
+{{- if eq .Cluster.Provider "zalando-nebius" }}
+      imagePullSecrets:
+      - name: ecr-registry-credentials
+{{- end }}
       affinity:
+{{- if ne .Cluster.Provider "zalando-nebius" }}
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
               matchLabels:
                 deployment: teapot-admission-controller
             topologyKey: kubernetes.io/hostname
+{{- end }}
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
             - weight: 100

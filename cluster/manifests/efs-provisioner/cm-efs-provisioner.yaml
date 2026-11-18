@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if index .Cluster.ConfigItems "efs_id" }}
 apiVersion: v1
 kind: ConfigMap
@@ -9,3 +10,4 @@ data:
   aws.region: "{{ .Cluster.Region }}"
   provisioner.name: external-storage.alpha.kubernetes.io/aws-efs
 {{ end }}
+{{- end }}

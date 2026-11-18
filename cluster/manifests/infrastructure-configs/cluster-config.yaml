@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,4 +11,5 @@ data:
   max-nodes: "{{ .Values.node_subnets_max_nodes }}"
 {{- else }}
   max-nodes: "{{ nodeCIDRMaxNodesPodCIDR (parseInt64 $pod_cidr_size) (parseInt64 .Cluster.ConfigItems.node_cidr_mask_size) (parseInt64 .Cluster.ConfigItems.reserved_nodes) }}"
+{{- end }}
 {{- end }}

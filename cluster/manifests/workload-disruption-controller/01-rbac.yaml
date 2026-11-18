@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{- if eq .Cluster.ConfigItems.karpenter_drift_disruption_enabled "true" }}
 apiVersion: v1
 kind: ServiceAccount
@@ -48,3 +49,4 @@ subjects:
   name: workload-disruption-controller
   namespace: kube-system
 {{- end}}
+{{- end }}

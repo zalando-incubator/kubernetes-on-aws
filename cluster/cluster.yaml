@@ -8,6 +8,44 @@ Metadata:
     "kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
 
 Resources:
+{{- if eq .Cluster.Provider "zalando-nebius" }}
+  NebiusOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: "https://{{ .Cluster.ConfigItems.oidc_provider }}/{{ .Cluster.ID }}"
+      ClientIdList:
+        - sts.amazonaws.com
+  NebiusECRRefresherIAMRole:
+    Type: AWS::IAM::Role
+    DependsOn: NebiusOIDCProvider
+    Properties:
+      RoleName: "{{ .Cluster.LocalID }}-app-ecr-refresher"
+      Path: /
+      AssumeRolePolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Federated": "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDC}"
+                },
+                "Action": "sts:AssumeRoleWithWebIdentity",
+                "Condition": {
+                  "StringEquals": {
+                    "${OIDC}:aud": "sts.amazonaws.com",
+                    "${OIDC}:sub": "system:serviceaccount:kube-system:ecr-refresher-sa"
+                  }
+                }
+              }
+            ]
+          }
+        - OIDC: "{{ .Cluster.ConfigItems.oidc_provider }}/{{ .Cluster.ID }}"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+{{- end }}
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if eq .Cluster.Provider "zalando-eks" }}
   # https://aws.amazon.com/blogs/containers/aws-fault-injection-simulator-supports-chaos-engineering-experiments-on-amazon-eks-pods/
   {{- if eq .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
@@ -2181,7 +2219,11 @@ Resources:
                   - 'cloudformation:GetTemplate'
                 Effect: Allow
                 Resource: '*'
+{{- end }}
   ExternalDNSIAMRole:
+{{- if eq .Cluster.Provider "zalando-nebius" }}
+    DependsOn: NebiusOIDCProvider
+{{- end }}
     Properties:
       AssumeRolePolicyDocument: !Sub
         - |
@@ -2200,6 +2242,7 @@ Resources:
                 ],
                 "Condition": {
                   "StringEquals": {
+                    "${OIDC}:aud": "sts.amazonaws.com",
                     "${OIDC}:sub": "system:serviceaccount:kube-system:external-dns"
                   }
                 }
@@ -2208,6 +2251,8 @@ Resources:
           }
 {{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else if eq .Cluster.Provider "zalando-nebius" }}
+        - OIDC: "{{ .Cluster.ConfigItems.oidc_provider }}/{{ .Cluster.ID }}"
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
 {{- end }}
@@ -2222,6 +2267,7 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-external-dns"
     Type: 'AWS::IAM::Role'
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
   IngressControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument: !Sub
@@ -3113,7 +3159,11 @@ Resources:
       RoleName: "{{.Cluster.LocalID}}-app-zmon"
     Type: 'AWS::IAM::Role'
 
+{{- end }}
   LoggingAgentIAMRole:
+{{- if eq .Cluster.Provider "zalando-nebius" }}
+    DependsOn: NebiusOIDCProvider
+{{- end }}
     Type: AWS::IAM::Role
     Properties:
       RoleName: "{{.Cluster.LocalID}}-app-logging-agent"
@@ -3123,35 +3173,6 @@ Resources:
           {
             "Version": "2012-10-17",
             "Statement": [
-              {
-                "Effect": "Allow",
-                "Action": [
-                  "sts:AssumeRole"
-                ],
-                "Principal": {
-                  "Service": [
-                    "ec2.amazonaws.com"
-                  ]
-                }
-              },
-              {
-                "Effect": "Allow",
-                "Action": [
-                  "sts:AssumeRole"
-                ],
-                "Principal": {
-                  "AWS": "${WorkerIAMRole}"
-                }
-              },
-              {
-                "Effect": "Allow",
-                "Action": [
-                  "sts:AssumeRole"
-                ],
-                "Principal": {
-                  "AWS": "${MasterIAMRole}"
-                }
-              },
               {
                 "Effect": "Allow",
                 "Principal": {
@@ -3164,6 +3185,7 @@ Resources:
                 ],
                 "Condition": {
                   "StringEquals": {
+                    "${OIDC}:aud": "sts.amazonaws.com",
                     "${OIDC}:sub": "system:serviceaccount:visibility:logging-agent"
                   }
                 }
@@ -3172,11 +3194,11 @@ Resources:
           }
 {{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else if eq .Cluster.Provider "zalando-nebius" }}
+        - OIDC: "{{ .Cluster.ConfigItems.oidc_provider }}/{{ .Cluster.ID }}"
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
 {{- end }}
-          WorkerIAMRole: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${WorkerIAMRole}'
-          MasterIAMRole: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${MasterIAMRole}'
       Policies:
         - PolicyName: AllowS3BucketAccess
           PolicyDocument:
@@ -3204,6 +3226,7 @@ Resources:
               Resource: 'arn:aws:s3:::{{.Cluster.ConfigItems.logging_infrastructure_s3_bucket}}/*'
 {{- end }}
 
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
   KubeMetricsIAMRole:
     Properties:
       AssumeRolePolicyDocument: !Sub
@@ -4183,3 +4206,4 @@ Outputs:
     Export:
       Name: '{{ .Cluster.ID}}:worker-files-encryption-key'
     Value: !Ref WorkerFilesEncryptionKey
+{{- end }}

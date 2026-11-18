@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # This gives zmon read access to clusters from the outside. This allows checking
 # various core functionality like coredns availability and Karpenter
 # availability from a zmon-worker in another cluster.
@@ -18,3 +19,4 @@ subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User
   name: zalando-iam:zalando:service:stups_gerry
+{{- end }}

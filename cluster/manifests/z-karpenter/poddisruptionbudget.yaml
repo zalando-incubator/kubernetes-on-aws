@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 ---
 # Source: karpenter/templates/poddisruptionbudget.yaml
 apiVersion: policy/v1
@@ -13,3 +14,4 @@ spec:
   selector:
     matchLabels:
       deployment: karpenter
+{{- end }}

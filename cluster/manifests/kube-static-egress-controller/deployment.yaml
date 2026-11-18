@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -80,3 +81,4 @@ spec:
       - name: platform-iam-credentials
         secret:
           secretName: kube-static-egress-controller-credentials
+{{- end }}

@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -12,3 +13,4 @@ spec:
     matchLabels:
       application: skipper-ingress
       component: ingress
+{{- end }}

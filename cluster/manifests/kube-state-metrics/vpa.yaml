@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
@@ -20,3 +21,4 @@ spec:
         memory: {{.Cluster.ConfigItems.kube_state_metrics_mem_max}}
       minAllowed:
         memory: {{.Cluster.ConfigItems.kube_state_metrics_mem_min}}
+{{- end }}

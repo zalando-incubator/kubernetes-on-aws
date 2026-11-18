@@ -1,0 +1,61 @@
+{{- if eq .Cluster.Provider "zalando-nebius" }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ecr-refresher
+  namespace: kube-system
+  labels:
+    application: kubernetes
+    component: ecr-refresher
+spec:
+  schedule: "0/5 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 3
+  jobTemplate:
+    metadata:
+      labels:
+        application: kubernetes
+        component: ecr-refresher
+    spec:
+      activeDeadlineSeconds: 60
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 300
+      template:
+        metadata:
+          labels:
+            application: kubernetes
+            component: ecr-refresher
+        spec:
+          serviceAccountName: ecr-refresher-sa
+          restartPolicy: Never
+          containers:
+            - name: ecr-refresher
+              # image: "container-registry-test.zalando.net/cloud-platform/ecr-refresher:main-16"
+              image: "mikkeloscar/ecr-refresher:1"
+              args:
+                - --registry=926694233939.dkr.ecr.eu-central-1.amazonaws.com
+              env:
+                - name: AWS_REGION
+                  value: "eu-central-1"
+                # The pod bypasses the admission controller, so configure IRSA explicitly.
+                - name: AWS_ROLE_ARN
+                  value: "arn:aws:iam::{{ .Cluster.InfrastructureAccountID }}:role/{{ .Cluster.LocalID }}-app-ecr-refresher"
+                - name: AWS_WEB_IDENTITY_TOKEN_FILE
+                  value: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token"
+                # - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                #   value: "tracing.platform-infrastructure-test.zalan.do:8443"
+              volumeMounts:
+                - name: aws-token
+                  mountPath: "/var/run/secrets/eks.amazonaws.com/serviceaccount"
+                  readOnly: true
+          volumes:
+            - name: aws-token
+              projected:
+                sources:
+                  - serviceAccountToken:
+                      path: token
+                      expirationSeconds: 3600
+                      audience: "sts.amazonaws.com"
+{{- end }}

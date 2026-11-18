@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 kind: ServiceAccount
 apiVersion: v1
 metadata:
@@ -53,4 +54,5 @@ subjects:
 - kind: ServiceAccount
   name: otel-collector
   namespace: tracing
+{{- end }}
 {{- end }}

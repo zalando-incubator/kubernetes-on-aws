@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if or (eq .Cluster.ConfigItems.wiz_enable_runtime_connector "true") (eq .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true") }}
 # wiz-cluster-reader-token Secret is dependent on wiz-cluster-reader SA.
 # It is created when wiz_enable_runtime_connector or wiz_enable_runtime_connector_broker is true and deleted when wiz_enable_runtime_connector_broker  and wiz_enable_runtime_connector is false
@@ -20,3 +21,4 @@ subjects:
   name: wiz-cluster-reader
   namespace: "wiz"
 {{end}}
+{{- end }}

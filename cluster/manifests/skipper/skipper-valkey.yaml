@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # {{ $image := "container-registry.zalando.net/library/valkey-9-alpine:9-alpine3.23-20261019" }}
 # {{ $version := index (split $image ":") 1 }}
 apiVersion: apps/v1
@@ -116,3 +117,4 @@ spec:
         operator: Exists
         effect: NoSchedule
 {{ end }}
+{{- end }}

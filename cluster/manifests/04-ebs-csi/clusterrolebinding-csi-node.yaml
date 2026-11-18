@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -13,3 +14,4 @@ roleRef:
   kind: ClusterRole
   name: ebs-csi-node-role
   apiGroup: rbac.authorization.k8s.io
+{{- end }}

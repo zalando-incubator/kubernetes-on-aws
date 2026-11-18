@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # {{ if eq .Cluster.ConfigItems.skipper_eks_migration_svc_enabled "true" }}
 apiVersion: v1
 kind: Service
@@ -31,3 +32,4 @@ spec:
   loadBalancerSourceRanges:
   - "{{ .Values.vpc_ipv4_cidr }}"
 # {{ end }}
+{{- end }}

@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{- if eq .Cluster.ConfigItems.kube2iam_enabled "true"}}
 apiVersion: v1
 kind: ServiceAccount
@@ -41,3 +42,4 @@ subjects:
   name: kube2iam
   namespace: kube-system
 {{- end}}
+{{- end }}

@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{- if eq .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true" }}
 apiVersion: batch/v1
 kind: CronJob
@@ -34,4 +35,5 @@ spec:
           containers:
           - name: main
             image: container-registry.zalando.net/cloud-platform/scheduled-scaling-vpa:main-36
+{{- end }}
 {{- end }}

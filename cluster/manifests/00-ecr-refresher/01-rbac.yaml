@@ -1,0 +1,58 @@
+{{- if eq .Cluster.Provider "zalando-nebius" }}
+# ServiceAccount used by the ECR credential-refresher CronJob.
+# Its identity (system:serviceaccount:kube-system:ecr-refresher-sa) must match
+# the `sub` condition in the ECR refresher IAM role's trust policy for
+# AssumeRoleWithWebIdentity to succeed.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecr-refresher-sa
+  namespace: kube-system
+  labels:
+    application: ecr-refresher
+    component: ecr-refresher
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::{{ .Cluster.InfrastructureAccountID }}:role/{{ .Cluster.LocalID }}-app-ecr-refresher"
+---
+# ClusterRole + ClusterRoleBinding granting ecr-refresher-sa permission to
+# discover namespaces, manage the "ecr-registry-credentials" secret, and patch
+# the "default" ServiceAccount in every namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ecr-refresher
+  labels:
+    application: kubernetes
+    component: ecr-refresher
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["list"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["ecr-registry-credentials"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create"] # create has no resourceNames support; needed for first-time secret creation
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    resourceNames: ["default"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ecr-refresher
+  labels:
+    application: kubernetes
+    component: ecr-refresher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ecr-refresher
+subjects:
+  - kind: ServiceAccount
+    name: ecr-refresher-sa
+    namespace: kube-system
+{{- end }}

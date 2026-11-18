@@ -1,0 +1,15 @@
+{{- if eq .Cluster.Provider "zalando-nebius" }}
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: pod-mutations
+spec:
+  policyName: pod-mutations
+  matchResources:
+    namespaceSelector: {}
+    objectSelector:
+      matchExpressions:
+      - key: component
+        operator: NotIn
+        values: ["ecr-refresher"]
+{{- end }}
