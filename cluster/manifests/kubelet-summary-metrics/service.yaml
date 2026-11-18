@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # {{ if eq .Cluster.ConfigItems.kubelet_summary_metrics_enabled "true" }}
 kind: Service
 apiVersion: v1
@@ -16,3 +17,4 @@ spec:
   selector:
     deployment: kubelet-summary-metrics
 # {{ end }}
+{{- end }}

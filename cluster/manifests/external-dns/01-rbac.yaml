@@ -8,7 +8,7 @@ metadata:
     application: kubernetes
     component: external-dns
   annotations:
-{{- if eq .Cluster.Provider "zalando-eks"}}
+{{- if or (eq .Cluster.Provider "zalando-eks") (eq .Cluster.Provider "zalando-nebius") }}
     eks.amazonaws.com/role-arn: "arn:aws:iam::{{.Cluster.InfrastructureAccountID}}:role/{{ .Cluster.LocalID }}-app-external-dns"
 {{- else}}
     iam.amazonaws.com/role: "{{ .Cluster.LocalID }}-app-external-dns"

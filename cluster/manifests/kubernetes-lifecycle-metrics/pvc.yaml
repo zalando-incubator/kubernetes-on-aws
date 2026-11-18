@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{- if eq .Cluster.ConfigItems.kubernetes_lifecycle_metrics_state_file "true" }}
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -14,4 +15,5 @@ spec:
   resources:
     requests:
       storage: 1Gi
+{{- end }}
 {{- end }}

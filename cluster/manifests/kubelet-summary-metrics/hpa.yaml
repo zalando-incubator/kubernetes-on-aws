@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # {{ if eq .Cluster.ConfigItems.kubelet_summary_metrics_enabled "true" }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -28,3 +29,4 @@ spec:
         type: Utilization
         averageUtilization: {{.Cluster.ConfigItems.kubelet_summary_metrics_hpa_memory_target}}
 # {{ end }}
+{{- end }}

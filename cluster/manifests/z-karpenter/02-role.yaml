@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 ---
 # Source: karpenter/templates/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -40,3 +41,4 @@ rules:
     resources: ["services"]
     resourceNames: ["kube-dns"]
     verbs: ["get"]
+{{- end }}

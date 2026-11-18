@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # {{ $image := "container-registry.zalando.net/gwproxy/fabric-gateway:master-386" }}
 # {{ $version := index (split $image ":") 1 }}
 apiVersion: apps/v1
@@ -56,3 +57,4 @@ spec:
             limits:
               cpu: {{ .Cluster.ConfigItems.fabric_gateway_controller_cpu }}
               memory: {{ .Cluster.ConfigItems.fabric_gateway_controller_memory }}
+{{- end }}

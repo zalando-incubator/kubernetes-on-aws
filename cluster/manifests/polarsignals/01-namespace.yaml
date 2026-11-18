@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if eq .Cluster.ConfigItems.polarsignals_enabled "true" }}
 ---
 apiVersion: v1
@@ -9,3 +10,4 @@ metadata:
     pod-security.kubernetes.io/warn: privileged
   name: polarsignals
 {{ end }}
+{{- end }}

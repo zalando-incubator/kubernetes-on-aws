@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -12,3 +13,4 @@ parameters:
   # TODO: this assumes 3 zones per region
   zones: {{ .Cluster.Region }}a,{{ .Cluster.Region }}b,{{ .Cluster.Region }}c
 allowVolumeExpansion: true
+{{- end }}

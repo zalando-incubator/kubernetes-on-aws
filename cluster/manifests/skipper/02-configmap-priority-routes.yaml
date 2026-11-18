@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if eq .Cluster.ConfigItems.skipper_priority_routes_enabled "true" }}
 apiVersion: v1
 kind: ConfigMap
@@ -11,3 +12,4 @@ data:
   routes.eskip: |-
     p0: False() -> <shunt>;
 {{ end }}
+{{- end }}

@@ -994,8 +994,10 @@ etcd_instance_type: "t3.medium"
 
 etcd_scalyr_key: ""
 
+{{- if eq .Cluster.Provider "zalando-aws" }}
 etcd_ami_amd64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-amd64-main-49" "861068367966"}}
 etcd_ami_arm64: {{ amiID "zalando-ubuntu-etcd-production-v3.5.33-arm64-main-49" "861068367966"}}
+{{- end }}
 
 cluster_dns: "coredns"
 coredns_log_svc_names: "true"
@@ -1015,6 +1017,7 @@ tracing_coredns_route_traces_to_local_zone: "false"
 tracing_coredns_global_traces_endpoint: ""
 tracing_coredns_local_zone_traces_endpoint: ""
 
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # Kubernetes on Ubuntu AMI to use
 # note this configuration uses the [amiID][0] function. It returns the
 # AMI id given the image name and the Image AWS account owner.
@@ -1022,6 +1025,7 @@ tracing_coredns_local_zone_traces_endpoint: ""
 # [0]: https://github.com/zalando-incubator/cluster-lifecycle-manager/blob/8a9bd1cb2d094038a9e23e646421f8146b48886a/provisioner/template.go#L116
 kuberuntu_image_v1_36_new_amd64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.6-amd64-master-448" "861068367966" }}
 kuberuntu_image_v1_36_new_arm64: {{ amiID "zalando-ubuntu-jammy-22.04-kubernetes-production-v1.36.6-arm64-master-448" "861068367966" }}
+{{- end }}
 
 # This is used to determine which AMI to use for the cluster or individual node
 # pools. Possible values are 'new' or 'old'

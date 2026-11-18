@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{- if eq .Cluster.ConfigItems.kube2iam_enabled "true"}}
 apiVersion: apps/v1
 kind: DaemonSet
@@ -73,3 +74,4 @@ spec:
             cpu: {{ .Cluster.ConfigItems.kube2iam_cpu }}
             memory: {{ .Cluster.ConfigItems.kube2iam_memory }}
 {{- end}}
+{{- end }}

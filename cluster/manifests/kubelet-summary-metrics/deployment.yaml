@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # {{ if eq .Cluster.ConfigItems.kubelet_summary_metrics_enabled "true" }}
 apiVersion: apps/v1
 kind: Deployment
@@ -36,3 +37,4 @@ spec:
             cpu: "{{.Cluster.ConfigItems.kubelet_summary_metrics_cpu}}"
             memory: "{{.Cluster.ConfigItems.kubelet_summary_metrics_memory}}"
 # {{ end }}
+{{- end }}

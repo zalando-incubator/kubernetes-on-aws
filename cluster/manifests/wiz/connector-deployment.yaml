@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if eq .Cluster.ConfigItems.wiz_enable_runtime_connector_broker "true"}}
 ---
 # Source: wiz-kubernetes-integration/charts/wiz-kubernetes-connector/charts/wiz-broker/templates/wiz-broker-deployment.yaml
@@ -123,3 +124,4 @@ spec:
               cpu: {{ .Cluster.ConfigItems.wiz_connector_cpu }}
               memory: {{ .Cluster.ConfigItems.wiz_connector_memory }} 
 {{end}}
+{{- end }}

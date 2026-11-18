@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -53,3 +54,4 @@ spec:
         value: 100
         periodSeconds: 60
       selectPolicy: Min
+{{- end }}

@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,7 +10,7 @@ metadata:
 spec:
   selector:
     component: coredns
-{{- if ne .Cluster.Provider "zalando-eks"}}
+{{- if eq .Cluster.Provider "zalando-aws"}}
 # TODO: what to do with eks service range?
   clusterIP: 10.5.0.11
 {{- end}}
@@ -20,3 +21,4 @@ spec:
   - name: dns-tcp
     port: 53
     protocol: TCP
+{{- end }}

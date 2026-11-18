@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -242,7 +243,7 @@ data:
         target_label: node_name
       - action: labeldrop
         regex: "^(pod|node|container)$"
-{{- if ne .Cluster.Provider "zalando-eks" }}
+{{- if eq .Cluster.Provider "zalando-aws" }}
     - job_name: 'etcd-servers'
       scheme: http
       dns_sd_configs:
@@ -452,3 +453,4 @@ data:
         action: keep
         regex: '(container_threads|container_file_descriptors)'
     # {{ end }}
+{{- end }}

@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ $min_replicas := .Cluster.ConfigItems.skipper_ingress_min_replicas }}
 {{ if and
   (eq .Cluster.ConfigItems.skipper_ingress_canary_enabled "true")
@@ -71,3 +72,4 @@ spec:
         value: {{ .Cluster.ConfigItems.skipper_ingress_hpa_scale_up_max_perc }}
       selectPolicy: Max
       stabilizationWindowSeconds: 0
+{{- end }}

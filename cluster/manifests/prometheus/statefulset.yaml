@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -118,3 +119,4 @@ spec:
       resources:
         requests:
           storage: {{.Cluster.ConfigItems.prometheus_storage_size}}
+{{- end }}

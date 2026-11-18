@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # {{ if eq .Cluster.ConfigItems.kube_janitor_enabled "true" }}
 apiVersion: v1
 kind: ConfigMap
@@ -92,3 +93,4 @@ data:
         ttl: "{{ .Cluster.ConfigItems.kube_janitor_default_unused_pvc_ttl }}"
 
 # {{ end }}
+{{- end }}

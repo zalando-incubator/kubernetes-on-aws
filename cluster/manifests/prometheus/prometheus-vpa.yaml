@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{- if eq .Cluster.ConfigItems.scheduled_scaling_vpa_enabled "true" }}
 apiVersion: zalando.org/v1
 {{- else }}
@@ -36,4 +37,5 @@ spec:
           cpu: {{ index $tuple 2 }}
           memory: {{ index $tuple 3 }}
   {{- end }}
+{{- end }}
 {{- end }}

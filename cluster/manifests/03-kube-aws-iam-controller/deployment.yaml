@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{- if eq .Cluster.ConfigItems.kube_aws_iam_controller_enabled "true"}}
 apiVersion: apps/v1
 kind: Deployment
@@ -34,7 +35,7 @@ spec:
           value: "{{.Cluster.Region}}"
         args:
         - --debug
-{{- if ne .Cluster.Provider "zalando-eks" }}
+{{- if eq .Cluster.Provider "zalando-aws" }}
         - "--assume-role={{.Cluster.LocalID}}-worker"
 {{- end }}
         resources:
@@ -58,3 +59,4 @@ spec:
         effect: NoSchedule
 {{- end}}
 {{- end}}
+{{- end }}

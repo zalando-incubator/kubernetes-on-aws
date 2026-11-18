@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if ne .Cluster.ConfigItems.teapot_admission_controller_process_resources "true" }}
 apiVersion: "v1"
 kind: "LimitRange"
@@ -13,3 +14,4 @@ spec:
       default:
         memory: 1Gi
 {{ end }}
+{{- end }}

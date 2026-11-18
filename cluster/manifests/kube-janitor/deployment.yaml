@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 # {{ if eq .Cluster.ConfigItems.kube_janitor_enabled "true" }}
 # {{ $image := "container-registry.zalando.net/teapot/kube-janitor:23.7.0-main-2" }}
 # {{ $version := index (split (index (split $image ":") 1) "-") 0 }}
@@ -62,3 +63,4 @@ spec:
           configMap:
             name: kube-janitor
 # {{ end }}
+{{- end }}

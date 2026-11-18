@@ -8,6 +8,7 @@ Metadata:
     "kubernetes.io/cluster/{{.Cluster.Name}}": "owned"
 
 Resources:
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if eq .Cluster.Provider "zalando-eks" }}
   # https://aws.amazon.com/blogs/containers/aws-fault-injection-simulator-supports-chaos-engineering-experiments-on-amazon-eks-pods/
   {{- if eq .Cluster.ConfigItems.eks_fis_support_enabled "true" }}
@@ -2181,6 +2182,7 @@ Resources:
                   - 'cloudformation:GetTemplate'
                 Effect: Allow
                 Resource: '*'
+{{- end }}
   ExternalDNSIAMRole:
     Properties:
       AssumeRolePolicyDocument: !Sub
@@ -2200,6 +2202,7 @@ Resources:
                 ],
                 "Condition": {
                   "StringEquals": {
+                    "${OIDC}:aud": "sts.amazonaws.com",
                     "${OIDC}:sub": "system:serviceaccount:kube-system:external-dns"
                   }
                 }
@@ -2208,6 +2211,8 @@ Resources:
           }
 {{- if eq .Cluster.Provider "zalando-eks" }}
         - OIDC: !Select [1, !Split ["//", !GetAtt EKSCluster.OpenIdConnectIssuerUrl]]
+{{- else if eq .Cluster.Provider "zalando-nebius" }}
+        - OIDC: "{{ .Cluster.ConfigItems.oidc_provider }}/{{ .Cluster.LocalID }}"
 {{- else }}
         - OIDC: "{{.Cluster.LocalID}}.{{.Values.hosted_zone}}"
 {{- end }}
@@ -2222,6 +2227,7 @@ Resources:
           PolicyName: root
       RoleName: "{{.Cluster.LocalID}}-app-external-dns"
     Type: 'AWS::IAM::Role'
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
   IngressControllerIAMRole:
     Properties:
       AssumeRolePolicyDocument: !Sub
@@ -4183,3 +4189,4 @@ Outputs:
     Export:
       Name: '{{ .Cluster.ID}}:worker-files-encryption-key'
     Value: !Ref WorkerFilesEncryptionKey
+{{- end }}

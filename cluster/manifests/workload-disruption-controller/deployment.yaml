@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{- if eq .Cluster.ConfigItems.karpenter_drift_disruption_enabled "true" }}
 apiVersion: apps/v1
 kind: Deployment
@@ -72,3 +73,4 @@ spec:
         operator: Exists
 {{- end}}
 {{- end}}
+{{- end }}

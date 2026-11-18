@@ -1,3 +1,4 @@
+{{- if or (eq .Cluster.Provider "zalando-aws") (eq .Cluster.Provider "zalando-eks") }}
 {{ if index .Cluster.ConfigItems "efs_id" }}
 apiVersion: v1
 kind: ServiceAccount
@@ -74,3 +75,4 @@ subjects:
   name: efs-provisioner
   namespace: kube-system
 {{ end }}
+{{- end }}
