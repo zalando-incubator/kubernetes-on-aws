@@ -1,6 +1,9 @@
 kind: ServiceAccount
 apiVersion: v1
 metadata:
+  labels:
+    application: kubernetes
+    component: prometheus
   name: prometheus
   namespace: kube-system
 ---
@@ -9,6 +12,8 @@ kind: ClusterRole
 metadata:
   name: prometheus
   labels:
+    application: kubernetes
+    component: prometheus
     admission.zalando.org/infrastructure-component: "true"
 rules:
 - apiGroups: [""]
@@ -40,6 +45,8 @@ kind: ClusterRoleBinding
 metadata:
   name: prometheus
   labels:
+    application: kubernetes
+    component: prometheus
     admission.zalando.org/infrastructure-component: "true"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
