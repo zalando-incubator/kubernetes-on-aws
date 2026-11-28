@@ -301,7 +301,7 @@ webhooks:
     failurePolicy: Fail
     sideEffects: "NoneOnDryRun"
     rules:
-      - operations: ["UPDATE"]
+      - operations: ["UPDATE", "DELETE"]
         apiGroups: ["zalando.org"]
         apiVersions: ["v1"]
         resources: ["stacks"]
@@ -320,7 +320,7 @@ webhooks:
     failurePolicy: Fail
     sideEffects: "NoneOnDryRun"
     rules:
-      - operations: ["CREATE", "UPDATE"]
+      - operations: ["CREATE", "UPDATE", "DELETE"]
         apiGroups: ["zalando.org"]
         apiVersions: ["v1"]
         resources: ["stacksets"]
@@ -526,7 +526,7 @@ webhooks:
     sideEffects: "NoneOnDryRun"
     matchPolicy: Equivalent
     rules:
-      - operations: [ "CREATE", "UPDATE" ]
+      - operations: [ "CREATE", "UPDATE", "DELETE" ]
         apiGroups: ["networking.k8s.io"]
         apiVersions: ["v1"]
         resources: ["ingresses"]
@@ -546,10 +546,29 @@ webhooks:
     sideEffects: "NoneOnDryRun"
     matchPolicy: Equivalent
     rules:
-      - operations: [ "CREATE", "UPDATE" ]
+      - operations: [ "CREATE", "UPDATE", "DELETE" ]
         apiGroups: ["zalando.org"]
         apiVersions: ["v1"]
         resources: ["routegroups"]
+  - name: fabricgateway-admitter.teapot.zalan.do
+    clientConfig:
+      {{- if eq .Cluster.Provider "zalando-eks"}}
+      service:
+        name: "admission-controller"
+        namespace: "kube-system"
+        path: "/fabricgateway"
+      {{- else }}
+      url: "https://localhost:8085/fabricgateway"
+      {{- end }}
+      caBundle: "{{ .Cluster.ConfigItems.ca_cert_decompressed }}"
+    admissionReviewVersions: ["v1beta1"]
+    failurePolicy: Fail
+    sideEffects: "NoneOnDryRun"
+    rules:
+      - operations: [ "DELETE" ]
+        apiGroups: ["zalando.org"]
+        apiVersions: ["v1"]
+        resources: ["fabricgateways"]
 
 {{- if eq .Cluster.ConfigItems.skipper_resources_validate_application_label "true" }}
   - name: applicationlabel-validation-admitter.teapot.zalan.do
