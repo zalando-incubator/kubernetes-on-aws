@@ -218,9 +218,10 @@ subjects:
 ---
 {{- end }}
 {{- if eq .Cluster.ConfigItems.deployment_service_accountable_user_impersonation_enabled "true" }}
-# Lets the deployment identity impersonate a task's accountable_user when deploying, using constrained impersonation
+# Lets the deployment identities impersonate a task's accountable_user, using constrained impersonation
 # (Kubernetes 1.36+): the identity is limited to a username and impersonated requests to the apply verbs below. The
 # impersonated user must also be authorized. API-gated: only the impersonation scope (CDP) may set accountable_user.
+# The controller deploys as the accountable_user; the API dry-runs as the accountable_user (POST /validate).
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -267,6 +268,9 @@ subjects:
     name: "deployment-service-controller"
     namespace: "kube-system"
   # {{ end }}
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: zalando-iam:zalando:service:stups_deployment-service
 ---
 {{- end }}
 kind: Role
